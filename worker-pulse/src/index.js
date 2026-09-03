@@ -538,6 +538,9 @@ const ANALYST_EVENTS = [
   'offer_world', 'offer_discord', 'offer_support',
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
   'quest_step',
+  // 🏡 without this the analyst structurally cannot mention the farm — the
+  // busiest thing built this year was invisible to its own judgement
+  'homestead_open',
 ];
 
 async function gscRange(env, from, to) {

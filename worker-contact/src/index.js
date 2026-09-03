@@ -180,6 +180,38 @@ export default {
       return new Response(JSON.stringify({ ok: true, pat: !!env.GITHUB_PAT }),
         { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
+    // 📡 THE PULSE PROXY — Banana Pulse behind the door HQ already has.
+    // The dashboard token lives HERE as this worker's own secret, so it never
+    // reaches a browser and Trym carries one key, not two. Server-to-server,
+    // so worker-pulse needs no CORS header and keeps its own gate exactly as
+    // it is: a wrong token there is still a 404 to the whole world.
+    if (url.pathname === '/pulse' && request.method === 'GET') {
+      const tok = url.searchParams.get('token') || '';
+      if (!env.INBOX_TOKEN || tok !== env.INBOX_TOKEN) return new Response('nope', { status: 403, headers: cors });
+      if (!env.DASH_TOKEN) {
+        return new Response(JSON.stringify({ ok: false, err: 'no dash token' }),
+          { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const want = String(url.searchParams.get('r') || 'analyst');
+      if (!['live', 'analyst', 'report', 'range'].includes(want)) {
+        return new Response(JSON.stringify({ ok: false, err: 'bad room' }),
+          { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const q = new URLSearchParams({ t: env.DASH_TOKEN });
+      if (want === 'range') {
+        q.set('from', String(url.searchParams.get('from') || 'today').slice(0, 12));
+        q.set('to', String(url.searchParams.get('to') || 'today').slice(0, 12));
+      }
+      try {
+        const up = await fetch('https://banana-pulse.trymstene.workers.dev/api/' + want + '?' + q.toString());
+        const body = await up.text();
+        return new Response(body, { status: up.status,
+          headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, err: 'pulse unreachable' }),
+          { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+    }
     if (url.pathname === '/dev/gh' && request.method === 'POST') {
       let body;
       try { body = await request.json(); } catch (e) { return new Response('bad json', { status: 400, headers: cors }); }

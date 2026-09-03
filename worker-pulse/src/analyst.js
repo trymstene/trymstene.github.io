@@ -285,7 +285,9 @@ export function analyse(d) {
   const oShown = ev('offer_shown');
   const oWorld = ev('offer_world');
   const oDisc = ev('offer_discord');
-  const oWarm = oWorld + oDisc + ev('offer_click');
+  // ☕ offer_support is the ask that is actually live; world/discord/click are
+  // retired and stay in the sum only so old windows read the same as they did
+  const oWarm = oWorld + oDisc + ev('offer_support') + ev('offer_click');
   if (oShown >= MIN_STEP_N) {
     const ctr = Math.round(rate(oWarm, oShown) * 100);
     if (oWarm === 0) {

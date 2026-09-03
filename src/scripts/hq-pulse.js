@@ -98,7 +98,8 @@ function lineChart(host, pts, opts) {
     if (!pts[i]) return;
     const tx = mk('text', { x: x(i), y: H - 8, fill: DIM, 'font-size': 12,
       'text-anchor': i === 0 ? 'start' : 'end' }, svg);
-    tx.textContent = (pts[i].d || '').slice(5);
+    const lab = String(pts[i].d || '');
+    tx.textContent = /^\d{4}-\d{2}-\d{2}$/.test(lab) ? lab.slice(5) : lab;
   });
   // the hover layer: an HTML chart is interactive, so it reads on touch too
   const tip = div('hqp-tip', null, wrap);
@@ -162,12 +163,48 @@ function funnel(host, steps) {
   });
 }
 
+// ── 📡 what Google saw. A DIFFERENT KIND OF NUMBER from everything below
+// it, and the note says so: these are client-fired and consent-gated, so an
+// adblocker or a declined banner makes a visit invisible. The two will
+// disagree. Neither is correcting the other.
+function googleBlock(el, an, live) {
+  if (!an && !live) return;
+  const s = section(el, 'What Google saw', 'Client-fired and consent-gated: an adblocker or a declined cookie banner makes a visit invisible here, and Google drops rows it considers empty. Everything below this section comes from the workers instead and misses nobody. Expect the two to disagree — neither is a correction of the other.');
+  if (live) {
+    const g = div('hqp-tiles', null, s);
+    tile(g, 'on the site now', nfmt(live.total || 0), (live.countries || []).length + ' countries');
+    const top = (live.pages || [])[0];
+    if (top) tile(g, 'busiest page', nfmt(top.v), String(top.page) || '/');
+    const ev = (live.events || [])[0];
+    if (ev) tile(g, 'top event now', nfmt(ev.v), ev.name);
+    if (live.spark && live.spark.length) {
+      const pts = live.spark.map((v, i) => ({ d: (29 - i) + ' min ago', v }));
+      lineChart(s, pts, { label: 'people on the site, last half hour', color: '#5ec8e0' });
+      div('hqp-cap', 'people on the site, by the minute', s);
+    }
+  }
+  if (!an || !an.headline) return;
+  const card = div('hqp-analyst', null, s);
+  div('hqp-verdict is-' + (an.verdict || 'normal'), an.verdict || 'reading', card);
+  div('hqp-ahead', an.headline, card);
+  (an.body || []).slice(0, 3).forEach((line) => div('hqp-abody', line, card));
+  (an.reads || []).slice(0, 4).forEach((r) => {
+    const row = div('hqp-aread', null, card);
+    div('hqp-aicon', r.icon || '•', row);
+    div('hqp-atext', r.text || String(r), row);
+  });
+  (an.recs || []).slice(0, 2).forEach((r) => div('hqp-arec', typeof r === 'string' ? r : (r.text || r.rec || ''), card));
+  if (an.confidence) div('hqp-cap', an.confidence + (an.sessions != null ? ' · ' + nfmt(an.sessions) + ' sessions vs ' + nfmt(an.avgSessions) + ' usual' : ''), card);
+}
+
 export function renderPulse(el, data) {
   const roll = data.roll || {};
   const world = data.world || {};
   const days = (roll.days || []).filter((d) => d && d.passes != null);
   const now = days.length ? days[days.length - 1] : (roll.today || null);
   el.textContent = '';
+
+  googleBlock(el, data.analyst, data.live);
 
   if (!now) {
     div('hqp-empty', 'The rollup has not written a day yet. It walks the bucket every ten minutes; the first file lands within the hour.', el);
