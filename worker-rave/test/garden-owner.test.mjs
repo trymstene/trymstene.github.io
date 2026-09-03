@@ -253,5 +253,23 @@ ok('…and reading it twice reads the same story', again.rows.length === r.rows.
 r = await yp('/diary', { pass: V, alt: Vs, wt: await wt(V) });
 ok('a stranger has no story to read here', r.status === 404, r);
 
+// 14. 🌍 THE CENSUS — /yards/stats already loaded every homestead document
+// and threw away everything but four counts. The world is in hand; counting it
+// is arithmetic inside a loop that was running anyway.
+console.log('14. the world census');
+const stats = await yard.fetch(new Request('https://room/stats')).then((x) => x.json());
+ok('the census rides along with the headline counts', !!stats.census, Object.keys(stats));
+ok('homesteads are counted by what they have grown into', Array.isArray(stats.census.stage) && stats.census.stage.length === 4
+  && stats.census.stage.reduce((a, b) => a + b, 0) > 0, stats.census.stage);
+ok('the flock is counted, and so is how many yards have one', stats.census.animals > 0 && stats.census.withAnimals > 0, stats.census);
+ok('the neighbourhood mechanic is measured at last', stats.census.social.hugs > 0 && stats.census.social.feeds > 0, stats.census.social);
+ok('…and a named sign is told from an unnamed one', stats.census.named >= 0, stats.census.named);
+// ⚠️ Trym's own test yards once made this desk read as a boom
+const before = stats.census.animals;
+await yp('/save', { state: { stage: 3, items: [], animals: [{ sp: 'cow', b: 1, id: 111111, ad: 1 }] },
+  since: 0, mark: 'qacow01', pass: V, alt: Vs, wt: await wt(V), name: 'Testy Boom' });
+const after = await yard.fetch(new Request('https://room/stats')).then((x) => x.json());
+ok('a QA yard never inflates the census', after.census.animals === before, { before, after: after.census.animals });
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

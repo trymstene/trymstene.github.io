@@ -2867,6 +2867,37 @@ export class YardRoom {
           stage: (doc.state && doc.state.stage) || 0,
           created: doc.created || 0, updated: doc.updated || 0 });
       }
+      // 🌍 THE CENSUS — every field is already in hand, so this is arithmetic
+      // inside a loop that was running anyway. QA yards are excluded the same
+      // way the headline numbers exclude them, or Trym's own tests read as a boom.
+      const qa0 = (slug) => /^testy(-\d+)?$/.test(slug || '') || slug === 'trym';
+      const census = { stage: [0, 0, 0, 0], animals: 0, withAnimals: 0, grass: 0, memory: 0,
+        named: 0, fenced: 0, planted: 0, decor: 0, indoors: 0, fedToday: 0,
+        social: { visits: 0, signs: 0, waters: 0, hugs: 0, feeds: 0 } };
+      const todayIso = yDay();
+      for (const doc of all.values()) {
+        if (doc.alias || qa0(doc.slug)) continue;
+        const st = (doc && doc.state) || {};
+        census.stage[Math.max(0, Math.min(3, st.stage || 0))]++;
+        const an = (st.animals || []).length;
+        census.animals += an;
+        if (an) census.withAnimals++;
+        census.grass += (st.grass || []).length;
+        census.memory += (st.memory || []).length;
+        if (doc.name && !/^a homestead$/i.test(doc.name)) census.named++;
+        if ((st.fence || []).length) census.fenced++;
+        if ((st.soil || []).some((c) => c && c.crop)) census.planted++;
+        census.decor += (st.items || []).length;
+        if (Object.keys(st.inItems || {}).length) census.indoors++;
+        if (st.feedAt && new Date(st.feedAt).toISOString().slice(0, 10) === todayIso) census.fedToday++;
+      }
+      // 🤝 is the neighbourhood mechanic being used at all? These are the rows
+      // a visitor leaves; they live under their own prefixes in this same room.
+      for (const [k, rows] of (await this.state.storage.list({ prefix: 'vis:' }))) { if (!qa0(k.slice(4))) census.social.visits += (rows || []).length; }
+      for (const [k, rows] of (await this.state.storage.list({ prefix: 'g:' }))) { if (!qa0(k.slice(2))) census.social.signs += (rows || []).length; }
+      for (const [k, rows] of (await this.state.storage.list({ prefix: 'wat:' }))) { if (!qa0(k.slice(4))) census.social.waters += (rows || []).length; }
+      for (const [k, rows] of (await this.state.storage.list({ prefix: 'hug:' }))) { if (!qa0(k.slice(4))) census.social.hugs += (rows || []).length; }
+      for (const [k, rows] of (await this.state.storage.list({ prefix: 'fed:' }))) { if (!qa0(k.slice(4))) census.social.feeds += (rows || []).length; }
       list.sort((a, b) => b.updated - a.updated);
       // the headline numbers exclude QA yards (the ?hstest scenario claims as
       // "Testy") — 9 of the first 14 were Trym's own test runs and the desk
@@ -2876,7 +2907,7 @@ export class YardRoom {
       const rn = real.length;
       const rday = real.filter((e) => now - e.updated < 86400000).length;
       const rweek = real.filter((e) => now - e.updated < 7 * 86400000).length;
-      return json({ yards: rn, day: rday, week: rweek, all: n,
+      return json({ yards: rn, day: rday, week: rweek, all: n, census,
         // 🪪 the token rollout, this isolate's lifetime: ok / wrong / absent
         wt: { ok: this.wtOk || 0, miss: this.wtMiss || 0, none: this.wtNone || 0, enforce: wtEnforce(this.env) ? 1 : 0 },
         list: list.slice(0, 100).map((e) => ({ ...e, qa: qa(e) ? 1 : 0 })) });

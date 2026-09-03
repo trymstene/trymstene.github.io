@@ -32,3 +32,8 @@ RULES_STRICT = "0"
 # counted ownLegacy on the desk; "1" = refused (nobody is charged for an item
 # they will not get). Flip once the desk shows ownLegacy at ~0 for a day.
 OWN_STRICT = "1"   # flipped 3 Sep 2026 in the QA batch: the pre-slice builds never named the stand anyway
+
+# 📊 the rollup walks the bucket a page at a time and writes one file a day.
+# Every 10 minutes covers ~5,700 records a day against a 40-per-tick read cap.
+[triggers]
+crons = ["*/10 * * * *"]

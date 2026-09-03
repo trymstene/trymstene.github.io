@@ -35,6 +35,11 @@ const MAX_TOKENS = 10;
 const CHALLENGE_TTL = 5 * 60 * 1000;
 
 export default {
+  // ⏱ the rollup walks the bucket a page at a time; a day of ticks covers
+  // far more records than the read cap could ever reach in one request
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(rollupTick(env).catch(() => {}));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
@@ -56,6 +61,8 @@ export default {
       if (url.pathname === '/admin/grant') return adminGrant(request, env);
       if (url.pathname === '/admin/erase') return adminErase(request, env);
       if (url.pathname === '/admin/log') return adminLog(request, env, url);
+      if (url.pathname === '/admin/rollup') return adminRollup(request, env, url);
+      if (url.pathname === '/admin/rollup/tick') return adminTick(request, env, url);
       if (url.pathname === '/kofi-hook') return kofiHook(request, env);
       if (url.pathname === '/polar-hook') return polarHook(request, env);
       if (url.pathname === '/pay/checkout') return payCheckout(request, env, url);
@@ -857,6 +864,15 @@ const ERASE_HOLD = 5;        // deletes a sweep holds back so it can finish its 
                              // (a pass carries 1-3 credentials in practice; holding 12
                              // starved the read budget below what the old code swept)
 const GRANT_CAP = 100000;    // no fat fingers turning 100 into 100000000
+// 📊 THE ROLLUP. Same 50-subrequest ceiling, so one tick reads a PAGE and
+// leaves a cursor; the cron comes back until the day is walked, then writes
+// one file. Nothing here is ever computed live on a desk request again.
+const ROLL_READ = 40;        // records a tick reads (1 list + 40 gets + 2 puts)
+const ROLL_KEEP = 120;       // days of history kept
+const ROLL_STATE = 'rollup/state.json';
+const rollKey = (d) => 'rollup/day-' + d + '.json';
+const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
+const dayIdx = (iso) => Math.floor(Date.parse(iso + 'T00:00:00Z') / 86400000);
 
 const adminOk = (env, key) => !!(env.PASS_ADMIN_KEY && key === env.PASS_ADMIN_KEY);
 const notFound = () => new Response('not found', { status: 404 });
@@ -900,6 +916,117 @@ async function adminNote(env, act, id, detail) {
 
 // one sweep of the bucket: primaries become rows, and every POINTER folds into
 // the row it points at as a device count + whether that pass can be recovered
+// one day's totals, before anything is folded in
+function blankRoll(day) {
+  return { day, at: 0, done: 0, scanned: 0, pages: 0,
+    passes: 0, anon: 0, veteran: 0, mailCreds: 0, named: 0, member: 0,
+    born1: 0, born7: 0,
+    dau: 0, wau: 0, mau: 0, regulars: 0,
+    ret: { c1: 0, r1: 0, c7: 0, r7: 0, c30: 0, r30: 0 },
+    coins: { earned: 0, spent: 0, held: 0 },
+    rep: 0, badges: 0, gear: 0, shelf: 0,
+    quest: 0, questDone: 0, farm: 0, animals: 0,
+    area: {}, faucet: {}, refuse: {}, unruled: 0, drift: 0, events: 0 };
+}
+// ⚠️ ONE RECORD, ONE FOLD — a pointer credential is not a person: it only
+// tells us this person can get back in. Everything else reads the primary.
+function foldRoll(acc, rec, today) {
+  acc.scanned++;
+  if (!rec) return;
+  if (rec.link) { if (rec.alg === 'mail' || rec.mail) acc.mailCreds++; return; }
+  acc.passes++;
+  if (rec.anon) acc.anon++;
+  if (rec.veteran) acc.veteran++;
+  const blob = rec.blob || {};
+  const p = blob.pass || {};
+  const stats = statsOf(p);
+  if (blob.name) acc.named++;
+  if (blob.member && +blob.member.until > Date.now()) acc.member++;
+  if (Array.isArray(blob.shelf)) acc.shelf += blob.shelf.length;
+  const q = blob.quest || {};
+  if (+q.s > 0) acc.quest++;
+  if (q.done) acc.questDone++;
+  acc.rep += stats.rep || 0;
+  acc.badges += Object.keys(p.patches || {}).length;
+  acc.gear += Object.keys(stats).filter((k) => k.startsWith('own_') && stats[k] > 0).length;
+  acc.coins.earned += stats.coins_earned || 0;
+  acc.coins.spent += stats.coins_spent || 0;
+  acc.coins.held += (rec.wallet ? +rec.wallet.base + +rec.wallet.earned - +rec.wallet.spent + +rec.wallet.refunded : 0) || 0;
+  // 📅 the day stamps are what GA4 can never give: distinct days per PERSON
+  const days = Array.isArray(p.days) ? p.days : [];
+  const t = dayIdx(today);
+  const last = days.length ? dayIdx(days[days.length - 1]) : -1e9;
+  if (last >= t) acc.dau++;
+  if (last >= t - 6) acc.wau++;
+  if (last >= t - 29) acc.mau++;
+  if (days.length >= 5) acc.regulars++;
+  const born = p.created ? dayIdx(isoDay(p.created)) : (days.length ? dayIdx(days[0]) : t);
+  const age = t - born;
+  if (age === 0) acc.born1++;
+  if (age >= 0 && age <= 6) acc.born7++;
+  // rolling retention: still turning up n days after the first day
+  const seenAfter = (n) => days.some((d) => dayIdx(d) >= born + n);
+  if (age >= 1) { acc.ret.c1++; if (seenAfter(1)) acc.ret.r1++; }
+  if (age >= 7) { acc.ret.c7++; if (seenAfter(7)) acc.ret.r7++; }
+  if (age >= 30) { acc.ret.c30++; if (seenAfter(30)) acc.ret.r30++; }
+  // 💰 where the coins come from, by area and by faucet — server truth, and
+  // the one question GA4 has no event for at all
+  const log = rec.log || {};
+  (log.ev || []).forEach((e) => {
+    acc.events++;
+    if (e.k !== 'coins_earned') return;
+    const a = e.a || 'unknown', f = e.s || 'unnamed';
+    acc.area[a] = (acc.area[a] || 0) + (+e.d || 0);
+    acc.faucet[f] = (acc.faucet[f] || 0) + (+e.d || 0);
+  });
+  for (const [why, n] of Object.entries(log.rr || {})) acc.refuse[why] = (acc.refuse[why] || 0) + n;
+  acc.unruled += log.unruled || 0;
+  acc.drift += driftScore(log) || 0;
+  if (blob.farm || (blob.pass && stats.hs_day)) acc.farm++;
+}
+
+// one cron tick: read a page, fold it, leave a cursor or finish the day
+async function rollupTick(env) {
+  const today = isoDay(Date.now());
+  let st = null;
+  try { const o = await env.PASSES.get(ROLL_STATE); st = o ? await o.json() : null; } catch (e) {}
+  if (!st || st.acc.day !== today) st = { cursor: null, acc: blankRoll(today) };
+  if (st.acc.done) return { skipped: 1, day: today };
+  const list = await env.PASSES.list({ prefix: 'pass/', limit: ROLL_READ, cursor: st.cursor || undefined });
+  const recs = await readMany(env, list.objects.map((o) => o.key));
+  for (const [, rec] of recs) foldRoll(st.acc, rec, today);
+  st.acc.pages++;
+  st.acc.at = Date.now();
+  st.cursor = list.truncated ? list.cursor : null;
+  if (!list.truncated) {
+    st.acc.done = 1;
+    await env.PASSES.put(rollKey(today), JSON.stringify(st.acc));
+  }
+  await env.PASSES.put(ROLL_STATE, JSON.stringify(st));
+  return { day: today, pages: st.acc.pages, scanned: st.acc.scanned, done: st.acc.done };
+}
+
+// 📈 the desk's history: N daily files, one get each, nothing computed live
+async function adminRollup(request, env, url) {
+  if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
+  const n = Math.max(1, Math.min(60, +url.searchParams.get('days') || 30));
+  const t = Math.floor(Date.now() / 86400000);
+  const keys = [];
+  for (let i = 0; i < n; i++) keys.push(rollKey(isoDay((t - i) * 86400000)));
+  // ⚠️ readMany hands back [key, value] PAIRS, not a map — adminScan wraps it
+  const got = new Map(await readMany(env, keys));
+  const days = [...got.values()].filter(Boolean).sort((a, b) => (a.day < b.day ? -1 : 1));
+  let state = null;
+  try { const o = await env.PASSES.get(ROLL_STATE); state = o ? await o.json() : null; } catch (e) {}
+  return json({ days, today: (state && state.acc) || null, keep: ROLL_KEEP }, 200, { 'Cache-Control': 'no-store' });
+}
+
+// a manual nudge, so a fresh day can be walked without waiting on the clock
+async function adminTick(request, env, url) {
+  if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
+  return json(await rollupTick(env), 200, { 'Cache-Control': 'no-store' });
+}
+
 async function adminScan(env) {
   const list = await env.PASSES.list({ prefix: 'pass/', limit: ADMIN_LIST });
   const keys = list.objects.map((o) => o.key);
