@@ -807,6 +807,38 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-tline { position: absolute; background: #dccfa6; border-radius: 3px; opacity: 1;
       transition: left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.3s ease; }
     .hs-tline.is-new { opacity: 0; }
+    /* 📖 THE FARM STORY — a deck of polaroids on the same dotted paper the
+       tree stands on. One card size, one gap, a deterministic tilt so the
+       stack reads as photos on a table rather than a grid of tiles. */
+    .hs-list--story { display: block; overflow: hidden; padding: 0.3rem 0.85rem 0.85rem 1.15rem; }
+    .hs-storyview { position: relative; overflow: hidden; height: 100%; border-radius: 16px;
+      background: #fbf7ea radial-gradient(#e7dfc8 1.2px, transparent 1.4px) 0 0 / 18px 18px; box-shadow: inset 0 0 0 1px rgba(31, 26, 8, 0.06); }
+    .hs-sdeck { display: flex; align-items: center; gap: 14px; height: 100%; padding: 0 22px 34px;
+      overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .hs-sdeck::-webkit-scrollbar { display: none; }
+    .hs-scard { flex: 0 0 168px; width: 168px; height: 210px; scroll-snap-align: center; background: #fff;
+      border-radius: 16px; padding: 8px; display: grid; grid-template-rows: 116px 1fr; gap: 6px;
+      box-shadow: 0 4px 0 rgba(31, 26, 8, 0.12); transition: opacity 0.3s ease, transform 0.3s ease; }
+    .hs-scard.is-new { opacity: 0; transform: translateY(12px) scale(0.94); }
+    .hs-sphoto { position: relative; border-radius: 10px; background: #7fb257; overflow: hidden; display: grid; place-items: center; }
+    .hs-ssub { display: block; background-repeat: no-repeat; background-size: contain; image-rendering: pixelated; }
+    .hs-ssub--banana { width: 96px; height: 96px; }
+    .hs-scard.is-old .hs-sphoto { background: #a8ac82; }
+    .hs-scard.is-old .hs-ssub { filter: grayscale(1) sepia(0.35) contrast(0.92) brightness(1.06); }
+    .hs-sheart { position: absolute; right: 6px; top: 6px; width: 16px; height: 16px; color: #e0708a; }
+    .hs-scap { display: grid; align-content: start; gap: 2px; padding: 0 2px; }
+    .hs-scap b { font-size: 0.74rem; line-height: 1.15; color: #2b2410;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .hs-scap small { font-size: 0.64rem; line-height: 1; color: #2b2410; opacity: 0.55; }
+    .hs-spill { position: absolute; bottom: 10px; width: 34px; height: 34px; border: 0; border-radius: 999px; background: #fff;
+      color: #6b5200; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.14); cursor: pointer; }
+    .hs-spill svg { display: block; }
+    .hs-spill--info { right: 10px; }
+    .hs-spill--top { right: 52px; }
+    .hs-snote { position: absolute; left: 10px; right: 10px; bottom: 52px; z-index: 2; display: grid; gap: 4px;
+      background: #fff; color: #2b2410; border-radius: 16px; padding: 10px 12px; box-shadow: 0 4px 0 rgba(31, 26, 8, 0.14); }
+    .hs-snote b { font-size: 0.76rem; line-height: 1.2; }
+    .hs-snote span { font-size: 0.68rem; line-height: 1.35; opacity: 0.7; }
     .hs-petport--rest i { filter: grayscale(1) sepia(0.35) contrast(0.92) brightness(1.06); }
     .hs-petport--rest { background: #ece7d9; }
     .hs-petport--away { opacity: 0.6; }
@@ -1117,6 +1149,7 @@ const description = 'A clearing west of the park with your name on the sign: cla
           <button type="button" data-tab="buy" hidden><span class="hs-appic" style="background:#e7f3d1">🐄</span>Buy animals</button>
           <button type="button" data-tab="animals" hidden><span class="hs-appic" style="background:#fbe4e4">🐔</span>My animals</button>
           <button type="button" data-tab="tree" hidden><span class="hs-appic" style="background:#e3efd9">🌳</span>Family</button>
+          <button type="button" data-tab="story" hidden><span class="hs-appic" style="background:#f2e7cd">📖</span>Story</button>
           <button type="button" data-tab="order"><span class="hs-appic" style="background:#dff1ff">🛒</span>Order stuff</button>
           <button type="button" data-tab="shed"><span class="hs-appic" style="background:#f3e6cf;position:relative">📦<i class="hs-appbadge" id="hsShedBadge" hidden></i></span>Shed</button>
           <button type="button" data-tab="up"><span class="hs-appic" style="background:#e2f4d9">⛺</span>Upgrades</button>

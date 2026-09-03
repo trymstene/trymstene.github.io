@@ -2954,6 +2954,8 @@ function init(visitDoc, visitMiss) {
     get bestFriend() { return bestFriend; },
     get closeShop() { return closeShop; },
     get dayNum() { return dayNum; },
+    get drawComposite() { return drawComposite; },   // the visitor's banana, for the story's photos
+    get yFetch() { return yFetch; },
     get farmAnimals() { return farmAnimals; },
     get farmMemory() { return farmMemory; },
     get fedToday() { return fedToday; },
@@ -3003,18 +3005,20 @@ function init(visitDoc, visitMiss) {
   }
   function renderShop() {
     const list = document.getElementById('hsShopList');
-    list.classList.remove('hs-list--rows', 'hs-list--tree');
+    list.classList.remove('hs-list--rows', 'hs-list--tree', 'hs-list--story');
     const catsRow = document.getElementById('hsShopCats');
     list.replaceChildren();
     catsRow.hidden = true;
     armAnimalsTab();
     const tok = ++renderTok;   // a later paint wins; a stale chunk load paints nothing
     const tabNow = shopEl.dataset.tab;
-    if (FARM && (tabNow === 'sell' || tabNow === 'buy' || tabNow === 'animals' || tabNow === 'tree')) {
+    if (FARM && (tabNow === 'sell' || tabNow === 'buy' || tabNow === 'animals' || tabNow === 'tree' || tabNow === 'story')) {
       phone().then((PH) => {
         if (tok !== renderTok) return;
         if (tabNow === 'sell') PH.renderSell(list); else if (tabNow === 'buy') PH.renderBuy(list);
-        else if (tabNow === 'tree') PH.renderTree(list); else PH.renderAnimals(list);
+        else if (tabNow === 'tree') PH.renderTree(list);
+        else if (tabNow === 'story') PH.renderStory(list);
+        else PH.renderAnimals(list);
       });
       return;
     }
@@ -3242,6 +3246,7 @@ function init(visitDoc, visitMiss) {
     buy: ['Buy animals', 'A bigger fence fits more of them.'],
     animals: ['My animals', 'Everyone who lives here.'],
     tree: ['The family tree', 'Everyone who ever lived here.'],
+    story: ['The farm story', 'What happened here while you were out.'],
     order: ['Order stuff', 'The van delivers to your mailbox.'],
     shed: ['The shed', 'Your stuff, ready to place.'],
     up: ['Upgrades', ''],
@@ -3303,7 +3308,7 @@ function init(visitDoc, visitMiss) {
     }
   }
   function openShop(tab, remote) {
-    const farmTabs = tab === 'sell' || tab === 'buy' || tab === 'animals' || tab === 'tree';
+    const farmTabs = tab === 'sell' || tab === 'buy' || tab === 'animals' || tab === 'tree' || tab === 'story';
     if (state.stage < 1 && !farmTabs) tab = 'order';   // tent-first: straight to the one offer (the farm trades from day one — it FUNDS the tent)
     if (tab) shopEl.dataset.tab = tab;
     shopHead();
@@ -4570,6 +4575,9 @@ function init(visitDoc, visitMiss) {
     document.querySelectorAll('[data-tab="animals"]').forEach((b) => { b.hidden = !has; });
     const ever = has || (FARM && !visiting && ((state.grass || []).length > 0 || (state.memory || []).length > 0));
     document.querySelectorAll('[data-tab="tree"]').forEach((b) => { b.hidden = !ever; });
+    // the story is about visitors, so it waits for an address to visit
+    const told = FARM && !visiting && !!state.claimedAt && !!state.slug;
+    document.querySelectorAll('[data-tab="story"]').forEach((b) => { b.hidden = !told; });
   }
   armAnimalsTab();
   if (FARM && !visiting && state.claimedAt) { farmGrant(); morningTick(); }

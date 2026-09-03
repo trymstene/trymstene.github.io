@@ -412,6 +412,44 @@ export function renderAnimals(list) {
     list.appendChild(r2.row);
   });
 }
+// 📖 THE FARM STORY — the deck of polaroids, in ITS OWN CHUNK: the phone is
+// at 75% of its budget and the tree already lives inside it. The rows come
+// from the yard's own read, which is re-readable — opening the story does not
+// consume it the way the away-news does.
+let storyMod = null, storyOn = null;
+function storyChunk() {
+  if (storyMod) return Promise.resolve(storyMod);
+  return import('./homestead-story.js').then((m) => { storyMod = m; return m; });
+}
+export function renderStory(list) {
+  list.classList.add('hs-list--story');
+  const view = document.createElement('div');
+  view.className = 'hs-storyview';
+  list.appendChild(view);
+  if (storyOn && storyOn.destroy) storyOn.destroy();
+  storyOn = null;
+  Promise.all([storyChunk(), C.yFetch('/diary', {}).catch(() => null)]).then(([m, r]) => {
+    if (!view.isConnected) return;   // the player already moved to another app
+    storyOn = m.buildStory(view, (r && Array.isArray(r.rows)) ? r.rows : [], {
+      art: '/assets/homestead/',
+      now: Date.now(),
+      icon: (nm, px) => ico(nm, px),
+      thumb: (sp) => THUMB[sp] || null,
+      // the visitor herself, drawn by the world's own engine
+      banana: (px) => {
+        try {
+          const cv = document.createElement('canvas');
+          cv.width = px; cv.height = px;
+          C.drawComposite(cv.getContext('2d'), px, 2, { bg: 'transparent', captions: false,
+            hat: '', glasses: '', extras: {}, top: '', bottom: '', effect: 'none' });
+          return cv;
+        } catch (e) { return null; }
+      },
+    });
+  });
+  track1('homestead_story');
+}
+
 // 🌳 THE FAMILY TREE — everyone who ever lived here: the living (a level
 // badge, gold at Lv 10), the ones at rest (a sepia photo) and the rehomed
 // (a dashed frame). Founders have no known parent; tapping opens the card.
