@@ -823,18 +823,20 @@ const description = 'A clearing west of the park with your name on the sign: cla
       overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; }
     .hs-sdeck::-webkit-scrollbar { display: none; }
     .hs-scard { flex: 0 0 202px; width: 202px; height: 296px; scroll-snap-align: center; background: #fff;
-      border-radius: 16px; padding: 9px; display: grid; grid-template-rows: 206px 1fr; gap: 7px;
-      box-shadow: 0 4px 0 rgba(31, 26, 8, 0.12); transition: opacity 0.3s ease, transform 0.3s ease; }
+      border-radius: 0; padding: 9px 9px 0; display: grid; grid-template-rows: 184px 1fr; gap: 9px;
+      box-shadow: 0 4px 0 rgba(31, 26, 8, 0.12); transition: opacity 0.3s ease, transform 0.3s ease;
+      -webkit-user-select: none; user-select: none; }
     .hs-scard.is-new { opacity: 0; transform: translateY(12px) scale(0.94); }
-    .hs-sphoto { position: relative; border-radius: 10px; overflow: hidden; display: grid; place-items: end center;
+    .hs-sphoto { position: relative; border-radius: 0; overflow: hidden; display: grid; place-items: end center;
       padding-bottom: 22px; background: linear-gradient(#b6d99b 0%, #9ccb78 32%, #79ad55 32%, #6a9f48 100%); }
     .hs-ssub { display: block; background-repeat: no-repeat; background-size: contain; image-rendering: pixelated; }
     .hs-ssub--banana { width: 132px; height: 132px; }
     .hs-sheart { position: absolute; right: 6px; top: 6px; width: 16px; height: 16px; color: #e0708a; }
-    .hs-scap { display: grid; align-content: start; gap: 2px; padding: 0 2px; }
-    .hs-scap b { font-size: 0.78rem; line-height: 1.2; color: #2b2410;
+    .hs-scap { display: grid; align-content: center; gap: 1px; padding: 0 4px;
+      font-family: 'Caveat', 'Segoe Script', 'Bradley Hand', cursive; }
+    .hs-scap b { font-size: 1.15rem; font-weight: 600; line-height: 1.08; color: #2a3550;
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .hs-scap small { font-size: 0.64rem; line-height: 1; color: #2b2410; opacity: 0.55; }
+    .hs-scap small { font-size: 0.95rem; line-height: 1; color: #2a3550; opacity: 0.5; }
     .hs-spill { position: absolute; bottom: 10px; width: 34px; height: 34px; border: 0; border-radius: 999px; background: #fff;
       color: #6b5200; display: grid; place-items: center; box-shadow: 0 3px 0 rgba(31, 26, 8, 0.14); cursor: pointer; }
     .hs-spill svg { display: block; }

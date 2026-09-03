@@ -17,11 +17,11 @@ import pxFlower from '../icons/pixelart/flower-solid.svg?raw';
 import pxChev from '../icons/pixelart/chevron-down.svg?raw';
 import pxChevUp from '../icons/pixelart/chevron-up.svg?raw';
 import pxZoomOut from '../icons/pixelart/zoom-out.svg?raw';
-import pxChevLeft from '../icons/pixelart/chevron-left.svg?raw';
+import pxChevRight from '../icons/pixelart/chevron-right.svg?raw';
 import pxInfo from '../icons/pixelart/info-box.svg?raw';
 const PX = { edit: pxEdit, check: pxCheck, 'heart-solid': pxHeartS, heart: pxHeart, calendar: pxCal, cake: pxCake,
   'crown-solid': pxCrown, 'star-solid': pxStar, 'flower-solid': pxFlower, 'chevron-down': pxChev, 'chevron-up': pxChevUp,
-  'zoom-out': pxZoomOut, 'chevron-left': pxChevLeft, 'info-box': pxInfo };
+  'zoom-out': pxZoomOut, 'chevron-right': pxChevRight, 'info-box': pxInfo };
 // an inline <svg> string, sized in px; currentColor follows the host
 export const ico = (nm, size) => (PX[nm] || '').replace('<svg ', '<svg width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true" ');
 let C = null;

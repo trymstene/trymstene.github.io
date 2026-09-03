@@ -83,6 +83,13 @@ export function buildStory(view, items, opts) {
     return fmt.format(new Date(t));
   }
 
+  // white → old paper, in one step per card
+  function mix(a, b, t) {
+    const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const x = p(a), y = p(b);
+    return 'rgb(' + x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(',') + ')';
+  }
+
   // an animal with a name is a somebody; without one she is still hers
   const her = (it) => it.an || ('the ' + (it.sp || 'hen'));
   function line(it) {
@@ -134,8 +141,11 @@ export function buildStory(view, items, opts) {
     // ago is black and white, and everything between is on its way there
     const age = it.t ? Math.min(1, Math.max(0, (opts.now - it.t) / FADE)) : 0;
     if (age > 0.02) {
-      ph.style.filter = 'grayscale(' + age.toFixed(2) + ') contrast(' + (1 - age * 0.08).toFixed(2) + ')';
-      a.style.background = age > 0.6 ? '#f7f3e6' : '#fff';
+      ph.style.filter = 'grayscale(' + (age * 0.86).toFixed(2) + ') sepia(' + (age * 0.62).toFixed(2)
+        + ') contrast(' + (1 - age * 0.1).toFixed(2) + ') brightness(' + (1 + age * 0.05).toFixed(2) + ')';
+      // the paper yellows with the picture
+      a.style.background = age > 0.05 ? mix('#ffffff', '#f2e3bd', age) : '#fff';
+      a.style.color = age > 0.5 ? '#4a4126' : '';
     }
     ph.appendChild(subject(it));
     if (it.k === 'hug') {
@@ -158,6 +168,7 @@ export function buildStory(view, items, opts) {
 
   function paint() {
     deck.textContent = '';
+    // oldest first, so swiping LEFT walks back into the past (Trym)
     if (!items.length) {
       const a = card({ k: 'none', n: '', t: 0 }, 0);
       a.querySelector('.hs-scap b').textContent = 'nobody has been by yet';
@@ -165,7 +176,7 @@ export function buildStory(view, items, opts) {
       deck.appendChild(a);
       return;
     }
-    items.forEach((it, n) => {
+    items.slice().reverse().forEach((it, n) => {
       const el = card(it, n);
       el.classList.add('is-new');
       deck.appendChild(el);
@@ -180,9 +191,9 @@ export function buildStory(view, items, opts) {
   const top = document.createElement('button');
   top.type = 'button';
   top.className = 'hs-spill hs-spill--top';
-  top.innerHTML = icon('chevron-left', 18);
-  top.setAttribute('aria-label', 'back to the newest');
-  top.addEventListener('click', (e) => { e.stopPropagation(); deck.scrollTo({ left: 0, behavior: 'smooth' }); });
+  top.innerHTML = icon('chevron-right', 18);
+  top.setAttribute('aria-label', 'back to today');
+  top.addEventListener('click', (e) => { e.stopPropagation(); deck.scrollTo({ left: deck.scrollWidth, behavior: 'smooth' }); });
 
   const note = document.createElement('div');
   note.className = 'hs-snote';
@@ -205,6 +216,7 @@ export function buildStory(view, items, opts) {
   view.appendChild(info);
   paint();
   fit();
+  deck.scrollLeft = deck.scrollWidth;   // today is where you come in
 
   return {
     paint,
