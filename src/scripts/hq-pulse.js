@@ -59,6 +59,42 @@ export function section(host, title, note) {
 
 // ── a headline number. A stat with no plot needs no chart, but it does need
 //    an object to sit on and a second line saying what it is measured against.
+// 📊 A REAL TABLE — one column per number, each under its own header.
+//
+// ⚠️ WHY THIS EXISTS. Three panels used to concatenate every value of a row
+// into ONE cell — the downloads surfaces printed "180 · 170 · 9 · 140 · 5.3%"
+// beneath a header reading "took · saw · ☕ · no-thx · willing", and Trym
+// circled it in red: you cannot tell which number is which without counting
+// separators. Columns align, so the eye reads DOWN a column instead.
+//
+//   cols = [{ h: 'surface', w: 'minmax(9rem, 1fr)' },
+//           { h: 'took', w: '4.4rem', num: true }, ...]
+//   rows = [[keyNodeOrString, v1, v2, ...], ...]
+// A value of null prints an em dash; a 0 prints quiet, because a zero is not
+// a finding and should not shout like one.
+export function grid(host, cols, rows) {
+  const wrap = div('hqp-grid', null, host);
+  const inner = div('hqp-gin', null, wrap);
+  inner.style.setProperty('--cols', cols.map((c) => c.w || 'auto').join(' '));
+  const head = div('hqp-grow is-head', null, inner);
+  cols.forEach((c) => {
+    const e = div('hqp-gh', c.h, head);
+    if (c.num) e.style.textAlign = 'right';
+  });
+  rows.forEach((r) => {
+    const row = div('hqp-grow', null, inner);
+    r.forEach((v, i) => {
+      const c = cols[i] || {};
+      if (v && v.nodeType) { v.classList.add(c.num ? 'hqp-gv' : 'hqp-gk'); row.appendChild(v); return; }
+      const zero = c.num && (v === 0 || v === '0');
+      const e = div((c.num ? 'hqp-gv' : 'hqp-gk') + (zero ? ' is-zero' : ''),
+        v == null ? '—' : String(v), row);
+      if (c.num) e.style.textAlign = 'right';
+    });
+  });
+  return wrap;
+}
+
 export function tile(host, label, value, sub, tone) {
   const t = div('hqp-tile' + (tone ? ' is-' + tone : ''), null, host);
   div('hqp-tval', value, t);

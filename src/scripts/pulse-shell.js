@@ -138,10 +138,13 @@ export function mountPulse(host, io) {
     zOut.addEventListener('click', () => { zOut.hidden = earth.zoom(-1) <= 1; });
 
     const modes = el('div', 'ps-modes', null, into);
+    // ⚠️ the chips choose WHAT the map draws; the select chooses WHICH event.
+    // They were one flex row at a 0.4rem gap and read as one control.
+    const chipRow = el('div', 'ps-mchips', null, modes);
     const modeDefs = [['live', "LIVE · who's on now"], ['range', 'RANGE · visitors'], ['event', 'RANGE · event lens']];
     const mchips = [];
     modeDefs.forEach(([m, label]) => {
-      const b = el('button', 'ps-chip', label, modes);
+      const b = el('button', 'ps-chip', label, chipRow);
       b.type = 'button';
       b.addEventListener('click', () => { S.mode = m; earth.setMode(m); syncModes(); });
       mchips.push([b, m]);

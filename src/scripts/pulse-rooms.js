@@ -12,7 +12,7 @@
 //   · a rate needs 20 behind it before it is printed at all
 //   · every ▲▼ comes from a SECOND range call for the previous window; the
 //     payload carries no comparison of its own
-import { section, tile, lineChart, barsH, div, nfmt, pct } from './hq-pulse.js';
+import { section, tile, lineChart, barsH, grid, div, nfmt, pct } from './hq-pulse.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
 import { flag, place, FUNNELS, DL_NAMES, AREAS, SHOPS } from '../data/pulse-dicts.js';
 
@@ -93,23 +93,26 @@ export function renderOverview(into, S) {
   barsH(s, (R.sources || []).slice(0, 8).map((x) => ({ k: x.source || '(direct)', v: x.sessions })), { mono: '#2F7BD6' });
   const srcRows = (R.sources || []).slice(0, 8);
   if (srcRows.length) {
-    const t = div('hqp-tbl', null, s);
-    srcRows.forEach((x) => {
-      const row = div('hqp-trow', null, t);
-      div('hqp-tk', (x.source || '(direct)') + ' · ' + (x.medium || '—'), row);
-      div('hqp-tv', nfmt(x.sessions) + '  ·  ' + pct(x.engaged, x.sessions) + '% eng  ·  '
-        + (x.sessions ? (x.views / x.sessions).toFixed(1) : '0') + ' pages', row);
-    });
+    grid(s, [
+      { h: 'source', w: 'minmax(9rem, 1fr)' },
+      { h: 'medium', w: 'minmax(5rem, auto)' },
+      { h: 'sessions', w: '5.2rem', num: true },
+      { h: 'engaged', w: '4.8rem', num: true },
+      { h: 'pages each', w: '5.6rem', num: true },
+    ], srcRows.map((x) => [x.source || '(direct)', x.medium || '—', nfmt(x.sessions),
+      pct(x.engaged, x.sessions) + '%',
+      x.sessions ? (x.views / x.sessions).toFixed(1) : '0']));
   }
   const camps = (R.camps || []).filter((c) => c.name && c.name !== '(not set)');
   if (camps.length) {
     const cs = section(into, 'Campaigns', 'utm_campaign by utm_content. It stays hidden until a real campaign lands, so an empty panel never implies a dead ad.');
-    const t = div('hqp-tbl', null, cs);
-    camps.forEach((c) => {
-      const row = div('hqp-trow', null, t);
-      div('hqp-tk', c.name + (c.content ? ' · ' + c.content : ''), row);
-      div('hqp-tv', nfmt(c.sessions) + '  ·  ' + pct(c.engaged, c.sessions) + '% eng', row);
-    });
+    grid(cs, [
+      { h: 'campaign', w: 'minmax(9rem, 1fr)' },
+      { h: 'content', w: 'minmax(6rem, auto)' },
+      { h: 'sessions', w: '5.2rem', num: true },
+      { h: 'engaged', w: '4.8rem', num: true },
+    ], camps.map((c) => [c.name, c.content || '—', nfmt(c.sessions),
+      pct(c.engaged, c.sessions) + '%']));
   }
 
   // ── what they did ───────────────────────────────────────────────────────
@@ -263,25 +266,24 @@ export function renderDownloads(into, S) {
 
   // ── every surface that hands a file over ───────────────────────────────
   const s5 = section(into, 'Every surface that hands a file over', 'Since 12 Aug the card rides every download, so in a fresh window SAW should track TOOK closely. A big gap means the wiring; in an old window it is just the retired once-per-visit cap.');
-  const t5 = div('hqp-tbl', null, s5);
-  const head = div('hqp-trow is-head', null, t5);
-  div('hqp-tk', 'surface', head);
-  div('hqp-tv', 'took · saw · ☕ · no-thx · willing', head);
-  const fmax = Math.max(1, ...rows.map((r) => +r.files || 0));
-  rows.slice().sort((a, b) => (+b.files || 0) - (+a.files || 0)).forEach((r) => {
-    const row = div('hqp-trow', null, t5);
-    const k = div('hqp-tk', null, row);
+  grid(s5, [
+    { h: 'surface', w: 'minmax(11rem, 1fr)' },
+    { h: 'took', w: '4.2rem', num: true },
+    { h: 'saw the card', w: '6.4rem', num: true },
+    { h: 'supported', w: '5.4rem', num: true },
+    { h: 'no thanks', w: '5.4rem', num: true },
+    { h: 'willing', w: '4.6rem', num: true },
+  ], rows.slice().sort((a, b) => (+b.files || 0) - (+a.files || 0)).map((r) => {
+    const k = div('', null, null);
     k.textContent = dlName(r.page);
     // ⚠️ files went out here but the offer never appeared — that is wiring
-    if ((+r.files || 0) >= MIN_N && !(+r.shown || 0)) {
-      const w = div('hqp-warn', ' ⚠ no offer', k);
-      w.title = '';
-    }
-    const bar = div('hqp-mini', null, k);
-    bar.style.width = (+r.files ? Math.max(2, Math.round((+r.files || 0) / fmax * 70)) : 0) + 'px';
-    div('hqp-tv', nfmt(r.files) + ' · ' + nfmt(r.shown) + ' · ' + nfmt(r.coffee) + ' · ' + nfmt(r.skip)
-      + ' · ' + ((+r.shown || 0) >= MIN_N ? ((+r.coffee || 0) / r.shown * 100).toFixed(1) + '%' : '–'), row);
-  });
+    if ((+r.files || 0) >= MIN_N && !(+r.shown || 0)) div('hqp-warn', ' ⚠ no offer', k);
+    // (the ranking bar that used to sit here is gone: the rows are sorted by
+    // TOOK and TOOK is now its own right-aligned column, so a 2px stub under
+    // the name said nothing the column did not say better)
+    return [k, nfmt(r.files), nfmt(r.shown), nfmt(r.coffee), nfmt(r.skip),
+      (+r.shown || 0) >= MIN_N ? ((+r.coffee || 0) / r.shown * 100).toFixed(1) + '%' : null];
+  }));
 }
 
 // ════════════════════════════════════════════════════════════════════════════
