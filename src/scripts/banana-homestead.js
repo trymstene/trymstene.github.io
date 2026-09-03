@@ -324,6 +324,10 @@ function visitState(d) {
     mailAt: d.mailAt, signAt: d.signAt,
     bed: Array.isArray(d.bed) ? d.bed : undefined, bedAt: d.bedAt,   // old docs migrate in withHome
     home: d.home, guest: d.guest || [], wtoday: !!d.wtoday,
+    // 🐐 their flock, and the trough's OWN clock. Before this the visitor's
+    // pen was empty and the trough was painted from the visitor's own farm.
+    animals: Array.isArray(d.animals) ? d.animals : [],
+    feedAt: +d.feedAt || 0,
     // 🛋 their rooms + feeder clock (worker-sanitized; older docs simply lack them)
     inItems: (d.inItems && typeof d.inItems === 'object') ? d.inItems : {},
   });
@@ -378,6 +382,8 @@ function init(visitDoc, visitMiss) {
         inItems: pubIn,
         // 🥚 what this homestead is holding: the eggs in hand, the kitchen
         // shelf and the furniture still in the shed
+        // the trough's own clock, so a visitor sees THIS yard's state
+        feedAt: (farmStats().hs_fed || 0) * 86400000 || undefined,
         goods: { eggs: state.eggs || 0, milk: state.milk || 0, wool: state.wool || 0, cheese: state.cheese || 0 },
         pantry: state.pantry || {},
         shed: (state.shed || []).slice(0, 40).map((it) => ({ id: it.id })),
@@ -1159,7 +1165,7 @@ function init(visitDoc, visitMiss) {
     // STANDS — it never vanishes (the trap list's own rule; legacy coop-only
     // behaviour is unchanged with the switch off).
     const want = FARM
-      ? (!visiting && !state.claimedAt ? 1 : farmAnimals().length + (hasCoop ? 3 : 0))
+      ? (!visiting && !state.claimedAt ? 1 : farmAnimals().length + (hasCoop && !visiting ? 3 : 0))
       : (hasCoop && !REDUCED ? 3 : 0);
     if (!want) {
       while (hens.length) hens.pop().el.remove();
@@ -1181,9 +1187,10 @@ function init(visitDoc, visitMiss) {
         || state.items.find((i) => i.id === 'trough')
         || { x: state.home.x + 40, y: state.home.y + 44 };
       const follow = FARM && !visiting && !state.claimedAt;
-      // bind this sprite to its entity (owner's animals only — a visited
-      // yard's flock is scenery and pays nothing, the standing pay-side gate)
-      const flock = (FARM && !visiting && state.claimedAt) ? farmAnimals() : [];
+      // bind this sprite to its entity. A visited flock binds too — it is the
+      // neighbour's real animals, read-only: they dress, walk, wear their
+      // names and open their card, and every write past here stays gated.
+      const flock = (FARM && (visiting || state.claimedAt)) ? farmAnimals() : [];
       const a = flock[hens.length] || null;
       // 🐐 species dress the same skeleton: strip + a size class. The sheep
       // wears the pack's own two states — woolly when wool is ready, the
@@ -1220,7 +1227,7 @@ function init(visitDoc, visitMiss) {
     // by index, so after a sale the surviving sprites carried STALE refs to
     // sold animals: Henrietta's new home was written onto a ghost (the walk).
     // Cheap for a flock of ten; re-dress the sprite when its species changed.
-    if (FARM && !visiting && state.claimedAt) {
+    if (FARM && (visiting || state.claimedAt)) {
       const fl = farmAnimals();
       hens.forEach((h4, i4) => {
         const na = fl[i4] || null;
@@ -1642,7 +1649,13 @@ function init(visitDoc, visitMiss) {
     return born;
   }
   function farmStats() { return passGet().stats || {}; }
-  function fedToday() { return (farmStats().hs_fed || 0) >= dayNum(); }
+  // ⚠️ WHOSE trough is this? On a visited yard the answer is the yard's own
+  // stamp, not the viewer's pass stat — the full/empty sprite and the animals'
+  // mood used to show a visitor their OWN farm painted onto somebody else's.
+  function fedToday() {
+    if (visiting) return Math.floor((state.feedAt || 0) / 86400000) >= dayNum();
+    return (farmStats().hs_fed || 0) >= dayNum();
+  }
   // 🐔 slice 2: an animal is an ENTITY — { sp, b (bond, only ever up),
   // pd (last pet day), name }. state.hens stays as the count mirror the pen
   // maths reads. Bond and names ride hs-v1 AND the yard sync (yardSan keeps
@@ -1729,6 +1742,10 @@ function init(visitDoc, visitMiss) {
   }
   function farmAnimals() {
     if (!Array.isArray(state.animals)) state.animals = [];
+    // ⚠️ READ ONLY on a visited yard: the migrations below MINT ids, arrival
+    // days and personality seeds. Run here they would invent a stranger's
+    // animals rather than read them.
+    if (visiting) return state.animals;
     // ⚠️ the slice-1 count migrates into entities ONCE, flag-gated — this
     // used to run on every call, topping the list back up to the mirror, so
     // a sold hen was resurrected before her refund toast faded (the walk:
@@ -1970,7 +1987,8 @@ function init(visitDoc, visitMiss) {
     // ❤️ THE HUG (slice 2). The same tap: bond climbs once per day per animal
     // and never, ever falls — pd is the only gate, there is no decay anywhere.
     const a = h.a;
-    if (!a || visiting) return;
+    if (!a) return;
+    if (visiting) { visitorHug(a, h); return; }
     // 🧶 THE SHEAR (slice 3): a woolly sheep gives her coat on the tap —
     // one wool, the drawn Sheared sprite takes over, three days grow it back
     if (a.sp === 'sheep' && (a.wd || 0) >= 3) {
@@ -2692,9 +2710,52 @@ function init(visitDoc, visitMiss) {
       });
       state.wdays = state.wdays.slice(-14);
       if (watered) refreshSoil();
+      // 🤗 HUGS FROM THE OTHER SIDE OF THE FENCE. A neighbour cannot write
+      // this yard, so their hug arrived as a note. It counts as the animal's
+      // hug for that day: the day's heart, and the morning that would have
+      // taken one back leaves her alone. One per animal per day, whoever gave
+      // it — a visitor can keep an animal's day, never out-hug her person.
+      const dnOf = (iso) => Math.floor(Date.parse(iso + 'T00:00:00Z') / 86400000);
+      state.hgs = state.hgs || [];
+      let hugged = 0, hname = '';
+      (n.hugs || []).forEach((g) => {
+        const tag = g.d + ':' + g.i;
+        if (!g.d || !g.i || state.hgs.includes(tag)) return;
+        state.hgs.push(tag);
+        const a = (state.animals || []).find((x) => x.id === g.i);
+        const dn = dnOf(g.d);
+        if (!a || !Number.isFinite(dn) || (a.pd || 0) >= dn) return;
+        a.pd = dn;
+        if ((a.b || 0) < LV_AT[LV_AT.length - 1]) a.b = (a.b || 0) + 1;
+        hugged++;
+        if (g.n) hname = g.n;
+      });
+      state.hgs = state.hgs.slice(-40);
+      if (hugged) hens.forEach((h) => { if (h.a) petBadge(h); });
+      // 🌾 AND THEIR TROUGH. Somebody filled it while this yard was empty, so
+      // the morning pays double exactly as it would have by the owner's hand.
+      state.fdays = state.fdays || [];
+      let fedBy = 0, fname = '';
+      (n.feeds || []).forEach((f) => {
+        if (!f.d || state.fdays.includes(f.d)) return;
+        state.fdays.push(f.d);
+        const dn = dnOf(f.d);
+        if (!Number.isFinite(dn)) return;
+        if ((farmStats().hs_fed || 0) < dn) passStat('hs_fed', dn - (farmStats().hs_fed || 0));
+        fedBy++;
+        if (f.n) fname = f.n;
+      });
+      state.fdays = state.fdays.slice(-14);
+      if (fedBy) refreshItems();
       save();   // persists slug/wdays AND publishes the fresh snapshot
       const msgs = [];
       if (watered) msgs.push('💧 ' + (wname || 'a neighbour') + ' watered your beds while you were away');
+      if (hugged) {
+        msgs.push('❤️ ' + (hname || 'a neighbour') + (hugged === 1
+          ? ' hugged one of your animals while you were away'
+          : ' hugged ' + hugged + ' of your animals while you were away'));
+      }
+      if (fedBy) msgs.push('🌾 ' + (fname || 'a neighbour') + ' filled your trough — the morning pays double');
       if (n.signs && n.signs.length) {
         msgs.push(n.signs.length === 1
           ? '✍️ ' + (n.signs[0].n || 'someone') + ' signed your guestbook'
@@ -3750,6 +3811,39 @@ function init(visitDoc, visitMiss) {
     }).catch(() => toast('the watering can is empty — try again in a bit'));
   }
 
+  // 🤗 A HUG OVER THE FENCE. The bond lives in the owner's yard doc, which
+  // only their own browser ever writes — so this leaves a note the server
+  // keeps and the owner folds in on their next visit, exactly like the
+  // watering can. One per animal per day, whoever gives it.
+  function visitorHug(a, h) {
+    if (!a.id) return;
+    const hkey = 'hs-hg:' + state.slug;
+    const today = dayStr();
+    let mine = [];
+    try { const v = JSON.parse(localStorage.getItem(hkey) || 'null'); if (v && v.d === today) mine = v.a || []; } catch (e) {}
+    if (mine.includes(a.id)) return;   // already hugged by this device today — the bubble said so
+    mine.push(a.id);
+    try { localStorage.setItem(hkey, JSON.stringify({ d: today, a: mine.slice(-24) })); } catch (e) {}
+    yFetch('/hug', { slug: state.slug, id: a.id, name: myName }).then((r) => {
+      if (r && r.already) return;      // somebody got here first today; the hug still happened on screen
+      float(h.x, h.y - 46, '❤️');
+      track('homestead_neighbor_hug');
+    }).catch(() => {});
+  }
+  // 🌾 FILLING SOMEBODY ELSE'S TROUGH — one yard, one day, and their morning
+  // pays double the way it would have if they had filled it themselves.
+  function visitorFeed(it) {
+    if (fedToday()) { toast('this trough is full for today 🌾'); return; }
+    yFetch('/feed', { slug: state.slug, name: myName }).then((r) => {
+      state.feedAt = Date.now();
+      refreshItems();
+      hens.forEach((h) => float(h.x, h.y - 40, '❤️'));
+      if (r && r.already) { toast('someone beat you to the trough today'); return; }
+      toast('🌾 you filled ' + state.name + '’s trough — their morning pays double', 3600);
+      track('homestead_neighbor_feed');
+    }).catch(() => toast('the feed sack is empty — try again in a bit'));
+  }
+
   // 🌱 THE SEED SHEET (the park's, in homestead colours). Only what's in the
   // pouch is listed — an empty pouch never opens an empty modal, it says where
   // seeds come from instead.
@@ -4099,7 +4193,7 @@ function init(visitDoc, visitMiss) {
       }
       if (bestH) {
         const t0 = Date.now();
-        if (bestH.a && lastTapH === bestH && t0 - lastTapAt < 600) { lastTapH = null; const a0 = bestH.a; phone().then((PH) => PH.openPet(a0)); return; }
+        if (bestH.a && lastTapH === bestH && t0 - lastTapAt < 600) { lastTapH = null; const a0 = bestH.a; phone().then((PH) => PH.openPet(a0, visiting ? 'guest' : undefined)); return; }
         lastTapH = bestH; lastTapAt = t0;
         henMood(bestH); return;
       }
@@ -4184,7 +4278,11 @@ function init(visitDoc, visitMiss) {
       const it = state.items[i];
       const d = DEX[it.id];
       if (d && Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > it.y - d.h - 8 && wy < it.y + 10) {
-        if (visiting) { tgt.x = it.x; tgt.y = it.y + 30; return; }   // look, don't touch
+        if (visiting) {
+          tgt.x = it.x; tgt.y = it.y + 30;                            // look, don't touch…
+          if (it.id === 'trough' && FARM) visitorFeed(it);            // …except the trough, which is help
+          return;
+        }
         if (Math.hypot(pos.x - it.x, pos.y - it.y) < 150) {
           if (d.sit) sitOn(it, d);
           if (!itemChip(i) && !d.sit) { tgt.x = wx; tgt.y = wy; }   // nothing to do here — just walk

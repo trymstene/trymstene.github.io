@@ -2356,6 +2356,10 @@ const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 9
 // 'index' → the doors list. The OWNER's truth stays in their browser (hs-v1);
 // this room is the copy the neighbours see — a lost row costs one re-save.
 const YARD_ITEM_CAP = 64, GUEST_CAP = 40, VIS_CAP = 40, WAT_CAP = 20;
+// 🤗 a neighbour's hugs and 🌾 their trough. Both are per-yard, per-day lists
+// the owner folds in on their next visit — a visitor NEVER writes the owner's
+// doc.state, because the owner's own save replaces it wholesale.
+const HUG_CAP = 60, FEED_CAP = 20;
 // a yard is a garden party, not a festival — the cap matches the guestbook's
 const YARD_CAP = 12;
 // the yard speaks WORLD PIXELS on the 1800×1100 homestead map
@@ -2891,6 +2895,10 @@ export class YardRoom {
         stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home, bedAt: st.bedAt,
         items: st.items || [], soil: st.soil || [], bed: st.bed,   // bed/bedAt: old snapshots, client migrates
         inItems: st.inItems || {}, feedAt: st.feedAt || 0,
+        // 🐐 the flock. Every field here was already published by the owner and
+        // already clamped by yardSan — a visited farm was simply being served
+        // an empty pen, so it grew three anonymous hens out of the coop count.
+        animals: st.animals || [],
         fence: st.fence || [], mailAt: st.mailAt, signAt: st.signAt,
         guest, wtoday: wat.some((w) => w.d === yDay()),
       });
@@ -2941,6 +2949,45 @@ export class YardRoom {
       return json({ ok: 1 });
     }
 
+    // 🤗 a hug from the neighbour. One per animal per day for the whole yard —
+    // the same rule the owner's own hand obeys, so a visit can keep an animal's
+    // day but can never out-hug the person who lives there.
+    if (path === '/hug' && request.method === 'POST') {
+      const slug = await this.canon(yStrip(body.slug, 40).toLowerCase());
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ err: 'no such yard' }, 404);
+      if (doc.pass === pass) return json({ err: 'own' }, 400);
+      const id = Math.round(Number(body.id) || 0);
+      if (!(id >= 100000 && id <= 999999)) return json({ err: 'no such animal' }, 400);
+      if (!((doc.state || {}).animals || []).some((a) => a && a.id === id)) return json({ err: 'no such animal' }, 400);
+      const day = yDay();
+      const hugs = (await this.state.storage.get('hug:' + slug)) || [];
+      if (hugs.some((h) => h.d === day && h.i === id)) return json({ ok: 1, already: 1 });
+      hugs.unshift({ i: id, n: yStrip(body.name, 24), o: who, d: day });
+      await this.state.storage.put('hug:' + slug, hugs.slice(0, HUG_CAP));
+      return json({ ok: 1 });
+    }
+
+    // 🌾 the trough, filled by somebody passing through. One per yard per day.
+    // It also stamps the published snapshot so the NEXT visitor sees a full
+    // trough instead of their own farm's state painted onto this one.
+    if (path === '/feed' && request.method === 'POST') {
+      const slug = await this.canon(yStrip(body.slug, 40).toLowerCase());
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ err: 'no such yard' }, 404);
+      if (doc.pass === pass) return json({ err: 'own' }, 400);
+      const day = yDay();
+      const fed = (await this.state.storage.get('fed:' + slug)) || [];
+      if (fed.some((f) => f.d === day)) return json({ ok: 1, already: 1 });
+      fed.unshift({ n: yStrip(body.name, 24), o: who, d: day });
+      await this.state.storage.put('fed:' + slug, fed.slice(0, FEED_CAP));
+      if (doc.state) {
+        doc.state.feedAt = Date.now();
+        await this.state.storage.put('y:' + slug, doc);
+      }
+      return json({ ok: 1 });
+    }
+
     // 📯 the owner's away-news: who came by, who signed, who watered
     if (path === '/news' && request.method === 'POST') {
       const slug = await this.ownSlug(pass, alt, aliases);
@@ -2950,12 +2997,16 @@ export class YardRoom {
       const vis = ((await this.state.storage.get('vis:' + slug)) || []).filter((v) => v.t > seen);
       const signs = ((await this.state.storage.get('g:' + slug)) || []).filter((e) => e.t > seen && e.o !== who);
       const waters = ((await this.state.storage.get('wat:' + slug)) || []).slice(0, 10);
+      const hugs = ((await this.state.storage.get('hug:' + slug)) || []).slice(0, 30);
+      const feeds = ((await this.state.storage.get('fed:' + slug)) || []).slice(0, 10);
       await this.state.storage.put('seen:' + slug, Date.now());
       return json({
         slug, name: doc ? doc.name : '',
         visits: vis.map((v) => v.n).filter(Boolean).slice(0, 8), visitCount: vis.length,
         signs: signs.slice(0, 5).map((e) => ({ n: e.n, x: e.x })),
         waters: waters.map((w) => ({ n: w.n, d: w.d })),
+        hugs: hugs.map((h) => ({ i: h.i, n: h.n, d: h.d })),
+        feeds: feeds.map((f) => ({ n: f.n, d: f.d })),
       });
     }
 

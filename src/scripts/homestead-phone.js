@@ -37,6 +37,10 @@ export function openPet(a, kind) {
   if (!a) return;
   const box = document.getElementById('hsPetBody');
   const gone = kind === 'grass' || kind === 'away';
+  // 👀 a neighbour reads the whole card — name, level, traits, hugs, goods,
+  // days — and gets none of the verbs. The same shape the resting animals
+  // already use, so there is no second card to keep in step.
+  const guest = kind === 'guest';
   const lv = lvOf(a), young = !gone && isYoungA(a), he = a.sp === 'rooster';
   const sp = THUMB[(young ? 'y' : '') + a.sp] || THUMB.hen;
   const badge = lv >= 10 ? 'crown-solid' : lv >= 5 ? 'star-solid' : '';
@@ -72,7 +76,7 @@ export function openPet(a, kind) {
   box.querySelector('.hs-petname b').textContent = a.name || (young ? 'little ' : gone ? 'a ' : 'unnamed ') + a.sp;
   // a name is earned at Lv 3 — but once given it is hers, and hearts decay: the
   // pencil never disappears from a named animal (Trym: "can't rename my dog")
-  if ((lv >= 3 || a.name) && !gone) {
+  if ((lv >= 3 || a.name) && !gone && !guest) {
     const pen = document.createElement('button');
     pen.className = 'hs-petedit';
     pen.setAttribute('aria-label', a.name ? 'rename' : 'name her');
@@ -86,7 +90,7 @@ export function openPet(a, kind) {
     : a.sp + ' · ' + (kind === 'grass' ? 'at rest' : kind === 'away' ? 'rehomed' : isOld(a) ? 'old friend of the farm' : 'grown') + (lv >= 10 ? ' · best friends' : '');
   if (next) box.querySelector('.hs-petnext').textContent = next;
   if (traitLine(a, gone)) box.querySelector('.hs-pettrait').textContent = traitLine(a, gone);
-  if (gone) { petEl.hidden = false; syncLock(); return; }
+  if (gone || guest) { petEl.hidden = false; syncLock(); return; }
   box.querySelector('.hs-petacts').appendChild(btnEl('↩ rehome', true, () => { petEl.hidden = true; syncLock(); openShop('animals'); }));
   if (isOld(a) && a.sp !== 'dog') {
     // 🌾 the long grass: only for old friends, only by your hand, twice

@@ -128,4 +128,5 @@ export const ALLOW_DYNAMIC = [
   { file: 'src/scripts/banana-beach.js', arg: 'TR_KEY', why: "'bh-treasure-' + day: one dig per day, a day counter like the rest" },
   { file: 'src/scripts/banana-beach.js', arg: 'MAP_KEY', why: "'bh-mappieces-' + day: the day's map pieces" },
   { file: 'src/scripts/banana-homestead.js', arg: 'wkey', why: "'hs-wd:' + slug: whether this device watered a given yard today" },
+  { file: 'src/scripts/banana-homestead.js', arg: 'hkey', why: "'hs-hg:' + slug: which of a neighbour's animals this device hugged today — the server is the real gate, this only saves a round trip" },
 ];

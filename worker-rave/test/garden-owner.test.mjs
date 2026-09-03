@@ -199,5 +199,42 @@ r = await yp('/save', { state: { stage: 2, items: [] }, since: 0, mark: 'oldtab0
 r = await yp('/mine', { pass: P2, alt: 'zzz', wt: await wt(P2) });
 ok('a save from an older tab leaves the fields ABSENT, never empty', r.goods === undefined && r.pantry === undefined && r.shed === undefined, { g: r.goods, p: r.pantry, s: r.shed });
 
+// 12. 🐐 A VISITED FARM HAS ANIMALS IN IT, and a neighbour can help with them.
+// The doc always held the flock; the visitor half of the wire stopped short.
+// The two help verbs are shaped like the watering can: a per-yard, per-day
+// note the owner folds in — a visitor never writes the owner's doc.state.
+console.log('12. visiting a farm: the flock, a hug, a filled trough');
+const FLOCK = [{ sp: 'goat', b: 4, name: 'Gunnar', id: 314159, ad: 20000, sd: 77, gs: 3 },
+  { sp: 'hen', b: 1, name: '', id: 271828, ad: 20001, sd: 12, gs: 9 }];
+r = await yp('/save', { state: { stage: 2, items: [], animals: FLOCK }, since: 0, mark: 'flock001', pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('the owner publishes a flock', r.ok === 1, r);
+const seen = await yard.fetch(new Request('https://room/yard?slug=' + r.slug)).then((x) => x.json());
+ok('a VISITOR now sees it, dressed and named', Array.isArray(seen.animals) && seen.animals.length === 2
+  && seen.animals[0].sp === 'goat' && seen.animals[0].name === 'Gunnar' && seen.animals[0].id === 314159, seen.animals);
+ok('…and still sees none of what the player is holding', !seen.goods && !seen.pantry && !seen.shed, { g: seen.goods, p: seen.pantry });
+
+r = await yp('/hug', { slug: seen.slug, id: 314159, name: 'Kiwi', pass: V, alt: Vs, wt: await wt(V) });
+ok('a neighbour hugs Gunnar', r.ok === 1 && !r.already, r);
+r = await yp('/hug', { slug: seen.slug, id: 314159, name: 'Kiwi', pass: V, alt: Vs, wt: await wt(V) });
+ok('…once per animal per day, whoever gives it', r.already === 1, r);
+r = await yp('/hug', { slug: seen.slug, id: 271828, name: 'Kiwi', pass: V, alt: Vs, wt: await wt(V) });
+ok('…but the hen is a different animal', r.ok === 1 && !r.already, r);
+r = await yp('/hug', { slug: seen.slug, id: 999999, name: 'Kiwi', pass: V, alt: Vs, wt: await wt(V) });
+ok('an animal that is not in the pen is refused', r.status === 400, r);
+r = await yp('/hug', { slug: seen.slug, id: 314159, name: 'me', pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('you cannot hug your own animals from the visitor door', r.status === 400 && r.err === 'own', r);
+
+r = await yp('/feed', { slug: seen.slug, name: 'Kiwi', pass: V, alt: Vs, wt: await wt(V) });
+ok('a neighbour fills the trough', r.ok === 1 && !r.already, r);
+r = await yp('/feed', { slug: seen.slug, name: 'Jade', pass: A, alt: As, wt: await wt(A) });
+ok('…one yard, one day, even from somebody else', r.already === 1, r);
+const seen2 = await yard.fetch(new Request('https://room/yard?slug=' + seen.slug)).then((x) => x.json());
+ok('the next visitor sees a full trough, not their own farm\'s', seen2.feedAt > 0, seen2.feedAt);
+
+r = await yp('/news', { pass: P2, alt: 'zzz', wt: await wt(P2) });
+ok('the owner comes home to the hugs', Array.isArray(r.hugs) && r.hugs.length === 2
+  && r.hugs.some((h) => h.i === 314159 && h.n === 'Kiwi'), r.hugs);
+ok('…and to the filled trough', Array.isArray(r.feeds) && r.feeds.length === 1 && r.feeds[0].n === 'Kiwi', r.feeds);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
