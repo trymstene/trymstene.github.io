@@ -27,7 +27,35 @@
 // Off unless ANTHROPIC_KEY is set. No key = null = the deterministic report.
 
 const API = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-sonnet-5';
+// the best model, because this is a judgement call read once a day and the
+// judgement IS the product. Set ANALYST_MODEL to claude-sonnet-5 to spend less
+// — that is Trym's decision to make, not a default I get to quietly pick.
+const DEFAULT_MODEL = 'claude-opus-5';
+
+// ⚠️ THE SHAPE IS CONSTRAINED, NOT REQUESTED. Asking a model for JSON in the
+// prompt and parsing whatever comes back means handling code fences, preambles
+// and the occasional apology. A json_schema means the response IS the shape.
+const SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['verdict', 'headline', 'body', 'reads', 'recs', 'confidence'],
+  properties: {
+    verdict: { type: 'string', enum: ['notable', 'quiet', 'thin', 'no-baseline'] },
+    headline: { type: 'string', description: 'one sentence, under 80 characters' },
+    body: { type: 'array', maxItems: 3, items: { type: 'string' },
+      description: 'one to three short paragraphs setting up what the day was' },
+    reads: { type: 'array', maxItems: 4,
+      items: { type: 'object', additionalProperties: false, required: ['icon', 'text'],
+        properties: {
+          icon: { type: 'string', description: 'a single emoji' },
+          text: { type: 'string', description: 'one finding, one to three sentences' },
+        } },
+      description: 'zero to four findings; zero or one on a quiet day' },
+    recs: { type: 'array', maxItems: 2, items: { type: 'string' },
+      description: 'at most two concrete things to do, and zero is a fine answer' },
+    confidence: { type: 'string', description: 'one clause on how much to trust this' },
+  },
+};
 
 const SYSTEM = `You are the analyst for Banana World — a one-person site (trymstene.com)
 that gives away dancing-banana GIFs and is trying to turn that audience into a small
@@ -70,18 +98,7 @@ THE RULES, in order of importance:
 
 7. RECOMMEND AT MOST TWO THINGS, and only where the evidence actually supports them.
    Zero is a fine answer. "Do nothing today" is a fine answer. Never recommend
-   something the evidence cannot back.
-
-Return JSON only, matching exactly:
-{
-  "verdict": "notable" | "quiet" | "thin" | "no-baseline",
-  "headline": "one sentence, under 80 characters, no trailing full stop needed",
-  "body": ["1 to 3 short paragraphs setting up what the day was"],
-  "reads": [{ "icon": "one emoji", "text": "one finding, one to three sentences" }],
-  "recs": ["at most two, each a concrete thing to do and why"],
-  "confidence": "one clause on how much to trust this, given the sample"
-}
-Between zero and four reads. On a quiet day, zero or one.`;
+   something the evidence cannot back.`;
 
 // ── the grounding check ───────────────────────────────────────────────────
 // Pull every number out of the prose and demand each one be in the pack.
@@ -135,13 +152,16 @@ export async function writeReport(env, pack) {
       },
       body: JSON.stringify({
         model,
-        max_tokens: 1600,
+        // a generous cap costs nothing — only tokens actually generated are
+        // billed — and on Opus 5 thinking is on and counts against it
+        max_tokens: 16000,
+        output_config: { format: { type: 'json_schema', schema: SCHEMA } },
         system: SYSTEM,
         messages: [{
           role: 'user',
           content: 'Here is yesterday (' + pack.niceDate + ') and the week behind it.\n\n'
             + JSON.stringify(pack, null, 1)
-            + '\n\nWrite the report. JSON only, no preamble, no code fence.',
+            + '\n\nWrite the report.',
         }],
       }),
     });
@@ -152,16 +172,16 @@ export async function writeReport(env, pack) {
     return { __err: 'writer ' + r.status + ': ' + (await r.text()).slice(0, 160) };
   }
   const j = await r.json();
+  // with thinking on there is a thinking block before the answer; the shape of
+  // the answer itself is guaranteed by the schema, so nothing needs unwrapping
   const raw = ((j.content || []).find((c) => c.type === 'text') || {}).text || '';
-  // it is told not to fence, but a fence is the one thing models add anyway
-  const body = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
   let out;
-  try { out = JSON.parse(body); } catch (e) {
+  try { out = JSON.parse(raw.trim()); } catch (e) {
     return { __err: 'writer returned something that is not JSON' };
   }
   const bad = ungrounded(out, pack);
   if (bad.length) {
-    // ⚠️ NOT a warning on the page — a discard. A number he cannot trust is
+    // ⚠️ NOT a warning on the page — a DISCARD. A number he cannot trust is
     // worse than no report, because he makes decisions off this.
     return { __err: 'writer invented numbers (' + bad.slice(0, 6).join(', ') + ')' };
   }
