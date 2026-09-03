@@ -25,6 +25,8 @@ const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 's
   'license_click', 'homestead_open', 'offer_world', 'offer_discord', 'offer_support', 'quest_step'];
 const WINDOWS = [['today', 'today', 'TODAY'], ['yesterday', 'yesterday', 'YESTERDAY'],
   ['6daysAgo', 'today', '7 DAYS'], ['27daysAgo', 'today', '28 DAYS']];
+// the six doors into the world, for the WORLD badge
+const DOORS = ['rave_join', 'park_join', 'beach_join', 'homestead_open', 'forge_open', 'stand_counter'];
 const ROOMS = [
   ['live', 'LIVE', '#ffe135'],
   ['overview', 'OVERVIEW', '#ffe135'],
@@ -33,6 +35,20 @@ const ROOMS = [
   ['world', 'WORLD', '#5ee08a'],
   ['ledger', 'LEDGER', '#c99cff'],
 ];
+// ⚠️ THE HOROSCOPE RULE, kept: the analyst is allowed to say nothing
+// happened, and to say a sample is too small to call. One that finds a story
+// every single day is not an analyst — the silence is what makes a loud day
+// worth reading. These four labels are its whole vocabulary.
+const VLABEL = { notable: 'something happened', quiet: 'nothing needed',
+  thin: 'too small to call', 'no-baseline': 'not enough history' };
+const RPT_KEY = 'pulse-rpt-read';
+// the report is dated in Oslo, the property's timezone, and stepped from a UTC
+// midnight — subtracting a day from a local timestamp slips an hour twice a year
+const osloYesterday = () => {
+  const t0 = Date.parse(new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Oslo' }) + 'T00:00:00Z');
+  return new Date(t0 - 86400000).toISOString().slice(0, 10);
+};
+
 // the hot line speaks a shade louder than the map tooltip
 const HOTLINE = { 2: 'hit ORDER 🛒', 3: 'reached the CHECKOUT 💳', 4: 'BOUGHT 💰🎉' };
 const flag = (cc) => (/^[A-Z]{2}$/.test(cc || '')
@@ -71,6 +87,13 @@ export function mountPulse(host, io) {
   hotWrap.hidden = true;
   const spark = el('canvas', 'ps-spark', null, bar);
   spark.width = 120; spark.height = 26;
+  const rptBtn = el('button', 'ps-rpt', '🍌📊 THE ANALYST', bar);
+  rptBtn.type = 'button';
+  const rptDot = el('span', 'ps-rptdot', '', rptBtn);
+  const rptSeen = () => { try { return localStorage.getItem(RPT_KEY) || ''; } catch (e) { return ''; } };
+  const syncDot = () => { rptDot.hidden = rptSeen() === osloYesterday(); };
+  syncDot();
+  rptBtn.addEventListener('click', () => openAnalyst());
 
   // ── the window, above every room because it drives all of them ──────────
   const rangeBar = el('div', 'ps-range', null, host);
@@ -187,6 +210,22 @@ export function mountPulse(host, io) {
     };
   }
 
+  // the three live counts on the room strip: files handed over, checkouts
+  // reached, and everyone who walked through a door in the world
+  function badges(R) {
+    const set = (id, n) => {
+      const t = tabEls[id];
+      if (!t) return;
+      t.badge.textContent = n ? ' ' + nfmt(n) : '';
+      t.badge.hidden = !n;
+    };
+    const evs = (R && R.events) || [];
+    const cnt = (n) => { const e = evs.find((x) => x.name === n); return e ? +e.v || 0 : 0; };
+    set('downloads', ((R && R.downloads) || []).reduce((a, r) => a + (+r.files || 0), 0));
+    set('shop', cnt('checkout_redirect'));
+    set('world', DOORS.reduce((a, d) => a + cnt(d), 0));
+  }
+
   function paint() {
     Object.entries(tabEls).forEach(([id, t]) => t.b.setAttribute('aria-pressed', String(S.room === id)));
     if (earth) { earth.stop(); earth = null; }
@@ -205,6 +244,61 @@ export function mountPulse(host, io) {
     }
     el('div', 'hqp-empty', 'This room is next — the shell landed first so the living half works. '
       + 'Everything it showed is inventoried and nothing has been dropped.', body);
+  }
+
+  // ── 🍌📊 THE ANALYST — the judgement, not the numbers ───────────────────
+  let veil = null;
+  async function openAnalyst() {
+    try { localStorage.setItem(RPT_KEY, osloYesterday()); } catch (e) {}
+    syncDot();
+    if (veil) veil.remove();
+    // ⚠️ MOUNT IT INSIDE THE WRAP, not on <body>. Every colour on this desk is
+    // a custom property declared on .bm-wrap, so an overlay parented to the
+    // body inherits none of them and renders completely transparent — the map
+    // reads straight through the report. A token outside its scope is not a
+    // token, it is nothing.
+    veil = el('div', 'ps-veil', null, host.closest('.bm-wrap') || document.body);
+    const card = el('div', 'ps-rcard', null, veil);
+    const x = el('button', 'ps-rx', '✕', card);
+    x.type = 'button';
+    x.addEventListener('click', () => { veil.remove(); veil = null; });
+    veil.addEventListener('click', (e) => { if (e.target === veil) { veil.remove(); veil = null; } });
+    el('div', 'ps-rload', 'reading yesterday…', card);
+    const [an, rp] = await Promise.all([
+      S.analyst ? Promise.resolve(S.analyst) : io.analyst().catch(() => null),
+      io.report ? io.report().catch(() => null) : Promise.resolve(null),
+    ]);
+    S.analyst = an || S.analyst;
+    card.querySelectorAll('.ps-rload').forEach((n) => n.remove());
+    if (!an) { el('div', 'hqp-empty', 'the analyst could not be read just now', card); return; }
+    el('div', 'ps-verdict is-' + (an.verdict || 'quiet'), VLABEL[an.verdict] || an.verdict || 'reading', card);
+    el('h3', 'ps-rhead', an.headline || '', card);
+    (an.body || []).forEach((line) => el('p', 'ps-rbody', line, card));
+    (an.reads || []).forEach((r) => {
+      const row = el('div', 'ps-read', null, card);
+      el('span', 'ps-ricon', (r && r.icon) || '•', row);
+      el('span', 'ps-rtext', (r && (r.text || r.line)) || String(r), row);
+    });
+    (an.recs || []).forEach((r) => el('div', 'ps-rec', typeof r === 'string' ? r : (r.text || r.rec || ''), card));
+    if (an.confidence) {
+      el('div', 'hqp-cap', an.confidence
+        + (an.sessions != null ? ' · ' + nfmt(an.sessions) + ' sessions against ' + nfmt(an.avgSessions) + ' usual' : ''), card);
+    }
+    if (rp) {
+      // ⚠️ these nine lines are written HTML from our OWN worker — <b> tags and
+      // all. Escaping them prints the markup; rewriting them loses the voice.
+      // Nothing here is player-authored, which is why innerHTML is safe.
+      el('h4', 'ps-rsub', 'the numbers behind it', card);
+      (rp.lines || []).forEach((line) => {
+        const p = el('p', 'ps-rline', null, card);
+        p.innerHTML = String(line);
+      });
+      // the old page generated these notes and never drew them
+      (rp.notes || []).forEach((n) => {
+        const p = el('div', 'ps-rnote', null, card);
+        p.innerHTML = String(n);
+      });
+    }
   }
 
   // ── the sparkline: 30 minute buckets, index 29 is NOW ───────────────────
@@ -254,6 +348,7 @@ export function mountPulse(host, io) {
       S.range = R;
       vToday.textContent = nfmt((R.kpis && R.kpis.sessions) || 0);
       if (earth) earth.push({ live: S.live, range: R, mode: S.mode, lens: S.lens });
+      badges(R);
       if (S.room !== 'live' && S.room !== 'ledger') paint();
     }
   }

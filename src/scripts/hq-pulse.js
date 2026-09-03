@@ -204,7 +204,6 @@ export function renderLedger(el, data) {
   const now = days.length ? days[days.length - 1] : (roll.today || null);
   el.textContent = '';
 
-  googleBlock(el, data.analyst, data.live);
 
   if (!now) {
     div('hqp-empty', 'The rollup has not written a day yet. It walks the bucket every ten minutes; the first file lands within the hour.', el);

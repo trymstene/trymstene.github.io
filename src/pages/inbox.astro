@@ -161,6 +161,35 @@ const description = 'Authorized banana personnel only.';
     .hqp-tk { font-size: 0.82rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hqp-tv { color: var(--hdim); font-size: 0.76rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+    .ps-rpt { position: relative; flex: none; margin-left: 0.5rem; border: 1px solid rgba(244, 238, 255, 0.12);
+      background: var(--hcard); color: var(--hink); border-radius: 999px; padding: 0.35rem 0.8rem;
+      font: inherit; font-size: 0.72rem; letter-spacing: 0.03em; cursor: pointer; white-space: nowrap; }
+    .ps-rptdot { position: absolute; top: -4px; right: -4px; width: 10px; height: 10px;
+      background: var(--hot2); border: 2px solid #0a0814; box-shadow: 0 0 8px var(--hot2); }
+    .ps-veil { position: fixed; inset: 0; z-index: 40; background: rgba(6, 4, 14, 0.86);
+      display: grid; place-items: start center; overflow-y: auto; padding: 1.2rem 0.8rem 3rem; }
+    .ps-rcard { position: relative; width: min(640px, 100%); background: var(--hcard, #1c1631); color: var(--hink, #f4eeff);
+      border-radius: 22px; padding: 1.4rem 1.1rem 1.2rem; display: grid; gap: 0.6rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
+    .ps-rx { position: absolute; right: 10px; top: 10px; width: 32px; height: 32px; border: 0;
+      border-radius: 999px; background: rgba(244, 238, 255, 0.1); color: var(--hink); font: inherit; cursor: pointer; }
+    .ps-rload { color: var(--hdim); font-size: 0.85rem; }
+    .ps-verdict { justify-self: start; border-radius: 999px; padding: 0.2rem 0.8rem; font-size: 0.68rem;
+      letter-spacing: 0.08em; text-transform: uppercase; background: rgba(244, 238, 255, 0.1); color: var(--hdim); }
+    .ps-verdict.is-notable { background: rgba(255, 93, 143, 0.18); color: var(--hot2); }
+    .ps-verdict.is-quiet { background: rgba(94, 224, 138, 0.16); color: var(--ok); }
+    .ps-verdict.is-thin, .ps-verdict.is-no-baseline { background: rgba(255, 180, 94, 0.16); color: var(--org); }
+    .ps-rhead { font-family: "Archivo Black", sans-serif; font-size: 1.15rem; line-height: 1.25; margin: 0; }
+    .ps-rbody { color: var(--hdim); font-size: 0.86rem; line-height: 1.55; margin: 0; }
+    .ps-read { display: grid; grid-template-columns: 1.5rem 1fr; gap: 0.5rem; align-items: start; }
+    .ps-ricon { font-size: 1rem; line-height: 1.4; overflow: hidden; }
+    .ps-rtext { font-size: 0.85rem; line-height: 1.5; }
+    .ps-rec { border-left: 3px solid var(--nana); padding-left: 0.75rem; font-size: 0.85rem; line-height: 1.5; }
+    .ps-rsub { margin: 0.6rem 0 0; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hdim); }
+    .ps-rline { margin: 0; font-size: 0.82rem; line-height: 1.5; color: var(--hink); }
+    .ps-rnote { background: rgba(255, 225, 53, 0.08); border-radius: 12px; padding: 0.6rem 0.75rem;
+      font-size: 0.82rem; line-height: 1.5; }
+
     .hqp-bars2 { display: flex; align-items: flex-end; gap: 4px; height: 110px;
       background: var(--hcard); border-radius: 18px; padding: 0.7rem; }
     .hqp-b2 { flex: 1 1 0; max-width: 64px; height: 100%; display: flex; align-items: flex-end; cursor: pointer; }
@@ -1203,6 +1232,7 @@ const description = 'Authorized banana personnel only.';
           live: () => px('live'),
           range: (from, to) => px('range', '&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to)),
           analyst: () => px('analyst'),
+          report: () => px('report'),
           ledger: () => Promise.all([
             fetch(PASS_ADMIN_API + '/admin/rollup?days=30&key=' + encodeURIComponent(key))
               .then((r) => (r.ok ? r.json() : null)).catch(() => null),
