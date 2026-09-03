@@ -5,7 +5,7 @@
 // nothing about the yard. Every variable thing arrives through `opts`, so the
 // same deck can be benched standalone in an HTML page with mock rows.
 //
-//   item: { k: 'visit'|'sign'|'water'|'hug'|'feed', n, t, x?, sp?, an? }
+//   item: { k: 'found'|'arrive'|'born'|'rest'|'away'|'visit'|'sign'|'water'|'hug'|'feed', n, t, x?, sp?, an? }
 //           n = the name somebody signed with · t = ms · x = a guestbook line
 //           sp/an = the species and name of the animal a hug was for
 //   opts: { art: '/assets/homestead/',
@@ -19,11 +19,11 @@
 // textContent, never innerHTML. Only opts.icon() output is trusted markup.
 
 // ⚠️ THE DECK'S GEOMETRY LIVES IN ONE PLACE and it is the CSS block in
-// homestead.astro (.hs-scard is a fixed 190x248, one 14px gap, packed to the
+// homestead.astro (.hs-scard is a fixed 202x300, one 14px gap, packed to the
 // top so a card sits in the same spot on a tall phone and a short one). The
 // only number here is how much bigger an animal stands in a photo than she
 // does in a list.
-const SUB = 1.8;
+const SUB = 2.6;
 const DAY = 86400000;
 
 // one subject per kind: a photo of the thing that happened, never an icon of it
@@ -78,7 +78,7 @@ export function buildStory(view, items, opts) {
   // the subject of the photo: an animal strip, a prop, or the visitor herself
   function subject(it) {
     if (it.k === 'visit') {
-      const el = opts.banana(Math.round(96));
+      const el = opts.banana(132);
       if (el) { el.className = 'hs-ssub hs-ssub--banana'; return el; }
     }
     const i = document.createElement('i');
