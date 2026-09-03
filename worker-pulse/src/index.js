@@ -5,6 +5,7 @@
 // Wrong token = a plain 404, indistinguishable from nothing existing.
 // ═══════════════════════════════════════════════════════════════════════
 import { analyse } from './analyst.js';
+import { writeReport } from './writer.js';
 
 const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 
@@ -536,11 +537,26 @@ const ANALYST_EVENTS = [
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
   'offer_world', 'offer_discord', 'offer_support',
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
-  'quest_step',
+  'quest_step', 'stand_counter',
   // 🏡 without this the analyst structurally cannot mention the farm — the
   // busiest thing built this year was invisible to its own judgement
   'homestead_open',
 ];
+
+// every door into the world, so the analyst can talk about all of them and not
+// the four somebody hard-coded into it. Mirrors AREAS in src/data/pulse-dicts.js.
+const WORLD_DOORS = [
+  { key: 'rave', name: 'the rave', door: 'rave_join' },
+  { key: 'park', name: 'the park', door: 'park_join' },
+  { key: 'beach', name: 'Banana Bay', door: 'beach_join' },
+  { key: 'homestead', name: 'the homestead', door: 'homestead_open' },
+  { key: 'forge', name: 'the Pixel Forge', door: 'forge_open' },
+  { key: 'stand', name: 'the Banana Stand', door: 'stand_counter' },
+];
+
+// the world's own state — free (our own worker, no GA4 quota) and the only
+// numbers here that GA4 structurally cannot see
+const WORLD_STATS = 'https://banana-rave.trymstene.workers.dev/yards/stats';
 
 async function gscRange(env, from, to) {
   const tok = await gaToken(env);
@@ -585,9 +601,16 @@ async function apiAnalyst(env) {
         metrics: [{ name: 'sessions' }, { name: 'engagedSessions' },
           { name: 'userEngagementDuration' }], limit: 10,
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }] },
+      // ⚠️ the analyst read d.sources for a month and was never given any —
+      // apiAnalyst simply never fetched them, so that whole branch was dead.
+      // The batch caps at FIVE requests and this is the fourth.
+      { dateRanges: [{ startDate: 'yesterday', endDate: 'yesterday' }],
+        dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }],
+        metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }], limit: 12,
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }] },
     ],
   });
-  const [dailyR, evR, campR] = resp.reports || [];
+  const [dailyR, evR, campR, srcR] = resp.reports || [];
 
   // ⚠️ THE EIGHT DATES ARE GENERATED, NEVER TAKEN OFF THE ROWS. GA4 sends no
   // row at all for a day whose metrics are all zero, so a dead day used to
@@ -624,6 +647,16 @@ async function apiAnalyst(env) {
   const campaigns = rows(campR).map((r) => ({
     name: dim(r, 0), sessions: met(r, 0), engaged: met(r, 1), secs: met(r, 2),
   }));
+  const sources = rows(srcR).map((r) => ({
+    source: dim(r, 0), medium: dim(r, 1), sessions: met(r, 0), engaged: met(r, 1),
+  }));
+
+  // the world census — never allowed to take the report down with it
+  let world = null;
+  try {
+    const w = await fetch(WORLD_STATS);
+    if (w.ok) world = await w.json();
+  } catch (e) { /* the farm is a bonus, not a dependency */ }
 
   let gsc = null; let gscBase = null;
   try {
@@ -635,10 +668,27 @@ async function apiAnalyst(env) {
     if (b) gscBase = { clicks: b.clicks / 7, impressions: b.impressions / 7, position: b.position };
   } catch (e) { /* GSC lags a day or two — the analyst just skips search */ }
 
-  const out = analyse({ days, events, eventUsers, campaigns, gsc, gscBase });
+  const out = analyse({ days, events, eventUsers, campaigns, sources, gsc, gscBase,
+    world, areas: WORLD_DOORS });
   const nice = new Date(yDate + 'T12:00:00').toLocaleDateString('en-GB',
     { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
-  const data = { ...out, date: yDate, niceDate: nice, generatedAt: Date.now() };
+
+  // ── the written report ────────────────────────────────────────────────
+  // ⚠️ THE DETERMINISTIC ONE IS ALWAYS COMPUTED FIRST and is what ships if the
+  // writer is off, unreachable, slow or caught inventing a number. A report is
+  // only worth having if every figure in it is real.
+  const { pack, ...det } = out;
+  let data = { ...det, date: yDate, niceDate: nice, generatedAt: Date.now(), by: 'rules' };
+  if (pack && env.ANTHROPIC_KEY) {
+    pack.date = yDate;
+    pack.niceDate = nice;
+    const written = await writeReport(env, pack);
+    if (written && !written.__err) {
+      data = { ...data, ...written, by: 'written', shape: det.shape };
+    } else if (written && written.__err) {
+      data.writerNote = written.__err;   // shown nowhere; read it in the payload
+    }
+  }
   rspCache.set('analyst:' + yDate, { t: Date.now(), data });
   return data;
 }

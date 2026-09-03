@@ -3,431 +3,259 @@
 // means so far, thoughts about what we should add, or remove — reflections
 // basically based on hard facts."
 //
-// He is a Lead SEO/CRO specialist. He can read a number off a chart. What a
-// chart cannot give him is JUDGEMENT, so every line here must say something
-// the number alone does not. Restating a figure the dashboard already shows,
-// without a verdict attached, is the one failure mode.
+// Trym, 3 Sep 2026, after reading it for a month: "it never feels like the
+// analyst actually checks the data and analyses it day by day - it seems the
+// analysis is just the same each time with new numbers... it's basically said
+// the same with 300 visits from an ad a day, to when it's 42 visits organically."
 //
-// ⚠️ THE HOROSCOPE RULE. This must be allowed to say "nothing happened" and
-// "that sample is too small to call". An analyst who finds a story every
-// single day is not an analyst. Silence on ordinary days is exactly what
-// makes the loud days worth reading.
+// He was right, for two separate reasons, and both are fixed here:
 //
-// Pure functions only — no fetch, no env. index.js gathers the numbers.
+//   1. THE LEVEL CHECK FIRED ALMOST EVERY DAY and carried the top weight, so
+//      the report literally opened with "The site has moved to a different
+//      level" every morning. The test compared two short windows at 35% on a
+//      site whose daily traffic swings by more than that on its own. It is now
+//      a three-part test in evidence.js and it stays quiet on ordinary weeks.
+//
+//   2. NOTHING KNEW WHAT IT HAD ALREADY SAID. Every fact now carries
+//      daysRunning, and a finding on its second morning cannot lead again. That
+//      one rule is what stops the report repeating itself.
+//
+// ⚠️ THE HOROSCOPE RULE, kept and strengthened. This must be allowed to say
+// "nothing happened" and "that sample is too small to call". An analyst who
+// finds a story every single day is not an analyst.
+//
+// ⚠️ THE SHAPE OF THE REPORT VARIES. A level-change morning, a money morning
+// and a quiet morning are different documents, not one document with different
+// numbers in it. See shapeOf().
+//
+// Pure functions — no fetch, no env. index.js gathers; writer.js may narrate.
 
-// ── statistics ────────────────────────────────────────────────────────────
-const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+import { buildPack, MIN_RATE_N, moveWord, rate } from './evidence.js';
 
-function sd(a) {
-  if (a.length < 2) return 0;
-  const m = mean(a);
-  return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1));
+const byLoudness = (a, b) => (b.sig - a.sig) || (Math.abs(b.z || 0) - Math.abs(a.z || 0));
+
+// ── THE SHAPE ─────────────────────────────────────────────────────────────
+// What KIND of morning is this? The answer changes what the report is, not
+// just what it says.
+function shapeOf(pack) {
+  const f = (id) => pack.facts.find((x) => x.id === id);
+  if (f('blackout')) return 'blackout';
+  if (f('money') && f('money').value > 0) return 'money';
+  const level = f('level');
+  if (level && level.daysRunning <= 1) return 'level';
+  const fresh = pack.facts.filter((x) => x.sig >= 2 && x.daysRunning <= 1);
+  if (fresh.length) return 'break';
+  if (pack.sampleIsThin) return 'thin';
+  // ⚠️ NOT "quiet". A day inside a level the site only just moved to is an
+  // ordinary day, but saying "nothing needs you" under a headline that halved
+  // the traffic reads as a report that has not looked at itself.
+  if (level) return 'settled';
+  return 'quiet';
 }
 
-// how many standard deviations from the baseline. ⚠️ a floor on sd stops a
-// freakishly steady week from turning a one-session wobble into a z of 40.
-function zed(cur, base) {
-  if (base.length < 3) return 0;
-  const s = Math.max(sd(base), Math.max(1, mean(base) * 0.08));
-  return (cur - mean(base)) / s;
+// ── CROSS-FACTS ───────────────────────────────────────────────────────────
+// The whole value over the dashboard: noticing that two numbers together mean
+// something neither means alone. These are the only sentences here that are not
+// a restatement of one row, so they are worth more than the rest of the file.
+function crossFacts(pack) {
+  const out = [];
+  const f = (id) => pack.facts.find((x) => x.id === id);
+  const S = f('sessions'), E = f('engagement'), D = f('downloads');
+
+  // fewer people, better people — the ad was the low-quality half
+  if (S && E && S.deltaPct != null && S.deltaPct <= -25 && E.value - E.base >= 5) {
+    out.push({ icon: '⚖️', text: 'Traffic ' + moveWord(S.deltaPct) + ' but engagement went UP, '
+      + E.value + '% against ' + E.base + '%. Whatever left was the half that was not '
+      + 'interested — the people still arriving are a better audience than the week average '
+      + 'suggested.' });
+  }
+  // more people, worse people — the signature of the wrong audience
+  if (S && E && S.deltaPct != null && S.deltaPct >= 25 && E.base - E.value >= 5) {
+    out.push({ icon: '⚠️', text: 'More people and a worse crowd: sessions ' + moveWord(S.deltaPct)
+      + ' while engagement fell to ' + E.value + '% from ' + E.base + '%. Extra volume that '
+      + 'engages less than usual is the wrong audience, not a win.' });
+  }
+  // the awareness channel held while the site moved — so the GIF audience is
+  // structural and the swing was bought
+  if (S && D && S.deltaPct != null && Math.abs(S.deltaPct) >= 30
+    && D.deltaPct != null && Math.abs(D.deltaPct) <= 15) {
+    out.push({ icon: '🎬', text: 'Sessions ' + moveWord(S.deltaPct) + ' but GIF downloads barely '
+      + 'moved (' + D.value + ' against ' + D.base + '). The file-grabbers are the steady part '
+      + 'of this business; the swing came from somewhere else.' });
+  }
+  // a busy day that produced no checkout at all
+  const money = f('money'), worst = f('funnel:worst');
+  if (money && money.value === 0 && S && S.value > pack.baselineSessions * 1.2 && worst) {
+    out.push({ icon: '🚪', text: 'A busier day than usual that produced no checkout at all. '
+      + 'Traffic is not the constraint right now — ' + worst.because + ' is.' });
+  }
+  return out;
 }
 
-const pct = (cur, base) => (base ? Math.round(((cur - base) / base) * 100) : (cur ? null : 0));
-const rate = (n, d) => (d ? n / d : 0);
-const r1 = (x) => Math.round(x * 10) / 10;
+// ── the deterministic report ──────────────────────────────────────────────
+// This is what he reads when there is no writer key set, and it is also the
+// fallback whenever the writer is unreachable or invents a number. It has to
+// stand on its own.
+function narrate(pack) {
+  const shape = shapeOf(pack);
+  const f = (id) => pack.facts.find((x) => x.id === id);
+  const S = pack.sessions;
+  const body = [];
+  const reads = [];
+  const recs = [];
+  const rec = (text, because) => { if (recs.length < 2) recs.push({ text, because }); };
 
-// "up 40%" / "down a third" — plain words beat ±40% in a sentence
-function moveWord(p) {
-  const a = Math.abs(p);
-  const dir = p > 0 ? 'up' : 'down';
-  if (a >= 200) return dir === 'up' ? 'more than tripled' : 'collapsed';
-  if (a >= 100) return dir === 'up' ? 'more than doubled' : 'fell by half or more';
-  if (a >= 60) return dir + ' by well over half';
-  if (a >= 40) return dir + ' sharply';
-  return dir + ' ' + a + '%';
+  const loud = pack.facts.filter((x) => x.sig >= 2).sort(byLoudness);
+  const fresh = loud.filter((x) => x.daysRunning <= 1);
+  const ongoing = loud.filter((x) => x.daysRunning >= 2);
+
+  let verdict = 'notable';
+  let headline = '';
+
+  // ⚠️ ONGOING FINDINGS GET ONE CLAUSE, NEVER THE HEADLINE. This is the rule
+  // that answers Trym's actual complaint.
+  // (a fact the body already narrates is not repeated here — the settled shape
+  // opens with the level, so the level must not also appear in this line)
+  const narrated = new Set(shape === 'settled' || shape === 'level' ? ['level']
+    : shape === 'money' ? ['money'] : []);
+  const still = ongoing.filter((x) => !narrated.has(x.id));
+  const stillLine = still.length
+    ? 'Still true from previous mornings, and I will not lead with them again: '
+      + still.map((x) => x.label + ' (' + x.because + ', day ' + x.daysRunning + ')').join('; ') + '.'
+    : null;
+
+  if (shape === 'blackout') {
+    verdict = 'notable';
+    headline = 'Yesterday recorded no sessions at all.';
+    body.push(f('blackout').say);
+    rec('Load the site yourself and watch the live pulse for your own hit. If nothing '
+      + 'arrives, the measurement broke rather than the traffic — and every baseline on '
+      + 'this page is wrong until it is fixed.', f('blackout').because);
+  } else if (shape === 'money') {
+    verdict = 'notable';
+    const m = f('money');
+    headline = m.value + ' purchase' + (m.value > 1 ? 's' : '') + ' yesterday.';
+    body.push(m.say);
+    body.push('Everything else, for context: ' + S + ' sessions, '
+      + f('engagement').value + '% engaged.');
+  } else if (shape === 'level') {
+    verdict = 'notable';
+    const L = f('level');
+    headline = 'The site has settled at a new level, about ' + L.value + ' sessions a day.';
+    body.push(L.say + ' That is not a bad day, it is a different baseline'
+      + (L.deltaPct < 0 ? ' — and the likeliest cause is something that WAS driving traffic '
+        + 'and has stopped.' : '.'));
+    body.push('Everything below is judged against the new level, not the old one.');
+    if (L.deltaPct < 0) {
+      rec('Decide whether the old level was bought or earned. If it was the ad, ' + L.value
+        + ' a day is the honest organic number to build against — optimising against the '
+        + 'inflated week will mislead you.', L.because);
+    }
+  } else if (shape === 'break') {
+    verdict = 'notable';
+    const lead = fresh[0];
+    headline = lead.say.split('. ')[0].replace(/[.:]$/, '') + '.';
+    body.push('Yesterday: ' + S + ' sessions'
+      + (f('sessions') && f('sessions').deltaPctText ? ' (' + f('sessions').deltaPctText
+        + ' on the usual ' + pack.baselineSessions + ')' : '')
+      + ', ' + f('engagement').value + '% engaged. One thing moved that had not been moving.');
+  } else if (shape === 'settled') {
+    verdict = 'quiet';
+    const L = f('level');
+    headline = 'Settling in at the new level. Nothing new today.';
+    body.push('The site is running at about ' + L.value + ' sessions a day now, and '
+      + 'yesterday was an ordinary day INSIDE that — ' + S + ' sessions, '
+      + f('engagement').value + '% engaged. I said the level had moved on a previous '
+      + 'morning and I am not going to lead with it again.');
+    body.push('Judged against the level it is actually in rather than the week it left, '
+      + 'nothing yesterday was outside the normal range.');
+  } else if (shape === 'thin') {
+    verdict = 'thin';
+    headline = 'Too quiet to read.';
+    body.push('Yesterday brought ' + S + ' sessions. At that size almost any percentage I '
+      + 'could quote would be an accident of small numbers, so I am not going to quote one. '
+      + 'Nothing broke; there is simply nothing here to conclude.');
+  } else {
+    verdict = 'quiet';
+    headline = 'A normal day. Nothing needs you.';
+    body.push('Yesterday looked like the week around it — ' + S + ' sessions against a usual '
+      + pack.baselineSessions + ', engagement at ' + f('engagement').value + '%. I went '
+      + 'looking for something outside the normal range and did not find it.');
+    body.push('That is worth saying plainly rather than dressing up: a steady day is '
+      + 'information too, and it means the levers that would move things are the ones you '
+      + 'choose to pull, not ones the data is pointing at.');
+  }
+
+  if (stillLine && shape !== 'blackout') body.push(stillLine);
+
+  // the findings: fresh loud ones first, then the cross-facts, then colour
+  fresh.filter((x) => x.id !== 'level' && x.id !== 'money' && x.id !== 'blackout')
+    .slice(0, 3).forEach((x) => reads.push({ icon: iconFor(x), text: x.say }));
+  crossFacts(pack).forEach((c) => { if (reads.length < 4) reads.push(c); });
+  if (reads.length < 3) {
+    pack.facts.filter((x) => x.sig === 1 && x.daysRunning <= 1)
+      .sort(byLoudness).slice(0, 3 - reads.length)
+      .forEach((x) => reads.push({ icon: iconFor(x), text: x.say }));
+  }
+
+  // ── recommendations, on STRUCTURE not on anomalies ──────────────────────
+  // ⚠️ so a quiet day still ends with something honest to do, without
+  // inventing a story to justify it. Two at most, and zero is allowed.
+  const worst = f('funnel:worst');
+  if (worst && worst.value <= 12 && worst.n >= 20) {
+    rec('The narrowest step is ' + worst.because + '. That one handoff caps every number '
+      + 'downstream of it, so it is the highest-leverage thing on the site.', worst.because);
+  }
+  const offer = f('offer');
+  if (offer && offer.value === 0 && offer.n >= 20) {
+    rec('The download card was shown ' + offer.n + ' times and nobody took any of its doors. '
+      + 'The placement is right — that is the moment the wish is granted — so rotate the copy '
+      + 'before adding surfaces.', offer.because);
+  }
+
+  return {
+    verdict, headline, body, reads, recs,
+    confidence: pack.sampleIsThin
+      ? 'thin — ' + S + ' sessions is too few to read percentages off, so I am sticking to counts'
+      : (S < 150 ? 'moderate — ' + S + ' sessions, enough for direction, not for small differences'
+        : 'good — ' + S + ' sessions'),
+    shape,
+  };
 }
 
-// ── the sample-size gate ──────────────────────────────────────────────────
-// Rates on tiny numbers are noise wearing a suit. 3 clicks out of 5 is not a
-// 60% conversion rate, it is three clicks. These thresholds are the honesty.
-const MIN_RATE_N = 40;   // below this, do not narrate a percentage
-const MIN_STEP_N = 20;   // below this, do not narrate a funnel step
-
-// ── a READ ────────────────────────────────────────────────────────────────
-// weight drives the order and whether it survives the cut. 3 = drop what you
-// are doing, 2 = worth knowing, 1 = colour.
-//
-// ⚠️ WEIGHT 1 IS FOR GOOD NEWS TOO. A number behaving exactly as it should is
-// not news, and weighting it 2 makes a flat day announce itself as notable —
-// which is precisely the horoscope this is built to avoid. Only a number that
-// wants a DECISION earns 2 or more.
-const read = (weight, icon, text) => ({ weight, icon, text });
+function iconFor(x) {
+  const up = (x.deltaPct || x.z || 0) > 0;
+  if (x.id === 'newcomers') return '🆕';
+  if (x.id === 'offer') return '🎯';
+  return ({ traffic: up ? '📈' : '📉', quality: up ? '🔥' : '💤', source: '📣',
+    funnel: '🛍', downloads: '🎬', world: '🌍', search: '🔎', money: '💰' })[x.area] || '·';
+}
 
 /**
- * @param {object} d the numbers, gathered by index.js
- *   d.days       [{d,sessions,users,newUsers,eng,revenue,tx}] oldest→newest,
- *                the LAST entry being yesterday
- *   d.events     { name: [8 daily counts, oldest→newest] }
- *   d.campaigns  [{name, sessions, engaged, secs}] for yesterday
- *   d.sources    [{source, medium, sessions, engaged}] for yesterday
- *   d.gsc        {clicks, impressions, position} | null
- *   d.gscBase    {clicks, impressions, position} | null  (daily average)
- *   d.offers     { shown:[8], click:[8] } already inside d.events, kept for clarity
+ * The public entry. index.js gathers the numbers and calls this.
+ * Returns the deterministic report plus the evidence pack, so index.js can hand
+ * the pack to the writer without recomputing it.
  */
 export function analyse(d) {
-  const days = d.days || [];
-  const today = days[days.length - 1];
-  const base = days.slice(0, -1);
-  if (!today || base.length < 3) {
+  const pack = buildPack(d);
+  if (!pack) {
     return {
       verdict: 'no-baseline',
       headline: 'Not enough history yet.',
-      body: ['I need about a week of days behind yesterday before I can tell '
-        + 'you whether a number is unusual. Give it a few more days.'],
-      reads: [], recs: [], confidence: 'no baseline',
+      body: ['I need about a week of days behind yesterday before I can tell you whether '
+        + 'a number is unusual. Give it a few more days.'],
+      reads: [], recs: [], confidence: 'no baseline', pack: null,
     };
   }
-
-  const S = today.sessions;
-  const baseS = base.map((x) => x.sessions);
-
-  // ── 🔑 THE REGIME CHECK, before anything else ───────────────────────────
-  // A seven-day mean is the wrong yardstick across a LEVEL CHANGE. When an ad
-  // flight ends, every day afterwards reads as "down 80% on the week" — which
-  // is true, useless, and repeats itself for a week. Worse, the real story
-  // (the site moved to a new level and stayed there) never gets told.
-  //
-  // So: compare the three days before yesterday against the four before them.
-  // If they are different worlds, judge yesterday against the world it is
-  // actually in, and report the SHIFT separately as its own finding.
-  //
-  // ⚠️ SEVEN OR NOTHING. slice(-3) and slice(0,4) only stay disjoint at seven.
-  // At six they share index 3, so the test compares a window against a
-  // superset of itself, drags shiftPct toward 0 and swallows real shifts.
-  const recent3 = baseS.slice(-3);
-  const early4 = baseS.slice(0, 4);
-  const shiftPct = pct(mean(recent3), mean(early4));
-  const regime = baseS.length >= 7 && shiftPct !== null && Math.abs(shiftPct) >= 35;
-
-  const cmpBase = regime ? recent3 : baseS;
-  const avgS = mean(cmpBase);
-  const zS = zed(S, cmpBase);
-  const pS = pct(S, avgS);
-  // the day the level changed, for naming it out loud
-  const breakDay = regime && base[base.length - 3]
-    ? new Date(String(base[base.length - 3].d).replace(/(\d{4})(\d\d)(\d\d)/, '$1-$2-$3')
-      + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
-    : null;
-
-  // an event's yesterday, and its baseline daily average
-  const ev = (n) => { const a = d.events[n]; return a ? (a[a.length - 1] || 0) : 0; };
-  // any sentence that says PEOPLE must count people — 6 shop views can be 2
-  // humans (Trym, 24 Aug). Falls back to event counts for old-shape callers.
-  const evUArr = (n) => (d.eventUsers || {})[n] || d.events[n] || [];
-  const evU = (n) => { const a = evUArr(n); return a.length ? (a[a.length - 1] || 0) : 0; };
-  const evBase = (n) => { const a = d.events[n]; return a ? mean(a.slice(0, -1)) : 0; };
-  const evZ = (n) => { const a = d.events[n]; return a ? zed(a[a.length - 1] || 0, a.slice(0, -1)) : 0; };
-
-  const reads = [];
-  const recs = [];
-  const rec = (text, because) => { if (recs.length < 3) recs.push({ text, because }); };
-
-  // ── is the sample even big enough to talk about rates? ──────────────────
-  const thin = S < MIN_RATE_N;
-  const confidence = thin
-    ? 'thin — ' + S + ' sessions is too few to read percentages off, so I am '
-      + 'sticking to counts'
-    : (S < 150 ? 'moderate — ' + S + ' sessions, enough for direction, not for '
-      + 'small differences' : 'good — ' + S + ' sessions');
-
-  // ── 0. A DAY WITH NOTHING IN IT ─────────────────────────────────────────
-  // Pushed FIRST so it sorts ahead of every other weight-3 read and owns the
-  // headline. A live site does not record zero sessions; the day is either an
-  // outage or a broken tag, and it must never reach the "normal day" verdict.
-  if (S === 0) {
-    const wk = Math.round(mean(baseS));
-    reads.push(read(3, '🛑',
-      'Yesterday recorded ZERO sessions'
-      + (wk ? ', against ' + wk + ' a day for the week behind it'
-        : ', and so did every day behind it')
-      + '. Nothing here is a quiet Sunday — a site that had visitors all week '
-      + 'does not have none. Check the site is up and the tag is still firing '
-      + 'before you read another number on this page.'));
-    rec('Load the site yourself and watch the live pulse for your own hit. If '
-      + 'nothing arrives, the measurement broke, not the traffic — and every '
-      + 'baseline below is wrong until it is fixed.',
-    wk ? wk + ' sessions a day, then 0' : 'no sessions anywhere in the window');
-  }
-
-  // ── 0b. the level change itself ─────────────────────────────────
-  if (regime) {
-    reads.push(read(3, shiftPct > 0 ? '🚀' : '📉',
-      'The site has moved to a different level. The last three days average '
-      + Math.round(mean(recent3)) + ' sessions against ' + Math.round(mean(early4))
-      + ' earlier in the week' + (breakDay ? ', with the step around ' + breakDay : '')
-      + '. That is not a bad day, it is a new baseline'
-      + (shiftPct < 0 ? ' — and the likeliest cause is something that WAS driving '
-        + 'traffic and has stopped.' : '.')));
-    if (shiftPct < 0) {
-      rec('Decide whether the old level was bought or earned. If it was the ad, '
-        + Math.round(mean(recent3)) + ' a day is the honest organic number to build '
-        + 'CRO against — optimising against the inflated week will mislead you.',
-      Math.round(mean(early4)) + ' → ' + Math.round(mean(recent3)) + ' sessions a day');
-    }
-  }
-
-  // ── 1. traffic ──────────────────────────────────────────────────────────
-  if (Math.abs(zS) >= 2 && Math.abs(pS) >= 25) {
-    reads.push(read(zS > 0 ? 3 : 2, zS > 0 ? '📈' : '📉',
-      'Traffic ' + moveWord(pS) + ' — ' + S + ' sessions against '
-      + Math.round(avgS) + ' a day '
-      + (regime ? 'over the last three days' : 'across the week')
-      + '. That is outside the normal wobble, not a quiet Tuesday.'));
-  }
-
-  // ── 2. engagement, and the trap of celebrating volume ───────────────────
-  const E = today.eng;
-  const avgE = mean(base.map((x) => x.eng));
-  const pE = avgE ? Math.round((E - avgE) * 100) : 0; // percentage POINTS
-  if (!thin && Math.abs(pE) >= 6) {
-    if (pS !== null && pS >= 25 && pE <= -6) {
-      reads.push(read(3, '⚠️',
-        'More people, and a worse crowd: sessions ' + moveWord(pS) + ' while '
-        + 'engagement fell ' + Math.abs(pE) + ' points to ' + Math.round(E * 100)
-        + '%. Extra volume that engages less than usual is the signature of '
-        + 'the wrong audience, not a win.'));
-      rec('Do not read the traffic spike as success until engagement recovers '
-        + '— check which source brought it and whether that source is worth keeping.',
-      'sessions ' + (pS > 0 ? '+' : '') + pS + '% but engagement ' + pE + 'pts');
-    } else {
-      reads.push(read(2, pE > 0 ? '🔥' : '💤',
-        'Engagement ' + (pE > 0 ? 'up' : 'down') + ' ' + Math.abs(pE)
-        + ' points at ' + Math.round(E * 100) + '%, against '
-        + Math.round(avgE * 100) + '% for the week. '
-        + (pE > 0 ? 'Whoever came yesterday wanted to be here.'
-          : 'People arrived and left again faster than usual.')));
-    }
-  }
-
-  // ── 3. the campaign — the flight that is live RIGHT NOW ─────────────────
-  // ⚠️ GA4 puts its own placeholders in this dimension — (direct), (organic),
-  // (referral), (not set). Anything bracketed is filler, not a flight.
-  const camps = (d.campaigns || []).filter((c) => c.name && c.sessions > 0
-    && !/^\(.*\)$/.test(c.name));
-  const paid = camps.sort((a, b) => b.sessions - a.sessions)[0];
-  if (paid) {
-    const cEng = Math.round(rate(paid.engaged, paid.sessions) * 100);
-    const cSecs = Math.round(rate(paid.secs, paid.sessions));
-    const siteEng = Math.round(E * 100);
-    if (paid.sessions < MIN_STEP_N) {
-      reads.push(read(1, '📣',
-        paid.name + ' brought ' + paid.sessions + ' sessions. Too few to judge '
-        + 'the creative on — give it a couple more days before reading anything '
-        + 'into the quality numbers.'));
-    } else {
-      const gap = cEng - siteEng;
-      reads.push(read(Math.abs(gap) >= 8 ? 2 : 1, '📣',
-        paid.name + ': ' + paid.sessions + ' sessions, ' + cEng + '% engaged, '
-        + cSecs + 's average. ' + (
-          gap >= 8 ? 'That is ' + gap + ' points better than the site as a whole '
-            + '— the ad is bringing people who actually want the thing.'
-            : gap <= -8 ? 'That is ' + Math.abs(gap) + ' points worse than the site '
-              + 'average — the ad is selling something the landing page is not '
-              + 'delivering.'
-              : 'Broadly in line with everyone else, which for paid traffic is a '
-                + 'decent result rather than a dull one.')));
-      if (cSecs < 20 && cEng >= 40) {
-        reads.push(read(2, '🕐',
-          'A tension worth watching on ' + paid.name + ': engagement is fine but '
-          + 'dwell is only ' + cSecs + 's. They are doing one thing and leaving. '
-          + 'That is a landing-page depth problem, not a targeting problem.'));
-        rec('Give ' + paid.name + ' somewhere obvious to go SECOND — one clear '
-          + 'next door on the landing page, not a menu.',
-        cSecs + 's average dwell at ' + cEng + '% engaged');
-      }
-    }
-  }
-
-  // ── 4. the funnel, only where the denominator earns a percentage ────────
-  const made = evU('builder_start');
-  const pdp = evU('sticker_pdp_view');
-  const co = evU('checkout_redirect');
-  if (made >= MIN_STEP_N) {
-    const cr = rate(pdp, made);
-    const crBase = rate(mean(evUArr('sticker_pdp_view').slice(0, -1)),
-      mean(evUArr('builder_start').slice(0, -1)));
-    if (pdp === 0) {
-      reads.push(read(3, '🚧',
-        made + ' people dressed a banana and not one of them reached a product '
-        + 'page. The making works; the asking does not.'));
-      rec('The step from finished banana to product page is where the money '
-        + 'stops — that single handoff is worth more attention than any new feature.',
-      made + ' built, 0 product pages');
-    } else if (pdp >= 5 && crBase && Math.abs(cr - crBase) >= 0.05) {
-      reads.push(read(2, cr > crBase ? '🛍' : '🧊',
-        'Builder → product page ran at ' + Math.round(cr * 100) + '% against '
-        + Math.round(crBase * 100) + '% for the week' + (cr > crBase
-          ? ' — the handoff is working better than usual, worth knowing what changed.'
-          : ' — fewer finished bananas turned into a shop visit than normal.')));
-    }
-  }
-  if (co > 0 && today.tx === 0) {
-    reads.push(read(1, '🚪',
-      co + ' ' + (co === 1 ? 'person' : 'people') + ' reached Shopify and nobody '
-      + 'paid. At this volume that is unremarkable, but it is the step to watch '
-      + 'once the numbers grow.'));
-  }
-
-  // ── 5. the download card — the WARM-UP surface (pivoted 12 Aug: it stopped
-  // selling merch and now invites people into Banana World or the Discord;
-  // offer_click is the retired merch CTA, counted only so old windows stay
-  // honest) ────────────────────────────────────────────────────────────────
-  const oShown = ev('offer_shown');
-  const oWorld = ev('offer_world');
-  const oDisc = ev('offer_discord');
-  // ☕ offer_support is the ask that is actually live; world/discord/click are
-  // retired and stay in the sum only so old windows read the same as they did
-  const oWarm = oWorld + oDisc + ev('offer_support') + ev('offer_click');
-  if (oShown >= MIN_STEP_N) {
-    const ctr = Math.round(rate(oWarm, oShown) * 100);
-    if (oWarm === 0) {
-      reads.push(read(3, '🎯',
-        'The download card appeared ' + oShown + ' times and nobody chose the '
-        + 'world or the Discord. The placement is right — that is the moment '
-        + 'the wish is granted — so the problem is the copy: rotate harder, or '
-        + 'the invitation itself is not landing.'));
-      rec('Check which variants are showing (the cards rotate 8 voices) and '
-        + 'rewrite the weakest before adding surfaces. ' + oShown
-        + ' cards with no takers is a copy answer, not a reach answer.',
-      oShown + ' shown, 0 warmed');
-    } else {
-      reads.push(read(1, '🎯',
-        'The download card warmed ' + ctr + '% (' + oWarm + ' of ' + oShown
-        + ' — ' + oWorld + ' to the world, ' + oDisc + ' to the Discord). '
-        + (ctr >= 8
-          ? 'That is a healthy rate for an interruption people did not ask for.'
-          : 'Low, but these are file-grabbers being offered a place to stay — '
-            + 'every warm one is a person the old merch card never got.')));
-    }
-  } else if (oShown > 0) {
-    reads.push(read(1, '🎯',
-      'The download card showed ' + oShown + ' times' + (oWarm ? ' and warmed '
-        + oWarm + ' visitor' + (oWarm > 1 ? 's' : '')
-        + ' toward the world or the Discord' : '')
-      + '. Not enough yet to judge — check back when it has a few hundred '
-      + 'behind it.'));
-  }
-
-  // ── 6. money ────────────────────────────────────────────────────────────
-  if (today.tx > 0) {
-    reads.push(read(3, '💰',
-      today.tx + ' purchase' + (today.tx > 1 ? 's' : '') + ' — '
-      + Math.round(today.revenue) + ' kr. Open Shopify and check whose it is '
-      + 'before celebrating; every order so far has been one of your own tests.'));
-  }
-
-  // ── 7. the volume channel ───────────────────────────────────────────────
-  const gifs = ev('gif_download');
-  const zGif = evZ('gif_download');
-  if (Math.abs(zGif) >= 2.2 && gifs >= 10) {
-    reads.push(read(2, '🎬',
-      'GIF downloads ' + moveWord(pct(gifs, evBase('gif_download'))) + ' to '
-      + gifs + '. That is the awareness channel moving, and it moves before '
-      + 'everything else does.'));
-  }
-
-  // ── 8. search ───────────────────────────────────────────────────────────
-  if (d.gsc && d.gscBase && d.gscBase.impressions >= 50) {
-    const pi = pct(d.gsc.impressions, d.gscBase.impressions);
-    const dp = r1(d.gscBase.position - d.gsc.position); // + = improved
-    if (Math.abs(dp) >= 0.6) {
-      reads.push(read(2, '🔎',
-        'Average Google position moved ' + (dp > 0 ? 'up ' : 'down ')
-        + Math.abs(dp) + ' to ' + r1(d.gsc.position) + '. '
-        + (dp > 0 ? 'Rankings drift slowly, so a move this size in a day is '
-          + 'usually a handful of queries changing, not the whole site.'
-          : 'Worth a look at which queries slipped before assuming the worst.')));
-    } else if (pi !== null && Math.abs(pi) >= 40) {
-      reads.push(read(1, '🔎',
-        'Search impressions ' + moveWord(pi) + ' at the same average position — '
-        + 'demand moved, not your rankings.'));
-    }
-  }
-
-  // ── 9. the world ────────────────────────────────────────────────────────
-  const worlds = [['rave_join', 'the rave'], ['park_join', 'the park'],
-    ['beach_join', 'the bay'], ['homestead_open', 'the homestead']];
-  const wUp = worlds.map(([n, label]) => ({ label, n: ev(n), z: evZ(n) }))
-    .filter((x) => x.n >= 15 && Math.abs(x.z) >= 2.2);
-  if (wUp.length) {
-    const w = wUp.sort((a, b) => Math.abs(b.z) - Math.abs(a.z))[0];
-    reads.push(read(1, w.z > 0 ? '🌍' : '🌑',
-      'Visits to ' + w.label + ' were ' + (w.z > 0 ? 'well above' : 'well below')
-      + ' the weekly rhythm (' + w.n + '). '
-      + (w.z > 0 ? 'Somebody sent people there, or the door got easier to find.'
-        : '')));
-  }
-
-  // ── the verdict ─────────────────────────────────────────────────────────
-  reads.sort((a, b) => b.weight - a.weight);
-  const loud = reads.filter((r) => r.weight >= 2);
-  const kept = reads.slice(0, 5);
-
-  let verdict; let headline; const body = [];
-
-  if (thin && !loud.length) {
-    verdict = 'thin';
-    headline = 'Too quiet to read.';
-    body.push('Yesterday brought ' + S + ' sessions. At that size almost any '
-      + 'percentage I could quote would be an accident of small numbers, so I '
-      + 'am not going to quote one. Nothing broke; there is simply nothing here '
-      + 'to conclude.');
-  } else if (!loud.length) {
-    verdict = 'quiet';
-    headline = 'A normal day. Nothing needs you.';
-    body.push('Yesterday looked like the week around it — ' + S + ' sessions '
-      + 'against a ' + Math.round(avgS) + '-a-day average, engagement at '
-      + Math.round(E * 100) + '%. I went looking for something outside the '
-      + 'normal range and did not find it.');
-    body.push('That is worth saying plainly rather than dressing up: a steady '
-      + 'day is information too, and it means the levers that would move things '
-      + 'are the ones you choose to pull, not ones the data is pointing at.');
-  } else {
-    verdict = 'notable';
-    const first = loud[0].text;
-    const cut = Math.min(...[first.indexOf(' — '), first.indexOf('. ')]
-      .filter((i) => i > 0).concat([first.length]));
-    headline = first.slice(0, cut).replace(/[.:]$/, '') + '.';
-    body.push('Yesterday: ' + S + ' sessions' + (pS === null ? ''
-      : ' (' + (pS >= 0 ? '+' : '') + pS + '% on '
-        + (regime ? 'the last three days' : 'the weekly average') + ')') + ', '
-      + Math.round(E * 100) + '% engaged'
-      + (today.tx ? ', ' + today.tx + ' purchase' + (today.tx > 1 ? 's' : '') : '')
-      + '. Here is what actually stands out.');
-  }
-
-  // ── recommendations of last resort ──────────────────────────────────────
-  // ⚠️ these fire on STRUCTURE, not on anomalies — so a quiet day still ends
-  // with something honest to do, without inventing a story to justify it.
-  if (recs.length < 2) {
-    if (made >= MIN_STEP_N && pdp > 0 && rate(pdp, made) < 0.08) {
-      rec('The builder→shop step is running under 8%. That one handoff caps '
-        + 'every sales number downstream of it, so it is the highest-leverage '
-        + 'thing on the site.', Math.round(rate(pdp, made) * 100) + '% builder→PDP');
-    }
-    if (gifs >= 20 && oShown < gifs * 0.3) {
-      rec('Only ' + oShown + ' of ' + gifs + ' downloads got shown an offer. '
-        + 'The card is capped at one per visit by design, but it is worth '
-        + 'checking the remaining download surfaces are actually wired.',
-      gifs + ' downloads, ' + oShown + ' offers shown');
-    }
-    if (!thin && S > avgS * 1.2 && today.tx === 0 && co === 0) {
-      rec('A busier-than-usual day that produced no checkout at all. Traffic is '
-        + 'not the constraint right now — the last click is.',
-      S + ' sessions, 0 checkouts');
-    }
-  }
-
-  return { verdict, headline, body, reads: kept, recs, confidence, sessions: S,
-    avgSessions: Math.round(avgS), regime, shiftPct, breakDay };
+  const out = narrate(pack);
+  return {
+    ...out,
+    sessions: pack.sessions,
+    avgSessions: pack.baselineSessions,
+    factsSeen: pack.counts.facts,
+    factsNew: pack.counts.newToday,
+    pack,
+  };
 }
+
+export { MIN_RATE_N, rate };
