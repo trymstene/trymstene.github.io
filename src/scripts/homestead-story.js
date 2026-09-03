@@ -54,9 +54,12 @@ export function buildStory(view, items, opts) {
   // smaller, so the deck fills the paper it is on and a photo never lands in
   // a different place on a different phone.
   function fit() {
-    const h = view.clientHeight || 0;
-    if (!h) return;
-    const s = Math.max(0.8, Math.min(1.5, (h - 52) / 314));
+    const h = view.clientHeight || 0, w = view.clientWidth || 0;
+    const cw = (deck.firstElementChild && deck.firstElementChild.offsetWidth) || 202;
+    if (!h || !w) return;
+    // fill the height, but never so much that the next photograph stops
+    // peeking — the peek is the only thing that says this deck is swipeable
+    const s = Math.max(0.8, Math.min(1.5, (h - 52) / 314, (w * 0.64) / cw));
     deck.style.transformOrigin = '0 0';
     deck.style.transform = 'scale(' + s.toFixed(3) + ')';
     deck.style.width = (100 / s) + '%';
