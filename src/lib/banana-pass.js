@@ -335,11 +335,16 @@ export function applyBlob(blob) {
         let cur = {};
         try { cur = JSON.parse(localStorage.getItem('bwq-c1') || '{}') || {}; } catch (e2) {}
         const inS = +q.s || 0, curS = +cur.s || 0;
-        const gainStep = inS > curS, gainDone = !!q.done && !cur.done, gainRes = !!q.resSet && !cur.resSet;
+        // ⚠️ the resident branch merges by MAX, like the worker does: a device
+        // that has not synced its homestead yet decides "not a resident" on
+        // its own at boot, and that guess must never beat the real answer
+        const inRes = +q.res || 0, curRes = +cur.res || 0;
+        const gainStep = inS > curS, gainDone = !!q.done && !cur.done;
+        const gainRes = !!q.resSet && (!cur.resSet || inRes > curRes);
         if (gainStep || gainDone || gainRes) {
           const next = { ...cur, s: Math.max(inS, curS), done: (q.done || cur.done) ? 1 : 0 };
           if (gainStep) next.k = {};
-          if (gainRes) { next.res = +q.res || 0; next.resSet = 1; }
+          if (gainRes) { next.res = Math.max(inRes, curRes); next.resSet = 1; }
           localStorage.setItem('bwq-c1', JSON.stringify(next));
           try { document.dispatchEvent(new CustomEvent('pass:quest')); } catch (e2) {}
         }
