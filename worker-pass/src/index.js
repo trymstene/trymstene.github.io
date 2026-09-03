@@ -1034,6 +1034,9 @@ async function adminGrant(request, env) {
     if (id) { st['own_' + id] = 1; p.base = p.base || {}; p.base['own_' + id] = 1; did.push('gear ' + id); }   // base + mirror: identityOf reads base
   }
   if (!did.length) return json({ error: 'nothing to do' }, 400, cors(env, request));
+  // the record's stats MIRROR must agree with base + slots at once — a stale
+  // mirror made every desk grant look lost until the player's next push
+  p.stats = statsOf(p);
   await env.PASSES.put(k, JSON.stringify({ ...rec, updated: Date.now() }),
     { httpMetadata: { contentType: 'application/json' } });
   await adminNote(env, 'grant', k.slice(5, 13), did.join(', '));

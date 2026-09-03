@@ -2399,7 +2399,7 @@ function init(visitDoc, visitMiss) {
     // slight y-jitter so it reads as dropped, not printed
     // FARM: the coins string along the shorter gate walk, so the arrival
     // auto-walk crosses every one of them before the first tap
-    ((FARM && !byRoad) ? [[880, -10], [950, 8], [1020, -6], [1090, 10], [1148, 0]]
+    ((FARM && !byRoad) ? [[880, -10], [950, 8], [1020, -6], [1090, 10], [1140, 0]]   // the last one INSIDE the arrival walk's 34px reach (it sat 2px past it, so the trail respawned every visit)
       : [[400, -10], [500, 8], [600, -6], [700, 10], [800, 0]]).forEach(([cx, jy], i) => {
       const x = byRoad ? W - cx : cx, y = ROAD.y + jy;
       const d = document.createElement('div');
