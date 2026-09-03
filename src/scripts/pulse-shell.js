@@ -18,6 +18,7 @@ import { buildEarth, HOTTXT } from './pulse-map.js';
 import * as MAP from '../data/pulse-map.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
 import { renderLedger } from './hq-pulse.js';
+import { renderOverview, renderNow, prevWindow } from './pulse-rooms.js';
 
 const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 'sticker_pdp_view',
   'checkout_redirect', 'begin_checkout', 'purchase', 'view_item', 'select_item', 'wallpaper_download',
@@ -48,7 +49,7 @@ const nfmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : String(Math.round
 export function mountPulse(host, io) {
   host.textContent = '';
   const S = { room: 'live', mode: 'live', lens: LENSES[0], from: 'today', to: 'today',
-    live: null, range: null, analyst: null, ledger: null };
+    live: null, range: null, prev: null, analyst: null, ledger: null };
   try { S.room = localStorage.getItem('pulse-pane') || 'live'; } catch (e) {}
   const timers = new Set();
   const every = (fn, ms) => { const t = setInterval(fn, ms); timers.add(t); return t; };
@@ -193,6 +194,7 @@ export function mountPulse(host, io) {
     const acc = (ROOMS.find((r) => r[0] === S.room) || ROOMS[0])[2];
     body.style.setProperty('--acc', acc);
     if (S.room === 'live') { liveRoom(body); if (body._live) body._live(); return; }
+    if (S.room === 'overview') { renderOverview(body, S); renderNow(body, S); return; }
     if (S.room === 'ledger') {
       if (!S.ledger) { el('div', 'hqp-empty', 'reading the world…', body); io.ledger().then((d) => { S.ledger = d; if (S.room === 'ledger') paint(); }); return; }
       renderLedger(body, { ...S.ledger, analyst: S.analyst, live: S.live });
@@ -237,7 +239,14 @@ export function mountPulse(host, io) {
     if (L && !L.error) { S.live = L; applyLive(); }
   }
   async function loadRange() {
-    const R = await io.range(S.from, S.to).catch(() => null);
+    const [pf, pt] = prevWindow(S.from, S.to);
+    // ⚠️ the payload carries no comparison of its own — every arrow on the
+    // overview comes from this second call for the window before
+    const [R, P] = await Promise.all([
+      io.range(S.from, S.to).catch(() => null),
+      io.range(pf, pt).catch(() => null),
+    ]);
+    S.prev = P;
     if (R) {
       S.range = R;
       vToday.textContent = nfmt((R.kpis && R.kpis.sessions) || 0);

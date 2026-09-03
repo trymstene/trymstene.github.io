@@ -28,18 +28,18 @@ const mk = (tag, attrs, parent) => {
   if (parent) parent.appendChild(e);
   return e;
 };
-const div = (cls, txt, parent) => {
+export const div = (cls, txt, parent) => {
   const e = document.createElement('div');
   if (cls) e.className = cls;
   if (txt != null) e.textContent = txt;
   if (parent) parent.appendChild(e);
   return e;
 };
-const nfmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n || 0)));
-const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
+export const nfmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n || 0)));
+export const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 
 // ── a section, and the (i) that carries anything needing more than a label ──
-function section(host, title, note) {
+export function section(host, title, note) {
   const s = div('hqp-sec', null, host);
   const h = div('hqp-h', null, s);
   div('hqp-htitle', title, h);
@@ -59,7 +59,7 @@ function section(host, title, note) {
 
 // ── a headline number. A stat with no plot needs no chart, but it does need
 //    an object to sit on and a second line saying what it is measured against.
-function tile(host, label, value, sub, tone) {
+export function tile(host, label, value, sub, tone) {
   const t = div('hqp-tile' + (tone ? ' is-' + tone : ''), null, host);
   div('hqp-tval', value, t);
   div('hqp-tlab', label, t);
@@ -68,7 +68,7 @@ function tile(host, label, value, sub, tone) {
 }
 
 // ── change over time: one series, so it wears ink and needs no legend ──────
-function lineChart(host, pts, opts) {
+export function lineChart(host, pts, opts) {
   const o = opts || {};
   const W = 640, H = 258, L = 40, R = 12, T = 16, B = 28;
   const wrap = div('hqp-chart', null, host);
@@ -121,7 +121,7 @@ function lineChart(host, pts, opts) {
 }
 
 // ── magnitude by category: horizontal bars, direct-labelled, no legend box ──
-function barsH(host, rows, opts) {
+export function barsH(host, rows, opts) {
   const o = opts || {};
   const wrap = div('hqp-bars', null, host);
   if (!rows.length) { div('hqp-empty', o.empty || 'nothing yet', wrap); return; }
@@ -138,7 +138,7 @@ function barsH(host, rows, opts) {
 }
 
 // ── a rate needs its denominator, and refuses to print under a sample gate ──
-function rate(host, label, hits, cohort, note) {
+export function rate(host, label, hits, cohort, note) {
   const t = div('hqp-rate', null, host);
   const enough = cohort >= 20;
   div('hqp-rval', enough ? pct(hits, cohort) + '%' : '—', t);
@@ -149,7 +149,7 @@ function rate(host, label, hits, cohort, note) {
 }
 
 // ── the funnel counts PEOPLE, and marks the step that is the work ──────────
-function funnel(host, steps) {
+export function funnel(host, steps) {
   const wrap = div('hqp-funnel', null, host);
   const top = Math.max(1, steps[0].v);
   steps.forEach((s, i) => {
