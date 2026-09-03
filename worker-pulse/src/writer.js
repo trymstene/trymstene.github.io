@@ -32,6 +32,10 @@ const API = 'https://api.anthropic.com/v1/messages';
 // — that is Trym's decision to make, not a default I get to quietly pick.
 const DEFAULT_MODEL = 'claude-opus-5';
 
+// ⚠️ NO maxItems ANYWHERE. A structured-output schema rejects it on an array
+// (400: "For 'array' type, property 'maxItems' is not supported"). The caps
+// are the prompt's job and the slices below enforce them.
+//
 // ⚠️ THE SHAPE IS CONSTRAINED, NOT REQUESTED. Asking a model for JSON in the
 // prompt and parsing whatever comes back means handling code fences, preambles
 // and the occasional apology. A json_schema means the response IS the shape.
@@ -42,16 +46,15 @@ const SCHEMA = {
   properties: {
     verdict: { type: 'string', enum: ['notable', 'quiet', 'thin', 'no-baseline'] },
     headline: { type: 'string', description: 'one sentence, under 80 characters' },
-    body: { type: 'array', maxItems: 3, items: { type: 'string' },
+    body: { type: 'array', items: { type: 'string' },
       description: 'one to three short paragraphs setting up what the day was' },
-    reads: { type: 'array', maxItems: 4,
-      items: { type: 'object', additionalProperties: false, required: ['icon', 'text'],
+    reads: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['icon', 'text'],
         properties: {
           icon: { type: 'string', description: 'a single emoji' },
           text: { type: 'string', description: 'one finding, one to three sentences' },
         } },
       description: 'zero to four findings; zero or one on a quiet day' },
-    recs: { type: 'array', maxItems: 2, items: { type: 'string' },
+    recs: { type: 'array', items: { type: 'string' },
       description: 'at most two concrete things to do, and zero is a fine answer' },
     confidence: { type: 'string', description: 'one clause on how much to trust this' },
   },
