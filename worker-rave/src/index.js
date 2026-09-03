@@ -2631,6 +2631,7 @@ export class YardRoom {
       if (m.gd != null) m2.gd = num(m.gd, 0, 9);
       if (m.id) m2.id = num(m.id, 0, 999999);
       if (m.ad != null) m2.ad = num(m.ad, 0, 99999);
+      if (m.rd != null) m2.rd = num(m.rd, 0, 99999);   // the day she moved on — the story needs it
       if (m.gs) m2.gs = num(m.gs, 0, 999999);
       if (m.sd != null) m2.sd = num(m.sd, 0, 9999);
       if (m.pa) m2.pa = num(m.pa, 0, 999999);

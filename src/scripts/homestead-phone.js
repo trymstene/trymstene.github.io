@@ -17,8 +17,11 @@ import pxFlower from '../icons/pixelart/flower-solid.svg?raw';
 import pxChev from '../icons/pixelart/chevron-down.svg?raw';
 import pxChevUp from '../icons/pixelart/chevron-up.svg?raw';
 import pxZoomOut from '../icons/pixelart/zoom-out.svg?raw';
+import pxChevLeft from '../icons/pixelart/chevron-left.svg?raw';
+import pxInfo from '../icons/pixelart/info-box.svg?raw';
 const PX = { edit: pxEdit, check: pxCheck, 'heart-solid': pxHeartS, heart: pxHeart, calendar: pxCal, cake: pxCake,
-  'crown-solid': pxCrown, 'star-solid': pxStar, 'flower-solid': pxFlower, 'chevron-down': pxChev, 'chevron-up': pxChevUp, 'zoom-out': pxZoomOut };
+  'crown-solid': pxCrown, 'star-solid': pxStar, 'flower-solid': pxFlower, 'chevron-down': pxChev, 'chevron-up': pxChevUp,
+  'zoom-out': pxZoomOut, 'chevron-left': pxChevLeft, 'info-box': pxInfo };
 // an inline <svg> string, sized in px; currentColor follows the host
 export const ico = (nm, size) => (PX[nm] || '').replace('<svg ', '<svg width="' + size + '" height="' + size + '" shape-rendering="crispEdges" aria-hidden="true" ');
 let C = null;
@@ -394,7 +397,7 @@ export function renderAnimals(list) {
       }
       C.state.animals.splice(C.state.animals.indexOf(a), 1);
       if (a.name) {   // ⚠️ NAMED only — an unnamed revival read as "grown up right away"
-        farmMemory().push({ sp: a.sp, name: a.name, b: a.b || 0, gd: a.gd, id: a.id, ad: a.ad, gs: a.gs || 0, sd: a.sd, pa: a.pa });
+        farmMemory().push({ sp: a.sp, name: a.name, b: a.b || 0, gd: a.gd, id: a.id, ad: a.ad, gs: a.gs || 0, sd: a.sd, pa: a.pa, rd: dayNum() });
         if (C.state.memory.length > 12) C.state.memory.shift();
       }
       C.state.hens = C.state.animals.filter((a2) => a2.sp === 'hen').length;
@@ -430,7 +433,10 @@ export function renderStory(list) {
   storyOn = null;
   Promise.all([storyChunk(), C.yFetch('/diary', {}).catch(() => null)]).then(([m, r]) => {
     if (!view.isConnected) return;   // the player already moved to another app
-    storyOn = m.buildStory(view, (r && Array.isArray(r.rows)) ? r.rows : [], {
+    const rows = (r && Array.isArray(r.rows)) ? r.rows.slice() : [];
+    rows.push(...lifeRows());
+    rows.sort((a, b) => (b.t || 0) - (a.t || 0));
+    storyOn = m.buildStory(view, rows.slice(0, 60), {
       art: '/assets/homestead/',
       now: Date.now(),
       icon: (nm, px) => ico(nm, px),
@@ -448,6 +454,29 @@ export function renderStory(list) {
     });
   });
   track1('homestead_story');
+}
+
+// the farm's OWN life, read from the yard: who arrived, who was born here,
+// who went to the long grass, who moved on, and the day it all started. A day
+// number becomes that day's midnight — precise enough to sort a story by.
+function lifeRows() {
+  const st = C.state || {};
+  const out = [];
+  const at = (d) => (d == null ? 0 : d * 86400000);
+  if (st.claimedAt) out.push({ k: 'found', n: st.name || '', t: st.claimedAt });
+  (st.animals || []).forEach((a) => {
+    if (a.ad == null) return;
+    out.push({ k: a.pa ? 'born' : 'arrive', t: at(a.ad), sp: a.sp, an: a.name || '' });
+  });
+  (st.grass || []).forEach((g) => {
+    if (g.ad != null) out.push({ k: g.pa ? 'born' : 'arrive', t: at(g.ad), sp: g.sp, an: g.name || '' });
+    if (g.ld != null) out.push({ k: 'rest', t: at(g.ld), sp: g.sp, an: g.name || '' });
+  });
+  (st.memory || []).forEach((m) => {
+    if (m.ad != null) out.push({ k: m.pa ? 'born' : 'arrive', t: at(m.ad), sp: m.sp, an: m.name || '' });
+    if (m.rd != null) out.push({ k: 'away', t: at(m.rd), sp: m.sp, an: m.name || '' });
+  });
+  return out;
 }
 
 // 🌳 THE FAMILY TREE — everyone who ever lived here: the living (a level

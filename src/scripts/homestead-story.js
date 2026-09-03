@@ -18,8 +18,12 @@
 // ⚠️ A guestbook line is written by another player: it goes in with
 // textContent, never innerHTML. Only opts.icon() output is trusted markup.
 
-// every size is fixed here and nothing downstream invents one
-const CARD_W = 168, CARD_H = 210, PHOTO_H = 116, PAD = 8, GAP = 14, SUB = 1.8;
+// ⚠️ THE DECK'S GEOMETRY LIVES IN ONE PLACE and it is the CSS block in
+// homestead.astro (.hs-scard is a fixed 190x248, one 14px gap, packed to the
+// top so a card sits in the same spot on a tall phone and a short one). The
+// only number here is how much bigger an animal stands in a photo than she
+// does in a list.
+const SUB = 1.8;
 const DAY = 86400000;
 
 // one subject per kind: a photo of the thing that happened, never an icon of it
@@ -27,8 +31,14 @@ const PROP = {
   water: ['d-sprout.png', 27, 23, 3],
   feed: ['d-trough-full.png', 65, 33, 2],
   sign: ['m-sign.png', 31, 31, 2],
+  found: ['m-sign.png', 31, 31, 2],
   none: ['m-sign.png', 31, 31, 2],
 };
+// the kinds whose photograph is an animal
+const ANIMAL = { hug: 1, arrive: 1, born: 1, rest: 1, away: 1 };
+// how long a photograph keeps its colour: fresh today, black and white by the
+// end of a fortnight, so scrolling back is visibly scrolling into the past
+const FADE = 14 * 86400000;
 
 export function buildStory(view, items, opts) {
   const icon = (n, px) => opts.icon(n, px);
@@ -49,8 +59,15 @@ export function buildStory(view, items, opts) {
     return fmt.format(new Date(t));
   }
 
+  // an animal with a name is a somebody; without one she is still hers
+  const her = (it) => it.an || ('the ' + (it.sp || 'hen'));
   function line(it) {
     const who = it.n || 'a banana';
+    if (it.k === 'found') return 'you founded ' + (it.n || 'this homestead');
+    if (it.k === 'arrive') return her(it) + ' arrived';
+    if (it.k === 'born') return her(it) + ' was born here';
+    if (it.k === 'rest') return her(it) + ' went to the long grass';
+    if (it.k === 'away') return her(it) + ' found a new farm';
     if (it.k === 'sign') return it.x || (who + ' signed the guestbook');
     if (it.k === 'water') return who + ' watered the beds';
     if (it.k === 'feed') return who + ' filled the trough';
@@ -67,8 +84,9 @@ export function buildStory(view, items, opts) {
     const i = document.createElement('i');
     i.className = 'hs-ssub';
     let file, fw, fh, w, strip = false;
-    if (it.k === 'hug' && opts.thumb(it.sp)) {
-      const t = opts.thumb(it.sp);
+    // a birth is photographed as the little one she was that day
+    const t = ANIMAL[it.k] && (opts.thumb((it.k === 'born' ? 'y' : '') + it.sp) || opts.thumb(it.sp));
+    if (t) {
       file = t[0]; fw = t[1]; fh = t[2]; w = Math.round(t[3] * SUB); strip = true;
     } else {
       const p = PROP[it.k] || PROP.none;
@@ -83,11 +101,18 @@ export function buildStory(view, items, opts) {
 
   function card(it, n) {
     const a = document.createElement('article');
-    a.className = 'hs-scard' + (it.t && opts.now - it.t > 2 * DAY ? ' is-old' : '');
+    a.className = 'hs-scard';
     // a hand-stacked deck, not a grid: the tilt is deterministic per position
     a.style.transform = 'rotate(' + (((n * 37) % 5) - 2) * 0.7 + 'deg)';
     const ph = document.createElement('div');
     ph.className = 'hs-sphoto';
+    // the colour drains with age: today is a colour photograph, a fortnight
+    // ago is black and white, and everything between is on its way there
+    const age = it.t ? Math.min(1, Math.max(0, (opts.now - it.t) / FADE)) : 0;
+    if (age > 0.02) {
+      ph.style.filter = 'grayscale(' + age.toFixed(2) + ') contrast(' + (1 - age * 0.08).toFixed(2) + ')';
+      a.style.background = age > 0.6 ? '#f7f3e6' : '#fff';
+    }
     ph.appendChild(subject(it));
     if (it.k === 'hug') {
       const h = document.createElement('span');

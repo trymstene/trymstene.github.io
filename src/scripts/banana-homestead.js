@@ -401,6 +401,7 @@ function init(visitDoc, visitMiss) {
         memory: (state.memory || []).slice(0, 12).map((m) => ({
           sp: m.sp, b: Math.round(m.b || 0), name: m.name || '',
           gd: m.gd == null ? undefined : Math.round(m.gd),
+          rd: m.rd == null ? undefined : Math.round(m.rd),
           id: m.id || undefined, ad: m.ad == null ? undefined : Math.round(m.ad),
           gs: Math.round(m.gs || 0), sd: m.sd == null ? undefined : Math.round(m.sd),
           pa: m.pa || undefined })),   // a rehomed kid keeps her parent on every device (the tree)
