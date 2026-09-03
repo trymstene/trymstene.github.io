@@ -1225,8 +1225,16 @@ const description = 'Authorized banana personnel only.';
         // there is one door. The workers' own numbers come straight.
         // the key rides a HEADER now — a token in a URL ends up in history,
         // in the console and in screenshots of the console
+        // a failed read comes back as { __err } so a room can SAY what happened
+        // instead of sitting on a loading line forever
         const px = (r, q) => fetch(API + '/pulse?r=' + r + (q || ''), { headers: { 'X-Inbox-Token': token || '' } })
-          .then((x) => (x.ok ? x.json() : null)).catch(() => null);
+          .then(async (x) => {
+            if (x.ok) return x.json();
+            let why = 'the dashboard answered ' + x.status;
+            try { const j = await x.json(); if (j && j.err) why = j.err; } catch (e) {}
+            return { __err: why };
+          })
+          .catch((e) => ({ __err: 'could not reach the dashboard (' + String(e.message || e).slice(0, 80) + ')' }));
         if (pulseApp) pulseApp.destroy();
         pulseApp = pulseMod.mountPulse(host, {
           live: () => px('live'),

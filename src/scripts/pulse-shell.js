@@ -65,7 +65,7 @@ const nfmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : String(Math.round
 export function mountPulse(host, io) {
   host.textContent = '';
   const S = { room: 'live', mode: 'live', lens: LENSES[0], from: 'today', to: 'today',
-    live: null, range: null, prev: null, analyst: null, ledger: null };
+    live: null, range: null, prev: null, analyst: null, ledger: null, err: '' };
   try { S.room = localStorage.getItem('pulse-pane') || 'live'; } catch (e) {}
   const timers = new Set();
   const every = (fn, ms) => { const t = setInterval(fn, ms); timers.add(t); return t; };
@@ -232,6 +232,11 @@ export function mountPulse(host, io) {
     body.textContent = '';
     const acc = (ROOMS.find((r) => r[0] === S.room) || ROOMS[0])[2];
     body.style.setProperty('--acc', acc);
+    // the reason, once, at the top — a room that cannot read says so
+    if (S.err && S.room !== 'ledger') {
+      const e = el('div', 'hqp-note', 'Google’s half is not answering: ' + S.err, body);
+      e.hidden = false;
+    }
     if (S.room === 'live') { liveRoom(body); if (body._live) body._live(); return; }
     if (S.room === 'overview') { renderOverview(body, S); renderNow(body, S); return; }
     if (S.room === 'downloads') { renderDownloads(body, S); return; }
@@ -333,7 +338,8 @@ export function mountPulse(host, io) {
   async function loadLive() {
     if (document.hidden) return;
     const L = await io.live().catch(() => null);
-    if (L && !L.error) { S.live = L; applyLive(); }
+    if (L && L.__err) { S.err = L.__err; if (S.room !== 'ledger') paint(); return; }
+    if (L && !L.error) { S.live = L; S.err = ''; applyLive(); }
   }
   async function loadRange() {
     const [pf, pt] = prevWindow(S.from, S.to);
@@ -344,7 +350,8 @@ export function mountPulse(host, io) {
       io.range(pf, pt).catch(() => null),
     ]);
     S.prev = P;
-    if (R) {
+    if (R && R.__err) S.err = R.__err;
+    if (R && !R.__err) {
       S.range = R;
       vToday.textContent = nfmt((R.kpis && R.kpis.sessions) || 0);
       if (earth) earth.push({ live: S.live, range: R, mode: S.mode, lens: S.lens });

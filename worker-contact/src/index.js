@@ -215,8 +215,19 @@ export default {
         // Pulse says 404 for a wrong token AND for a wrong path. Passing that
         // straight through told the desk "not found" for what is really "the
         // dashboard token is wrong", so name it.
+        // ⚠️ SAY WHAT WENT WRONG. Pulse answers 404 for a bad token and 502/503
+        // for its own upstream trouble; forwarding a bare status left the desk
+        // spinning on 'reading the window…' with the reason locked in a
+        // response nobody read.
         if (up.status === 404) {
           return new Response(JSON.stringify({ ok: false, err: 'pulse refused the dashboard token' }),
+            { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
+        if (!up.ok) {
+          let why = body.slice(0, 300);
+          try { const j = JSON.parse(body); why = j.error || why; } catch (e) {}
+          return new Response(JSON.stringify({ ok: false, err: why, upstream: up.status,
+            quota: body.indexOf('quota') > -1 }),
             { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
         }
         return new Response(body, { status: up.status,
