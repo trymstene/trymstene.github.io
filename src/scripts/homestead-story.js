@@ -19,7 +19,7 @@
 // textContent, never innerHTML. Only opts.icon() output is trusted markup.
 
 // ⚠️ THE DECK'S GEOMETRY LIVES IN ONE PLACE and it is the CSS block in
-// homestead.astro (.hs-scard is a fixed 202x330, one 14px gap, packed to the
+// homestead.astro (.hs-scard is a fixed 202x296, one 14px gap, packed to the
 // top so a card sits in the same spot on a tall phone and a short one). The
 // only number here is how much bigger an animal stands in a photo than she
 // does in a list.
@@ -59,7 +59,7 @@ export function buildStory(view, items, opts) {
     if (!h || !w) return;
     // fill the height, but never so much that the next photograph stops
     // peeking — the peek is the only thing that says this deck is swipeable
-    const s = Math.max(0.8, Math.min(1.5, (h - 52) / 344, (w * 0.68) / cw));
+    const s = Math.max(0.75, Math.min(1.5, (h - 52) / 310, (w * 0.68) / cw));
     deck.style.transformOrigin = '0 0';
     deck.style.transform = 'scale(' + s.toFixed(3) + ')';
     deck.style.width = (100 / s) + '%';
