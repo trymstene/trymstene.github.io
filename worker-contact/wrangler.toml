@@ -22,3 +22,11 @@ new_sqlite_classes = ["ContactInbox"]
 
 [vars]
 ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
+
+# 📡 a DIRECT binding to Banana Pulse instead of a public round trip. A worker
+# fetching another worker on the same account by its workers.dev URL is the
+# fragile path; a service binding never leaves the edge, adds no latency, and
+# cannot be blocked as a loop. The dashboard token still gates the far side.
+[[services]]
+binding = "PULSE"
+service = "banana-pulse"

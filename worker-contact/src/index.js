@@ -210,7 +210,12 @@ export default {
         q.set('to', String(url.searchParams.get('to') || 'today').slice(0, 12));
       }
       try {
-        const up = await fetch('https://banana-pulse.trymstene.workers.dev/api/' + want + '?' + q.toString());
+        const target = 'https://pulse.internal/api/' + want + '?' + q.toString();
+        // the binding when it is there, the public URL when it is not, so this
+        // keeps working if the binding is ever removed
+        const up = env.PULSE
+          ? await env.PULSE.fetch(new Request(target))
+          : await fetch('https://banana-pulse.trymstene.workers.dev/api/' + want + '?' + q.toString());
         const body = await up.text();
         // Pulse says 404 for a wrong token AND for a wrong path. Passing that
         // straight through told the desk "not found" for what is really "the
