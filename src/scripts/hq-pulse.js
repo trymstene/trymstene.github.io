@@ -197,7 +197,7 @@ function googleBlock(el, an, live) {
   if (an.confidence) div('hqp-cap', an.confidence + (an.sessions != null ? ' · ' + nfmt(an.sessions) + ' sessions vs ' + nfmt(an.avgSessions) + ' usual' : ''), card);
 }
 
-export function renderPulse(el, data) {
+export function renderLedger(el, data) {
   const roll = data.roll || {};
   const world = data.world || {};
   const days = (roll.days || []).filter((d) => d && d.passes != null);

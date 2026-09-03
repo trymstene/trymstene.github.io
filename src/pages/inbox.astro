@@ -91,6 +91,67 @@ const description = 'Authorized banana personnel only.';
     .hqp-fname { font-size: 0.82rem; }
     .hqp-fnum { color: var(--hdim); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
     .hqp-fstep.is-work .hqp-fname { color: var(--nana); }
+    /* 📊 PULSE 2.0 — the shell. Not the site's content grid: this is a
+       control room, so it goes wide, dark and dense, and it stacks on a
+       phone instead of shrinking. */
+    #bmPanePulse { --acc: var(--nana); }
+    .ps-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 0.9rem;
+      flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+      padding: 0.6rem 0.8rem; margin: 0 0 0.8rem; border-radius: 18px;
+      background: rgba(10, 8, 20, 0.92); backdrop-filter: blur(6px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4); }
+    .ps-bar::-webkit-scrollbar { display: none; }
+    .ps-stat { display: grid; line-height: 1.05; flex: none; }
+    .ps-stat b { font-family: "Archivo Black", sans-serif; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+    .ps-stat span { color: var(--hdim); font-size: 0.66rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .ps-stat.is-hot b { color: var(--ok); }
+    .ps-spark { margin-left: auto; flex: none; width: 120px; height: 26px; }
+    .ps-range { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin: 0 0 0.8rem; }
+    .ps-rlab { color: var(--hdim); font-size: 0.74rem; margin-right: 0.2rem; }
+    .ps-chip { border: 1px solid rgba(244, 238, 255, 0.1); background: var(--hcard); color: var(--hink);
+      border-radius: 999px; padding: 0.3rem 0.75rem; font: inherit; font-size: 0.74rem; cursor: pointer; }
+    .ps-chip[aria-pressed="true"] { background: var(--acc, var(--nana)); border-color: transparent; color: #14101f; font-weight: 700; }
+    .ps-rooms { display: flex; gap: 0.4rem; overflow-x: auto; scrollbar-width: none; margin: 0 0 1rem; padding-bottom: 0.2rem;
+      -webkit-mask-image: linear-gradient(90deg, #000 0, #000 88%, transparent 100%);
+      mask-image: linear-gradient(90deg, #000 0, #000 88%, transparent 100%); }
+    @media (min-width: 760px) { .ps-rooms { -webkit-mask-image: none; mask-image: none; } }
+    .ps-rooms::-webkit-scrollbar { display: none; }
+    .ps-room { flex: none; border: 1px solid rgba(244, 238, 255, 0.1); background: var(--hcard); color: var(--hdim);
+      border-radius: 999px; padding: 0.4rem 0.9rem; font: inherit; font-size: 0.76rem; letter-spacing: 0.05em;
+      cursor: pointer; position: relative; }
+    .ps-room[aria-pressed="true"] { color: #14101f; background: var(--racc); border-color: transparent; font-weight: 700; }
+    .ps-rbadge { margin-left: 0.35rem; font-size: 0.68rem; opacity: 0.8; }
+    .ps-body { min-height: 40vh; }
+    .ps-mapcard { position: relative; border-radius: 18px; overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+    .pm-wrap { position: relative; }
+    .pm-cv { display: block; width: 100%; height: auto; image-rendering: pixelated;
+      background: #151129; touch-action: pan-y; }
+    .pm-tip { position: absolute; transform: translate(-50%, -120%); pointer-events: none; white-space: pre;
+      background: #0a0814; color: var(--hink); border-radius: 12px; padding: 0.35rem 0.6rem;
+      font-size: 0.7rem; line-height: 1.35; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
+    .ps-zoom { position: absolute; right: 8px; top: 8px; z-index: 2; display: grid; gap: 4px; }
+    .ps-zbtn { width: 30px; height: 30px; border: 0; border-radius: 999px; background: rgba(10, 8, 20, 0.8);
+      color: var(--hink); font: inherit; font-size: 0.9rem; cursor: pointer; }
+    .ps-modes { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin: 0.6rem 0 0.4rem; }
+    .ps-lens { border: 1px solid rgba(244, 238, 255, 0.1); background: var(--hcard); color: var(--hink);
+      border-radius: 999px; padding: 0.3rem 0.6rem; font: inherit; font-size: 0.74rem; }
+    .ps-legend { color: var(--hdim); font-size: 0.74rem; margin: 0 0 0.4rem; }
+    .ps-hotline { background: rgba(94, 224, 138, 0.12); color: var(--ok); border-radius: 14px;
+      padding: 0.45rem 0.7rem; font-size: 0.78rem; margin: 0 0 0.5rem; }
+    .ps-ticker { overflow: hidden; border-radius: 14px; background: var(--hcard); padding: 0.45rem 0;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28); }
+    .ps-tickin { display: inline-block; white-space: nowrap; padding-left: 35%;
+      animation: ps-tick 26s linear infinite; font-size: 0.78rem; }
+    .ps-ticker:hover .ps-tickin, .ps-ticker:focus-within .ps-tickin { animation-play-state: paused; }
+    @keyframes ps-tick { to { transform: translateX(-100%); } }
+    .ps-tev { border: 0; background: none; color: var(--hink); font: inherit; font-size: 0.78rem;
+      cursor: pointer; padding: 0; text-decoration: underline dotted rgba(244, 238, 255, 0.3); }
+    .ps-tlead, .ps-tsep { color: var(--hdim); }
+    .ps-tnote { margin: 0.5rem 0 0; padding: 0.7rem 0.85rem; border-radius: 14px;
+      background: rgba(244, 238, 255, 0.05); color: var(--hink); font-size: 0.8rem; line-height: 1.45; }
+    @media (prefers-reduced-motion: reduce) { .ps-tickin { animation: none; padding-left: 0; } }
+
     .hqp-analyst { background: var(--hcard); border-radius: 18px; padding: 1rem;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); display: grid; gap: 0.55rem; }
     .hqp-verdict { justify-self: start; border-radius: 999px; padding: 0.15rem 0.7rem;
@@ -1078,7 +1139,7 @@ const description = 'Authorized banana personnel only.';
     // by a cron that pages the whole bucket) and the yard census (arithmetic
     // inside a loop the stats route already runs). Nothing here is GA4, so
     // nothing here is lost to a consent banner or an adblocker.
-    let pulseMod = null, pulseAt = 0;
+    let pulseMod = null, pulseApp = null, pulseAt = 0;
     async function pulseLoad(force) {
       const host = el('bmPulse');
       if (!force && Date.now() - pulseAt < 60000 && host.childElementCount) return;
@@ -1098,34 +1159,23 @@ const description = 'Authorized banana personnel only.';
         host.appendChild(p);
       }
       try {
-        if (!pulseMod) pulseMod = await import('../scripts/hq-pulse.js');
-        // 📡 four reads: two from the workers (server truth), two from Google
-        // THROUGH worker-contact — the dashboard token lives there as a secret,
-        // so no GA4 credential ever reaches this browser and there is one door.
-        const px = (r) => fetch(API + '/pulse?r=' + r + '&token=' + encodeURIComponent(token || ''))
+        if (!pulseMod) pulseMod = await import('../scripts/pulse-shell.js');
+        // 📡 Google comes THROUGH worker-contact — the dashboard token lives
+        // there as a secret, so no GA4 credential reaches this browser and
+        // there is one door. The workers' own numbers come straight.
+        const px = (r, q) => fetch(API + '/pulse?r=' + r + (q || '') + '&token=' + encodeURIComponent(token || ''))
           .then((x) => (x.ok ? x.json() : null)).catch(() => null);
-        // ⚠️ keep WHY it failed: lumping every failure into "key refused" sent
-        // Trym to check a key that was fine when the real fault was a missing
-        // CORS header on the worker
-        let rollWhy = '';
-        const [roll, world, analyst, live] = await Promise.all([
-          fetch(PASS_ADMIN_API + '/admin/rollup?days=30&key=' + encodeURIComponent(key))
-            .then((r) => { if (r.ok) return r.json(); rollWhy = 'the pass worker answered ' + r.status; return null; })
-            .catch((e) => { rollWhy = 'the pass worker could not be reached (' + String(e.message || e).slice(0, 60) + ')'; return null; }),
-          fetch(WORLD_API + '/yards/stats').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-          px('analyst'), px('live'),
-        ]);
-        if (!roll) {
-          host.innerHTML = '';
-          const p = document.createElement('div');
-          p.className = 'hqp-empty';
-          p.textContent = rollWhy.indexOf('404') > -1
-            ? 'The pass admin key was refused. Check it on the Users tab.'
-            : 'The world numbers could not be read — ' + (rollWhy || 'no answer') + '.';
-          host.appendChild(p);
-          return;
-        }
-        pulseMod.renderPulse(host, { roll, world, analyst, live });
+        if (pulseApp) pulseApp.destroy();
+        pulseApp = pulseMod.mountPulse(host, {
+          live: () => px('live'),
+          range: (from, to) => px('range', '&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to)),
+          analyst: () => px('analyst'),
+          ledger: () => Promise.all([
+            fetch(PASS_ADMIN_API + '/admin/rollup?days=30&key=' + encodeURIComponent(key))
+              .then((r) => (r.ok ? r.json() : null)).catch(() => null),
+            fetch(WORLD_API + '/yards/stats').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          ]).then(([roll, world]) => ({ roll, world })),
+        });
         pulseAt = Date.now();
       } catch (e) {
         host.innerHTML = '';
