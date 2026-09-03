@@ -106,7 +106,13 @@ export function tile(host, label, value, sub, tone) {
 // ── change over time: one series, so it wears ink and needs no legend ──────
 export function lineChart(host, pts, opts) {
   const o = opts || {};
-  const W = 640, H = 258, L = 40, R = 12, T = 16, B = 28;
+  // ⚠️ SVG text scales with the viewBox. At a fixed W of 640 stretched to a
+  // 345px phone, the 12px axis labels render at 6.6px — the only text on the
+  // desk that shrinks with the viewport. Sizing the viewBox to the real box
+  // keeps the scale near 1 and the labels at the size they say they are.
+  const box = Math.round(host.clientWidth || 640);
+  const W = Math.max(320, Math.min(760, box || 640));
+  const H = Math.round(W * 0.4) + 60, L = 40, R = 12, T = 16, B = 28;
   const wrap = div('hqp-chart', null, host);
   const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, class: 'hqp-svg', role: 'img',
     'aria-label': o.label || 'trend' }, wrap);

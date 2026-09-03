@@ -273,8 +273,16 @@ export function mountPulse(host, io) {
     const card = el('div', 'ps-rcard', null, veil);
     const x = el('button', 'ps-rx', '✕', card);
     x.type = 'button';
-    x.addEventListener('click', () => { veil.remove(); veil = null; });
-    veil.addEventListener('click', (e) => { if (e.target === veil) { veil.remove(); veil = null; } });
+    x.addEventListener('click', () => close());
+    veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
+    // a modal with no Escape is a trap on a keyboard
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    addEventListener('keydown', onKey);
+    function close() {
+      removeEventListener('keydown', onKey);
+      if (veil) veil.remove();
+      veil = null;
+    }
     el('div', 'ps-rload', 'reading yesterday…', card);
     const [an, rp] = await Promise.all([
       S.analyst ? Promise.resolve(S.analyst) : io.analyst().catch(() => null),

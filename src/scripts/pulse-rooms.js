@@ -120,15 +120,25 @@ export function renderOverview(into, S) {
   const evs = (R.events || []).filter((e) => !SKIP_EV.has(e.name)).slice(0, 20);
   const note = div('hqp-note', '', s);
   note.hidden = true;
-  const t = div('hqp-tbl', null, s);
-  evs.forEach((e) => {
-    const row = div('hqp-trow is-tap', null, t);
-    div('hqp-tk', EV_LABEL[e.name] || e.name, row);
-    div('hqp-tv', nfmt(e.v) + (e.u ? '  ·  ' + nfmt(e.u) + ' people' : ''), row);
+  // ⚠️ twenty rows of "260  ·  210 people" under no header at all: two
+  // different measures run together in one cell, and nothing saying which is
+  // which. Events and PEOPLE are different numbers and get different columns.
+  const evTable = grid(s, [
+    { h: 'what they did', w: 'minmax(11rem, 1fr)' },
+    { h: 'times', w: '5rem', num: true },
+    { h: 'people', w: '5rem', num: true },
+  ], evs.map((e) => {
+    const k = div('', EV_LABEL[e.name] || e.name, null);
+    return [k, nfmt(e.v), e.u ? nfmt(e.u) : null];
+  }));
+  // the explainer is the only written record of what these events measure
+  [...evTable.querySelectorAll('.hqp-grow')].slice(1).forEach((row, i) => {
+    const e = evs[i];
+    if (!e) return;
+    row.style.cursor = 'pointer';
     row.addEventListener('click', () => {
-      const x = explain(e.name);
       note.hidden = false;
-      note.textContent = e.name + ' — ' + x.why;
+      note.textContent = e.name + ' — ' + explain(e.name).why;
     });
   });
   if (!evs.length) div('hqp-empty', 'no events in this window', t);
@@ -411,7 +421,13 @@ export function renderWorld(into, S) {
     div('hqp-aq', A.q, card);
     const door = cnt(A.door);
     if (!A.door) div('hqp-warn', '⚠ no arrival event — this area cannot answer “how many came” until one is added', card);
-    else div('hqp-abig', nfmt(door) + '  ' + (EV_LABEL[A.door] || A.door), card);
+    else {
+      // ⚠️ the value and its label were ONE node, so the label wore Archivo
+      // Black at the headline size — a stat and its name shouting equally.
+      const big = div('hqp-abig', null, card);
+      div('hqp-abigv', nfmt(door), big);
+      div('hqp-abigl', EV_LABEL[A.door] || A.door, big);
+    }
     div('hqp-cap', nfmt(total) + ' things done inside', card);
     const acts = mine.filter((e) => e.name !== A.door).sort((a, b) => b.v - a.v).slice(0, 6);
     if (!acts.length) { div('hqp-empty', 'they arrived and did nothing else — the door works, the room does not', card); return; }
