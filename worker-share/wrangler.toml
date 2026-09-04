@@ -15,3 +15,14 @@ bucket_name = "banana-shares"
 
 [vars]
 ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803,http://localhost:8802"
+
+# 🪪 WHO IS CALLING. The catalog needs to prove a person owns an item before it
+# lets them edit it, and it holds no secret that could verify a world token —
+# MEMBER_HMAC lives on worker-pass and worker-rave and must not spread here,
+# because it also backs member hats and whoHash. worker-rave already has both
+# the secret and the verifier, so the secret stays where it is and the ANSWER
+# comes over this binding. ⚠️ env.RAVE.fetch, never a fetch to the public URL:
+# a same-account workers.dev subrequest loops back into the caller.
+[[services]]
+binding = "RAVE"
+service = "banana-rave"

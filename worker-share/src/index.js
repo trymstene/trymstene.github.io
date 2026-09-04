@@ -106,7 +106,7 @@ export default {
       if (url.pathname === '/catalog/status') return handleCatalogStatus(env, url);
       if (url.pathname === '/catalog/caught') return handleCatalogCaught(request, env, url);
       if (url.pathname === '/catalog/catches') return handleCatalogCatches(env, url);
-      if (url.pathname === '/health') return handleHealth(env);
+      if (url.pathname === '/health') return handleHealth(env, url);
       return json({ error: 'not found' }, 404);
     } catch (e) {
       console.error(e);
@@ -114,6 +114,27 @@ export default {
     }
   },
 };
+
+// 🪪 who is calling — asked of worker-rave over the service binding, because
+// the secret that answers it must not live here (see wrangler.toml).
+// Returns { gid, aliases } or null. Null on ANY doubt: no binding, no token,
+// a bad answer, a network wobble. Every caller must fail closed on null.
+const WT = { ok: 0, no: 0, err: 0 };
+async function verifyWt(env, wt) {
+  if (!env.RAVE || !wt) { WT.no++; return null; }
+  try {
+    const r = await env.RAVE.fetch(new Request('https://internal/wt/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wt: String(wt) }),
+    }));
+    if (!r.ok) { WT.err++; return null; }
+    const d = await r.json();
+    if (!d || !d.ok || !/^[a-f0-9]{16}$/.test(d.gid || '')) { WT.no++; return null; }
+    WT.ok++;
+    return { gid: d.gid, aliases: Array.isArray(d.aliases) ? d.aliases : [] };
+  } catch (e) { WT.err++; return null; }
+}
 
 function json(obj, status = 200, extra = {}) {
   return new Response(JSON.stringify(obj), {
@@ -974,10 +995,26 @@ async function handleCatalogCatches(env, url) {
 }
 
 // ---------- GET /health ----------
-async function handleHealth(env) {
+async function handleHealth(env, url) {
+  // 🪪 /health?wt=<token> — prove the world-token chain END TO END from
+  // outside. Same reason /health?buyable=1 exists on the shop: a capability
+  // that is only reasoned about is a capability nobody has tested. This says
+  // which branch fired, never who the token belongs to:
+  //   ok        the binding resolved, rave verified a real signature
+  //   rejected  the binding resolved, rave refused the signature
+  //   nobinding / error   the chain itself is broken
+  if (url && url.searchParams.has('wt')) {
+    const before = WT.err;
+    const who = await verifyWt(env, url.searchParams.get('wt'));
+    const state = who ? 'ok' : (!env.RAVE ? 'nobinding' : (WT.err > before ? 'error' : 'rejected'));
+    return json({ wt: state });
+  }
   try {
     await env.SHARES.head('og/healthcheck.png');
-    return json({ bucket: 'ok' });
+    // 🪪 what the world-token binding has been asked since this isolate started.
+    // Nothing depends on the answer yet — the counters exist so the capability
+    // can be watched against real traffic BEFORE anything is gated on it.
+    return json({ bucket: 'ok', wtBinding: env.RAVE ? 'ok' : 'missing', wt: { ...WT } });
   } catch (e) {
     return json({ bucket: 'error: ' + e.message }, 500);
   }

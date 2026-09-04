@@ -259,6 +259,31 @@ const fxLen = (id) => FX_DUR[id] || FX_MS;
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // 🪪 INTERNAL: verify a world token for another worker. worker-share needs
+    // to know who is calling before it lets anyone edit a catalog item, and it
+    // holds no secret that could tell it — MEMBER_HMAC lives here and on
+    // worker-pass and must not spread further, because it also backs member
+    // hats and whoHash. So the secret stays put and the ANSWER travels.
+    //
+    // ⚠️ NOT REACHABLE FROM THE INTERNET. A service binding lets the caller
+    // choose the URL, so worker-share calls https://internal/wt/verify — a
+    // request that genuinely arrived off the internet carries this worker's
+    // real hostname, and Cloudflare routes by hostname, so no outside caller
+    // can present 'internal'. This gate needs no secret of its own.
+    //
+    // ⚠️ VERIFY ONLY, NEVER MINT. Minting lives on worker-pass. A route here
+    // that could issue a token would hand out the world's identities.
+    if (url.hostname === 'internal' && url.pathname === '/wt/verify') {
+      if (request.method !== 'POST') return new Response('no', { status: 405 });
+      let wt = '';
+      try { wt = String(((await request.json()) || {}).wt || ''); } catch (e) {}
+      const tok = await worldTokenOf(env, wt);
+      WT_SEEN[tok ? 'ok' : (wt ? 'wrong' : 'absent')]++;
+      return new Response(JSON.stringify(tok ? { ok: 1, gid: tok.gid, aliases: tok.aliases } : { ok: 0 }),
+        { headers: { 'Content-Type': 'application/json' } });
+    }
+
     const room = env.RAVE.get(env.RAVE.idFromName('main-floor'));
     if (url.pathname === '/ws') {
       const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
@@ -459,6 +484,10 @@ async function worldTokenOf(env, wt) {
   } catch (e) { return null; }
 }
 const wtEnforce = (env) => !!(env && String(env.WT_ENFORCE || '') === '1');
+// what the internal verify route has been asked, since this isolate started —
+// the same shape worker-rave already reports for its own token rollout, so a
+// new caller can be watched before anything is allowed to depend on it
+const WT_SEEN = { ok: 0, wrong: 0, absent: 0 };
 // 🕶 a keyed hash of an owner id for the WIRE: the client can still tell two
 // growers apart and match a plot to a name, but nobody can turn it back into
 // the id the room accepts as proof. Falls back to a fixed salt without the
