@@ -1038,15 +1038,25 @@ if HAVE_PACK:
             _p[_i, _j] = (_outline if L < 60 else _dark if L < 140 else _mid if L < 205 else _light) + (255,)
     dm = _o.resize((_o.width * 2, _o.height * 2), Image.NEAREST)
     dk = Image.open(os.path.join(CS, 'Clothing_Store_Singles_48x48_260.png')).convert('RGBA')
-    tl = Image.new('RGBA', (dk.width + dm.width - 8, max(dk.height, dm.height)), (0, 0, 0, 0))
-    tl.paste(dk, (0, tl.height - dk.height), dk)
-    tl.paste(dm, (dk.width - 8, tl.height - dm.height), dm)   # the dummy stands at the desk's right end
-    tl = tl.crop(tl.getbbox())
+    # ⚠️ THESE ARE TWO OBJECTS, NOT ONE (Trym, 4 Sep). They used to be pasted
+    # into a single d-tailor.png, so the desk could never be placed without the
+    # dummy standing beside it and the dummy could not be placed at all. The
+    # desk IS the tailor table; the banana mannequin stands on its own as a
+    # statue. k-dummy.png stays — the tailor CARD's stage still uses it.
+    tl = dk.crop(dk.getbbox())
     tl.save(os.path.join(OUT, 'd-tailor.png'), optimize=True)
     dm.save(os.path.join(OUT, 'k-dummy.png'), optimize=True)
+    st = dm.crop(dm.getbbox())
+    st.save(os.path.join(OUT, 'd-bananastatue.png'), optimize=True)
     _tw = max(10, int(tl.width * 0.4))
+    _sw = max(10, int(st.width * 0.38))
     DECOR_OUT.append(('tailor', 'Tailor table', 'farm', 45, 0, tl.width, tl.height, [-_tw, -12, _tw, 2]))
-    print('  d-tailor.png %dx%d, k-dummy.png %dx%d (+catalog)' % (tl.width, tl.height, dm.width, dm.height))
+    # 🗿 'display' is what gives it the van: SHIP_MIN.display is 240 minutes, the
+    # same wait as the angel statue and the fountain. Stage 3 is the rung the
+    # ladder itself calls "Build the house" — Trym: only once you have a house.
+    DECOR_OUT.append(('bananastatue', 'Banana statue', 'display', 55, 3, st.width, st.height, [-_sw, -12, _sw, 2]))
+    print('  d-tailor.png %dx%d (desk only), d-bananastatue.png %dx%d, k-dummy.png %dx%d (+catalog)'
+          % (tl.width, tl.height, st.width, st.height, dm.width, dm.height))
     CHI = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/Icons/Icons_32x32/Icons_32x32/Singles_Icons_32x32_Food_Cheese.png')
     Image.open(CHI).convert('RGBA').save(os.path.join(OUT, 'm-cheese.png'), optimize=True)
     print('  m-cheese.png')
