@@ -14,3 +14,12 @@ compatibility_date = "2026-06-01"
 [vars]
 PROPERTY_ID = "358694050"
 GSC_SITE = "https://trymstene.com/"
+
+# ⚠️ A SERVICE BINDING, NOT A FETCH. A Worker fetching a *.workers.dev URL on
+# the same account does not reach the other Worker — it loops back into THIS
+# one, which 404s anything without its own token. That 404 is indistinguishable
+# from adminRollup refusing a key, and it cost three key rotations to find.
+# Worker-to-worker goes over a binding; the hostname in the Request is ignored.
+[[services]]
+binding = "PASS"
+service = "banana-pass"

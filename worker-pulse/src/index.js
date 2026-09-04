@@ -678,10 +678,24 @@ async function apiAnalyst(env) {
     if (!env.PASS_ADMIN_KEY) {
       rollNote = 'no PASS_ADMIN_KEY set';
     } else {
-      const rr = await fetch(PASS_ROLLUP + '?days=60&key=' + encodeURIComponent(String(env.PASS_ADMIN_KEY).trim()));
+      // ⚠️ env.PASS.fetch, never a global fetch to that hostname — see the note
+      // in wrangler.toml. The host in the Request is a formality over a binding.
+      const rurl = PASS_ROLLUP + '?days=60&key=' + encodeURIComponent(String(env.PASS_ADMIN_KEY).trim());
+      const rr = env.PASS ? await env.PASS.fetch(new Request(rurl)) : await fetch(rurl);
       if (!rr.ok) {
-        // a wrong key is a 404 here, not a 401 — adminRollup denies as nothing
-        rollNote = 'rollup said ' + rr.status + (rr.status === 404 ? ' (key refused)' : '');
+        // ⚠️ A REFUSED KEY AND AN UNREACHABLE WORKER LOOK IDENTICAL from here:
+        // adminRollup denies as a 404, and so does anything that never arrives.
+        // /health is public and unauthenticated, so it tells the two apart —
+        // without it this just says "key refused" forever and the key gets
+        // rotated three times for nothing.
+        let probe = '';
+        try {
+          const hurl = PASS_ROLLUP.replace('/admin/rollup', '/health');
+          const h = env.PASS ? await env.PASS.fetch(new Request(hurl)) : await fetch(hurl);
+          probe = h.ok ? 'worker-pass is up, so the key really is wrong'
+            : 'worker-pass /health says ' + h.status + ' — not the key, the worker';
+        } catch (e) { probe = 'worker-pass unreachable from here: ' + String(e.message || e).slice(0, 60); }
+        rollNote = 'rollup said ' + rr.status + ' · ' + probe;
       } else {
         const rj = await rr.json();
         const all = rj.days || [];
