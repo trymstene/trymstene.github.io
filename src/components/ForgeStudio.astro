@@ -471,6 +471,10 @@ const items = mode === 'items';
              is the sentence that tells a maker where their item ends up -->
         <p class="fg-itemsnote" id="fgSubNote">Send it in — approved gear goes on sale at the <b>Banana Stand</b>, your name on the label.</p>
         <button class="btn btn--light" id="fgItemsClear" title="Wipe the item and start over"><PixelArtIcon name="eraser" size="18px" /> Clear &amp; start over</button>
+        <!-- ✏️ you arrived here from My Pass to change something that is
+             already out in the world. Say so, and say what happens — a person
+             editing has different consequences than a person making. -->
+        <div id="fgEditNote" class="fg-importnote" hidden></div>
         <div class="fg-signrow" id="fgItemsSubRow" hidden>
           <input id="fgItemName" maxlength="40" placeholder="name your item — e.g. Wizard Hat" aria-label="Item name">
           <input id="fgItemBy" maxlength="24" placeholder="your name — optional" aria-label="Your name (optional)">

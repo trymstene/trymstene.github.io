@@ -1482,7 +1482,7 @@ function init() {
           // 🪚 the token rides in the BODY, not a header: the worker's CORS
           // preflight allows Content-Type and nothing else, so a custom header
           // would die before the request was ever sent. Same as the homestead.
-          title, by, sid, wt: worldToken(),
+          title, by, sid, wt: worldToken(), ...(editTarget ? { target: editTarget } : {}),
           wear: { forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale,
             ...(c.anchor === 'decor' ? { where: c.where, fw: c.fw, fh: c.fh } : {}) },
         }),
@@ -1495,8 +1495,14 @@ function init() {
           localStorage.setItem('cat-subs-v1', JSON.stringify(subs.slice(0, 20)));
         } catch (e) {}
         el('fgItemsSubRow').hidden = true;
-        el(itemKind === 'decor' ? 'fgItemsSubDoneDecor' : 'fgItemsSubDone').hidden = false;
-        track('forge_item_submit', { anchor: c.anchor });
+        if (editTarget) {
+          // an edit does not get the "goes on sale" note -- it is already on sale
+          editNote('📮 Sent. The banana guy sees your change next to the one that is live, '
+            + 'and the verdict lands on <a href="/pass/">your pass</a>.');
+        } else {
+          el(itemKind === 'decor' ? 'fgItemsSubDoneDecor' : 'fgItemsSubDone').hidden = false;
+        }
+        track('forge_item_submit', { anchor: c.anchor, edit: editTarget ? 1 : 0 });
       } else if (res.status === 429) {
         itemSend.textContent = 'easy there — try later';
         setTimeout(() => { itemSend.textContent = label; }, 2500);
@@ -1512,8 +1518,74 @@ function init() {
     if (el('fgItemsSubDone') && !el('fgItemsSubDone').hidden) itemSend.textContent = label;
   };
 
+  // put a saved item's pixels AND its placement back on the bench.
+  // ⚠️ ONLY THE PIXELS CAME BACK before this existed. wd.anchor, wd.hand and
+  // wd.where were parsed and dropped and applyKind() never ran, so a reopened
+  // item came up as a WEARABLE in the yard whatever it was, and its anchor was
+  // re-derived from the drawing instead of restored. Reopening and saving with
+  // no edit at all MOVED the art -- which is exactly what makes an edit
+  // feature impossible to judge: the diff would show a change nobody made.
+  // ⚠️ wearPick is set AFTER applyKind -- applyKind's second statement is
+  // `wearPick = null`, so setting it first wipes it one line later.
+  function restoreWear(wd) {
+    deserialize(wd.forge);
+    const kind = wd.anchor === 'decor' ? 'decor' : 'wear';
+    decorWhere = wd.where === 'indoor' ? 'indoor' : 'yard';
+    applyKind(kind);
+    if (kind !== 'decor' && wd.anchor) wearPick = pickKey(wd.anchor, wd.hand);
+  }
+
+  // ✏️ THE EDIT DOOR. /forge/items/?edit=c_xxx opens something already live,
+  // reached from the (...) menu on My Pass. The server is the real gate -- it
+  // refuses a submit for an item that is not yours -- but being told after
+  // twenty minutes of drawing is not a gate, it is a waste of somebody's
+  // evening, so ownership is checked before the pixels land.
+  const SHARE_API = 'https://banana-share.trymstene.workers.dev';
+  let editTarget = '';
+  const editNote = (html) => { const n = el('fgEditNote'); if (n) { n.innerHTML = html; n.hidden = !html; } };
+  async function openForEdit(id) {
+    editNote('⚙️ Fetching your item…');
+    const wt = worldToken();
+    if (!wt) { editNote('⚠️ To change an item you made, log into <b>My Pass</b> in the menu first.'); return; }
+    try {
+      const mine = await fetch(SHARE_API + '/catalog/mine', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wt }),
+      }).then((r) => r.json()).catch(() => ({}));
+      if (!Array.isArray(mine.items) || !mine.items.includes(id)) {
+        editNote('⚠️ That item was made by somebody else, so it is not yours to change. You can still draw a new one here.');
+        return;
+      }
+      const cat = await fetch(SHARE_API + '/catalog/items.json').then((r) => r.json()).catch(() => []);
+      const it = (Array.isArray(cat) ? cat : []).find((x) => x.id === id);
+      if (!it || !it.wear) { editNote('⚠️ That item is not in the catalog any more.'); return; }
+      restoreWear(it.wear);
+      const nameIn = el('fgItemName'); if (nameIn) nameIn.value = it.title || '';
+      const byIn2 = el('fgItemBy'); if (byIn2) byIn2.value = it.by || '';
+      editTarget = id;
+      // ⚠️ the pixels only just landed -- everything that reads the doc has to
+      // be told, or the bench shows the previous drawing's size and anchor
+      document.querySelectorAll('.fg-size').forEach((x) => x.setAttribute('aria-pressed', String(state.w === state.h && +x.dataset.size === state.w)));
+      fitCanvas();
+      refreshAll();
+      updateItemsStatus();
+      const send = el('fgItemSend'); if (send) send.textContent = 'Send the change in';
+      // ⚠️ the standing note promises an item "goes on sale" — true for a new
+      // one, wrong for a change to something already selling. Two notes saying
+      // different things is worse than one saying the right thing.
+      const subNote = el('fgSubNote'); if (subNote) subNote.hidden = true;
+      const sub = el('fgItemsSubmit'); if (sub) sub.hidden = true;
+      editNote('✏️ You are changing <b>' + (it.title || id).replace(/[<>&]/g, '') + '</b>, which is already out in the world. '
+        + 'The change goes to the banana guy first; if he says yes it replaces the old one everywhere, and the version you have now is kept.');
+      const row = el('fgItemsSubRow'); if (row) row.hidden = false;
+      track('forge_edit_open', { id });
+    } catch (e) {
+      editNote('⚠️ Could not fetch that item — try again.');
+    }
+  }
+
   // ---- boot ----
   const pickId = new URLSearchParams(location.search).get('shelf');
+  const editId = (new URLSearchParams(location.search).get('edit') || '').trim();
   const pickedAny = pickId ? shelfList().find((c) => c.id === pickId) : null;
   // a creation opens at ITS OWN bench — a cross-kind ?shelf= travels to the
   // other page (old bookmarks and pre-split links keep working)
@@ -1538,14 +1610,7 @@ function init() {
       //
       // ⚠️ wearPick is set AFTER applyKind — applyKind's second statement is
       // `wearPick = null`, so setting it first wipes it one line later.
-      try {
-        const wd = JSON.parse(pickedAny.params.replace(/^wear:/, ''));
-        deserialize(wd.forge);
-        const kind = wd.anchor === 'decor' ? 'decor' : 'wear';
-        decorWhere = wd.where === 'indoor' ? 'indoor' : 'yard';
-        applyKind(kind);
-        if (kind !== 'decor' && wd.anchor) wearPick = pickKey(wd.anchor, wd.hand);
-      } catch (e) {}
+      try { restoreWear(JSON.parse(pickedAny.params.replace(/^wear:/, ''))); } catch (e) {}
     }
   } else if (pickedAny) { deserialize(pickedAny.params); }
   else {
@@ -1565,4 +1630,7 @@ function init() {
   if (mode === 'emoji') requestAnimationFrame(previewTick); // chat preview is emoji-bench only
   track('forge_open', { bench: mode });
   passVisit();
+  // ⚠️ LAST, and async: the item has to be fetched, and the bench must be
+  // fully built before anything drops a drawing into it.
+  if (mode === 'items' && /^c_[a-f0-9]{6,32}$/.test(editId)) openForEdit(editId);
 }
