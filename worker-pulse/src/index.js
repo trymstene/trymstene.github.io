@@ -673,19 +673,34 @@ async function apiAnalyst(env) {
   // daysRunning 4, and is then permanently barred from ever leading a report.
   // ⚠️ a part-way row (done: 0) is a partial scan, not a small day — dropped.
   let roll = null;
+  let rollNote = '';
   try {
-    if (env.PASS_ADMIN_KEY) {
+    if (!env.PASS_ADMIN_KEY) {
+      rollNote = 'no PASS_ADMIN_KEY set';
+    } else {
       const rr = await fetch(PASS_ROLLUP + '?days=60&key=' + encodeURIComponent(env.PASS_ADMIN_KEY));
-      if (rr.ok) {
+      if (!rr.ok) {
+        // a wrong key is a 404 here, not a 401 — adminRollup denies as nothing
+        rollNote = 'rollup said ' + rr.status + (rr.status === 404 ? ' (key refused)' : '');
+      } else {
         const rj = await rr.json();
+        const all = rj.days || [];
         const byDay = {};
-        for (const row of (rj.days || [])) {
+        for (const row of all) {
           if (row && row.done) byDay[String(row.day).replace(/-/g, '')] = row;
         }
         roll = order.map((dd) => byDay[dd] || null);
+        const hit = roll.filter(Boolean).length;
+        if (!hit) {
+          rollNote = all.length
+            ? all.length + ' rows, ' + all.filter((x) => x && x.done).length + ' finished, none '
+              + 'inside the window ' + order[0] + '-' + order[order.length - 1]
+              + ' (newest row ' + String((all[all.length - 1] || {}).day) + ')'
+            : 'rollup returned no rows at all';
+        }
       }
     }
-  } catch (e) { /* the ledger is a bonus, not a dependency */ }
+  } catch (e) { rollNote = 'rollup unreachable: ' + String(e.message || e).slice(0, 90); }
 
   let gsc = null; let gscBase = null;
   try {
@@ -707,7 +722,12 @@ async function apiAnalyst(env) {
   // writer is off, unreachable, slow or caught inventing a number. A report is
   // only worth having if every figure in it is real.
   const { pack, ...det } = out;
-  let data = { ...det, date: yDate, niceDate: nice, generatedAt: Date.now(), by: 'rules' };
+  // how many of the eight days the ledger actually answered for. 0 means the
+  // rollup was not read at all (no PASS_ADMIN_KEY, or worker-pass was down) —
+  // without this the report just quietly says less and nothing tells you why.
+  let data = { ...det, date: yDate, niceDate: nice, generatedAt: Date.now(), by: 'rules',
+    ledgerDays: (roll || []).filter(Boolean).length,
+    ledgerNote: rollNote || undefined };
   if (pack && env.ANTHROPIC_KEY) {
     pack.date = yDate;
     pack.niceDate = nice;
