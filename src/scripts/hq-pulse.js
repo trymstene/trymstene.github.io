@@ -248,7 +248,10 @@ function googleBlock(el, an, live) {
 export function renderLedger(el, data) {
   const roll = data.roll || {};
   const world = data.world || {};
-  const days = (roll.days || []).filter((d) => d && d.passes != null);
+  // ⚠️ `done` matters as much as `passes`: a row still being written is a
+  // PARTIAL scan of the pass store, not a quiet day. Charting one drags
+  // every line down until the night finishes.
+  const days = (roll.days || []).filter((d) => d && d.passes != null && d.done);
   const now = days.length ? days[days.length - 1] : (roll.today || null);
   el.textContent = '';
 

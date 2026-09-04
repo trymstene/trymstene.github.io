@@ -177,7 +177,11 @@ function narrate(pack) {
       + 'Nothing broke; there is simply nothing here to conclude.');
   } else {
     verdict = 'quiet';
-    headline = 'A normal day. Nothing needs you.';
+    // ⚠️ "nothing needs you" is the wrong sentence when something IS running —
+    // supporters growing three days straight is not nothing, it is just not
+    // new. Say that instead of contradicting the clause two lines below.
+    headline = still.length ? 'Nothing new today, but yesterday is still true.'
+      : 'A normal day. Nothing needs you.';
     body.push('Yesterday looked like the week around it — ' + S + ' sessions against a usual '
       + pack.baselineSessions + ', engagement at ' + f('engagement').value + '%. I went '
       + 'looking for something outside the normal range and did not find it.');

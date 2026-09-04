@@ -558,6 +558,14 @@ const WORLD_DOORS = [
 // numbers here that GA4 structurally cannot see
 const WORLD_STATS = 'https://banana-rave.trymstene.workers.dev/yards/stats';
 
+// 📜 THE LEDGER. worker-pass writes one rollup row a night: how many people
+// hold a pass, how many claimed a name, how many can get back in after a lost
+// phone, and how many are PAYING. GA4 sees none of that — it is behind the
+// consent banner, the adblocker and the sampling, and coins never reach Google
+// at all. The analyst was blind to the only numbers the business plan turns on.
+// ⚠️ adminRollup clamps days to 60. Needs `wrangler secret put PASS_ADMIN_KEY`.
+const PASS_ROLLUP = 'https://banana-pass.trymstene.workers.dev/admin/rollup';
+
 async function gscRange(env, from, to) {
   const tok = await gaToken(env);
   const r = await fetch('https://searchconsole.googleapis.com/webmasters/v3/sites/'
@@ -658,6 +666,27 @@ async function apiAnalyst(env) {
     if (w.ok) world = await w.json();
   } catch (e) { /* the farm is a bonus, not a dependency */ }
 
+  // the ledger, aligned to the SAME eight days as `days`, index for index.
+  // ⚠️ THIS ALIGNMENT IS LOAD-BEARING. buildFacts slices d.days by `upTo` to
+  // work out how many mornings running a fact has been true; a series that does
+  // not slice in lockstep reads identically on every replay, lands on
+  // daysRunning 4, and is then permanently barred from ever leading a report.
+  // ⚠️ a part-way row (done: 0) is a partial scan, not a small day — dropped.
+  let roll = null;
+  try {
+    if (env.PASS_ADMIN_KEY) {
+      const rr = await fetch(PASS_ROLLUP + '?days=60&key=' + encodeURIComponent(env.PASS_ADMIN_KEY));
+      if (rr.ok) {
+        const rj = await rr.json();
+        const byDay = {};
+        for (const row of (rj.days || [])) {
+          if (row && row.done) byDay[String(row.day).replace(/-/g, '')] = row;
+        }
+        roll = order.map((dd) => byDay[dd] || null);
+      }
+    }
+  } catch (e) { /* the ledger is a bonus, not a dependency */ }
+
   let gsc = null; let gscBase = null;
   try {
     const [a, b] = await Promise.all([
@@ -669,7 +698,7 @@ async function apiAnalyst(env) {
   } catch (e) { /* GSC lags a day or two — the analyst just skips search */ }
 
   const out = analyse({ days, events, eventUsers, campaigns, sources, gsc, gscBase,
-    world, areas: WORLD_DOORS });
+    world, roll, areas: WORLD_DOORS });
   const nice = new Date(yDate + 'T12:00:00').toLocaleDateString('en-GB',
     { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
 

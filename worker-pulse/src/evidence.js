@@ -80,7 +80,9 @@ function sigOf(z, n, absDelta) {
 
 // the facts the report is built around, whether or not they are interesting
 const CORE = new Set(['sessions', 'engagement', 'level', 'blackout', 'money',
-  'downloads', 'offer', 'newcomers', 'search', 'campaign']);
+  'downloads', 'offer', 'newcomers', 'search', 'campaign',
+  // the ledger's headline numbers are context on every shape, not only when loud
+  'supporters', 'passes', 'dau']);
 
 const fact = (o) => ({
   id: o.id, area: o.area, label: o.label,
@@ -383,6 +385,127 @@ export function buildFacts(d, upTo) {
         + Math.round(d.gscBase.impressions) + ' at ' + r1(d.gscBase.position) + '.',
       because: 'position moved ' + Math.abs(dp),
     }));
+  }
+
+  // ── 📜 THE LEDGER: the people the server knows about ────────────────────
+  // ⚠️ SLICED BY `cut`, exactly like d.days. See the note in index.js — a
+  // series that does not slice in lockstep is identical on every replay, so
+  // every fact off it lands on daysRunning 4 and can never lead a report.
+  //
+  // ⚠️ LEVELS vs FOLDS. passes/named/member/dau/wau/ret are same-day predicate
+  // counts — LEVELS, so a difference is a net change. coins.earned/spent and
+  // rep are lifetime sums across every pass — FOLDS, so only their difference
+  // says anything about yesterday.
+  const rollArr = (d.roll || []).slice(0, cut);
+  const R = rollArr[rollArr.length - 1] || null;
+  const rollPrev = [...rollArr.slice(0, -1)].reverse().find(Boolean) || null;
+  const rollHist = (k) => rollArr.slice(0, -1).filter(Boolean).map(k);
+  if (R) {
+    // 💚 THE ONE NUMBER THE BUSINESS PLAN TURNS ON. At this scale a single
+    // supporter arriving or leaving is the news of the day, so it does not
+    // wait on a z-score to be allowed to say so.
+    const dMem = rollPrev ? R.member - rollPrev.member : 0;
+    push(fact({
+      id: 'supporters', area: 'money', label: 'paying supporters',
+      value: R.member, base: rollPrev ? rollPrev.member : null,
+      deltaPct: null, n: R.member, z: 0,
+      sig: dMem !== 0 ? 3 : 0,
+      say: dMem === 0
+        ? R.member + ' paying supporters, unchanged.'
+        : (dMem > 0 ? 'A supporter arrived' + (dMem > 1 ? ' — ' + dMem + ' of them' : '')
+          : 'A supporter left' + (dMem < -1 ? ' — ' + Math.abs(dMem) + ' of them' : ''))
+          + '. ' + R.member + ' now, against ' + rollPrev.member + ' the day before.',
+      because: R.member + ' supporters, ' + (dMem >= 0 ? '+' : '') + dMem + ' on the day',
+    }));
+
+    // who turned up, counted by the server rather than by Google — no consent
+    // banner, no adblocker, no sampling
+    const dauBase = median(rollHist((x) => x.dau));
+    const zDau = robustZ(R.dau, rollHist((x) => x.dau));
+    push(fact({
+      id: 'dau', area: 'quality', label: 'people the server saw',
+      value: R.dau, base: dauBase, deltaPct: pct(R.dau, dauBase), n: R.dau, z: zDau,
+      sig: sigOf(zDau, R.dau, Math.abs(R.dau - dauBase)),
+      say: R.dau + ' people did something the server recorded, against a usual '
+        + Math.round(dauBase) + '. ' + R.wau + ' over the week, ' + R.mau
+        + ' over the month. Counted behind the consent banner, so it does not '
+        + 'move when tracking is blocked.',
+      because: R.dau + ' server-side actives',
+    }));
+
+    // the conversion the site exists to make: took a file → holds a pass →
+    // claimed a name → can get back in after a lost phone
+    push(fact({
+      id: 'passes', area: 'funnel', label: 'people with a pass',
+      value: R.passes, base: rollPrev ? rollPrev.passes : null,
+      deltaPct: null, n: R.passes, z: 0,
+      sig: R.born1 >= 5 ? 1 : 0,
+      say: R.passes + ' people hold a pass. ' + R.born1 + ' started yesterday, '
+        + R.born7 + ' this week. ' + R.named + ' have claimed a name and '
+        + R.mailCreds + ' can get back in after a lost phone.',
+      because: R.born1 + ' new passes yesterday',
+    }));
+
+    // ⚠️ NOT cohort retention. worker-pass computes a ROLLING STOCK RATIO over
+    // everyone old enough to qualify, so "next-day retention is sliding" is a
+    // sentence this number cannot support. It answers: of the people who COULD
+    // have come back, what share did.
+    if (R.ret && R.ret.c7 >= 20) {
+      const r7 = Math.round(rate(R.ret.r7, R.ret.c7) * 100);
+      const b7 = rollHist((x) => (x.ret && x.ret.c7 ? rate(x.ret.r7, x.ret.c7) * 100 : null))
+        .filter((x) => x != null);
+      const z7 = b7.length >= 3 ? robustZ(r7, b7) : 0;
+      push(fact({
+        id: 'return', area: 'quality', label: 'share who came back',
+        value: r7, unit: '%', base: b7.length ? Math.round(median(b7)) : null,
+        deltaPct: null, n: R.ret.c7, z: z7,
+        sig: sigOf(z7, R.ret.c7, Math.abs(r7 - (b7.length ? median(b7) : r7))),
+        say: r7 + '% of the ' + R.ret.c7 + ' people old enough to count came back '
+          + 'within a week'
+          + (b7.length ? ', against a usual ' + Math.round(median(b7)) + '%' : '')
+          + '. A rolling share of everyone, not a cohort followed forward.',
+        because: R.ret.r7 + ' of ' + R.ret.c7 + ' came back',
+      }));
+    }
+
+    // the economy, as a DIFFERENCE — these are lifetime sums
+    if (rollPrev && rollPrev.coins && R.coins) {
+      const earned = R.coins.earned - rollPrev.coins.earned;
+      const spent = R.coins.spent - rollPrev.coins.spent;
+      const hist = [];
+      for (let i = 1; i < rollArr.length - 1; i++) {
+        if (rollArr[i] && rollArr[i - 1] && rollArr[i].coins && rollArr[i - 1].coins) {
+          hist.push(rollArr[i].coins.earned - rollArr[i - 1].coins.earned);
+        }
+      }
+      const cBase = hist.length ? median(hist) : earned;
+      const zC = hist.length >= 3 ? robustZ(earned, hist) : 0;
+      push(fact({
+        id: 'coins', area: 'world', label: 'coins earned',
+        value: earned, base: hist.length ? cBase : null,
+        deltaPct: hist.length ? pct(earned, cBase) : null, n: earned, z: zC,
+        sig: sigOf(zC, earned, Math.abs(earned - cBase)),
+        say: earned + ' coins were earned yesterday and ' + spent + ' spent, with '
+          + R.coins.held + ' held across every pass.',
+        because: earned + ' earned, ' + spent + ' spent',
+      }));
+    }
+
+    // ⚠️ AN INTEGRITY ALARM, NOT A METRIC. Drift is the ledger disagreeing with
+    // itself; unruled is a faucet paying out with no rule capping it. Either
+    // means a number somewhere on this desk is wrong.
+    if (R.drift || R.unruled) {
+      push(fact({
+        id: 'ledger:integrity', area: 'money', label: 'the ledger disagreeing with itself',
+        value: R.drift + R.unruled, base: 0, deltaPct: null,
+        n: R.drift + R.unruled, z: 0, sig: 2,
+        say: (R.drift ? R.drift + ' passes whose totals do not match their own tape' : '')
+          + (R.drift && R.unruled ? ', and ' : '')
+          + (R.unruled ? R.unruled + ' events from a faucet with no rule capping it' : '')
+          + '. Both mean a number on this desk is wrong until it is chased down.',
+        because: R.drift + ' drifted, ' + R.unruled + ' unruled',
+      }));
+    }
   }
 
   // ── the world's own state, which GA4 cannot see ─────────────────────────
