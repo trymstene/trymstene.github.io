@@ -327,6 +327,18 @@ async function init() {
   await refresh(landing);
 }
 
+// 🎫 the busy strip on the card. `what` is the honest verb for the step we are
+// actually on — spending the link and pulling the account are different waits,
+// and a player who sees the words change knows the page has not stalled.
+function signing(what) {
+  const box = el('psSigning');
+  if (!box) return;
+  if (!what) { box.hidden = true; return; }
+  const t = el('psSigningTxt');
+  if (t) t.textContent = what;
+  box.hidden = false;
+}
+
 // — the network pass: spend a magic link, pull the account, repaint what moved —
 async function refresh(landing) {
   // 📯 verdicts on your gallery/catalog submissions — no account needed, never blocking
@@ -336,6 +348,7 @@ async function refresh(landing) {
   if (!landing && !linked()) return;   // nothing to reach — the local page IS the page
   let cold = false;
   if (landing) {
+    signing(landing.kind === 'news' ? 'Confirming…' : 'Signing you in…');
     try {
       await withTimeout(runLanding(landing), LANDING_MS);
     } catch (e) {
@@ -347,6 +360,10 @@ async function refresh(landing) {
     }
   }
   if (linked()) {
+    // ⚠️ the SECOND wait, and the longer one — the pass blob has to come down
+    // before any of their things can appear. Naming it separately is what
+    // stops the strip looking stuck on one word for seven seconds.
+    signing('Loading your pass…');
     const ok = await withTimeout(pullLatest(), PULL_MS).catch(() => false);
     if (!ok) cold = true;
   }
@@ -356,6 +373,7 @@ async function refresh(landing) {
     paint();    // the pull rewrites bb-last, the stats and the shelf
     initSync(); // a magic-link login flips the keep row from "log in" to "saved"
   } catch (e) { cold = true; }
+  signing(null);          // whatever happened, stop saying we are still working
   netNote(cold);
 }
 

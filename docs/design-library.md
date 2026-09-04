@@ -102,6 +102,28 @@ And never concatenate several values into one cell. `1.8k · 1.7k · 92 · 1.4k 
 5.4%` under a header reading `took · saw · coffee · no-thx · willing` asks the
 reader to pair them by counting separators. Give every number its own column.
 
+### 3d. A wait is told where the reader is looking
+
+Trym, 4 Sep 2026, after clicking a magic link on his phone: *"i was still
+there as a fresh banana for 5-6-7 seconds until suddenly my stuff loaded up…
+6-7 seconds is enough for me to think and act on 'hmm ill try to click the
+link in the email again'."*
+
+The page **did** say `Signing you in…` — on a status row ninety lines below
+the card, off the fold on a phone. A message the reader cannot see is not a
+message, and the cost is not confusion: they take a **destructive action**
+(re-spending a single-use link) because nothing looked like it was working.
+
+- put the busy state **on the thing that will change**, not on a status row
+- **name the step, and change the words when the step changes** — one word
+  held for seven seconds reads as stalled; `Signing you in…` then
+  `Loading your pass…` reads as progress
+- clear it on **every** exit, including the failures
+- a moving bar with `prefers-reduced-motion` gets a still one, not none
+
+Anything that can exceed roughly a second gets this: a login, a pull, a
+checkout hand-off, a render.
+
 ## 4. `[hidden]` loses
 
 **Any author `display:` beats the `hidden` attribute.** A flex row, a grid, an

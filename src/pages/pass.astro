@@ -69,6 +69,30 @@ const NUMBERS = [
       position: relative; cursor: pointer; overflow: hidden;   /* the sunburst stays inside the frame */
       background: var(--banana); border: var(--line); box-shadow: var(--shadow-sm);
     }
+    /* the busy strip sits directly under the card's black header, full width,
+       and pushes nothing around when it appears (the card is position:relative
+       and clips, so an absolute bar cannot shift the layout under the reader) */
+    .ps-signing {
+      position: absolute; left: 0; right: 0; top: 0; z-index: 3;
+      display: flex; align-items: center; gap: 0.5rem;
+      background: var(--ink); color: var(--banana);
+      padding: 0.42rem 0.7rem; font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 0.09em; text-transform: uppercase;
+    }
+    .ps-signing__bar {
+      flex: 0 0 auto; width: 46px; height: 6px; border-radius: 999px;
+      background: rgba(255, 225, 53, 0.25); overflow: hidden; position: relative;
+    }
+    .ps-signing__bar::after {
+      content: ''; position: absolute; inset: 0 auto 0 0; width: 45%;
+      border-radius: 999px; background: var(--banana);
+      animation: ps-sweep 1.1s ease-in-out infinite;
+    }
+    @keyframes ps-sweep { 0% { left: -45%; } 100% { left: 100%; } }
+    /* ⚠️ a moving bar with nothing to say is worse than a still one */
+    @media (prefers-reduced-motion: reduce) {
+      .ps-signing__bar::after { animation: none; left: 0; width: 100%; opacity: 0.6; }
+    }
     .ps-card__head {
       position: relative; z-index: 1;   /* the sunburst is positioned, so the strip must out-rank it */
       display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
@@ -471,6 +495,18 @@ const NUMBERS = [
         <div class="ps-card__head">
           <span>★ Banana World · Membership Pass</span>
           <span class="ps-card__hole" aria-hidden="true"></span>
+        </div>
+        <!-- 🎫 SIGNING IN. Spending a magic link takes seconds, and the page
+             renders the LOCAL pass while it happens — so a returning player
+             watched a stranger's blank banana and reasonably assumed the link
+             had failed (Trym, 4 Sep: "6-7 seconds is enough for me to think
+             and act on 'hmm ill try to click the link in the email again'").
+             The one signal we had said "Signing you in…" on the keep row,
+             ninety lines further down the page and off the fold on a phone.
+             This sits ON the card, which is where they are looking. -->
+        <div class="ps-signing" id="psSigning" hidden>
+          <span class="ps-signing__bar" aria-hidden="true"></span>
+          <span class="ps-signing__txt" id="psSigningTxt">Signing you in…</span>
         </div>
         <div class="ps-card__body">
           <div class="ps-card__sig">
