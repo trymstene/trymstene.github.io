@@ -2063,6 +2063,8 @@ const description = 'Authorized banana personnel only.';
     // beat, wearing the submitted item. The turned frames matter most: that's
     // where the auto-mirror flips the art and placement sins show up.
     const liveCards = new Set();
+    // the live catalog by id, so a pending edit can draw what it is changing
+    const CAT_BY_ID = {};
     setInterval(() => {
       if (document.hidden || !liveCards.size) return;
       const cyc = BASE_CYCLE_S * 1000;
@@ -2072,40 +2074,37 @@ const description = 'Authorized banana personnel only.';
         if (f !== c.lastF) { c.lastF = f; c.draw(f); }
       });
     }, 120);
-    function itemCard(it, { live } = {}) {
-      const card = document.createElement('article');
-      card.className = 'bm-mail';
-      const body = document.createElement('div');
-      body.style.cssText = 'display:flex;gap:0.9rem;padding:0.8rem;flex-wrap:wrap;align-items:center;';
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = 220;
-      cv.style.cssText = 'width:150px;height:150px;image-rendering:pixelated;flex:none;background:#f4f1e8;border:3px solid var(--ink);';
-      const custom = wearToCustom(it.wear);
-      // 🏡 a DECOR submission isn't worn — show the piece itself
-      const isDecor = it.wear && it.wear.anchor === 'decor';
+    // 🖼 ONE PREVIEW BUILDER, because there are now two of them on a card: an
+    // edit shows what the item is NOW beside what is being proposed. Written as
+    // a function rather than copied so the decor ribbon, the async svg decode
+    // and the beat ticker only exist once.
+    // Returns { node, isDecor }; `px` is the on-screen edge in CSS pixels.
+    function itemArt(wear, px) {
+      const custom = wearToCustom(wear);
+      const isDecor = wear && wear.anchor === 'decor';
       if (isDecor) {
         // 🏡 DECOR reads differently at a glance (Trym: separate from
         // wearables in the queue): green frame + a corner ribbon + where/tiles
-        card.style.borderLeft = '6px solid #2e7d32';
-        cv.style.display = 'none';
         const box = document.createElement('div');
-        box.style.cssText = 'position:relative;width:150px;height:150px;flex:none;display:grid;place-items:center;background:#e8f0e2;border:3px solid #2e7d32;';
+        box.style.cssText = 'position:relative;width:' + px + 'px;height:' + px + 'px;flex:none;display:grid;place-items:center;background:#e8f0e2;border:3px solid #2e7d32;';
         box.innerHTML = (custom && custom.art) || '—';
         const sv = box.querySelector('svg');
-        if (sv) { sv.style.width = '120px'; sv.style.height = '120px'; }
+        if (sv) { sv.style.width = Math.round(px * 0.8) + 'px'; sv.style.height = Math.round(px * 0.8) + 'px'; }
         const rib = document.createElement('span');
         rib.textContent = '🏡 DECOR';
         rib.style.cssText = 'position:absolute;top:-12px;left:-8px;background:#2e7d32;color:#fff;font-size:0.6rem;font-weight:800;letter-spacing:0.08em;padding:2px 8px;transform:rotate(-4deg);';
         box.appendChild(rib);
-        body.appendChild(box);
+        return { node: box, isDecor: true };
       }
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 220;
+      cv.style.cssText = 'width:' + px + 'px;height:' + px + 'px;image-rendering:pixelated;flex:none;background:#f4f1e8;border:3px solid var(--ink);';
       const outfit = {
         hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '',
-        bg: 'transparent', captions: false, effect: 'none',
-        custom: (!isDecor && custom) || undefined,
+        bg: 'transparent', captions: false, effect: 'none', custom: custom || undefined,
       };
       const draw = (f) => drawComposite(cv.getContext('2d'), 220, f, outfit);
-      if (!isDecor) assetsReady().then(() => {
+      assetsReady().then(() => {
         // the item svg decodes async — early redraws so the card never shows
         // a bare banana; then the beat ticker keeps it dancing
         draw(2);
@@ -2113,6 +2112,46 @@ const description = 'Authorized banana personnel only.';
         setTimeout(() => draw(2), 1600);
         liveCards.add({ cv, draw, lastF: -1 });
       });
+      return { node: cv, isDecor: false };
+    }
+    // a labelled preview, for the side-by-side
+    function itemArtCol(wear, px, label, dim) {
+      const col = document.createElement('div');
+      col.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem;align-items:center;flex:none;';
+      const a = itemArt(wear, px);
+      if (dim) a.node.style.opacity = '0.55';
+      const cap = document.createElement('span');
+      cap.textContent = label;
+      cap.style.cssText = 'font-size:0.6rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--hdim);';
+      col.appendChild(a.node); col.appendChild(cap);
+      return col;
+    }
+
+    function itemCard(it, { live } = {}) {
+      const card = document.createElement('article');
+      card.className = 'bm-mail';
+      const body = document.createElement('div');
+      body.style.cssText = 'display:flex;gap:0.9rem;padding:0.8rem;flex-wrap:wrap;align-items:center;';
+      // ✏️ AN EDIT IS NOT A NEW ITEM AND MUST NOT LOOK LIKE ONE. `target` means
+      // the maker is changing something already live — approving it REPLACES
+      // the art everywhere, so the one thing this card owes Trym is what it
+      // looks like now, next to what it would become.
+      const wasLive = (!live && it.target && CAT_BY_ID[it.target]) || null;
+      const art = itemArt(it.wear, 150);
+      const isDecor = art.isDecor;
+      const cv = art.node;
+      if (isDecor) card.style.borderLeft = '6px solid #2e7d32';
+      if (wasLive) {
+        card.style.borderLeft = '6px solid var(--nana, #ffd83d)';
+        body.appendChild(itemArtCol(wasLive.wear, 110, 'now', true));
+        const arrow = document.createElement('span');
+        arrow.textContent = '→';
+        arrow.style.cssText = 'font-size:1.4rem;font-weight:800;color:var(--hdim);flex:none;';
+        body.appendChild(arrow);
+        body.appendChild(itemArtCol(it.wear, 150, 'proposed', false));
+      } else {
+        body.appendChild(cv);
+      }
       const meta = document.createElement('div');
       meta.style.cssText = 'flex:1;min-width:220px;display:flex;flex-direction:column;gap:0.4rem;';
       const titleIn = document.createElement('input');
@@ -2139,6 +2178,17 @@ const description = 'Authorized banana personnel only.';
       const gone = !!(live && it.retired);
       info.textContent = (live ? (gone ? 'off sale · added ' : 'live since ') : spotTxt + ' · sent ')
         + new Date(it.added || it.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      if (wasLive) {
+        // concrete, not clever: say what approving DOES, because it is not the
+        // same act as approving a new item
+        info.textContent = 'a change to “' + (wasLive.title || wasLive.id) + '” by its maker · '
+          + 'approving replaces the art everywhere · sent '
+          + new Date(it.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      } else if (!live && it.target) {
+        // the target vanished (removed while the edit waited) — say so plainly
+        info.textContent = '⚠ a change to an item that is no longer in the catalog · sent '
+          + new Date(it.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      }
       // dimmed, not boxed: this list already has edges and a retired item is a
       // quieter version of the same thing, not a different kind of thing
       if (gone) cv.style.opacity = '0.4';
@@ -2196,17 +2246,20 @@ const description = 'Authorized banana personnel only.';
         const ok = document.createElement('button');
         ok.className = 'bm-btn';
         ok.type = 'button';
-        ok.textContent = '✓ into the catalog';
+        // ✏️ an edit is a different ACT and the buttons have to say so — yes
+        // does not add anything to the catalog, and no does not turn anyone
+        // away, it leaves the item exactly as it already is
+        ok.textContent = wasLive ? '✓ replace it' : '✓ into the catalog';
         ok.onclick = () => mod({ id: it.id, action: 'ok', title: titleIn.value.trim(), by: byIn.value.trim() }, ok);
         const no = document.createElement('button');
         no.className = 'bm-btn bm-btn--shred';
         no.type = 'button';
-        no.textContent = '✕ not this one';
+        no.textContent = wasLive ? '✕ keep the one that is live' : '✕ not this one';
         no.onclick = () => mod({ id: it.id, action: 'no' }, no);
         row.appendChild(ok); row.appendChild(no);
       }
       meta.appendChild(titleIn); meta.appendChild(byIn); meta.appendChild(info); meta.appendChild(row);
-      body.appendChild(cv); body.appendChild(meta);
+      body.appendChild(meta);
       card.appendChild(body);
       return card;
     }
@@ -2223,18 +2276,29 @@ const description = 'Authorized banana personnel only.';
         return;
       }
       el('bmItemsList').innerHTML = '<p class="bm-livenote">Opening the workshop…</p>';
+      // ⚠️ THE CATALOG IS READ FIRST NOW. A pending EDIT card has to draw the
+      // item as it stands today beside the proposed one, and it cannot do that
+      // if the live rows arrive after the queue has already rendered.
+      let cat = [];
+      try {
+        const r2 = await fetch(CAT_API + '/catalog/items.json', { cache: 'reload' });
+        cat = await r2.json();
+        if (!Array.isArray(cat)) cat = [];
+      } catch (e) { cat = []; }
+      Object.keys(CAT_BY_ID).forEach((k) => delete CAT_BY_ID[k]);
+      cat.forEach((x) => { CAT_BY_ID[x.id] = x; });
       try {
         const r = await fetch(CAT_API + '/catalog/inbox?key=' + encodeURIComponent(gkey));
         if (!r.ok) throw new Error(r.status);
         const items = await r.json();
         el('bmItemsList').textContent = '';
         if (!items.length) el('bmItemsList').innerHTML = '<p class="bm-livenote">🏝 No items waiting. The workshops are quiet.</p>';
-        items.forEach((it) => el('bmItemsList').appendChild(itemCard(it)));
+        // changes to living items first — they are the ones with consequences
+        items.slice().sort((x, y) => (y.target ? 1 : 0) - (x.target ? 1 : 0))
+          .forEach((it) => el('bmItemsList').appendChild(itemCard(it)));
         itemsCount();
       } catch (e) { el('bmItemsList').innerHTML = '<p class="bm-livenote">Couldn’t open the inbox — try refresh.</p>'; }
       try {
-        const r2 = await fetch(CAT_API + '/catalog/items.json', { cache: 'reload' });
-        const cat = await r2.json();
         el('bmCatList').textContent = '';
         if (!cat.length) el('bmCatList').innerHTML = '<p class="bm-livenote">Nothing in the catalog yet — approve something above, or submit from the Forge.</p>';
         // on sale first, off sale after -- otherwise a retired row hides in the
