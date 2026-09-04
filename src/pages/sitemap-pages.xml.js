@@ -42,7 +42,7 @@ const PAGES = [
   // src/data/guides.js and nothing else, which is the whole point of having it.
   ...GUIDES.map((g) => ({ path: '/guides/' + g.slug + '/', images: [] })),
   { path: '/banana-of-the-day/', images: [] },
-  { path: '/supporters/', images: [] },
+  { path: '/support/', images: [] },
   {
     path: '/dancing-banana-wallpaper/',
     images: [

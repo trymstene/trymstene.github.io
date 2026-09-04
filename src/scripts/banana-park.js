@@ -244,7 +244,7 @@ function init() {
   }
   // 💛 the supporters board's header plank — the same DOM-plank trick as the
   // waypost signs, wide enough to span the board and sitting ON its top rail
-  // (the names are NOT on the board; they live in its card and /supporters/)
+  // (the names are NOT on the board; they live in its card and /support/)
   if (SUP_BOARD) {
     const sup = document.createElement('div');
     sup.className = 'pk-way pk-way--sup';
@@ -352,11 +352,11 @@ function init() {
     // wall they are on.
     out += isMem
       ? '<p class="pk-supmine">You are up there 💛 <a href="/pass/">your membership →</a></p>'
-      : '<a class="pk-cta" href="/supporters/"><span class="pk-cta__verb">get on the board →</span></a>';
+      : '<a class="pk-cta" href="/support/"><span class="pk-cta__verb">get on the board →</span></a>';
     // the count IS the reason to tap — two lines saying nearly the same thing
     // cost a line the card does not have, and the number is the better half
     const hidden = all.length - Math.min(all.length, SUP_SHOW);
-    out += '<p class="pk-supsee"><a href="/supporters/">'
+    out += '<p class="pk-supsee"><a href="/support/">'
       + (hidden ? hidden + ' more on the board — see them all →' : 'See the whole board →')
       + '</a></p>';
     supBody.innerHTML = out;

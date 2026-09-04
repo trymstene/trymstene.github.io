@@ -310,7 +310,7 @@ const WORLD_HREF = '/homestead/';
 // support instead of pitching the world/Discord — an honest ask at the one
 // moment a stranger has just received something. ONE message, deliberately:
 // a clean read on willingness-to-pay beats a rotation. The $5 matches the
-// $5 matches the middle preset on /supporters/, which is where this now goes.
+// $5 matches the middle preset on /support/, which is where this now goes.
 // The old world/discord rotation lives in git (WORLD_VARIANTS, this commit's
 // parent) — this is a TEST, not a demolition.
 const WORLD_VARIANTS = [

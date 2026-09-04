@@ -15,6 +15,10 @@ export default defineConfig({
   // so the middle step is gone. Keep old links/bookmarks alive → the builder.
   redirects: {
     '/make/': '/make-a-banana/',
+    // 🎩 /supporters/ became /support/ on 4 Sep: one word, a verb, and short
+    // enough to paste into an email when somebody asks how to help. The old
+    // slug has been on the park board and in My Pass for weeks, so it stays.
+    '/supporters/': '/support/',
     // 🛒 THE WIX STORE'S URLS. /product-page/<slug> was Wix's format and the
     // slugs outlived the migration — bots still probe them daily and a stale
     // bookmark would land on a 404. `?gone=1` tells main.js not to count the

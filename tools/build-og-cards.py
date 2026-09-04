@@ -112,6 +112,10 @@ CARDS = {
                      glasses='shades'),
     'park':     dict(chip='A FREE COZY GARDEN GAME', title=['Welcome to', 'The Park'], pose=2,
                      hat='sombrero'),   # the widest sun hat in the manifest = the gardener read
+    # 🎩 the card for the link Trym pastes into an email when somebody asks how
+    # to support him — so it wears the gold hat that supporting actually buys
+    'support':  dict(chip='KEEP BANANA WORLD FREE', title=['Support the', 'Dancing Banana'], pose=2,
+                     hat='tophatgold'),
 }
 
 BG, INK, PINK, PAPER = (255, 221, 40), (17, 17, 17), (255, 84, 112), (255, 253, 245)

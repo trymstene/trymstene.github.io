@@ -33,7 +33,7 @@ export const RAILS = {
 export const PAY = RAILS[RAIL] || RAILS.polar;
 // ☕ THE ONE-OFF TIP, EVERYWHERE. Every "buy me a coffee" on the site points
 // here: the download cards, the footer, the localised pages, the gif-meme page
-// and /supporters/. ⚠️ They used to point at buymeacoffee.com — a platform
+// and /support/. ⚠️ They used to point at buymeacoffee.com — a platform
 // abandoned back in August whose money delivered no hat, landed on no wall, and
 // reconciled with nothing. Never hardcode a payment URL in a page again.
 export const TIP_URL = 'https://banana-pass.trymstene.workers.dev/pay/tip';
