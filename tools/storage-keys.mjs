@@ -33,6 +33,10 @@ export const KEYS = {
   'hs-v1': { travels: 'yard', why: 'the homestead: the yard, pen, family tree, pantry, produce and shed all publish; what stays is sync bookkeeping (pubUpdated, pubMarks, dirty)' },
   'hs-v1-prev': { travels: 'no', why: 'a one-time stash of the local yard from before a published one was adopted' },
   'hs-pull': { travels: 'no', why: 'a session guard against re-adopting the same pull twice' },
+  'hs-pullbudget': { travels: 'no', why: 'how many times the yard has adopted-and-reloaded in the '
+    + 'last 30s. The session guard above lives behind swallowed catches, so a browser that refuses '
+    + 'sessionStorage loses it silently and the page reloads forever; this one is in localStorage, '
+    + 'which we know works because the yard is in it' },
 
   // ---- identity and the server's own answers, cached ----
   'pass-link': { travels: 'no', why: 'THIS device\'s credential. It must not travel; the pass it names is what does' },

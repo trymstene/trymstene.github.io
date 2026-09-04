@@ -466,6 +466,22 @@ function init(visitDoc, visitMiss) {
       merged.dirty = 1;
       try { localStorage.setItem(HS_KEY, JSON.stringify(merged)); } catch (e) { return; }
       track1('homestead_pull', { how: 'resync' });
+      // ⚠️ this path had NO guard at all: it sets dirty = 1, so the reload
+      // pushes again, and a push that 409s again comes straight back here.
+      // It shares the pull's budget — three reloads in half a minute is a loop
+      // whichever door it came through.
+      let rs = 0;
+      try {
+        const b = JSON.parse(localStorage.getItem('hs-pullbudget') || 'null');
+        rs = (b && Date.now() - b.t < 30000) ? (b.n || 0) : 0;
+      } catch (e) {}
+      if (rs >= 2) {
+        try { localStorage.removeItem('hs-pullbudget'); } catch (e) {}
+        toast('⚠️ your homestead is out of step with the server — showing this device\'s copy', 6000);
+        console.warn('[homestead] resync loop stopped', { slug: state.slug, updated: r.updated });
+        return;
+      }
+      try { localStorage.setItem('hs-pullbudget', JSON.stringify({ t: Date.now(), n: rs + 1 })); } catch (e) {}
       toast('⬇️ fetching your homestead…', 2400);
       setTimeout(() => location.reload(), 700);
     }).catch(() => {});
@@ -4554,8 +4570,43 @@ function init(visitDoc, visitMiss) {
     }
     next.pubUpdated = r.updated || Date.now();
     next.dirty = 0;
+    // ⚠️ THE STAMP GUARD IS NOT ENOUGH, and it never was. It lives in
+    // sessionStorage behind three swallowed catches, so a browser that refuses
+    // session storage loses the guard SILENTLY — and even with it working, a
+    // stamp that changes every boot (a device whose identity flips between an
+    // anonymous pass and a linked one gets a different yard from /mine each
+    // time) is a new stamp every time and never matches. Either way the page
+    // adopts, reloads, adopts, reloads, and the homestead is unusable.
+    //
+    // So the reload gets a BUDGET, kept in localStorage — the store we know
+    // works, because the yard itself lives there. Two adoptions in half a
+    // minute is already wrong; a third is a loop, and we stop and say so
+    // rather than bouncing the player forever.
     const stamp = r.slug + ':' + (r.updated || 0);
-    try { if (sessionStorage.getItem('hs-pull') === stamp) return; } catch (e) {}
+    // ⚠️ this read is ALSO the probe. If sessionStorage throws here, the guard
+    // below is dead and that is the whole bug — no need for a second key to
+    // find it out (and the storage gate is right to refuse one).
+    let guardOk = true;
+    try { if (sessionStorage.getItem('hs-pull') === stamp) return; } catch (e) { guardOk = false; }
+    let spins = 0;
+    try {
+      const b = JSON.parse(localStorage.getItem('hs-pullbudget') || 'null');
+      spins = (b && Date.now() - b.t < 30000) ? (b.n || 0) : 0;
+    } catch (e) {}
+    if (spins >= 2) {
+      // ⚠️ NO RELOAD. Keep whatever is on screen, tell the truth, and leave a
+      // breadcrumb that says which of the two causes it was.
+      try { localStorage.removeItem('hs-pullbudget'); } catch (e) {}
+      track1('homestead_pull', { how: 'loop' });
+      toast('⚠️ could not settle your homestead — showing the copy on this device', 6000);
+      console.warn('[homestead] pull loop stopped after ' + spins + ' adoptions.',
+        { serverSlug: r.slug, mySlug: state.slug, mine, updated: r.updated,
+          claimed: !!state.claimedAt,
+          sessionGuard: guardOk ? 'works — so the stamp is changing every boot'
+            : 'UNAVAILABLE — this browser refuses sessionStorage, and that is the cause' });
+      return;
+    }
+    try { localStorage.setItem('hs-pullbudget', JSON.stringify({ t: Date.now(), n: spins + 1 })); } catch (e) {}
     try { sessionStorage.setItem('hs-pull', stamp); } catch (e) {}
     try { localStorage.setItem(HS_KEY, JSON.stringify(next)); } catch (e) { return; }
     track1('homestead_pull', { how: mine ? 'refresh' : 'adopt' });
