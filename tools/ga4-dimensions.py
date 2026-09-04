@@ -68,6 +68,15 @@ DIMENSIONS = [
      'to ask which part of the world a newcomer picks.'),
     ('action', 'Quick action',
      'Which shortcut was used (quick_action): takehome or homebar.'),
+    # ⚠️ beach_dig is by far the loudest event in the world and NOBODY COULD SAY
+    # WHY. It fires on every shovel tap, including taps on ground already dug,
+    # which pay nothing — `find: spent`. Until this dimension exists there is no
+    # way to tell a player working the sand from a player standing still mashing
+    # the button, and those two need opposite responses.
+    ('find', 'What a dig turned up',
+     'beach_dig: treasure / warm / spent / mappiece / curio / junk / sand. '
+     '"spent" is a wasted tap on ground already dug — the spent:fresh ratio is '
+     'the difference between people playing the hunt and people mashing.'),
 ]
 
 
