@@ -300,6 +300,12 @@
       gtag('event', 'gif_download', { file: href.split('/').pop() });
     } else if (href.indexOf('make-a-banana') > -1) {
       gtag('event', 'generator_click', { placement: place });
+    } else if (/^\/(rave|park|beach|homestead|banana-stand)\/?($|[?#])/.test(href)) {
+      // 🚪 WHICH DOOR INTO THE WORLD ACTUALLY GETS TAKEN. There was no branch
+      // for this at all, so every world link on the site — including the one
+      // in the nav and the builder's single old button — fired nothing, and
+      // "which area do newcomers pick" had never been askable.
+      gtag('event', 'world_door', { area: (href.match(/^\/([a-z-]+)/) || [])[1] || '', from: place });
     } else if (/^\/shop\/?($|[?#])/.test(href)) {
       // 🛍 which door earns the shop its visits. `shop_door` already means
       // "took a door out of the world to /shop/" — the nav is one of them, and

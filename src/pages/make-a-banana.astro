@@ -108,7 +108,24 @@ const appSchema = {
     /* quick actions live IN the page, right under the stage where thumbs already
        are — standard buttons, no page-specific chrome (the sticky bar was a
        one-page anomaly, Trym verdict) */
-    .bb-toprow--go { margin-top: 0.7rem; }
+    /* 🚪 four doors, flat on the page. The column they sit in already has
+     edges, so a card here would be the third box (design library, "boxes").
+     Two up on a phone, four across when there is room. */
+  .bb-doors { margin: 0.7rem 0 0.2rem; }
+  .bb-doors__lead { margin: 0 0 0.45rem; font-size: 0.82rem; font-weight: 700; opacity: 0.72; }
+  .bb-doors__row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  @media (min-width: 900px) { .bb-doors__row { grid-template-columns: repeat(4, 1fr); } }
+  .bb-door { display: flex; flex-direction: column; gap: 1px; min-height: 44px;
+    justify-content: center; padding: 0.45rem 0.55rem; text-decoration: none;
+    color: var(--ink); background: var(--paper); border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink); }
+  .bb-door:hover { background: var(--banana, #ffe135); }
+  .bb-door:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .bb-door:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .bb-door b { font-size: 0.86rem; font-weight: 800; }
+  .bb-door small { font-size: 0.68rem; font-weight: 700; opacity: 0.62; }
+
+  .bb-toprow--go { margin-top: 0.7rem; }
     .bb-row label { display:block; font-weight: 700; margin-bottom: 0.4rem; font-size: 0.95rem; }
     /* group each item CATEGORY on its own faint surface — separates the
        categories and grounds the de-chromed items so they don't float in white */
@@ -521,6 +538,27 @@ const appSchema = {
         </div>
         <div class="bb-toprow bb-toprow--go">
           <button class="btn btn--dark" id="bbQuickSticker" style="flex:1"><PixelIcon name="tag" /> BUY as sticker, mug or tee</button>
+        </div>
+        <!-- 🚪 DOORS INTO THE WORLD. This page takes 1,112 views a month from
+             one Google result — by a long way the busiest thing anyone does
+             here after arriving — and it had exactly ONE way through to the
+             world, a single button pointing at the homestead.
+             ⚠️ THE OUTFIT TRAVELS BY ITSELF: every area reads `bb-last`, so
+             the banana they just dressed walks in wearing it. That is the
+             whole hook, so the copy says it once, above the row, instead of
+             four times inside it. -->
+        <div class="bb-doors">
+          <p class="bb-doors__lead">It can walk around dressed like that.</p>
+          <div class="bb-doors__row">
+            <a class="bb-door" href="/homestead/" data-place="builder-doors">
+              <b>Your homestead</b><small>a plot of your own</small></a>
+            <a class="bb-door" href="/rave/" data-place="builder-doors">
+              <b>The rave</b><small>music and a dancefloor</small></a>
+            <a class="bb-door" href="/park/" data-place="builder-doors">
+              <b>The park</b><small>plant a garden</small></a>
+            <a class="bb-door" href="/beach/" data-place="builder-doors">
+              <b>The beach</b><small>volleyball and digging</small></a>
+          </div>
         </div>
         <div class="bb-actions">
           <button class="btn btn--light" id="bbShare"><PixelIcon name="link" /> Copy share link</button>
