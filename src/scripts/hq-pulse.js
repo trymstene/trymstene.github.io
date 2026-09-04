@@ -273,6 +273,25 @@ export function renderLedger(el, data) {
     div('hqp-cap', 'active people per day', s);
   }
 
+  // ── is it growing ─────────────────────────────────────────────────────────
+  // ⚠️ DAU WAS THE ONLY THING CHARTED, and it is the wrong line for this
+  // question. A world that recruits slowly moves its MONTHLY number; the daily
+  // one is mostly noise at this size — one person's quiet Tuesday is a 20%
+  // drop. Both series below were already in every nightly rollup and simply
+  // were not drawn.
+  if (days.length > 1) {
+    s = section(el, 'Is it growing', 'Two different questions. The total only ever goes up, so its SLOPE is the recruitment rate — flattening means new people stopped arriving. The monthly number can fall, and that is the one that says whether the people already here are still turning up.');
+    lineChart(s, days.map((d) => ({ d: d.day, v: d.passes })), { label: 'people who have ever arrived', color: '#7ee0a8' });
+    div('hqp-cap', 'people who have ever arrived — the slope is the recruitment rate', s);
+    lineChart(s, days.map((d) => ({ d: d.day, v: d.mau })), { label: 'active in the last 30 days', color: '#ffd83d' });
+    div('hqp-cap', 'active in the last 30 days', s);
+    // the honest caveat, once, under the pair rather than on each chart
+    const span = days.length;
+    div('hqp-cap', span < 30
+      ? span + ' days of rollup so far — the monthly line is still filling and reads low until it has 30.'
+      : span + ' days of rollup.', s);
+  }
+
   // ── do they come back ─────────────────────────────────────────────────────
   s = section(el, 'Do they come back', 'Rolling retention: of everyone old enough to qualify, the share who turned up at least that many days after their first day. A rate is withheld under twenty people, because below that it is noise.');
   g = div('hqp-rates', null, s);
