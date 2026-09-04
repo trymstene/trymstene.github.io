@@ -44,6 +44,30 @@ DIMENSIONS = [
     ('ad', 'LED screen ad',
      'Which house ad was tapped on the rave club screen (rave_screen_ad). '
      'ad=sticker is the merch slide that paints the visitor\'s own banana.'),
+    # ⭐ 4 Sep 2026 — "which of the ~90 wearables does nobody ever use, and what
+    # could we delete?" could not be answered AT ALL. The builder has been
+    # sending the whole outfit on every download, share and gallery submit for
+    # months, and GA4 was never told to keep it — so every one of those strings
+    # is in there and ungroupable. Registering does not backfill; the answer
+    # starts accumulating the day this lands.
+    ('design', 'Builder outfit',
+     'hat|glasses|extras|effect|bg at the moment of a download, share or '
+     'gallery submit. The only record of what people actually put ON the '
+     'banana — splits gif_download / png_download / share_link_copy / '
+     'gallery_submit by outfit, which is how a never-worn item gets found.'),
+    ('slot', 'Wardrobe slot',
+     'Which drawer the inventory sheet was opened on (inventory_open): hats, '
+     'glasses, body, feet, extras, effect. Says which slots people browse, as '
+     'opposed to which items they end up wearing.'),
+    ('product', 'Product tile',
+     'Which product was tapped in the builder (product_tile_click): sticker, '
+     'mug, tee. Fourteen taps in ninety days total, so the split matters.'),
+    ('area', 'World door',
+     'Which area a world_door click led to: rave / park / beach / homestead / '
+     'banana-stand. New on 4 Sep with the builder door tiles — the first way '
+     'to ask which part of the world a newcomer picks.'),
+    ('action', 'Quick action',
+     'Which shortcut was used (quick_action): takehome or homebar.'),
 ]
 
 
