@@ -29,6 +29,11 @@ const CAT_CUSTOM = {};
 // a section that never appears. Exactly the trap that killed three desks in
 // Banana HQ the same day: MODULE CONSTS GO ABOVE ANYTHING THAT CAN RUN.
 const SHARE_API = 'https://banana-share.trymstene.workers.dev';
+// ⚠️ paint() RUNS TWICE — once from localStorage, once when the account lands —
+// and renderOut() awaits two fetches in the middle. Both calls cleared the host
+// and then both appended, so every item appeared twice. Clearing at the top is
+// not enough when there is an await after it: only the LATEST call may paint.
+let outRun = 0;
 const outPost = (path, body) => fetch(SHARE_API + path, {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ ...body, wt: worldToken() }),
@@ -568,11 +573,14 @@ async function renderOut() {
   // first in the document. Names on a page this long are a namespace.
   const host = el('psLive'); const block = el('psLiveBlock');
   if (!host || !block) return;
+  const run = ++outRun;
+  const stale = () => run !== outRun;
   // ⚠️ gated on loggedIn(), NOT on the token: a signed-in person whose last
   // pull failed has no fresh token for a moment, and hiding their own work
   // because of a network blip reads as losing it. The server refuses anyway.
   if (!loggedIn() || !worldToken()) { block.hidden = true; return; }
   const mine = await outPost('/catalog/mine', {});
+  if (stale()) return;
   const ids = Array.isArray(mine.items) ? mine.items : [];
   if (!ids.length) { block.hidden = true; return; }
   // ⚠️ catalogReady RESOLVES TO UNDEFINED — it assigns the rows to CATALOG and
@@ -583,12 +591,20 @@ async function renderOut() {
   block.hidden = false;
   // having something out in the world IS having something
   if (!HAVE) { setHave(true); selectTab(); }
-  host.textContent = '';
   await assetsReady();
-  rows.forEach((it) => host.appendChild(outRow(it)));
+  // 🍌 HOW MANY PEOPLE HAVE IT. The whole reason a person makes a second
+  // item is finding out somebody wanted the first. One request for all of them.
+  let got = {};
+  try {
+    got = await fetch(SHARE_API + '/catalog/catches?ids=' + rows.map((x) => x.id).join(','))
+      .then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  } catch (e) {}
+  if (stale()) return;
+  host.textContent = '';   // cleared HERE, after the last await, not before it
+  rows.forEach((it) => host.appendChild(outRow(it, +got[it.id] || 0)));
 }
 
-function outRow(it) {
+function outRow(it, have) {
   const wrap = document.createElement('div');
   const row = document.createElement('div');
   row.className = 'ps-live';
@@ -610,6 +626,15 @@ function outRow(it) {
   st.textContent = it.retired ? 'off sale — people who already have it keep it'
     : (it.kind === 'decor' ? 'in every homestead phone store' : 'on sale in the Banana Stand');
   t.appendChild(nm); t.appendChild(st);
+  // ⚠️ the count is the LOUD line, not a footnote — a maker opens this page to
+  // find out whether anyone wanted it. Zero says nothing at all: "0 people have
+  // this" is a worse thing to read than a shop that has not sold one yet.
+  if (have > 0) {
+    const c = document.createElement('span');
+    c.className = 'ps-live__have';
+    c.textContent = have === 1 ? '1 banana is wearing it' : have + ' bananas have it';
+    t.appendChild(c);
+  }
   const more = document.createElement('button');
   more.type = 'button';
   more.className = 'ps-live__more';

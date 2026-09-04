@@ -12,7 +12,7 @@ import pxEdit from '../icons/pixelart/edit.svg?raw';
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone } from '../lib/banana-pass.js';
 import { loggedIn } from '../lib/pass-sync.js';
-import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
+import { catCustom, loadCatalog, fullOutfit, noteCatch } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
 import { gardenerLvlFor } from '../lib/pass-defs.js';
@@ -3180,6 +3180,7 @@ function init(visitDoc, visitMiss) {
           // only check that counts — never spend past zero
           if (!passSpend(d.price, 'order')) { shopNote('🪙 not enough coins for that one'); renderShop(); return; }
           refreshHud();
+          noteCatch(d.id);           // 🍌 furniture has a maker too (no-op for curated)
           track('homestead_buy', { id: d.id, price: d.price, ship: shipMin(d) });
           const mins = shipMin(d);
           if (mins) {

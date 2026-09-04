@@ -4,7 +4,7 @@
 import { drawComposite, assetsReady, outfitParams, SVG as ART } from '../lib/banana-engine.js';
 import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
 import { passStat, passGet, passPush, passSpend, passFlush, pullIfStale } from '../lib/banana-pass.js';
-import { catCustom } from '../lib/drops.js';
+import { catCustom, noteCatch } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { MARKET } from './park-geo.js';
 import { track, esc } from './park-util.js';
@@ -494,6 +494,7 @@ export function initShops(ctx) {
       return;
     }
     passStat('own_' + item.id, 1);   // the optimistic local flag — the server's word replaces it
+    noteCatch(item.id);              // 🍌 and the maker gets told (no-op for curated stock)
     if (item.back) {
       // back-catalog buys also write the LEGACY stores so every flag/cat-own
       // reader (rave gift gate, builder chips) unlocks at once

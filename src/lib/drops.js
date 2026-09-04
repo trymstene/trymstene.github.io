@@ -186,10 +186,33 @@ export function claimDrop(drop) {
   } catch (e) {}
   try { const s = JSON.parse(localStorage.getItem('bb-last') || '{}'); applyDropToOutfit(s, drop); localStorage.setItem('bb-last', JSON.stringify(s)); } catch (e) {}
   if (!had) { try { passStat('own_' + drop.id, 1); } catch (e) {} }
-  if (!had && drop.catalog) {                           // warm vanity tally, fire-and-forget, once per device
-    try { fetch(CAUGHT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: drop.id, sid: worldSid() }) }).catch(() => {}); } catch (e) {}
-  }
+  if (!had && drop.catalog) noteCatch(drop.id);
   return { had };
+}
+
+// 🍌 TELL THE MAKER SOMEBODY GOT THEIR ITEM. Fire-and-forget, once per person
+// per item, never economy-critical -- it is a warm number on their pass.
+//
+// ⚠️ THIS WENT SILENT FOR A MONTH AND NOBODY NOTICED. It used to be called from
+// claimDrop above and nowhere else, and on 7 Aug community items were moved off
+// the rave floor into the Banana Stand's back-catalogue -- correctly, because a
+// maker waited days for approval and then their piece appeared on one random
+// night to whoever happened to be standing there. But pickTonightDrop then
+// hardcoded `catalog: false`, so the line above became unreachable and the only
+// signal a maker ever got that their work was wanted stopped firing. Killing
+// the drop was the decision; killing the thank-you was an accident.
+//
+// So it lives out here now, and the places that ACTUALLY hand somebody a
+// community item call it: the Banana Stand's back-catalogue and the homestead
+// phone store. Anything that gives one away in future must call it too.
+export function noteCatch(id) {
+  if (!/^c_[a-f0-9]{6,32}$/.test(String(id || ''))) return;   // curated items have no maker to thank
+  try {
+    fetch(CAUGHT_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, sid: worldSid() }),
+    }).catch(() => {});
+  } catch (e) {}
 }
 
 // ── The orchestrator: the ONLY thing an area instantiates ──

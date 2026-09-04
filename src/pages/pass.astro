@@ -315,6 +315,9 @@ const NUMBERS = [
     .ps-live__t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
     .ps-live__name { font-weight: 800; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ps-live__state { font-size: 0.72rem; font-weight: 700; opacity: 0.65; }
+    /* the one number on this row that is a reward, so it is not the quiet grey
+       the state line is — a value is never quieter than its own label */
+    .ps-live__have { font-size: 0.8rem; font-weight: 800; color: var(--ink, #111); }
     /* 44px, because a 20px dotted glyph is a miss on a phone and 85% of this
        world is on one */
     .ps-live__more { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font: inherit; font-size: 1.3rem; font-weight: 800; line-height: 1; cursor: pointer; background: none; border: 2px solid transparent; border-radius: 10px; }

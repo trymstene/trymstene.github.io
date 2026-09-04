@@ -885,6 +885,25 @@ async function handleCatalogInbox(request, env, url) {
 // ⚠️ Concrete etags only, never '*'.
 const IDX_KEY = 'catalog/items.json';
 class IndexBusy extends Error {}
+// the same conditional-put loop for any JSON object in the bucket. `empty` is
+// what `fn` receives when the object does not exist yet.
+async function mutateObj(env, key, fn, empty) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const obj = await env.SHARES.get(key);
+    let cur = empty;
+    if (obj) { try { cur = await obj.json(); } catch (e) {} }
+    const next = await fn(cur);
+    if (next === null || next === undefined) return null;
+    const wrote = await env.SHARES.put(key, JSON.stringify(next),
+      obj ? { httpMetadata: { contentType: 'application/json' }, onlyIf: { etagMatches: obj.etag } }
+          : { httpMetadata: { contentType: 'application/json' } });
+    if (wrote) return next;
+    IDX_RETRY.n++;
+    await new Promise((r) => setTimeout(r, 30 + Math.floor(Math.random() * 90) * (attempt + 1)));
+  }
+  IDX_RETRY.gaveUp++;
+  throw new IndexBusy();
+}
 async function mutateIndex(env, fn, key = IDX_KEY) {
   for (let attempt = 0; attempt < 6; attempt++) {
     const obj = await env.SHARES.get(key);
@@ -1247,17 +1266,26 @@ async function handleCatalogCaught(request, env, url) {
   // `crypto.randomUUID().slice(0,12)` — 8 hex, a dash, 3 hex. Without it every
   // real player 400'd here, silently (the call sites are fire-and-forget).
   if (!/^c_[a-f0-9]{6,32}$/.test(id) || !/^[a-z0-9-]{8,32}$/.test(sid)) return json({ error: 'bad' }, 400, cors);
+  // ⚠️ THE ONE RMW ON THE PLAYER PATH. This was a bare get-change-put like the
+  // manifest's four, and it did not matter while it was unreachable. It is
+  // reachable again -- everyone who buys the same item races here -- so it goes
+  // through the same conditional-put loop. A tally that undercounts is worse
+  // than no tally: it tells a maker fewer people wanted their work than did.
   const key = 'catalog-catch/' + id + '.json';
-  let rec = { n: 0, seen: {} };
-  const obj = await env.SHARES.get(key);
-  if (obj) { try { rec = await obj.json(); } catch (e) {} }
-  if (!rec.seen) rec.seen = {};
-  if (!rec.seen[sid]) {
-    rec.n = (rec.n || 0) + 1;
-    if (Object.keys(rec.seen).length < 2000) rec.seen[sid] = 1; // cap storage; beyond it, count-only
-  }
-  await env.SHARES.put(key, JSON.stringify(rec), { httpMetadata: { contentType: 'application/json' } });
-  return json({ ok: true, n: rec.n }, 200, cors);
+  let n = 0;
+  try {
+    await mutateObj(env, key, (rec) => {
+      const r = rec && typeof rec === 'object' ? rec : { n: 0, seen: {} };
+      if (!r.seen) r.seen = {};
+      if (!r.seen[sid]) {
+        r.n = (r.n || 0) + 1;
+        if (Object.keys(r.seen).length < 2000) r.seen[sid] = 1; // cap storage; beyond it, count-only
+      }
+      n = r.n;
+      return r;
+    }, { n: 0, seen: {} });
+  } catch (e) { return json({ error: 'busy' }, 409, cors); }
+  return json({ ok: true, n }, 200, cors);
 }
 
 // ---------- GET /catalog/catches?ids= — the tallies (id → n) ----------
