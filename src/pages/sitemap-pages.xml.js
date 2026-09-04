@@ -43,6 +43,7 @@ const PAGES = [
   ...GUIDES.map((g) => ({ path: '/guides/' + g.slug + '/', images: [] })),
   { path: '/banana-of-the-day/', images: [] },
   { path: '/support/', images: [] },
+  { path: '/coffee/', images: [] },
   {
     path: '/dancing-banana-wallpaper/',
     images: [

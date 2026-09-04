@@ -1,0 +1,89 @@
+---
+// ☕ THE GENERIC ONE. /support/ is the storefront and it speaks Banana World —
+// hats, a glow, a plaque on the park board. Trym, 4 Sep: "the supporters page
+// is fine if you play the banana world game, but what about those who dont".
+// This is the page for everyone else: somebody who used the GIF, or got an
+// email, and wants to say thanks. No tiers, no hats, no wall, no game words.
+//
+// ⚠️ THE AMOUNTS ARE CENTS AND THE WORKER GATES THEM. payTip takes 300-50000
+// and treats anything outside that as "let them pick" — so a preset here must
+// stay inside it or it silently becomes the open-amount button.
+//
+// ⚠️ NEVER HARDCODE A PAYMENT URL. TIP_URL is the one place the rail lives;
+// every coffee link on the site already points through it.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { TIP_URL } from '../data/pay-rail.js';
+const AMOUNTS = [3, 5, 10];
+---
+<BaseLayout
+  title="Buy the banana a coffee"
+  description="I made the dancing banana in 1999 and everything built around it since is free — the GIF, the emoji, the wallpapers, the builder. No ads, no accounts. A coffee keeps it that way."
+  ogImage="https://trymstene.com/assets/og/coffee.png">
+  <style is:inline slot="head">
+    .cf { max-width: 620px; margin: 0 auto; padding: 2.6rem 1.1rem 4rem; text-align: center; }
+    /* block, or the kicker chip beside it sits on the image's baseline. The GIF
+       has a WHITE background, not transparency — against the cream paper that
+       reads as a stray box, so it gets the site's own frame and becomes a
+       deliberate thing pinned to the page. */
+    .cf__gif { display: block; margin: 0 auto 1.1rem; width: 180px; height: 180px;
+      image-rendering: pixelated; border: var(--line); box-shadow: var(--shadow-sm); }
+    .cf__kick { color: var(--ink); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.18em;
+      text-transform: uppercase; background: var(--banana); border: 3px solid var(--ink);
+      display: inline-block; padding: 0.25rem 0.7rem; margin: 0 0 0.9rem; }
+    .cf__h { font-size: clamp(2rem, 7vw, 2.9rem); margin: 0 0 0.9rem; }
+    .cf__lead { font-size: clamp(1rem, 2.6vw, 1.12rem); line-height: 1.55; margin: 0 auto 2rem; max-width: 46ch; }
+    .cf__lead b { background: var(--banana); padding: 0 0.2rem; }
+    /* the amounts. ⚠️ a button must never wrap — these are two words at most */
+    .cf__amts { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; margin: 0 0 1rem; }
+    .cf__amt { flex: 0 0 auto; min-width: 5.5rem; background: var(--banana); color: var(--ink);
+      border: var(--line); box-shadow: var(--shadow-sm); font-family: "Archivo Black", system-ui, sans-serif;
+      font-size: 1.35rem; padding: 0.7rem 1.1rem; text-decoration: none; white-space: nowrap;
+      transition: transform 0.08s ease, box-shadow 0.08s ease; }
+    .cf__amt:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+    .cf__amt:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+    .cf__any { display: inline-block; font-weight: 700; text-decoration: underline;
+      text-underline-offset: 3px; padding: 0.5rem; }
+    .cf__fine { color: #5b5b5b; font-size: 0.84rem; line-height: 1.5; margin: 1.6rem auto 0; max-width: 42ch; }
+    .cf__fine a { text-decoration: underline; text-underline-offset: 2px; }
+    /* the one line for people who DO play — quiet, and last */
+    .cf__world { margin: 2.6rem auto 0; padding-top: 1.6rem; border-top: 3px solid var(--ink);
+      max-width: 42ch; font-size: 0.92rem; line-height: 1.55; }
+    .cf__world a { font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 420px) {
+      .cf__amt { flex: 1 1 6.5rem; }
+      .cf__gif { width: 140px; height: 140px; }
+    }
+  </style>
+
+  <main class="cf" id="main">
+    <img class="cf__gif" src="/assets/dancing-banana-gif.gif" width="180" height="180"
+      alt="The dancing banana, mid-dance" />
+    <p class="cf__kick">Dancing since 1999</p>
+    <h1 class="cf__h">Buy the banana a coffee</h1>
+
+    <p class="cf__lead">
+      I'm Trym. I made the dancing banana in 1999, and everything built around it
+      since — the GIF, the emoji, the wallpapers, the builder — is
+      <b>free</b>. No ads, no accounts, no email. A coffee keeps it that way.
+    </p>
+
+    <div class="cf__amts">
+      {AMOUNTS.map((n) => (
+        <a class="cf__amt" href={`${TIP_URL}?a=${n * 100}`} data-tier="once" data-amt={n}>${n}</a>
+      ))}
+    </div>
+    <a class="cf__any" href={TIP_URL} data-tier="once">or pick your own amount →</a>
+
+    <p class="cf__fine">
+      One coffee, once — there's nothing to cancel. Payment is handled by
+      <a href="https://polar.sh" rel="noopener nofollow">Polar</a>, who appear on your
+      statement, not me. Thank you, genuinely.
+    </p>
+
+    <p class="cf__world">
+      Spend time in <a href="/homestead/">Banana World</a>? There's a
+      <a href="/support/">membership</a> instead — it puts a top hat on your banana
+      and your name on the park board.
+    </p>
+  </main>
+</BaseLayout>

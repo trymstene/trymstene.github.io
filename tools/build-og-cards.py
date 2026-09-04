@@ -116,6 +116,9 @@ CARDS = {
     # to support him — so it wears the gold hat that supporting actually buys
     'support':  dict(chip='KEEP BANANA WORLD FREE', title=['Support the', 'Dancing Banana'], pose=2,
                      hat='tophatgold'),
+    # ☕ the generic one — no hat, because this card is for people who have
+    # never heard of Banana World and a top hat would mean nothing to them
+    'coffee':   dict(chip='DANCING SINCE 1999', title=['Buy the Banana', 'a Coffee'], pose=4),
 }
 
 BG, INK, PINK, PAPER = (255, 221, 40), (17, 17, 17), (255, 84, 112), (255, 253, 245)
