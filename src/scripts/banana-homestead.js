@@ -477,7 +477,7 @@ function init(visitDoc, visitMiss) {
       } catch (e) {}
       if (rs >= 2) {
         try { localStorage.removeItem('hs-pullbudget'); } catch (e) {}
-        toast('⚠️ your homestead is out of step with the server — showing this device\'s copy', 6000);
+        toast('⚠️ your homestead is out of step with the server (the save keeps being refused) — showing the copy on this device', 8000);
         console.warn('[homestead] resync loop stopped', { slug: state.slug, updated: r.updated });
         return;
       }
@@ -4597,8 +4597,14 @@ function init(visitDoc, visitMiss) {
       // ⚠️ NO RELOAD. Keep whatever is on screen, tell the truth, and leave a
       // breadcrumb that says which of the two causes it was.
       try { localStorage.removeItem('hs-pullbudget'); } catch (e) {}
-      track1('homestead_pull', { how: 'loop' });
-      toast('⚠️ could not settle your homestead — showing the copy on this device', 6000);
+      // ⚠️ THE DIAGNOSIS GOES ON SCREEN, NOT IN THE CONSOLE. This fires on
+      // PHONES, where nobody can open one — a diagnostic the sufferer cannot
+      // read is not a diagnostic.
+      const why = !guardOk ? 'this browser blocks session storage'
+        : !mine ? 'this device and the server disagree on which yard is yours'
+          : 'the server keeps changing its stamp';
+      track1('homestead_pull', { how: 'loop', why: !guardOk ? 'nosession' : !mine ? 'slug' : 'stamp' });
+      toast('⚠️ could not settle your homestead (' + why + ') — showing the copy on this device', 8000);
       console.warn('[homestead] pull loop stopped after ' + spins + ' adoptions.',
         { serverSlug: r.slug, mySlug: state.slug, mine, updated: r.updated,
           claimed: !!state.claimedAt,
