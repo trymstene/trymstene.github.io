@@ -832,6 +832,48 @@ async function handleCatalogInbox(request, env, url) {
   return json(items, 200, { ...cors, 'Cache-Control': 'no-store', ...truncHeaders(got) });
 }
 
+// 🔒 THE MANIFEST LOCK. catalog/items.json is one object that several paths
+// rewrite whole -- approve, retire, unretire, remove -- and every one of them
+// was a bare get -> change -> put. Two of those overlapping means the second
+// one writes a list it read BEFORE the first one's change, and the first
+// change is gone. The desk disables only the button you clicked, so approving
+// three pending items in a row is exactly the shape that loses one, silently.
+//
+// R2 can settle this itself: a put carrying `onlyIf.etagMatches` lands only if
+// the object is still the one we read, and returns null instead of writing if
+// somebody got there first. Then we read the new version and re-apply.
+//
+// ⚠️ `fn` MUST be pure and re-runnable -- it can be called several times.
+// Do side effects (verdicts, owner records, inbox deletes) AFTER this returns.
+// ⚠️ Return null from `fn` to abort without writing (e.g. nothing matched).
+// ⚠️ Concrete etags only, never '*'.
+const IDX_KEY = 'catalog/items.json';
+class IndexBusy extends Error {}
+async function mutateIndex(env, fn, key = IDX_KEY) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const obj = await env.SHARES.get(key);
+    let items = [];
+    if (obj) { try { items = await obj.json(); } catch (e) {} }
+    if (!Array.isArray(items)) items = [];
+    const next = await fn(items);
+    if (next === null || next === undefined) return null;
+    const opts = { httpMetadata: { contentType: 'application/json' } };
+    const wrote = await env.SHARES.put(key, JSON.stringify(next),
+      obj ? { ...opts, onlyIf: { etagMatches: obj.etag } } : opts);
+    if (wrote) return next;
+    // somebody landed between our read and our write. Back off a little --
+    // jittered, so two racers do not keep colliding in step -- and re-apply
+    // the change to what is there now.
+    IDX_RETRY.n++;
+    await new Promise((r) => setTimeout(r, 30 + Math.floor(Math.random() * 90) * (attempt + 1)));
+  }
+  IDX_RETRY.gaveUp++;
+  throw new IndexBusy();
+}
+// watched on /health: `n` is how often a write had to be re-applied, `gaveUp`
+// how often one could not be. gaveUp above zero means a human saw a red button.
+const IDX_RETRY = { n: 0, gaveUp: 0 };
+
 // ---------- POST /catalog/moderate?key= {id, action, title?, by?} ----------
 async function handleCatalogModerate(request, env, url) {
   const cors = corsHeaders(env, request);
@@ -853,19 +895,20 @@ async function handleCatalogModerate(request, env, url) {
   // taking a piece off sale is not that, and it was the same button.
   if (b.action === 'retire' || b.action === 'unretire') {
     if (!/^c_[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
-    const idxObj = await env.SHARES.get('catalog/items.json');
-    let items = [];
-    if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
     let hit = 0;
-    items = items.map((x) => {
-      if (x.id !== id) return x;
-      hit = 1;
-      if (b.action === 'unretire') { const { retired, ...rest } = x; return rest; }
-      return { ...x, retired: 1 };
-    });
+    try {
+      await mutateIndex(env, (items) => {
+        hit = 0;
+        const next = items.map((x) => {
+          if (x.id !== id) return x;
+          hit = 1;
+          if (b.action === 'unretire') { const { retired, ...rest } = x; return rest; }
+          return { ...x, retired: 1 };
+        });
+        return hit ? next : null;
+      });
+    } catch (e) { return json({ error: 'busy, try again' }, 409, cors); }
     if (!hit) return json({ error: 'no such item' }, 404, cors);
-    await env.SHARES.put('catalog/items.json', JSON.stringify(items),
-      { httpMetadata: { contentType: 'application/json' } });
     return json({ ok: true, retired: b.action === 'retire' ? 1 : 0 }, 200, cors);
   }
 
@@ -874,14 +917,15 @@ async function handleCatalogModerate(request, env, url) {
   // desk's everyday button sends.
   if (b.action === 'remove') {
     if (!/^c_[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
-    const idxObj = await env.SHARES.get('catalog/items.json');
-    let items = [];
-    if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
-    const before = items.length;
-    items = items.filter((x) => x.id !== id);
-    await env.SHARES.put('catalog/items.json', JSON.stringify(items),
-      { httpMetadata: { contentType: 'application/json' } });
-    return json({ ok: true, removed: before - items.length }, 200, cors);
+    let gone = 0;
+    try {
+      await mutateIndex(env, (items) => {
+        const next = items.filter((x) => x.id !== id);
+        gone = items.length - next.length;
+        return next;
+      });
+    } catch (e) { return json({ error: 'busy, try again' }, 409, cors); }
+    return json({ ok: true, removed: gone }, 200, cors);
   }
 
   if (!/^[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
@@ -911,22 +955,28 @@ async function handleCatalogModerate(request, env, url) {
   const by = clean(b.by !== undefined ? b.by : meta.by, 24);
   if (dirty(title) || dirty(by)) return json({ error: 'family friendly only 🍌' }, 400, cors);
 
-  const idxObj = await env.SHARES.get('catalog/items.json');
-  let items = [];
-  if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
   const itemId = 'c_' + id; // catalog ids are namespaced — never collide with curated wearables.js ids
   // ⚠️ this REBUILDS the row from scratch, so any state the row carried is lost
   // unless it is carried across by hand. `retired` cannot be dropped here: an
   // approval landing on a retired id would silently put it back on sale. It
   // cannot happen today — itemId comes from a fresh uuid, so the filter below
   // never matches — but it is exactly the line an edit-in-place feature breaks.
-  const was = items.find((x) => x.id === itemId);
-  items = items.filter((x) => x.id !== itemId);
-  items.push({ id: itemId, title, by, wear: meta.wear, added: Date.now(),
-    ...(was && was.retired ? { retired: 1 } : {}),
-    ...(meta.wear && meta.wear.anchor === 'decor' ? { kind: 'decor' } : {}) });
-  await env.SHARES.put('catalog/items.json', JSON.stringify(items),
-    { httpMetadata: { contentType: 'application/json' } });
+  try {
+    await mutateIndex(env, (items) => {
+      const was = items.find((x) => x.id === itemId);
+      const next = items.filter((x) => x.id !== itemId);
+      next.push({ id: itemId, title, by, wear: meta.wear, added: Date.now(),
+        ...(was && was.retired ? { retired: 1 } : {}),
+        ...(meta.wear && meta.wear.anchor === 'decor' ? { kind: 'decor' } : {}) });
+      return next;
+    });
+  } catch (e) {
+    // ⚠️ NOTHING after this point has run, so the inbox record is untouched
+    // and the submission is still pending. A red button and a second click is
+    // the whole recovery -- which is the point: the old code returned ok: true
+    // and dropped the approval on the floor.
+    return json({ error: 'busy, try again' }, 409, cors);
+  }
   // 🪚 THE OWNER RECORD -- deliberately NOT a field on the row.
   // catalog/items.json is served `Access-Control-Allow-Origin: *`, so anything
   // written there is published to the whole internet, and a maker's gid is the
@@ -1060,7 +1110,7 @@ async function handleHealth(env, url) {
     // 🪪 what the world-token binding has been asked since this isolate started.
     // Nothing depends on the answer yet — the counters exist so the capability
     // can be watched against real traffic BEFORE anything is gated on it.
-    return json({ bucket: 'ok', wtBinding: env.RAVE ? 'ok' : 'missing', wt: { ...WT }, catOwn: { ...CAT_OWN } });
+    return json({ bucket: 'ok', wtBinding: env.RAVE ? 'ok' : 'missing', wt: { ...WT }, catOwn: { ...CAT_OWN }, idxRetry: { ...IDX_RETRY } });
   } catch (e) {
     return json({ bucket: 'error: ' + e.message }, 500);
   }
