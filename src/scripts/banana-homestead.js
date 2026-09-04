@@ -934,8 +934,11 @@ function init(visitDoc, visitMiss) {
         indoor: it.wear.where === 'indoor',   // the maker's shelf choice
         svg: cu.art, img: null, solid: null, maker: it.by || '' };
       // ⚠️ the SHOP reads DECOR, not DEX — without this push the Community
-      // shelf stayed empty forever (found 7 Aug wiring the maker pipeline)
-      DECOR.push(DEX[it.id]);
+      // shelf stayed empty forever (found 7 Aug wiring the maker pipeline).
+      // ⚠️ AND THIS IS WHY THE RETIRE FILTER GOES HERE AND NOT ABOVE: DEX must
+      // still get the entry, or a retired piece already standing in somebody's
+      // yard would vanish from it. Retiring stops it being SOLD, not owned.
+      if (!it.retired) DECOR.push(DEX[it.id]);
       fresh++;
     });
     if (fresh) refreshItems();

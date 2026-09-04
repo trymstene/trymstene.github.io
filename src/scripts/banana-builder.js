@@ -327,7 +327,7 @@ function init() {
       const own = catOwned(); const st = catStats();
       Object.keys(own).forEach((id) => { if (/^c_/.test(id) && !((st['own_' + id] || 0) > 0)) passStat('own_' + id, 1); });
     } catch (e) {}
-    CATALOG.filter((it) => it.kind !== 'decor').sort((a, b) => (a.added || 0) - (b.added || 0)).forEach((it) => {
+    CATALOG.filter((it) => it.kind !== 'decor' && !it.retired).sort((a, b) => (a.added || 0) - (b.added || 0)).forEach((it) => {
       const owned = ownsCatalog(it.id);
       const name = it.title || 'community item';
       // EVERY community chip opens the CARD (works on touch AND desktop, so the

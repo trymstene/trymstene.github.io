@@ -802,8 +802,37 @@ async function handleCatalogModerate(request, env, url) {
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors); }
   const id = String(b.id || '');
 
-  // 'remove' retires a LIVE catalog item (curation includes un-cataloguing —
-  // the inbox record is long gone by then, so handle before the inbox fetch)
+  // 🅁 'retire' — the SAFE one, and what the desk sends. The row stays and keeps
+  // its `wear`, so everybody who already caught, bought or placed this item goes
+  // on seeing it; it simply stops being offered. Readers skip `retired` rows.
+  //
+  // ⚠️ THIS EXISTS BECAUSE 'remove' BELOW REACHES INTO STRANGERS' THINGS. It
+  // deletes the only copy of the art, so all five catCustom resolvers stop
+  // finding it at once — a banana wearing it renders bare, furniture standing
+  // in a yard disappears, and ownership cannot be revoked to match (the pass
+  // refuses negative deltas). Removal is for something that must not exist;
+  // taking a piece off sale is not that, and it was the same button.
+  if (b.action === 'retire' || b.action === 'unretire') {
+    if (!/^c_[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
+    const idxObj = await env.SHARES.get('catalog/items.json');
+    let items = [];
+    if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
+    let hit = 0;
+    items = items.map((x) => {
+      if (x.id !== id) return x;
+      hit = 1;
+      if (b.action === 'unretire') { const { retired, ...rest } = x; return rest; }
+      return { ...x, retired: 1 };
+    });
+    if (!hit) return json({ error: 'no such item' }, 404, cors);
+    await env.SHARES.put('catalog/items.json', JSON.stringify(items),
+      { httpMetadata: { contentType: 'application/json' } });
+    return json({ ok: true, retired: b.action === 'retire' ? 1 : 0 }, 200, cors);
+  }
+
+  // 'remove' DELETES a live catalog item, art and all — see the warning above.
+  // Kept for something that must genuinely not exist; it is no longer what the
+  // desk's everyday button sends.
   if (b.action === 'remove') {
     if (!/^c_[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, cors);
     const idxObj = await env.SHARES.get('catalog/items.json');
@@ -847,8 +876,15 @@ async function handleCatalogModerate(request, env, url) {
   let items = [];
   if (idxObj) { try { items = await idxObj.json(); } catch (e) {} }
   const itemId = 'c_' + id; // catalog ids are namespaced — never collide with curated wearables.js ids
+  // ⚠️ this REBUILDS the row from scratch, so any state the row carried is lost
+  // unless it is carried across by hand. `retired` cannot be dropped here: an
+  // approval landing on a retired id would silently put it back on sale. It
+  // cannot happen today — itemId comes from a fresh uuid, so the filter below
+  // never matches — but it is exactly the line an edit-in-place feature breaks.
+  const was = items.find((x) => x.id === itemId);
   items = items.filter((x) => x.id !== itemId);
   items.push({ id: itemId, title, by, wear: meta.wear, added: Date.now(),
+    ...(was && was.retired ? { retired: 1 } : {}),
     ...(meta.wear && meta.wear.anchor === 'decor' ? { kind: 'decor' } : {}) });
   await env.SHARES.put('catalog/items.json', JSON.stringify(items),
     { httpMetadata: { contentType: 'application/json' } });

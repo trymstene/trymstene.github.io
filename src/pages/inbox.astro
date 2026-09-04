@@ -2139,7 +2139,12 @@ const description = 'Authorized banana personnel only.';
           });
           const d = await r.json().catch(() => ({}));
           if (d.ok) {
-            if (payload && payload.action === 'approve') askRebuild('the item');
+            // (the askRebuild call that stood here has never run: this desk sends
+            // 'ok', 'no' or 'remove' and the worker 400s anything else, so
+            // action === 'approve' was unreachable. Left as a comment rather
+            // than "fixed" to 'ok' — rebuildAt is module scope shared with the
+            // gallery desk and its 60s throttle returns before any toast, so
+            // wiring it would fire a silent no-op on a batch of approvals.)
             card.remove(); itemsCount(); return;
           }
           btn.textContent = d.error || 'failed'; btn.disabled = false;
@@ -2152,7 +2157,10 @@ const description = 'Authorized banana personnel only.';
         retire.textContent = '📦 retire from catalog';
         retire.onclick = () => {
           if (retire.dataset.arm !== '1') { retire.dataset.arm = '1'; retire.textContent = '⚠ retire, really?'; setTimeout(() => { retire.dataset.arm = ''; retire.textContent = '📦 retire from catalog'; }, 3000); return; }
-          mod({ id: it.id, action: 'remove' }, retire);
+          // the button always SAID retire; it sent 'remove', which deleted the
+          // art out from under everyone holding it. 'retire' takes it off sale
+          // and leaves every copy people already own exactly where it is.
+          mod({ id: it.id, action: 'retire' }, retire);
         };
         titleIn.disabled = true; byIn.disabled = true;
         row.appendChild(retire);

@@ -336,7 +336,7 @@ function buildWardrobe() {
       },
     };
   };
-  const comm = CATALOG.filter((it) => it.kind !== 'decor')
+  const comm = CATALOG.filter((it) => it.kind !== 'decor' && !it.retired)
     .sort((a, b) => (a.added || 0) - (b.added || 0)).map(commChip);
   const commIn = (want) => comm.filter((c) => want(c.anchor)).map((c) => c.chip);
   // 🎩 member (supporter) gear never dresses a product — not even for live

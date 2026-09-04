@@ -1525,7 +1525,23 @@ function init() {
     ensureEngine();
     freshDoc(); // the banana-native grid, before any restore
     if (pickedAny) { // re-open a saved item
-      try { const wd = JSON.parse(pickedAny.params.replace(/^wear:/, '')); deserialize(wd.forge); } catch (e) {}
+      // ⚠️ ONLY THE PIXELS CAME BACK. wd.anchor, wd.hand and wd.where were
+      // parsed and dropped, and applyKind() never ran at boot — so a reopened
+      // item came up as a WEARABLE in the yard no matter what it was, and its
+      // anchor was re-derived from the drawing instead of restored. Reopening
+      // and saving with no edit at all MOVED the art. That makes an "edit"
+      // feature impossible to judge: the diff would show a change nobody made.
+      //
+      // ⚠️ wearPick is set AFTER applyKind — applyKind's second statement is
+      // `wearPick = null`, so setting it first wipes it one line later.
+      try {
+        const wd = JSON.parse(pickedAny.params.replace(/^wear:/, ''));
+        deserialize(wd.forge);
+        const kind = wd.anchor === 'decor' ? 'decor' : 'wear';
+        decorWhere = wd.where === 'indoor' ? 'indoor' : 'yard';
+        applyKind(kind);
+        if (kind !== 'decor' && wd.anchor) wearPick = pickKey(wd.anchor, wd.hand);
+      } catch (e) {}
     }
   } else if (pickedAny) { deserialize(pickedAny.params); }
   else {

@@ -107,7 +107,7 @@ export function worldDay() { return Math.floor(Date.now() / 86400000); }
 export function tonightDrop({ custom = true, day = worldDay() } = {}) {
   const pool = [
     ...DROPS.map((d) => ({ ...d, catalog: false })),
-    ...(custom ? CATALOG.filter((it) => it.kind !== 'decor').sort((a, b) => (a.added || 0) - (b.added || 0))
+    ...(custom ? CATALOG.filter((it) => it.kind !== 'decor' && !it.retired).sort((a, b) => (a.added || 0) - (b.added || 0))
       .map((it) => ({ id: it.id, label: it.title || 'community item', by: it.by || '', catalog: true, wear: it.wear })) : []),
   ];
   if (!pool.length) return null;

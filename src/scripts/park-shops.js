@@ -426,7 +426,7 @@ export function initShops(ctx) {
         // wall of what the community made is the point — and a rave drop was a
         // coin flip most makers never saw land). Furniture sells at the phone.
         stAddBackItems(items
-          .filter((it) => it.kind !== 'decor')
+          .filter((it) => it.kind !== 'decor' && !it.retired)
           .sort((a, b) => (b.added || 0) - (a.added || 0))
           .map((it) => ({
             id: it.id, label: it.title || 'community item', slot: 'c',
