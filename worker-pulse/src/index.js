@@ -678,7 +678,7 @@ async function apiAnalyst(env) {
     if (!env.PASS_ADMIN_KEY) {
       rollNote = 'no PASS_ADMIN_KEY set';
     } else {
-      const rr = await fetch(PASS_ROLLUP + '?days=60&key=' + encodeURIComponent(env.PASS_ADMIN_KEY));
+      const rr = await fetch(PASS_ROLLUP + '?days=60&key=' + encodeURIComponent(String(env.PASS_ADMIN_KEY).trim()));
       if (!rr.ok) {
         // a wrong key is a 404 here, not a 401 — adminRollup denies as nothing
         rollNote = 'rollup said ' + rr.status + (rr.status === 404 ? ' (key refused)' : '');

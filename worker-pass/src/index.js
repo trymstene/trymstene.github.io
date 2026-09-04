@@ -874,7 +874,15 @@ const rollKey = (d) => 'rollup/day-' + d + '.json';
 const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 const dayIdx = (iso) => Math.floor(Date.parse(iso + 'T00:00:00Z') / 86400000);
 
-const adminOk = (env, key) => !!(env.PASS_ADMIN_KEY && key === env.PASS_ADMIN_KEY);
+// ⚠️ TRIM BOTH SIDES. `wrangler secret put` keeps whatever it is handed,
+// including the trailing newline a paste often carries, and this compared raw
+// — so a key that LOOKS identical is refused, and adminRollup denies as a 404
+// rather than a 401, which makes it look like the wrong key entirely. Trym lost
+// an hour to exactly this. Whitespace is not part of anybody's secret.
+const adminOk = (env, key) => {
+  const want = String(env.PASS_ADMIN_KEY || '').trim();
+  return !!(want && String(key || '').trim() === want);
+};
 const notFound = () => new Response('not found', { status: 404 });
 // ✉️ an email identity is keyed 'm' + hash; a passkey key is pure hex, and 'm'
 // is not a hex digit, so the prefix tells the two rails apart with no lookup
