@@ -120,6 +120,9 @@ export default {
 // Returns { gid, aliases } or null. Null on ANY doubt: no binding, no token,
 // a bad answer, a network wobble. Every caller must fail closed on null.
 const WT = { ok: 0, no: 0, err: 0 };
+// how many submissions arrive with a provable maker. Watched on /health so the
+// adoption rate is a number before anything is gated on it.
+const CAT_OWN = { with: 0, without: 0 };
 async function verifyWt(env, wt) {
   if (!env.RAVE || !wt) { WT.no++; return null; }
   try {
@@ -790,11 +793,26 @@ async function handleCatalogSubmit(request, env, url) {
   if (!wearOk(body.wear)) return json({ error: 'bad item' }, 400, cors);
   const sid = /^[a-z0-9]{8,32}$/.test(body.sid || '') ? body.sid : '';
 
+  // 🪚 WHO MADE THIS. `by` is a name somebody TYPED -- the same person
+  // shows up in the live catalog as both "JADE" and "JADE (Jade Green Banana)"
+  // -- so it can never decide who is allowed to change an item later. The world
+  // token can: worker-rave checks the signature over the service binding and
+  // hands back a gid nobody can forge.
+  //
+  // ⚠️ SUBMISSION STAYS OPEN TO EVERYONE. No token just means no owner, and
+  // an ownerless item is one nobody can edit later -- not one that was refused.
+  const who = await verifyWt(env, body.wt);
+  CAT_OWN[who ? 'with' : 'without']++;
+
   const id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
   await env.SHARES.put(`catalog-inbox/${id}.json`,
-    JSON.stringify({ title, by, sid, wear: body.wear, created: Date.now() }),
+    JSON.stringify({ title, by, sid, wear: body.wear, created: Date.now(),
+      ...(who ? { gid: who.gid } : {}) }),
     { httpMetadata: { contentType: 'application/json' } });
-  return json({ ok: true, id }, 200, cors);
+  // `owner` is not a debug flag -- it is the one thing the maker needs told.
+  // Whether this item can ever be renamed or changed later was decided the
+  // moment they pressed send, and only the server knows which way it went.
+  return json({ ok: true, id, owner: who ? 1 : 0 }, 200, cors);
 }
 
 // ---------- GET /catalog/inbox?key= — pending submissions (curation) ----------
@@ -909,6 +927,22 @@ async function handleCatalogModerate(request, env, url) {
     ...(meta.wear && meta.wear.anchor === 'decor' ? { kind: 'decor' } : {}) });
   await env.SHARES.put('catalog/items.json', JSON.stringify(items),
     { httpMetadata: { contentType: 'application/json' } });
+  // 🪚 THE OWNER RECORD -- deliberately NOT a field on the row.
+  // catalog/items.json is served `Access-Control-Allow-Origin: *`, so anything
+  // written there is published to the whole internet, and a maker's gid is the
+  // one id this world keeps private (it is why the park publishes a HASHED
+  // `who` and never the gid itself). Ownership is a server-side question, so it
+  // lives in a server-side object and the public manifest does not change shape
+  // at all -- nothing downstream can break on a field it never sees.
+  //
+  // ⚠️ ONE OBJECT PER ITEM, for the reason putVerdict already learned the
+  // hard way above: catalog/items.json is a lock-free read-modify-write, and a
+  // second writer on it loses writes. Per-key puts cannot clobber each other.
+  if (meta.gid) {
+    await env.SHARES.put('catalog-own/' + itemId + '.json',
+      JSON.stringify({ gid: meta.gid, at: Date.now() }),
+      { httpMetadata: { contentType: 'application/json' } });
+  }
   await putVerdict('ok', itemId);
   await env.SHARES.delete(`catalog-inbox/${id}.json`);
   return json({ ok: true, id: itemId }, 200, cors);
@@ -1003,6 +1037,18 @@ async function handleHealth(env, url) {
   //   ok        the binding resolved, rave verified a real signature
   //   rejected  the binding resolved, rave refused the signature
   //   nobinding / error   the chain itself is broken
+  // 🪚 /health?own=c_xxx -- has this item got an owner on record? Answers
+  // YES/NO and never who: the gid is the one id this world keeps private. It
+  // exists because the owner object is written by the key-gated approve path
+  // and read by nothing public, so without this there is no way to confirm an
+  // approval actually stamped it -- and an ownership record nobody has ever
+  // seen land is an ownership record nobody should build a permission on.
+  if (url && url.searchParams.has('own')) {
+    const want = String(url.searchParams.get('own') || '');
+    if (!/^c_[a-f0-9]{6,32}$/.test(want)) return json({ error: 'bad id' }, 400);
+    const rec = await env.SHARES.head('catalog-own/' + want + '.json');
+    return json({ item: want, owned: rec ? 1 : 0 });
+  }
   if (url && url.searchParams.has('wt')) {
     const before = WT.err;
     const who = await verifyWt(env, url.searchParams.get('wt'));
@@ -1014,7 +1060,7 @@ async function handleHealth(env, url) {
     // 🪪 what the world-token binding has been asked since this isolate started.
     // Nothing depends on the answer yet — the counters exist so the capability
     // can be watched against real traffic BEFORE anything is gated on it.
-    return json({ bucket: 'ok', wtBinding: env.RAVE ? 'ok' : 'missing', wt: { ...WT } });
+    return json({ bucket: 'ok', wtBinding: env.RAVE ? 'ok' : 'missing', wt: { ...WT }, catOwn: { ...CAT_OWN } });
   } catch (e) {
     return json({ bucket: 'error: ' + e.message }, 500);
   }

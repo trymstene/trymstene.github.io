@@ -16,6 +16,7 @@ import { passPatch, passStat, passVisit } from '../lib/banana-pass.js';
 import { FORGE_PALETTE as PALETTE, FORGE_MAX_FRAMES as MAX_FRAMES, FORGE_CUSTOM_MAX, FORGE_SIZES, FORGE_DIM_MAX, b64, forgeParse, forgeGridToSVG } from '../lib/forge-format.js';
 import { BANANA_REMIX } from '../data/banana-remix.js';
 import { iconSvg } from '../lib/pixel-icons.js';
+import { worldToken } from '../lib/world.js';
 // ITEMS WORKSHOP mode — the dancing banana wears what you draw, in place (WYSIWYG)
 // ⚡ THE BANANA COMPOSITOR IS LAZY. Only the Items Workshop needs it, but a
 // static import made every visitor arriving from “emoji maker gif” download the
@@ -1478,7 +1479,10 @@ function init() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title, by, sid,
+          // 🪚 the token rides in the BODY, not a header: the worker's CORS
+          // preflight allows Content-Type and nothing else, so a custom header
+          // would die before the request was ever sent. Same as the homestead.
+          title, by, sid, wt: worldToken(),
           wear: { forge: serialize(), anchor: c.anchor, hand: c.hand, ox: c.ox, oy: c.oy, scale: c.scale,
             ...(c.anchor === 'decor' ? { where: c.where, fw: c.fw, fh: c.fh } : {}) },
         }),
