@@ -77,7 +77,7 @@ function dirty(s) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/share') return handleShare(request, env, url);
@@ -102,7 +102,7 @@ export default {
       if (url.pathname === '/catalog/submit') return handleCatalogSubmit(request, env, url);
       if (url.pathname === '/catalog/inbox') return handleCatalogInbox(request, env, url);
       if (url.pathname === '/catalog/moderate') return handleCatalogModerate(request, env, url);
-      if (url.pathname === '/catalog/items.json') return handleCatalogItems(env);
+      if (url.pathname === '/catalog/items.json') return handleCatalogItems(env, request, ctx);
       if (url.pathname === '/catalog/status') return handleCatalogStatus(env, url);
       if (url.pathname === '/catalog/mine') return handleCatalogMine(request, env);
       if (url.pathname === '/catalog/versions') return handleCatalogVersions(request, env);
@@ -896,7 +896,15 @@ async function mutateIndex(env, fn, key = IDX_KEY) {
     const opts = { httpMetadata: { contentType: 'application/json' } };
     const wrote = await env.SHARES.put(key, JSON.stringify(next),
       obj ? { ...opts, onlyIf: { etagMatches: obj.etag } } : opts);
-    if (wrote) return next;
+    if (wrote) {
+      // ⚠️ the catalog just changed, so the cached copy is a lie. This purges
+      // THIS COLO only (a Worker cannot purge the world without an API token),
+      // so elsewhere the change lands within the 300s max-age -- exactly the
+      // staleness the browser cache already had, now shared instead of
+      // per-person. The desk's own `cache: 'reload'` always sees the truth.
+      try { await caches.default.delete(new Request(IDX_CACHE_KEY, { method: 'GET' })); } catch (e) {}
+      return next;
+    }
     // somebody landed between our read and our write. Back off a little --
     // jittered, so two racers do not keep colliding in step -- and re-apply
     // the change to what is there now.
@@ -1160,15 +1168,46 @@ async function handleCatalogUnlist(request, env) {
 // ---------- GET /catalog/items.json — THE public manifest ----------
 // Short cache: drops change on curation, clients (rave/builder/pass) refetch
 // within 5 min. This file is the single source every surface reads.
-async function handleCatalogItems(env) {
+// 💸 CACHED AT THE EDGE, at last. Eight surfaces fetch this file and every
+// cold load used to reach the worker and then R2 for it -- because the Cache
+// API is a NO-OP on *.workers.dev (the cache is zone-level, and workers.dev is
+// one zone shared by every account). On share.trymstene.com it works, so the
+// second visitor in a colo is served without waking this worker at all.
+//
+// ⚠️ ONE FIXED CACHE KEY, not the incoming URL: the file is the same on both
+// hosts, and a key built from the request would cache the workers.dev copy
+// separately (where the put silently does nothing anyway).
+//
+// ⚠️ A RELOAD MUST REACH THE TRUTH. Banana HQ reads this with
+// `{ cache: 'reload' }` right after approving something, and an admin looking
+// at a five-minute-old catalog would think the approval failed.
+const IDX_CACHE_KEY = 'https://share.trymstene.com/__cache/catalog-items';
+const idxHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Cache-Control': 'public, max-age=300',
+});
+async function handleCatalogItems(env, request, ctx) {
+  const cache = caches.default;
+  const key = new Request(IDX_CACHE_KEY, { method: 'GET' });
+  const noCache = /no-cache|no-store/i.test(request.headers.get('Cache-Control') || '')
+    || /no-cache/i.test(request.headers.get('Pragma') || '');
+  if (!noCache) {
+    const hit = await cache.match(key);
+    if (hit) {
+      const r = new Response(hit.body, hit);
+      r.headers.set('X-Cache', 'hit');
+      return r;
+    }
+  }
   const obj = await env.SHARES.get('catalog/items.json');
-  return new Response(obj ? obj.body : '[]', {
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'public, max-age=300',
-    },
-  });
+  const body = obj ? await obj.text() : '[]';
+  const res = new Response(body, { headers: { ...idxHeaders(), 'X-Cache': noCache ? 'bypass' : 'miss' } });
+  // stored WITHOUT the X-Cache header, so a later hit is not labelled a miss
+  const store = new Response(body, { headers: idxHeaders() });
+  if (ctx && ctx.waitUntil) ctx.waitUntil(cache.put(key, store));
+  else await cache.put(key, store).catch(() => {});
+  return res;
 }
 
 // ---------- GET /catalog/status?ids= — sid → verdict (pass notices) ----------

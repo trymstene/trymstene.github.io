@@ -9,6 +9,28 @@ name = "banana-share"
 main = "src/index.js"
 compatibility_date = "2026-06-01"
 
+# 💸 A CUSTOM DOMAIN, FOR THE CACHE. Cloudflare's Cache API is a NO-OP on
+# *.workers.dev -- the cache is zone-level and workers.dev is one zone shared by
+# everybody -- so `Cache-Control: public, max-age=300` on catalog/items.json was
+# honoured by the BROWSER only. Every cold load of the rave, the park, the pass,
+# the builder and the PDP fetched the whole manifest and burned a worker
+# invocation plus an R2 GET. On a custom domain the cache works, and the worker
+# can purge it the moment the catalog actually changes.
+#
+# ⚠️ THE workers.dev URL STAYS ON. Share links live in other people's Discord
+# and Twitter posts as banana-share.trymstene.workers.dev/s/<id>, and SSG
+# bundles in the wild hold that host for weeks. Adding a domain is additive;
+# removing the old one would break both.
+# ⚠️⭐ EXPLICIT, AND NOT OPTIONAL. Declaring ANY [[routes]] block turns the
+# workers.dev route OFF unless this line says otherwise -- wrangler said so and
+# then did it. The old host is in other people's Discord posts and in every
+# cached bundle; it has to keep answering.
+workers_dev = true
+
+[[routes]]
+pattern = "share.trymstene.com"
+custom_domain = true
+
 [[r2_buckets]]
 binding = "SHARES"
 bucket_name = "banana-shares"
