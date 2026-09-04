@@ -92,8 +92,14 @@ export function buildEarth(host, MAP, opts) {
   // the canvas is sized to the box it actually occupies, in device pixels, so
   // nothing is ever resampled on its way to the screen
   function layout() {
-    const box = wrap.clientWidth || host.clientWidth || 0;
-    if (!box) return false;                 // hidden: keep the size we had
+    // ⚠️ A ZERO-WIDTH BOX IS NOT A REASON TO DRAW NOTHING. This returned early
+    // when the container had no width — which is the NORMAL state when the map
+    // is built inside a pane that is still `hidden`, or before first layout. The
+    // canvas then kept width 0 and the earth was blank until something resized
+    // the window, which is the "sometimes the world map doesnt load" Trym saw.
+    // Fall back to a real size, and let the observer below correct it the moment
+    // the box is measurable.
+    const box = wrap.clientWidth || host.clientWidth || 960;
     const px = Math.max(1.2, (box * DPR) / W);
     if (Math.abs(px - PX) < 0.01 && cv.width) return false;
     PX = px;
@@ -106,6 +112,12 @@ export function buildEarth(host, MAP, opts) {
   }
   layout();
   addEventListener('resize', layout);
+  // ⚠️ RESIZE ALONE IS NOT ENOUGH: a pane that becomes visible fires no resize
+  // event, so a map built while hidden would keep its fallback size forever.
+  // The observer catches the box the instant it has one.
+  if (typeof ResizeObserver !== 'undefined') {
+    try { new ResizeObserver(() => layout()).observe(wrap); } catch (e) {}
+  }
 
   const view = { s: 1, ox: 0, oy: 0 };
   const clampView = () => {

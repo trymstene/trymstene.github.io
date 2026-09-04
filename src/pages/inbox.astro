@@ -708,17 +708,19 @@ const description = 'Authorized banana personnel only.';
 
     <div id="bmApp" hidden>
       <div class="bm-tabs" role="tablist" aria-label="Departments">
-        <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="true" type="button">📥 Mail</button>
+        <!-- 📈 PULSE LEADS AND OPENS FIRST (Trym, 4 Sep). It is the thing he
+             comes here for; the mail is a place he goes when there is mail. -->
+        <button class="bm-tab" id="bmTabPulse" role="tab" aria-selected="true" type="button">📈 Pulse</button>
+        <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="false" type="button">📥 Mail</button>
         <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery<span class="bm-badge" id="bmGalBadge" hidden></span></button>
         <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">📇 Names</button>
         <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Items<span class="bm-badge" id="bmItemsBadge" hidden></span></button>
         <button class="bm-tab" id="bmTabUsers" role="tab" aria-selected="false" type="button">👤 Users</button>
         <button class="bm-tab" id="bmTabWorld" role="tab" aria-selected="false" type="button">🌍 World</button>
-        <button class="bm-tab" id="bmTabPulse" role="tab" aria-selected="false" type="button">📈 Pulse</button>
         <button class="bm-tab" id="bmTabDev" role="tab" aria-selected="false" type="button">🛠 Dev<span class="bm-badge" id="bmDevBadge" hidden></span></button>
       </div>
 
-      <div id="bmPaneMail">
+      <div id="bmPaneMail" hidden>
         <div class="bm-bar">
           <span class="bm-count" id="bmCount"></span>
           <span id="bmChips"></span>
@@ -850,7 +852,7 @@ const description = 'Authorized banana personnel only.';
            public API (public repo, no secrets); approve/comment/dismiss proxy
            through worker-contact with the inbox token. No PAT on the worker =
            read-only, and the desk says so honestly. -->
-      <div id="bmPanePulse" hidden>
+      <div id="bmPanePulse">
         <div id="bmPulse"></div>
       </div>
       <div id="bmPaneDev" hidden>
@@ -1342,6 +1344,10 @@ const description = 'Authorized banana personnel only.';
     el('bmTabWorld').onclick = () => setTab('world');
     el('bmTabPulse').onclick = () => setTab('pulse');
     el('bmTabDev').onclick = () => setTab('dev');
+    // ⚠️ the markup can show a pane but it cannot RUN one. Pulse opens first, so
+    // it needs the same setTab that every other tab gets from a click — without
+    // this the desk renders an empty pane and waits for a tab press.
+    setTab('pulse');
 
     // ── 📈 THE WORLD DESK ──
     // Two reads, both server truth: the pass rollup (one file a day, written
