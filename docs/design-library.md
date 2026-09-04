@@ -124,6 +124,35 @@ message, and the cost is not confusion: they take a **destructive action**
 Anything that can exceed roughly a second gets this: a login, a pull, a
 checkout hand-off, a render.
 
+### 3e. Concrete, not clever
+
+Trym, 4 Sep 2026, on a note that said *"add your email in My Pass to take it
+anywhere"*: *"if you dont know what this is, or what anywhere is, it doesnt
+make any sense - anywhere, as in i can take it to netflix.com? gmail? … keep
+user-notification and communication very clear and concrete."*
+
+Benefit-copy needs a mental model the reader has not built yet. Ninety seconds
+in, they do not know what the world is, so a promise about it lands as noise.
+The replacement — **"To save your progress, log into My Pass in the menu"** —
+is shorter and says the two things they can act on.
+
+Every notice: name the **outcome** in words they already own, then the
+**action**, pointing at something that is **on the screen right now**.
+
+| ✗ | ✓ |
+|---|---|
+| take it anywhere | to save your progress |
+| could not settle your homestead | could not load your homestead |
+| out of step with the server | the server keeps refusing to save it |
+| this browser blocks session storage | this browser blocks storage |
+| the server keeps changing its stamp | another device keeps changing it |
+
+The right-hand column is not dumbed down, it is **de-jargoned**: *stamp*,
+*session storage* and *yard* are words out of the source. Keep the precise
+version on the analytics event, where precision is the point; the sentence a
+person reads gets the plain one. And see [[named-things-must-be-findable]] —
+never point at a name that is nowhere on screen.
+
 ## 4. `[hidden]` loses
 
 **Any author `display:` beats the `hidden` attribute.** A flex row, a grid, an

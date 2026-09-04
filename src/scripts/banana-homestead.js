@@ -487,7 +487,7 @@ function init(visitDoc, visitMiss) {
       } catch (e) {}
       if (rs >= 2) {
         try { localStorage.removeItem('hs-pullbudget'); } catch (e) {}
-        toast('⚠️ your homestead is out of step with the server (the save keeps being refused) — showing the copy on this device', 8000);
+        toast('⚠️ Could not save your homestead — the server keeps refusing it. Showing what is saved on this device.', 8000);
         console.warn('[homestead] resync loop stopped', { slug: state.slug, updated: r.updated });
         return;
       }
@@ -2568,10 +2568,14 @@ function init(visitDoc, visitMiss) {
         if (localStorage.getItem('hs-keepnote-v1')) return;
         localStorage.setItem('hs-keepnote-v1', '1');
       } catch (e) { return; }
-      // ✂️ 21 words wrapped to seven lines on a phone and was gone before it
-      // could be read (Trym). Same two facts, 13 words: where it lives, and
-      // what to do. "My Pass" is the nav's own label, so it is findable.
-      toast('🎫 Saved on this device only — add your email in My Pass to take it anywhere', 9000);
+      // ✂️ CONCRETE, NOT CLEVER (Trym, 4 Sep). This said "take it anywhere",
+      // which means nothing to somebody who arrived ninety seconds ago —
+      // anywhere as in gmail? netflix? Benefit-copy needs a mental model the
+      // reader does not have yet. Say the OUTCOME they already understand
+      // (save your progress) and the ACTION, naming a thing that is on screen:
+      // "My Pass" is the nav's own label and the 🎫 is the nav's own icon, so
+      // the sentence points at something they can actually find.
+      toast('🎫 To save your progress, log into My Pass in the menu', 9000);
       track1('homestead_keepnote', {});
     }, 45000);
   })();
@@ -4664,11 +4668,14 @@ function init(visitDoc, visitMiss) {
       // ⚠️ THE DIAGNOSIS GOES ON SCREEN, NOT IN THE CONSOLE. This fires on
       // PHONES, where nobody can open one — a diagnostic the sufferer cannot
       // read is not a diagnostic.
-      const why = !guardOk ? 'this browser blocks session storage'
-        : !mine ? 'this device and the server disagree on which yard is yours'
-          : 'the server keeps changing its stamp';
+      // ⚠️ these are read by a PLAYER, not by me. "session storage", "stamp"
+      // and "yard" are words from the code. The `why` on the event below keeps
+      // the precision for the desk; the sentence keeps the plain version.
+      const why = !guardOk ? 'this browser blocks storage'
+        : !mine ? 'this device is on a different homestead'
+          : 'another device keeps changing it';
       track1('homestead_pull', { how: 'loop', why: !guardOk ? 'nosession' : !mine ? 'slug' : 'stamp' });
-      toast('⚠️ could not settle your homestead (' + why + ') — showing the copy on this device', 8000);
+      toast('⚠️ Could not load your homestead (' + why + '). Showing what is saved on this device.', 8000);
       console.warn('[homestead] pull loop stopped after ' + spins + ' adoptions.',
         { serverSlug: r.slug, mySlug: state.slug, mine, updated: r.updated,
           claimed: !!state.claimedAt,
