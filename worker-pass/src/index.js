@@ -462,18 +462,18 @@ async function kofiHook(request, env) {
 // always take one hop to ko-fi.com. Polar is a merchant of record with a real
 // API, so the button can mint a checkout HERE and hand the buyer straight to
 // payment — and it carries EU VAT, which is why this is never raw Stripe.
-// Both rails write the SAME member/wall stores, so /supporters/ and the park
+// Both rails write the SAME member/wall stores, so /support/ and the park
 // board do not care which one paid.
 const POLAR_PRODUCT_ENV = { t1: 'POLAR_T1', t2: 'POLAR_T2', t3: 'POLAR_T3', tip: 'POLAR_TIP' };
 const POLAR_GRANT = { t1: 'sup-t1', t2: 'sup-t2', t3: 'sup-t3', tip: '' };   // a tip grants nothing but thanks
 const polarBase = (env) => env.POLAR_BASE || 'https://sandbox-api.polar.sh';
 
 // GET /pay/checkout?t=t1|t2|t3 → 302 straight into a fresh Polar checkout.
-// ⚠️ every failure lands the buyer back on /supporters/ with a reason rather
+// ⚠️ every failure lands the buyer back on /support/ with a reason rather
 // than a worker error page: a dead money path must be visible, never a blank.
 async function payCheckout(request, env, url) {
   const site = (env.ALLOWED_ORIGIN || 'https://trymstene.com').split(',')[0].trim();
-  const back = (why) => Response.redirect(site + '/supporters/?pay=' + why, 302);
+  const back = (why) => Response.redirect(site + '/support/?pay=' + why, 302);
   if (throttled(request.headers.get('CF-Connecting-IP') || 'unknown')) return back('busy');
   const t = String(url.searchParams.get('t') || '').slice(0, 4);
   const pid = env[POLAR_PRODUCT_ENV[t] || ''] || '';
@@ -484,7 +484,7 @@ async function payCheckout(request, env, url) {
       headers: { Authorization: 'Bearer ' + env.POLAR_TOKEN, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         products: [pid],
-        success_url: site + '/supporters/?joined=1',
+        success_url: site + '/support/?joined=1',
         metadata: { tier: POLAR_GRANT[t] || '', src: 'supporters' },
       }),
     });
@@ -638,7 +638,7 @@ async function payTip(request, env, url) {
       body: JSON.stringify({
         products: [pid],
         ...(amount ? { amount } : {}),          // 0 = let them pick on the checkout
-        success_url: site + '/supporters/?thanks=1',
+        success_url: site + '/support/?thanks=1',
         metadata: { tier: 'coffee', src: 'supporters' },
       }),
     });

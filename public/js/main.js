@@ -305,8 +305,11 @@
       // "took a door out of the world to /shop/" — the nav is one of them, and
       // this is how we find out whether making it yellow was worth it.
       gtag('event', 'shop_door', { from: place });
-    } else if (/^\/supporters\/?($|[?#])/.test(href)) {
-      // which door earns the wall its visits — same shape as `shop_door`
+    } else if (/^\/support(ers)?\/?($|[?#])/.test(href)) {
+      // which door earns the support page its visits — same shape as `shop_door`.
+      // ⚠️ MATCHES BOTH SLUGS. The page moved /supporters/ → /support/ on 4 Sep
+      // and this regex still read the old one — every door tap would have gone
+      // untracked, silently, exactly like the buymeacoffee case logged below.
       gtag('event', 'supporters_door', { from: place });
     } else if (href.indexOf('/pay/tip') > -1) {
       // ⚠️ MATCH THE RAIL, NOT THE PLATFORM. This read `buymeacoffee` and kept
