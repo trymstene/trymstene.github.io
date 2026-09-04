@@ -254,6 +254,25 @@ function init() {
     sup.style.zIndex = String(100 + SUP_BOARD.y + 3);
     sup.addEventListener('click', (e) => { e.stopPropagation(); openSupCard(); });
     world.appendChild(sup);
+    // 💛 ⚠️ AN IMPRESSION, NOT A TAP. `park_supboard` only ever fired when the
+    // card was OPENED, so the one number the board has is 9 people a month and
+    // it cannot say which of two opposite problems that is: nobody walks past
+    // it, or everybody walks past it and keeps walking. Those need opposite
+    // fixes — move it vs change it — so the sign now says when it was actually
+    // on somebody's screen.
+    //
+    // ⚠️ ONCE PER VISIT. The park scrolls, so the sign crosses the viewport
+    // repeatedly; counting every crossing would measure pacing, not reach.
+    if ('IntersectionObserver' in window) {
+      let seen = false;
+      const io2 = new IntersectionObserver((es) => {
+        if (seen || !es.some((e) => e.isIntersecting)) return;
+        seen = true;
+        io2.disconnect();
+        track('park_supboard_seen');
+      }, { threshold: 0.5 });
+      io2.observe(sup);
+    }
   }
 
   // 💛 the board's card: who is keeping the world free. The feed is public
