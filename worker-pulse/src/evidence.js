@@ -491,19 +491,48 @@ export function buildFacts(d, upTo) {
       }));
     }
 
-    // ⚠️ AN INTEGRITY ALARM, NOT A METRIC. Drift is the ledger disagreeing with
-    // itself; unruled is a faucet paying out with no rule capping it. Either
-    // means a number somewhere on this desk is wrong.
-    if (R.drift || R.unruled) {
+    // ⚠️ DRIFT IS POINTS, NOT PASSES. driftScore sums the ABSOLUTE unexplained
+    // movement across coins_earned/spent/refunded, rep and jelly, then the
+    // rollup sums that across every pass. Calling it "607 passes" — which this
+    // did — invites exactly the reading it got: that 607 drifted passes
+    // contradicts 119 people holding one. They are different units.
+    //
+    // ⚠️ AND IT IS ADVISORY, NOT A VERDICT — worker-pass says so itself. A
+    // device still on pre-tape JS moves slots with no events behind them, so
+    // its drift is EVERYTHING it ever earned. Until those age out, a standing
+    // balance of drift is expected and means nothing on its own. Only drift
+    // that is large against the coins actually in circulation is a finding.
+    const held = (R.coins && R.coins.held) || 0;
+    const driftShare = held ? R.drift / held : 0;
+    if (R.drift) {
       push(fact({
-        id: 'ledger:integrity', area: 'money', label: 'the ledger disagreeing with itself',
-        value: R.drift + R.unruled, base: 0, deltaPct: null,
-        n: R.drift + R.unruled, z: 0, sig: 2,
-        say: (R.drift ? R.drift + ' passes whose totals do not match their own tape' : '')
-          + (R.drift && R.unruled ? ', and ' : '')
-          + (R.unruled ? R.unruled + ' events from a faucet with no rule capping it' : '')
-          + '. Both mean a number on this desk is wrong until it is chased down.',
-        because: R.drift + ' drifted, ' + R.unruled + ' unruled',
+        id: 'ledger:drift', area: 'money', label: 'coin and rep movement the tape cannot explain',
+        value: R.drift, unit: 'points', base: held, deltaPct: null,
+        n: R.passes || 0, z: 0,
+        // a fifth of everything in circulation is worth a morning; less is the
+        // legacy tail, and the tail shrinks on its own
+        sig: driftShare >= 0.2 ? 2 : 0,
+        say: R.drift + ' points of coin and rep movement across all ' + (R.passes || 0)
+          + ' passes have no event on the tape explaining them, against ' + held
+          + ' coins held in total. This counts POINTS, not passes. It is advisory: '
+          + 'a device still running pre-tape code moves its totals with no events '
+          + 'at all, so its whole history lands here and ages out on its own.',
+        because: R.drift + ' points unexplained against ' + held + ' held',
+      }));
+    }
+
+    // ⚠️ a COUNT of events, unlike drift — a faucet paid out without naming
+    // itself, so no per-person cap could be applied to it.
+    if (R.unruled) {
+      push(fact({
+        id: 'ledger:unruled', area: 'money', label: 'payouts from a faucet that named no rule',
+        value: R.unruled, base: null, deltaPct: null, n: R.unruled, z: 0,
+        sig: 1,
+        say: R.unruled + ' events came from a faucet that did not name itself, so no '
+          + 'per-person cap could be applied to them. Expected while RULES_STRICT is '
+          + 'off and older tabs are still running; it is the number that has to reach '
+          + 'about zero before that flag can be flipped.',
+        because: R.unruled + ' unruled events',
       }));
     }
   }
