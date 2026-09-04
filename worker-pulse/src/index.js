@@ -251,9 +251,16 @@ async function apiRange(env, from, to) {
       // dedupes people inside a row, never across the date dimension, so
       // summing the daily column counts a five-day visitor five times. Costs
       // no extra request — the total rides back in the same response.
+      // 📈 active1/7/28DayUsers are GA4's OWN rolling windows: on any given day,
+      // how many distinct people had been on the site in the last 1 / 7 / 28.
+      // Two things make them worth the columns: they are computed by Google, so
+      // they go BACKWARDS — our own rollup only knows days since the cron
+      // started — and they count VISITORS, where the pass rollup counts people
+      // who have a banana pass. Different questions, both true, never mixed.
       { dateRanges, dimensions: [{ name: 'date' }],
         metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'newUsers' },
-          { name: 'engagementRate' }, { name: 'totalRevenue' }, { name: 'transactions' }],
+          { name: 'engagementRate' }, { name: 'totalRevenue' }, { name: 'transactions' },
+          { name: 'active1DayUsers' }, { name: 'active7DayUsers' }, { name: 'active28DayUsers' }],
         metricAggregations: ['TOTAL'],
         orderBys: [{ dimension: { dimensionName: 'date' } }], limit: 400 },
       { dateRanges, dimensions: [{ name: 'countryId' }, { name: 'eventName' }],
@@ -327,6 +334,7 @@ async function apiRange(env, from, to) {
   const dailyRows = rows(daily).map((r) => ({
     d: dim(r, 0), sessions: met(r, 0), users: met(r, 1), newUsers: met(r, 2),
     eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5),
+    a1: met(r, 6), a7: met(r, 7), a28: met(r, 8),
   }));
   const sum = (k) => dailyRows.reduce((a, x) => a + x[k], 0);
   // 👥 people, counted once for the whole window. metricValues here follow the
@@ -635,8 +643,9 @@ async function apiAnalyst(env) {
     const r = dayRow[d];
     return r
       ? { d, sessions: met(r, 0), users: met(r, 1), newUsers: met(r, 2),
-        eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5) }
-      : { d, sessions: 0, users: 0, newUsers: 0, eng: 0, revenue: 0, tx: 0 };
+        eng: met(r, 3), revenue: met(r, 4), tx: met(r, 5),
+        a1: met(r, 6), a7: met(r, 7), a28: met(r, 8) }
+      : { d, sessions: 0, users: 0, newUsers: 0, eng: 0, revenue: 0, tx: 0, a1: 0, a7: 0, a28: 0 };
   });
 
   // one zero-filled series per event — ⚠️ a day with no rows must read 0,

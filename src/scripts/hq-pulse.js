@@ -117,7 +117,12 @@ export function lineChart(host, pts, opts) {
   const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, class: 'hqp-svg', role: 'img',
     'aria-label': o.label || 'trend' }, wrap);
   if (!pts.length) { div('hqp-empty', 'no days rolled up yet', wrap); return; }
-  const max = Math.max(1, ...pts.map((p) => p.v));
+  // ⚠️ A SECOND SERIES SHARES THE SCALE, or the comparison lies. `o.second`
+  // = { key, label, color } and every point carries that key. Used for weekly
+  // against monthly actives, where the GAP between the lines is the thing
+  // worth looking at — two charts side by side cannot show a gap.
+  const k2 = o.second && o.second.key;
+  const max = Math.max(1, ...pts.map((p) => p.v), ...(k2 ? pts.map((p) => +p[k2] || 0) : []));
   const x = (i) => L + (i * (W - L - R)) / Math.max(1, pts.length - 1);
   const y = (v) => T + (H - T - B) * (1 - v / max);
   // a recessive grid: three lines, labelled at the ends only
@@ -129,19 +134,36 @@ export function lineChart(host, pts, opts) {
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
   // ⚠️ a flat 13%-alpha yellow over the panel reads as MUD. The fill has to
   // fade out downward so the ink stays at the line, where the data is.
-  const gid = 'hqpg' + (host.childElementCount + 1) + '-' + Math.round(max);
-  const grad = mk('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, mk('defs', {}, svg));
-  mk('stop', { offset: '0%', 'stop-color': o.color || LINE, 'stop-opacity': 0.34 }, grad);
-  mk('stop', { offset: '100%', 'stop-color': o.color || LINE, 'stop-opacity': 0.02 }, grad);
-  mk('path', { d: `${d} L${x(pts.length - 1)},${y(0)} L${x(0)},${y(0)} Z`, fill: 'url(#' + gid + ')' }, svg);
+  // ⚠️ NO FILL WHEN THERE ARE TWO LINES. The lower series would sit inside the
+  // upper one's wash and both would read as mud — the same reason the fill
+  // fades downward on a single line.
+  if (!k2) {
+    const gid = 'hqpg' + (host.childElementCount + 1) + '-' + Math.round(max);
+    const grad = mk('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, mk('defs', {}, svg));
+    mk('stop', { offset: '0%', 'stop-color': o.color || LINE, 'stop-opacity': 0.34 }, grad);
+    mk('stop', { offset: '100%', 'stop-color': o.color || LINE, 'stop-opacity': 0.02 }, grad);
+    mk('path', { d: `${d} L${x(pts.length - 1)},${y(0)} L${x(0)},${y(0)} Z`, fill: 'url(#' + gid + ')' }, svg);
+  }
   mk('path', { d, fill: 'none', stroke: o.color || LINE, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+  if (k2) {
+    const d2 = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(+p[k2] || 0).toFixed(1)}`).join(' ');
+    mk('path', { d: d2, fill: 'none', stroke: o.second.color || '#5ec8e0', 'stroke-width': 2,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    // direct-labelled at the line's own end, not a legend box off to one side
+    const l2 = pts[pts.length - 1][k2] || 0;
+    mk('circle', { cx: x(pts.length - 1), cy: y(l2), r: 4, fill: o.second.color || '#5ec8e0',
+      stroke: '#171326', 'stroke-width': 2 }, svg);
+    const t2 = mk('text', { x: x(pts.length - 1) - 8, y: Math.min(H - B - 4, y(l2) + 16), fill: o.second.color || '#5ec8e0',
+      'font-size': 12, 'font-weight': 700, 'text-anchor': 'end' }, svg);
+    t2.textContent = nfmt(l2) + ' ' + (o.second.label || '');
+  }
   // the last point is the one that gets a label — never a number on every point
   const last = pts[pts.length - 1];
   mk('circle', { cx: x(pts.length - 1), cy: y(last.v), r: 4, fill: o.color || LINE, stroke: '#171326', 'stroke-width': 2 }, svg);
   const lx = x(pts.length - 1);
   const t1 = mk('text', { x: lx - 8, y: Math.max(T + 12, y(last.v) - 10), fill: INK, 'font-size': 13,
     'font-weight': 700, 'text-anchor': 'end' }, svg);
-  t1.textContent = nfmt(last.v);
+  t1.textContent = nfmt(last.v) + (k2 ? ' ' + (o.label1 || '') : '');
   [0, pts.length - 1].forEach((i) => {
     if (!pts[i]) return;
     const tx = mk('text', { x: x(i), y: H - 8, fill: DIM, 'font-size': 12,
@@ -160,7 +182,8 @@ export function lineChart(host, pts, opts) {
     i = Math.max(0, Math.min(pts.length - 1, i));
     cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 1);
     tip.hidden = false;
-    tip.textContent = pts[i].d + ' · ' + nfmt(pts[i].v);
+    tip.textContent = pts[i].d + ' · ' + nfmt(pts[i].v) + (o.label1 ? ' ' + o.label1 : '')
+      + (k2 ? '  ·  ' + nfmt(+pts[i][k2] || 0) + ' ' + (o.second.label || '') : '');
     tip.style.left = Math.max(0, Math.min(100, (x(i) / W) * 100)) + '%';
   };
   svg.addEventListener('pointermove', at);
@@ -283,8 +306,15 @@ export function renderLedger(el, data) {
     s = section(el, 'Is it growing', 'Two different questions. The total only ever goes up, so its SLOPE is the recruitment rate — flattening means new people stopped arriving. The monthly number can fall, and that is the one that says whether the people already here are still turning up.');
     lineChart(s, days.map((d) => ({ d: d.day, v: d.passes })), { label: 'people who have ever arrived', color: '#7ee0a8' });
     div('hqp-cap', 'people who have ever arrived — the slope is the recruitment rate', s);
-    lineChart(s, days.map((d) => ({ d: d.day, v: d.mau })), { label: 'active in the last 30 days', color: '#ffd83d' });
-    div('hqp-cap', 'active in the last 30 days', s);
+    // ⚠️ ONE CHART, TWO LINES. Monthly and weekly actives share a scale and
+    // the GAP between them is the real signal — it is the share of the month's
+    // players who turned up in any given week. Two charts stacked cannot show
+    // a gap, and the weekly number was only ever a tile before this.
+    lineChart(s, days.map((d) => ({ d: d.day, v: d.mau, wau: d.wau })), {
+      label: 'monthly and weekly actives', color: '#ffd83d', label1: 'monthly',
+      second: { key: 'wau', label: 'weekly', color: '#5ec8e0' },
+    });
+    div('hqp-cap', 'active in the last 30 days (yellow) and the last 7 (blue) — the gap is how much of the month shows up in a week', s);
     // the honest caveat, once, under the pair rather than on each chart
     const span = days.length;
     div('hqp-cap', span < 30

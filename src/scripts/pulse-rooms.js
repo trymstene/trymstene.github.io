@@ -85,6 +85,24 @@ export function renderOverview(into, S) {
   const daily = fillDaily(R.daily, 'sessions');
   if (daily.length > 1) {
     lineChart(s, daily, { label: 'sessions per day' });
+    div('hqp-cap', 'sessions per day', s);
+    // 📈 HOW MANY PEOPLE THE SITE HAS, day by day. Google computes these
+    // rolling windows itself, so this chart is full from the first day it is
+    // switched on — our own pass rollup can only ever show days since its cron
+    // started. ⚠️ These count VISITORS to the site; the world desk's monthly
+    // number counts people who hold a banana pass. Both are true and they are
+    // not the same number, so they live on separate screens.
+    // ⚠️ fillDaily carries ONE value per point, so the two windows are filled
+    // separately and zipped. Both span the same dates, so the indices line up.
+    const mau = fillDaily(R.daily, 'a28');
+    const wau = fillDaily(R.daily, 'a7');
+    if (mau.some((x) => x.v > 0)) {
+      lineChart(s, mau.map((x, i) => ({ d: x.d, v: x.v, w: (wau[i] && wau[i].v) || 0 })), {
+        label: 'monthly and weekly visitors', color: '#ffd83d', label1: 'monthly',
+        second: { key: 'w', label: 'weekly', color: '#5ec8e0' },
+      });
+      div('hqp-cap', 'people on the site in the last 28 days (yellow) and the last 7 (blue) — ⚠️ the monthly line is a trailing window, so a campaign stays in it for four weeks after the spend stops', s);
+    }
     div('hqp-cap', 'sessions per day · a day with nothing is a real zero, not a gap', s);
   }
 
