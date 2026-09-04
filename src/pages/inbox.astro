@@ -1347,7 +1347,12 @@ const description = 'Authorized banana personnel only.';
     // ⚠️ the markup can show a pane but it cannot RUN one. Pulse opens first, so
     // it needs the same setTab that every other tab gets from a click — without
     // this the desk renders an empty pane and waits for a tab press.
-    setTab('pulse');
+    // ⚠️⭐ BUT NOT HERE. The call is at the BOTTOM of this module, and moving it
+    // back up breaks the whole desk. setTab('pulse') runs pulseLoad(), which
+    // reads `pulseAt` — declared seven lines BELOW this comment. Reading a `let`
+    // before its declaration throws, and the throw does not stop at Pulse: it
+    // aborts the rest of the module, so the items desk, the rave desk and the
+    // dev desk were never wired at all. The page still LOOKED like Banana HQ.
 
     // ── 📈 THE WORLD DESK ──
     // Two reads, both server truth: the pass rollup (one file a day, written
@@ -2127,11 +2132,22 @@ const description = 'Authorized banana personnel only.';
         ? '🏡 ' + (it.wear.where === 'indoor' ? 'indoor' : 'yard') + ' decor'
           + (it.wear.fw ? ' · ' + Math.max(1, Math.ceil(it.wear.fw / 16)) + '×' + Math.max(1, Math.ceil((it.wear.fh || 16) / 16)) + ' tiles' : '')
         : 'rides the ' + (it.wear && it.wear.anchor === 'hand' ? (it.wear.hand || '') + ' hand' : (it.wear && it.wear.anchor) || '?');
-      info.textContent = (live ? 'live since ' : spotTxt + ' · sent ')
+      // 📦 a retired row used to render EXACTLY like a live one -- nothing
+      // read `it.retired` -- so taking something off sale left no trace on the
+      // only screen that could show it, and pressing retire again was a silent
+      // no-op re-put. The state has to be on the card, or it does not exist.
+      const gone = !!(live && it.retired);
+      info.textContent = (live ? (gone ? 'off sale · added ' : 'live since ') : spotTxt + ' · sent ')
         + new Date(it.added || it.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      // dimmed, not boxed: this list already has edges and a retired item is a
+      // quieter version of the same thing, not a different kind of thing
+      if (gone) cv.style.opacity = '0.4';
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;';
-      const mod = async (payload, btn) => {
+      // `after` = what to do instead of dropping the card. Approve and reject
+      // finish a submission, so the card goes; retire does NOT finish anything
+      // -- the item is still there, just off sale -- so it stays and re-renders.
+      const mod = async (payload, btn, after) => {
         btn.disabled = true;
         try {
           const r = await fetch(CAT_API + '/catalog/moderate?key=' + encodeURIComponent(gkey), {
@@ -2145,25 +2161,37 @@ const description = 'Authorized banana personnel only.';
             // than "fixed" to 'ok' — rebuildAt is module scope shared with the
             // gallery desk and its 60s throttle returns before any toast, so
             // wiring it would fire a silent no-op on a batch of approvals.)
-            card.remove(); itemsCount(); return;
+            if (after) after(); else { card.remove(); itemsCount(); }
+            return;
           }
           btn.textContent = d.error || 'failed'; btn.disabled = false;
         } catch (e) { btn.textContent = 'failed — retry'; btn.disabled = false; }
       };
       if (live) {
-        const retire = document.createElement('button');
-        retire.className = 'bm-btn bm-btn--shred';
-        retire.type = 'button';
-        retire.textContent = '📦 retire from catalog';
-        retire.onclick = () => {
-          if (retire.dataset.arm !== '1') { retire.dataset.arm = '1'; retire.textContent = '⚠ retire, really?'; setTimeout(() => { retire.dataset.arm = ''; retire.textContent = '📦 retire from catalog'; }, 3000); return; }
+        // ONE button, both directions. `unretire` has existed in the worker
+        // since retire did and had no control anywhere in the site, so a retire
+        // could only be undone by hand-POSTing the worker.
+        const flip = document.createElement('button');
+        flip.className = 'bm-btn' + (gone ? '' : ' bm-btn--shred');
+        flip.type = 'button';
+        const restLabel = gone ? '↩ put back on sale' : '📦 retire from catalog';
+        flip.textContent = restLabel;
+        flip.onclick = () => {
+          // arming guards the destructive direction only -- putting something
+          // back on sale is not a thing anyone needs protecting from
+          if (!gone && flip.dataset.arm !== '1') {
+            flip.dataset.arm = '1'; flip.textContent = '⚠ retire, really?';
+            setTimeout(() => { flip.dataset.arm = ''; flip.textContent = restLabel; }, 3000);
+            return;
+          }
           // the button always SAID retire; it sent 'remove', which deleted the
           // art out from under everyone holding it. 'retire' takes it off sale
           // and leaves every copy people already own exactly where it is.
-          mod({ id: it.id, action: 'retire' }, retire);
+          mod({ id: it.id, action: gone ? 'unretire' : 'retire' }, flip,
+            () => card.replaceWith(itemCard({ ...it, retired: gone ? 0 : 1 }, { live: true })));
         };
         titleIn.disabled = true; byIn.disabled = true;
-        row.appendChild(retire);
+        row.appendChild(flip);
       } else {
         const ok = document.createElement('button');
         ok.className = 'bm-btn';
@@ -2209,7 +2237,10 @@ const description = 'Authorized banana personnel only.';
         const cat = await r2.json();
         el('bmCatList').textContent = '';
         if (!cat.length) el('bmCatList').innerHTML = '<p class="bm-livenote">Nothing in the catalog yet — approve something above, or submit from the Forge.</p>';
-        cat.forEach((it) => el('bmCatList').appendChild(itemCard(it, { live: true })));
+        // on sale first, off sale after -- otherwise a retired row hides in the
+        // middle of the list and the state is only findable by reading every card
+        cat.slice().sort((x, y) => (x.retired ? 1 : 0) - (y.retired ? 1 : 0))
+          .forEach((it) => el('bmCatList').appendChild(itemCard(it, { live: true })));
       } catch (e) { el('bmCatList').innerHTML = '<p class="bm-livenote">Couldn’t read the catalog.</p>'; }
     }
     el('bmItemsRefresh').onclick = itemsLoad;
@@ -2571,6 +2602,11 @@ const description = 'Authorized banana personnel only.';
         .then((items) => { const b = el('bmItemsBadge'); if (b && items.length) { b.hidden = false; b.textContent = items.length; } })
         .catch(() => {});
     }
+
+    // ⚠️ LAST, ON PURPOSE — see the note beside the tab wiring above. Opening a
+    // tab runs that tab's loader, so nothing may open one until every desk in
+    // this module has been declared.
+    setTab('pulse');
 
     boot();
   </script>
