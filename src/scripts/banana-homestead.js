@@ -464,7 +464,16 @@ function init(visitDoc, visitMiss) {
       if (Array.isArray(merged.animals)) merged.hens = merged.animals.filter((a) => a.sp === 'hen').length || 0;
       merged.pubUpdated = r.updated || Date.now();
       merged.dirty = 1;
-      try { localStorage.setItem(HS_KEY, JSON.stringify(merged)); } catch (e) { return; }
+      // ⚠️⭐ THE LOOP. This used to write `merged` to localStorage and leave the
+      // in-memory `state` untouched — but the reload below fires `pagehide`,
+      // whose beacon calls stampMark(), and stampMark WRITES `state` back over
+      // the same key. The merged yard was overwritten by the stale one every
+      // single time, so the reloaded page came up with the OLD pubUpdated, its
+      // save was refused again, and it resynced and reloaded forever.
+      // Adopting into memory first means anything that writes `state` between
+      // here and the reload carries the merge instead of undoing it.
+      Object.assign(state, merged);
+      try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) { return; }
       track1('homestead_pull', { how: 'resync' });
       // ⚠️ this path had NO guard at all: it sets dirty = 1, so the reload
       // pushes again, and a push that 409s again comes straight back here.
@@ -4614,7 +4623,11 @@ function init(visitDoc, visitMiss) {
     }
     try { localStorage.setItem('hs-pullbudget', JSON.stringify({ t: Date.now(), n: spins + 1 })); } catch (e) {}
     try { sessionStorage.setItem('hs-pull', stamp); } catch (e) {}
-    try { localStorage.setItem(HS_KEY, JSON.stringify(next)); } catch (e) { return; }
+    // ⚠️ same hazard as yardResync: the reload's pagehide beacon calls
+    // stampMark(), which persists `state`. Adopt into memory first or the
+    // pull is undone on its way out.
+    Object.assign(state, next);
+    try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) { return; }
     track1('homestead_pull', { how: mine ? 'refresh' : 'adopt' });
     toast('⬇️ fetching your homestead…', 2400);
     setTimeout(() => location.reload(), 700);
