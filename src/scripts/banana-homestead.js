@@ -4548,7 +4548,14 @@ function init(visitDoc, visitMiss) {
     // adopt: the shed, pantry and pockets survive)
     if (r.was && state.slug === r.was && state.slug !== r.slug) { state.slug = r.slug; saveRaw(); }
     const mine = state.slug === r.slug;
-    const testy = /^Testy/.test(state.name || '');
+    // ⚠️⭐ ONLY WHEN THE SERVER HAS SOMETHING BETTER TO OFFER. This read "the
+    // local yard is called Testy" on its own, and meant "a QA leftover — take
+    // the real published yard instead". But a scenario that ran on a real
+    // device PUBLISHES the Testy name (Trym's own yard is slug testy-3), and
+    // then adopting it leaves the name Testy — so the next boot adopts again,
+    // and the next, and the homestead reloads under the player forever.
+    // A Testy yard is only disposable when the published one is not also Testy.
+    const testy = /^Testy/.test(state.name || '') && !/^Testy/.test(r.name || '');
     let next = null;
     if (!state.claimedAt || testy || !mine) {
       try { localStorage.setItem('hs-v1-prev', localStorage.getItem(HS_KEY) || ''); } catch (e) {}
