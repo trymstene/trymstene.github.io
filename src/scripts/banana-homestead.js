@@ -2568,8 +2568,10 @@ function init(visitDoc, visitMiss) {
         if (localStorage.getItem('hs-keepnote-v1')) return;
         localStorage.setItem('hs-keepnote-v1', '1');
       } catch (e) { return; }
-      toast('🎫 this homestead is saved on this device — add your email in the '
-        + 'menu under My Pass and it follows you to your phone too', 9000);
+      // ✂️ 21 words wrapped to seven lines on a phone and was gone before it
+      // could be read (Trym). Same two facts, 13 words: where it lives, and
+      // what to do. "My Pass" is the nav's own label, so it is findable.
+      toast('🎫 Saved on this device only — add your email in My Pass to take it anywhere', 9000);
       track1('homestead_keepnote', {});
     }, 45000);
   })();

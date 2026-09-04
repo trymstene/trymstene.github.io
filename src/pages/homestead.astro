@@ -230,6 +230,14 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-toast {
       position: absolute; left: 50%; top: max(18%, 140px); transform: translateX(-50%);
       z-index: 30; pointer-events: none; max-width: calc(100% - 2rem); text-align: center;
+      /* ⚠️ EVERY TOAST HERE WAS HALF-WIDTH. An absolutely positioned box with
+         `left: 50%` and no `right` shrinks to fit the space from 50% to the
+         RIGHT EDGE — half the view, 177px of an available 323px on a 393px
+         phone — and translateX(-50%) then centres that half-width box, so it
+         looks deliberate. Anything longer than a few words wrapped to five
+         lines and read as a wall (Trym, 4 Sep). max-content lets it ask for
+         the width it wants; max-width above still caps it. */
+      width: max-content;
       background: #101a10; color: #ffe135; border: 3px solid #ffe135;
       box-shadow: 4px 4px 0 #000; padding: 0.5rem 0.9rem; line-height: 1.35;
       font-size: 0.85rem; font-weight: 800; opacity: 0; transition: opacity 0.25s ease;
