@@ -16,11 +16,24 @@ import { passkeysSupported, linked, savePass, restorePass, pullLatest,
 import { captionsClean } from '../lib/sticker-core.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
+import { worldToken } from '../lib/world.js';
 
 // 🎁 community catalog (the ownership stack) — owned items show in GEAR and
 // can be worn; the manifest is public + cached, fetched once per page
 let CATALOG = [];
 const CAT_CUSTOM = {};
+// ⚠️⭐ UP HERE, NOT BESIDE renderOut(). paint() calls renderMade() which calls
+// renderOut(), and paint() runs while this module is still being evaluated —
+// so a `const` declared further down is in its temporal dead zone and reading
+// it throws. The throw is swallowed by the async call and the only symptom is
+// a section that never appears. Exactly the trap that killed three desks in
+// Banana HQ the same day: MODULE CONSTS GO ABOVE ANYTHING THAT CAN RUN.
+const SHARE_API = 'https://banana-share.trymstene.workers.dev';
+const outPost = (path, body) => fetch(SHARE_API + path, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ ...body, wt: worldToken() }),
+}).then((r) => r.json().catch(() => ({}))).catch(() => ({}));
+
 const catCustomP = (ids) => {
   // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
   // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
@@ -385,6 +398,19 @@ function netNote(cold) {
   else if (el('psSyncNote').textContent === LINE_WAIT) setLine(loggedIn() ? LINE_IN : LINE_OUT);
 }
 
+// the zero state, in one place. ⚠️ It is not only paint() that can discover a
+// person has something: published items arrive from the server a moment later,
+// and a maker whose shelf is empty on this device would otherwise be shown the
+// "nothing here yet" screen with their own live items sitting behind it.
+function setHave(v) {
+  HAVE = !!v;
+  el('psNav').hidden = !HAVE;
+  el('psZero').hidden = HAVE;
+  el('psSigSlot').hidden = HAVE;   // a dashed frame beats a banana they never made
+  el('psSig').hidden = !HAVE;
+  el('psDoorMake').hidden = !HAVE; // down there the pane doors ARE the exits
+}
+
 // ⚠️ paint() RUNS TWICE — once from localStorage, once when the account lands —
 // so every block below REPLACES what it drew and never appends to it.
 function paint() {
@@ -461,12 +487,7 @@ function paint() {
 
   // — ⚠️ THE ZERO STATE HAS NO NAVIGATION. Nothing made, nothing earned, nothing
   //   counted = three doors in the pane slot and not one tile of nothing. —
-  HAVE = !!(all.length || earned.length || any);
-  el('psNav').hidden = !HAVE;
-  el('psZero').hidden = HAVE;
-  el('psSigSlot').hidden = HAVE;   // a dashed frame beats a banana they never made
-  el('psSig').hidden = !HAVE;
-  el('psDoorMake').hidden = !HAVE; // down there the pane doors ARE the exits
+  setHave(!!(all.length || earned.length || any));
   el('tab-numbers').hidden = !any;
   if (!HAVE) document.querySelectorAll('.ps-pane').forEach((p) => { p.hidden = true; });
   else if (selectTab) selectTab();
@@ -535,12 +556,178 @@ function paint() {
 }
 
 // — ONE MIXED-KIND SHELF, newest first, each tile routed to its own tool —
+// 🏷 ---- OUT IN THE WORLD: the items of yours other people can get ----
+// Only shown to somebody the SERVER agrees made something. There is no local
+// list to trust here and there must not be: `cat-subs-v1` and the shelf both
+// survive a logout, so a menu built on device state would offer a stranger the
+// controls to somebody else's work. Every action re-proves who is asking.
+async function renderOut() {
+  // ⚠️ psLive, NOT psOut: `ps-out` / `psOut` is the LOG-OUT row further up
+  // this page. Reusing either name put item rows inside the log-out button's
+  // wrapper and restyled it, and getElementById handed back whichever came
+  // first in the document. Names on a page this long are a namespace.
+  const host = el('psLive'); const block = el('psLiveBlock');
+  if (!host || !block) return;
+  // ⚠️ gated on loggedIn(), NOT on the token: a signed-in person whose last
+  // pull failed has no fresh token for a moment, and hiding their own work
+  // because of a network blip reads as losing it. The server refuses anyway.
+  if (!loggedIn() || !worldToken()) { block.hidden = true; return; }
+  const mine = await outPost('/catalog/mine', {});
+  const ids = Array.isArray(mine.items) ? mine.items : [];
+  if (!ids.length) { block.hidden = true; return; }
+  // ⚠️ catalogReady RESOLVES TO UNDEFINED — it assigns the rows to CATALOG and
+  // returns nothing. Await it for the timing, then read CATALOG for the data.
+  await catalogReady;
+  const rows = ids.map((id) => (Array.isArray(CATALOG) ? CATALOG : []).find((x) => x.id === id)).filter(Boolean);
+  if (!rows.length) { block.hidden = true; return; }
+  block.hidden = false;
+  // having something out in the world IS having something
+  if (!HAVE) { setHave(true); selectTab(); }
+  host.textContent = '';
+  await assetsReady();
+  rows.forEach((it) => host.appendChild(outRow(it)));
+}
+
+function outRow(it) {
+  const wrap = document.createElement('div');
+  const row = document.createElement('div');
+  row.className = 'ps-live';
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 180;
+  cv.className = 'ps-live__art' + (it.retired ? ' ps-live__art--gone' : '');
+  drawComposite(cv.getContext('2d'), 180, 2, {
+    hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '',
+    bg: 'transparent', captions: false, effect: 'none', custom: wearToCustom(it.wear) || undefined,
+  });
+  const t = document.createElement('div');
+  t.className = 'ps-live__t';
+  const nm = document.createElement('span');
+  nm.className = 'ps-live__name';
+  nm.textContent = it.title || it.id;
+  const st = document.createElement('span');
+  st.className = 'ps-live__state';
+  // concrete, not clever: say where it is, not what flag it carries
+  st.textContent = it.retired ? 'off sale — people who already have it keep it'
+    : (it.kind === 'decor' ? 'in every homestead phone store' : 'on sale in the Banana Stand');
+  t.appendChild(nm); t.appendChild(st);
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.className = 'ps-live__more';
+  // ⚠️ the purchased pixel pack, not an OS glyph — an emoji renders as a
+  // different shape on every phone and none of them belong to this world
+  more.innerHTML = iconSvg('more-horizontal', { size: 22 });
+  more.setAttribute('aria-label', 'What you can do with ' + (it.title || 'this item'));
+  more.setAttribute('aria-expanded', 'false');
+  const menu = document.createElement('div');
+  menu.className = 'ps-live__menu';
+  menu.hidden = true;
+  more.onclick = () => { menu.hidden = !menu.hidden; more.setAttribute('aria-expanded', String(!menu.hidden)); };
+  row.appendChild(cv); row.appendChild(t); row.appendChild(more);
+  wrap.appendChild(row); wrap.appendChild(menu);
+
+  const act = (icon, label, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.innerHTML = iconSvg(icon, { size: 18 }) + '<span>' + esc(label) + '</span>';
+    b.onclick = fn;
+    menu.appendChild(b);
+    return b;
+  };
+  // a button mid-action keeps its icon and swaps only the words
+  const say = (b, msg) => {
+    const sp = b.querySelector('span'); if (!sp) return;
+    const was = sp.textContent; sp.textContent = msg;
+    setTimeout(() => { sp.textContent = was; }, 3200);
+  };
+
+  if (!it.retired) {
+    act('pencil', 'Change how it looks', () => { location.href = '/forge/items/?edit=' + encodeURIComponent(it.id); });
+    act('label', 'Rename it', async (e) => {
+      const b = e.currentTarget;
+      const next = prompt('What should it be called?', it.title || '');
+      if (next === null) return;
+      const title = next.trim().slice(0, 40);
+      if (!title || title === it.title) return;
+      b.disabled = true;
+      // a rename is an edit that keeps the art — same queue, same review
+      const r = await outPost('/catalog/submit', {
+        title, by: it.by || '', target: it.id, wear: it.wear,
+        sid: [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, '0')).join(''),
+      });
+      b.disabled = false;
+      say(b, r.ok ? '📮 sent for a look — the name changes if he says yes' : (r.error || 'didn’t send — try again'));
+    });
+  }
+  act(it.retired ? 'lock' : 'archive', it.retired ? 'Off sale — ask Trym to put it back' : 'Take it off sale', (e) => {
+    if (it.retired) return;
+    const b = e.currentTarget;
+    confirmOut(it.title || 'this item', async () => {
+      b.disabled = true;
+      const r = await outPost('/catalog/unlist', { id: it.id });
+      b.disabled = false;
+      if (r.ok) { it.retired = 1; renderOut(); } else say(b, r.error || 'didn’t work — try again');
+    });
+  }).disabled = !!it.retired;
+  act('undo', 'What it used to look like', async (e) => {
+    const b = e.currentTarget;
+    if (wrap.querySelector('.ps-live__vers')) { wrap.querySelector('.ps-live__vers').remove(); return; }
+    b.disabled = true;
+    const r = await outPost('/catalog/versions', { id: it.id });
+    b.disabled = false;
+    const vs = Array.isArray(r.versions) ? r.versions : [];
+    const box = document.createElement('div');
+    box.className = 'ps-live__vers';
+    if (vs.length < 2) {
+      box.innerHTML = '<span class="ps-live__state">This is the only version — you have not changed it yet.</span>';
+    } else {
+      vs.forEach((v) => {
+        const c = document.createElement('div');
+        c.className = 'ps-live__ver';
+        const cc = document.createElement('canvas');
+        cc.width = cc.height = 180;
+        drawComposite(cc.getContext('2d'), 180, 2, {
+          hat: 'none', glasses: 'none', extras: {}, top: '', bottom: '',
+          bg: 'transparent', captions: false, effect: 'none', custom: wearToCustom(v.wear) || undefined,
+        });
+        const cap = document.createElement('span');
+        cap.textContent = v.v === Math.max(...vs.map((x) => x.v)) ? 'now' : 'v' + v.v;
+        c.appendChild(cc); c.appendChild(cap);
+        box.appendChild(c);
+      });
+    }
+    wrap.appendChild(box);
+  });
+  return wrap;
+}
+
+// the world's own confirm shape, not a browser confirm()
+function confirmOut(name, onYes) {
+  const ov = document.createElement('div');
+  ov.className = 'shelf-confirm';
+  ov.innerHTML = '<div class="shelf-confirm__box" role="alertdialog" aria-modal="true">'
+    + '<span class="shelf-confirm__peel" aria-hidden="true">📦</span>'
+    + '<h3>Take “' + String(name).replace(/[<>&]/g, '') + '” off sale?</h3>'
+    + '<p>Nobody new can get it. Everyone who already has it keeps it, and it stays on their banana. '
+    + 'You cannot put it back yourself — ask Trym.</p>'
+    + '<div class="shelf-confirm__row"><button type="button" class="shelf-confirm__no">Leave it on sale</button>'
+    + '<button type="button" class="shelf-confirm__yes">Take it off sale</button></div></div>';
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+  ov.querySelector('.shelf-confirm__no').onclick = close;
+  ov.querySelector('.shelf-confirm__yes').onclick = () => { close(); onYes(); };
+  ov.querySelector('.shelf-confirm__no').focus();
+}
+
 function renderMade() {
   const chips = [...document.querySelectorAll('#psMadeChips .ps-chip')];
   const on = chips.find((c) => c.dataset.kind === madeKind) || chips[0];
   chips.forEach((c) => c.setAttribute('aria-pressed', String(c === on)));
   const n = shelfList().filter((c) => !madeKind || c.kind === madeKind).length;
   el('psMadeH').textContent = on.dataset.h + ' ' + n;
+  renderOut();
   renderShelf(el('psMade'), {
     kinds: madeKind ? [madeKind] : undefined,
     onPick: (c) => {
