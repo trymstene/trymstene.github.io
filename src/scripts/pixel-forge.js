@@ -1254,6 +1254,7 @@ function init() {
         b2.onclick = () => {
           decorWhere = b2.dataset.where;
           paintSpotPicker();
+          drawDecorPreviews();   // the toggle now picks which card is shown
           track('forge_item_where', { where: decorWhere });
         };
       });
@@ -1284,7 +1285,10 @@ function init() {
   // tiny and static) — the piece on the REAL homestead lawn and against the
   // REAL cabin wall, with a banana for scale. One shared world scale so the
   // two cards compare honestly.
-  const PREV_S = 0.55;                     // preview px per homestead world px
+  // ⚠️ 1:1 WITH THE HOMESTEAD. This was 0.55, which made every judgement about
+  // size a guess with a conversion in it. At 1 the preview IS the size the
+  // piece will be when it stands in somebody's yard, banana included.
+  const PREV_S = 1;                        // preview px per homestead world px
   const prevImgs = {};
   function prevImg(key, src) {
     if (prevImgs[key]) return prevImgs[key];
@@ -1299,6 +1303,10 @@ function init() {
     if (mode !== 'items' || itemKind !== 'decor') return;
     const yard = el('fgPrevYard'), room = el('fgPrevRoom');
     if (!yard || !room) return;
+    // only the place this piece is actually going — the toggle above decides
+    const fy = el('fgPrevFigYard'), fr = el('fgPrevFigRoom');
+    if (fy) fy.hidden = decorWhere !== 'yard';
+    if (fr) fr.hidden = decorWhere === 'yard';
     const out = forgeGridToSVG(frame(), state.w, state.h, pal());
     if (!prevBanana && itemsReady) {
       prevBanana = document.createElement('canvas');
@@ -1324,10 +1332,11 @@ function init() {
       const c2 = yard.getContext('2d');
       c2.imageSmoothingEnabled = false;
       const g = prevImg('grass', '/assets/world/tour-home.jpg');
-      if (g.complete && g.naturalWidth) c2.drawImage(g, 20, 120, 180, 130, 0, 0, yard.width, yard.height);
+      // a wider source crop, so filling a 440px card does not smear the lawn
+      if (g.complete && g.naturalWidth) c2.drawImage(g, 20, 90, 360, 245, 0, 0, yard.width, yard.height);
       else { c2.fillStyle = '#569a4a'; c2.fillRect(0, 0, yard.width, yard.height); }
-      piece(c2, 70, 128);
-      nana(c2, 158, 132);
+      piece(c2, 150, 246);                 // base-centre, standing on the lawn
+      nana(c2, 300, 252);                  // a banana's length away, for scale
     }
     { // indoors — the cabin plate at true scale, dark beyond its edge
       const c2 = room.getContext('2d');
@@ -1339,8 +1348,8 @@ function init() {
         c2.drawImage(r, 0, 0, r.naturalWidth, r.naturalHeight,
           0, 0, r.naturalWidth * PREV_S, r.naturalHeight * PREV_S);
       } else { c2.fillStyle = '#caa66c'; c2.fillRect(0, 0, room.width, room.height); }
-      piece(c2, 64, 64);                   // backed against the wall
-      nana(c2, 150, 120);                  // mid-floor for scale
+      piece(c2, 140, 250);                 // backed against the wall, on the floor
+      nana(c2, 300, 256);                  // mid-floor for scale
     }
   }
 

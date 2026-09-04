@@ -1,5 +1,5 @@
 {
-  "_raises": "3 Sep 2026 pulse-shell. NEW 120000 — Banana HQ's Pulse 2.0, an ADMIN-ONLY lazy chunk behind a token that no player ever downloads. Most of it is the two event dictionaries (245 labels + 285 explainers) moved verbatim out of worker-pulse's template literal; they are hand-written source that cannot be regenerated, so they are weight worth carrying. It counts toward totalBudget even though it never reaches a visitor — if the total gets tight, this is the first chunk to argue about. 2 Sep 2026 homestead-kitchen. NEW 16000 - the kitchen + the tailor split out of the homestead main chunk (94%) into a lazy chunk loaded on the first stove/fire/tailor open. 2 Sep 2026 homestead-phone. NEW 34000 — the Banana Phone + animal card split out of homestead.astro into a lazy chunk (loaded on first phone/card open) so the yard's hot path stays under its 130k cap. 29 Aug 2026 pass.astro 38000→42000 — My Pass gained subscription management (see the membership state, cancel it, un-cancel it). Deliberate: the exit for a paid membership is not a thing to shave, and the page had 103 bytes of headroom left.",
+  "_raises": "4 Sep 2026 THE TOTAL SPLIT IN TWO. One number was measuring two audiences: Banana HQ sits behind a token and no visitor downloads a byte of it, yet its 173KB counted against the payload a PLAYER pays for — so the gate that guards the game was creeping toward red for reasons the game had nothing to do with. This was pre-registered in the pulse-shell note below on 3 Sep (\"the first chunk to argue about\"), not invented when it got inconvenient. totalBudget is now player-facing only and adminBudget caps HQ, so admin weight stays bounded and visible rather than excused. Checked for real waste first and found none worth having: the engine is genuinely shared (not copied into the four bundles that reference it), and kitchen/phone/quest/tutorial/sticker-core are already lazy. The one real find was world-quest — 56.7KB fetched on EVERY visit to all four world areas by players who had already finished it, because bootQuest() checks S.done only after the chunk loads. The done flag is read off bwq-c1 before the import now. 3 Sep 2026 pulse-shell. NEW 120000 — Banana HQ's Pulse 2.0, an ADMIN-ONLY lazy chunk behind a token that no player ever downloads. Most of it is the two event dictionaries (245 labels + 285 explainers) moved verbatim out of worker-pulse's template literal; they are hand-written source that cannot be regenerated, so they are weight worth carrying. It counts toward totalBudget even though it never reaches a visitor — if the total gets tight, this is the first chunk to argue about. 2 Sep 2026 homestead-kitchen. NEW 16000 - the kitchen + the tailor split out of the homestead main chunk (94%) into a lazy chunk loaded on the first stove/fire/tailor open. 2 Sep 2026 homestead-phone. NEW 34000 — the Banana Phone + animal card split out of homestead.astro into a lazy chunk (loaded on first phone/card open) so the yard's hot path stays under its 130k cap. 29 Aug 2026 pass.astro 38000→42000 — My Pass gained subscription management (see the membership state, cancel it, un-cancel it). Deliberate: the exit for a paid membership is not a thing to shave, and the page had 103 bytes of headroom left.",
   "_doc": "Per-surface JS budgets in BYTES, measured on the BUILT output (dist/_astro) — the static-import back door means source size lies; only dist tells the truth. Prefix-matched against chunk filenames. Current size + ~15% headroom at adoption (24 Aug 2026); raising a number is a deliberate act that belongs in a PR description, never a drive-by.",
   "budgets": {
     "banana-engine.": 240000,
@@ -17,5 +17,12 @@
     "make-a-banana.astro": 38000,
     "pass.astro": 42000
   },
-  "totalBudget": 1500000
+  "totalBudget": 1350000,
+  "adminBudget": 220000,
+  "adminPrefixes": [
+    "pulse-shell.",
+    "inbox.astro",
+    "hq-pulse.",
+    "pulse-"
+  ]
 }

@@ -1925,7 +1925,14 @@ const GUIDE = [
     try {
       if (/[?&]questtest=off/.test(location.search)) localStorage.removeItem('bwq-dev');
       else if (/[?&]questtest/.test(location.search)) localStorage.setItem('bwq-dev', '1');
-      if (QUEST_LIVE || localStorage.getItem('bwq-dev') === '1') {
+      // ⚠️ THE DONE CHECK HAS TO HAPPEN BEFORE THE IMPORT. bootQuest() returns
+      // immediately on `S.done`, but only AFTER the 57KB chunk has been
+      // fetched and parsed — so every finisher paid for the whole questline on
+      // every visit to every world area, forever. bwq-c1 is the quest's own
+      // local state; reading one flag off it here costs nothing.
+      let questDone = false;
+      try { questDone = !!(JSON.parse(localStorage.getItem('bwq-c1') || 'null') || {}).done; } catch (e) {}
+      if (!questDone && (QUEST_LIVE || localStorage.getItem('bwq-dev') === '1')) {
         import('../lib/world-quest.js').then((m) => m.bootQuest());
       }
     } catch (e) { /* quest is optional garnish */ }
