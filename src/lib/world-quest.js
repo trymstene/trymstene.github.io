@@ -149,7 +149,16 @@ const STEPS = [
   // ⚠️ MEASURED, not guessed: at the west spawn a 393-wide phone sees world
   // x 6-591 only. 34% (x612) was clipped at the right edge; 24% (x432) sits
   // ~3/4 across the frame — plainly visible, still a real walk away.
+  // ⚠️ THE MEASUREMENT ABOVE WAS FOR ONE OF THE TWO DOORS. 24% (x432) was
+  // measured at the WEST road entrance — where you land walking in from the
+  // park — and it is right for that. But a DIRECT visit to /homestead/ walks
+  // you east to the gate at x1152, which leaves Nib ~700px BEHIND you, off the
+  // left edge, and that is the door most new players use (Trym, 4 Sep: "he is
+  // off screen far left ... they miss Nib completely"). atDirect puts him just
+  // south of the road beside the post-box (x1252, y985 of an 1800x1100 plate),
+  // a few steps ahead of where the arrival walk sets you down.
   { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', leave: 1, at: { x: 24, y: 83 },
+    atDirect: { x: 70, y: 89 },
     atRes: { x: 66, y: 90 },
     find: 'someone is waiting up the road — go say hello!',
     findRes: 'someone is waiting across the road — go say hello!',
@@ -1462,7 +1471,11 @@ export function bootQuest() {
     if (step.kind === 'talk') {
       // residents get their own anchor where a step carries one (Nib waits
       // across the road instead of in their fence opening)
-      const at = (S.res && step.atRes) || step.at;
+      // ⚠️ the same test the homestead uses for its own arrival (banana-homestead
+      // byRoad): ?park / ?world means you walked in from the west, anything else
+      // is a direct visit that lands you at the gate in the east.
+      const direct = !/[?&](park|world)(?:=|&|$)/.test(location.search);
+      const at = (S.res && step.atRes) || (direct && step.atDirect) || step.at;
       // 🎬 CHAPTER I splash — plays when you OPEN the questline at Nib, not
       // on area boot (Trym: it must never compete with the homestead's
       // first-visit tutorial). Fade in → hold → fade out → the dialogue.

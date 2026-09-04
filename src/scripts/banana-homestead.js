@@ -11,6 +11,7 @@ import pxEdit from '../icons/pixelart/edit.svg?raw';
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone } from '../lib/banana-pass.js';
+import { loggedIn } from '../lib/pass-sync.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
@@ -2516,8 +2517,25 @@ function init(visitDoc, visitMiss) {
     // slight y-jitter so it reads as dropped, not printed
     // FARM: the coins string along the shorter gate walk, so the arrival
     // auto-walk crosses every one of them before the first tap
-    ((FARM && !byRoad) ? [[880, -10], [950, 8], [1020, -6], [1090, 10], [1140, 0]]   // the last one INSIDE the arrival walk's 34px reach (it sat 2px past it, so the trail respawned every visit)
-      : [[400, -10], [500, 8], [600, -6], [700, 10], [800, 0]]).forEach(([cx, jy], i) => {
+    // ⚠️ PAST THE ARRIVAL WALK, NOT UNDER IT (Trym, 4 Sep: "the banana walks
+    // through coins automatically when joining directly ... so he doesnt
+    // auto-pick them up since hes on the move when you load in"). The direct
+    // arrival walks east to the gate at x1152, so the trail starts beyond it
+    // and the first coin is a thing you choose to fetch.
+    //
+    // ⚠️ THE TRAIL USED TO END INSIDE THE WALK ON PURPOSE: the spent-flag is
+    // written when the LAST coin is picked up, so a trail nobody finishes
+    // respawns every visit. Out of auto-reach that would come straight back —
+    // so we now spawn only the coins this PERSON is still owed (the server's
+    // own count), and the flag stops mattering for the ones already paid.
+    const owed = Math.max(0, 5 - (ruleUsed('homestead:road').n || 0));
+    // ⚠️ AND CLEAR OF NIB. He now stands beside the post-box at x1252, so a
+    // trail starting at 1230 sat on top of him. It starts east of them both.
+    // the first coin has to be VISIBLE or the trail is not a lure — it sits
+    // ~80px past Nib (x1252) and ~145px past where the arrival walk stops
+    // reaching (gate x1152 + a 34px grab), so it tempts without collecting.
+    ((FARM && !byRoad) ? [[1330, -10], [1395, 8], [1460, -6], [1525, 10], [1590, 0]]
+      : [[400, -10], [500, 8], [600, -6], [700, 10], [800, 0]]).slice(0, owed).forEach(([cx, jy], i) => {
       const x = byRoad ? W - cx : cx, y = ROAD.y + jy;
       const d = document.createElement('div');
       d.className = 'hs-roadcoin';
@@ -2528,6 +2546,34 @@ function init(visitDoc, visitMiss) {
       roadCoins.push({ x, y, el: d });
     });
   })();
+  // 🎫 THE KEEP NOTE — once, ever, after a real minute on your own plot.
+  //
+  // ⚠️ IT MUST NOT LIE. Everyone gets an anonymous server pass at their first
+  // write, so their progress IS saved — telling them it is not would be false
+  // and would read as a scare. What is actually true is narrower and is the
+  // thing that bit Trym himself on 4 Sep: the anonymous credential lives in
+  // THIS BROWSER, so the homestead does not follow you to your phone until an
+  // email is on it. That is the sentence, and nothing more.
+  //
+  // ⚠️ NOT AT SPAWN. A person who has been here 45 seconds has made something
+  // worth keeping; a person who has been here 2 seconds is being sold to.
+  (() => {
+    if (visiting || HS_TEST) return;
+    try { if (localStorage.getItem('hs-keepnote-v1')) return; } catch (e) { return; }
+    setTimeout(() => {
+      // re-checked LATE: they may have signed in during the 45 seconds, and a
+      // note that arrives after the thing it asks for is just noise
+      if (visiting || loggedIn()) return;
+      try {
+        if (localStorage.getItem('hs-keepnote-v1')) return;
+        localStorage.setItem('hs-keepnote-v1', '1');
+      } catch (e) { return; }
+      toast('🎫 this homestead is saved on this device — add your email in the '
+        + 'menu under My Pass and it follows you to your phone too', 9000);
+      track1('homestead_keepnote', {});
+    }, 45000);
+  })();
+
   function roadCoinTick() {
     for (let i = roadCoins.length - 1; i >= 0; i--) {
       const c = roadCoins[i];

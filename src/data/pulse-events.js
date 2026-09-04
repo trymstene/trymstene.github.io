@@ -55,7 +55,8 @@ export const EV_LABEL = {
   homestead_open:'came home to the Homestead 🏡', homestead_claim:'CLAIMED a homestead 🪧',
   homestead_rename:'repainted their sign ✏️', homestead_upgrade:'UPGRADED their home 🏠',
   homestead_buy:'bought decor from the phone 🛋', homestead_sell:'sold a piece from the shed 🪙',
-  homestead_delivery:'a furniture delivery arrived 🚚', homestead_enter_home:'stepped inside their home 🚪',
+  homestead_delivery:'a furniture delivery arrived 🚚',
+  homestead_keepnote:'was told their homestead is device-only 🎫', homestead_enter_home:'stepped inside their home 🚪',
   homestead_exit:'walked the road out of the homestead', homestead_phone:'opened the banana phone 📱',
   homestead_planner:'opened build mode 🔨', homestead_fence:'worked the fence 🪵',
   homestead_dig:'dug soil on their plot ⛏', homestead_plant:'planted a seed at home 🌱',
@@ -225,6 +226,7 @@ export const EV_LABEL = {
 
 export const EV_EXPLAIN = {
   gallery_download:'downloaded a community banana from its gallery page (the download card rides this too since 27 Aug)',
+  homestead_keepnote:'the one-time note, 45s into their own plot, telling an anonymous player their homestead lives in THIS browser and an email makes it follow them. Fires once per device and never for a signed-in player, so a high count against few pass_view is people being told and not acting',
   forge_gif_export:'exported a finished GIF from the Pixel Forge — the forge equivalent of gif_download',
   forge_open:'opened the Pixel Forge (/forge/ = emoji bench, /forge/items/ = the items workshop)',
   world_levelup:'crossed a level anywhere in the world — the superset; the rave also fires its own older rave_levelup, never add them together',

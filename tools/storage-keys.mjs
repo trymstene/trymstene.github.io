@@ -54,6 +54,7 @@ export const KEYS = {
   'bc-win': { travels: 'no', why: 'the hourly coin window; the rule that matters is server-side' },
   'hs-stall-v1': { travels: 'no', why: 'the stall\'s daily sale count; capped per person on the server' },
   'hs-roadcoins-v1': { travels: 'no', why: 'the roadside coin faucet\'s day counter; capped per person on the server' },
+  'hs-keepnote-v1': { travels: 'no', why: 'the one-time "add your email and this follows you" note has been shown. Deliberately per-device: the whole point of the note is that this BROWSER holds an anonymous pass, so a device that has not been told yet is exactly the one that needs telling' },
   'bh-fishcoins-v1': { travels: 'no', why: 'the fishing day counter; capped per person on the server' },
   'rv-fq-slot': { travels: 'no', why: 'which half-hour floor-quest slot this device has played' },
   'pk-seed-voucher': { travels: 'no', why: 'a one-shot free seed from the fountain' },
