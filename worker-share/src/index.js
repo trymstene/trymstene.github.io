@@ -104,6 +104,9 @@ export default {
       if (url.pathname === '/catalog/moderate') return handleCatalogModerate(request, env, url);
       if (url.pathname === '/catalog/items.json') return handleCatalogItems(env);
       if (url.pathname === '/catalog/status') return handleCatalogStatus(env, url);
+      if (url.pathname === '/catalog/mine') return handleCatalogMine(request, env);
+      if (url.pathname === '/catalog/versions') return handleCatalogVersions(request, env);
+      if (url.pathname === '/catalog/unlist') return handleCatalogUnlist(request, env);
       if (url.pathname === '/catalog/caught') return handleCatalogCaught(request, env, url);
       if (url.pathname === '/catalog/catches') return handleCatalogCatches(env, url);
       if (url.pathname === '/health') return handleHealth(env, url);
@@ -137,6 +140,25 @@ async function verifyWt(env, wt) {
     WT.ok++;
     return { gid: d.gid, aliases: Array.isArray(d.aliases) ? d.aliases : [] };
   } catch (e) { WT.err++; return null; }
+}
+
+// ✏️ DOES THIS PERSON OWN THIS ITEM? The only gate on creator editing.
+// `who` comes from verifyWt (worker-rave checked the signature), so the gid is
+// proof, not a claim. Aliases matter: somebody who made an item on an anonymous
+// pass and later added an email keeps their item, because the fold carries the
+// old gid in the token's aliases.
+//
+// ⚠️ FAILS CLOSED ON EVERYTHING. No token, no owner record, unreadable record
+// -- all false. An item approved before owners existed has no record and is
+// therefore nobody's; that is deliberate.
+async function ownsItem(env, who, itemId) {
+  if (!who || !who.gid) return false;
+  const o = await env.SHARES.get('catalog-own/' + itemId + '.json');
+  if (!o) return false;
+  let rec = null;
+  try { rec = await o.json(); } catch (e) { return false; }
+  if (!rec || !rec.gid) return false;
+  return rec.gid === who.gid || (Array.isArray(who.aliases) && who.aliases.includes(rec.gid));
 }
 
 function json(obj, status = 200, extra = {}) {
@@ -804,10 +826,24 @@ async function handleCatalogSubmit(request, env, url) {
   const who = await verifyWt(env, body.wt);
   CAT_OWN[who ? 'with' : 'without']++;
 
+  // ✏️ AN EDIT IS A SUBMISSION WITH A TARGET. Same route on purpose: the
+  // family filter, the size cap, the throttle and the shape check are all here
+  // already, and a second door into the queue is a second door to keep honest.
+  // The target rides through moderation so approve knows to REPLACE that item
+  // rather than mint a new one.
+  //
+  // ⚠️ OWNERSHIP IS CHECKED HERE, AT SUBMIT, AND AGAIN AT APPROVE. Here so the
+  // creator is told no immediately; there because an edit sits in a queue and
+  // ownership could have changed under it.
+  const target = /^c_[a-f0-9]{6,32}$/.test(body.target || '') ? body.target : '';
+  if (target && !(await ownsItem(env, who, target))) {
+    return json({ error: 'not yours to change' }, 403, cors);
+  }
+
   const id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
   await env.SHARES.put(`catalog-inbox/${id}.json`,
     JSON.stringify({ title, by, sid, wear: body.wear, created: Date.now(),
-      ...(who ? { gid: who.gid } : {}) }),
+      ...(who ? { gid: who.gid } : {}), ...(target ? { target } : {}) }),
     { httpMetadata: { contentType: 'application/json' } });
   // `owner` is not a debug flag -- it is the one thing the maker needs told.
   // Whether this item can ever be renamed or changed later was decided the
@@ -955,17 +991,35 @@ async function handleCatalogModerate(request, env, url) {
   const by = clean(b.by !== undefined ? b.by : meta.by, 24);
   if (dirty(title) || dirty(by)) return json({ error: 'family friendly only 🍌' }, 400, cors);
 
-  const itemId = 'c_' + id; // catalog ids are namespaced — never collide with curated wearables.js ids
+  // ✏️ an edit keeps the item's OWN id; only a new submission mints one
+  const itemId = meta.target || ('c_' + id); // catalog ids are namespaced — never collide with curated wearables.js ids
+  // re-checked at approve: the edit has been sitting in a queue
+  if (meta.target && !(await ownsItem(env, { gid: meta.gid, aliases: [] }, meta.target))) {
+    return json({ error: 'not theirs any more' }, 403, cors);
+  }
   // ⚠️ this REBUILDS the row from scratch, so any state the row carried is lost
   // unless it is carried across by hand. `retired` cannot be dropped here: an
   // approval landing on a retired id would silently put it back on sale. It
   // cannot happen today — itemId comes from a fresh uuid, so the filter below
   // never matches — but it is exactly the line an edit-in-place feature breaks.
+  let ver = 1;
+  let prev = null;
   try {
     await mutateIndex(env, (items) => {
       const was = items.find((x) => x.id === itemId);
+      // ⚠️ COMPUTED INSIDE, so it is read off whatever the row says on the
+      // attempt that actually LANDS -- two approvals racing cannot both take
+      // version 2. mutateIndex only returns after a successful put, so these
+      // hold the winning attempt's values.
+      ver = (was && +was.v > 0 ? +was.v : 0) + 1;
+      prev = was || null;
       const next = items.filter((x) => x.id !== itemId);
-      next.push({ id: itemId, title, by, wear: meta.wear, added: Date.now(),
+      next.push({ id: itemId, title, by, wear: meta.wear, v: ver,
+        // ⚠️ `added` is the sort key in three shops (ascending in the builder,
+        // descending in the Stand) and it is what the desk prints as "live
+        // since". Stamping it fresh on an EDIT would jump the item to the front
+        // of one shop, the back of another, and rewrite its own birthday.
+        added: (was && was.added) || Date.now(),
         ...(was && was.retired ? { retired: 1 } : {}),
         ...(meta.wear && meta.wear.anchor === 'decor' ? { kind: 'decor' } : {}) });
       return next;
@@ -988,14 +1042,119 @@ async function handleCatalogModerate(request, env, url) {
   // ⚠️ ONE OBJECT PER ITEM, for the reason putVerdict already learned the
   // hard way above: catalog/items.json is a lock-free read-modify-write, and a
   // second writer on it loses writes. Per-key puts cannot clobber each other.
-  if (meta.gid) {
+  // 🗃️ EVERY APPROVED VERSION IS KEPT, immutably, one object each. This is
+  // not a history FEATURE bolted on -- it is where the art goes, so "the
+  // creator can look at what it used to be" costs nothing to add later and
+  // an admin comparing an edit has two real objects instead of two blobs in
+  // flight. The live row still carries `wear` inline exactly as before, so
+  // none of the eight readers of the manifest change at all.
+  //
+  // ⚠️ AFTER the row, deliberately. If the worker dies between the two, the
+  // history misses an entry -- a gap. The other order would leave a row
+  // pointing at art that was never written, which is an item that renders
+  // bare. Lose the record, never the thing.
+  await env.SHARES.put('catalog/art/' + itemId + '/' + ver + '.json',
+    JSON.stringify({ v: ver, title, by, wear: meta.wear, at: Date.now(),
+      ...(meta.target ? { edited: 1 } : {}) }),
+    { httpMetadata: { contentType: 'application/json' } });
+
+  // an edit must never REASSIGN ownership -- the row keeps the owner it had
+  if (meta.gid && !meta.target) {
     await env.SHARES.put('catalog-own/' + itemId + '.json',
       JSON.stringify({ gid: meta.gid, at: Date.now() }),
       { httpMetadata: { contentType: 'application/json' } });
+    // the same fact the other way round, so "which items are mine" is ONE list
+    // call instead of reading an owner record per item in the catalog. Empty
+    // body: the key IS the record.
+    await env.SHARES.put('catalog-by/' + meta.gid + '/' + itemId, '');
   }
   await putVerdict('ok', itemId);
   await env.SHARES.delete(`catalog-inbox/${id}.json`);
   return json({ ok: true, id: itemId }, 200, cors);
+}
+
+// ✏️ ---- THE CREATOR'S OWN THREE ROUTES ----
+// All three answer the same question first -- who is calling, proved by the
+// world token via worker-rave -- and all three refuse rather than guess.
+//
+// ⚠️ THE TOKEN RIDES IN THE BODY, NEVER THE QUERY STRING. corsHeaders allows
+// Content-Type only, so a custom header dies at preflight; and a credential in
+// a URL ends up in logs, referrers and shared links.
+async function creatorGate(request, env) {
+  const cors = corsHeaders(env, request);
+  if (request.method === 'OPTIONS') return { pre: new Response(null, { headers: cors }) };
+  if (request.method !== 'POST') return { pre: json({ error: 'method not allowed' }, 405, cors) };
+  const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((x) => x.trim());
+  if (!allowed.includes(request.headers.get('Origin') || '')) return { pre: json({ error: 'forbidden' }, 403, cors) };
+  let body;
+  try { body = await request.json(); } catch (e) { return { pre: json({ error: 'bad json' }, 400, cors) }; }
+  const who = await verifyWt(env, body.wt);
+  // ⚠️ the 401 CARRIES CORS. The submit route's own 403 does not, which makes
+  // a refusal arrive in the browser as an opaque network failure -- do not copy
+  // that shape. A person who is signed out should be told so.
+  if (!who) return { pre: json({ error: 'sign in on My Pass first' }, 401, cors) };
+  return { cors, body, who };
+}
+
+// ---------- POST /catalog/mine {wt} — the items this person made ----------
+async function handleCatalogMine(request, env) {
+  const g = await creatorGate(request, env);
+  if (g.pre) return g.pre;
+  // every gid this person is: the one they are now, plus any anonymous pass
+  // that has since folded into it. An item made before they added an email is
+  // still theirs.
+  const gids = [g.who.gid, ...(g.who.aliases || [])].filter((x) => /^[a-f0-9]{16}$/.test(x));
+  const ids = [];
+  for (const gid of gids.slice(0, 8)) {
+    const got = await env.SHARES.list({ prefix: 'catalog-by/' + gid + '/', limit: 200 });
+    for (const o of got.objects) ids.push(o.key.slice(('catalog-by/' + gid + '/').length));
+  }
+  return json({ items: [...new Set(ids)] }, 200, g.cors);
+}
+
+// ---------- POST /catalog/versions {wt, id} — what it used to look like ----
+async function handleCatalogVersions(request, env) {
+  const g = await creatorGate(request, env);
+  if (g.pre) return g.pre;
+  const id = String(g.body.id || '');
+  if (!/^c_[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, g.cors);
+  if (!(await ownsItem(env, g.who, id))) return json({ error: 'not yours' }, 403, g.cors);
+  const got = await env.SHARES.list({ prefix: 'catalog/art/' + id + '/', limit: 60 });
+  const keys = got.objects.map((o) => o.key);
+  // ⚠️ getMany returns { objects, scanned, total, truncated } — not a bare
+  // array. Every other caller in this file unwraps `.objects`; this one did not.
+  const got2 = await getMany(env, keys);
+  const out = [];
+  for (const o of got2.objects) { if (o) { try { out.push(await o.json()); } catch (e) {} } }
+  out.sort((x, y) => (y.v || 0) - (x.v || 0));
+  return json({ id, versions: out }, 200, g.cors);
+}
+
+// ---------- POST /catalog/unlist {wt, id} — the maker takes it off sale ----
+// ⚠️ UNLIST, NOT ERASE, and the copy must say so: ownership in this world
+// cannot be revoked (passStat refuses negative deltas, and the rave republishes
+// own_c_* from the device on the next visit), so anyone already wearing it goes
+// on wearing it. What stops is it being OFFERED.
+//
+// ⚠️ ONE WAY. There is deliberately no maker-side undo: `retired` does not
+// record who set it, so a maker-undo would also lift an ADMIN takedown. Trym
+// can put anything back from the desk, which is the right asymmetry.
+async function handleCatalogUnlist(request, env) {
+  const g = await creatorGate(request, env);
+  if (g.pre) return g.pre;
+  const id = String(g.body.id || '');
+  if (!/^c_[a-f0-9]{6,32}$/.test(id)) return json({ error: 'bad id' }, 400, g.cors);
+  if (!(await ownsItem(env, g.who, id))) return json({ error: 'not yours' }, 403, g.cors);
+  let hit = 0;
+  try {
+    await mutateIndex(env, (items) => {
+      hit = 0;
+      const next = items.map((x) => { if (x.id !== id) return x; hit = 1; return { ...x, retired: 1 }; });
+      return hit ? next : null;
+    });
+  } catch (e) { return json({ error: 'busy, try again' }, 409, g.cors); }
+  if (!hit) return json({ error: 'no such item' }, 404, g.cors);
+  return json({ ok: true, id }, 200, g.cors);
 }
 
 // ---------- GET /catalog/items.json — THE public manifest ----------
