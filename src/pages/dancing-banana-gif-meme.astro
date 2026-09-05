@@ -7,9 +7,17 @@ import PixelIcon from '../components/PixelIcon.astro';
 import ShopStrip from '../components/ShopStrip.astro';
 import remixes from '../data/remixes.json';
 
-const title = "Dancing Banana GIF — Download the Original Meme (Free)";
-const description = "The original Dancing Banana GIF — free to download (GIF + transparent PNG). Made in 1999 by its creator, Trym Stene. Grab it, make your own, or license it.";
-const ogDescription = "The original Dancing Banana GIF, free to download. Made in 1999 by its creator, Trym Stene. Grab it, remix it, or license it.";
+// 🔍 THE SNIPPET IS THE WHOLE JOB HERE. This page is shown ~19,000 times a
+// month on Google and clicked 1.1% of the time — position 5 should be winning
+// 5-8%. The results page it sits on is Giphy, Tenor, GIFDB and four Pinterest
+// slots, all aggregators. Not one of them can say ORIGINAL, FROM ITS CREATOR,
+// NO WATERMARK or MAKE YOUR OWN, so those are the words that earn the click.
+// Keyword first (Google weights the opening), ≤60 chars so it is not cut.
+// "license it" is gone from both descriptions — licensing was killed as a
+// strategy in August and it was spending snippet words on a dead door.
+const title = "Dancing Banana GIF — The Original (1999), Free & Transparent";
+const description = "The original 1999 Dancing Banana — free, no watermark, transparent GIF + PNG, from its creator. Or dress your own banana and make a new one.";
+const ogDescription = "The original Dancing Banana GIF, free to download. Made in 1999 by its creator, Trym Stene. Grab it, remix it, or make your own.";
 
 const creativeWork = {
   "@context": "https://schema.org",
