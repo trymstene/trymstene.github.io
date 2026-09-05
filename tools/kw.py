@@ -83,13 +83,53 @@ def search_volume(keywords, loc):
     print_rows(rows)
 
 
-def ideas(seed, loc, limit):
+def contains(seed, loc, limit):
+    # keyword_suggestions = every query CONTAINING the seed phrase, by volume.
+    # This is the instrument for "how big is the market around OUR word" --
+    # keyword_ideas expands by shared words, so seeding it with "dancing banana"
+    # returns line dancing and Strictly Come Dancing, which is not the market.
+    loc = loc or 2840
     payload = [{
-        "keywords": [seed], "language_code": "en", "limit": limit,
+        "keyword": seed, "language_code": "en", "limit": limit,
+        "location_code": loc, "include_seed_keyword": True,
         "order_by": ["keyword_info.search_volume,desc"],
     }]
-    if loc:
-        payload[0]["location_code"] = loc
+    print(f"(every search containing \"{seed}\" -- location {loc}{' = US' if loc == 2840 else ''}, Google Ads data)")
+    result = call("/dataforseo_labs/google/keyword_suggestions/live", payload)
+    items = (result or [{}])[0].get("items") or []
+    rows = []
+    for it in items:
+        info = it.get("keyword_info") or {}
+        rows.append((it["keyword"], info.get("search_volume"),
+                     info.get("cpc"), info.get("competition_level")))
+    # Google Ads reports close variants as ONE cluster with one volume, and the
+    # Labs endpoint returns every member of the cluster as its own row -- fourteen
+    # spellings of "banana bread recipe" each carrying the same 301,000. Summing
+    # rows counts the cluster fourteen times. Identical (volume, cpc, competition)
+    # is the cluster signature, so the total counts each signature once.
+    print_rows(rows)
+    seen, total, clusters = set(), 0, 0
+    for r in rows:
+        sig = (r[1], r[2], r[3])
+        if r[1] and sig not in seen:
+            seen.add(sig); total += r[1]; clusters += 1
+    print(f"\n{len(rows)} rows = {clusters} distinct terms, {total:,} searches/month once each (top {limit} rows only)")
+
+
+def ideas(seed, loc, limit):
+    # The Labs endpoint REQUIRES a location. search_volume (Google Ads data)
+    # accepts "worldwide" by simply omitting it; keyword_ideas does not, and
+    # answers an omitted location with "Invalid Field: 'location_name'" -- the
+    # error names a field we never sent, which is why it read as an API change
+    # rather than a missing default. US (2840) is the default here: our
+    # audience is ~90% US, and for RANKING ideas the region barely moves the order.
+    loc = loc or 2840
+    payload = [{
+        "keywords": [seed], "language_code": "en", "limit": limit,
+        "location_code": loc,
+        "order_by": ["keyword_info.search_volume,desc"],
+    }]
+    print(f"(related to \"{seed}\" -- location {loc}{' = US' if loc == 2840 else ''}, Google Ads data)")
     result = call("/dataforseo_labs/google/keyword_ideas/live", payload)
     items = (result or [{}])[0].get("items") or []
     rows = []
@@ -111,6 +151,8 @@ def main():
     ap.add_argument("keywords", nargs="*", help="a single keyword phrase")
     ap.add_argument("--file", help="file with one keyword per line")
     ap.add_argument("--ideas", metavar="SEED", help="related-keyword ideas for a seed phrase")
+    ap.add_argument("--contains", metavar="WORD",
+                    help="every search containing WORD, by volume (the market around a brand word)")
     ap.add_argument("--limit", type=int, default=50, help="max ideas rows (default 50)")
     ap.add_argument("--loc", type=int, default=None,
                     help="DataForSEO location code (e.g. 2840 = US); default worldwide")
@@ -119,6 +161,8 @@ def main():
 
     if args.balance:
         balance()
+    elif args.contains:
+        contains(args.contains, args.loc, args.limit)
     elif args.ideas:
         ideas(args.ideas, args.loc, args.limit)
     elif args.file:
