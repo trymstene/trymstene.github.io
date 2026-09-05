@@ -4,8 +4,8 @@ import PressBelt from '../../components/PressBelt.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import PackGrid from '../../components/PackGrid.astro';
 import { getProducts, money, colorHex, firstSentence, sizeTableHtml, SITE } from '../../lib/shop.js';
-import { officialFaqs, faqSchema } from '../../lib/product-faq.js';
-import { STICKER_PACKS, packNumber, packSpread, packSheet, stickerSrc, previewPacks } from '../../data/sticker-packs.js';
+import { officialFaqs, packFaqs, faqSchema } from '../../lib/product-faq.js';
+import { STICKER_PACKS, SET_PRICE, packNumber, packSpread, packSheet, stickerSrc, previewPacks } from '../../data/sticker-packs.js';
 
 export async function getStaticPaths() {
   const products = await getProducts();
@@ -104,9 +104,11 @@ const productSchema = {
 // ❓ PER-PRODUCT FAQ — the question list lives in src/lib/product-faq.js so the
 // official shop and the builder products answer "can I return it" with the SAME
 // words. Two copies would drift the day one is edited.
-const faqs = officialFaqs({
-  title: m.title, colors: m.colors, sizes: m.sizes, hasSizeGuide: !!sizeGuide,
-});
+// 🎟 a pack answers pack questions (what is on the sheet, how big, the set
+// price) — the merch list would promise a size guide a sticker sheet has not got
+const faqs = pack
+  ? packFaqs({ pack, price: money(m.pmin, m.cur), setPrice: money(SET_PRICE, m.cur) })
+  : officialFaqs({ title: m.title, colors: m.colors, sizes: m.sizes, hasSizeGuide: !!sizeGuide });
 const breadcrumbSchema = {
   '@context': 'https://schema.org/',
   '@type': 'BreadcrumbList',

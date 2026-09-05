@@ -97,6 +97,53 @@ export function customFaqs({ name, sizes = [], hasSizeGuide = false }) {
   ];
 }
 
+/** 🎟 A STICKER PACK: one sheet, six bananas, no sizes, no colours — so the
+ *  questions are about what is on the sheet and how big it is, and the
+ *  returns answer never mentions a size guide. Measurements are from the
+ *  print file (A5 at 300 dpi, 2×3 grid): the tallest costume reaches ~7 cm. */
+export function packFaqs({ pack, price, setPrice }) {
+  return [
+    {
+      q: `What is in ${pack.num}?`,
+      a: `Six kiss-cut vinyl stickers on one A5 sheet: ${list(pack.names)}, and the Original 1999 `
+        + 'banana. The Original is in every pack; the other five are only in this one.',
+    },
+    {
+      q: 'How big are the stickers?',
+      a: 'The sheet is A5, 14.8 × 21 cm (5.83 × 8.27 in). Each banana is about 5 to 7 cm tall '
+        + 'depending on his costume, with a 3 mm white kiss-cut border — laptop-sticker size, '
+        + 'not emoji size.',
+    },
+    {
+      q: 'What are they made of?',
+      a: 'Glossy vinyl, kiss-cut: each sticker peels off on its own and the backing sheet stays '
+        + 'whole. Made for indoor use — laptops, bottles, notebooks, phone cases.',
+    },
+    {
+      q: 'Is there a deal on all eight packs?',
+      a: `Yes. Put all eight in the cart and the total drops to ${setPrice} at checkout on its own, `
+        + `no code — eight sheets, 48 stickers, instead of ${price} a pack.`,
+    },
+    {
+      q: 'Is this official Dancing Banana merch?',
+      a: 'Yes. Trym Stene drew the original dancing banana in 1999, and this shop is his — every '
+        + 'sheet is printed and posted by the person who made the character.',
+    },
+    {
+      q: 'How long does it take, and where do you ship?',
+      a: 'It is printed to order, which takes 2–5 business days, and then the carrier time to you '
+        + 'on top. Worldwide, from the print facility closest to you; shipping is calculated at '
+        + 'checkout, so you see the exact cost before you pay.',
+    },
+    DAMAGED,
+    {
+      q: 'Can I return it?',
+      a: 'No — it is printed to order, so there are no returns for a change of mind. Damaged, '
+        + 'misprinted and defective sheets are always replaced free.',
+    },
+  ];
+}
+
 /** schema.org FAQPage for a question list. */
 export const faqSchema = (faqs) => ({
   '@context': 'https://schema.org/',
