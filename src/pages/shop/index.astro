@@ -2,10 +2,15 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import PressBelt from '../../components/PressBelt.astro';
+import PackGrid from '../../components/PackGrid.astro';
 import { getProducts, money, colorHex } from '../../lib/shop.js';
+import { packNumber, PACK_OG } from '../../data/sticker-packs.js';
 import CUSTOM from '../../../shared/products.js';
 
 const products = await getProducts();
+// the sticker packs are the main product and get their own section (PackGrid);
+// the rest of the official line is the grid under it
+const official = products.filter((p) => !packNumber(p.handle));
 // the custom line is deliberately absent from getProducts() (a bare PDP would
 // sell a blank product) — it comes in through its own lane, design-first
 const custom = CUSTOM.filter((p) => p.live);
@@ -35,11 +40,11 @@ const breadcrumbSchema = {
 };
 ---
 <BaseLayout
-  title="Shop — Dancing Banana Merch | Trym Stene"
-  description="Official Dancing Banana merch from the creator of the meme — the tee and the camper mug, printed on demand and shipped worldwide."
-  ogTitle="Shop — Dancing Banana Merch"
-  ogImage="https://trymstene.com/assets/og/shop.png"
-  ogDescription="Official Dancing Banana merch from the creator of the meme."
+  title="Shop — Dancing Banana Sticker Packs & Merch | Trym Stene"
+  description="Series 1 sticker packs — eight packs of six kiss-cut vinyl Dancing Bananas, the Original in every one — plus the official tee and mug. From the creator of the meme, printed on demand, shipped worldwide."
+  ogTitle="Shop — Dancing Banana Sticker Packs & Merch"
+  ogImage={`https://trymstene.com${PACK_OG}`}
+  ogDescription="Eight sticker packs of six kiss-cut Dancing Bananas, plus the official tee and mug."
 >
   <link rel="stylesheet" href="/css/shop.css" slot="head" />
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(collectionSchema)} />
@@ -71,11 +76,17 @@ const breadcrumbSchema = {
     </div>
   </section>
 
-  <section class="block block--yellow shopgridblock">
-    <h2 class="sr-only">The collection</h2>
-    {products.length ? (
+  {/* 🎟 THE MAIN PRODUCT FIRST (Trym, 5 Sep): the eight heroes alive at the
+      top, price and count in the copy, every pack underneath. */}
+  <PackGrid place="shop" fan tone="yellow" kicker="New · Series 1" heading="Sticker packs"
+            lead="The Giphy bananas as real kiss-cut vinyl — eight packs of six, the Original in every one." />
+
+  <section class="block shopgridblock">
+    <p class="kicker">Also official</p>
+    <h2>More merch</h2>
+    {official.length ? (
       <div class="shop-grid">
-        {products.map((p) => (
+        {official.map((p) => (
           <a class="project-card shop-card" href={`/shop/${p.handle}/`}>
             <img class="shop-card__img" src={p.featured} alt={p.title} loading="lazy" width="600" height="600" />
             <div class="project-card__body">
@@ -157,8 +168,8 @@ const breadcrumbSchema = {
       border: 2px solid var(--banana); color: var(--banana);
       padding: 0.22rem 0.5rem; border-radius: 2px;
     }
-    /* the grid starts immediately — no breathing room to scroll past */
-    .shopgridblock { padding-top: 1.4rem; }
+    .shopgridblock { text-align: center; }
+    .shopgridblock .shop-grid { text-align: left; }
     @media (max-width: 720px) {
       .shopbar__nana { width: 64px; height: 64px; }
       .shopbar__trust { margin-left: 0; width: 100%; }

@@ -9,6 +9,7 @@
 //
 // Drop it on any page: <ShopStrip place="gif_hub" />
 import { getProducts, money } from '../lib/shop.js';
+import { packNumber } from '../data/sticker-packs.js';
 
 export interface Props {
   place?: string;      // GA4 label, so we can tell which page's strip converts
@@ -23,7 +24,9 @@ const { place = 'strip', kicker = 'Official merch', tone = 'light',
 // Never let a shop hiccup take a content page down with it — the strip is an
 // addition to the page, not the page.
 let products = [];
-try { products = (await getProducts()).slice(0, limit); } catch (e) { products = []; }
+// the sticker packs have their own grid (PackGrid) on the pages that carry this
+// strip, so they are left out here rather than shown twice
+try { products = (await getProducts()).filter((p) => !packNumber(p.handle)).slice(0, limit); } catch (e) { products = []; }
 ---
 {products.length > 0 && (
   <section class:list={['shopstrip', tone === 'dark' && 'shopstrip--dark']} data-place={place}>

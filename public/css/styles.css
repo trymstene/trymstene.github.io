@@ -1111,3 +1111,24 @@ details.story p { margin-bottom: 1rem; }
 .press-belt--compact { padding: 1.15rem 0 1.1rem; margin: 1.2rem 0 0.4rem; border-top: 2px solid rgba(17, 17, 17, 0.12); }
 .press-belt--compact .press-belt__logos { gap: 0.85rem 1rem; opacity: 0.62; justify-content: flex-start; }
 .press-belt--compact img { filter: grayscale(1); }
+
+/* 💲 THE PRICE TAG — a tilted yellow tag with a hard shadow. Worn by the shop, the
+   PDPs AND the sticker-pack grid on the front page and the GIF page, so it lives
+   here (one layer, design library rule 5), not in shop.css. */
+.price-tag {
+  display: inline-block; background: var(--banana, #ffe135); color: #111;
+  border: 3px solid #111; box-shadow: 4px 4px 0 #111;
+  padding: 0.5rem 0.95rem; transform: rotate(-3deg);
+  font-weight: 900; font-size: 1.55rem; line-height: 1; white-space: nowrap;
+}
+.price-tag small {
+  font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.04em; opacity: 0.65; margin-right: 0.2rem;
+}
+.price-tag--ship {
+  background: #111; color: var(--banana, #ffe135); box-shadow: none;
+  transform: rotate(2deg); font-size: 0.78rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em; padding: 0.5rem 0.7rem;
+  white-space: normal;
+}
+.price-tag--sm { font-size: 1.05rem; padding: 0.35rem 0.6rem; box-shadow: 3px 3px 0 #111; }

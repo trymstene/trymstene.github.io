@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PackFan from '../components/PackFan.astro';
+import { PACK_PRICE } from '../data/sticker-packs.js';
 
 const title = "Trym Stene — the Dancing Banana Guy, since 1999";
 const description = "Trym Stene — the guy who made the Dancing Banana GIF in 1999. Where the banana lives: the story, make your own, the live rave, and the official shop.";
@@ -177,6 +179,22 @@ const FEATURES = [
       <a class="btn btn--light" href="/make-a-banana/" data-place="hero"><PixelIcon name="palette" /> Make a banana</a>
     </div>
   </section>
+
+  <!-- 🎟 THE PACK BAND — the shop's main product, one band under the hero
+       (Trym, 5 Sep: "frontpage somewhere in the top"). The stickers are the
+       copy; the words stay tiny. -->
+  <section class="block block--yellow pkband" id="stickers">
+    <PackFan />
+    <p class="kicker">New · Series 1</p>
+    <h2>Sticker packs</h2>
+    <p class="lead pkband__lead">The Giphy bananas as real kiss-cut vinyl — eight packs of six, the Original in every one, <strong>${PACK_PRICE.toFixed(2)} a pack</strong>.</p>
+    <a class="btn btn--dark" href="/shop/#sticker-packs" data-place="home_band">Shop the packs →</a>
+  </section>
+  <style>
+    .pkband { text-align: center; padding-top: 1.6rem; }
+    .pkband h2 { margin-bottom: 0.6rem; }
+    .pkband__lead { margin: 0 auto 1.2rem; }
+  </style>
 
   <!-- 🌍 the world landing — the doors became a visual sell (Trym, 13 Aug):
        feature stills from the reel scenes, real community homesteads with

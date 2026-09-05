@@ -1,0 +1,107 @@
+---
+// 🎟 THE PACK GRID — the eight Series 1 packs, on every page that sells them:
+// the shop (with the fan on top), the GIF page and the pack product pages
+// ("collect all 8"). Real Shopify products link to their page; a pack that is
+// not published yet shows its picture and price and says "soon" — the card
+// flips to a link on the next nightly build after Trym publishes it, with no
+// code change.
+//
+//   <PackGrid place="shop" fan kicker="New · Series 1" heading="Sticker packs" />
+import { getProducts, money } from '../lib/shop.js';
+import { STICKER_PACKS, PACK_PRICE, packCard, packProducts, previewPacks } from '../data/sticker-packs.js';
+import PackFan from './PackFan.astro';
+
+export interface Props {
+  place?: string;      // GA4 label — which page's grid sends people to a pack
+  id?: string;
+  kicker?: string;
+  heading?: string;
+  lead?: string;
+  fan?: boolean;       // the animated heroes above the heading (the shop)
+  current?: number;    // the pack whose page this grid is on
+  tone?: 'light' | 'yellow';
+}
+const { place = 'grid', id = 'sticker-packs', kicker = 'Series 1', heading = 'Sticker packs',
+        lead, fan = false, current = 0, tone = 'light' } = Astro.props;
+
+// a shop hiccup must never take a content page down with it
+let products = [];
+try { products = await getProducts(); } catch (e) { products = []; }
+const have = packProducts([...products, ...previewPacks(products)]);
+---
+<section class:list={['block', tone === 'yellow' && 'block--yellow', 'pkgrid']} id={id} data-place={place}>
+  {fan && <PackFan size="hero" />}
+  <p class="kicker">{kicker}</p>
+  <h2>{heading}</h2>
+  {lead && <p class="lead">{lead}</p>}
+  <div class="pkgrid__cards">
+    {STICKER_PACKS.map((p) => {
+      const prod = have[p.n];
+      const Tag = prod ? 'a' : 'div';
+      return (
+        <Tag class:list={['pk-card', current === p.n && 'pk-card--here', !prod && 'pk-card--soon']}
+             href={prod ? `/shop/${prod.handle}/` : undefined} data-name={`Sticker ${p.name}`}>
+          <img src={packCard(p.n)} alt={`${p.name}: ${p.names.join(', ')} and the Original`}
+               width="600" height="600" loading="lazy" decoding="async" />
+          <div class="pk-card__body">
+            <h3>{p.name}</h3>
+            <p class="pk-card__names">{p.names.join(' · ')}</p>
+            <div class="pk-card__foot">
+              <span class="price-tag price-tag--sm">{money(prod ? prod.pmin : PACK_PRICE, 'USD')}</span>
+              <span class="pk-card__cta">{prod ? (current === p.n ? 'This one' : 'View →') : 'Soon'}</span>
+            </div>
+          </div>
+        </Tag>
+      );
+    })}
+  </div>
+  <p class="pkgrid__note">The Original is in every pack · six kiss-cut vinyl stickers on one A5 sheet · printed to order, ships worldwide</p>
+</section>
+
+<style>
+  .pkgrid { text-align: center; }
+  .pkgrid .lead { margin-left: auto; margin-right: auto; }
+  .pkgrid__cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.4rem;
+    max-width: 1100px; margin: 1.6rem auto 0; text-align: left;
+  }
+  @media (max-width: 720px) { .pkgrid__cards { grid-template-columns: 1fr 1fr; gap: 0.8rem; } }
+  /* a card you buy from keeps its edges (design library rule 2) */
+  .pk-card {
+    display: flex; flex-direction: column; background: var(--paper); color: var(--ink);
+    border: var(--line); box-shadow: var(--shadow-sm); text-decoration: none; overflow: hidden;
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  a.pk-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+  .pk-card img { width: 100%; height: auto; aspect-ratio: 1; display: block; border-bottom: 3px solid var(--ink); }
+  .pk-card__body { padding: 0.8rem 0.9rem 0.9rem; display: flex; flex-direction: column; flex: 1; gap: 0.35rem; }
+  .pk-card h3 { font-size: 1.05rem; line-height: 1.1; margin: 0; }
+  .pk-card__names { margin: 0; font-size: 0.78rem; line-height: 1.35; opacity: 0.78; }
+  .pk-card__foot {
+    margin-top: auto; padding-top: 0.5rem; display: flex; flex-wrap: wrap;
+    align-items: center; justify-content: space-between; gap: 0.5rem;
+  }
+  .pk-card__cta { font-weight: 800; color: var(--hot); font-size: 0.9rem; white-space: nowrap; }
+  a.pk-card:hover .pk-card__cta { text-decoration: underline; }
+  .pk-card--soon .pk-card__cta { color: var(--ink); opacity: 0.55; }
+  .pk-card--here { outline: 4px solid var(--hot); outline-offset: -4px; }
+  .pkgrid__note { margin: 1.2rem auto 0; font-size: 0.8rem; font-weight: 600; opacity: 0.7; max-width: 60ch; }
+  @media (prefers-reduced-motion: reduce) { a.pk-card:hover { transform: none; } }
+</style>
+
+<script>
+  // which grid, on which page, sent someone to a pack — pairs with select_item
+  // on the shop's own cards so Pulse can compare the doors
+  document.querySelectorAll('.pkgrid').forEach((grid) => {
+    const place = (grid as HTMLElement).dataset.place || 'grid';
+    grid.querySelectorAll('a.pk-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const w = window as any;
+        if (w.gtag) w.gtag('event', 'select_item', {
+          item_list_name: 'packs_' + place,
+          items: [{ item_name: (card as HTMLElement).dataset.name || '' }],
+        });
+      });
+    });
+  });
+</script>

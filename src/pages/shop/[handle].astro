@@ -2,29 +2,43 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PressBelt from '../../components/PressBelt.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
+import PackGrid from '../../components/PackGrid.astro';
 import { getProducts, money, colorHex, firstSentence, sizeTableHtml, SITE } from '../../lib/shop.js';
 import { officialFaqs, faqSchema } from '../../lib/product-faq.js';
+import { STICKER_PACKS, packNumber, packSpread, packSheet, stickerSrc, previewPacks } from '../../data/sticker-packs.js';
 
 export async function getStaticPaths() {
   const products = await getProducts();
-  return products.map((p) => ({ params: { handle: p.handle }, props: { m: p } }));
+  // previewPacks() is empty unless PACK_PREVIEW=1 — the pre-launch walk only
+  return [...products, ...previewPacks(products)].map((p) => ({ params: { handle: p.handle }, props: { m: p } }));
 }
 
 const { m } = Astro.props;
+
+// 🎟 A STICKER PACK gets its own pictures and words. Printful's blurb is about
+// "kiss-cut sticker sheets" in general; ours is about which bananas are in
+// this one — and the spread, not Printful's mockup, is what a shopper sees.
+const packN = packNumber(m.handle);
+const pack = packN ? STICKER_PACKS.find((p) => p.n === packN) : null;
 
 // Shopify titles already open with "DANCING BANANA OFFICIAL™ …", so the old
 // suffix said the brand twice and pushed these tags to 77-94 chars — long
 // enough that Google truncates and rewrites them. Strip the prefix, say it once.
 const branded = /^DANCING BANANA OFFICIAL/i.test(m.title);
 const bare = branded ? m.title.replace(/^DANCING BANANA OFFICIAL[™\s]*/i, '').trim() : m.title;
-const titleTag = branded
-  ? `Dancing Banana ${bare} — Official Merch | Trym Stene`
-  : `${bare} — official Dancing Banana merch | Trym Stene`;
+const titleTag = pack
+  ? `Dancing Banana Sticker ${pack.name} — 6 kiss-cut vinyl stickers | Trym Stene`
+  : branded
+    ? `Dancing Banana ${bare} — Official Merch | Trym Stene`
+    : `${bare} — official Dancing Banana merch | Trym Stene`;
 // the Shopify/Printful blurb never mentions a banana ("every happy camper needs
 // a mug…"), so someone searching "dancing banana mug" saw a snippet about
 // camping. Lead with what it actually is.
-const descMeta = `Dancing Banana ${bare.toLowerCase()} — ${firstSentence(m.descHtml, 90)} From ${money(m.pmin, m.cur)}, shipped worldwide.`;
-const mainImg = m.colors.length ? m.colorImage[m.colors[0]] : m.featured;
+const descMeta = pack
+  ? `${pack.names.join(', ')} and the Original — six kiss-cut vinyl Dancing Banana stickers on one A5 sheet, from the creator of the meme. ${money(m.pmin, m.cur)}, ships worldwide.`
+  : `Dancing Banana ${bare.toLowerCase()} — ${firstSentence(m.descHtml, 90)} From ${money(m.pmin, m.cur)}, shipped worldwide.`;
+const mainImg = pack ? packSpread(pack.n) : m.colors.length ? m.colorImage[m.colors[0]] : m.featured;
+const ogImg = pack ? SITE + packSpread(pack.n) : m.featured;
 const sizeGuide = sizeTableHtml(m); // null = no chart for this product → section hidden
 
 const island = {
@@ -66,8 +80,8 @@ const productSchema = {
   '@context': 'https://schema.org/',
   '@type': 'Product',
   name: m.title,
-  image: m.images.slice(0, 10),
-  description: firstSentence(m.descHtml, 300),
+  image: pack ? [SITE + packSpread(pack.n), SITE + packSheet(pack.n), ...m.images].slice(0, 10) : m.images.slice(0, 10),
+  description: pack ? descMeta : firstSentence(m.descHtml, 300),
   brand: { '@type': 'Brand', name: 'Dancing Banana Official' },
   sku: m.handle,
   ...(m.colors.length ? { color: m.colors } : {}),
@@ -108,7 +122,7 @@ const breadcrumbSchema = {
   description={descMeta}
   ogTitle={m.title}
   ogType="product"
-  ogImage={m.featured}
+  ogImage={ogImg}
 >
   <Fragment slot="head">
     <link rel="stylesheet" href="/css/shop.css" />
@@ -125,19 +139,23 @@ const breadcrumbSchema = {
 
   <section class="pdp" data-pdp>
     <div class="pdp__gallery">
-      <img class="pdp__main" src={mainImg} alt={m.title} width="800" height="800" />
-      <div class="pdp__thumbs">
-        {m.colors.map((c) => (
-          <button class="pdp-thumb" data-color={c} aria-label={c}>
-            <img src={m.colorImage[c]} alt={`${m.title} – ${c}`} loading="lazy" />
-          </button>
-        ))}
-      </div>
+      <img class="pdp__main" src={mainImg} alt={pack ? `${pack.name}: ${pack.names.join(', ')} and the Original` : m.title} width="800" height="800" />
+      {!pack && (
+        <div class="pdp__thumbs">
+          {m.colors.map((c) => (
+            <button class="pdp-thumb" data-color={c} aria-label={c}>
+              <img src={m.colorImage[c]} alt={`${m.title} – ${c}`} loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
 
     <div class="pdp__info">
       <h1>{m.title}</h1>
-      <p class="pdp__tag">{firstSentence(m.descHtml, 120)}</p>
+      <p class="pdp__tag">{pack
+        ? 'Six kiss-cut vinyl stickers, about 5–6 cm each, on one A5 sheet — five you won\'t find anywhere else, plus the Original.'
+        : firstSentence(m.descHtml, 120)}</p>
       <div class="pdp-pricetags">
         <p class="pdp__price price-tag"><small>from</small> {money(m.pmin, m.cur)}</p>
       </div>
@@ -147,6 +165,20 @@ const breadcrumbSchema = {
           is shorter than the line it replaced and says more. */}
       <p class="pdp__note">Printed to order in 2–5 days · shipping &amp; tax at checkout</p>
       <PressBelt compact label="As featured in" />
+
+      {pack && (
+        <div class="pdp-field pdp-inside">
+          <div class="pdp-field__label">Inside <span>— 6 stickers, hands up</span></div>
+          <ul class="pdp-inside__list">
+            {pack.stickers.map((s) => (
+              <li class:list={[s.hero && 'is-hero']}>
+                <img src={stickerSrc(s.slug)} alt="" width={s.w} height={s.h} loading="lazy" decoding="async" />
+                <span>{s.name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {m.colors.length > 0 && (
         <div class="pdp-field">
@@ -181,12 +213,22 @@ const breadcrumbSchema = {
       <p class="pdp-stock"></p>
 
       <ul class="pdp-trust">
+        {pack && <li>Kiss-cut: each sticker peels off the sheet on its own</li>}
         <li>Printed &amp; shipped on demand — made just for you</li>
         <li>Ships worldwide</li>
         <li>Secure checkout via Shopify</li>
         <li>Free replacement if it arrives wrong — <a href="/shop/policies/">shipping &amp; returns</a></li>
         <li>From the creator of the original 1999 dancing banana</li>
       </ul>
+
+      {/* the sheet as it prints — AFTER the price and the button, so a phone
+          sees what it costs before a second tall picture */}
+      {pack && (
+        <figure class="pdp-sheet">
+          <img src={packSheet(pack.n)} alt={`${pack.name} — the A5 sheet as it prints`} width="1200" height="1700" loading="lazy" decoding="async" />
+          <figcaption>What arrives: one A5 sheet, six kiss-cut stickers</figcaption>
+        </figure>
+      )}
     </div>
   </section>
 
@@ -217,6 +259,8 @@ const breadcrumbSchema = {
     </details>
   </section>
 
+  {pack && <PackGrid place="pdp" current={pack.n} kicker="Series 1" heading="Collect all 8" />}
+
   <section class="block">
     <p class="kicker">Keep going</p>
     <h2>More banana</h2>
@@ -226,6 +270,24 @@ const breadcrumbSchema = {
       <a href="/dancing-banana-gif-meme/">The story &amp; free GIF</a>
     </p>
   </section>
+
+  <style>
+    .pdp-sheet { margin: 1.6rem 0 0; max-width: 420px; }
+    .pdp-sheet img {
+      width: 100%; height: auto; display: block; background: #fff;
+      border: var(--line); box-shadow: var(--shadow-sm);
+    }
+    .pdp-sheet figcaption { margin-top: 0.5rem; font-size: 0.78rem; font-weight: 700; opacity: 0.7; }
+    .pdp-inside__list {
+      list-style: none; margin: 0; padding: 0;
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.5rem 0.3rem;
+    }
+    @media (max-width: 520px) { .pdp-inside__list { grid-template-columns: repeat(3, 1fr); } }
+    .pdp-inside__list li { text-align: center; font-size: 0.7rem; font-weight: 700; line-height: 1.2; }
+    .pdp-inside__list img { height: 68px; width: auto; display: block; margin: 0 auto 0.3rem; transform: rotate(-5deg); }
+    .pdp-inside__list li:nth-child(even) img { transform: rotate(5deg); }
+    .pdp-inside__list li.is-hero img { height: 78px; }
+  </style>
 
   <script id="pdp-data" type="application/json" set:html={JSON.stringify(island)}></script>
   <script src="/js/shop.js" is:inline></script>

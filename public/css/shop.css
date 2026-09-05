@@ -70,23 +70,6 @@ a.shop-card:hover .shop-card__cta { text-decoration: underline; }
 /* ---------- the price tag: price as a tilted banana-yellow sticker instead
    of another line of text (Trym: price + free shipping are THE two facts —
    give them a badge, not a paragraph) ---------- */
-.price-tag {
-  display: inline-block; background: var(--banana, #ffe135); color: #111;
-  border: 3px solid #111; box-shadow: 4px 4px 0 #111;
-  padding: 0.5rem 0.95rem; transform: rotate(-3deg);
-  font-weight: 900; font-size: 1.55rem; line-height: 1; white-space: nowrap;
-}
-.price-tag small {
-  font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 0.04em; opacity: 0.65; margin-right: 0.2rem;
-}
-.price-tag--ship {
-  background: #111; color: var(--banana, #ffe135); box-shadow: none;
-  transform: rotate(2deg); font-size: 0.78rem; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.06em; padding: 0.5rem 0.7rem;
-  white-space: normal;
-}
-.price-tag--sm { font-size: 1.05rem; padding: 0.35rem 0.6rem; box-shadow: 3px 3px 0 #111; }
 .pdp-pricetags { display: flex; align-items: center; flex-wrap: wrap; gap: 0.9rem; margin: 0.7rem 0 0.9rem; }
 .pdp-pricetags .pdp__price { margin: 0; }
 

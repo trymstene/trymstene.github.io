@@ -5,6 +5,7 @@ import Hreflang from '../components/Hreflang.astro';
 import LangSwitch from '../components/LangSwitch.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import ShopStrip from '../components/ShopStrip.astro';
+import PackGrid from '../components/PackGrid.astro';
 import remixes from '../data/remixes.json';
 
 // 🔍 THE SNIPPET IS THE WHOLE JOB HERE. This page is shown ~19,000 times a
@@ -256,6 +257,12 @@ const person = {
       Rather just say thanks? You can <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener">buy the banana guy a coffee</a>. <PixelIcon name="coffee" />
     </p>
   </section>
+
+  <!-- 🎟 THE PACKS, where the traffic is. The GIF just downloaded is free; the
+       same bananas as real stickers are the site's main product (Trym, 5 Sep).
+       Cards link to the pack pages once they are published. -->
+  <PackGrid place="gif_hub" kicker="New · Series 1" heading="Sticker packs"
+            lead="The bananas you've been sending — as real kiss-cut vinyl. Eight packs of six, the Original in every one." />
 
   <!-- CTA: the builder — GIF-seekers become banana-makers -->
   <section class="block block--dark" id="make-your-own">
