@@ -32,7 +32,7 @@
 // ⚠️ Same back-door that defeated the Forge's lazy import via banana-shelf.js.
 // Verify by MEASURING the built page, never by reading the import list.
 import PRODUCTS from '../../shared/products.js';   // plain catalog, no engine
-import { TIP_URL } from '../data/pay-rail.js';
+import { STICKER_PACKS, PACK_PRICE, SET_PRICE, packCard as packShot, packThumb } from '../data/sticker-packs.js';
 
 // ⚠️ was a hand-copied 14.99 "mirroring sticker-core" — a mirror nobody
 // repolished when the sticker dropped to $4.99. Read the manifest instead.
@@ -113,6 +113,32 @@ const CSS = `
 }
 .mir--warm .mir__no { margin-top: 0.5rem; }
 .mir__go--dc { background:#5865f2; color:#fff; }
+/* 🎟 the pack card: the spread IS the shot; eight minis swap it */
+.mir--pack { grid-template-columns: minmax(0, 176px) minmax(0, 1fr); max-width: 600px; }
+.mir--pack .mir__shot { display: block; background: #fff; }
+.mir--pack .mir__shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mir--pack .mir__head { font-size: clamp(1.1rem, 4.6vw, 1.45rem); margin-bottom: 0.3rem; }
+.mir__packname {
+  font-size: 0.74rem; line-height: 1.3; margin: 0 0 0.45rem; opacity: 0.85;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.mir__minis { display: flex; gap: 4px; margin: 0 0 0.55rem; }
+.mir__mini {
+  width: 30px; height: 30px; padding: 0; flex: none; cursor: pointer;
+  border: 2px solid var(--mir-ink); background: #fff; opacity: 0.55;
+}
+.mir__mini img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mir__mini:hover, .mir__mini.on { opacity: 1; }
+.mir__mini.on { outline: 3px solid #ff4d6d; outline-offset: -1px; }
+.mir--pack .mir__go, .mir--pack .mir__no { width: 100%; justify-content: center; box-sizing: border-box; text-align: center; }
+@media (max-width: 430px) {
+  /* ⚠️ restated here: .mir--pack's two columns are declared AFTER the base
+     phone rule and would otherwise win over it — the card must stack */
+  .mir--pack { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .mir--pack .mir__shot { width: 62%; }
+  .mir__minis { justify-content: center; flex-wrap: wrap; }
+  .mir__packname { text-align: center; }
+}
 /* the post-download moment: the card arrives over the page, once */
 .mir-veil {
   position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
@@ -290,145 +316,109 @@ function pickHead(offer) {
   return lastHead;
 }
 
-// 🌍💬 THE WARM-UP PIVOT (Trym, 12 Aug 2026). The data closed the merch
-// question: months of download popups fronting stickers/mugs/tees produced
-// effectively nothing — organic GIF traffic wants the file for Discord or a
-// chat, not a checkout. So the download moment stops selling and starts
-// WARMING UP: the card introduces Banana World (join the Homestead) or the
-// Discord community. The file stays one honest tap away, same as before.
-// The merch offerCard/OFFERS machinery survives untouched for the pass page
-// and park-postcard embeds — only the DOWNLOAD moment pivots.
-export const DISCORD_URL = 'https://discord.gg/cuF6BHfZT4';
-const WORLD_HREF = '/homestead/';
-// 8 rotating voices — a SITUATION or a promise, never a feature list, and
-// ⭐ ONE ask each (Trym: two CTAs at once is drowning, not testing). Five
-// pitch the world, three pitch the Discord; `to` decides the single primary
-// button and `variant` rides every event so the winners can be counted
-// (per-variant splits in GA4 need `variant` registered as a custom
-// dimension — same admin errand family as `from`).
-// ☕ THE SUPPORT TEST (Trym, 27 Aug): every download-moment card asks for
-// support instead of pitching the world/Discord — an honest ask at the one
-// moment a stranger has just received something. ONE message, deliberately:
-// a clean read on willingness-to-pay beats a rotation. The $5 matches the
-// $5 matches the middle preset on /support/, which is where this now goes.
-// The old world/discord rotation lives in git (WORLD_VARIANTS, this commit's
-// parent) — this is a TEST, not a demolition.
-const WORLD_VARIANTS = [
-  { id: 'coffee', to: 'support', kicker: 'Free, since 1999', head: 'I make nothing on the banana',
-    pills: ['Every download is free', 'Support keeps it that way'], cta: '☕ Buy me a coffee — $5' },
+// 🎟 THE PACK CARD (Trym, 5 Sep 2026: "swap the popup to the pack entirely,
+// make it nice and visual"). Thirty days of the warm-up/coffee card on the GIF
+// page: 231 shown, 174 skipped, 15 taken, and 3 merch clicks on the whole
+// page. The download moment now shows the one thing this site sells that
+// nobody else has: the Giphy bananas as real kiss-cut sticker packs.
+// ONE ask (the pack on show) and the free file one honest tap away, same as
+// before. The eight packs sit under the pitch as tappable minis — a tap swaps
+// the big picture, so the card is a small shop window, not a poster.
+// The world / Discord / coffee cards live in git (this commit's parent).
+const PACK_HEADS = [
+  'The banana you just took, as real stickers',
+  'He also comes on paper',
+  'Take him home for real',
+  'Six of him, kiss-cut, in an envelope',
+  'Real stickers of the 1999 banana',
 ];
-export const SUPPORT_URL = TIP_URL;
 
-// their banana standing in the world — sky, grass, and the engine composite.
-// A gradient backdrop is card chrome, not world art (the pack rule is about
-// scenes); the banana itself is the real engine render.
-async function worldShot(outfit, size = 420) {
-  const { drawComposite, assetsReady } = await import('./banana-engine.js');
-  await assetsReady();
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = size;
-  const c = cv.getContext('2d');
-  const sky = c.createLinearGradient(0, 0, 0, size * 0.66);
-  sky.addColorStop(0, '#8ed0f0'); sky.addColorStop(1, '#c6e9f8');
-  c.fillStyle = sky; c.fillRect(0, 0, size, size * 0.66);
-  const grass = c.createLinearGradient(0, size * 0.66, 0, size);
-  grass.addColorStop(0, '#79bd55'); grass.addColorStop(1, '#549a39');
-  c.fillStyle = grass; c.fillRect(0, size * 0.66, size, size * 0.34);
-  drawComposite(c, size, 3, {   // the ta-da pose
-    bg: 'transparent', captions: false, effect: 'none', top: '', bottom: '',
-    ...outfit, extras: (outfit && outfit.extras) || {},
-  });
-  return cv;
-}
-
-function worldCard({ v, outfit, img, skipText, onGo, onSkip }) {
+function packCard({ pack, head, skipText, onGo, onSkip, onSwap }) {
   injectCss();
   const card = document.createElement('div');
-  card.className = 'mir mir--warm';
-  const shot = document.createElement('div');
-  shot.className = 'mir__shot';
-  const f = document.createElement('span');
-  f.className = 'mir__flag';
-  // 🖼 THE THUMB IS THE THING BEING DOWNLOADED. `img` (the download's own
-  // href) wins: the official page shows the original, a remix page shows that
-  // remix, a wallpaper shows that wallpaper. The outfit render is ONLY for the
-  // builder, where the file really is their banana — showing a custom fit
-  // with a MADE BY YOU sash over the ORIGINAL's download was a lie.
-  if (img) {
-    f.textContent = 'FREE';
-    const im = document.createElement('img');
-    im.src = img; im.alt = ''; im.loading = 'eager'; im.decoding = 'async';
-    im.style.cssText = 'display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;';
-    shot.appendChild(f);
-    card.appendChild(shot);
-    shot.appendChild(im);
-  } else {
-    const o = outfit || myOutfit();
-    f.textContent = o.made ? 'MADE BY YOU' : 'SINCE 1999';
-    shot.appendChild(f);
-    card.appendChild(shot);
-    worldShot(o).then((cv) => { shot.appendChild(cv); }).catch(() => {});
-  }
+  card.className = 'mir mir--pack';
+  let cur = pack;
+  // the shot IS the pack picture — it carries its own PACK N flair, so no sash
+  const shot = document.createElement('a');
+  shot.className = 'mir__shot mir__shot--pack';
+  const im = document.createElement('img');
+  im.alt = ''; im.loading = 'eager'; im.decoding = 'async'; im.width = 600; im.height = 600;
+  shot.appendChild(im);
   const body = document.createElement('div');
-  const k = document.createElement('p'); k.className = 'mir__kicker'; k.textContent = v.kicker;
-  const h = document.createElement('p'); h.className = 'mir__head'; h.textContent = v.head;
+  const k = document.createElement('p'); k.className = 'mir__kicker'; k.textContent = 'Now on paper · 8 sticker packs';
+  const h = document.createElement('p'); h.className = 'mir__head'; h.textContent = head;
+  const nm = document.createElement('p'); nm.className = 'mir__packname';
+  const minis = document.createElement('div'); minis.className = 'mir__minis';
   const ps = document.createElement('div'); ps.className = 'mir__pills';
-  v.pills.forEach((t) => {
-    const s = document.createElement('span'); s.className = 'mir__pill'; s.textContent = t;
-    ps.appendChild(s);
+  ['6 kiss-cut stickers · $' + PACK_PRICE.toFixed(2), 'The Original in every pack', 'All eight $' + SET_PRICE.toFixed(2)]
+    .forEach((t, i) => {
+      const sp = document.createElement('span');
+      sp.className = 'mir__pill' + (i === 0 ? ' mir__pill--price' : ''); sp.textContent = t;
+      ps.appendChild(sp);
+    });
+  const go = document.createElement('a'); go.className = 'mir__go';
+  const show = (p) => {
+    cur = p;
+    im.src = packShot(p.n);
+    shot.href = '/shop/' + p.handle + '/';
+    go.href = shot.href;
+    go.textContent = 'See ' + p.name + ' →';
+    nm.textContent = '';
+    const b = document.createElement('b'); b.textContent = p.num + ' · ' + p.name;
+    nm.append(b, document.createTextNode(' — ' + p.names.join(', ')));
+    [...minis.children].forEach((m) => m.classList.toggle('on', Number(m.dataset.n) === p.n));
+  };
+  STICKER_PACKS.forEach((p) => {
+    const m = document.createElement('button');
+    m.type = 'button'; m.className = 'mir__mini'; m.dataset.n = String(p.n);
+    m.setAttribute('aria-label', p.num + ', ' + p.name);
+    const mi = document.createElement('img');
+    mi.src = packThumb(p.n); mi.alt = ''; mi.width = 240; mi.height = 240; mi.decoding = 'async';
+    m.appendChild(mi);
+    m.addEventListener('click', () => { show(p); if (onSwap) onSwap(p); });
+    minis.appendChild(m);
   });
-  // ONE primary — the variant's destination decides both colour and door
-  const go = document.createElement('a');
-  go.textContent = v.cta;
-  if (v.to === 'support') {
-    go.className = 'mir__go';
-    go.href = SUPPORT_URL;
-    go.target = '_blank'; go.rel = 'noopener';
-  } else if (v.to === 'discord') {
-    go.className = 'mir__go mir__go--dc';
-    go.href = DISCORD_URL;
-    go.target = '_blank'; go.rel = 'noopener';
-  } else {
-    go.className = 'mir__go';
-    go.href = WORLD_HREF;
+  if (onGo) {
+    go.addEventListener('click', () => onGo(cur));
+    shot.addEventListener('click', () => onGo(cur));
   }
-  if (onGo) go.addEventListener('click', onGo);
   const no = document.createElement('button');
   no.type = 'button'; no.className = 'mir__no'; no.textContent = skipText;
   if (onSkip) no.addEventListener('click', onSkip);
-  body.append(k, h, ps, go, no);
-  card.appendChild(body);
+  body.append(k, h, nm, minis, ps, go, no);
+  card.append(shot, body);
+  show(pack);
   return card;
 }
 
 /**
- * The download-moment card — the WARM-UP card since 12 Aug. Owns its own
- * tracking now: offer_shown / offer_world / offer_discord / offer_skip, all
- * carrying { from, variant } (+ any caller `params`). Callers only supply
- * the moment (`from`), the file (`onSkip`) and optionally the outfit.
- * Shows on EVERY download (Trym, 12 Aug) — offer_shown counts CARDS now,
- * not people.
+ * The download-moment card — THE PACK CARD since 5 Sep 2026. Owns its own
+ * tracking: offer_shown / offer_pack / offer_swap / offer_skip, all carrying
+ * { from, variant } (+ any caller `params`); variant = which pack and which
+ * headline showed, product = the pack tapped. Callers only supply the moment
+ * (`from`) and the file (`onSkip`); `outfit` and `img` are accepted and
+ * ignored so every caller keeps working unchanged.
+ * Shows on EVERY download (Trym, 12 Aug) — offer_shown counts CARDS, not people.
  */
 export function offerAfterDownload(opts = {}) {
   if (!offerWillShow()) return null;
   injectCss();
-  const v = WORLD_VARIANTS[Math.floor(Math.random() * WORLD_VARIANTS.length)];
-  const P = { from: opts.from || 'unknown', variant: v.id, ...(opts.params || {}) };
+  const pack = STICKER_PACKS[Math.floor(Math.random() * STICKER_PACKS.length)];
+  const head = PACK_HEADS[Math.floor(Math.random() * PACK_HEADS.length)];
+  const P = { from: opts.from || 'unknown', variant: 'pack-' + pack.n + '/h' + (PACK_HEADS.indexOf(head) + 1), ...(opts.params || {}) };
   const hit = (name, extra) => {
     try { if (window.gtag) window.gtag('event', name, { ...P, ...(extra || {}) }); } catch (e) {}
   };
   const veil = document.createElement('div');
   veil.className = 'mir-veil';
   const close = () => veil.remove();
-  const card = worldCard({
-    v,
-    outfit: opts.outfit,
-    img: opts.img,
+  const card = packCard({
+    pack, head,
     skipText: opts.skipText || 'no thanks, just the GIF',
-    // ⚠️ beacon transport: the world link navigates THIS tab away instantly —
+    // ⚠️ beacon transport: the pack link navigates THIS tab away instantly —
     // a plain gtag hit would be cancelled mid-flight with the page
-    onGo: () => hit(v.to === 'support' ? 'offer_support' : v.to === 'discord' ? 'offer_discord' : 'offer_world',
-      { transport_type: 'beacon' }),
+    onGo: (p) => hit('offer_pack', { product: 'pack-' + p.n, transport_type: 'beacon' }),
+    onSwap: (p) => hit('offer_swap', { product: 'pack-' + p.n }),
     onSkip: () => { close(); hit('offer_skip'); if (opts.onSkip) opts.onSkip(); },
   });
   veil.appendChild(card);
@@ -440,7 +430,6 @@ export function offerAfterDownload(opts = {}) {
   hit('offer_shown');
   return { el: veil, close };
 }
-
 
 // ⭐ ONE CARD, MANY MOMENTS — the offer table.
 //
