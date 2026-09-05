@@ -8,8 +8,9 @@
 //
 //   <PackGrid place="shop" fan kicker="New · Series 1" heading="Sticker packs" />
 import { getProducts, money } from '../lib/shop.js';
-import { STICKER_PACKS, PACK_PRICE, SET_PRICE, packCard, packProducts, previewPacks } from '../data/sticker-packs.js';
+import { STICKER_PACKS, PACK_PRICE, packCard, packProducts, previewPacks } from '../data/sticker-packs.js';
 import PackFan from './PackFan.astro';
+import PackDeal from './PackDeal.astro';
 
 export interface Props {
   place?: string;      // GA4 label — which page's grid sends people to a pack
@@ -20,9 +21,10 @@ export interface Props {
   fan?: boolean;       // the animated heroes above the heading (the shop)
   current?: number;    // the pack whose page this grid is on
   tone?: 'light' | 'yellow';
+  deal?: boolean;      // the loud set-deal band under the heading (the shop)
 }
 const { place = 'grid', id = 'sticker-packs', kicker = 'Series 1', heading = 'Sticker packs',
-        lead, fan = false, current = 0, tone = 'light' } = Astro.props;
+        lead, fan = false, current = 0, tone = 'light', deal = false } = Astro.props;
 
 // a shop hiccup must never take a content page down with it
 let products = [];
@@ -34,6 +36,7 @@ const have = packProducts([...products, ...previewPacks(products)]);
   <p class="kicker">{kicker}</p>
   <h2>{heading}</h2>
   {lead && <p class="lead">{lead}</p>}
+  {deal && <PackDeal variant="band" place={place + '_top'} />}
   <div class="pkgrid__cards">
     {STICKER_PACKS.map((p) => {
       const prod = have[p.n];
@@ -56,7 +59,8 @@ const have = packProducts([...products, ...previewPacks(products)]);
       );
     })}
   </div>
-  <p class="pkgrid__note">The Original is in every pack · six kiss-cut vinyl stickers on one A5 sheet · all eight together come to ${SET_PRICE.toFixed(2)} at checkout</p>
+  <p class="pkgrid__note">The Original is in every pack · six kiss-cut vinyl stickers on one A5 sheet</p>
+  <PackDeal variant="line" place={place + '_grid'} />
 </section>
 
 <style>

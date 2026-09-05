@@ -9,6 +9,8 @@ fun spread with all the stickers overlapping eachother"). So, per pack:
                                             the pack's named sticker front and
                                             centre, EVERY face visible
   public/assets/packs/pack-N-card.webp       600x600   the same, for grids
+  public/assets/packs/pack-N-banner.webp    1200x480  the group on the right of a wide
+                                            ground - the GIF page's carousel tile
   public/assets/packs/pack-N-sheet.webp     1200x1700  the A5 exactly as it prints
   public/assets/packs/stickers/<slug>.webp  one kiss-cut sticker on transparency,
                                             for the pages to lay out and animate
@@ -259,17 +261,49 @@ SEATS = [  # (index in the pack, x, y, height share, max tilt, jitter)
 ]
 
 
-def spread(pack, cells, size=1200):
+def group(im, pack, cells, S, ox=0, oy=0):
+    '''the six-seat group photo on a virtual square of side S whose top-left is
+    (ox, oy) in `im`: the spread fills its own square with it, the banner seats
+    it to the right and leaves the left to the tile's words. Same seeds, same
+    call order as the spread always had - the spreads do not change.'''
     rnd = random.Random(100 + int(pack))
-    im = MOODS[pack](size)
     arts = [BSP.art_for(c, 1)[0] for c in cells]
     for idx, fx, fy, share, tilt, jit in SEATS:
-        a, k = fit(arts[idx], size * share)
+        a, k = fit(arts[idx], S * share)
         # a captioned square tilts less: its bottom line of text is what a
         # neighbour in front would cover first
         tilt = tilt * (0.6 if k < 0.9 else 1.0)
         st = kiss_cut(a, border=12).rotate(rnd.uniform(-tilt, tilt), expand=True, resample=Image.BICUBIC)
-        place(im, st, size * fx + rnd.uniform(-jit, jit), size * fy + rnd.uniform(-jit, jit) * 0.7)
+        place(im, st, ox + S * fx + rnd.uniform(-jit, jit), oy + S * fy + rnd.uniform(-jit, jit) * 0.7)
+
+
+# the four sunburst grounds paint at any size; the four painted ones are square
+# scenes, so a wide picture takes the band where the ground is
+BURSTS = {'2': (YELLOW, DEEP), '4': (HOT, HOT2), '7': (SKY, SKY2), '8': (PAPER, CREAM2)}
+
+
+def banner(pack, cells, size=(1200, 480)):
+    '''the GIF page's carousel tile (Trym, 5 Sep: "make it the background image
+    of the tile, so the whole banner becomes a visual image"): the group photo
+    on the right, the left kept quiet for the name, the names and the price;
+    no pills - the tile prints those as text'''
+    W, H = size
+    if pack in BURSTS:
+        im = burst(BURSTS[pack][0], BURSTS[pack][1], W, H, cx=0.70, cy=0.62)
+    else:
+        sq = MOODS[pack](W)
+        y0 = int(W * 0.48)
+        im = sq.crop((0, y0, W, y0 + H))
+    # 1.12 x the height, seated so the raised hands at the top and the front
+    # feet at the bottom both stay inside the picture (checked by eye, 5 Sep)
+    S = int(H * 1.12)
+    group(im, pack, cells, S, ox=W * 0.70 - S / 2, oy=-H * 0.15)
+    return im
+
+
+def spread(pack, cells, size=1200):
+    im = MOODS[pack](size)
+    group(im, pack, cells, size)
     im.alpha_composite(pill('PACK %s' % pack, px=52, **PILL.get(pack, {})), (44, 40))
     six = pill('6 STICKERS', px=32, fill=WHITE, ink=INK, tilt=4)
     im.alpha_composite(six, (size - six.width - 40, 44))
@@ -342,6 +376,8 @@ def main():
         total += save_webp(sp.convert('RGB').resize((600, 600), Image.BOX), os.path.join(OUT, 'pack-%s-card.webp' % pack), lossy=True)
         # 240px for the slim carousel on the GIF page: eight of these must cost less than one card
         total += save_webp(sp.convert('RGB').resize((240, 240), Image.BOX), os.path.join(OUT, 'pack-%s-thumb.webp' % pack), lossy=True)
+        # 1200x480 for the GIF page's carousel tile - the whole tile is the picture
+        total += save_webp(banner(pack, cells).convert('RGB'), os.path.join(OUT, 'pack-%s-banner.webp' % pack), lossy=True)
         total += save_webp(sheet_on_white(pack).convert('RGB'), os.path.join(OUT, 'pack-%s-sheet.webp' % pack))
         entries = []
         for i, cell in enumerate(cells):
@@ -360,7 +396,7 @@ def main():
             w, h, _ = done[s]
             entries.append({'name': label, 'slug': s, 'w': w, 'h': h, 'hero': i == 1})
         manifest['packs'][pack] = entries
-        print('  pack %s: spread + card + sheet' % pack)
+        print('  pack %s: spread + card + banner + sheet' % pack)
     total += save_webp(strip().convert('RGB'), os.path.join(OUT, 'series-1-strip.webp'), lossy=True)
     strip((1200, 630)).convert('RGB').save(os.path.join(OG, 'sticker-packs.png'), optimize=True)
     with open(os.path.join(ROOT, 'src', 'data', 'pack-art.json'), 'w', encoding='utf-8') as f:

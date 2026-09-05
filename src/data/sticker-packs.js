@@ -8,11 +8,15 @@
 // together with the pictures — so a sticker's name, its file and its print are
 // one thing. Change a pack there, rerun both tools, and this file needs nothing.
 import ART from './pack-art.json';
+import { PACK_PRICE, SET_PRICE, SET_SIZE, packHandle, packNumber as packNo } from './pack-deal.js';
 
 // $9.99 a sheet: the middle of the store rule's three honest options (blank
 // $5.50 → $8.99 / $9.99 / $10.99). Keeps $3.90; a buyer pays $14.28 with
 // shipping, of which shipping is 30% — against 46% on a single sticker.
-export const PACK_PRICE = ART.price;
+// The numbers live in pack-deal.js (the nav's cart drawer reads them too and
+// must not drag this manifest along); the art manifest has to agree.
+if (ART.price !== PACK_PRICE) throw new Error(`pack-art.json says $${ART.price} a pack, pack-deal.js says $${PACK_PRICE}`);
+export { PACK_PRICE, SET_PRICE, SET_SIZE, packHandle };
 export const PACK_OG = '/assets/og/sticker-packs.png';
 
 // Each pack is named after the ground its picture stands on (Trym, 5 Sep:
@@ -20,7 +24,6 @@ export const PACK_OG = '/assets/og/sticker-packs.png';
 // stays as the PACK N flair printed on the picture). Change a ground in
 // tools/build-pack-art.py MOODS, change its name here.
 const NAMES = { 1: 'Park Life', 2: 'Sunshine', 3: 'Meadow', 4: 'Party', 5: 'Rave', 6: 'Beach Day', 7: 'Blue Sky', 8: 'Moods' };
-export const SET_PRICE = 69.99;   // all eight, an automatic Shopify discount ($9.93 off at 8 packs)
 export const STICKER_PACKS = Object.keys(ART.packs).map(Number).sort((a, b) => a - b).map((n) => {
   const stickers = ART.packs[n];
   return {
@@ -29,7 +32,7 @@ export const STICKER_PACKS = Object.keys(ART.packs).map(Number).sort((a, b) => a
     num: `Pack ${n}`,
     // the Shopify handle as created on 5 Sep 2026 — client code (the download card)
     // links straight to it; build-time code prefers the live product's handle
-    handle: `dancing-banana-official-sticker-pack-${n}`,
+    handle: packHandle(n),
     stickers,
     hero: stickers.find((s) => s.hero) || stickers[1],
     // the five that make this pack THIS pack — the Original is in all eight and
@@ -42,7 +45,8 @@ export const HEROES = STICKER_PACKS.map((p) => p.hero);
 export const stickerSrc = (slug) => `/assets/packs/stickers/${slug}.webp`;   // one kiss-cut sticker, transparent
 export const packSpread = (n) => `/assets/packs/pack-${n}-spread.webp`;     // 1200², the PDP's first picture
 export const packCard = (n) => `/assets/packs/pack-${n}-card.webp`;         // 600², the grids
-export const packThumb = (n) => `/assets/packs/pack-${n}-thumb.webp`;       // 240², the slim carousel
+export const packThumb = (n) => `/assets/packs/pack-${n}-thumb.webp`;       // 240², the deal band's fan
+export const packBanner = (n) => `/assets/packs/pack-${n}-banner.webp`;     // 1200×480, the GIF page's carousel tile
 export const packSheet = (n) => `/assets/packs/pack-${n}-sheet.webp`;       // the A5 as it prints
 
 // Which pack a Shopify product is. Shopify builds the handle from the title
@@ -50,8 +54,7 @@ export const packSheet = (n) => `/assets/packs/pack-${n}-sheet.webp`;       // t
 // dancing-banana-sticker-pack-3), so the site keys on the tail and survives a
 // brand prefix or a trademark sign in front of it.
 export function packNumber(handle) {
-  const m = /sticker-pack-(\d+)/.exec(handle || '');
-  const n = m ? +m[1] : 0;
+  const n = packNo(handle);
   return ART.packs[n] ? n : 0;
 }
 export function packProducts(products) {

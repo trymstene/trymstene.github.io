@@ -1,0 +1,115 @@
+---
+// 🎟 THE SET DEAL — all eight packs for $69.99, one tap. Trym, 5 Sep: "GET ALL
+// FOR 69,99 or something ... a button that puts all of them in the basket for
+// you so the users can get the price". The eight variant ids ride the button
+// from build time; Shopify's automatic discount does the rest, and the cart
+// drawer shows it by name with the ordinary total struck through.
+//
+//   <PackDeal variant="band" place="shop_top" />   the loud one under the heading
+//   <PackDeal variant="line" place="shop_grid" />  the quiet row under a pack grid
+import { getProducts, money } from '../lib/shop.js';
+import { STICKER_PACKS, PACK_PRICE, SET_PRICE, SET_SIZE, packProducts, packThumb } from '../data/sticker-packs.js';
+
+export interface Props {
+  place?: string;
+  variant?: 'band' | 'line';
+}
+const { place = 'deal', variant = 'band' } = Astro.props;
+
+// a shop hiccup must never take a content page down with it
+let products = [];
+try { products = await getProducts(); } catch (e) { products = []; }
+const have = packProducts(products);
+const ids = STICKER_PACKS.map((p) => {
+  const prod = have[p.n];
+  return prod && prod.variants && prod.variants[0] ? prod.variants[0].id : '';
+}).filter(Boolean);
+const ready = ids.length === SET_SIZE;   // every pack live in the shop — otherwise the button is a door to the grid
+const full = SET_SIZE * PACK_PRICE;
+---
+<div class:list={['pkdeal', `pkdeal--${variant}`]} id={variant === 'band' ? 'pkdeal' : undefined} data-place={place} data-ids={ready ? ids.join(',') : ''}>
+  {variant === 'band' && (
+    <div class="pkdeal__fan" aria-hidden="true">
+      {STICKER_PACKS.map((p) => <img src={packThumb(p.n)} alt="" width="240" height="240" loading="lazy" decoding="async" />)}
+    </div>
+  )}
+  <div class="pkdeal__text">
+    <p class="pkdeal__kicker">Set deal</p>
+    <p class="pkdeal__h">All {SET_SIZE} packs · {SET_SIZE * 6} stickers</p>
+    <p class="pkdeal__sub">The whole of Series 1 in one order — the price drops by itself in the cart.</p>
+  </div>
+  <div class="pkdeal__buy">
+    <span class="pkdeal__price"><s>{money(full, 'USD')}</s> <span class="price-tag">{money(SET_PRICE, 'USD')}</span></span>
+    {ready
+      ? <button type="button" class="btn btn--dark pkdeal__btn">Add all {SET_SIZE} to cart →</button>
+      : <a class="btn btn--dark pkdeal__btn" href="/shop/#sticker-packs">See the packs →</a>}
+  </div>
+</div>
+
+<style>
+  .pkdeal {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.9rem 1.2rem;
+    background: var(--paper); color: var(--ink); border: var(--line); box-shadow: var(--shadow-sm);
+    padding: 0.9rem 1.1rem; max-width: 1100px; margin: 1.4rem auto 0; text-align: left;
+  }
+  /* the eight packs, fanned like a hand of cards */
+  .pkdeal__fan { display: flex; padding-right: 0.5rem; }
+  .pkdeal__fan img {
+    width: 52px; height: 52px; border: 3px solid var(--ink); background: #fff; margin-left: -20px;
+    box-shadow: 2px 2px 0 var(--ink); transform: rotate(var(--r, 0deg));
+  }
+  .pkdeal__fan img:first-child { margin-left: 0; }
+  .pkdeal__fan img:nth-child(odd) { --r: -4deg; }
+  .pkdeal__fan img:nth-child(even) { --r: 4deg; }
+  .pkdeal__kicker { margin: 0 0 0.15rem; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--hot); }
+  .pkdeal__h { margin: 0; font-family: "Archivo Black", system-ui, sans-serif; font-size: 1.35rem; line-height: 1.05; }
+  .pkdeal__sub { margin: 0.25rem 0 0; font-size: 0.85rem; opacity: 0.75; }
+  .pkdeal__buy { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end; }
+  .pkdeal__price { display: inline-flex; align-items: center; gap: 0.7rem; font-weight: 800; }
+  .pkdeal__price s { opacity: 0.5; }
+  .pkdeal__btn { margin: 0; }
+  /* the quiet row under a grid: one line, centred, no box */
+  .pkdeal--line {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.6rem 1.1rem;
+    max-width: none; box-shadow: none; border: 0; background: transparent; padding: 0; margin-top: 1rem;
+  }
+  .pkdeal--line .pkdeal__kicker, .pkdeal--line .pkdeal__sub { display: none; }
+  .pkdeal--line .pkdeal__h { font-size: 1.05rem; }
+  .pkdeal--line .price-tag { font-size: 1.05rem; padding: 0.35rem 0.6rem; box-shadow: 3px 3px 0 var(--ink); }
+  @media (max-width: 720px) {
+    .pkdeal { grid-template-columns: 1fr; gap: 0.7rem; }
+    .pkdeal__fan { justify-content: center; }
+    .pkdeal__fan img { width: 44px; height: 44px; margin-left: -16px; }
+    .pkdeal__buy { justify-content: space-between; }
+  }
+</style>
+
+<script>
+  import { cartAddLines } from '../lib/shop-config.js';
+  import { SET_PRICE } from '../data/pack-deal.js';
+  // one tap puts the eight lines in the shared cart and opens the drawer, where
+  // Shopify's own discount rows prove the price. A failure says so on the
+  // button and never leaves it dead.
+  document.querySelectorAll<HTMLElement>('.pkdeal').forEach((box) => {
+    const btn = box.querySelector<HTMLButtonElement>('button.pkdeal__btn');
+    const ids = (box.dataset.ids || '').split(',').filter(Boolean);
+    if (!btn || !ids.length) return;
+    const was = btn.textContent;
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      btn.disabled = true; btn.textContent = 'Adding the set…';
+      try {
+        await cartAddLines(ids.map((id) => ({ merchandiseId: id, quantity: 1 })));
+        const w = window as any;
+        if (w.gtag) w.gtag('event', 'add_to_cart', { from: 'pack_deal_' + (box.dataset.place || 'deal'), n: ids.length, value: SET_PRICE, currency: 'USD' });
+        btn.textContent = 'In the cart ✓';
+        if (w.__bbCart) w.__bbCart.open();
+      } catch (e) {
+        btn.textContent = 'Could not reach the shop — try again';
+      } finally {
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = was; }, 4000);
+      }
+    });
+  });
+</script>

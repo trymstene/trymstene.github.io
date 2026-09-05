@@ -4,7 +4,7 @@ import PixelIcon from '../../components/PixelIcon.astro';
 import PressBelt from '../../components/PressBelt.astro';
 import PackGrid from '../../components/PackGrid.astro';
 import { getProducts, money, colorHex } from '../../lib/shop.js';
-import { packNumber, PACK_OG } from '../../data/sticker-packs.js';
+import { packNumber, PACK_OG, SET_PRICE } from '../../data/sticker-packs.js';
 import CUSTOM from '../../../shared/products.js';
 
 const products = await getProducts();
@@ -72,13 +72,14 @@ const breadcrumbSchema = {
         <li>🚚 Ships worldwide</li>
         <li>🖨 Printed on demand</li>
         <li>🔒 Secure checkout</li>
+        <li><a class="shopbar__deal" href="#pkdeal">All 8 sticker packs ${SET_PRICE} →</a></li>
       </ul>
     </div>
   </section>
 
   {/* 🎟 THE MAIN PRODUCT FIRST (Trym, 5 Sep): the eight heroes alive at the
       top, price and count in the copy, every pack underneath. */}
-  <PackGrid place="shop" fan tone="yellow" kicker="New · Series 1" heading="Sticker packs"
+  <PackGrid place="shop" fan deal tone="yellow" kicker="New · Series 1" heading="Sticker packs"
             lead="The Giphy bananas as real kiss-cut vinyl — eight packs of six, the Original in every one." />
 
   <section class="block shopgridblock">
@@ -170,6 +171,9 @@ const breadcrumbSchema = {
     }
     .shopgridblock { text-align: center; }
     .shopgridblock .shop-grid { text-align: left; }
+    /* the set deal, said once in the bar so nobody has to scroll to learn it */
+    .shopbar__deal { color: var(--hot); font-weight: 800; text-decoration: none; white-space: nowrap; }
+    .shopbar__deal:hover { text-decoration: underline; }
     @media (max-width: 720px) {
       .shopbar__nana { width: 64px; height: 64px; }
       .shopbar__trust { margin-left: 0; width: 100%; }

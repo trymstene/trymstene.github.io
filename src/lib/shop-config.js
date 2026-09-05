@@ -41,19 +41,20 @@ export function cartPing(n) {
 export const CART_FIELDS = 'id checkoutUrl totalQuantity';
 const errsOf = (p) => ((p && p.userErrors) || []).map((e) => e.message).join('; ');
 
-// Add one prepared CartLineInput to the stored cart, creating a fresh cart
+// Add prepared CartLineInputs to the stored cart, creating a fresh cart
 // only when Shopify says the stored one is GONE (completed/expired → cart:
 // null). ⚠️ Review doctrine (28 Aug): a network throw is NOT a dead cart —
 // clearing on it orphaned a live multi-line cart — and userErrors ARE
 // failure even when a cart with a checkoutUrl comes back beside them
 // (unpublished variant, sold out): the old code called that success and
 // checked out WITHOUT the line the buyer just added.
-export async function cartAddLine(line) {
+export const cartAddLine = (line) => cartAddLines([line]);
+export async function cartAddLines(lines) {
   const prev = cartRead();
   if (prev && prev.id) {
     const d = await storefront(
       'mutation($cartId: ID!, $lines: [CartLineInput!]!) { cartLinesAdd(cartId: $cartId, lines: $lines) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
-      { cartId: prev.id, lines: [line] });
+      { cartId: prev.id, lines });
     const payload = d && d.cartLinesAdd;
     if (!d) throw new Error('cart add failed: no response');
     const errs = errsOf(payload);
@@ -69,7 +70,7 @@ export async function cartAddLine(line) {
   }
   const d = await storefront(
     'mutation($lines: [CartLineInput!]!) { cartCreate(input: { lines: $lines }) { cart { ' + CART_FIELDS + ' } userErrors { message } } }',
-    { lines: [line] });
+    { lines });
   const payload = d && d.cartCreate;
   const errs = errsOf(payload);
   if (errs) throw new Error('cart failed: ' + errs);

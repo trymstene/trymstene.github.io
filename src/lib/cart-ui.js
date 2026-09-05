@@ -11,7 +11,8 @@
 // ⚠️ REFRESH NEVER PINGS. cart-ui's own saves are quiet (cartSave(c, true)) —
 // a pinging refresh re-triggers the 'bb-cart' listener while the drawer is
 // open and the loop polls Shopify forever (adversarial review, 28 Aug).
-import { storefront, cartRead, cartSave, cartClear } from './shop-config.js';
+import { storefront, cartRead, cartSave, cartClear, cartAddLines } from './shop-config.js';
+import { SET_SIZE, SET_PRICE, PACK_PRICE, packHandle, packNumber } from '../data/pack-deal.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
 const fmt = (m) => {
@@ -26,13 +27,14 @@ const CART_Q = `query($id: ID!) { cart(id: $id) {
   cost { subtotalAmount { amount currencyCode } }
   lines(first: 50) { nodes {
     id quantity
-    cost { totalAmount { amount currencyCode } }
+    cost { subtotalAmount { amount currencyCode } totalAmount { amount currencyCode } }
+    discountAllocations { discountedAmount { amount currencyCode } ... on CartAutomaticDiscountAllocation { title } ... on CartCodeDiscountAllocation { code } }
     attributes { key value }
     merchandise { ... on ProductVariant {
       id title
       price { amount currencyCode }
       image { url }
-      product { title }
+      product { title handle }
     } }
   } }
 } }`;
@@ -62,6 +64,9 @@ function ensureDrawer() {
       </div>
       <div class="bbc__body" id="bbCartBody"><p class="bbc__hint">Looking in the basket…</p></div>
       <div class="bbc__foot" id="bbCartFoot" hidden>
+        <div id="bbCartDeal" hidden></div>
+        <p class="bbc__row bbc__row--was" id="bbCartWas" hidden><span>Items</span><s id="bbCartFull"></s></p>
+        <p class="bbc__row bbc__row--off" id="bbCartOff" hidden><span id="bbCartOffName"></span><b id="bbCartOffAmt"></b></p>
         <p class="bbc__row"><span>Subtotal</span><b id="bbCartSubtotal"></b></p>
         <p class="bbc__row bbc__row--dim"><span>Shipping</span><span>calculated at checkout · ships worldwide</span></p>
         <a class="btn btn--dark bbc__checkout" id="bbCartCheckout" href="#">Checkout</a>
@@ -105,9 +110,9 @@ function emptyState() {
   $('#bbCartBody').innerHTML =
     '<div class="bbc__empty"><p class="bbc__emptyart">🍌</p>' +
     '<p><b>Nothing in the cart yet.</b></p>' +
-    '<p class="bbc__hint">Make a banana and put it on something real — or grab the official shirt.</p>' +
+    '<p class="bbc__hint">Make a banana and put it on something real — or grab a sticker pack.</p>' +
     '<p class="bbc__doors bbc__doors--big"><a class="btn" href="/make-a-banana/">make a banana →</a>' +
-    '<a class="btn" href="/shop/">official shop →</a></p></div>';
+    '<a class="btn" href="/shop/#sticker-packs">sticker packs →</a></p></div>';
   $('#bbCartFoot').hidden = true;
 }
 
@@ -158,7 +163,7 @@ function render(cart) {
       '<span class="bbc__n">' + ln.quantity + '</span>' +
       '<button type="button" class="bbc__step" data-step="1" aria-label="One more">+</button>' +
       '<button type="button" class="bbc__rm" aria-label="Remove from cart">remove</button></span></div>' +
-      '<b class="bbc__price">' + fmt(ln.cost && ln.cost.totalAmount) + '</b></div>';
+      '<b class="bbc__price">' + fmt(ln.cost && (ln.cost.subtotalAmount || ln.cost.totalAmount)) + '</b></div>';
   });
   // 50 lines fit far more carts than anyone builds — but if one overflows,
   // say so instead of silently hiding lines the subtotal still counts
@@ -168,6 +173,28 @@ function render(cart) {
   $('#bbCartSubtotal').textContent = fmt(cart.cost && cart.cost.subtotalAmount);
   $('#bbCartCheckout').setAttribute('href', cart.checkoutUrl);
   $('#bbCartFoot').hidden = false;
+  // 🎟 the set deal, from Shopify's own numbers: each pack line carries its
+  // share of the automatic discount and the discount's title, so the drawer
+  // shows the ordinary total struck through, the deal by name, and what is
+  // actually due — the line prices above stay the ordinary ones.
+  let full = 0, off = 0, offName = '', cur = 'USD';
+  nodes.forEach((ln) => {
+    const c = ln.cost || {};
+    if (c.subtotalAmount) { full += parseFloat(c.subtotalAmount.amount) || 0; cur = c.subtotalAmount.currencyCode || cur; }
+    (ln.discountAllocations || []).forEach((d) => {
+      off += parseFloat((d.discountedAmount || {}).amount) || 0;
+      offName = offName || d.title || d.code || 'Discount';
+    });
+  });
+  const hasOff = off > 0.004;
+  $('#bbCartWas').hidden = !hasOff;
+  $('#bbCartOff').hidden = !hasOff;
+  if (hasOff) {
+    $('#bbCartFull').textContent = fmt({ amount: full, currencyCode: cur });
+    $('#bbCartOffName').textContent = offName;
+    $('#bbCartOffAmt').textContent = '−' + fmt({ amount: off, currencyCode: cur });
+  }
+  dealRow(nodes);
 
   body.querySelectorAll('.bbc__line').forEach((row) => {
     const lineId = row.dataset.line;
@@ -179,6 +206,41 @@ function render(cart) {
       });
     });
     row.querySelector('.bbc__rm').addEventListener('click', () => mutateLine(cart.id, lineId, 0));
+  });
+}
+
+// 🎟 "complete the set": with one to seven different packs in the cart, one
+// tap adds the rest and the automatic $69.99 deal applies. Counted by distinct
+// pack, not quantity — two of Pack 3 are not two packs of the set.
+function dealRow(nodes) {
+  const host = $('#bbCartDeal');
+  const have = new Set();
+  nodes.forEach((ln) => { const n = packNumber(((ln.merchandise || {}).product || {}).handle); if (n) have.add(n); });
+  const k = have.size;
+  if (!k || k >= SET_SIZE) { host.innerHTML = ''; host.hidden = true; return; }
+  const missing = [];
+  for (let n = 1; n <= SET_SIZE; n++) if (!have.has(n)) missing.push(n);
+  const save = (SET_SIZE * PACK_PRICE - SET_PRICE).toFixed(2);
+  host.hidden = false;
+  host.innerHTML = '<div class="bbc__deal"><b>' + k + ' of ' + SET_SIZE + ' sticker packs in the cart</b>' +
+    '<span>All eight for $' + SET_PRICE.toFixed(2) + ' — save $' + save + '</span>' +
+    '<button type="button" class="btn bbc__dealbtn">add the other ' + missing.length + ' →</button></div>';
+  host.querySelector('.bbc__dealbtn').addEventListener('click', async (e) => {
+    const b = e.currentTarget;
+    if (mutating) return;
+    mutating = true; b.disabled = true; b.textContent = 'adding…';
+    try {
+      // the missing packs' variants, by handle — the drawer carries no catalogue
+      const q = missing.map((n, i) => 'p' + i + ': product(handle: "' + packHandle(n) + '") { variants(first: 1) { nodes { id } } }').join(' ');
+      const d = await storefront('{ ' + q + ' }');
+      const ids = Object.values(d || {}).map((p) => p && p.variants && p.variants.nodes[0] && p.variants.nodes[0].id).filter(Boolean);
+      if (ids.length !== missing.length) throw new Error('a pack is missing from the shop');
+      await cartAddLines(ids.map((id) => ({ merchandiseId: id, quantity: 1 })));
+      if (window.gtag) window.gtag('event', 'add_to_cart', { from: 'cart_complete_set', n: ids.length, value: SET_PRICE, currency: 'USD' });
+    } catch (err) {
+      b.disabled = false; b.textContent = 'could not add them — try again →';
+    } finally { mutating = false; }
+    await refresh();
   });
 }
 
