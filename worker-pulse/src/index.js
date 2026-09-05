@@ -14,7 +14,8 @@ const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 const DL_EVENTS = ['gif_download', 'png_download', 'wallpaper_download',
   'offer_shown', 'offer_click', 'offer_skip',
   'offer_world', 'offer_discord',    // 🌍💬 the warm-up pivot, 12 Aug (offer_click = retired merch CTA)
-  'offer_support'];                  // ☕ the SUPPORT TEST, 27 Aug — the card asks for a coffee now
+  'offer_support',                   // ☕ the SUPPORT TEST, 27 Aug – 5 Sep
+  'offer_pack', 'offer_swap'];       // 🎟 THE PACK CARD, 5 Sep — the card shows a sticker pack now
 
 // events worth plotting on the map / showing in the ticker (the rest is noise)
 const LENS_EVENTS = [
@@ -25,7 +26,8 @@ const LENS_EVENTS = [
   'begin_checkout', 'purchase', 'shop_view',
   'offer_shown', 'offer_click', 'offer_skip',   // 🛍 the make-it-real card (offer-FIRST since 6 Aug)
   'offer_world', 'offer_discord',               // 🌍💬 the warm-up pivot, 12 Aug (retired 27 Aug)
-  'offer_support',                              // ☕ the support ask, 27 Aug
+  'offer_support',                              // ☕ the support ask, 27 Aug (retired 5 Sep)
+  'offer_pack',                                 // 🎟 the pack card, 5 Sep
   'homestead_open',               // 🏡 the home area's door, 6 Aug
   'quest_step',                   // 🕯 chapter-1 funnel, live 13 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
@@ -154,7 +156,7 @@ async function apiLive(env) {
   // hot = per-country purchase proximity in the last 30 min:
   // 1 eyeing a product · 2 hit ORDER · 3 at the checkout · 4 PAID
   const STAGE = {
-    sticker_pdp_view: 1, view_item: 1, select_item: 1,
+    sticker_pdp_view: 1, view_item: 1, select_item: 1, offer_pack: 1,
     sticker_pdp_checkout: 2, pdp_add_to_order: 2, add_to_cart: 2, checkout_redirect: 3, begin_checkout: 3, purchase: 4,
   };
   const evFull = {}; const evNow = []; const hot = {};
@@ -312,6 +314,19 @@ async function apiRange(env, from, to) {
     limit: 12, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
   }).catch(() => null));
 
+  // 🎟 which list a product click came from: the shop grid ("(not set)"), a
+  // shop strip, the GIF page's pack carousel. Item-scoped on both sides —
+  // itemListName × itemsClickedInList — the pairing GA4 accepts (its event-
+  // scoped cousin itemListClickEvents is refused as incompatible; tested 5 Sep).
+  // Its own request (the batch is full at five) and it fails soft: a null
+  // reaches the page as "no section", never as a zero.
+  const listsP = gaPost(env, 'runReport', {
+    dateRanges,
+    dimensions: [{ name: 'itemListName' }],
+    metrics: [{ name: 'itemsClickedInList' }],
+    limit: 20, orderBys: [{ metric: { metricName: 'itemsClickedInList' }, desc: true }],
+  }).catch(() => null);
+
   const stepTimes = {};
   try {
     const st = await gaPost(env, 'runReport', {
@@ -321,7 +336,7 @@ async function apiRange(env, from, to) {
       dimensionFilter: { filter: { fieldName: 'eventName', inListFilter: { values: [
         'builder_boot', 'builder_start', 'product_tile_click', 'sticker_pdp_view',
         'sticker_pdp_checkout', 'checkout_redirect', 'shop_view', 'select_item',
-        'view_item', 'begin_checkout', 'offer_shown', 'offer_click',
+        'view_item', 'begin_checkout', 'offer_shown', 'offer_click', 'offer_pack',
       ] } } },
       limit: 20,
     });
@@ -349,19 +364,21 @@ async function apiRange(env, from, to) {
   }
   const dls = await dlsP;
   const campRes = await campP;
+  const listsRes = await listsP;
   const dlMap = {};
   const dayMap = {};
   const DL_KEY = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
     offer_shown: 'shown', offer_click: 'click', offer_skip: 'skip',
-    offer_world: 'world', offer_discord: 'disc', offer_support: 'coffee' };
+    offer_world: 'world', offer_discord: 'disc', offer_support: 'coffee',
+    offer_pack: 'pack', offer_swap: 'swap' };
   for (const r of (dls ? rows(dls) : [])) {
     const day = dim(r, 0); const page = dim(r, 1);
     const key = DL_KEY[dim(r, 2)];
     if (!key) continue;
     const v = met(r, 0);
-    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0 });
+    const row = dlMap[page] || (dlMap[page] = { page, gif: 0, png: 0, wall: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0, pack: 0, swap: 0 });
     row[key] += v;
-    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0 });
+    const d = dayMap[day] || (dayMap[day] = { d: day, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0, pack: 0, swap: 0 });
     if (key === 'gif' || key === 'png' || key === 'wall') d.files += v; else d[key] += v;
   }
   // ⚠️ a day with no download events sends no row, so the bars used to close
@@ -371,7 +388,7 @@ async function apiRange(env, from, to) {
   const dlKeys = [...new Set(rangeDayKeys(from, to).concat(Object.keys(dayMap)))].sort();
   const dlDaily = Object.keys(dayMap).length
     ? dlKeys.map((d) => dayMap[d]
-      || { d, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0 })
+      || { d, files: 0, shown: 0, click: 0, skip: 0, world: 0, disc: 0, coffee: 0, pack: 0, swap: 0 })
     : [];
   const downloads = Object.values(dlMap)
     .map((r) => ({ ...r, files: r.gif + r.png + r.wall }))
@@ -384,6 +401,8 @@ async function apiRange(env, from, to) {
   const data = {
     at: Date.now(), from, to,
     downloads, dlDaily,
+    // null = the report failed (the room hides the section); [] = nobody clicked
+    lists: listsRes ? rows(listsRes).map((r) => ({ list: dim(r, 0), clicks: met(r, 0) })).filter((l) => l.clicks > 0) : null,
     kpis: {
       sessions: sum('sessions'), users: windowUsers, newUsers: sum('newUsers'),
       engagementRate: dailyRows.length
@@ -544,6 +563,7 @@ const ANALYST_EVENTS = [
   'pdp_add_to_order', 'add_to_cart', 'cart_open', 'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
   'offer_world', 'offer_discord', 'offer_support',
+  'offer_pack', 'offer_swap',      // 🎟 the pack card, 5 Sep
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
   'quest_step', 'stand_counter',
   // 🏡 without this the analyst structurally cannot mention the farm — the

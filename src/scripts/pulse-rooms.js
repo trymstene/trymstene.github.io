@@ -216,29 +216,48 @@ function dlName(page) {
   return rest ? best[1] + ' · ' + rest.split('/').pop().replace(/-/g, ' ') : best[1];
 }
 const DLSET = new Set(['gif_download', 'png_download', 'wallpaper_download', 'offer_shown',
-  'offer_click', 'offer_skip', 'offer_world', 'offer_discord']);
+  'offer_click', 'offer_skip', 'offer_world', 'offer_discord', 'offer_support', 'offer_pack', 'offer_swap']);
+
+// GA4's item_list_name → the place a person would recognise. The shop grid
+// sends no list name, so GA4 files it under "(not set)".
+const LIST_NAMES = {
+  '(not set)': 'The shop grid', shop_custom_lane: 'The shop · custom lane',
+  packs_gif_hero: 'The GIF page · pack carousel, top',
+  packs_gif_hub: 'The GIF page · pack carousel, download hub',
+};
+function listName(l) {
+  const k = String(l || '');
+  if (LIST_NAMES[k]) return LIST_NAMES[k];
+  if (k.indexOf('shopstrip_') === 0) return 'Shop strip · ' + k.slice(10).replace(/_/g, ' ');
+  if (k.indexOf('packs_') === 0) return 'Pack carousel · ' + k.slice(6).replace(/_/g, ' ');
+  return k || 'The shop grid';
+}
 
 export function renderDownloads(into, S) {
   const R = S.range;
   if (!R) { div('hqp-empty', 'reading the window…', into); return; }
   const rows = R.downloads || [];
-  let s = section(into, 'The download business', 'TOOK is files handed over. SAW is the card appearing — since 12 Aug it rides every download, so it counts cards, not people. The card makes one honest ask, and WILLINGNESS is coffee clicks over cards shown. A rate needs twenty cards behind it before it is printed: three out of five is three clicks, not sixty per cent.');
+  let s = section(into, 'The download business', 'TOOK is files handed over. SAW is the card appearing — since 12 Aug it rides every download, so it counts cards, not people. Since 5 Sep the card shows a sticker pack, and TAKE RATE is pack taps over cards shown. A rate needs twenty cards behind it before it is printed: three out of five is three taps, not sixty per cent.');
   if (!rows.length) { div('hqp-empty', 'no downloads in this window', s); return; }
   const sum = (k) => rows.reduce((a, r) => a + (+r[k] || 0), 0);
   const tf = sum('files'), ts = sum('shown'), tc = sum('click'), tk = sum('skip');
   const tw = sum('world'), td = sum('disc'), tcof = sum('coffee');
-  const warm = tw + td + tc;
+  const tp = sum('pack'), tsw = sum('swap');
+  // the card's earlier lives (merch link, world/Discord, coffee) so an old
+  // window still adds up; a fresh window has none of them and hides the tile
+  const oldAsks = tw + td + tc + tcof;
   const sessions = (R.kpis && R.kpis.sessions) || 0;
   const g = div('hqp-tiles', null, s);
   tile(g, 'files taken', nfmt(tf));
   tile(g, 'per 100 visits', sessions ? (tf / sessions * 100).toFixed(1) : '–');
   tile(g, 'cards shown', nfmt(ts));
-  tile(g, 'coffee clicks', nfmt(tcof), '☕ the ask');
-  tile(g, 'willingness', ts >= MIN_N ? (tcof / ts * 100).toFixed(1) + '%' : '–', ts >= MIN_N ? 'of cards shown' : 'needs 20 cards');
+  tile(g, 'pack taps', nfmt(tp), '🎟 the ask');
+  tile(g, 'take rate', ts >= MIN_N ? (tp / ts * 100).toFixed(1) + '%' : '–', ts >= MIN_N ? 'of cards shown' : 'needs 20 cards');
+  tile(g, 'browsed packs', nfmt(tsw), 'flipped the minis');
   tile(g, 'no-thanks', nfmt(tk));
-  tile(g, 'warm-up', warm ? Math.round(warm / Math.max(ts, 1) * 100) + '%' : '–', 'retired ask');
+  if (oldAsks) tile(g, 'old asks', nfmt(oldAsks), 'world · Discord · coffee');
   div('hqp-cap', ts >= MIN_N
-    ? 'Of every 100 people shown the card, ' + (tcof / ts * 100).toFixed(1) + ' clicked the ☕ ask. The money lands on the payment dashboard, not here.'
+    ? 'Of every 100 people shown the card, ' + (tp / ts * 100).toFixed(1) + ' tapped through to a sticker pack. Sales land in Shopify, not here.'
     : 'Not enough cards yet to judge the ask — come back when a few hundred have been shown.', s);
 
   // ── files, day by day ──────────────────────────────────────────────────
@@ -254,8 +273,9 @@ export function renderDownloads(into, S) {
       const d = r.d.slice(6, 8) + '.' + r.d.slice(4, 6);
       col.addEventListener('click', () => {
         note2.hidden = false;
+        const was = (r.world || 0) + (r.disc || 0) + (r.click || 0) + (r.coffee || 0);
         note2.textContent = d + ' — ' + (r.files || 0) + ' files, ' + (r.shown || 0) + ' cards shown, '
-          + ((r.world || 0) + (r.disc || 0) + (r.click || 0)) + ' warmed';
+          + (r.pack || 0) + ' pack taps' + (was ? ', ' + was + ' on old asks' : '');
       });
     });
     var note2 = div('hqp-note', '', s2);
@@ -298,9 +318,9 @@ export function renderDownloads(into, S) {
     { h: 'surface', w: 'minmax(11rem, 1fr)' },
     { h: 'took', w: '4.2rem', num: true },
     { h: 'saw the card', w: '6.4rem', num: true },
-    { h: 'supported', w: '5.4rem', num: true },
+    { h: '🎟 packs', w: '5.4rem', num: true },
     { h: 'no thanks', w: '5.4rem', num: true },
-    { h: 'willing', w: '4.6rem', num: true },
+    { h: 'take', w: '4.6rem', num: true },
   ], rows.slice().sort((a, b) => (+b.files || 0) - (+a.files || 0)).map((r) => {
     const k = div('', null, null);
     k.textContent = dlName(r.page);
@@ -309,8 +329,8 @@ export function renderDownloads(into, S) {
     // (the ranking bar that used to sit here is gone: the rows are sorted by
     // TOOK and TOOK is now its own right-aligned column, so a 2px stub under
     // the name said nothing the column did not say better)
-    return [k, nfmt(r.files), nfmt(r.shown), nfmt(r.coffee), nfmt(r.skip),
-      (+r.shown || 0) >= MIN_N ? ((+r.coffee || 0) / r.shown * 100).toFixed(1) + '%' : null];
+    return [k, nfmt(r.files), nfmt(r.shown), nfmt(r.pack || 0), nfmt(r.skip),
+      (+r.shown || 0) >= MIN_N ? ((+r.pack || 0) / r.shown * 100).toFixed(1) + '%' : null];
   }));
 }
 
@@ -386,14 +406,32 @@ export function renderShop(into, S) {
     'make-a-banana → tee, sticker or magnet. Every step counts people, not events. The last two steps are store-wide, because Shopify fires them for the official line too. Tap a step to read what it measures.',
     'the highlighted step is the one people stall on — the page to fix, not the one they fail to reach');
   renderFunnel(into, R, FUNNELS[1], 'Official merch funnel', 'The /shop/ line.', null);
+  // 🎟 which door sends people to a product: the shop grid, a shop strip on a
+  // content page, the GIF page's pack carousel. GA4's item list name, one row
+  // per list. `lists` is null when the worker's report failed — then the
+  // section stays away rather than printing a zero that means nothing.
+  const lists = R.lists;
+  if (lists) {
+    const s1 = section(into, 'Where product clicks come from',
+      'Every product tile click, by the list it sat in. The pack carousel (5 Sep) rides the GIF page twice: under the free buttons and in the download hub.');
+    if (!lists.length) div('hqp-empty', 'no product clicks in this window', s1);
+    else {
+      const t1 = div('hqp-tbl', null, s1);
+      lists.slice().sort((a, b) => (+b.clicks || 0) - (+a.clicks || 0)).forEach((l) => {
+        const row = div('hqp-trow', null, t1);
+        div('hqp-tk', listName(l.list), row);
+        div('hqp-tv', nfmt(l.clicks || 0), row);
+      });
+    }
+  }
   // ⚠️ NOT A FUNNEL. The old page defined these three and never drew them,
   // and now I know why: taking the file is a SIBLING of clicking the ask, not
   // a step after it. Chained, it printed "1800% make it from" — so it is drawn
   // as what it is, one question with two answers.
   const ask = FUNNELS[2];
   const shown = stepVal(R, ask[0][0]);
-  const s2 = section(into, 'The support ask',
-    'The download card opens before any file moves and makes one honest ask. The two lines below are answers to it, not steps after it — the file is the no-thanks button.');
+  const s2 = section(into, 'The pack card',
+    'The download card opens before any file moves and shows a sticker pack. The two lines below are answers to it, not steps after it — the file is the no-thanks button. Counted in people.');
   const card = div('hqp-funnel', null, s2);
   const note2 = div('hqp-note', '', s2);
   note2.hidden = true;

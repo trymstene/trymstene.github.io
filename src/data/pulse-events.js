@@ -29,7 +29,7 @@ export const EV_LABEL = {
   tip_click:'eyed the tip jar 💛', forge_start:'fired up the forge',
   begin_checkout:'started checkout 💳', purchase:'PAID 💰💰💰',
   shop_view:'browsed the shop',
-  offer_shown:'got the warm-up card 🌍', offer_click:'took the merch offer 🛍 (retired 12 Aug)',
+  offer_shown:'got the pack card 🎟', offer_click:'took the merch offer 🛍 (retired 12 Aug)',
   offer_skip:'said no thanks, took the file 📥',
   offer_world:'chose Banana World from the card 🌍 (retired 27 Aug)', offer_discord:'headed to the Discord 💬 (retired 27 Aug)',
   offer_support:'clicked buy-me-a-coffee on the card ☕ (retired 5 Sep)',

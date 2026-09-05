@@ -5,8 +5,8 @@
 // for a download surface, the ONE QUESTION each area of the world is asked,
 // and which storefronts take real money.
 //
-//   FUNNELS   [0] custom banana line · [1] official merch · [2] the support
-//             ask (defined but never rendered in the old page)
+//   FUNNELS   [0] custom banana line · [1] official merch · [2] the pack
+//             card (drawn as one question with two answers, not a funnel)
 //   DL_NAMES  longest prefix wins; a deeper path appends its slug
 //   AREAS     key · name · icon · door event · the question
 //   SHOPS     steps, where it stands, and `real` for real money
@@ -44,19 +44,16 @@ export const FUNNELS=[
     'They opened a merch product page — mug, tee, and friends.'],
    ['transactions','Purchases 💰',
     'Completed paid orders as GA4 counts them — rides the same broken Shopify purchase link, so 0 for now.']],
-  // ☕ THE SUPPORT TEST — the card's third life. Merch ask (30 Jul) →
-  // world/Discord warm-up (12 Aug) → an honest buy-me-a-coffee ask (27 Aug):
-  // "I make nothing on the banana." One message, $5 (= the BMAC coffee
-  // price), on EVERY download surface incl. the gallery (first wired 27 Aug).
-  // The question this funnel answers: will this audience pay ANYTHING?
-  // Clicks land on our own /pay/tip — the MONEY shows in Polar, not
-  // here; this measures willingness. Read it in people, never events.
-  [['offer_shown','Got the support card ☕',
-    'The download click opened the card BEFORE any file moved. Since 27 Aug it makes one honest ask: "I make nothing on the banana — buy me a coffee, $5." The file is its no-thanks button.'],
-   ['offer_support','Clicked buy-me-a-coffee 💛',
-    'Tapped a tip amount through to our own checkout. This over "Got the support card" = the willingness rate — the number the whole test exists to learn. Actual money lands in Polar, not in GA4.'],
+  // 🎟 THE PACK CARD — the card's fourth life. Merch ask (30 Jul) →
+  // world/Discord warm-up (12 Aug) → buy-me-a-coffee (27 Aug, 2 takers) →
+  // a sticker pack (5 Sep): the one product nobody else has, shown at the
+  // moment the free file is granted. Read it in people, never events.
+  [['offer_shown','Got the pack card 🎟',
+    'The download click opened the card BEFORE any file moved. Since 5 Sep it shows one of the eight sticker packs, with the other seven a tap away. The file is its no-thanks button.'],
+   ['offer_pack','Tapped a pack 🎟',
+    'Tapped through to a pack’s shop page. This over "Got the pack card" = the take rate — the number the card exists to learn. Sales land in Shopify, not in GA4 (the purchase link is still broken).'],
    ['offer_skip','Just took the file',
-    'Pressed no-thanks and the download flowed — still a happily served visitor, and the answer the test expects most often.']]];
+    'Pressed no-thanks and the download flowed — still a happily served visitor, and the most common answer.']]];
 
 export const DL_NAMES=[
   ['/dancing-banana-gif-meme/','The GIF page'],

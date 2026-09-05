@@ -212,9 +212,9 @@ function narrate(pack) {
   }
   const offer = f('offer');
   if (offer && offer.value === 0 && offer.n >= 20) {
-    rec('The download card was shown ' + offer.n + ' times and nobody took any of its doors. '
-      + 'The placement is right — that is the moment the wish is granted — so rotate the copy '
-      + 'before adding surfaces.', offer.because);
+    rec('The download card was shown ' + offer.n + ' times and nobody tapped a pack. '
+      + 'The placement is right — that is the moment the wish is granted — so rotate the '
+      + 'headline or the pack on show before adding surfaces.', offer.because);
   }
 
   return {

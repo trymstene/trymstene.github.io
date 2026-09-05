@@ -309,25 +309,29 @@ export function buildFacts(d, upTo) {
 
   // ── the download card ───────────────────────────────────────────────────
   const oShown = ev('offer_shown');
-  const oWarm = ev('offer_world') + ev('offer_discord') + ev('offer_support') + ev('offer_click');
+  // 🎟 since 5 Sep the card shows a sticker pack. Its earlier asks (world,
+  // Discord, coffee, the retired merch link) are named only when they still
+  // occur, so an old window adds up and a fresh one is not haunted by them.
+  const oPack = ev('offer_pack');
+  const oOld = ev('offer_world') + ev('offer_discord') + ev('offer_support') + ev('offer_click');
+  const oTook = oPack + oOld;
   if (oShown > 0) {
     // ⚠️ MIN_RATE_N, not MIN_STEP_N. 2 takers of 26 cards printed "8%", which
     // is two people wearing a percentage — the exact thing the gates exist for.
-    const ctr = oShown >= MIN_RATE_N ? Math.round(rate(oWarm, oShown) * 100) : null;
+    const ctr = oShown >= MIN_RATE_N ? Math.round(rate(oTook, oShown) * 100) : null;
     push(fact({
       id: 'offer', area: 'downloads', label: 'the download card',
-      value: oWarm, base: null, deltaPct: null, n: oShown, z: 0,
-      sig: oShown >= MIN_STEP_N && oWarm === 0 ? 2 : (oShown >= MIN_STEP_N ? 1 : 0),
-      // ⚠️ NAME EVERY DOOR THE SUM COUNTS. The old line said "warmed 2" then
-      // printed "0 to the world, 0 to the Discord" — because the support ask
-      // and the retired merch click were in the total and not in the sentence.
-      say: 'The card appeared ' + oShown + ' times and warmed ' + oWarm
+      value: oTook, base: null, deltaPct: null, n: oShown, z: 0,
+      sig: oShown >= MIN_STEP_N && oTook === 0 ? 2 : (oShown >= MIN_STEP_N ? 1 : 0),
+      // ⚠️ NAME EVERY DOOR THE SUM COUNTS — a total the sentence cannot
+      // account for reads as a bug (the old line once said "warmed 2" and
+      // then listed two zeros).
+      say: 'The card appeared ' + oShown + ' times; ' + oPack + ' tapped through to a sticker pack'
         + (ctr == null ? '' : ' — ' + ctr + '%')
-        + ' (' + ev('offer_world') + ' to the world, ' + ev('offer_discord')
-        + ' to the Discord, ' + ev('offer_support') + ' to the support ask'
-        + (ev('offer_click') ? ', ' + ev('offer_click') + ' on the retired merch link' : '')
-        + '). ' + ev('offer_skip') + ' took the file and left.',
-      because: oWarm + ' warmed of ' + oShown + ' shown',
+        + (oOld ? ' (plus ' + oOld + ' on the retired world/Discord/coffee asks)' : '')
+        + (ev('offer_swap') ? '; ' + ev('offer_swap') + ' flipped through the packs' : '')
+        + '. ' + ev('offer_skip') + ' took the file and left.',
+      because: oPack + ' pack taps of ' + oShown + ' shown',
     }));
   }
 

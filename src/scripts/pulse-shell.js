@@ -23,7 +23,7 @@ import { renderOverview, renderNow, renderDownloads, renderShop, renderWorld, pr
 
 const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 'sticker_pdp_view',
   'checkout_redirect', 'begin_checkout', 'purchase', 'view_item', 'select_item', 'wallpaper_download',
-  'license_click', 'homestead_open', 'offer_world', 'offer_discord', 'offer_support', 'quest_step'];
+  'license_click', 'homestead_open', 'offer_pack', 'offer_world', 'offer_discord', 'offer_support', 'quest_step'];
 const WINDOWS = [['today', 'today', 'TODAY'], ['yesterday', 'yesterday', 'YESTERDAY'],
   ['6daysAgo', 'today', '7 DAYS'], ['27daysAgo', 'today', '28 DAYS']];
 // the six doors into the world, for the WORLD badge
