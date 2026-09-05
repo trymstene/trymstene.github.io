@@ -170,7 +170,10 @@ def sheet(pack, cells, preview):
     # ⚠️ 0.64 cm between cut lines is Printful's minimum: 76 px at 300 DPI.
     # 0.80 of the cell leaves ~110 px on the tightest axis, comfortably over it.
     fill = 0.80 if not preview else 0.72
-    canvas = Image.new('RGBA', (w, h + top), (255, 255, 255, 255))
+    # ⚠️ TRANSPARENT FOR PRINT. Printful's kiss-cut runs around the edge of
+    # every non-transparent island, so a white background would make the whole
+    # sheet ONE sticker. White only in the preview, where it stands for the paper.
+    canvas = Image.new('RGBA', (w, h + top), (255, 255, 255, 255) if preview else (0, 0, 0, 0))
     dr = ImageDraw.Draw(canvas)
     try: font = ImageFont.truetype(os.path.join(HERE, 'ArchivoBlack.ttf'), 22 if preview else 1)
     except Exception: font = ImageFont.load_default()
@@ -201,7 +204,7 @@ def main():
         assert len(cells) == COLS * ROWS, pack
         img = sheet(pack, cells, preview=a.preview)
         name = 'pack-%s-%s.png' % (pack, 'preview' if a.preview else 'print')
-        img.convert('RGB').save(os.path.join(a.out, name), dpi=(300, 300))
+        (img.convert('RGB') if a.preview else img).save(os.path.join(a.out, name), dpi=(300, 300))
         print('  wrote', name, '%dx%d' % img.size)
     print('  not placed in Series 1:', ' · '.join(NOT_PLACED))
 
