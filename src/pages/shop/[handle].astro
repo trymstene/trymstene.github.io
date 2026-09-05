@@ -27,7 +27,7 @@ const pack = packN ? STICKER_PACKS.find((p) => p.n === packN) : null;
 const branded = /^DANCING BANANA OFFICIAL/i.test(m.title);
 const bare = branded ? m.title.replace(/^DANCING BANANA OFFICIAL[™\s]*/i, '').trim() : m.title;
 const titleTag = pack
-  ? `Dancing Banana Sticker ${pack.name} — 6 kiss-cut vinyl stickers | Trym Stene`
+  ? `Dancing Banana Sticker ${pack.num} "${pack.name}" — 6 kiss-cut vinyl stickers | Trym Stene`
   : branded
     ? `Dancing Banana ${bare} — Official Merch | Trym Stene`
     : `${bare} — official Dancing Banana merch | Trym Stene`;

@@ -8,7 +8,7 @@
 //
 //   <PackGrid place="shop" fan kicker="New · Series 1" heading="Sticker packs" />
 import { getProducts, money } from '../lib/shop.js';
-import { STICKER_PACKS, PACK_PRICE, packCard, packProducts, previewPacks } from '../data/sticker-packs.js';
+import { STICKER_PACKS, PACK_PRICE, SET_PRICE, packCard, packProducts, previewPacks } from '../data/sticker-packs.js';
 import PackFan from './PackFan.astro';
 
 export interface Props {
@@ -44,6 +44,7 @@ const have = packProducts([...products, ...previewPacks(products)]);
           <img src={packCard(p.n)} alt={`${p.name}: ${p.names.join(', ')} and the Original`}
                width="600" height="600" loading="lazy" decoding="async" />
           <div class="pk-card__body">
+            <p class="pk-card__num">{p.num}</p>
             <h3>{p.name}</h3>
             <p class="pk-card__names">{p.names.join(' · ')}</p>
             <div class="pk-card__foot">
@@ -55,7 +56,7 @@ const have = packProducts([...products, ...previewPacks(products)]);
       );
     })}
   </div>
-  <p class="pkgrid__note">The Original is in every pack · six kiss-cut vinyl stickers on one A5 sheet · printed to order, ships worldwide</p>
+  <p class="pkgrid__note">The Original is in every pack · six kiss-cut vinyl stickers on one A5 sheet · all eight together come to ${SET_PRICE.toFixed(2)} at checkout</p>
 </section>
 
 <style>
@@ -75,7 +76,9 @@ const have = packProducts([...products, ...previewPacks(products)]);
   a.pk-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
   .pk-card img { width: 100%; height: auto; aspect-ratio: 1; display: block; border-bottom: 3px solid var(--ink); }
   .pk-card__body { padding: 0.8rem 0.9rem 0.9rem; display: flex; flex-direction: column; flex: 1; gap: 0.35rem; }
-  .pk-card h3 { font-size: 1.05rem; line-height: 1.1; margin: 0; }
+  /* the number is the collection order, the name is the mood — number quiet, name loud */
+  .pk-card__num { margin: 0; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; }
+  .pk-card h3 { font-size: 1.15rem; line-height: 1.1; margin: 0; }
   .pk-card__names { margin: 0; font-size: 0.78rem; line-height: 1.35; opacity: 0.78; }
   .pk-card__foot {
     margin-top: auto; padding-top: 0.5rem; display: flex; flex-wrap: wrap;

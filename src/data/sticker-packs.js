@@ -15,12 +15,18 @@ import ART from './pack-art.json';
 export const PACK_PRICE = ART.price;
 export const PACK_OG = '/assets/og/sticker-packs.png';
 
-const NAMES = { 8: 'Pack 8 · Moods' };
+// Each pack is named after the ground its picture stands on (Trym, 5 Sep:
+// "something short for each pack, instead of Pack 1, Pack 2" — the number
+// stays as the PACK N flair printed on the picture). Change a ground in
+// tools/build-pack-art.py MOODS, change its name here.
+const NAMES = { 1: 'Park Life', 2: 'Sunshine', 3: 'Meadow', 4: 'Party', 5: 'Rave', 6: 'Beach Day', 7: 'Blue Sky', 8: 'Moods' };
+export const SET_PRICE = 69.99;   // all eight, an automatic Shopify discount ($9.93 off at 8 packs)
 export const STICKER_PACKS = Object.keys(ART.packs).map(Number).sort((a, b) => a - b).map((n) => {
   const stickers = ART.packs[n];
   return {
     n,
     name: NAMES[n] || `Pack ${n}`,
+    num: `Pack ${n}`,
     stickers,
     hero: stickers.find((s) => s.hero) || stickers[1],
     // the five that make this pack THIS pack — the Original is in all eight and
