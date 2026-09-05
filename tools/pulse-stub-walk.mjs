@@ -56,11 +56,15 @@ const RANGE = {
 };
 const LIVE = {
   at: Date.now(), total: 3,
-  countries: [{ cc: 'US', name: 'United States', v: 2 }, { cc: 'NO', name: 'Norway', v: 1 }],
+  // pins at the map's extremes so the tooltip sweep below meets every edge
+  countries: [{ cc: 'US', name: 'United States', v: 2 }, { cc: 'NO', name: 'Norway', v: 1 },
+    { cc: 'GL', name: 'Greenland', v: 1 }, { cc: 'CA', name: 'Canada', v: 1 }, { cc: 'RU', name: 'Russia', v: 1 },
+    { cc: 'CL', name: 'Chile', v: 1 }, { cc: 'AU', name: 'Australia', v: 1 }, { cc: 'NZ', name: 'New Zealand', v: 1 }],
   cities: [], pages: [{ page: '/dancing-banana-gif-meme/', v: 2 }],
   events: [{ name: 'offer_shown', v: 2 }, { name: 'offer_pack', v: 1 }],
   spark: Array(30).fill(0), recent: [{ name: 'offer_pack', cc: 'US', v: 1 }, { name: 'offer_shown', cc: 'NO', v: 1 }, { name: 'gif_download', cc: 'US', v: 1 }],
-  countryPages: {}, devices: { mobile: 2, desktop: 1 }, hot: {},
+  countryPages: { NO: [{ page: '/dancing-banana-gif-meme/' }, { page: '/' }, { page: '/shop/' }], GL: [{ page: '/' }, { page: '/rave/' }] },
+  devices: { mobile: 2, desktop: 1 }, hot: {},
 };
 
 const browser = await chromium.launch();
@@ -116,5 +120,63 @@ out.shop = {
   listRows: ['The shop grid', 'The GIF page · pack carousel, top', 'The GIF page · pack carousel, download hub', 'Shop strip · gif hub', 'The shop · custom lane'].map((t) => [t, sh.includes(t)]),
   oldWords: ['support ask', 'buy-me-a-coffee'].filter((t) => sh.includes(t)),
 };
+// ── the map tooltip must stay inside the card at every pin (it used to be
+// drawn above the pin and clipped for countries high on the map)
+await page.locator('.ps-room', { hasText: 'LIVE' }).first().click();
+await page.waitForTimeout(1500);
+const cv = page.locator('canvas.pm-cv').first();
+const cb = await cv.boundingBox();
+const card = await page.locator('.ps-mapcard').first().boundingBox();
+out.tips = { seen: 0, distinct: [], clipped: 0, worst: null, topmost: null };
+if (cb && card) {
+  // find the pins by their paint (the pulses are yellow on a purple sea), then
+  // hover each one with a synthetic pointermove — exact, and it also tells us
+  // when a pin exists but the hit test misses it
+  const res = await page.evaluate(({ card }) => {
+    const cvs = [...document.querySelectorAll('canvas.pm-cv')]; const tips = [...document.querySelectorAll('.pm-tip')];
+    const cv = cvs[cvs.length - 1]; const tip = tips[tips.length - 1];
+    const diag = { canvases: cvs.length, tips: tips.length, w: cv.width, h: cv.height };
+    const r = cv.getBoundingClientRect();
+    const img = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    const pts = [];
+    for (let y = 0; y < cv.height; y += 3) for (let x = 0; x < cv.width; x += 3) {
+      const i = (y * cv.width + x) * 4;
+      if (img[i] > 190 && img[i + 1] > 150 && img[i + 2] < 130) pts.push([x, y]);
+    }
+    const pins = [];
+    for (const [x, y] of pts) if (!pins.some((q) => Math.hypot(q[0] - x, q[1] - y) < 30)) pins.push([x, y]);
+    diag.yellowPx = pts.length; diag.pins = pins.length;
+    const found = [];
+    for (const [x, y] of pins) {
+      const cx = r.left + x * (r.width / cv.width), cy = r.top + y * (r.height / cv.height);
+      cv.dispatchEvent(new PointerEvent('pointermove', { clientX: cx, clientY: cy, bubbles: true }));
+      const rec = { x: Math.round(cx - r.left), y: Math.round(cy - r.top), head: null, over: 0 };
+      if (!tip.hidden) {
+        const b = tip.getBoundingClientRect();
+        rec.head = tip.textContent.split(String.fromCharCode(10))[0];
+        rec.lines = tip.textContent.split(String.fromCharCode(10)).length;
+        rec.over = Math.round(Math.max(card.y - b.top, b.bottom - (card.y + card.height), card.x - b.left, b.right - (card.x + card.width)) * 10) / 10;
+      }
+      found.push(rec);
+    }
+    cv.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+    return { diag, found };
+  }, { card });
+  out.tips.diag = res.diag;
+  out.tips.seen = res.found.filter((h) => h.head).length;
+  out.tips.missed = res.found.filter((h) => !h.head).length;
+  out.tips.distinct = [...new Set(res.found.filter((h) => h.head).map((h) => h.head))];
+  const clipped = res.found.filter((h) => h.over > 0.5);
+  out.tips.clipped = clipped.length;
+  out.tips.worst = clipped.sort((a, b) => b.over - a.over)[0] || null;
+  out.tips.topmost = res.found.filter((h) => h.head).sort((a, b) => a.y - b.y)[0] || null;
+  if (out.tips.topmost) {
+    await page.mouse.move(cb.x + out.tips.topmost.x, cb.y + out.tips.topmost.y);
+    await page.waitForTimeout(250);
+    await page.locator('.ps-mapcard').first().screenshot({ path: `${OUT}/hq-map-tip.png` });
+  } else {
+    await page.locator('.ps-mapcard').first().screenshot({ path: `${OUT}/hq-map-tip.png` });
+  }
+}
 await ctx.close(); await browser.close(); server.close();
 console.log(JSON.stringify(out, null, 1));

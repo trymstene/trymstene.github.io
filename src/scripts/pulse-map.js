@@ -283,8 +283,17 @@ export function buildEarth(host, MAP, opts) {
     }
     tip.hidden = false;
     tip.textContent = bits.join('\n');
-    tip.style.left = Math.round((best.cx / cv.width) * 100) + '%';
-    tip.style.top = Math.round((best.cy / cv.height) * 100) + '%';
+    // ⚠️ the card clips its overflow (rounded corners), so a tip drawn above a
+    // pin near the top edge — Norway, Canada, Greenland — lost its first lines
+    // (Trym, 5 Sep). Measure the tip, flip it below the pin when there is no
+    // room above, and keep it inside the card sideways. Pixels, not
+    // percentages: the clamp needs the tip's own size.
+    const bw = wrap.clientWidth, bh = wrap.clientHeight;
+    const px = (best.cx / cv.width) * bw, py = (best.cy / cv.height) * bh;
+    const tw = tip.offsetWidth, th = tip.offsetHeight, GAP = 14;
+    const above = py - GAP - th >= 4;
+    tip.style.left = Math.round(Math.max(6, Math.min(bw - tw - 6, px - tw / 2))) + 'px';
+    tip.style.top = Math.round(above ? py - GAP - th : Math.min(bh - th - 4, py + GAP)) + 'px';
     if (o.onTip) o.onTip(bits);
   };
   cv.addEventListener('pointermove', at);

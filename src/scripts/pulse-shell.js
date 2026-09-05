@@ -134,6 +134,11 @@ export function mountPulse(host, io) {
     const zOut = el('button', 'ps-zbtn', '−', zoomer);
     zOut.hidden = true;
     earth = buildEarth(mapCard, MAP, {});
+    // ⚠️ every visit to this room builds a fresh earth, and the live poll only
+    // feeds the earth that exists when it lands — so coming back from another
+    // room showed an EMPTY map for up to a minute (found 5 Sep while hunting
+    // the tooltip clip). Hand the new earth what the shell already knows.
+    if (S.live || S.range) earth.push({ live: S.live, range: S.range, mode: S.mode, lens: S.lens });
     zIn.addEventListener('click', () => { zOut.hidden = earth.zoom(1) <= 1; });
     zOut.addEventListener('click', () => { zOut.hidden = earth.zoom(-1) <= 1; });
 
