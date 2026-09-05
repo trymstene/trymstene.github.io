@@ -27,6 +27,9 @@ export const STICKER_PACKS = Object.keys(ART.packs).map(Number).sort((a, b) => a
     n,
     name: NAMES[n] || `Pack ${n}`,
     num: `Pack ${n}`,
+    // the Shopify handle as created on 5 Sep 2026 — client code (the download card)
+    // links straight to it; build-time code prefers the live product's handle
+    handle: `dancing-banana-official-sticker-pack-${n}`,
     stickers,
     hero: stickers.find((s) => s.hero) || stickers[1],
     // the five that make this pack THIS pack — the Original is in all eight and
@@ -64,7 +67,9 @@ export function packProducts(products) {
 // has published them, so the pages can be walked before launch (design library
 // rule 13: verify by looking). Never on by default; a real product always wins.
 export function previewPacks(products) {
-  if (!process.env.PACK_PREVIEW) return [];
+  // ⚠️ this module is also bundled for the browser (the download card) where
+  // `process` does not exist — never touch it unguarded
+  if (typeof process === 'undefined' || !process.env.PACK_PREVIEW) return [];
   const have = packProducts(products);
   return STICKER_PACKS.filter((p) => !have[p.n]).map((p) => {
     const handle = `dancing-banana-sticker-pack-${p.n}`;
