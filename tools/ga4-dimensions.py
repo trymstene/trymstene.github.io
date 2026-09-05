@@ -77,6 +77,14 @@ DIMENSIONS = [
      'beach_dig: treasure / warm / spent / mappiece / curio / junk / sand. '
      '"spent" is a wasted tap on ground already dug — the spent:fresh ratio is '
      'the difference between people playing the hunt and people mashing.'),
+    # Which sticker/meme actually gets downloaded (gif_download, png_download
+    # carry `file`). The gallery has 42 designs and no popularity signal at
+    # all -- gallery.json holds no views, and Giphy's counts need a channel
+    # key we do not have. This is the only way to learn which designs earn a
+    # slot on a sticker sheet, instead of guessing.
+    ('file', 'Downloaded file',
+     'The file name on gif_download / png_download / wallpaper_download -- '
+     'which of the 42 gallery designs people actually take home.'),
 ]
 
 
