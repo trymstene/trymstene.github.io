@@ -85,7 +85,7 @@ const full = SET_SIZE * PACK_PRICE;
 </style>
 
 <script>
-  import { cartAddLines } from '../lib/shop-config.js';
+  import { cartAddLines, trackIds } from '../lib/shop-config.js';
   import { SET_PRICE } from '../data/pack-deal.js';
   // one tap puts the eight lines in the shared cart and opens the drawer, where
   // Shopify's own discount rows prove the price. A failure says so on the
@@ -99,7 +99,8 @@ const full = SET_SIZE * PACK_PRICE;
       if (btn.disabled) return;
       btn.disabled = true; btn.textContent = 'Adding the set…';
       try {
-        await cartAddLines(ids.map((id) => ({ merchandiseId: id, quantity: 1 })));
+        const attributes = trackIds();   // so the sale is credited, not just counted
+        await cartAddLines(ids.map((id) => ({ merchandiseId: id, quantity: 1, attributes })));
         const w = window as any;
         if (w.gtag) w.gtag('event', 'add_to_cart', { from: 'pack_deal_' + (box.dataset.place || 'deal'), n: ids.length, value: SET_PRICE, currency: 'USD' });
         btn.textContent = 'In the cart ✓';

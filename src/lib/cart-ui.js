@@ -11,7 +11,7 @@
 // ⚠️ REFRESH NEVER PINGS. cart-ui's own saves are quiet (cartSave(c, true)) —
 // a pinging refresh re-triggers the 'bb-cart' listener while the drawer is
 // open and the loop polls Shopify forever (adversarial review, 28 Aug).
-import { storefront, cartRead, cartSave, cartClear, cartAddLines } from './shop-config.js';
+import { storefront, cartRead, cartSave, cartClear, cartAddLines, trackIds } from './shop-config.js';
 import { SET_SIZE, SET_PRICE, PACK_PRICE, packHandle, packNumber } from '../data/pack-deal.js';
 
 const $ = (sel, root) => (root || document).querySelector(sel);
@@ -235,7 +235,8 @@ function dealRow(nodes) {
       const d = await storefront('{ ' + q + ' }');
       const ids = Object.values(d || {}).map((p) => p && p.variants && p.variants.nodes[0] && p.variants.nodes[0].id).filter(Boolean);
       if (ids.length !== missing.length) throw new Error('a pack is missing from the shop');
-      await cartAddLines(ids.map((id) => ({ merchandiseId: id, quantity: 1 })));
+      const attributes = trackIds();   // credited, not just counted (see shop-config)
+      await cartAddLines(ids.map((id) => ({ merchandiseId: id, quantity: 1, attributes })));
       if (window.gtag) window.gtag('event', 'add_to_cart', { from: 'cart_complete_set', n: ids.length, value: SET_PRICE, currency: 'USD' });
     } catch (err) {
       b.disabled = false; b.textContent = 'could not add them — try again →';

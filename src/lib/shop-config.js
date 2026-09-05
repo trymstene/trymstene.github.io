@@ -39,6 +39,22 @@ export function cartPing(n) {
 }
 
 export const CART_FIELDS = 'id checkoutUrl totalQuantity';
+
+// 📊 the ids a sale needs to be CREDITED, not just counted: the GA4 client id
+// (worker → Measurement Protocol) and Meta's _fbp/_fbc (worker → Conversions
+// API) ride every line as hidden attributes (underscore = not shown at
+// checkout). Every buy door must attach them — a line without them still
+// counts, but as a new anonymous user with no campaign. Mirrors trackIds()
+// in public/js/shop.js and metaIds() in sticker-core.
+export function trackIds() {
+  const ck = (n) => (document.cookie.match('(^|; )' + n + '=([^;]*)') || [])[2];
+  const out = [];
+  const ga = ck('_ga');
+  if (ga) { const cid = ga.split('.').slice(-2).join('.'); if (cid) out.push({ key: '_ga_cid', value: cid }); }
+  const fbp = ck('_fbp'); if (fbp) out.push({ key: '_fbp', value: fbp });
+  const fbc = ck('_fbc'); if (fbc) out.push({ key: '_fbc', value: fbc });
+  return out;
+}
 const errsOf = (p) => ((p && p.userErrors) || []).map((e) => e.message).join('; ');
 
 // Add prepared CartLineInputs to the stored cart, creating a fresh cart
