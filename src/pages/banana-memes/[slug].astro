@@ -163,13 +163,17 @@ if (type === 'item') {
 } else {
   const isTag = type === 'tag';
   const meta = isTag ? tagMeta(tagKey) : null;
-  const catName = catKey === 'stickers' ? 'Banana Stickers — Transparent, for Any Chat' : 'Banana Meme GIFs — the Captioned Collection';
+  // ⚠️ the GIF category must NOT aim at "banana meme(s)" — that phrase belongs to
+  // the hub (plural) and the GIF page (singular); Search Console showed this page
+  // splitting "banana memes" with its own hub (6 Sep 2026). Reaction GIFs is the
+  // honest, distinct intent: captioned loops people paste into chats.
+  const catName = catKey === 'stickers' ? 'Banana Stickers — Transparent, for Any Chat' : 'Banana Reaction GIFs — Captioned Loops for Chats & Comments';
   title = isTag ? `${meta.name} — Free to Download & Share` : catName;
   description = isTag
     ? `${members.length} free ${meta.q}s starring the banana — download and share, no watermark. ${meta.blurb.split('—')[0].trim()}.`
     : (catKey === 'stickers'
       ? `${members.length} free transparent banana stickers — no background box, they float over any chat. By the banana's original creator.`
-      : `${members.length} free banana meme GIFs with captions — Monday moods, work memes and pure vibes. Download free, no watermark.`);
+      : `${members.length} free banana reaction GIFs with captions — Monday moods, work memes and pure vibes, ready to paste into any chat. No watermark.`);
   pageUrl = `${SITE}/banana-memes/${isTag ? tagKey : catKey}/`;
   ogImage = `${SITE}/assets/gallery-posters/${members[0].id}.png`;
   ld = [{
@@ -356,11 +360,11 @@ const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
       <nav class="gd-crumb" aria-label="Breadcrumb" style="text-align:left;">
         <a href="/banana-memes/">Banana memes</a> › <span>{type === 'tag' ? tagMeta(tagKey).name : (catKey === 'stickers' ? 'Stickers' : 'GIFs')}</span>
       </nav>
-      <h1>{type === 'tag' ? tagMeta(tagKey).name.toLowerCase() : (catKey === 'stickers' ? 'banana stickers' : 'banana meme gifs')}</h1>
+      <h1>{type === 'tag' ? tagMeta(tagKey).name.toLowerCase() : (catKey === 'stickers' ? 'banana stickers' : 'banana reaction gifs')}</h1>
       <p class="gc-blurb">
         {type === 'tag' ? tagMeta(tagKey).blurb : (catKey === 'stickers'
           ? 'Transparent dancing banana stickers — no background box, they float straight over any chat. Free to download and share, made by the banana\'s original creator.'
-          : 'Captioned dancing banana meme GIFs — Monday moods, work memes and pure vibes on loud pixel backgrounds. Free to download and share.')}
+          : 'Captioned banana reaction GIFs — Monday moods, work memes and pure vibes on loud pixel backgrounds, ready to paste into any chat. Free to download and share.')}
       </p>
       <div class="gc-grid">
         {members.map((m) => (
