@@ -35,7 +35,11 @@ ASSETS = os.path.join(ROOT, 'public', 'assets')
 FILES = {f: os.path.join(r, f) for r, _, fs in os.walk(ASSETS) for f in fs if f.endswith('.gif')}
 POSE = 2                       # hands straight up — the ta-da frame
 W, H = 1749, 2481              # A5 at 300 DPI, Printful's sheet
-COLS, ROWS = 3, 4
+# 2x3, not 3x4 (Trym, 5 Sep): the sheet costs the same at any count, so the
+# count is an OFFER decision. Six gives a 5.6 cm sticker instead of 3.9 --
+# a laptop sticker, not an emoji -- and eight packs for the catalogue instead
+# of four, so the collect-them-all pull has twice the reach.
+COLS, ROWS = 2, 3
 
 # A cell is either a gallery title (looked up), a raw outfit dict for a
 # wardrobe-only design, or ORIGINAL.
@@ -44,22 +48,25 @@ def outfit(label, **o):
     return {'_label': label, 'hat': o.get('hat', 'none'), 'glasses': o.get('glasses', 'none'), 'extras': o.get('extras', [])}
 
 PACKS = {
-    'A': [ORIGINAL, 'Bird Friend', outfit('Bow Tie', extras=['bowtie']), 'Arrow Through the Head',
-          'Who, Me?', 'Rubber Chicken', 'Propeller Beanie', outfit('Shades', glasses='shades'),
-          'Googly Eyes', 'Sombrero', 'Cozy Scarf', '3D Glasses'],
-    'B': [ORIGINAL, 'Court Jester', outfit('Party Hat', hat='party'), outfit('Crown', hat='crown'),
-          outfit('Glowstick', glasses='shades', extras=['glowstick']), 'Too Cool', 'Winner Winner',
-          'Little Devil', 'Boombox', 'Bunch of Balloons', 'Clown Shoes', 'Fishbowl Head'],
-    'C': [ORIGINAL, outfit('Cowboy', hat='cowboy'), outfit('Top Hat & Monocle', hat='tophat', glasses='monocle'),
-          "Something's Fishy", 'Captain', 'Eyepatch', 'Viking', 'Cone of Shame', 'Spa Day',
-          'Banana Rights', 'We Did It, Grad', 'Good Egg'],
-    'D': [ORIGINAL, 'Rent Is Due, Dance Is Free', 'Bills? Bananas.', 'Born to Dance, Forced to Work',
-          'My Last Braincell', 'Everything Is Content', 'Dance First, Think Later',
-          'Emotional Support Banana', 'Monday Again. How. Why.', 'Not Thriving, But Vibing',
+    # one Giphy top-8 hero per pack, split pairs never share a sheet
+    # (Captain/Eyepatch, Fishy/Fishbowl, Shades/Too Cool, the two coffees)
+    '1': [ORIGINAL, 'Bird Friend', 'Rubber Chicken', 'Googly Eyes', 'Sombrero', 'Cozy Scarf'],
+    '2': [ORIGINAL, 'Court Jester', 'Too Cool', 'Bunch of Balloons', 'Clown Shoes', 'Spa Day'],
+    '3': [ORIGINAL, outfit('Bow Tie', extras=['bowtie']), 'Propeller Beanie', '3D Glasses', 'Good Egg', 'Cone of Shame'],
+    '4': [ORIGINAL, outfit('Party Hat', hat='party'), 'Winner Winner', 'Boombox', 'Banana Rights', 'We Did It, Grad'],
+    '5': [ORIGINAL, outfit('Glowstick', glasses='shades', extras=['glowstick']), outfit('Shades', glasses='shades'),
+          'Little Devil', 'Fishbowl Head', 'Viking'],
+    '6': [ORIGINAL, outfit('Crown', hat='crown'), outfit('Cowboy', hat='cowboy'),
+          outfit('Top Hat & Monocle', hat='tophat', glasses='monocle'), 'Captain', 'But First, Coffee'],
+    '7': [ORIGINAL, 'Arrow Through the Head', 'Who, Me?', "Something's Fishy", 'Eyepatch',
+          outfit('PINK - TBC', hat='none')],   # Trym's pink bow tie + pink shoes, identity to confirm
+    '8': [ORIGINAL, 'Rent Is Due, Dance Is Free', 'Bills? Bananas.', 'Born to Dance, Forced to Work',
           'This Is Fine', '100% Ripe'],
 }
-NOT_PLACED = ['But First, Coffee', 'Touched Grass, It Was Mid', 'On Mute, On Purpose',
-              'Me After One Coffee', 'Quiet Quitting, Loud Dancing']
+NOT_PLACED = ['My Last Braincell', 'Everything Is Content', 'Dance First, Think Later',
+              'Emotional Support Banana', 'Touched Grass, It Was Mid', 'Monday Again. How. Why.',
+              'Not Thriving, But Vibing', 'On Mute, On Purpose', 'Me After One Coffee',
+              'Quiet Quitting, Loud Dancing']
 
 
 def gallery_outfit(params):
@@ -104,10 +111,10 @@ def sheet(pack, cells, preview):
         canvas.alpha_composite(art, (x0 + int((cw - art.width) / 2), y0 + int((ch * (0.88 if preview else 1) - art.height) / 2)))
         if preview:
             dr.rectangle([x0 + 2, y0 + 2, x0 + cw - 2, y0 + ch - 2], outline=(200, 200, 200, 255), width=1)
-            dr.text((x0 + 10, y0 + ch - 34), '%d. %s' % (i + 1, label.replace(' Banana', '')[:24]), fill=(17, 17, 17, 255), font=font)
+            dr.text((x0 + 10, y0 + ch - 34), '%d. %s' % (i + 1, (label[:-7] if label.endswith(' Banana') else label)[:26]), fill=(17, 17, 17, 255), font=font)
     if preview:
         dr.rectangle([0, 0, w, 44], fill=(255, 225, 53, 255))
-        dr.text((14, 8), 'PACK %s  ·  preview, not print  ·  hands-up pose  ·  12 stickers' % pack,
+        dr.text((14, 8), 'PACK %s  ·  preview, not print  ·  hands-up pose  ·  6 stickers' % pack,
                 fill=(17, 17, 17, 255), font=font)
     return canvas
 
