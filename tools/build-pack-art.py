@@ -22,7 +22,7 @@ fun spread with all the stickers overlapping eachother"). So, per pack:
 Art comes from the same renderers as the print files (build-sticker-packs.py),
 so what is shown is what is printed. Resampling is NEAREST only.
 """
-import os, sys, json, random, re
+import os, sys, json, math, random, re
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -39,6 +39,10 @@ YELLOW = (255, 225, 53, 255)
 INK = (17, 17, 17, 255)
 WHITE = (255, 255, 255, 255)
 PAPER = (250, 246, 238, 255)
+DEEP = (245, 196, 0, 255)            # the sunburst ray on banana yellow (tip card, pass)
+HOT, HOT2 = (255, 77, 109, 255), (255, 122, 149, 255)
+SKY, SKY2 = (127, 208, 245, 255), (166, 224, 250, 255)
+CREAM2 = (255, 243, 176, 255)
 PRICE = 9.99
 WEBP = dict(lossless=True, quality=100, method=6)
 
@@ -83,18 +87,162 @@ def kiss_cut(art, border, shadow=True):
     return out
 
 
-def pill(text, px=44, fill=INK, ink=YELLOW, tilt=-4):
+def pill(text, px=44, fill=INK, ink=YELLOW, tilt=-4, outline=INK):
     f = font(px)
     tw = int(f.getlength(text))
     im = Image.new('RGBA', (tw + px, px + px // 2 + 10), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    d.rectangle([0, 0, im.width - 1, im.height - 1], fill=fill, outline=INK, width=4)
+    d.rectangle([0, 0, im.width - 1, im.height - 1], fill=fill, outline=outline, width=4)
     d.text((px // 2, px // 4), text, font=f, fill=ink)
     return im.rotate(tilt, expand=True, resample=Image.BICUBIC)
 
 
 def place(im, st, cx, cy):
     im.alpha_composite(st, (int(cx - st.width / 2), int(cy - st.height / 2)))
+
+
+# ---- the grounds: eight moods, so eight packs never read as one -------------
+# Trym, 5 Sep: "if all is yellow and looks the same, the stickers look the same
+# when you throw fast glances at them". The painted ones follow the areas' own
+# share cards (park-share.js, shareBeach, the rave card) and colours sampled
+# from the world art; the sunbursts are the pass's rays in four colours.
+
+def vgrad(w, h, c0, c1):
+    mask = Image.linear_gradient('L').resize((w, h), Image.BILINEAR)
+    return Image.composite(Image.new('RGBA', (w, h), c1), Image.new('RGBA', (w, h), c0), mask)
+
+
+def rays(im, cx, cy, colour, n=16, spin=0.0):
+    """Alternating wedges from a point - rays, never stripes (tip-card rule) -
+    drawn at 2x and boxed down so the edges are smooth."""
+    W, H = im.size
+    lay = Image.new('RGBA', (W * 2, H * 2), (0, 0, 0, 0))
+    d = ImageDraw.Draw(lay)
+    R = max(W, H) * 3.2
+    for i in range(0, n, 2):
+        a0 = spin + i / n * 2 * math.pi
+        a1 = spin + (i + 1) / n * 2 * math.pi
+        d.polygon([(cx * 2, cy * 2),
+                   (cx * 2 + R * math.cos(a0), cy * 2 + R * math.sin(a0)),
+                   (cx * 2 + R * math.cos(a1), cy * 2 + R * math.sin(a1))], fill=colour)
+    im.alpha_composite(lay.resize((W, H), Image.BOX))
+
+
+def glow(im, cx, cy, r, colour):
+    """a soft round light, colour's alpha at the centre fading out by r"""
+    r = int(r)
+    mask = Image.radial_gradient('L').resize((r * 2, r * 2), Image.BILINEAR)
+    mask = mask.point(lambda v: (255 - v) * colour[3] // 255)
+    spot = Image.new('RGBA', (r * 2, r * 2), colour[:3] + (255,))
+    spot.putalpha(mask)
+    lay = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    lay.alpha_composite(spot, (int(cx - r), int(cy - r)))
+    im.alpha_composite(lay)
+
+
+def burst(base, ray, w, h, cx=0.5, cy=0.62):
+    im = Image.new('RGBA', (w, h), base)
+    rays(im, w * cx, h * cy, ray)
+    return im
+
+
+def flowers(d, x, y, col, s):
+    k = s / 1200
+    for dx, dy in ((0, 0), (-34, 18), (30, 22)):
+        px, py = x + dx * k, y + dy * k
+        d.rectangle([px - 2 * k, py, px + 2 * k, py + 16 * k], fill=(44, 107, 44, 255))
+        d.ellipse([px - 11 * k, py - 11 * k, px + 11 * k, py + 11 * k], fill=col)
+        d.ellipse([px - 4 * k, py - 4 * k, px + 4 * k, py + 4 * k], fill=(255, 253, 240, 255))
+
+
+def paint_park(s):
+    """the park's share card: lawn, the woods along the top, sun, flower clusters"""
+    im = vgrad(s, s, (184, 212, 120, 255), (134, 174, 82, 255))
+    im.alpha_composite(vgrad(s, int(s * 0.30), (47, 143, 69, 255), (84, 184, 106, 255)), (0, 0))
+    d = ImageDraw.Draw(im)
+    for i in range(-1, 14):
+        x = i * s / 12 + (s / 24 if i % 2 else 0)
+        d.ellipse([x - s * 0.06, s * 0.30 - s * 0.07, x + s * 0.06, s * 0.30 + s * 0.05], fill=(31, 92, 46, 255))
+    rays(im, s * 0.78, s * 0.08, (255, 250, 205, 28), n=18)
+    for fx, fy, col in ((0.34, 0.50, (255, 214, 232, 255)), (0.72, 0.72, (255, 225, 53, 255)),
+                        (0.46, 0.86, (255, 253, 245, 255)), (0.10, 0.70, (255, 225, 53, 255)),
+                        (0.90, 0.50, (255, 214, 232, 255))):
+        flowers(d, fx * s, fy * s, col, s)
+    return im
+
+
+def paint_bay(s):
+    """Banana Bay's postcard: sea along the top, sand, the sun and its rays"""
+    im = vgrad(s, s, (242, 215, 155, 255), (230, 190, 124, 255))
+    im.alpha_composite(vgrad(s, int(s * 0.34), (47, 143, 168, 255), (84, 182, 200, 255)), (0, 0))
+    rays(im, s * 0.80, s * 0.14, (255, 236, 150, 44), n=20)
+    glow(im, s * 0.80, s * 0.14, s * 0.30, (255, 236, 150, 190))
+    d = ImageDraw.Draw(im)
+    foam = [(x, s * 0.34 + math.sin(x / s * 2 * math.pi * 5) * s * 0.006) for x in range(0, s + 1, 8)]
+    d.line(foam, fill=(255, 255, 255, 130), width=max(3, int(s * 0.008)))
+    r = s * 0.06
+    d.ellipse([s * 0.80 - r, s * 0.14 - r, s * 0.80 + r, s * 0.14 + r], fill=(255, 232, 154, 255))
+    return im
+
+
+def paint_rave(s):
+    """the rave's card: the jelly floor, three spotlights, the yellow glow, sparkles"""
+    im = Image.new('RGBA', (s, s), (22, 18, 31, 255))
+    d = ImageDraw.Draw(im)
+    cell = s // 10
+    for yy in range(0, s, cell):
+        for xx in range(0, s, cell):
+            if (xx // cell + yy // cell) % 2:
+                d.rectangle([xx, yy, xx + cell - 1, yy + cell - 1], fill=(28, 22, 40, 255))
+    lay = Image.new('RGBA', (s, s), (0, 0, 0, 0))
+    ld = ImageDraw.Draw(lay)
+    for x0, x1, col in ((0.12, 0.62, (255, 77, 160, 60)), (0.50, 0.28, (80, 220, 200, 48)), (0.88, 0.46, (170, 90, 255, 56))):
+        ld.polygon([(s * x0 - s * 0.05, -10), (s * x0 + s * 0.05, -10),
+                    (s * x1 + s * 0.24, s + 10), (s * x1 - s * 0.24, s + 10)], fill=col)
+    im.alpha_composite(lay)
+    glow(im, s * 0.5, s * 0.74, s * 0.55, (255, 225, 53, 72))
+    rnd = random.Random(5)
+    for _ in range(14):
+        x, y, k = rnd.randrange(s), rnd.randrange(int(s * 0.6)), rnd.choice((3, 4, 6))
+        d.rectangle([x - k, y - 1, x + k, y + 1], fill=(255, 255, 255, 230))
+        d.rectangle([x - 1, y - k, x + 1, y + k], fill=(255, 255, 255, 230))
+    return im
+
+
+def paint_meadow(s):
+    """the homestead's meadow (grass #59a057 and path #ccaf7d sampled from the
+    world art): light patches, tufts, the dirt path across the bottom, blooms"""
+    im = Image.new('RGBA', (s, s), (89, 160, 87, 255))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(3)
+    for _ in range(26):
+        x, y, r = rnd.randrange(s), rnd.randrange(s), rnd.randrange(int(s * 0.03), int(s * 0.07))
+        d.ellipse([x - r, y - r, x + r, y + r], fill=(101, 175, 96, 255))
+    k = max(2, s // 300)
+    for _ in range(140):
+        x, y = rnd.randrange(s), rnd.randrange(s)
+        d.line([(x - 2 * k, y - 2 * k), (x, y), (x + 2 * k, y - 2 * k)], fill=(56, 118, 60, 255), width=k)
+    top = [(x, s * 0.80 + math.sin(x / s * 2 * math.pi * 1.5) * s * 0.02) for x in range(0, s + 1, 10)]
+    bot = [(x, s * 0.92 + math.sin(x / s * 2 * math.pi * 1.5 + 1) * s * 0.02) for x in range(s, -1, -10)]
+    d.polygon(top + bot, fill=(204, 175, 125, 255))
+    for _ in range(9):
+        x, y, r = rnd.randrange(s), rnd.randrange(int(s * 0.76)), 3 * k
+        d.ellipse([x - r, y - r, x + r, y + r], fill=(224, 138, 74, 255))
+    return im
+
+
+MOODS = {
+    '1': paint_park,                                   # Bird Friend and friends - the park
+    '2': lambda s: burst(YELLOW, DEEP, s, s),          # the pass's sunburst
+    '3': paint_meadow,                                 # the homestead's meadow
+    '4': lambda s: burst(HOT, HOT2, s, s),             # the party pack
+    '5': paint_rave,                                   # the glowstick pack - the rave
+    '6': paint_bay,                                    # the Captain - Banana Bay
+    '7': lambda s: burst(SKY, SKY2, s, s),
+    '8': lambda s: burst(PAPER, CREAM2, s, s),         # calm ground under five coloured squares
+}
+# the name pill needs an edge the ground does not have
+PILL = {'5': dict(fill=YELLOW, ink=INK, outline=INK)}
 
 
 # 6 seats, a group photo: the Original peeks over the hero's shoulder, two
@@ -113,7 +261,7 @@ SEATS = [  # (index in the pack, x, y, height share, max tilt, jitter)
 
 def spread(pack, cells, size=1200):
     rnd = random.Random(100 + int(pack))
-    im = Image.new('RGBA', (size, size), YELLOW)
+    im = MOODS[pack](size)
     arts = [BSP.art_for(c, 1)[0] for c in cells]
     for idx, fx, fy, share, tilt, jit in SEATS:
         a, k = fit(arts[idx], size * share)
@@ -122,7 +270,7 @@ def spread(pack, cells, size=1200):
         tilt = tilt * (0.6 if k < 0.9 else 1.0)
         st = kiss_cut(a, border=12).rotate(rnd.uniform(-tilt, tilt), expand=True, resample=Image.BICUBIC)
         place(im, st, size * fx + rnd.uniform(-jit, jit), size * fy + rnd.uniform(-jit, jit) * 0.7)
-    im.alpha_composite(pill('PACK %s' % pack, px=52), (44, 40))
+    im.alpha_composite(pill('PACK %s' % pack, px=52, **PILL.get(pack, {})), (44, 40))
     six = pill('6 STICKERS', px=32, fill=WHITE, ink=INK, tilt=4)
     im.alpha_composite(six, (size - six.width - 40, 44))
     return im
@@ -157,7 +305,7 @@ def strip(size=(1600, 640), labels=True):
     clear of the edges."""
     W, H = size
     rnd = random.Random(2026)
-    im = Image.new('RGBA', (W, H), YELLOW)
+    im = burst(YELLOW, DEEP, W, H, cx=0.5, cy=0.72)
     hs = heroes(); n = len(hs)
     for i, (cell, pack) in enumerate(hs):
         mid = abs(i - (n - 1) / 2) / ((n - 1) / 2)          # 0 centre .. 1 edge
