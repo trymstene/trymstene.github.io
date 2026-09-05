@@ -44,22 +44,91 @@ COLS, ROWS = 2, 3
 # A cell is either a gallery title (looked up), a raw outfit dict for a
 # wardrobe-only design, or ORIGINAL.
 ORIGINAL = {'_label': 'The Original', 'hat': 'none', 'glasses': 'none', 'extras': []}
+def catalog(label, *ids):
+    """A cell made of COMMUNITY items from the live catalog, by id."""
+    return {'_label': label, '_catalog': list(ids)}
+
+# --- the community-item channel, ported from the engine's `custom` branch ---
+# A catalog item stores its pixels in the Forge format: a palette-index grid,
+# base64 per frame, 33 shared colours + optional custom ones. The engine draws
+# frame 0's PAINTED BOX (trimmed to non-transparent cells) with its top-left at
+# the anchor point for the item's slot plus the (ox, oy) offset captured when
+# it was drawn, both in sprite units, scaled by `scale`. Mirrored here exactly:
+#   cw = bw*unit*s, ch = bh*unit*s, px = anchor.x*S + ox*unit, py = anchor.y*S + oy*unit
+import base64, json as _json, urllib.request
+FORGE_PALETTE = [None, '#111111', '#fffdf5', '#ffe135', '#f2c200', '#5a3618', '#e22020', '#ff4d6d',
+    '#ff9f1c', '#37d67a', '#39ff14', '#4db8ff', '#6c8cff', '#b388ff', '#ff2ec4', '#484848', '#d9a066',
+    '#ffdbac', '#c68642', '#8d5524', '#8e1600', '#7b1e3c', '#1d7a3c', '#0fb5ba', '#00e5ff', '#1e2a78',
+    '#6a1b9a', '#ffc1e3', '#a8e6cf', '#d4af37', '#556b2f', '#9e9e9e', '#bdbdbd']
+_CATALOG = None
+def catalog_item(cid):
+    global _CATALOG
+    if _CATALOG is None:
+        # ⚠️ a bare urllib User-Agent gets a 403 from the edge; curl and browsers do not
+        req = urllib.request.Request('https://share.trymstene.com/catalog/items.json',
+                                     headers={'User-Agent': 'trymstene-tools/1.0 (build-sticker-packs)'})
+        _CATALOG = {x['id']: x for x in _json.load(urllib.request.urlopen(req))}
+    return _CATALOG[cid]
+
+def forge_art(forge):
+    """frame 0 of a forge string -> (RGBA image of the painted box, bw, bh) in CELLS"""
+    d = _json.loads(forge[6:] if forge.startswith('forge:') else forge)
+    w, h = (d['w'], d['h']) if d.get('v') == 3 else (d['size'], d['size'])
+    pal = FORGE_PALETTE + [c for c in (d.get('cpal') or []) if isinstance(c, str)]
+    g = base64.b64decode(d['frames'][0])
+    cells = [(x, y, pal[g[y * w + x]]) for y in range(h) for x in range(w) if g[y * w + x] and g[y * w + x] < len(pal) and pal[g[y * w + x]]]
+    if not cells: return None, 0, 0
+    x0, x1 = min(c[0] for c in cells), max(c[0] for c in cells)
+    y0, y1 = min(c[1] for c in cells), max(c[1] for c in cells)
+    bw, bh = x1 - x0 + 1, y1 - y0 + 1
+    im = Image.new('RGBA', (bw, bh), (0, 0, 0, 0))
+    for x, y, col in cells:
+        im.putpixel((x - x0, y - y0), tuple(int(col[i:i + 2], 16) for i in (1, 3, 5)) + (255,))
+    return im, bw, bh
+
+def wear_anchor(idx, kind, hand=None):
+    F = br.FRAMES[idx]
+    if kind == 'face': return F['eyeCx'], F['eyeCy']
+    if kind in ('chest', 'body'): return F['btCx'], F['eyeCy']
+    if kind == 'feet': fx = F.get('feetX') or [br.FEET_CX - 71, br.FEET_CX + 71]; return (fx[0] + fx[1]) / 2, br.FEET_BOTTOM
+    if kind == 'hand': hnd = F['hands'][0 if hand == 'left' else 1]; return hnd[0], hnd[1]
+    return F['hatCx'], F['tipY']
+
+def render_catalog(idx, ids, scale):
+    """the dressed banana + community items, same canvas/pad as banana_render"""
+    im = br.render(idx, {}, scale=scale)
+    S = scale; unit = br.PX * S; pad = br.pad_for(scale)
+    for cid in ids:
+        wear = catalog_item(cid)['wear']
+        art, bw, bh = forge_art(wear['forge'])
+        if art is None: continue
+        s_ = wear.get('scale') or 1
+        cw, ch = max(1, int(round(bw * unit * s_))), max(1, int(round(bh * unit * s_)))
+        ax, ay = wear_anchor(idx, wear.get('anchor'), wear.get('hand'))
+        px = pad + ax * S + (wear.get('ox') or 0) * unit
+        py = pad + ay * S + (wear.get('oy') or 0) * unit
+        im.alpha_composite(art.resize((cw, ch), Image.NEAREST), (int(round(px)), int(round(py))))
+    return im
+
 def outfit(label, **o):
     return {'_label': label, 'hat': o.get('hat', 'none'), 'glasses': o.get('glasses', 'none'), 'extras': o.get('extras', [])}
 
 PACKS = {
     # one Giphy top-8 hero per pack, split pairs never share a sheet
     # (Captain/Eyepatch, Fishy/Fishbowl, Shades/Too Cool, the two coffees)
-    '1': [ORIGINAL, 'Bird Friend', 'Rubber Chicken', 'Googly Eyes', 'Sombrero', 'Cozy Scarf'],
+    '1': [ORIGINAL, 'Bird Friend', 'Rubber Chicken', 'Googly Eyes', outfit('Shades', glasses='shades'), 'Cozy Scarf'],
     '2': [ORIGINAL, 'Court Jester', 'Too Cool', 'Bunch of Balloons', 'Clown Shoes', 'Spa Day'],
     '3': [ORIGINAL, outfit('Bow Tie', extras=['bowtie']), 'Propeller Beanie', '3D Glasses', 'Good Egg', 'Cone of Shame'],
-    '4': [ORIGINAL, outfit('Party Hat', hat='party'), 'Winner Winner', 'Boombox', 'Banana Rights', 'We Did It, Grad'],
-    '5': [ORIGINAL, outfit('Glowstick', glasses='shades', extras=['glowstick']), outfit('Shades', glasses='shades'),
+    # Boombox WITHOUT the deal-with-it shades the gallery version wears (Trym, 5 Sep)
+    '4': [ORIGINAL, outfit('Party Hat', hat='party'), 'Winner Winner', outfit('Boombox', extras=['boombox']), 'Banana Rights', 'We Did It, Grad'],
+    # the Glowstick banana wears shades too, so a shades-only banana beside it read as a
+    # duplicate (Trym) -- Sombrero comes in from pack 1, Shades goes there
+    '5': [ORIGINAL, outfit('Glowstick', glasses='shades', extras=['glowstick']), 'Sombrero',
           'Little Devil', 'Fishbowl Head', 'Viking'],
     '6': [ORIGINAL, outfit('Crown', hat='crown'), outfit('Cowboy', hat='cowboy'),
           outfit('Top Hat & Monocle', hat='tophat', glasses='monocle'), 'Captain', 'But First, Coffee'],
     '7': [ORIGINAL, 'Arrow Through the Head', 'Who, Me?', "Something's Fishy", 'Eyepatch',
-          outfit('PINK - TBC', hat='none')],   # Trym's pink bow tie + pink shoes, identity to confirm
+          catalog('Pink Bow & Shoes', 'c_3e2d0938cb', 'c_3005fcb9e3')],   # by Tulip: Cute pink bow + Pink shoes
     '8': [ORIGINAL, 'Rent Is Due, Dance Is Free', 'Bills? Bananas.', 'Born to Dance, Forced to Work',
           'This Is Fine', '100% Ripe'],
 }
@@ -77,6 +146,8 @@ def gallery_outfit(params):
 
 def art_for(cell, scale):
     """RGBA art for one cell + its label. Costumes render; squares come from the GIF."""
+    if isinstance(cell, dict) and cell.get('_catalog'):
+        im = render_catalog(POSE, cell['_catalog'], scale); return im.crop(im.getbbox()), cell['_label']
     if isinstance(cell, dict):
         im = br.render(POSE, cell, scale=scale); return im.crop(im.getbbox()), cell['_label']
     e = BY_TITLE[_key(cell)]
