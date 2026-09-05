@@ -340,6 +340,8 @@ def main():
         sp.convert('RGB').save(os.path.join(MOCK, 'pack-%s-spread.png' % pack), optimize=True)
         total += save_webp(sp.convert('RGB'), os.path.join(OUT, 'pack-%s-spread.webp' % pack), lossy=True)
         total += save_webp(sp.convert('RGB').resize((600, 600), Image.BOX), os.path.join(OUT, 'pack-%s-card.webp' % pack), lossy=True)
+        # 240px for the slim carousel on the GIF page: eight of these must cost less than one card
+        total += save_webp(sp.convert('RGB').resize((240, 240), Image.BOX), os.path.join(OUT, 'pack-%s-thumb.webp' % pack), lossy=True)
         total += save_webp(sheet_on_white(pack).convert('RGB'), os.path.join(OUT, 'pack-%s-sheet.webp' % pack))
         entries = []
         for i, cell in enumerate(cells):

@@ -6,6 +6,7 @@ import LangSwitch from '../components/LangSwitch.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import ShopStrip from '../components/ShopStrip.astro';
 import PackGrid from '../components/PackGrid.astro';
+import PackCarousel from '../components/PackCarousel.astro';
 import remixes from '../data/remixes.json';
 
 // 🔍 THE SNIPPET IS THE WHOLE JOB HERE. This page is shown ~19,000 times a
@@ -112,25 +113,8 @@ const person = {
 
   <style>
     .hero__cta { margin-top: 1.1rem; }
-    /* the sticker moment — YELLOW so it reads as the offer, not another free link */
-    .sticker-offer {
-      display: flex; align-items: center; gap: 1.2rem;
-      max-width: 640px; margin: 1.1rem auto 0; padding: 1rem 1.2rem;
-      background: var(--banana); color: var(--ink);
-      border: var(--line); box-shadow: var(--shadow);
-      text-decoration: none; transition: transform 0.12s ease, box-shadow 0.12s ease;
-    }
-    .sticker-offer:hover, .sticker-offer:focus-visible { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #000; }
-    .sticker-offer img { width: 116px; height: auto; flex: none; }
-    .sticker-offer__copy { display: flex; flex-direction: column; align-items: flex-start; }
-    .sticker-offer__k { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; }
-    .sticker-offer__h { font-size: 1.12rem; font-weight: 800; margin: 0.15rem 0 0.3rem; line-height: 1.2; }
-    .sticker-offer__p { font-weight: 700; margin-bottom: 0.7rem; }
-    .sticker-offer__btn { pointer-events: none; }
-    @media (max-width: 560px) {
-      .sticker-offer { flex-direction: column; text-align: center; }
-      .sticker-offer__copy { align-items: center; }
-    }
+    /* the sticker moment in the hub: the same slim carousel as the hero, centred */
+    .hub-packs { max-width: 560px; margin: 1.4rem auto 0; }
     /* the tip steps back — it shares the sticker's emotion at 1/30th the value */
     .dl-tip { font-size: 0.9rem; opacity: 0.7; }
     /* the formats line under the download buttons */
@@ -161,6 +145,9 @@ const person = {
           <a class="btn btn--light" href="/assets/dancing-banana-transparent.gif" download="dancing-banana-transparent-trymstene.com.gif">Transparent ↓</a>
         </div>
         <p class="gifhero__note">No sign-up, no watermark. <a href="#download">Every format ↓</a></p>
+        {/* 🎟 the one ask above the fold: a slim rotating pack under the free
+            buttons, never above them — the download stays the page's job */}
+        <div class="gifhero__packs"><PackCarousel place="gif_hero" /></div>
       </div>
     </div>
   </section>
@@ -177,7 +164,9 @@ const person = {
     .gifhero__h1 { text-align: left; margin: 0.1rem 0 0.4rem; }
     .gifhero__dl { justify-content: flex-start; margin-top: 1rem; }
     .gifhero__note { font-size: 0.86rem; opacity: 0.7; margin: 0.7rem 0 0; }
+    .gifhero__packs { margin-top: 1.2rem; }
     @media (max-width: 640px) {
+      .gifhero__packs { text-align: left; }
       /* on a phone the banana leads and the ask follows — same order as before,
          just without a screenful of air between them */
       .gifhero__in { flex-direction: column; text-align: center; }
@@ -198,6 +187,7 @@ const person = {
 
     <nav class="jumpnav" aria-label="On this page">
       <a href="#download"><PixelIcon name="download" /> Download</a>
+      <a href="#sticker-packs">Sticker packs</a>
       <a href="#story">The story</a>
       <a href="/make-a-banana/" data-place="hub_jumpnav"><PixelIcon name="palette" /> Make your own</a>
       <a href="#remixes"><PixelIcon name="banana" /> Community remixes</a>
@@ -226,20 +216,14 @@ const person = {
       see-through background, so it drops onto any colour. All free, no signup, no watermark.
     </p>
 
-    <!-- the sticker moment: the product, right where the traffic actually is -->
-    <a class="sticker-offer" href="/make-a-banana/" data-place="hub_sticker">
-      <img src="/assets/custom-banana-sticker-product.png" width="300" height="300" alt="A custom dancing banana printed as a real vinyl sticker" loading="lazy">
-      <span class="sticker-offer__copy">
-        <span class="sticker-offer__k">Take one home for real</span>
-        <span class="sticker-offer__h">Your banana, on a real vinyl sticker</span>
-        <span class="sticker-offer__p"><strong>from $4.99</strong> · ships worldwide</span>
-        <span class="btn btn--dark sticker-offer__btn">Make &amp; order yours →</span>
-      </span>
-    </a>
+    {/* 🎟 the sticker moment, right where the traffic is. This slot held the
+        custom-sticker card for a month: 3 merch clicks from 467 people. The
+        packs ARE these bananas, so the rotating pack takes the slot. */}
+    <div class="hub-packs"><PackCarousel place="gif_hub" kicker="Take them home" /></div>
 
     <p class="dl-door">It's yours <PixelIcon name="banana" /> — and it can also wear a hat. <a href="/make-a-banana/" data-place="post-dl-hub">Dress your own →</a></p>
 
-    <ShopStrip place="gif_hub" heading="Or skip the design step" />
+    <ShopStrip place="gif_hub" heading="The tee, the mug, the poster" />
 
 
     <p class="lead" style="margin-top:1.5rem;">

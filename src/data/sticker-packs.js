@@ -39,6 +39,7 @@ export const HEROES = STICKER_PACKS.map((p) => p.hero);
 export const stickerSrc = (slug) => `/assets/packs/stickers/${slug}.webp`;   // one kiss-cut sticker, transparent
 export const packSpread = (n) => `/assets/packs/pack-${n}-spread.webp`;     // 1200², the PDP's first picture
 export const packCard = (n) => `/assets/packs/pack-${n}-card.webp`;         // 600², the grids
+export const packThumb = (n) => `/assets/packs/pack-${n}-thumb.webp`;       // 240², the slim carousel
 export const packSheet = (n) => `/assets/packs/pack-${n}-sheet.webp`;       // the A5 as it prints
 
 // Which pack a Shopify product is. Shopify builds the handle from the title
