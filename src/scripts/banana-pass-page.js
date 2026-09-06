@@ -1046,6 +1046,7 @@ function initTabs() {
 async function citizenLine() {
   const line = el('psWeek');
   if (!line) return;
+  const txt = el('psWeekTxt') || line;
   let gid = '';
   try { gid = localStorage.getItem('world-gid') || ''; } catch (e) {}
   if (!gid) return;
@@ -1065,18 +1066,18 @@ async function citizenLine() {
     if (ci >= 0) mine.unshift({ p: 'citizen', i: ci });
     if (!mine.length) return;
     const ord = ['1st', '2nd', '3rd'];
-    line.textContent = '';
+    txt.textContent = '';
     const b = document.createElement('b');
-    b.textContent = '🏆 This week you are ' + mine.map((m) => ord[m.i] + ' for ' + TITLES[m.p]).join(', ') + '.';
-    line.appendChild(b);
+    b.textContent = 'This week you are ' + mine.map((m) => ord[m.i] + ' for ' + TITLES[m.p]).join(', ') + '.';
+    txt.appendChild(b);
     if (!loggedIn()) {
-      line.appendChild(document.createTextNode(' A plaque goes to a kept pass — '));
+      txt.appendChild(document.createTextNode(' A plaque goes to a kept pass — '));
       const a = document.createElement('a');
       a.href = '#';
       a.textContent = 'log in to claim it';
       a.addEventListener('click', (ev) => { ev.preventDefault(); const k = el('psKeep'); if (k) { k.open = true; k.scrollIntoView({ block: 'center' }); } const inp = el('psMailIn'); if (inp) setTimeout(() => inp.focus(), 250); if (window.gtag) window.gtag('event', 'citizens_keep', { via: 'pass' }); });
-      line.appendChild(a);
-      line.appendChild(document.createTextNode('.'));
+      txt.appendChild(a);
+      txt.appendChild(document.createTextNode('.'));
     }
     line.hidden = false;
   } catch (e) {}
