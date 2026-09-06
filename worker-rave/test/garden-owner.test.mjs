@@ -117,7 +117,7 @@ console.log('6. yards');
 const yard = new YardRoom(fakeState(), { MEMBER_HMAC: HMAC });
 const yp = (path, body) => yard.fetch(new Request('https://room' + path, { method: 'POST', body: JSON.stringify(body) }))
   .then(async (r2) => ({ status: r2.status, ...(await r2.json()) }));
-r = await yp('/claim', { name: 'Testy Yard', pass: P, alt: S, wt: await wt(P) });
+r = await yp('/claim', { name: 'Jade Yard', pass: P, alt: S, wt: await wt(P) });
 ok('a proven person claims', r.status === 200 && !!r.slug, r);
 const slug = r.slug;
 r = await yp('/save', { state: { stage: 1, items: [] }, pass: P, alt: S, wt: 'wrong' });

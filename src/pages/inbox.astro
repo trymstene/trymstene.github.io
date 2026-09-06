@@ -866,6 +866,7 @@ const description = 'Authorized banana personnel only.';
         <p class="bm-devnote" id="bmDevMode" hidden>🔒 read-only — set the GitHub key on worker-contact to approve from here</p>
         <div class="bm-worldcards bm-devcards">
           <div class="bm-worldcard"><b id="bmDevDeploy">–</b><span>🚀 last deploy</span></div>
+          <div class="bm-worldcard"><b id="bmDevProof">–</b><span>📱📱 two-device proof</span></div>
           <div class="bm-worldcard"><b id="bmDevQueueN">–</b><span>📋 on the desk</span></div>
           <div class="bm-worldcard"><b id="bmDevPrN">–</b><span>🔧 in flight</span></div>
         </div>
@@ -1536,6 +1537,13 @@ const description = 'Authorized banana personnel only.';
         const r0 = (runs.workflow_runs || [])[0];
         put('bmDevDeploy', r0 ? ((r0.conclusion === 'success' ? '✅' : r0.status !== 'completed' ? '⏳' : '❌') + ' ' + devAgo(r0.updated_at)) : '—');
       } catch (e) { put('bmDevDeploy', '?'); }
+      // 📱📱 the nightly two-device proof (.github/workflows/proof.yml): a phone
+      // plays and adds an email, a second phone logs in and must see it all
+      try {
+        const pr = await (await fetch(GH_API + '/actions/workflows/proof.yml/runs?per_page=1')).json();
+        const p0 = (pr.workflow_runs || [])[0];
+        put('bmDevProof', p0 ? ((p0.conclusion === 'success' ? '✅' : p0.status !== 'completed' ? '⏳' : '❌') + ' ' + devAgo(p0.updated_at)) : '—');
+      } catch (e) { put('bmDevProof', '?'); }
       try {
         const issues = (await (await fetch(GH_API + '/issues?state=open&per_page=30')).json())
           .filter((x) => !x.pull_request);

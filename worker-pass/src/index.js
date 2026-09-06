@@ -56,6 +56,8 @@ export default {
       if (url.pathname === '/push') return push(request, env);
       if (url.pathname === '/pull') return pull(request, env, url);
       if (url.pathname === '/anon') return anon(request, env);
+      if (url.pathname === '/qa/ticket') return qaTicket(request, env);
+      if (url.pathname === '/qa/erase') return qaErase(request, env);
       if (url.pathname === '/admin/ledger') return adminLedger(request, env, url);
       if (url.pathname === '/admin/find') return adminFind(request, env);
       if (url.pathname === '/admin/grant') return adminGrant(request, env);
@@ -940,7 +942,7 @@ function blankRoll(day) {
 // tells us this person can get back in. Everything else reads the primary.
 function foldRoll(acc, rec, today) {
   acc.scanned++;
-  if (!rec) return;
+  if (!rec || rec.qa) return;   // 🧪 the nightly proof's person is not a player
   if (rec.link) { if (rec.alg === 'mail' || rec.mail) acc.mailCreds++; return; }
   acc.passes++;
   if (rec.anon) acc.anon++;
@@ -1051,7 +1053,7 @@ async function adminScan(env) {
   }
   const rows = [];
   for (const [k, rec] of recs) {
-    if (!rec || rec.link) continue;              // one row per PASS, not per credential
+    if (!rec || rec.link || rec.qa) continue;    // one row per PASS, not per credential; never the proof's
     const blob = rec.blob || {};
     const p = blob.pass || {};
     const stats = statsOf(p);        // totals, not the frozen scalars
@@ -1692,6 +1694,66 @@ async function foldAnon(env, R, fromCredId, fromToken) {
   } catch (e) { return false; }
 }
 
+// ---------- 🧪 THE QA LOGIN DOOR (6 Sep 2026 — the two-device proof) ----------
+// The nightly proof (tests/two-devices.spec.mjs) plays as a fresh phone, adds
+// an email, and logs in on a second phone — the real journey on the real
+// workers. A real ticket needs an inbox, so this door mints the SAME ticket
+// /mail/signin would, for an identity that can never be an address ('qa:<who>'
+// has no @, so it collides with no player), under QA_KEY — a secret; unset =
+// 404, deny-as-nothing like the desk. Every home a QA ticket opens is stamped
+// `qa: 1`: the rollup and the ledger skip it, and /qa/erase can only ever
+// delete a stamped home — by QA_KEY + who (a crashed run's leftovers) or by the
+// person's own credential.
+const QA_WHO = /^[a-z0-9-]{1,48}$/;
+const qaOk = (env, key) => {
+  const want = String(env.QA_KEY || '').trim();
+  return !!(want && String(key || '').trim() === want);
+};
+const qaKeyFor = async (who) => 'm' + (await sha256Hex('qa:' + who));
+async function qaTicket(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b = {};
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  if (!qaOk(env, b && b.key)) return notFound();
+  const who = String((b && b.who) || '');
+  if (!QA_WHO.test(who)) return json({ error: 'bad who' }, 400, cors(env, request));
+  const tok = bufToHex(crypto.getRandomValues(new Uint8Array(32)));
+  const exp = Date.now() + MAIL_TTL;
+  await env.PASSES.put(`mailtkt/${await sha256Hex(tok)}.json`,
+    JSON.stringify({ k: await qaKeyFor(who), exp, qa: 1 }),
+    { httpMetadata: { contentType: 'application/json' } });
+  return json({ ok: true, t: tok, exp }, 200, cors(env, request));
+}
+async function qaErase(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b = {};
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  let R = null, mailKey = '';
+  if (b && b.who !== undefined) {
+    if (!qaOk(env, b.key)) return notFound();
+    const who = String(b.who || '');
+    if (!QA_WHO.test(who)) return json({ error: 'bad who' }, 400, cors(env, request));
+    mailKey = await qaKeyFor(who);
+    R = await resolve(env, 'm:' + mailKey);
+  } else {
+    R = await tokenRec(env, b && b.credId, b && b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+  }
+  let gone = 0;
+  if (R && R.home && R.home.qa) {
+    for (const k of new Set([R.ownKey, R.homeKey])) { await env.PASSES.delete(`pass/${k}.json`); gone++; }
+  } else if (R) {
+    return json({ error: 'not a qa pass' }, 403, cors(env, request));
+  }
+  if (mailKey && !gone) {   // a stamped pointer whose home is already gone
+    const rec = await loadKey(env, mailKey);
+    if (rec && rec.qa) { await env.PASSES.delete(`pass/${mailKey}.json`); gone++; }
+  }
+  return json({ ok: true, gone }, 200, cors(env, request));
+}
+
 // ---------- POST /register ----------
 async function register(request, env) {
   const bad = guard(env, request);
@@ -1998,9 +2060,11 @@ async function mailUse(request, env, url) {
       rec = { mail: 1, tokens: {}, blob: null };           // a brand-new pass
     }
   }
+  if (ticket.qa) rec.qa = 1;   // 🧪 a proof ticket stamps what it opens (see qaTicket)
   const token = await mintToken(rec);
   await saveKey(env, key, rec);
   const R = await resolve(env, credId);
+  if (ticket.qa && R && R.home && !R.home.qa) { R.home.qa = 1; await saveKey(env, R.homeKey, R.home); }
   // 🫧 a KNOWN address arriving on a device that holds an anonymous pass:
   // that world folds into this one (see foldAnon) instead of being left behind
   const folded = !attached && R && R.home

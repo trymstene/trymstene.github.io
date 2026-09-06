@@ -2806,6 +2806,35 @@ export class YardRoom {
       return json({ slug });
     }
 
+    // 🧪 QA ERASE (6 Sep 2026 — the two-device proof cleans up after itself):
+    // the PROVEN owner of a `testy-proof-…` yard may delete it — the doc, every
+    // pointer at it, its alias docs, its guestbook/visit rows, its index entry
+    // — and any `testy-proof-…` yard older than two days goes with it (a run
+    // that crashed before its own cleanup). Only that slug family, ever.
+    if (path === '/qa-erase' && request.method === 'POST') {
+      if (!proven) return json({ err: 'token' }, 401);
+      const QA_SLUG = /^testy-proof-/;
+      const mine = await this.ownSlug(pass, alt, aliases);
+      const targets = new Set();
+      if (mine && QA_SLUG.test(mine)) targets.add(mine);
+      const all = await this.state.storage.list({ prefix: 'y:' });
+      for (const [k, doc] of all) {
+        const slug = k.slice(2);
+        if (QA_SLUG.test(slug) && doc && !doc.alias && Date.now() - (doc.updated || doc.created || 0) > 2 * 86400000) targets.add(slug);
+      }
+      if (!targets.size) return json({ ok: 1, gone: [] });
+      const owners = await this.state.storage.list({ prefix: 'own:' });
+      for (const slug of targets) {
+        await this.state.storage.delete('y:' + slug);
+        for (const [k, v] of owners) if (v === slug) await this.state.storage.delete(k);
+        for (const [k, doc] of all) if (doc && doc.alias === slug) await this.state.storage.delete(k);
+        for (const p of ['g:', 'wat:', 'vis:', 'hug:', 'fed:', 'seen:']) await this.state.storage.delete(p + slug);
+      }
+      const idx = ((await this.state.storage.get('index')) || []).filter((e) => !targets.has(e.slug));
+      await this.state.storage.put('index', idx);
+      return json({ ok: 1, gone: [...targets] });
+    }
+
     // 🪧 RENAME (admin, ?key=YARD_ADMIN secret): move a yard to a new
     // address and leave a forwarding alias behind. The old doc becomes
     // { alias }, every 'own:' pointer at the old slug is re-aimed, the
@@ -2911,7 +2940,9 @@ export class YardRoom {
       // 🌍 THE CENSUS — every field is already in hand, so this is arithmetic
       // inside a loop that was running anyway. QA yards are excluded the same
       // way the headline numbers exclude them, or Trym's own tests read as a boom.
-      const qa0 = (slug) => /^testy(-\d+)?$/.test(slug || '') || slug === 'trym';
+      // every testy-* slug is QA: the walk mints testy-final-2, testy-polaroid…,
+      // the proof mints testy-proof-<stamp> (widened 6 Sep 2026)
+      const qa0 = (slug) => /^testy(-|$)/.test(slug || '') || slug === 'trym';
       const census = { stage: [0, 0, 0, 0], animals: 0, withAnimals: 0, grass: 0, memory: 0,
         named: 0, fenced: 0, planted: 0, decor: 0, indoors: 0, fedToday: 0,
         social: { visits: 0, signs: 0, waters: 0, hugs: 0, feeds: 0 } };

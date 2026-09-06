@@ -1,0 +1,61 @@
+name: Two-device proof
+
+# 📱📱 THE PROOF (6 Sep 2026; Trym: "a user, across devices, always is the same
+# user … AS LONG AS it actually saves PERFECT"): phone A arrives fresh, gets its
+# anonymous pass, claims a homestead, names itself and adds an email; phone B
+# logs in with that email and must see all of it; B renames the sign and A
+# must see that. The real player journey against the REAL workers — nothing
+# stubbed. Every push to main (the pushed client against the live workers),
+# every night after the walk, and by hand.
+# ⚠️ It needs the pass worker's QA key as the repository secret QA_KEY. Without
+# it the job FAILS on purpose: a proof that quietly does not run is the exact
+# "something" this exists to remove.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '4 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proof
+  cancel-in-progress: false
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: The proof — phone A plays and adds an email, phone B logs in and sees it all
+        env:
+          QA_KEY: ${{ secrets.QA_KEY }}
+        run: |
+          if [ -z "$QA_KEY" ]; then
+            echo "::error title=the proof cannot run::QA_KEY is not set. Add the pass worker's QA key as a repository secret named QA_KEY (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          npx playwright test --config playwright.proof.config.mjs
+      - name: Keep the proof's screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proof-screenshots
+          path: test-results/proof/
+          if-no-files-found: ignore
+          retention-days: 14
