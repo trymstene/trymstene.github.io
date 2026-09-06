@@ -50,7 +50,8 @@ const slides = STICKER_PACKS.map((p) => ({ ...p, href: have[p.n] ? `/shop/${have
 </div>
 
 <style>
-  .pkc { position: relative; max-width: min(560px, 100%); text-align: left; }
+  /* --pkc-max: a page can widen the tile to its own column (the GIF hero does) */
+  .pkc { position: relative; max-width: var(--pkc-max, min(560px, 100%)); text-align: left; }
   /* the track: one slide per screen, native swipe, no scrollbar.
      ⚠️ contain: inline-size — eight 100%-wide slides otherwise give the track an
      intrinsic width of eight screens, and a shrink-to-fit parent (the phone hero,

@@ -160,11 +160,16 @@ const person = {
       justify-content: center;
     }
     .gifhero__nana { width: min(38vw, 260px); margin: 0; flex: 0 0 auto; }
-    .gifhero__say { flex: 1 1 320px; min-width: 0; }
+    /* ONE column width on the right (Trym, 6 Sep: the buttons ran wide, the pack
+       tile sat narrower, the title wrapped at its own width — three edges).
+       640px fits "the dancing" at the title's 6rem cap, the two buttons fill it,
+       and the pack tile grows to the same edge. */
+    .gifhero__say { flex: 0 1 640px; max-width: 640px; min-width: 0; }
     .gifhero__h1 { text-align: left; margin: 0.1rem 0 0.4rem; }
     .gifhero__dl { justify-content: flex-start; margin-top: 1rem; }
     .gifhero__note { font-size: 0.86rem; opacity: 0.7; margin: 0.7rem 0 0; }
     .gifhero__packs { margin-top: 1.2rem; }
+    .gifhero__packs { --pkc-max: 100%; }   /* the tile takes the column's own width */
     @media (max-width: 640px) {
       .gifhero__packs { text-align: left; }
       /* on a phone the banana leads and the ask follows — same order as before,
