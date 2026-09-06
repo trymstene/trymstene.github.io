@@ -401,6 +401,7 @@ async function writeJson(env, key, v) {
 // client-writable on push, and the one thing a cancel button must not accept is
 // a subscription id chosen by the browser asking for the cancellation.
 async function deliverGrant(env, emailHash, grant, polar) {
+  return retrying(async () => {
   const mailKey = 'm' + emailHash;
   const rec = await loadKey(env, mailKey);
   if (!rec) return false;
@@ -411,6 +412,7 @@ async function deliverGrant(env, emailHash, grant, polar) {
   if (polar && polar.sub) home.polar = { ...(home.polar || {}), ...polar, at: Date.now() };
   await saveKey(env, homeKey, home);
   return true;
+  });
 }
 async function kofiHook(request, env) {
   if (request.method !== 'POST') return json({ error: 'not found' }, 404);
@@ -528,6 +530,7 @@ async function payManage(request, env) {
   const act = String(b.act || 'status');
   if (!MANAGE_ACTS.includes(act)) return out({ error: 'bad act' }, 400);
 
+  return retrying(async () => {
   const R = await tokenRec(env, b.credId, b.token);
   if (!R) return out({ error: 'not linked' }, 403);
   let P = (R.home && R.home.polar) || {};
@@ -614,6 +617,7 @@ async function payManage(request, env) {
       product: String((d.product || {}).name || ''),
     });
   } catch (e) { return out({ error: 'polar down' }, 502); }
+  });
 }
 
 // ☕ A ONE-OFF, IN ONE TAP. The amount is chosen on our own page and carried
@@ -799,18 +803,48 @@ async function keyFor(credId) {
   const c = String(credId || '');
   return c.startsWith('m:') ? c.slice(2) : await sha256Hex(c);
 }
+// ---------- ⚔️ CONDITIONAL WRITES (6 Sep 2026) ----------
+// Two devices pushing at the same instant used to read the same record, merge
+// on their own, and the second put overwrote the first — an append lost, the
+// one known way a coin event could vanish (the seen-ring ack only hid it).
+// Now every record read remembers its R2 etag under a Symbol (never
+// serialised, never spread), saveKey writes ONLY IF that etag still matches,
+// a mismatch throws Conflict, and every read-modify-write handler runs inside
+// retrying(): re-read, re-merge, re-save. The tape dedupes by event id, so
+// re-applying a push against a fresher record is safe.
+// ⚠️ a record built by hand (a pointer, a fresh mint) carries no etag and
+// writes unconditionally — `inherit()` hands one over when it REPLACES a
+// record that was read (foldAnon's pointer).
+const ETAG = Symbol('r2-etag');
+class Conflict extends Error {}
+function remember(rec, obj) {
+  if (rec && obj && typeof obj === 'object' && typeof obj.etag === 'string') {
+    Object.defineProperty(rec, ETAG, { value: obj.etag, enumerable: false, configurable: true, writable: true });
+  }
+  return rec;
+}
+function inherit(rec, from) { if (from && from[ETAG]) remember(rec, { etag: from[ETAG] }); return rec; }
+async function retrying(fn, tries = 5) {
+  for (let k = 0; ; k++) {
+    try { return await fn(); } catch (e) { if (!(e instanceof Conflict) || k >= tries - 1) throw e; }
+  }
+}
 async function loadRec(env, credId) {
   const obj = await env.PASSES.get(`pass/${await keyFor(credId)}.json`);
-  return obj ? await obj.json() : null;
+  return obj ? remember(await obj.json(), obj) : null;
 }
 async function loadKey(env, key) {
   const obj = await env.PASSES.get(`pass/${key}.json`);
-  return obj ? await obj.json() : null;
+  return obj ? remember(await obj.json(), obj) : null;
 }
 async function saveKey(env, key, rec) {
   rec.updated = Date.now();
-  await env.PASSES.put(`pass/${key}.json`, JSON.stringify(rec),
-    { httpMetadata: { contentType: 'application/json' } });
+  const etag = rec[ETAG];
+  const res = await env.PASSES.put(`pass/${key}.json`, JSON.stringify(rec),
+    { httpMetadata: { contentType: 'application/json' }, ...(etag ? { onlyIf: { etagMatches: etag } } : {}) });
+  if (res === null) throw new Conflict(key);
+  remember(rec, res);
+  return res;
 }
 
 // ⭐ ONE PASS, SEVERAL PASSKEYS. A record is either a PRIMARY (it holds the
@@ -1240,7 +1274,8 @@ async function adminGrant(request, env) {
   if (!adminOk(env, (b && b.key) || '')) return notFound();
   const k = await adminKeyFor(env, b.id);
   if (!k) return json({ error: 'no such pass' }, 404, cors(env, request));
-  const rec = await (await env.PASSES.get(k)).json();
+  return retrying(async () => {
+  const rec = await loadKey(env, k.slice(5, -5));
   if (!rec || rec.link) return json({ error: 'not a primary' }, 409, cors(env, request));
 
   const n = (v) => Math.min(GRANT_CAP, Math.max(0, Math.floor(Number(v) || 0)));
@@ -1287,13 +1322,13 @@ async function adminGrant(request, env) {
   // the record's stats MIRROR must agree with base + slots at once — a stale
   // mirror made every desk grant look lost until the player's next push
   p.stats = statsOf(p);
-  await env.PASSES.put(k, JSON.stringify({ ...rec, updated: Date.now() }),
-    { httpMetadata: { contentType: 'application/json' } });
+  await saveKey(env, k.slice(5, -5), rec);
   await adminNote(env, 'grant', k.slice(5, 13), did.join(', '));
   const coins = rec.wallet ? walletBal(rec.wallet)
     : Math.max(0, statTotal(p, 'coins_earned') + statTotal(p, 'coins_refunded') - statTotal(p, 'coins_spent'));
   return json({ ok: true, did, coins, rep: statTotal(p, 'rep'), jelly: statTotal(p, 'jelly') },
     200, cors(env, request));
+  });
 }
 
 // POST /admin/erase { key, id, confirm } → the pass and every credential for it
@@ -1349,10 +1384,7 @@ async function adminErase(request, env) {
 }
 
 async function saveRec(env, credId, rec) {
-  rec.updated = Date.now();
-  await env.PASSES.put(`pass/${await keyFor(credId)}.json`, JSON.stringify(rec), {
-    httpMetadata: { contentType: 'application/json' },
-  });
+  return saveKey(env, await keyFor(credId), rec);
 }
 async function mintToken(rec) {
   const token = bufToHex(crypto.getRandomValues(new Uint8Array(24)));
@@ -1761,7 +1793,7 @@ async function foldAnon(env, R, fromCredId, fromToken) {
     if (F.home.ownAuth) R.home.ownAuth = [...new Set([...(R.home.ownAuth || []), ...F.home.ownAuth])];
     const gid = await worldGid(env, F.homeKey);
     R.home.aliases = [...new Set([...(R.home.aliases || []), gid])].slice(-8);
-    const ptr = { tokens: F.home.tokens || {}, link: R.homeKey, folded: Date.now() };
+    const ptr = inherit({ tokens: F.home.tokens || {}, link: R.homeKey, folded: Date.now() }, F.home);
     await saveKey(env, F.homeKey, ptr);
     return true;
   } catch (e) { return false; }
@@ -1841,6 +1873,7 @@ async function register(request, env) {
   if (!(await challengeOk(env, clientDataJSON))) return json({ error: 'stale challenge' }, 400, cors(env, request));
   if (blob && !blobOk(blob)) return json({ error: 'blob too large' }, 413, cors(env, request));
 
+  return retrying(async () => {
   const existing = await loadRec(env, credId);
   if (existing && existing.pk !== pk) return json({ error: 'credential exists' }, 409, cors(env, request));
   // ⚠️ RE-REGISTERING AN ALREADY-LINKED DEVICE must merge into its HOME, not
@@ -1877,6 +1910,7 @@ async function register(request, env) {
   const token = await mintToken(rec);
   await saveRec(env, credId, rec);
   return json({ token }, 200, cors(env, request));
+  });
 }
 
 // ---------- POST /assert — link another device ----------
@@ -1889,6 +1923,7 @@ async function assert_(request, env) {
   if (!credId || !clientDataJSON || !authenticatorData || !signature) return json({ error: 'bad assert' }, 400, cors(env, request));
   if (!(await challengeOk(env, clientDataJSON))) return json({ error: 'stale challenge' }, 400, cors(env, request));
 
+  return retrying(async () => {
   const R = await resolve(env, credId);
   if (!R) return json({ error: 'unknown pass' }, 404, cors(env, request));
   const rec = R.own;                       // ← the KEY is always the credential's own
@@ -1922,6 +1957,7 @@ async function assert_(request, env) {
   await saveKey(env, R.ownKey, rec);
   if (R.homeKey !== R.ownKey || folded) await saveKey(env, R.homeKey, R.home);
   return json({ token, blob: R.home.blob, folded, ...(await identityOf(env, R)) }, 200, cors(env, request));
+  });
 }
 
 // WebAuthn ECDSA signatures are DER; WebCrypto wants raw r||s (32+32)
@@ -2121,6 +2157,7 @@ async function mailUse(request, env, url) {
   // somebody's inbox still work, and removable once they have all expired
   const key = ticket.k || (ticket.email ? 'm' + (await sha256Hex(ticket.email)) : '');
   if (!key) return json({ error: 'bad link' }, 400, cors(env, request));
+  return retrying(async () => {
   const credId = 'm:' + key;
   let rec = await loadKey(env, key);
   let attached = false;
@@ -2162,6 +2199,7 @@ async function mailUse(request, env, url) {
   return json({ credId, token, attached, folded, blob: blobOut,
     ...(R ? await identityOf(env, R) : { memberToken: await mintMemberToken(env, (blobOut || {}).member) }) },
     200, cors(env, request));
+  });
 }
 
 // ---------- 📣 THE NEWS LIST — a SECOND rail, never the login one ----------
@@ -2333,6 +2371,7 @@ async function linkFinish(request, env) {
   const ticket = await obj.json();
   await env.PASSES.delete(ticketKey);                       // single use, always
   if (!ticket || ticket.exp < Date.now()) return json({ error: 'code expired' }, 410, cors(env, request));
+  return retrying(async () => {
   const home = await loadKey(env, ticket.home);
   if (!home || home.link) return json({ error: 'bad code' }, 404, cors(env, request));
 
@@ -2349,6 +2388,7 @@ async function linkFinish(request, env) {
   const folded = await foldAnon(env, R, b.fromCredId, b.fromToken);
   if (folded) await saveKey(env, ticket.home, home);
   return json({ token, blob: home.blob, folded, ...(await identityOf(env, R)) }, 200, cors(env, request));
+  });
 }
 
 // ---------- token-auth sync (no biometrics day-to-day) ----------
@@ -2365,6 +2405,7 @@ async function push(request, env) {
   if (bad) return bad;
   let b;
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  return retrying(async () => {
   const R = await tokenRec(env, b.credId, b.token);
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
   // 🚨 a blob over the cap is 413, not 400: the phone shrinks and pushes again
@@ -2387,6 +2428,7 @@ async function push(request, env) {
   log.nak = [...kept, ...fresh.filter((x) => !ids.has(x.id))].filter((x) => !done.has(x.id)).slice(-20);
   await saveKey(env, R.homeKey, R.home);
   return json({ ok: true, ...(await identityOf(env, R)) }, 200, cors(env, request));
+  });
 }
 
 async function pull(request, env, url) {

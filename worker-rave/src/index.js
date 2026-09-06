@@ -548,6 +548,9 @@ function dirty(s) {
 
 // strike-list matching key: lowercase, de-accent, de-leet, letters only —
 // so a struck fragment catches respellings of the same stunt
+// 🧪 QA phones (the two-device proof names its pass "Proofy <hhmm>", the walks
+// "Testy …") never reach the Names desk or its ledger
+const QA_NAME = /^(testy|proofy)\b/i;
 function normName(s) {
   let b = String(s || '').toLowerCase();
   try { b = b.normalize('NFD').replace(F_MARKS, ''); } catch (e) {}
@@ -632,11 +635,12 @@ export class RaveRoom {
         return new Response(JSON.stringify({ ok: true, strikes: next }));
       }
       const seen = (await this.state.storage.get('namesBySid')) || {};
-      const names = Object.values(seen).sort((a, b) => b.at - a.at).map((u) => ({
+      // 🧪 the nightly proof's phones name themselves Proofy/Testy — not people
+      const names = Object.values(seen).filter((u) => !QA_NAME.test(u.name || '')).sort((a, b) => b.at - a.at).map((u) => ({
         n: u.name, at: u.at, count: u.n || 1,
         vars: (u.vars || []).filter((v) => normName(v) !== normName(u.name)).slice(0, 5),
       }));
-      const live = this.roster().filter((a) => a.name).map((a) => a.name);
+      const live = this.roster().filter((a) => a.name && !QA_NAME.test(a.name)).map((a) => a.name);
       return new Response(JSON.stringify({ live, names, strikes }));
     }
     // internal (park + beach report every name they see here, so the Banana HQ
@@ -980,7 +984,7 @@ export class RaveRoom {
   // they've worn, and the recent variations (a name-cycler is a moderation
   // signal, and the previous names still get a look). Capped to 300 visitors.
   async recordName(sid, name) {
-    if (!sid || !name) return;
+    if (!sid || !name || QA_NAME.test(name)) return;   // the proof's phones are not people
     try {
       const seen = (await this.state.storage.get('namesBySid')) || {};
       const cur = seen[sid] || { name: '', at: 0, n: 0, vars: [] };
