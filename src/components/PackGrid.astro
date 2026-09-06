@@ -23,7 +23,7 @@ export interface Props {
   tone?: 'light' | 'yellow';
   deal?: boolean;      // the loud set-deal band under the heading (the shop)
 }
-const { place = 'grid', id = 'sticker-packs', kicker = 'Series 1', heading = 'Sticker packs',
+const { place = 'grid', id = 'sticker-packs', kicker = 'Official stickers', heading = 'Sticker packs',
         lead, fan = false, current = 0, tone = 'light', deal = false } = Astro.props;
 
 // a shop hiccup must never take a content page down with it
@@ -52,14 +52,14 @@ const have = packProducts([...products, ...previewPacks(products)]);
             <p class="pk-card__names">{p.names.join(' · ')}</p>
             <div class="pk-card__foot">
               <span class="price-tag price-tag--sm">{money(prod ? prod.pmin : PACK_PRICE, 'USD')}</span>
-              <span class="pk-card__cta">{prod ? (current === p.n ? 'This one' : 'View →') : 'Soon'}</span>
+              <span class="pk-card__cta">{prod ? (current === p.n ? 'This one' : 'See the pack →') : 'Soon'}</span>
             </div>
           </div>
         </Tag>
       );
     })}
   </div>
-  <p class="pkgrid__note">The Original is in every pack · six kiss-cut vinyl stickers on one A5 sheet</p>
+  <p class="pkgrid__note">The classic dancing banana is in every pack · six stickers on one sheet, about 5–6 cm each</p>
   <PackDeal variant="line" place={place + '_grid'} />
 </section>
 

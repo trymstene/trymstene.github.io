@@ -156,7 +156,7 @@ const breadcrumbSchema = {
     <div class="pdp__info">
       <h1>{m.title}</h1>
       <p class="pdp__tag">{pack
-        ? 'Six kiss-cut vinyl stickers, about 5–6 cm each, on one A5 sheet — five you won\'t find anywhere else, plus the Original.'
+        ? 'Six real stickers, about 5–6 cm each, on one sheet: the classic dancing banana plus five looks nobody else prints.'
         : firstSentence(m.descHtml, 120)}</p>
       <div class="pdp-pricetags">
         <p class="pdp__price price-tag"><small>from</small> {money(m.pmin, m.cur)}</p>
@@ -261,7 +261,7 @@ const breadcrumbSchema = {
     </details>
   </section>
 
-  {pack && <PackGrid place="pdp" current={pack.n} kicker="Series 1" heading="Collect all 8" />}
+  {pack && <PackGrid place="pdp" current={pack.n} kicker="Official stickers" heading="Collect all 8" />}
 
   <section class="block">
     <p class="kicker">Keep going</p>
