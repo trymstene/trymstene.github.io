@@ -325,8 +325,8 @@ async function apiRange(env, from, to) {
   const listsP = gaPost(env, 'runReport', {
     dateRanges,
     dimensions: [{ name: 'itemListName' }],
-    metrics: [{ name: 'itemsClickedInList' }],
-    limit: 20, orderBys: [{ metric: { metricName: 'itemsClickedInList' }, desc: true }],
+    metrics: [{ name: 'itemsClickedInList' }, { name: 'itemsViewedInList' }],   // 🎟 6 Sep: viewed too — the download card's headlines are lists
+    limit: 40, orderBys: [{ metric: { metricName: 'itemsClickedInList' }, desc: true }],
   }).catch(() => null);
 
   const stepTimes = {};
@@ -404,7 +404,7 @@ async function apiRange(env, from, to) {
     at: Date.now(), from, to,
     downloads, dlDaily,
     // null = the report failed (the room hides the section); [] = nobody clicked
-    lists: listsRes ? rows(listsRes).map((r) => ({ list: dim(r, 0), clicks: met(r, 0) })).filter((l) => l.clicks > 0) : null,
+    lists: listsRes ? rows(listsRes).map((r) => ({ list: dim(r, 0), clicks: met(r, 0), views: met(r, 1) })).filter((l) => l.clicks > 0 || l.views > 0) : null,
     kpis: {
       sessions: sum('sessions'), users: windowUsers, newUsers: sum('newUsers'),
       engagementRate: dailyRows.length

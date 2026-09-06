@@ -32,7 +32,8 @@
 // ⚠️ Same back-door that defeated the Forge's lazy import via banana-shelf.js.
 // Verify by MEASURING the built page, never by reading the import list.
 import PRODUCTS from '../../shared/products.js';   // plain catalog, no engine
-import { STICKER_PACKS, PACK_PRICE, SET_PRICE, packCard as packShot, packThumb } from '../data/sticker-packs.js';
+import { STICKER_PACKS, PACK_PRICE, packCard as packShot } from '../data/sticker-packs.js';
+import { PACK_HEADS, CARD_LIST } from '../data/pack-heads.js';
 
 // ⚠️ was a hand-copied 14.99 "mirroring sticker-core" — a mirror nobody
 // repolished when the sticker dropped to $4.99. Read the manifest instead.
@@ -113,31 +114,26 @@ const CSS = `
 }
 .mir--warm .mir__no { margin-top: 0.5rem; }
 .mir__go--dc { background:#5865f2; color:#fff; }
-/* 🎟 the pack card: the spread IS the shot; eight minis swap it */
+/* 🎟 the pack card: the sheet IS the shot; one headline, the price, one line */
 .mir--pack { grid-template-columns: minmax(0, 176px) minmax(0, 1fr); max-width: 600px; }
 .mir--pack .mir__shot { display: block; background: #fff; }
 .mir--pack .mir__shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .mir--pack .mir__head { font-size: clamp(1.1rem, 4.6vw, 1.45rem); margin-bottom: 0.3rem; }
-.mir__packname {
-  font-size: 0.74rem; line-height: 1.3; margin: 0 0 0.45rem; opacity: 0.85;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+.mir__price { margin: 0 0 0.55rem; }
+.mir__pill--big { font-size: 0.92rem; padding: 0.32rem 0.7rem; letter-spacing: 0.02em; }
+.mir__desc { font-size: 0.86rem; line-height: 1.35; margin: 0 0 0.8rem; }
+/* the yes and the no are the SAME button in two voices: same width, same
+   height, same type — the no used to be a size smaller (Trym, 6 Sep) */
+.mir--pack .mir__go, .mir--pack .mir__no {
+  width: 100%; min-height: 48px; padding: 0.62rem 1rem; font-size: 0.92rem;
+  justify-content: center; box-sizing: border-box; text-align: center;
 }
-.mir__minis { display: flex; gap: 4px; margin: 0 0 0.55rem; }
-.mir__mini {
-  width: 30px; height: 30px; padding: 0; flex: none; cursor: pointer;
-  border: 2px solid var(--mir-ink); background: #fff; opacity: 0.55;
-}
-.mir__mini img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.mir__mini:hover, .mir__mini.on { opacity: 1; }
-.mir__mini.on { outline: 3px solid #ff4d6d; outline-offset: -1px; }
-.mir--pack .mir__go, .mir--pack .mir__no { width: 100%; justify-content: center; box-sizing: border-box; text-align: center; }
 @media (max-width: 430px) {
   /* ⚠️ restated here: .mir--pack's two columns are declared AFTER the base
      phone rule and would otherwise win over it — the card must stack */
   .mir--pack { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .mir--pack .mir__shot { width: 62%; }
-  .mir__minis { justify-content: center; flex-wrap: wrap; }
-  .mir__packname { text-align: center; }
+  .mir__desc { text-align: center; }
 }
 /* the post-download moment: the card arrives over the page, once */
 .mir-veil {
@@ -317,77 +313,52 @@ function pickHead(offer) {
 }
 
 // 🎟 THE PACK CARD (Trym, 5 Sep 2026: "swap the popup to the pack entirely,
-// make it nice and visual"). Thirty days of the warm-up/coffee card on the GIF
-// page: 231 shown, 174 skipped, 15 taken, and 3 merch clicks on the whole
-// page. The download moment now shows the one thing this site sells that
-// nobody else has: the Giphy bananas as real kiss-cut sticker packs.
-// ONE ask (the pack on show) and the free file one honest tap away, same as
-// before. The eight packs sit under the pitch as tappable minis — a tap swaps
-// the big picture, so the card is a small shop window, not a poster.
-// The world / Discord / coffee cards live in git (this commit's parent).
-const PACK_HEADS = [
-  'The banana you just took, as real stickers',
-  'He also comes on paper',
-  'Take him home for real',
-  'Six of him, kiss-cut, in an envelope',
-  'Real stickers of the 1999 banana',
-];
+// make it nice and visual"; 6 Sep: "the headline is what's read. And the
+// price"). The download moment shows the one thing this site sells that
+// nobody else has: the Giphy bananas as real sticker packs — and says ONE
+// thing about it. Thirty days of the warm-up card: 231 shown, 174 skipped,
+// 15 taken. The first pack card (eight minis, three pills, the sticker names,
+// five rotating lines about "him"): 8 people shown, 0 taken. Every word on it
+// was ours; none of it was theirs. Now:
+//   headline   one of PACK_HEADS, drawn per card, measured per line (pack-heads.js)
+//   price      $9.99 · 6 stickers — the second thing that gets read
+//   one line   what is in it, that nobody else prints it, that it ships
+//   the tap    "See the sticker pack →" — a look, not a purchase (Trym: too
+//              early for a cart) — to the pack's own page
+//   the file   the no-thanks button, same size as the yes (it was shorter)
+// ONE fixed pack (Park Life: the sheet where the plain banana reads biggest),
+// so the headline is the only thing that varies. The other seven and the set
+// deal live in the shop and the cart, after the first yes.
+const NOUN_BY_FROM = { pbjt: 'The Peanut Butter Jelly Time banana' };
 
-function packCard({ pack, head, skipText, onGo, onSkip, onSwap }) {
+function packCard({ pack, head, noun, skipText, onGo, onSkip }) {
   injectCss();
   const card = document.createElement('div');
   card.className = 'mir mir--pack';
-  let cur = pack;
+  const href = '/shop/' + pack.handle + '/';
   // the shot IS the pack picture — it carries its own PACK N flair, so no sash
   const shot = document.createElement('a');
   shot.className = 'mir__shot mir__shot--pack';
+  shot.href = href;
   const im = document.createElement('img');
-  im.alt = ''; im.loading = 'eager'; im.decoding = 'async'; im.width = 600; im.height = 600;
+  im.alt = pack.num + ' — a sheet of six stickers'; im.loading = 'eager'; im.decoding = 'async'; im.width = 600; im.height = 600;
+  im.src = packShot(pack.n);
   shot.appendChild(im);
   const body = document.createElement('div');
-  const k = document.createElement('p'); k.className = 'mir__kicker'; k.textContent = 'Now on paper · 8 sticker packs';
   const h = document.createElement('p'); h.className = 'mir__head'; h.textContent = head;
-  const nm = document.createElement('p'); nm.className = 'mir__packname';
-  const minis = document.createElement('div'); minis.className = 'mir__minis';
-  const ps = document.createElement('div'); ps.className = 'mir__pills';
-  ['6 kiss-cut stickers · $' + PACK_PRICE.toFixed(2), 'The Original in every pack', 'All eight $' + SET_PRICE.toFixed(2)]
-    .forEach((t, i) => {
-      const sp = document.createElement('span');
-      sp.className = 'mir__pill' + (i === 0 ? ' mir__pill--price' : ''); sp.textContent = t;
-      ps.appendChild(sp);
-    });
-  const go = document.createElement('a'); go.className = 'mir__go';
-  const show = (p) => {
-    cur = p;
-    im.src = packShot(p.n);
-    shot.href = '/shop/' + p.handle + '/';
-    go.href = shot.href;
-    go.textContent = 'See ' + p.name + ' →';
-    nm.textContent = '';
-    const b = document.createElement('b'); b.textContent = p.num + ' · ' + p.name;
-    nm.append(b, document.createTextNode(' — ' + p.names.join(', ')));
-    [...minis.children].forEach((m) => m.classList.toggle('on', Number(m.dataset.n) === p.n));
-  };
-  STICKER_PACKS.forEach((p) => {
-    const m = document.createElement('button');
-    m.type = 'button'; m.className = 'mir__mini'; m.dataset.n = String(p.n);
-    m.setAttribute('aria-label', p.num + ', ' + p.name);
-    const mi = document.createElement('img');
-    mi.src = packThumb(p.n); mi.alt = ''; mi.width = 240; mi.height = 240; mi.decoding = 'async';
-    m.appendChild(mi);
-    m.addEventListener('click', () => { show(p); if (onSwap) onSwap(p); });
-    minis.appendChild(m);
-  });
-  if (onGo) {
-    go.addEventListener('click', () => onGo(cur));
-    shot.addEventListener('click', () => onGo(cur));
-  }
+  const price = document.createElement('p'); price.className = 'mir__price';
+  const pp = document.createElement('span'); pp.className = 'mir__pill mir__pill--price mir__pill--big';
+  pp.textContent = '$' + PACK_PRICE.toFixed(2) + ' · 6 stickers';
+  price.appendChild(pp);
+  const d = document.createElement('p'); d.className = 'mir__desc';
+  d.textContent = (noun || 'The dancing banana') + ' and 5 more of his looks, as real stickers. Nobody else prints these. Ships worldwide.';
+  const go = document.createElement('a'); go.className = 'mir__go'; go.href = href; go.textContent = 'See the sticker pack →';
+  if (onGo) { go.addEventListener('click', onGo); shot.addEventListener('click', onGo); }
   const no = document.createElement('button');
   no.type = 'button'; no.className = 'mir__no'; no.textContent = skipText;
   if (onSkip) no.addEventListener('click', onSkip);
-  body.append(k, h, nm, minis, ps, go, no);
+  body.append(h, price, d, go, no);
   card.append(shot, body);
-  show(pack);
   return card;
 }
 
@@ -403,9 +374,14 @@ function packCard({ pack, head, skipText, onGo, onSkip, onSwap }) {
 export function offerAfterDownload(opts = {}) {
   if (!offerWillShow()) return null;
   injectCss();
-  const pack = STICKER_PACKS[Math.floor(Math.random() * STICKER_PACKS.length)];
+  const pack = STICKER_PACKS[0];   // Park Life — fixed, so the headline is the only variable
   const head = PACK_HEADS[Math.floor(Math.random() * PACK_HEADS.length)];
-  const P = { from: opts.from || 'unknown', variant: 'pack-' + pack.n + '/h' + (PACK_HEADS.indexOf(head) + 1), ...(opts.params || {}) };
+  const list = CARD_LIST + head.key;
+  const from = opts.from || 'unknown';
+  // the headline rides as a GA4 ITEM LIST: itemListName pairs with viewed-in-list
+  // and clicked-in-list in the Data API, so Pulse prints shown → tapped per line
+  const item = { item_id: pack.handle, item_name: pack.num + ' · ' + pack.name, item_list_name: list, price: PACK_PRICE, quantity: 1 };
+  const P = { from, variant: head.key, ...(opts.params || {}) };
   const hit = (name, extra) => {
     try { if (window.gtag) window.gtag('event', name, { ...P, ...(extra || {}) }); } catch (e) {}
   };
@@ -413,12 +389,14 @@ export function offerAfterDownload(opts = {}) {
   veil.className = 'mir-veil';
   const close = () => veil.remove();
   const card = packCard({
-    pack, head,
+    pack, head: head.text, noun: NOUN_BY_FROM[from],
     skipText: opts.skipText || 'no thanks, just the GIF',
     // ⚠️ beacon transport: the pack link navigates THIS tab away instantly —
     // a plain gtag hit would be cancelled mid-flight with the page
-    onGo: (p) => hit('offer_pack', { product: 'pack-' + p.n, transport_type: 'beacon' }),
-    onSwap: (p) => hit('offer_swap', { product: 'pack-' + p.n }),
+    onGo: () => {
+      hit('offer_pack', { product: 'pack-' + pack.n, transport_type: 'beacon' });
+      hit('select_item', { item_list_name: list, items: [item], transport_type: 'beacon' });
+    },
     onSkip: () => { close(); hit('offer_skip'); if (opts.onSkip) opts.onSkip(); },
   });
   veil.appendChild(card);
@@ -428,6 +406,7 @@ export function offerAfterDownload(opts = {}) {
   });
   document.body.appendChild(veil);
   hit('offer_shown');
+  hit('view_item_list', { item_list_name: list, items: [item] });
   return { el: veil, close };
 }
 

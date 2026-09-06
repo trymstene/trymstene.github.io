@@ -38,7 +38,8 @@ const RANGE = {
     { page: '/banana-memes/viking-banana/', gif: 6, png: 0, wall: 0, files: 6, shown: 6, click: 0, skip: 5, world: 0, disc: 0, coffee: 0, pack: 0, swap: 0 },
   ],
   dlDaily,
-  lists: [{ list: '(not set)', clicks: 12 }, { list: 'packs_gif_hero', clicks: 9 }, { list: 'shopstrip_gif_hub', clicks: 2 }, { list: 'packs_gif_hub', clicks: 4 }, { list: 'shop_custom_lane', clicks: 1 }],
+  lists: [{ list: '(not set)', clicks: 12 }, { list: 'packs_gif_hero', clicks: 9 }, { list: 'shopstrip_gif_hub', clicks: 2 }, { list: 'packs_gif_hub', clicks: 4 }, { list: 'shop_custom_lane', clicks: 1 },
+    { list: 'card_official', clicks: 3, views: 41 }, { list: 'card_only', clicks: 1, views: 12 }],
   kpis: { sessions: 912, users: 700, newUsers: 520, engagementRate: 0.52, revenue: 0, transactions: 0 },
   daily: dlDaily.map((r) => ({ d: r.d, sessions: 130, users: 100, newUsers: 70, eng: 0.5, revenue: 0, tx: 0, a1: 100, a7: 400, a28: 900 })),
   countries: [{ cc: 'US', name: 'United States', sessions: 400, users: 300 }, { cc: 'NO', name: 'Norway', sessions: 60, users: 50 }],
@@ -121,6 +122,8 @@ const sh = await roomShot('SHOP', 'shop');
 out.shop = {
   sections: ['Where product clicks come from', 'The pack card', 'Got the pack card', 'Tapped a pack'].map((t) => [t, has(sh, t)]),
   listRows: ['The shop grid', 'The GIF page · pack carousel, top', 'The GIF page · pack carousel, download hub', 'Shop strip · gif hub', 'The shop · custom lane'].map((t) => [t, has(sh, t)]),
+  // 🎟 the per-headline table sits beside the pack funnel (6 Sep)
+  heads: ['Which headline works', 'Official Banana sticker pack', '3 / 41 · 7.3%', 'needs 20', 'Download card · “Only here: official Banana stickers”'].map((t) => [t, has(sh, t)]),
   oldWords: ['support ask', 'buy-me-a-coffee'].filter((t) => has(sh, t)),
 };
 // ── the world room reads the save ask (6 Sep): the funnel from the blinking

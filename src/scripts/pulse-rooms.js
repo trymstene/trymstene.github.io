@@ -13,6 +13,7 @@
 //   · every ▲▼ comes from a SECOND range call for the previous window; the
 //     payload carries no comparison of its own
 import { section, tile, lineChart, barsH, grid, div, nfmt, pct } from './hq-pulse.js';
+import { headText, CARD_LIST } from '../data/pack-heads.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
 import { flag, place, FUNNELS, DL_NAMES, AREAS, SHOPS } from '../data/pulse-dicts.js';
 
@@ -228,6 +229,7 @@ const LIST_NAMES = {
 function listName(l) {
   const k = String(l || '');
   if (LIST_NAMES[k]) return LIST_NAMES[k];
+  if (k.indexOf(CARD_LIST) === 0) return 'Download card · “' + (headText(k.slice(CARD_LIST.length)) || k.slice(CARD_LIST.length)) + '”';
   if (k.indexOf('shopstrip_') === 0) return 'Shop strip · ' + k.slice(10).replace(/_/g, ' ');
   if (k.indexOf('packs_') === 0) return 'Pack carousel · ' + k.slice(6).replace(/_/g, ' ');
   return k || 'The shop grid';
@@ -455,6 +457,21 @@ export function renderShop(into, S) {
     div('hqp-fdrop', shown >= MIN_N ? pct(v, shown) + '% of the cards shown' : 'needs 20 cards before a rate means anything', row);
     row.addEventListener('click', () => { note2.hidden = false; note2.textContent = st[2]; });
   });
+
+  // 🎟 WHICH HEADLINE WORKS (6 Sep 2026) — the card draws one of PACK_HEADS
+  // per show and files it as a GA4 item list (`card_<key>`), so shown and
+  // tapped come back per headline. Twenty shown before a rate, like the funnel.
+  const heads = (lists || []).filter((l) => String(l.list || '').indexOf(CARD_LIST) === 0);
+  if (lists && heads.length) {
+    const s3 = section(into, 'Which headline works', 'Each download card shows one headline at random. A row is a headline: tapped / shown, and the rate once twenty cards have carried it. The words live in src/data/pack-heads.js — add a line there and it appears here.');
+    const t3 = div('hqp-tbl', null, s3);
+    heads.slice().sort((a, b) => (+b.views || 0) - (+a.views || 0)).forEach((l) => {
+      const row = div('hqp-trow', null, t3);
+      div('hqp-tk', '“' + (headText(l.list.slice(CARD_LIST.length)) || l.list) + '”', row);
+      const v = +l.views || 0, c = +l.clicks || 0;
+      div('hqp-tv', nfmt(c) + ' / ' + nfmt(v) + (v >= MIN_N ? ' · ' + (c / v * 100).toFixed(1) + '%' : ' · needs 20'), row);
+    });
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
