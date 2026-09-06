@@ -316,6 +316,10 @@ function init() {
     return dd > 0 ? dd + 'd ' + hh + 'h' : hh > 0 ? hh + 'h ' + mm + 'm' : mm + 'm';
   }
   let citTimer = 0;
+  // logged in = an email or passkey on the pass (the HUD's save-ask rule);
+  // a name is what the board shows, so a nameless login is not nominated yet
+  const citLoggedIn = () => { try { const l = JSON.parse(localStorage.getItem('pass-link') || 'null'); return !!(l && l.credId && !String(l.credId).startsWith('a:')); } catch (e) { return false; } };
+  const citNamed = () => { try { return !!(localStorage.getItem('ps-name-v1') || '').trim(); } catch (e) { return false; } };
   const citEsc = (v) => String(v == null ? '' : v).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
   function citDraw(cv, look) {
     try {
@@ -335,25 +339,32 @@ function init() {
     const wins = (last && last.winners) || {};
     const unkept = (last && last.unkept) || {};
     let out = '<h2 class="pk-cardtitle">' + iconSvg('star-solid', { size: 18 }) + ' Citizens of the week</h2>';
-    out += '<p class="pk-cit__lead">Four plaques and one Citizen, every Monday, for last week in Banana World.'
+    out += '<p class="pk-cit__lead">Four plaques and one Citizen every Monday, based on what you do in Banana World.'
       + (last && last.week ? ' Week ' + citEsc(String(last.week).slice(-2)) + ' is on the wall.' : '') + '</p>';
     out += '<div class="pk-cit__grid">';
     for (const [p, title] of CIT_PLAQUES) {
       const w = wins[p] || null;
       out += '<div class="pk-cit__item">' + citFrame(p, title, w);
-      if (unkept[p] && !w) out += '<p class="pk-cit__note">' + citEsc(unkept[p].name) + ' led — a plaque needs a kept pass.</p>';
+      if (unkept[p] && !w) out += '<p class="pk-cit__note">' + citEsc(unkept[p].name) + ' led, but was not logged in.</p>';
       out += '</div>';
     }
     out += '</div>';
-    // the ask, said once: in the running and not kept is the honest reason to log in
+    // the ask, said once and in plain words. Logged in and named: nothing to
+    // ask, the frames speak. Logged in, no name: the board can only show a
+    // name. Anonymous: log in — and if this phone is already in the running,
+    // say so first, because that is the moment it matters.
     const me = live ? Object.entries(live.plaques || {}).map(([p, list]) => [p, (list || []).find((r) => r.tag && r.tag === citTag)]).filter((x) => x[1]) : [];
-    const meUnkept = me.find((x) => x[1] && x[1].kept === false);
-    out += '<p class="pk-cit__rule">' + (meUnkept
-      ? '<b>You are in the running for ' + citEsc((CIT_PLAQUES.find((x) => x[0] === meUnkept[0]) || ['', 'a plaque'])[1]) + '.</b> A plaque goes to a kept pass.'
-      : 'Plaques go to kept passes with a name.') + '</p>';
-    out += '<a class="pk-cta pk-cta--keep" href="/pass/?keep"><span class="pk-cta__verb">Keep yours on My Pass →</span></a>';
+    const meRun = me[0] ? (CIT_PLAQUES.find((x) => x[0] === me[0][0]) || ['', ''])[1] : '';
+    if (!citLoggedIn()) {
+      if (meRun) out += '<p class="pk-cit__rule"><b>You are in the running for ' + citEsc(meRun) + '.</b></p>';
+      out += '<a class="pk-cta pk-cta--keep" href="/pass/?keep"><span class="pk-cta__verb">Log in to get nominated →</span></a>';
+    } else if (!citNamed()) {
+      out += '<p class="pk-cit__rule">Name your banana to get nominated.</p>';
+      out += '<a class="pk-cta pk-cta--keep" href="/pass/"><span class="pk-cta__verb">Name it on My Pass →</span></a>';
+    }
     citBody.innerHTML = out;
-    citBody.querySelector('.pk-cta--keep').addEventListener('click', () => track('citizens_keep'));
+    const keep = citBody.querySelector('.pk-cta--keep');
+    if (keep) keep.addEventListener('click', () => track('citizens_keep'));
     assetsReady().then(() => {
       citBody.querySelectorAll('canvas[data-plaque]').forEach((cv) => { const w = wins[cv.dataset.plaque]; if (w) citDraw(cv, w.look); });
     });

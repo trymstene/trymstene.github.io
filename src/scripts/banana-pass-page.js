@@ -1071,10 +1071,10 @@ async function citizenLine() {
     b.textContent = 'This week you are ' + mine.map((m) => ord[m.i] + ' for ' + TITLES[m.p]).join(', ') + '.';
     txt.appendChild(b);
     if (!loggedIn()) {
-      txt.appendChild(document.createTextNode(' A plaque goes to a kept pass — '));
+      txt.appendChild(document.createTextNode(' '));
       const a = document.createElement('a');
       a.href = '#';
-      a.textContent = 'log in to claim it';
+      a.textContent = 'Log in to get nominated';
       a.addEventListener('click', (ev) => { ev.preventDefault(); const k = el('psKeep'); if (k) { k.open = true; k.scrollIntoView({ block: 'center' }); } const inp = el('psMailIn'); if (inp) setTimeout(() => inp.focus(), 250); if (window.gtag) window.gtag('event', 'citizens_keep', { via: 'pass' }); });
       txt.appendChild(a);
       txt.appendChild(document.createTextNode('.'));
