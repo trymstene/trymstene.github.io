@@ -48,6 +48,18 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      # 🏆 the citizens' frames: the week's winners, rendered with the engine's
+      # Python mirror and hung in their frames. Daily, so Monday's plaques are on
+      # the front page the same day. Fail-soft: an unreachable board keeps the
+      # committed pictures.
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bake the citizens' frames
+        run: |
+          pip install --quiet pillow
+          python tools/build-citizen-cards.py || echo "::warning::citizens bake skipped"
       - name: Build
         run: npm run build
       - name: Upload Pages artifact

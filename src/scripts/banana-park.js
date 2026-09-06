@@ -8,6 +8,7 @@
 // shared ctx object (live values like phase/pSpeed/camera cross as getters).
 // All imports are static → still one page bundle.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
+import { iconSvg } from '../lib/pixel-icons.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
 import { presenceRoom, poofInto } from '../lib/world.js';
@@ -23,7 +24,7 @@ import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
 // the place() call that draws its prop. Never hand-copy a coordinate here.
 import {
-  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN, ROAD_SIGN_W, SUP_BOARD, WEED_GRID,
+  WORLD, BOUND, POND, FOUNTAIN, DOORS, PLOTS, ROAD_SIGN, ROAD_SIGN_W, SUP_BOARD, CIT_BOARD, WEED_GRID,
   OB_RECTS, OB_CIRCLES, OVERLAYS, TREE_OVS,
 } from './park-geo.js';
 import { initCritters } from './park-critters.js';
@@ -274,6 +275,117 @@ function init() {
       io2.observe(sup);
     }
   }
+
+  // 🏆 THE CITIZENS' WALL (6 Sep 2026) — the week's five plaques and the
+  // Citizen, each a picture frame with the winner's banana close up on paper
+  // (Trym: "like an actual employee of the month image frame" — not the
+  // supporters' plaques, not a polaroid). A plank and one small frame stand
+  // on the meadow; the card holds all six with this week's running top three.
+  // Nothing is drawn over anybody's head: the honour is the frame.
+  if (CIT_BOARD) {
+    const cw = document.createElement('div');
+    cw.className = 'pk-way pk-way--cit';
+    cw.textContent = 'CITIZENS';
+    cw.style.left = pct(CIT_BOARD.x, W);
+    cw.style.top = pct(CIT_BOARD.y - 107, H);
+    cw.style.zIndex = String(100 + CIT_BOARD.y + 3);
+    cw.addEventListener('click', (e) => { e.stopPropagation(); openCitCard(); });
+    world.appendChild(cw);
+    const wall = document.createElement('button');
+    wall.type = 'button';
+    wall.className = 'pk-citwall';
+    wall.setAttribute('aria-label', 'Citizens of the week');
+    wall.innerHTML = '<span class="pk-frame pk-frame--wall"><span class="pk-frame__paper"><canvas width="176" height="176" data-plaque="citizen"></canvas></span></span>';
+    wall.style.left = pct(CIT_BOARD.x - 40, W);
+    wall.style.top = pct(CIT_BOARD.y - 96, H);
+    wall.style.zIndex = String(100 + CIT_BOARD.y + 2);
+    wall.addEventListener('click', (e) => { e.stopPropagation(); openCitCard(); });
+    world.appendChild(wall);
+  }
+  const citPanel = document.getElementById('pkCit');
+  const citBody = document.getElementById('pkCitBody');
+  let citFeed = null, citTag = '';
+  // my tag = sha256(world id)[0:8] — the board carries tags, never ids
+  (async () => {
+    try {
+      const gid = localStorage.getItem('world-gid') || '';
+      if (!gid) return;
+      const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(gid));
+      citTag = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 8);
+    } catch (e) {}
+  })();
+  const CIT_PLAQUES = [
+    ['citizen', 'Citizen of the week', 'the widest week: most plaques scored on, then most days here'],
+    ['gardener', 'Gardener', 'harvests, weeds pulled, eggs found, park coins'],
+    ['neighbour', 'Neighbour', 'hugs, feeds, waterings, notes and visits in other people\'s yards'],
+    ['farmer', 'Farmer', 'days on the homestead, feedings, knits, homestead coins'],
+    ['raver', 'Raver', 'drops caught, floors survived, hypes, fives, vinyls, jelly'],
+    ['maker', 'Maker', 'bananas built, emojis forged, items approved, bananas shelved'],
+  ];
+  const citEsc = (v) => String(v == null ? '' : v).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+  function citDraw(cv, look) {
+    try {
+      drawComposite(cv.getContext('2d'), 176, 2, { hat: 'none', glasses: 'none', extras: {}, ...(look || {}), top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+    } catch (e) {}
+  }
+  function citFrame(p, title, w) {
+    return '<figure class="pk-frame' + (p === 'citizen' ? ' pk-frame--big' : '') + '">'
+      + '<span class="pk-frame__paper"><canvas class="pk-frame__cv" data-plaque="' + p + '" width="176" height="176"></canvas>'
+      + (w ? '' : '<i class="pk-frame__empty">your banana here?</i>') + '</span>'
+      + '<figcaption class="pk-frame__plate"><small>' + citEsc(title) + '</small><b>' + citEsc(w ? w.name : '—') + '</b></figcaption></figure>';
+  }
+  function citPaint() {
+    const live = (citFeed && citFeed.live) || null;
+    const last = (citFeed && citFeed.last) || null;
+    const wins = (last && last.winners) || {};
+    const unkept = (last && last.unkept) || {};
+    let out = '<h2 class="pk-cardtitle">' + iconSvg('star-solid', { size: 18 }) + ' Citizens of the week</h2>';
+    out += '<p class="pk-cit__lead">Five plaques and one Citizen, every Monday, from what you actually did in Banana World last week. '
+      + (last && last.week ? 'Week ' + citEsc(String(last.week).slice(-2)) + ' is on the wall.' : 'The first frames go up on Monday.') + '</p>';
+    out += '<div class="pk-cit__grid">';
+    for (const [p, title, how] of CIT_PLAQUES) {
+      const w = wins[p] || null;
+      const run = (live && (p === 'citizen' ? live.citizen : (live.plaques || {})[p])) || [];
+      out += '<div class="pk-cit__item">' + citFrame(p, title, w);
+      if (unkept[p] && !w) out += '<p class="pk-cit__note">' + citEsc(unkept[p].name) + ' led this one — but a plaque needs a kept pass.</p>';
+      out += '<p class="pk-cit__how">' + citEsc(how) + '</p>';
+      out += '<p class="pk-cit__run">' + (run.length
+        ? 'this week: ' + run.map((r) => '<span' + (r.tag && r.tag === citTag ? ' class="is-me"' : '') + '>' + citEsc(r.name) + ' ' + (r.score || 0) + (r.tag && r.tag === citTag ? ' (you)' : '') + '</span>').join(' · ')
+        : 'this week: nobody yet') + '</p></div>';
+    }
+    out += '</div>';
+    const me = live ? Object.entries(live.plaques || {}).map(([p, list]) => [p, (list || []).find((r) => r.tag && r.tag === citTag)]).filter((x) => x[1]) : [];
+    const meUnkept = me.find((x) => x[1] && x[1].kept === false);
+    out += '<p class="pk-cit__rule">' + (meUnkept
+      ? '<b>You are in the running for ' + citEsc(CIT_PLAQUES.find((x) => x[0] === meUnkept[0])[1]) + '.</b> A plaque goes to a kept pass — '
+      : 'Plaques go to kept passes with a name. ')
+      + '<a class="pk-cta pk-cta--keep" href="/pass/?keep">Keep yours on My Pass →</a></p>';
+    citBody.innerHTML = out;
+    citBody.querySelector('.pk-cta--keep').addEventListener('click', () => track('citizens_keep'));
+    assetsReady().then(() => {
+      citBody.querySelectorAll('canvas[data-plaque]').forEach((cv) => { const w = wins[cv.dataset.plaque]; if (w) citDraw(cv, w.look); });
+    });
+  }
+  function citLoad() {
+    if (citFeed) return Promise.resolve(citFeed);
+    return fetch('https://banana-pass.trymstene.workers.dev/citizen').then((r) => r.json())
+      .then((d) => { citFeed = d; return d; }).catch(() => null);
+  }
+  function openCitCard() {
+    citPaint();
+    citPanel.hidden = false;
+    track('park_citizens');
+    citLoad().then(() => { if (!citPanel.hidden) citPaint(); });
+  }
+  document.getElementById('pkCitClose').addEventListener('click', () => { citPanel.hidden = true; });
+  citPanel.addEventListener('click', (e) => { if (e.target === citPanel) citPanel.hidden = true; });
+  // the small frame on the meadow shows the standing Citizen
+  citLoad().then((d) => {
+    const w = d && d.last && d.last.winners && d.last.winners.citizen;
+    const cv = document.querySelector('.pk-citwall canvas');
+    if (w && cv) assetsReady().then(() => citDraw(cv, w.look));
+  });
+  if (/[?&]citizens(?:=|&|$)/.test(location.search)) setTimeout(openCitCard, 900);   // QA door
 
   // 💛 the board's card: who is keeping the world free. The feed is public
   // (names only, private supporters already filtered server-side) and cached

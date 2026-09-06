@@ -37,3 +37,9 @@ OWN_STRICT = "1"   # flipped 3 Sep 2026 in the QA batch: the pre-slice builds ne
 # Every 10 minutes covers ~5,700 records a day against a 40-per-tick read cap.
 [triggers]
 crons = ["*/10 * * * *"]
+
+# 🏆 the weekly walk asks the yard room (worker-rave) who was neighbourly, over a
+# service binding — the answer travels, never a key (the /wt/verify doctrine)
+[[services]]
+binding = "RAVE"
+service = "banana-rave"

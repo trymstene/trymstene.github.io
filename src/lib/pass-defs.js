@@ -9,6 +9,14 @@
 // enough — earning happens wherever the moment lives via passPatch(id).
 export const PATCHES = [
   { id: 'maker',     icon: 'palette',  title: 'Maker',          hint: 'Take your first banana home from the workshop.' },
+  // 🏆 the weekly plaques (6 Sep 2026) — stamped by the server on Monday's first walk, never by a phone.
+  // ⚠️ icons come from PixelIcon.astro's own hand-drawn set (frame, sparkle, heart, burger, flame, tag), not the pixelarticons pack
+  { id: 'wk-citizen',   icon: 'frame',    title: 'Citizen of the Week', hint: 'The widest week in Banana World, on a kept pass.' },
+  { id: 'wk-gardener',  icon: 'sparkle',  title: 'Gardener of the Week', hint: 'The park\'s best week: harvests, weeds, eggs.' },
+  { id: 'wk-neighbour', icon: 'heart',    title: 'Neighbour of the Week', hint: 'Hugs, feeds and waterings in other people\'s yards.' },
+  { id: 'wk-farmer',    icon: 'burger',   title: 'Farmer of the Week', hint: 'The homestead\'s best week.' },
+  { id: 'wk-raver',     icon: 'flame',    title: 'Raver of the Week', hint: 'The floor\'s best week.' },
+  { id: 'wk-maker',     icon: 'tag',      title: 'Maker of the Week', hint: 'Bananas built, emojis forged, items approved.' },
   { id: 'chaos',     icon: 'dice',     title: 'Agent of Chaos', hint: 'Let the dice dress the banana.' },
   { id: 'emoji',     icon: 'chat',     title: 'Chat Weapon',    hint: 'Download a chat-sized emoji GIF.' },
   { id: 'spreader',  icon: 'link',     title: 'Spreader',       hint: 'Share a banana with the world.' },

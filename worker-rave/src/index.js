@@ -284,6 +284,13 @@ export default {
         { headers: { 'Content-Type': 'application/json' } });
     }
 
+    // 🏆 the pass worker's weekly walk asks the neighbourhood who was kind to whom
+    // (same internal-hostname gate as /wt/verify; the room checks the header too)
+    if (url.hostname === 'internal' && url.pathname === '/yards/week') {
+      return env.YARDS.get(env.YARDS.idFromName('the-neighbourhood')).fetch(new Request('https://room/week' + url.search,
+        { headers: { 'x-internal': '1' } }));
+    }
+
     const room = env.RAVE.get(env.RAVE.idFromName('main-floor'));
     if (url.pathname === '/ws') {
       const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
@@ -2808,6 +2815,31 @@ export class YardRoom {
       await this.state.storage.put('own:' + pass, slug);
       await this.indexUpsert(doc);
       return json({ slug });
+    }
+
+    // 🏆 A WEEK OF NEIGHBOURLINESS, per visitor (6 Sep 2026 — Citizens of the
+    // week). Every hug, feed, watering, guestbook note and visit a person left
+    // in SOMEBODY ELSE'S yard inside [from, to), keyed by the 8-char id the rows
+    // already carry. Internal only: the public /yards/* forwarder sets no
+    // header, so it answers 404 there — id prefixes are not for the wire.
+    if (path === '/week' && request.method === 'GET') {
+      if (request.headers.get('x-internal') !== '1') return json({ err: 'no' }, 404);
+      const from = +url.searchParams.get('from') || 0, to = +url.searchParams.get('to') || Date.now();
+      const owner = {};
+      for (const [k, doc] of await this.state.storage.list({ prefix: 'y:' })) if (doc && !doc.alias && doc.pass) owner[k.slice(2)] = String(doc.pass).slice(0, 8);
+      const who = {};
+      const add = (o, k) => { const c = who[o] || (who[o] = { hugs: 0, feeds: 0, waters: 0, signs: 0, visits: 0 }); c[k]++; };
+      for (const [p, k] of [['hug:', 'hugs'], ['fed:', 'feeds'], ['wat:', 'waters'], ['g:', 'signs'], ['vis:', 'visits']]) {
+        for (const [key, rows] of await this.state.storage.list({ prefix: p })) {
+          const slug = key.slice(p.length);
+          for (const r of rows || []) {
+            if (!r || !r.o || !(r.t >= from && r.t < to)) continue;
+            if (owner[slug] && r.o === owner[slug]) continue;   // your own yard is not neighbourliness
+            add(r.o, k);
+          }
+        }
+      }
+      return json({ from, to, who });
     }
 
     // 🧪 QA ERASE (6 Sep 2026 — the two-device proof cleans up after itself):

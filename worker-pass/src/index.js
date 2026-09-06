@@ -66,6 +66,7 @@ export default {
       if (url.pathname === '/admin/rollup') return adminRollup(request, env, url);
       if (url.pathname === '/admin/rollup/tick') return adminTick(request, env, url);
       if (url.pathname === '/admin/people') return adminPeople(request, env, url);
+      if (url.pathname === '/citizen') return citizen(request, env);
       if (url.pathname === '/kofi-hook') return kofiHook(request, env);
       if (url.pathname === '/polar-hook') return polarHook(request, env);
       if (url.pathname === '/pay/checkout') return payCheckout(request, env, url);
@@ -918,6 +919,154 @@ const ROLL_STATE = 'rollup/state.json';
 // day, so "seen" is at most one lap stale (N records ÷ 40 per tick ÷ 6 ticks
 // an hour). QA homes never appear.
 const PEOPLE_KEY = 'people/index.json';
+
+// ---------- 🏆 CITIZENS OF THE WEEK (6 Sep 2026) ----------
+// Trym: "weekly 'Banana World Citizen of the week' … based on a range of stats
+// … like an employee of the month, only weekly and for banana world … use this
+// concept to drive users to register on mypass and log in — several plaques
+// are fun." Five plaques + the Citizen, scored ONLY from what the server saw:
+// the tape (server-stamped rows, by area and act), the shelf's own timestamps,
+// and the yard room's rows of things done in OTHER people's yards. Rep and
+// jelly are phone-asserted and do not decide anything here.
+//   gardener   park harvests, weeds, eggs, park coin acts
+//   neighbour  hugs, feeds, waterings, notes and visits in other people's yards
+//   farmer     homestead days, feedings, knits, homestead coin acts
+//   raver      drops, survivals, hypes, fives, vinyls, beers, rave coin acts, jelly
+//   maker      bananas built, emojis forged, items approved, bananas shelved
+//   citizen    the widest: plaques scored on, then days active, then total
+// The running top three per plaque needs only a NAME; the plaque itself goes
+// to a KEPT pass (an email or passkey on it) — the honest reason to log in. A
+// tag that won a plaque in the last four weeks sits that week out. Weeks are
+// ISO, Monday 00:00 UTC; the first lap after a week ends crowns it.
+// ⚠️ the tape keeps ~600 rows per pass, so a very busy week undercounts the
+// busiest players — fair enough for an honour, wrong for money (it is never money).
+const PLAQUES = ['gardener', 'neighbour', 'farmer', 'raver', 'maker'];
+const CIT_LIVE = 'citizen/live.json', CIT_LATEST = 'citizen/latest.json';
+const citFinalKey = (wk) => 'citizen/final-' + wk + '.json';
+const DAY = 86400000;
+function weekOf(ms) {
+  const d = new Date(ms);
+  const day = (d.getUTCDay() + 6) % 7;                         // Monday = 0
+  const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - day * DAY;
+  const th = new Date(start + 3 * DAY);                        // ISO week number: the Thursday's year
+  const jan1 = Date.UTC(th.getUTCFullYear(), 0, 1);
+  const n = Math.floor((th.getTime() - jan1) / DAY / 7) + 1;
+  return { id: th.getUTCFullYear() + '-W' + String(n).padStart(2, '0'), from: start, to: start + 7 * DAY };
+}
+function lookOf(bb) {
+  if (!bb || typeof bb !== 'object') return null;
+  const o = { hat: String(bb.hat || 'none').slice(0, 24), glasses: String(bb.glasses || 'none').slice(0, 24) };
+  if (bb.extras && typeof bb.extras === 'object') o.extras = bb.extras;
+  if (bb.c) o.c = String(bb.c).slice(0, 48);
+  return o;
+}
+function scorecard(rec, from, to, hood, gid) {
+  const g = { gardener: 0, neighbour: 0, farmer: 0, raver: 0, maker: 0 };
+  const days = new Set();
+  for (const e of (rec.log && rec.log.ev) || []) {
+    const at = +e.at || +e.t || 0;
+    if (!(at >= from && at < to) || e.x) continue;
+    days.add(Math.floor(at / DAY));
+    const k = String(e.k || ''), a = String(e.a || ''), d = Math.max(0, +e.d || 0);
+    if (k === 'coins_earned') {
+      if (a === 'park') g.gardener += 1; else if (a === 'homestead') g.farmer += 1; else if (a === 'rave') g.raver += 1;
+      continue;
+    }
+    if (k === 'garden_harvests') g.gardener += 3 * d;
+    else if (k === 'weeds_pulled' || k === 'eggs_found') g.gardener += d;
+    else if (k === 'hs_fed') g.farmer += 2 * d;
+    else if (k === 'hs_day') g.farmer += d;
+    else if (k.startsWith('knit_')) g.farmer += 2 * d;
+    else if (k === 'drops' || k === 'floor_survived') g.raver += 2 * d;
+    else if (k === 'hypes' || k === 'fives' || k === 'vinyls' || k === 'beers') g.raver += d;
+    else if (k === 'jelly' && d > 0) g.raver += 1;
+    else if (k === 'builds') g.maker += 2 * d;
+    else if (k === 'forges') g.maker += 3 * d;
+    else if (k.startsWith('own_c_')) g.maker += 5;
+  }
+  for (const c of (rec.blob && rec.blob.shelf) || []) if (c && c.created >= from && c.created < to) g.maker += 2;
+  const h = hood && gid && hood[gid.slice(0, 8)];
+  if (h) g.neighbour += (h.hugs || 0) + 2 * (h.feeds || 0) + 2 * (h.waters || 0) + (h.signs || 0) + Math.min(7, h.visits || 0);
+  const breadth = PLAQUES.filter((p) => g[p] > 0).length;
+  const total = PLAQUES.reduce((t, p) => t + g[p], 0);
+  return { ...g, days: days.size, breadth, total };
+}
+async function hoodCounts(env, from, to) {
+  try {
+    if (!env.RAVE) return {};
+    const r = await env.RAVE.fetch(new Request('https://internal/yards/week?from=' + from + '&to=' + to));
+    const j = r.ok ? await r.json() : null;
+    return (j && j.who) || {};
+  } catch (e) { return {}; }
+}
+const citRank = (p) => (a, b) => (b.wk[p] - a.wk[p]) || (b.wk.days - a.wk.days) || (b.wk.total - a.wk.total);
+const citRankAll = (a, b) => (b.wk.breadth - a.wk.breadth) || (b.wk.days - a.wk.days) || (b.wk.total - a.wk.total);
+// kept = an email or passkey opens this pass. On a raw lap row the email is a
+// POINTER record the lap met elsewhere, so the answer lives in st.ptr, not on the row
+const keptOf = (st, r) => !!(r.mail || (st && st.ptr && st.ptr[r.home] && st.ptr[r.home].mail));
+const citRow = (st, r, p) => ({ name: r.name, tag: r.tag, look: r.look || null, score: p ? r.wk[p] : r.wk.breadth, days: r.wk.days, kept: keptOf(st, r) });
+function citLive(rows, week, st) {
+  const named = rows.filter((r) => r.name && r.wk);
+  const plaques = {};
+  for (const p of PLAQUES) plaques[p] = named.filter((r) => r.wk[p] > 0).sort(citRank(p)).slice(0, 3).map((r) => citRow(st, r, p));
+  const citizen = named.filter((r) => r.wk.breadth > 0).sort(citRankAll).slice(0, 3).map((r) => citRow(st, r, null));
+  return { week: week.id, from: week.from, to: week.to, plaques, citizen, at: Date.now() };
+}
+async function citFinals(env, st, rows, week) {
+  // the last four weeks' winners sit this one out
+  const recent = {};
+  for (let i = 1; i <= 4; i++) {
+    try {
+      const o = await env.PASSES.get(citFinalKey(weekOf(week.from - i * 7 * DAY).id));
+      const f = o ? await o.json() : null;
+      for (const p of [...PLAQUES, 'citizen']) if (f && f.winners && f.winners[p]) (recent[p] = recent[p] || new Set()).add(f.winners[p].tag);
+    } catch (e) {}
+  }
+  const named = rows.filter((r) => r.name && r.wkPrev);
+  const winners = {}, unkept = {};
+  const pick = (list, p) => {
+    for (const r of list) {
+      if (!keptOf(st, r)) { if (!unkept[p]) unkept[p] = { name: r.name, tag: r.tag }; continue; }   // the leader who never kept a pass
+      if (recent[p] && recent[p].has(r.tag)) continue;
+      return r;
+    }
+    return null;
+  };
+  for (const p of PLAQUES) {
+    const w = pick(named.filter((r) => r.wkPrev[p] > 0).sort((a, b) => (b.wkPrev[p] - a.wkPrev[p]) || (b.wkPrev.days - a.wkPrev.days) || (b.wkPrev.total - a.wkPrev.total)), p);
+    if (w) winners[p] = { name: w.name, tag: w.tag, look: w.look || null, score: w.wkPrev[p], home: w.home };
+  }
+  const c = pick(named.filter((r) => r.wkPrev.breadth > 0).sort((a, b) => (b.wkPrev.breadth - a.wkPrev.breadth) || (b.wkPrev.days - a.wkPrev.days) || (b.wkPrev.total - a.wkPrev.total)), 'citizen');
+  if (c) winners.citizen = { name: c.name, tag: c.tag, look: c.look || null, score: c.wkPrev.breadth, days: c.wkPrev.days, home: c.home };
+  // the badge lands on the record — a conditional write, like every other
+  for (const [p, w] of Object.entries(winners)) {
+    try {
+      await retrying(async () => {
+        const rec = await loadKey(env, w.home);
+        if (!rec || rec.link) return;
+        const pp = (rec.blob = rec.blob || {}).pass || (rec.blob.pass = { created: Date.now(), patches: {}, stats: {}, days: [] });
+        pp.patches = pp.patches || {};
+        if (!pp.patches['wk-' + p]) pp.patches['wk-' + p] = Date.now();
+        (rec.honours = rec.honours || []).push({ week: week.id, plaque: p });
+        rec.honours = rec.honours.slice(-40);
+        await saveKey(env, w.home, rec);
+      });
+    } catch (e) {}
+  }
+  const pub = {};
+  for (const [p, w] of Object.entries(winners)) { const { home, ...rest } = w; pub[p] = rest; }
+  const file = { week: week.id, from: week.from, to: week.to, winners: pub, unkept, at: Date.now() };
+  await env.PASSES.put(citFinalKey(week.id), JSON.stringify(file));
+  await env.PASSES.put(CIT_LATEST, JSON.stringify(file));
+  return file;
+}
+// the public board: names, tags, looks and scores — never an id, never a key
+async function citizen(request, env) {
+  let live = null, last = null;
+  try { const o = await env.PASSES.get(CIT_LIVE); live = o ? await o.json() : null; } catch (e) {}
+  try { const o = await env.PASSES.get(CIT_LATEST); last = o ? await o.json() : null; } catch (e) {}
+  return json({ live, last }, 200, { ...cors(env, request), 'Cache-Control': 'public, max-age=300' });
+}
 const rollKey = (d) => 'rollup/day-' + d + '.json';
 const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 const dayIdx = (iso) => Math.floor(Date.parse(iso + 'T00:00:00Z') / 86400000);
@@ -1051,7 +1200,14 @@ async function peopleFold(env, st, k, rec) {
     if (isMailKey(k)) e.mail = true;
     return;
   }
-  st.rows.push({ home: k.slice(5, -5), ...(await rowOf(env, k, rec)) });
+  const row = { home: k.slice(5, -5), ...(await rowOf(env, k, rec)) };
+  // 🏆 this week and last week, scored from what the server saw
+  if (st.cit) {
+    const gid = await worldGid(env, row.home);
+    row.wk = scorecard(rec, st.cit.cur.from, st.cit.cur.to, st.cit.hoodCur, gid);
+    row.wkPrev = scorecard(rec, st.cit.prev.from, st.cit.prev.to, st.cit.hoodPrev, gid);
+  }
+  st.rows.push(row);
 }
 function peopleFile(st) {
   const rows = st.rows.map((r) => {
@@ -1074,6 +1230,12 @@ async function rollupTick(env) {
   // file is on disk; start lapping for people from the top
   if (st.acc.done && !st.dayDone) { st.dayDone = 1; st.cursor = null; st.rows = []; st.ptr = {}; st.laps = st.laps || 0; }
   if (!Array.isArray(st.rows)) { st.rows = []; st.ptr = {}; }
+  // 🏆 a lap begins: fix this week's and last week's windows and fetch the
+  // neighbourhood's counts once, so every record in the lap is scored alike
+  if (!st.cursor) {
+    const cur = weekOf(Date.now()), prev = weekOf(cur.from - DAY);
+    st.cit = { cur, prev, hoodCur: await hoodCounts(env, cur.from, cur.to), hoodPrev: await hoodCounts(env, prev.from, prev.to) };
+  }
   const list = await env.PASSES.list({ prefix: 'pass/', limit: ROLL_READ, cursor: st.cursor || undefined });
   const recs = await readMany(env, list.objects.map((o) => o.key));
   for (const [k, rec] of recs) {
@@ -1093,6 +1255,15 @@ async function rollupTick(env) {
     const file = peopleFile(st);
     await env.PASSES.put(PEOPLE_KEY, JSON.stringify(file));
     people = file.n;
+    // 🏆 the running board every lap; last week crowned on the first lap after it ended
+    if (st.cit) {
+      const scored = st.rows.filter((r) => !r.qa);
+      await env.PASSES.put(CIT_LIVE, JSON.stringify(citLive(scored, st.cit.cur, st)));
+      if (st.citFinal !== st.cit.prev.id) {
+        await citFinals(env, st, scored, st.cit.prev);
+        st.citFinal = st.cit.prev.id;
+      }
+    }
     st.rows = []; st.ptr = {}; st.laps = (st.laps || 0) + 1; st.peopleAt = file.at;
   }
   await env.PASSES.put(ROLL_STATE, JSON.stringify(st));
@@ -1150,6 +1321,7 @@ async function rowOf(env, k, rec) {
     // to a pass without the pass id or the world id ever leaving either store
     tag: (await sha256Hex(await worldGid(env, k.slice(5, -5)))).slice(0, 8),
     name: (blob.name || '').slice(0, 24),
+    look: lookOf(blob.bbLast),                 // 🏆 the banana the frames draw
     updated: rec.updated || 0,
     created: p.created || 0,
     mail: isMailKey(k),

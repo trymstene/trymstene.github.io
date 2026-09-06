@@ -31,6 +31,7 @@ const LENS_EVENTS = [
   'homestead_open',               // 🏡 the home area's door, 6 Aug
   'homestead_save_refused', 'homestead_reattach', 'pass_sync_refused', 'pass_reminted',   // 🚨 sync health, 6 Sep
   'pass_ask_shown', 'pass_ask_tap', 'pass_mail_signin', 'pass_mail_login', 'pass_mail_attached',   // 🎫 the save ask → a kept pass, 6 Sep
+  'park_citizens', 'citizens_keep',   // 🏆 the citizens' wall, 6 Sep
   'quest_step',                   // 🕯 chapter-1 funnel, live 13 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
   // 🏪 every in-world shopfront, 1 Aug — these are real storefronts and
@@ -575,6 +576,8 @@ const ANALYST_EVENTS = [
   'homestead_save_refused', 'homestead_reattach', 'pass_sync_refused', 'pass_reminted',
   // 🎫 the save ask (the HUD's blinking pill) and the email rail it leads to
   'pass_ask_shown', 'pass_ask_tap', 'pass_mail_signin', 'pass_mail_login', 'pass_mail_attached',
+  // 🏆 the citizens' wall — the other reason to keep a pass
+  'park_citizens', 'citizens_keep',
 ];
 
 // every door into the world, so the analyst can talk about all of them and not

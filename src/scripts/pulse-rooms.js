@@ -544,6 +544,10 @@ export function renderWorld(into, S) {
   tile(ga, 'tapped it', nfmt(askTap), askShown >= MIN_N ? (askTap / askShown * 100).toFixed(1) + '% of them' : 'needs 20 shown');
   tile(ga, 'asked for a link', nfmt(askLink), 'typed an email');
   tile(ga, 'logged in', nfmt(askIn), 'kept for good');
+  // 🏆 the citizens' wall (6 Sep): the other door to a kept pass
+  const wall = ppl('park_citizens'), wallKeep = ppl('citizens_keep');
+  tile(ga, 'citizens\' wall opened', nfmt(wall), wall ? 'people' : 'nobody yet');
+  tile(ga, 'keep-my-pass from the wall', nfmt(wallKeep), wall >= MIN_N ? (wallKeep / wall * 100).toFixed(1) + '% of them' : 'needs 20 opens');
 
   // ── the shops inside the world ─────────────────────────────────────────
   s = section(into, 'The shops inside the world', 'Every storefront a banana can walk into. Some sell for coins and some take real money — the row says which.');

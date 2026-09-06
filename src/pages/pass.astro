@@ -151,6 +151,8 @@ const NUMBERS = [
     .ps-rankbar { display: block; height: 6px; background: rgba(17, 17, 17, 0.22); max-width: 200px; margin: 4px 0 1px; }
     .ps-rankbar i { display: block; height: 100%; background: var(--ink); }
     .ps-ranknote { display: block; font-size: 0.58rem; font-weight: 700; line-height: 1.35; opacity: 0.7; }
+    .ps-week { margin: 0.5rem auto 0; max-width: 62ch; font-size: 0.92rem; line-height: 1.4; }
+    .ps-week a { font-weight: 700; }
     .ps-card__blabel {
       margin: 0.4rem 0 0.22rem; font-size: 0.52rem; font-weight: 800;
       letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7;
@@ -570,6 +572,8 @@ const NUMBERS = [
 
       <!-- ── 2. THE PROMISE — the one sentence that says what this page is for ── -->
       <p class="ps-promise">Everything you make and win saves automatically.<noscript> Turn on JavaScript to see it.</noscript></p>
+      <!-- 🏆 where this pass stands on the week's plaques — above the tabs, so it is seen whatever pile is open -->
+      <p class="ps-week" id="psWeek" hidden></p>
     <div class="ps-rail">
 
       <!-- ── 5. SUBNAV — three tabs, hidden until there is something in a pile ── -->

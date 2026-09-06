@@ -1,0 +1,18 @@
+{
+ "week": null,
+ "at": null,
+ "winners": {},
+ "unkept": {},
+ "live": {
+  "week": null,
+  "ends": null,
+  "plaques": {
+   "gardener": [],
+   "neighbour": [],
+   "farmer": [],
+   "raver": [],
+   "maker": []
+  },
+  "citizen": []
+ }
+}

@@ -333,6 +333,7 @@ async function init() {
   paint();
   initTabs();
   initSync();
+  citizenLine();   // 🏆 where this pass stands on the week's plaques (and the nudge to keep it)
   // 🎫 the HUD's "not saved" pill lands here (/pass/?keep): open the keep row
   // and put the cursor in the email box — the tap already said what they want
   if (/[?&]keep(?:=|&|$)/.test(location.search)) {
@@ -1036,6 +1037,49 @@ function initTabs() {
     });
   });
   if (!el('psNav').hidden) selectTab();
+}
+
+// 🏆 THE WEEK'S STANDING (6 Sep 2026). The board carries tags (sha256 of the
+// world id, 8 hex) and names, never ids; this page computes its own tag and
+// looks itself up. In the running and not kept = the one honest reason to log
+// in, said where the email box is.
+async function citizenLine() {
+  const line = el('psWeek');
+  if (!line) return;
+  let gid = '';
+  try { gid = localStorage.getItem('world-gid') || ''; } catch (e) {}
+  if (!gid) return;
+  try {
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(gid));
+    const tag = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 8);
+    const d = await (await fetch('https://banana-pass.trymstene.workers.dev/citizen')).json();
+    const live = d && d.live;
+    if (!live) return;
+    const TITLES = { citizen: 'Citizen', gardener: 'Gardener', neighbour: 'Neighbour', farmer: 'Farmer', raver: 'Raver', maker: 'Maker' };
+    const mine = [];
+    for (const [p, list] of Object.entries(live.plaques || {})) {
+      const i = (list || []).findIndex((r) => r.tag === tag);
+      if (i >= 0) mine.push({ p, i });
+    }
+    const ci = (live.citizen || []).findIndex((r) => r.tag === tag);
+    if (ci >= 0) mine.unshift({ p: 'citizen', i: ci });
+    if (!mine.length) return;
+    const ord = ['1st', '2nd', '3rd'];
+    line.textContent = '';
+    const b = document.createElement('b');
+    b.textContent = '🏆 This week you are ' + mine.map((m) => ord[m.i] + ' for ' + TITLES[m.p]).join(', ') + '.';
+    line.appendChild(b);
+    if (!loggedIn()) {
+      line.appendChild(document.createTextNode(' A plaque goes to a kept pass — '));
+      const a = document.createElement('a');
+      a.href = '#';
+      a.textContent = 'log in to claim it';
+      a.addEventListener('click', (ev) => { ev.preventDefault(); const k = el('psKeep'); if (k) { k.open = true; k.scrollIntoView({ block: 'center' }); } const inp = el('psMailIn'); if (inp) setTimeout(() => inp.focus(), 250); if (window.gtag) window.gtag('event', 'citizens_keep', { via: 'pass' }); });
+      line.appendChild(a);
+      line.appendChild(document.createTextNode('.'));
+    }
+    line.hidden = false;
+  } catch (e) {}
 }
 
 // hash → the tab you used last → what the nav dot was counting → made.
