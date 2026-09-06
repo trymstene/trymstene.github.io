@@ -1641,11 +1641,24 @@ const faq = {
       font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: 0.85rem;
       letter-spacing: 0.06em; margin: 1.3rem 0 0.7rem; text-transform: lowercase;
     }
+    /* the spotlight is a CARD OVER THE SHELF: fixed, so it is on screen wherever
+       the shelf was scrolled to when the tile was tapped (the below-fold trap) */
     .pk-stand__spot {
-      display: flex; gap: 0.9rem; align-items: center; margin-top: 1rem;
-      border: 4px solid #000; box-shadow: 6px 6px 0 #000; background: #241d33; padding: 0.9rem;
+      position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 1rem;
+      background: rgba(6, 4, 12, 0.72);
     }
     .pk-stand__spot[hidden] { display: none; }
+    .pk-stand__spotcard {
+      position: relative; display: flex; gap: 0.9rem; align-items: center; width: min(440px, 100%);
+      border: 4px solid #000; box-shadow: 6px 6px 0 #000; background: #241d33; padding: 0.9rem; color: #fffdf5;
+    }
+    .pk-stand__spotx {
+      position: absolute; top: -14px; right: -14px; width: 34px; height: 34px; padding: 0; cursor: pointer;
+      border: 3px solid #000; box-shadow: 3px 3px 0 #000; background: #ffe135; color: #111;
+      font-family: inherit; font-weight: 900; font-size: 1.15rem; line-height: 1;
+    }
+    .pk-stand__spotsay { margin: 0.55rem 0 0; font-size: 0.82rem; color: #ffe135; }
+    .pk-stand__spotsay:empty { display: none; }
     .pk-stand__spotart {
       flex: 0 0 96px; height: 96px; display: flex; align-items: center; justify-content: center;
       border: 3px solid #000; background: #17121f;
@@ -1664,7 +1677,7 @@ const faq = {
     }
     .pk-stand button.pk-btn--buy.is-poor { background: #17121f; color: #fffdf5; opacity: 0.85; }
     .pk-stand button.pk-btn--buy.is-owned { background: #37d67a; color: #06220f; }
-    @media (max-width: 420px) { .pk-stand__spot { flex-wrap: wrap; } .pk-stand__spotmeta { flex-basis: 100%; } }
+    @media (max-width: 420px) { .pk-stand__spotcard { flex-wrap: wrap; } .pk-stand__spotmeta { flex-basis: 100%; } }
     @media (prefers-reduced-motion: reduce) { .pk-stand__sign .pk-stand__flick { animation: none; } }
 
     /* ─── 🌳 THE PARK-DAY CARD — who's here + your stats + share, the bay's
@@ -1883,15 +1896,21 @@ const faq = {
               </div>
             </div>
 
-            <!-- the SPOTLIGHT: tap a shelf tile and the item takes the stage -->
+            <!-- the SPOTLIGHT: tap a shelf tile and the item takes the stage — a card
+                 over the shelf, not a box at the top (Trym, 6 Sep: tapping a back-catalog
+                 item four screens down changed a box nobody could see) -->
             <div class="pk-stand__spot" id="pkStandSpot" hidden>
-              <div class="pk-stand__spotart" id="pkStandSpotArt"></div>
-              <div class="pk-stand__spotmeta">
-                <h2 id="pkStandSpotName"></h2>
-                <p id="pkStandSpotDesc"></p>
-                <div class="pk-stand__spotrow">
-                  <span class="pk-price pk-price--big"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><b id="pkStandSpotPrice"></b></span>
-                  <button class="pk-btn pk-btn--buy" id="pkStandBuy" type="button">buy</button>
+              <div class="pk-stand__spotcard" role="dialog" aria-modal="true" aria-labelledby="pkStandSpotName">
+                <button class="pk-stand__spotx" id="pkStandSpotClose" type="button" aria-label="Close">×</button>
+                <div class="pk-stand__spotart" id="pkStandSpotArt"></div>
+                <div class="pk-stand__spotmeta">
+                  <h2 id="pkStandSpotName"></h2>
+                  <p id="pkStandSpotDesc"></p>
+                  <div class="pk-stand__spotrow">
+                    <span class="pk-price pk-price--big"><img src="/assets/banana-stand/coin.png" width="22" alt="" aria-hidden="true" /><b id="pkStandSpotPrice"></b></span>
+                    <button class="pk-btn pk-btn--buy" id="pkStandBuy" type="button">buy</button>
+                  </div>
+                  <p class="pk-stand__spotsay" id="pkStandSpotSay" role="status" aria-live="polite"></p>
                 </div>
               </div>
             </div>

@@ -241,6 +241,11 @@ export function initShops(ctx) {
   const stStats = () => passGet().stats || {};
   const stOwned = (id) => (stStats()['own_' + id] || 0) > 0;
   function standSay(text) {
+    // the keeper answers in the spotlight card too — the bubble is at the top
+    // of the shelf, which is exactly where the buyer is not
+    const say = document.getElementById('pkStandSpotSay');
+    const spot = document.getElementById('pkStandSpot');
+    if (say && spot && !spot.hidden) say.textContent = text;
     standBubble.textContent = text;
     standBubble.classList.add('is-on');
     clearTimeout(standBubbleTimer);
@@ -352,8 +357,13 @@ export function initShops(ctx) {
     document.getElementById('pkStandSpotDesc').textContent = item.back ? item.desc : (ST_DESC[item.id] || item.phrase);
     document.getElementById('pkStandSpotPrice').textContent = item.price;
     stUpdateSpot(item);
+    document.getElementById('pkStandSpotSay').textContent = '';
     standSpot.hidden = false;
   }
+  // the card's doors: the ×, the dim around it, Escape (before Escape leaves the stand)
+  const stSpotClose = () => { standSpot.hidden = true; };
+  document.getElementById('pkStandSpotClose').addEventListener('click', stSpotClose);
+  standSpot.addEventListener('click', (e) => { if (e.target === standSpot) stSpotClose(); });
   function stAddTile(item, container) {
     const tile = document.createElement('button');
     tile.type = 'button';
@@ -555,12 +565,19 @@ export function initShops(ctx) {
   }
   function closeStand() {
     if (standEl.hidden) return;
+    standSpot.hidden = true;   // no stale card when the stand reopens
     clearTimeout(standBubbleTimer);
     standBubble.classList.remove('is-on');
     blink(() => { standEl.hidden = true; document.body.classList.remove('pk-inside'); });
   }
   document.getElementById('pkStandBack').addEventListener('click', closeStand);
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !standEl.hidden) closeStand(); });
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || standEl.hidden) return;
+    if (!standSpot.hidden) stSpotClose(); else closeStand();
+  });
+  // ?stand — QA walks straight to the counter (the rave's ?stagetest pattern);
+  // the shelf, the card and the till are the same code the player meets
+  if (/[?&]stand(?:=|&|$)/.test(location.search)) setTimeout(openStand, 900);
   // tap the STAND BUILDING (tap-the-thing) → walk up → the counter cuts in
   function tapStand(wx, wy) {
     if (!(Math.abs(wx - STAND_AT.x) < 80 && STAND_AT.y - 130 < wy && wy < STAND_AT.y + 16)) return false;
