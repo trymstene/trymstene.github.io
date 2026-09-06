@@ -932,7 +932,7 @@ const PEOPLE_KEY = 'people/index.json';
 //   neighbour  hugs, feeds, waterings, notes and visits in other people's yards
 //   farmer     homestead days, feedings, knits, homestead coin acts
 //   raver      drops, survivals, hypes, fives, vinyls, beers, rave coin acts, jelly
-//   maker      bananas built, emojis forged, items approved, bananas shelved
+//   (a Maker plaque was cut on 6 Sep — five frames were one too many for the card)
 //   citizen    the widest: plaques scored on, then days active, then total
 // The running top three per plaque needs only a NAME; the plaque itself goes
 // to a KEPT pass (an email or passkey on it) — the honest reason to log in. A
@@ -940,7 +940,7 @@ const PEOPLE_KEY = 'people/index.json';
 // ISO, Monday 00:00 UTC; the first lap after a week ends crowns it.
 // ⚠️ the tape keeps ~600 rows per pass, so a very busy week undercounts the
 // busiest players — fair enough for an honour, wrong for money (it is never money).
-const PLAQUES = ['gardener', 'neighbour', 'farmer', 'raver', 'maker'];
+const PLAQUES = ['gardener', 'neighbour', 'farmer', 'raver'];
 const CIT_LIVE = 'citizen/live.json', CIT_LATEST = 'citizen/latest.json';
 const citFinalKey = (wk) => 'citizen/final-' + wk + '.json';
 const DAY = 86400000;
@@ -961,7 +961,7 @@ function lookOf(bb) {
   return o;
 }
 function scorecard(rec, from, to, hood, gid) {
-  const g = { gardener: 0, neighbour: 0, farmer: 0, raver: 0, maker: 0 };
+  const g = { gardener: 0, neighbour: 0, farmer: 0, raver: 0 };
   const days = new Set();
   for (const e of (rec.log && rec.log.ev) || []) {
     const at = +e.at || +e.t || 0;
@@ -980,11 +980,7 @@ function scorecard(rec, from, to, hood, gid) {
     else if (k === 'drops' || k === 'floor_survived') g.raver += 2 * d;
     else if (k === 'hypes' || k === 'fives' || k === 'vinyls' || k === 'beers') g.raver += d;
     else if (k === 'jelly' && d > 0) g.raver += 1;
-    else if (k === 'builds') g.maker += 2 * d;
-    else if (k === 'forges') g.maker += 3 * d;
-    else if (k.startsWith('own_c_')) g.maker += 5;
   }
-  for (const c of (rec.blob && rec.blob.shelf) || []) if (c && c.created >= from && c.created < to) g.maker += 2;
   const h = hood && gid && hood[gid.slice(0, 8)];
   if (h) g.neighbour += (h.hugs || 0) + 2 * (h.feeds || 0) + 2 * (h.waters || 0) + (h.signs || 0) + Math.min(7, h.visits || 0);
   const breadth = PLAQUES.filter((p) => g[p] > 0).length;

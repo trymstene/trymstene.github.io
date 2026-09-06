@@ -99,7 +99,7 @@ let board = await hit('/citizen');
 ok('the public route answers with live + last', board.live && 'last' in board, Object.keys(board));
 const live = board.live;
 ok('this week: Be leads farmer (kept)', live.plaques.farmer[0] && live.plaques.farmer[0].name === 'Be' && live.plaques.farmer[0].kept === true, live.plaques.farmer);
-ok('this week: Jade leads maker with two shelved bananas', live.plaques.maker[0] && live.plaques.maker[0].name === 'Jade' && live.plaques.maker[0].score === 4, live.plaques.maker);
+ok('four plaques, no Maker', Object.keys(live.plaques).sort().join() === 'farmer,gardener,neighbour,raver', Object.keys(live.plaques));
 ok('a nameless pass never appears', JSON.stringify(live).indexOf('cccc3333') < 0 && !Object.values(live.plaques).flat().some((x) => !x.name), live.plaques);
 ok('a QA home never appears', !JSON.stringify(live).includes('Proofy'), live.plaques.gardener);
 ok('rows carry a look for the frames and no id', live.plaques.farmer[0].look && live.plaques.farmer[0].look.hat === 'party' && !('home' in live.plaques.farmer[0]) && !('id' in live.plaques.farmer[0]), live.plaques.farmer[0]);

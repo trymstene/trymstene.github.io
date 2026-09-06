@@ -288,7 +288,7 @@ function init() {
     cw.className = 'pk-way pk-way--cit';
     cw.textContent = 'CITIZENS';
     cw.style.left = pct(CIT_BOARD.x, W);
-    cw.style.top = pct(CIT_BOARD.y - 107, H);
+    cw.style.top = pct(CIT_BOARD.y - 123, H);   // 7px below the 130-tall board's top
     cw.style.zIndex = String(100 + CIT_BOARD.y + 3);
     cw.addEventListener('click', (e) => { e.stopPropagation(); openCitCard(); });
     world.appendChild(cw);
@@ -305,14 +305,17 @@ function init() {
       citTag = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 8);
     } catch (e) {}
   })();
-  const CIT_PLAQUES = [
-    ['citizen', 'Citizen of the week', 'the widest week: most plaques scored on, then most days here'],
-    ['gardener', 'Gardener', 'harvests, weeds pulled, eggs found, park coins'],
-    ['neighbour', 'Neighbour', 'hugs, feeds, waterings, notes and visits in other people\'s yards'],
-    ['farmer', 'Farmer', 'days on the homestead, feedings, knits, homestead coins'],
-    ['raver', 'Raver', 'drops caught, floors survived, hypes, fives, vinyls, jelly'],
-    ['maker', 'Maker', 'bananas built, emojis forged, items approved, bananas shelved'],
-  ];
+  const CIT_PLAQUES = [['citizen', 'Citizen of the week'], ['gardener', 'Gardener'], ['neighbour', 'Neighbour'], ['farmer', 'Farmer'], ['raver', 'Raver']];
+  // the countdown on the big frame: the week turns Monday 00:00 UTC and the
+  // walk's next lap hangs the new frames
+  function citNext() {
+    const now = Date.now(), d = new Date(now);
+    const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - ((d.getUTCDay() + 6) % 7) * 86400000;
+    const left = Math.max(0, start + 7 * 86400000 - now);
+    const dd = Math.floor(left / 86400000), hh = Math.floor(left / 3600000) % 24, mm = Math.floor(left / 60000) % 60;
+    return dd > 0 ? dd + 'd ' + hh + 'h' : hh > 0 ? hh + 'h ' + mm + 'm' : mm + 'm';
+  }
+  let citTimer = 0;
   const citEsc = (v) => String(v == null ? '' : v).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
   function citDraw(cv, look) {
     try {
@@ -321,6 +324,7 @@ function init() {
   }
   function citFrame(p, title, w) {
     return '<figure class="pk-frame' + (p === 'citizen' ? ' pk-frame--big' : '') + '">'
+      + (p === 'citizen' ? '<span class="pk-frame__pin">new frames in <b>' + citNext() + '</b></span>' : '')
       + '<span class="pk-frame__paper"><canvas class="pk-frame__cv" data-plaque="' + p + '" width="176" height="176"></canvas>'
       + (w ? '' : '<i class="pk-frame__empty">your banana here?</i>') + '</span>'
       + '<figcaption class="pk-frame__plate"><small>' + citEsc(title) + '</small><b>' + citEsc(w ? w.name : '—') + '</b></figcaption></figure>';
@@ -331,26 +335,23 @@ function init() {
     const wins = (last && last.winners) || {};
     const unkept = (last && last.unkept) || {};
     let out = '<h2 class="pk-cardtitle">' + iconSvg('star-solid', { size: 18 }) + ' Citizens of the week</h2>';
-    out += '<p class="pk-cit__lead">Five plaques and one Citizen, every Monday, from what you actually did in Banana World last week. '
-      + (last && last.week ? 'Week ' + citEsc(String(last.week).slice(-2)) + ' is on the wall.' : 'The first frames go up on Monday.') + '</p>';
+    out += '<p class="pk-cit__lead">Four plaques and one Citizen, every Monday, for last week in Banana World.'
+      + (last && last.week ? ' Week ' + citEsc(String(last.week).slice(-2)) + ' is on the wall.' : '') + '</p>';
     out += '<div class="pk-cit__grid">';
-    for (const [p, title, how] of CIT_PLAQUES) {
+    for (const [p, title] of CIT_PLAQUES) {
       const w = wins[p] || null;
-      const run = (live && (p === 'citizen' ? live.citizen : (live.plaques || {})[p])) || [];
       out += '<div class="pk-cit__item">' + citFrame(p, title, w);
-      if (unkept[p] && !w) out += '<p class="pk-cit__note">' + citEsc(unkept[p].name) + ' led this one — but a plaque needs a kept pass.</p>';
-      out += '<p class="pk-cit__how">' + citEsc(how) + '</p>';
-      out += '<p class="pk-cit__run">' + (run.length
-        ? 'this week: ' + run.map((r) => '<span' + (r.tag && r.tag === citTag ? ' class="is-me"' : '') + '>' + citEsc(r.name) + ' ' + (r.score || 0) + (r.tag && r.tag === citTag ? ' (you)' : '') + '</span>').join(' · ')
-        : 'this week: nobody yet') + '</p></div>';
+      if (unkept[p] && !w) out += '<p class="pk-cit__note">' + citEsc(unkept[p].name) + ' led — a plaque needs a kept pass.</p>';
+      out += '</div>';
     }
     out += '</div>';
+    // the ask, said once: in the running and not kept is the honest reason to log in
     const me = live ? Object.entries(live.plaques || {}).map(([p, list]) => [p, (list || []).find((r) => r.tag && r.tag === citTag)]).filter((x) => x[1]) : [];
     const meUnkept = me.find((x) => x[1] && x[1].kept === false);
     out += '<p class="pk-cit__rule">' + (meUnkept
-      ? '<b>You are in the running for ' + citEsc(CIT_PLAQUES.find((x) => x[0] === meUnkept[0])[1]) + '.</b> A plaque goes to a kept pass — '
-      : 'Plaques go to kept passes with a name. ')
-      + '<a class="pk-cta pk-cta--keep" href="/pass/?keep">Keep yours on My Pass →</a></p>';
+      ? '<b>You are in the running for ' + citEsc((CIT_PLAQUES.find((x) => x[0] === meUnkept[0]) || ['', 'a plaque'])[1]) + '.</b> A plaque goes to a kept pass.'
+      : 'Plaques go to kept passes with a name.') + '</p>';
+    out += '<a class="pk-cta pk-cta--keep" href="/pass/?keep"><span class="pk-cta__verb">Keep yours on My Pass →</span></a>';
     citBody.innerHTML = out;
     citBody.querySelector('.pk-cta--keep').addEventListener('click', () => track('citizens_keep'));
     assetsReady().then(() => {
@@ -366,10 +367,13 @@ function init() {
     citPaint();
     citPanel.hidden = false;
     track('park_citizens');
+    clearInterval(citTimer);
+    citTimer = setInterval(() => { const b = citBody.querySelector('.pk-frame__pin b'); if (b) b.textContent = citNext(); }, 30000);
     citLoad().then(() => { if (!citPanel.hidden) citPaint(); });
   }
-  document.getElementById('pkCitClose').addEventListener('click', () => { citPanel.hidden = true; });
-  citPanel.addEventListener('click', (e) => { if (e.target === citPanel) citPanel.hidden = true; });
+  const closeCit = () => { citPanel.hidden = true; clearInterval(citTimer); };
+  document.getElementById('pkCitClose').addEventListener('click', closeCit);
+  citPanel.addEventListener('click', (e) => { if (e.target === citPanel) closeCit(); });
   if (/[?&]citizens(?:=|&|$)/.test(location.search)) setTimeout(openCitCard, 900);   // QA door
 
   // 💛 the board's card: who is keeping the world free. The feed is public
@@ -539,7 +543,7 @@ function init() {
   }
   function tapCitBoard(wx, wy) {   // 🏆 the citizens' board answers a tap the same way
     if (!CIT_BOARD) return false;
-    if (Math.abs(wx - CIT_BOARD.x) > 82 || wy > CIT_BOARD.y + 6 || wy < CIT_BOARD.y - 118) return false;
+    if (Math.abs(wx - CIT_BOARD.x) > 40 || wy > CIT_BOARD.y + 6 || wy < CIT_BOARD.y - 134) return false;
     openCitCard();
     return true;
   }

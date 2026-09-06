@@ -7,7 +7,7 @@ picture frame: cream paper with a grain, a wooden frame, a brass plate with
 the name — the employee-of-the-week frame, not a polaroid, not the supporters'
 plaques (Trym, 6 Sep). Writes:
 
-    public/assets/citizen/<plaque>.webp   citizen, gardener, neighbour, farmer, raver, maker
+    public/assets/citizen/<plaque>.webp   citizen, gardener, neighbour, farmer, raver
     src/data/citizen.json                 { week, winners, unkept, live, at }
 
 Runs in the deploy workflow before the build (daily + on push) and by hand.
@@ -30,9 +30,9 @@ sys.path.insert(0, HERE)
 API = 'https://banana-pass.trymstene.workers.dev/citizen'
 OUT_DIR = os.path.join(ROOT, 'public', 'assets', 'citizen')
 DATA = os.path.join(ROOT, 'src', 'data', 'citizen.json')
-PLAQUES = ['citizen', 'gardener', 'neighbour', 'farmer', 'raver', 'maker']
+PLAQUES = ['citizen', 'gardener', 'neighbour', 'farmer', 'raver']
 TITLES = {'citizen': 'Citizen of the week', 'gardener': 'Gardener', 'neighbour': 'Neighbour',
-          'farmer': 'Farmer', 'raver': 'Raver', 'maker': 'Maker'}
+          'farmer': 'Farmer', 'raver': 'Raver'}
 S = 480                                  # the frame's outer size
 WOOD, WOOD2, PAPER, INK, BRASS = (94, 58, 30, 255), (150, 98, 52, 255), (245, 236, 214, 255), (17, 17, 17, 255), (201, 162, 39, 255)
 

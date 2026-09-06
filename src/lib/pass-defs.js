@@ -16,7 +16,6 @@ export const PATCHES = [
   { id: 'wk-neighbour', icon: 'heart',    title: 'Neighbour of the Week', hint: 'Hugs, feeds and waterings in other people\'s yards.' },
   { id: 'wk-farmer',    icon: 'burger',   title: 'Farmer of the Week', hint: 'The homestead\'s best week.' },
   { id: 'wk-raver',     icon: 'flame',    title: 'Raver of the Week', hint: 'The floor\'s best week.' },
-  { id: 'wk-maker',     icon: 'tag',      title: 'Maker of the Week', hint: 'Bananas built, emojis forged, items approved.' },
   { id: 'chaos',     icon: 'dice',     title: 'Agent of Chaos', hint: 'Let the dice dress the banana.' },
   { id: 'emoji',     icon: 'chat',     title: 'Chat Weapon',    hint: 'Download a chat-sized emoji GIF.' },
   { id: 'spreader',  icon: 'link',     title: 'Spreader',       hint: 'Share a banana with the world.' },

@@ -1547,15 +1547,62 @@ if HAVE_PACK:
     place(_SUPB, SUP_BOARD[0], SUP_BOARD[1], scale=1.0, sh=0.55,
           layer=True, solid=('rect', -72, -16, 72, 4))
 
-    # 🏆 THE CITIZENS' BOARD (6 Sep 2026) — the same drawn board, its papers the
-    # week's plaques; the frames live on its tap card, so the art never goes
-    # stale. On the meadow just east of the plaza's rim, north of the east road,
-    # where Trym circled it. Its header plank is DOM (banana-park.js) too.
+    # 🏆 THE CITIZENS' BOARD (6 Sep 2026) — the supporters' board's little
+    # cousin: half as wide, taller than wide, the same wood. What hangs on it is
+    # a miniature of its own card — one big picture frame on top, four small
+    # ones under it (Trym: "a miniature of that"). The names live on the tap
+    # card, so the art never goes stale. On the meadow just east of the plaza's
+    # rim, north of the east road, where Trym circled it; the plank is DOM.
+    def build_citboard(w=72, ph=104, legh=26, K=3):
+        WOOD_, LIT_, GRAIN_, DARK_ = (146, 102, 56), (178, 128, 72), (120, 83, 44), (104, 71, 38)
+        INK_ = (52, 36, 21)
+        FRAME_, FRAME2_, PAPER_, PLATE_ = (74, 46, 24), (122, 80, 42), (247, 240, 214), (201, 162, 39)
+        NANA_, NANA2_ = (255, 225, 53), (150, 110, 20)
+        W2, H2 = w * K, (ph + legh) * K
+        s = Image.new('RGBA', (W2, H2), (0, 0, 0, 0))
+        d = ImageDraw.Draw(s)
+        lw, lx1, lx2 = 7 * K, 12 * K, (w - 19) * K
+        for lx in (lx1, lx2):                                   # the legs
+            d.rectangle([lx, (ph - 6) * K, lx + lw - 1, H2 - 1], fill=INK_)
+            d.rectangle([lx + K, (ph - 6) * K + K, lx + lw - K - 1, H2 - K - 1], fill=WOOD_)
+            d.rectangle([lx + K, (ph - 6) * K + K, lx + 2 * K - 1, H2 - K - 1], fill=LIT_)
+        d.rectangle([0, 0, W2 - 1, ph * K - 1], fill=INK_)      # the panel
+        d.rectangle([K, K, W2 - K - 1, ph * K - K - 1], fill=WOOD_)
+        d.rectangle([K, K, W2 - K - 1, 5 * K - 1], fill=LIT_)
+        d.rectangle([K, (ph - 6) * K, W2 - K - 1, ph * K - K - 1], fill=DARK_)
+        for gy in (34, 68):
+            d.rectangle([K, gy * K, W2 - K - 1, gy * K + K - 1], fill=GRAIN_)
+        for px in (4, w - 6):
+            for py in (7, ph - 11):
+                d.rectangle([px * K, py * K, px * K + K - 1, py * K + K - 1], fill=INK_)
+
+        def frame(x, y, fw, fh, big):
+            # a picture frame: dark wood with a lit inner edge, cream paper, a
+            # brass plate along the bottom, a yellow banana on the paper
+            d.rectangle([x * K + K, y * K + K, (x + fw) * K + K - 1, (y + fh) * K + K - 1], fill=(0, 0, 0, 70))
+            d.rectangle([x * K, y * K, (x + fw) * K - 1, (y + fh) * K - 1], fill=FRAME_)
+            d.rectangle([x * K + K, y * K + K, (x + fw) * K - K - 1, (y + fh) * K - K - 1], fill=FRAME2_)
+            ix, iy, ex, ey = x + 2, y + 2, x + fw - 2, y + fh - 2
+            d.rectangle([ix * K, iy * K, ex * K - 1, ey * K - 1], fill=PAPER_)
+            pl = 4 if big else 3
+            d.rectangle([(ix + 1) * K, (ey - pl - 1) * K, (ex - 1) * K - 1, (ey - 1) * K - 1], fill=PLATE_)
+            bw, bh = (8, 20) if big else (4, 7)
+            bx, by = (ix + ex) // 2 - bw // 2, iy + (3 if big else 1)
+            d.rounded_rectangle([bx * K, by * K, (bx + bw) * K - 1, (by + bh) * K - 1], radius=2 * K, fill=NANA2_)
+            d.rounded_rectangle([bx * K + K, by * K + K, (bx + bw) * K - K - 1, (by + bh) * K - K - 1], radius=2 * K, fill=NANA_)
+            if big:
+                for ex2 in (bx + 2, bx + 5):
+                    d.rectangle([ex2 * K, (by + 5) * K, ex2 * K + K - 1, (by + 5) * K + K - 1], fill=INK_)
+        frame(8, 9, 56, 44, True)
+        for (fx, fy) in ((8, 58), (38, 58), (8, 78), (38, 78)):
+            frame(fx, fy, 26, 18, False)
+        return blockify(s, factor=K, colors=16, alpha_thresh=0.4, trim=False)
+
     CIT_BOARD = (1715, 535)
     _CITB = '__citizens_board.png'
-    _cache[(_CITB, 1, 28, 0.0, 1.0, 1.0)] = build_supboard()
+    _cache[(_CITB, 1, 28, 0.0, 1.0, 1.0)] = build_citboard()
     place(_CITB, CIT_BOARD[0], CIT_BOARD[1], scale=1.0, sh=0.55,
-          layer=True, solid=('rect', -72, -16, 72, 4))
+          layer=True, solid=('rect', -32, -12, 32, 4))
 
 
 # ---- 🌦 THE RAIN TILE --------------------------------------------------

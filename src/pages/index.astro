@@ -49,7 +49,7 @@ const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  �
 import yardCards from '../data/yard-cards.json';
 // 🏆 the citizens of the week — frames baked by tools/build-citizen-cards.py (the deploy runs it daily)
 import citizens from '../data/citizen.json';
-const CIT_ORDER = [['citizen', 'Citizen of the week'], ['gardener', 'Gardener'], ['neighbour', 'Neighbour'], ['farmer', 'Farmer'], ['raver', 'Raver'], ['maker', 'Maker']];
+const CIT_ORDER = [['citizen', 'Citizen of the week'], ['gardener', 'Gardener'], ['neighbour', 'Neighbour'], ['farmer', 'Farmer'], ['raver', 'Raver']];
 const citWon = CIT_ORDER.filter(([p]) => citizens.winners && citizens.winners[p]);
 // hero slides are HONEST world shots (tools/reel/export_hero.py: real plate
 // crops, sprites at true game scale) — the stylized reel stills stay in the
@@ -120,12 +120,12 @@ const FEATURES = [
     }
     .bwl-sub { font-family: "Archivo Black", sans-serif; font-size: clamp(1.2rem, 4vw, 1.7rem); margin: 2.4rem 0 0.2rem; }
     /* 🏆 the citizens' frames: the Citizen big, the five plaques in a row */
-    .bwl-cit { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.7rem; margin: 1rem auto 0; max-width: 980px; }
+    .bwl-cit { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; margin: 1rem auto 0; max-width: 820px; }
     .bwl-cit__frame { display: block; }
     .bwl-cit__frame img { display: block; width: 100%; height: auto; }
     .bwl-cit__frame--big { grid-column: 1 / -1; max-width: 300px; margin: 0 auto; }
     .bwl-cit__rule { margin: 0.7rem 0 0; font-size: 0.86rem; opacity: 0.8; }
-    @media (max-width: 640px) { .bwl-cit { grid-template-columns: repeat(3, minmax(0, 1fr)); } .bwl-cit__frame--big { max-width: 240px; } }
+    @media (max-width: 640px) { .bwl-cit { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bwl-cit__frame--big { max-width: 240px; } }
     .bwl-subnote { margin: 0.2rem 0 0; font-size: 0.92rem; opacity: 0.75; }
     .bwl-yards {
       display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -237,8 +237,8 @@ const FEATURES = [
 
     <h3 class="bwl-sub">Citizens of the week</h3>
     <p class="bwl-subnote">{citWon.length
-      ? 'Five plaques and one Citizen, every Monday, for what people actually did in Banana World.'
-      : 'Five plaques and one Citizen go up every Monday, for what people actually did in Banana World. The first frames are coming.'}</p>
+      ? 'Four plaques and one Citizen, every Monday, for what people actually did in Banana World.'
+      : 'Four plaques and one Citizen go up every Monday, for what people actually did in Banana World. The first frames are coming.'}</p>
     <div class="bwl-cit">
       {CIT_ORDER.map(([p, title]) => (
         <a class={'bwl-cit__frame' + (p === 'citizen' ? ' bwl-cit__frame--big' : '')} href="/park/?citizens" title={title}>

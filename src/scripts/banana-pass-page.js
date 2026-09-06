@@ -1056,7 +1056,7 @@ async function citizenLine() {
     const d = await (await fetch('https://banana-pass.trymstene.workers.dev/citizen')).json();
     const live = d && d.live;
     if (!live) return;
-    const TITLES = { citizen: 'Citizen', gardener: 'Gardener', neighbour: 'Neighbour', farmer: 'Farmer', raver: 'Raver', maker: 'Maker' };
+    const TITLES = { citizen: 'Citizen', gardener: 'Gardener', neighbour: 'Neighbour', farmer: 'Farmer', raver: 'Raver' };
     const mine = [];
     for (const [p, list] of Object.entries(live.plaques || {})) {
       const i = (list || []).findIndex((r) => r.tag === tag);
