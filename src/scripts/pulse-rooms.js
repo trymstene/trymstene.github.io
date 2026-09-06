@@ -514,6 +514,20 @@ export function renderWorld(into, S) {
   tile(gs, 'passes re-minted', nfmt(reminted), 'healed');
   if (refused || prefused) div('hqp-warn', '⚠ ' + nfmt(refused + prefused) + ' phones hit a wall in this window — the why rides the event (token · unclaimed · offline)', s);
 
+  // ── 🎫 the ask ────────────────────────────────────────────────────────
+  // 6 Sep 2026: the HUD's crowd chip turns amber and blinks "not saved" once
+  // an anonymous player has something to lose; a tap lands on the pass page's
+  // email row. Shown → tapped → asked for a link → logged in: the funnel from
+  // a blinking pill to a pass that survives a lost phone, in PEOPLE.
+  const askShown = ppl('pass_ask_shown'), askTap = ppl('pass_ask_tap');
+  const askLink = ppl('pass_mail_signin'), askIn = ppl('pass_mail_login') + ppl('pass_mail_attached');
+  s = section(into, 'The ask', 'The blinking "not saved" pill in the world HUD — only for anonymous players with something to lose, never at spawn. Each step counts people. The step to watch is shown → tapped; the pass page owns the rest.');
+  const ga = div('hqp-tiles', null, s);
+  tile(ga, 'saw the pill', nfmt(askShown), askShown ? 'people' : 'nobody yet');
+  tile(ga, 'tapped it', nfmt(askTap), askShown >= MIN_N ? (askTap / askShown * 100).toFixed(1) + '% of them' : 'needs 20 shown');
+  tile(ga, 'asked for a link', nfmt(askLink), 'typed an email');
+  tile(ga, 'logged in', nfmt(askIn), 'kept for good');
+
   // ── the shops inside the world ─────────────────────────────────────────
   s = section(into, 'The shops inside the world', 'Every storefront a banana can walk into. Some sell for coins and some take real money — the row says which.');
   SHOPS.forEach((sh) => {

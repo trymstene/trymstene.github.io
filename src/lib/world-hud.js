@@ -73,7 +73,18 @@ const CSS = `
 .wh__crowd { color: #8affc0; }
 /* a chip with nothing to say takes no room — the bay's rally line, mostly */
 .wh__slot:empty { display: none; }
-@media (prefers-reduced-motion: reduce) { .wh__lvlbar i { transition: none; } }
+/* 🎫 THE SAVE ASK — the crowd chip doubles as the save door (Trym, 6 Sep 2026:
+   reuse the online pill, make it blink when progress is at risk, a tap = sign
+   in on the pass). Amber, not red: nothing is broken, something is not kept
+   yet. While it is on, the presence text is hidden, never removed — the club's
+   engine keeps writing into the same nodes underneath. */
+.wh__crowd--save { border-color: #ffb340 !important; color: #ffd98a; cursor: pointer; }
+.wh__crowd--save > :not(.wh__save):not(.wh__savedot) { display: none; }
+.wh__savedot { color: #ffb340; animation: wh-blink 1s step-end infinite; }
+.wh__save { color: inherit; text-decoration: none; font: inherit; }
+.wh__save:focus-visible { outline: 2px solid #ffb340; outline-offset: 2px; }
+@keyframes wh-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.18; } }
+@media (prefers-reduced-motion: reduce) { .wh__lvlbar i { transition: none; } .wh__savedot { animation: none; } }
 `;
 
 let styled = false;
@@ -94,6 +105,27 @@ function injectCss() {
 // passSpend() refuses to dig one; if a negative ever shows up it is a bug and
 // must be visible, not swallowed.
 export const coinBalance = () => coinsNow();
+
+// 🎫 THE SAVE ASK. Anonymous progress lives in one browser: the pass is real
+// and syncing, but nothing survives a wipe or follows to a second phone until
+// an email is on it. Once there is something to lose — a coin, a rep point, a
+// name, a claimed homestead — the crowd chip turns into the save door: amber,
+// the dot blinking, "not saved"; a tap lands on the pass page's email row.
+// Never at spawn (nothing at risk yet), never for a login (email or passkey).
+// Read every second by refresh(), so a login on the pass page turns it off
+// the moment the player comes back.
+const SAVE_HREF = '/pass/?keep';
+const areaName = () => { try { return location.pathname.split('/')[1] || 'site'; } catch (e) { return 'site'; } };
+function saveAtRisk(stats) {
+  try {
+    const l = JSON.parse(localStorage.getItem('pass-link') || 'null');
+    if (l && l.credId && !String(l.credId).startsWith('a:')) return false;
+    if ((stats.coins_earned || 0) > 0 || (stats.rep || 0) > 0) return true;
+    if (localStorage.getItem('ps-name-v1')) return true;
+    const y = JSON.parse(localStorage.getItem('hs-v1') || 'null');
+    return !!(y && y.claimedAt);
+  } catch (e) { return false; }
+}
 
 /**
  * @param mount   the element the strip goes in (a map wrapper for 'overlay')
@@ -159,6 +191,36 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
   }
   adopt.forEach((n) => { if (n) el.appendChild(n); });
   mount.appendChild(el);
+  // the crowd chip — built here, or the club's own (adopted) one
+  const crowdEl = made.crowd || adopt.find((n) => n && n.classList && n.classList.contains('wh__crowd')) || null;
+  let saveOn = false, saveTold = false;
+  function syncSave(stats) {
+    if (!crowdEl) return;
+    const on = saveAtRisk(stats);
+    if (on === saveOn) return;
+    saveOn = on;
+    crowdEl.classList.toggle('wh__crowd--save', on);
+    const dot = crowdEl.querySelector('.wh__savedot'), a = crowdEl.querySelector('.wh__save');
+    if (!on) { if (dot) dot.remove(); if (a) a.remove(); return; }
+    if (!dot) {
+      const d = document.createElement('span');
+      d.className = 'wh__savedot'; d.setAttribute('aria-hidden', 'true'); d.textContent = '◍';
+      crowdEl.appendChild(d);
+    }
+    if (!a) {
+      const link = document.createElement('a');
+      link.className = 'wh__save'; link.href = SAVE_HREF; link.textContent = 'not saved';
+      link.setAttribute('aria-label', 'Not saved to an email yet — log in to keep your progress');
+      link.addEventListener('click', () => { try { if (window.gtag) window.gtag('event', 'pass_ask_tap', { via: 'hud', area: areaName() }); } catch (e) {} });
+      crowdEl.appendChild(link);
+    }
+    if (!saveTold) { saveTold = true; try { if (window.gtag) window.gtag('event', 'pass_ask_shown', { via: 'hud', area: areaName() }); } catch (e) {} }
+  }
+  if (crowdEl) crowdEl.addEventListener('click', (e) => {   // the whole chip is the door, not just the word
+    if (!saveOn) return;
+    const a = crowdEl.querySelector('.wh__save');
+    if (a && e.target !== a) { e.preventDefault(); a.click(); }
+  });
 
   const lvlN = made.lvl && made.lvl.querySelector('.wh__lvln');
   const lvlFill = made.lvl && made.lvl.querySelector('.wh__lvlbar i');
@@ -183,6 +245,7 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
         : Math.round(((g.n - g.prevAt) / (g.nextAt - g.prevAt)) * 100)) + '%';
     }
     if (tixN && values.tix) tixN.textContent = values.tix();
+    syncSave(s);
   }
 
   // ⚠️ THE FIRST REFRESH IS DEFERRED ONE TICK, ON PURPOSE. Callers mount this

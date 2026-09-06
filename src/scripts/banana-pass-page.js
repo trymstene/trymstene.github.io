@@ -333,6 +333,13 @@ async function init() {
   paint();
   initTabs();
   initSync();
+  // 🎫 the HUD's "not saved" pill lands here (/pass/?keep): open the keep row
+  // and put the cursor in the email box — the tap already said what they want
+  if (/[?&]keep(?:=|&|$)/.test(location.search)) {
+    const keep = el('psKeep'), inp = el('psMailIn');
+    if (keep) { keep.open = true; try { keep.scrollIntoView({ block: 'center' }); } catch (e) {} }
+    if (inp) setTimeout(() => { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 350);
+  }
   initShare();
   initChips();
   startSignature();

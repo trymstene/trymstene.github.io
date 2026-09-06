@@ -50,6 +50,8 @@ const RANGE = {
     { name: 'offer_world', v: 2, u: 2 }, { name: 'offer_support', v: 2, u: 2 },
     { name: 'gif_download', v: 176, u: 150 }, { name: 'builder_boot', v: 300, u: 250 }, { name: 'builder_start', v: 100, u: 90 },
     { name: 'shop_view', v: 50, u: 45 }, { name: 'select_item', v: 28, u: 24 }, { name: 'view_item', v: 33, u: 28 },
+    // the save ask (6 Sep): the HUD pill -> the pass page's email row -> a kept pass
+    { name: 'pass_ask_shown', v: 61, u: 40 }, { name: 'pass_ask_tap', v: 9, u: 8 }, { name: 'pass_mail_signin', v: 6, u: 5 }, { name: 'pass_mail_login', v: 3, u: 3 }, { name: 'pass_mail_attached', v: 1, u: 1 },
   ],
   eventMap: { gif_download: { US: 100, NO: 20, DE: 12 }, offer_pack: { US: 15, NO: 4 } },
   stepTimes: {},
@@ -99,6 +101,7 @@ await page.waitForTimeout(2500);
 out.roomChips = await page.locator('.ps-room').count();
 out.pulseText = (await page.locator('#bmPulse').innerText().catch(() => 'no #bmPulse')).slice(0, 300);
 if (!out.roomChips) { console.log(JSON.stringify(out, null, 1)); await browser.close(); server.close(); process.exit(1); }
+const has = (txt, t) => String(txt || '').toLowerCase().includes(String(t).toLowerCase());   // tile labels are uppercased by CSS, innerText honours it
 const roomShot = async (label, name) => {
   const chip = page.locator('.ps-room', { hasText: label }).first();
   await chip.click();
@@ -109,16 +112,24 @@ const roomShot = async (label, name) => {
 };
 const dl = await roomShot('DOWNLOADS', 'downloads');
 out.downloads = {
-  tiles: ['pack taps', 'take rate', 'browsed packs', 'no-thanks', 'old asks'].map((t) => [t, dl.includes(t)]),
+  tiles: ['pack taps', 'take rate', 'browsed packs', 'no-thanks', 'old asks'].map((t) => [t, has(dl, t)]),
   cap: (dl.match(/Of every 100 people shown the card[^\n]*/) || [''])[0],
-  cols: ['🎟 packs', 'take'].map((t) => [t, dl.includes(t)]),
-  oldWords: ['coffee clicks', 'willingness', 'warm-up', 'supported'].filter((t) => dl.includes(t)),
+  cols: ['🎟 packs', 'take'].map((t) => [t, has(dl, t)]),
+  oldWords: ['coffee clicks', 'willingness', 'warm-up', 'supported'].filter((t) => has(dl, t)),
 };
 const sh = await roomShot('SHOP', 'shop');
 out.shop = {
-  sections: ['Where product clicks come from', 'The pack card', 'Got the pack card', 'Tapped a pack'].map((t) => [t, sh.includes(t)]),
-  listRows: ['The shop grid', 'The GIF page · pack carousel, top', 'The GIF page · pack carousel, download hub', 'Shop strip · gif hub', 'The shop · custom lane'].map((t) => [t, sh.includes(t)]),
-  oldWords: ['support ask', 'buy-me-a-coffee'].filter((t) => sh.includes(t)),
+  sections: ['Where product clicks come from', 'The pack card', 'Got the pack card', 'Tapped a pack'].map((t) => [t, has(sh, t)]),
+  listRows: ['The shop grid', 'The GIF page · pack carousel, top', 'The GIF page · pack carousel, download hub', 'Shop strip · gif hub', 'The shop · custom lane'].map((t) => [t, has(sh, t)]),
+  oldWords: ['support ask', 'buy-me-a-coffee'].filter((t) => has(sh, t)),
+};
+// ── the world room reads the save ask (6 Sep): the funnel from the blinking
+// pill to a kept pass, in people, next to the sync-health tiles
+const wd = await roomShot('WORLD', 'world');
+out.world = {
+  sections: ['The ask', 'Sync health'].map((t) => [t, has(wd, t)]),
+  tiles: ['saw the pill', 'tapped it', 'asked for a link', 'logged in'].map((t) => [t, has(wd, t)]),
+  rate: (wd.match(/[0-9.]+% of them/) || [''])[0],
 };
 // ── the map tooltip must stay inside the card at every pin (it used to be
 // drawn above the pin and clipped for countries high on the map)
