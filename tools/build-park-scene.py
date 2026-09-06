@@ -461,6 +461,7 @@ SIGNS = []
 ROAD_SIGN = None                # 🧭 the waypost at the east road's end
 ROAD_SIGN_W = None              # 🧭 …and the west road's (→ the Homestead)
 SUP_BOARD = None                # 💛 the supporters board, by Old Peel's bench
+CIT_BOARD = None                # 🏆 the citizens' board, on the meadow east of the plaza
 MARKET = {}
 
 TRUNK = ('rect', -13, -36, 13, 0)
@@ -1546,6 +1547,16 @@ if HAVE_PACK:
     place(_SUPB, SUP_BOARD[0], SUP_BOARD[1], scale=1.0, sh=0.55,
           layer=True, solid=('rect', -72, -16, 72, 4))
 
+    # 🏆 THE CITIZENS' BOARD (6 Sep 2026) — the same drawn board, its papers the
+    # week's plaques; the frames live on its tap card, so the art never goes
+    # stale. On the meadow just east of the plaza's rim, north of the east road,
+    # where Trym circled it. Its header plank is DOM (banana-park.js) too.
+    CIT_BOARD = (1715, 535)
+    _CITB = '__citizens_board.png'
+    _cache[(_CITB, 1, 28, 0.0, 1.0, 1.0)] = build_supboard()
+    place(_CITB, CIT_BOARD[0], CIT_BOARD[1], scale=1.0, sh=0.55,
+          layer=True, solid=('rect', -72, -16, 72, 4))
+
 
 # ---- 🌦 THE RAIN TILE --------------------------------------------------
 # ONE seamless tile, scrolled by CSS transform, is the whole rain engine: no
@@ -1933,6 +1944,8 @@ def emit_geo():
              % ('{ x: %d, y: %d }' % ROAD_SIGN_W if ROAD_SIGN_W else 'null'))
     L.append('export const SUP_BOARD = %s;'
              % ('{ x: %d, y: %d }' % SUP_BOARD if SUP_BOARD else 'null'))
+    L.append('export const CIT_BOARD = %s;'
+             % ('{ x: %d, y: %d }' % CIT_BOARD if CIT_BOARD else 'null'))
     L.append('export const OLDBENCH = %s;' % list(OLD_BENCH))
     L.append('export const MEADOW = %s;' % list(MEADOW))
     L.append('export const PLOTS = %s;' % [list(p) for p in PLOTS])

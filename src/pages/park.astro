@@ -566,48 +566,48 @@ const faq = {
       font-size: 0.62rem; padding: 3px 22px; letter-spacing: 0.06em;
       pointer-events: auto; cursor: pointer;
     }
-    /* 🏆 the citizens' wall: a small frame on the meadow, and the card's frames */
-    .pk-citwall {
-      position: absolute; width: 5.4%; aspect-ratio: 1; padding: 0; border: 0; background: none; cursor: pointer;
-      pointer-events: auto;
-    }
-    .pk-citwall .pk-frame { display: block; width: 100%; height: 100%; padding: 6%; }
-    .pk-citwall .pk-frame__paper { height: 100%; }
-    .pk-citwall canvas { width: 150%; height: 150%; margin: -12% 0 0 -25%; }
+    /* 🏆 the citizens' card: six picture frames. ⚠️ the drawing sits ABSOLUTE
+       inside the paper — a canvas in flow made every grid track as wide as the
+       canvas, and on desktop the card grew a horizontal scrollbar with the big
+       frame cut off (Trym's screenshot, 6 Sep). */
     .pk-frame {
-      display: block; margin: 0; padding: 8px; background: #5e3a1e; border: 3px solid #2a1708;
-      box-shadow: inset 0 0 0 3px #96623a, 4px 5px 0 rgba(0, 0, 0, 0.45); border-radius: 2px;
+      display: block; margin: 0; padding: 6px; background: #5e3a1e; border: 3px solid #2a1708;
+      box-shadow: inset 0 0 0 3px #96623a, 3px 4px 0 rgba(0, 0, 0, 0.45); border-radius: 2px;
     }
     .pk-frame__paper {
-      display: block; position: relative; overflow: hidden; height: 112px; background: #f5ecd6;
+      display: block; position: relative; overflow: hidden; height: 92px; background: #f5ecd6;
       background-image: repeating-linear-gradient(0deg, rgba(90, 60, 20, 0.05) 0 1px, transparent 1px 3px),
         repeating-linear-gradient(90deg, rgba(90, 60, 20, 0.035) 0 1px, transparent 1px 4px);
       box-shadow: inset 0 0 0 1px rgba(90, 60, 20, 0.35);
     }
     /* a CLOSE-UP: the drawing is bigger than the paper window, so the head and shoulders fill it */
-    .pk-frame__cv { display: block; width: 210px; height: 210px; margin: -14px auto 0; image-rendering: pixelated; }
-    .pk-frame--big .pk-frame__paper { height: 170px; }
-    .pk-frame--big .pk-frame__cv { width: 330px; height: 330px; margin-top: -26px; }
+    .pk-frame__cv {
+      position: absolute; left: 50%; top: -12px; width: 172px; height: 172px;
+      transform: translateX(-50%); image-rendering: pixelated;
+    }
+    .pk-frame--big .pk-frame__paper { height: 136px; }
+    .pk-frame--big .pk-frame__cv { top: -18px; width: 256px; height: 256px; }
     .pk-frame__empty {
       position: absolute; inset: 0; display: grid; place-items: center; font-style: normal;
-      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; color: rgba(90, 60, 20, 0.55); text-transform: uppercase;
+      font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em; color: rgba(90, 60, 20, 0.55); text-transform: uppercase;
     }
     .pk-frame__plate {
-      display: flex; flex-direction: column; margin: 8px 6px 0; padding: 4px 10px 6px; background: #c9a227;
+      display: flex; flex-direction: column; margin: 6px 4px 0; padding: 3px 8px 5px; background: #c9a227;
       border: 2px solid #78500f; border-radius: 4px; color: #111; text-align: left;
     }
     .pk-frame__plate small { font-size: 0.55rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #4a3308; }
-    .pk-frame__plate b { font-size: 0.95rem; line-height: 1.1; overflow-wrap: anywhere; }
+    .pk-frame__plate b { font-size: 0.85rem; line-height: 1.1; overflow-wrap: anywhere; }
     .pk-cit__lead { margin: 0.2rem 0 0.8rem; font-size: 0.86rem; opacity: 0.85; }
-    .pk-cit__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem 0.8rem; }
+    .pk-cit__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8rem 0.7rem; }
+    .pk-cit__item { min-width: 0; }
     .pk-cit__item:first-child { grid-column: 1 / -1; }
-    .pk-cit__item:first-child .pk-frame { max-width: 300px; margin: 0 auto; }
+    .pk-cit__item:first-child .pk-frame { max-width: 236px; margin: 0 auto; }
     .pk-cit__how { margin: 0.4rem 0 0; font-size: 0.68rem; opacity: 0.72; line-height: 1.3; }
     .pk-cit__run { margin: 0.25rem 0 0; font-size: 0.72rem; font-weight: 700; }
     .pk-cit__run .is-me { color: var(--nana, #ffe135); }
     .pk-cit__note { margin: 0.35rem 0 0; font-size: 0.7rem; font-weight: 700; color: #ffb340; }
     .pk-cit__rule { margin: 1rem 0 0; font-size: 0.82rem; }
-    @media (max-width: 420px) { .pk-cit__grid { grid-template-columns: 1fr; } }
+    @media (max-width: 340px) { .pk-cit__grid { grid-template-columns: minmax(0, 1fr); } }
     a.pk-cta { text-decoration: none; }   /* the card's door is a button, not a link */
     .pk-plaqs { margin: 0; }
     /* 🪵 the board, inside the card.

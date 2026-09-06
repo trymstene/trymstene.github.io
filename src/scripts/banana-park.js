@@ -276,12 +276,13 @@ function init() {
     }
   }
 
-  // 🏆 THE CITIZENS' WALL (6 Sep 2026) — the week's five plaques and the
-  // Citizen, each a picture frame with the winner's banana close up on paper
-  // (Trym: "like an actual employee of the month image frame" — not the
-  // supporters' plaques, not a polaroid). A plank and one small frame stand
-  // on the meadow; the card holds all six with this week's running top three.
-  // Nothing is drawn over anybody's head: the honour is the frame.
+  // 🏆 THE CITIZENS' BOARD (6 Sep 2026) — the supporters' drawn board again
+  // (build-park-scene.py bakes it at CIT_BOARD, papers and all) with the same
+  // DOM plank nailed across its top rail. The week's five plaques and the
+  // Citizen live on its card as picture frames: the winner's banana close up
+  // on paper (Trym: "like an actual employee of the month image frame" — not
+  // the supporters' plaques, not a polaroid). Nothing is drawn over anybody's
+  // head: the honour is the frame.
   if (CIT_BOARD) {
     const cw = document.createElement('div');
     cw.className = 'pk-way pk-way--cit';
@@ -291,16 +292,6 @@ function init() {
     cw.style.zIndex = String(100 + CIT_BOARD.y + 3);
     cw.addEventListener('click', (e) => { e.stopPropagation(); openCitCard(); });
     world.appendChild(cw);
-    const wall = document.createElement('button');
-    wall.type = 'button';
-    wall.className = 'pk-citwall';
-    wall.setAttribute('aria-label', 'Citizens of the week');
-    wall.innerHTML = '<span class="pk-frame pk-frame--wall"><span class="pk-frame__paper"><canvas width="176" height="176" data-plaque="citizen"></canvas></span></span>';
-    wall.style.left = pct(CIT_BOARD.x - 40, W);
-    wall.style.top = pct(CIT_BOARD.y - 96, H);
-    wall.style.zIndex = String(100 + CIT_BOARD.y + 2);
-    wall.addEventListener('click', (e) => { e.stopPropagation(); openCitCard(); });
-    world.appendChild(wall);
   }
   const citPanel = document.getElementById('pkCit');
   const citBody = document.getElementById('pkCitBody');
@@ -379,12 +370,6 @@ function init() {
   }
   document.getElementById('pkCitClose').addEventListener('click', () => { citPanel.hidden = true; });
   citPanel.addEventListener('click', (e) => { if (e.target === citPanel) citPanel.hidden = true; });
-  // the small frame on the meadow shows the standing Citizen
-  citLoad().then((d) => {
-    const w = d && d.last && d.last.winners && d.last.winners.citizen;
-    const cv = document.querySelector('.pk-citwall canvas');
-    if (w && cv) assetsReady().then(() => citDraw(cv, w.look));
-  });
   if (/[?&]citizens(?:=|&|$)/.test(location.search)) setTimeout(openCitCard, 900);   // QA door
 
   // 💛 the board's card: who is keeping the world free. The feed is public
@@ -550,6 +535,12 @@ function init() {
     if (!SUP_BOARD) return false;
     if (Math.abs(wx - SUP_BOARD.x) > 82 || wy > SUP_BOARD.y + 6 || wy < SUP_BOARD.y - 118) return false;
     openSupCard();
+    return true;
+  }
+  function tapCitBoard(wx, wy) {   // 🏆 the citizens' board answers a tap the same way
+    if (!CIT_BOARD) return false;
+    if (Math.abs(wx - CIT_BOARD.x) > 82 || wy > CIT_BOARD.y + 6 || wy < CIT_BOARD.y - 118) return false;
+    openCitCard();
     return true;
   }
 
@@ -910,7 +901,7 @@ function init() {
     if (birds.tapBird(wx, wy)) return;      // 🔭 they fly above everything
     if (critters.tapBfly(wx, wy)) return;
     if (critters.tapAnimal(wx, wy)) return;
-    if (tapSupBoard(wx, wy)) return;
+    if (tapSupBoard(wx, wy) || tapCitBoard(wx, wy)) return;
     if (npc.tapOld(wx, wy)) return;
     if (npc.tapPeelBed(wx, wy)) return;   // 🌼 his flowerbed answers with fussing
     // ⚠️ NO tapWeed HERE (30 Jul). Weeds are a CHORE, and the park's grammar
