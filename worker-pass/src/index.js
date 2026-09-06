@@ -65,6 +65,7 @@ export default {
       if (url.pathname === '/admin/log') return adminLog(request, env, url);
       if (url.pathname === '/admin/rollup') return adminRollup(request, env, url);
       if (url.pathname === '/admin/rollup/tick') return adminTick(request, env, url);
+      if (url.pathname === '/admin/people') return adminPeople(request, env, url);
       if (url.pathname === '/kofi-hook') return kofiHook(request, env);
       if (url.pathname === '/polar-hook') return polarHook(request, env);
       if (url.pathname === '/pay/checkout') return payCheckout(request, env, url);
@@ -872,6 +873,17 @@ const GRANT_CAP = 100000;    // no fat fingers turning 100 into 100000000
 const ROLL_READ = 40;        // records a tick reads (1 list + 40 gets + 2 puts)
 const ROLL_KEEP = 120;       // days of history kept
 const ROLL_STATE = 'rollup/state.json';
+// 👥 THE PEOPLE INDEX — one row per pass, the WHOLE population, written by the
+// same walk that writes the day's rollup (6 Sep 2026, Trym: "how do we make
+// sure that i get these profiles built well in my HQ?"). The desk's list used
+// to be the first 46 records R2 happened to list: a random sample presented as
+// the player base, with `mail` and `devices` wrong whenever a pointer landed in
+// another request. The walk reads every record, so it resolves pointer → home
+// and writes people/index.json at the end of every lap; the desk reads ONE
+// file. The walk no longer stops when the day file is written — it laps all
+// day, so "seen" is at most one lap stale (N records ÷ 40 per tick ÷ 6 ticks
+// an hour). QA homes never appear.
+const PEOPLE_KEY = 'people/index.json';
 const rollKey = (d) => 'rollup/day-' + d + '.json';
 const isoDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 const dayIdx = (iso) => Math.floor(Date.parse(iso + 'T00:00:00Z') / 86400000);
@@ -995,25 +1007,75 @@ function foldRoll(acc, rec, today) {
   if (blob.farm || (blob.pass && stats.hs_day)) acc.farm++;
 }
 
-// one cron tick: read a page, fold it, leave a cursor or finish the day
+// 👥 a record on its way past the walk: a home becomes a row, a pointer is
+// remembered against the home it opens (devices, and whether one is an email)
+async function peopleFold(env, st, k, rec) {
+  if (!rec || rec.qa) return;
+  if (rec.link) {
+    const e = st.ptr[rec.link] || (st.ptr[rec.link] = { devices: 0, mail: false });
+    e.devices++;
+    if (isMailKey(k)) e.mail = true;
+    return;
+  }
+  st.rows.push({ home: k.slice(5, -5), ...(await rowOf(env, k, rec)) });
+}
+function peopleFile(st) {
+  const rows = st.rows.map((r) => {
+    const e = st.ptr[r.home] || { devices: 0, mail: false };
+    const { home, ...row } = r;
+    return { ...row, mail: !!(e.mail || row.mail), devices: row.devices + e.devices };
+  }).sort((a, b) => b.updated - a.updated);
+  return { at: Date.now(), n: rows.length, rows };
+}
+
+// one cron tick: read a page, fold it, leave a cursor or finish the lap. The
+// first lap of a day also writes the day's rollup file; every lap rewrites
+// the people index.
 async function rollupTick(env) {
   const today = isoDay(Date.now());
   let st = null;
   try { const o = await env.PASSES.get(ROLL_STATE); st = o ? await o.json() : null; } catch (e) {}
-  if (!st || st.acc.day !== today) st = { cursor: null, acc: blankRoll(today) };
-  if (st.acc.done) return { skipped: 1, day: today };
+  if (!st || st.acc.day !== today) st = { cursor: null, acc: blankRoll(today), dayDone: 0, rows: [], ptr: {}, laps: 0 };
+  // a state written before the people index: the finished day means the day
+  // file is on disk; start lapping for people from the top
+  if (st.acc.done && !st.dayDone) { st.dayDone = 1; st.cursor = null; st.rows = []; st.ptr = {}; st.laps = st.laps || 0; }
+  if (!Array.isArray(st.rows)) { st.rows = []; st.ptr = {}; }
   const list = await env.PASSES.list({ prefix: 'pass/', limit: ROLL_READ, cursor: st.cursor || undefined });
   const recs = await readMany(env, list.objects.map((o) => o.key));
-  for (const [, rec] of recs) foldRoll(st.acc, rec, today);
+  for (const [k, rec] of recs) {
+    if (!st.dayDone) foldRoll(st.acc, rec, today);
+    await peopleFold(env, st, k, rec);
+  }
   st.acc.pages++;
   st.acc.at = Date.now();
   st.cursor = list.truncated ? list.cursor : null;
+  let people = 0;
   if (!list.truncated) {
-    st.acc.done = 1;
-    await env.PASSES.put(rollKey(today), JSON.stringify(st.acc));
+    if (!st.dayDone) {
+      st.acc.done = 1;
+      st.dayDone = 1;
+      await env.PASSES.put(rollKey(today), JSON.stringify(st.acc));
+    }
+    const file = peopleFile(st);
+    await env.PASSES.put(PEOPLE_KEY, JSON.stringify(file));
+    people = file.n;
+    st.rows = []; st.ptr = {}; st.laps = (st.laps || 0) + 1; st.peopleAt = file.at;
   }
   await env.PASSES.put(ROLL_STATE, JSON.stringify(st));
-  return { day: today, pages: st.acc.pages, scanned: st.acc.scanned, done: st.acc.done };
+  return { day: today, pages: st.acc.pages, scanned: st.acc.scanned, done: st.dayDone ? 1 : 0, lap: st.rows.length, people };
+}
+
+// the desk's list: the whole population in one get, plus where the current lap is
+async function adminPeople(request, env, url) {
+  if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
+  let file = null, lap = null;
+  try { const o = await env.PASSES.get(PEOPLE_KEY); file = o ? await o.json() : null; } catch (e) {}
+  try {
+    const o = await env.PASSES.get(ROLL_STATE);
+    const st = o ? await o.json() : null;
+    if (st) lap = { seen: (st.rows || []).length, laps: st.laps || 0 };
+  } catch (e) {}
+  return json(file ? { ...file, lap } : { building: 1, lap }, 200, { ...cors(env, request), 'Cache-Control': 'no-store' });
 }
 
 // 📈 the desk's history: N daily files, one get each, nothing computed live
@@ -1038,6 +1100,58 @@ async function adminTick(request, env, url) {
   return json(await rollupTick(env), 200, { ...cors(env, request), 'Cache-Control': 'no-store' });
 }
 
+// one pass → one desk row. Shared by the live scan and the people index, so
+// the two can never disagree about what a row holds. `mail` and `devices` here
+// know only this record; the callers add what the pointers say.
+async function rowOf(env, k, rec) {
+  const blob = rec.blob || {};
+  const p = blob.pass || {};
+  const stats = statsOf(p);        // totals, not the frozen scalars
+  const gear = Object.keys(stats).filter((x) => x.startsWith('own_') && stats[x] > 0).map((x) => x.slice(4));
+  const rep = stats.rep || 0;
+  return {
+    id: k.slice(5, 13),                        // stable pseudo-id, never the credId
+    // 🏷 the owner TAG — sha256 of the world id, first 8 hex. The yard room
+    // publishes the same tag on each yard, so HQ can put a homestead next
+    // to a pass without the pass id or the world id ever leaving either store
+    tag: (await sha256Hex(await worldGid(env, k.slice(5, -5)))).slice(0, 8),
+    name: (blob.name || '').slice(0, 24),
+    updated: rec.updated || 0,
+    created: p.created || 0,
+    mail: isMailKey(k),
+    devices: Object.keys(rec.tokens || {}).length,
+    days: (p.days || []).length,
+    badges: Object.keys(p.patches || {}).length,
+    shelf: (blob.shelf || []).length,
+    rep,
+    level: levelFor(rep).level,                // ⚠️ the real curve — see the import
+    jelly: stats.jelly || 0,
+    // 💰 the server wallet once frozen, the client ledger's number until then
+    coins: rec.wallet ? walletBal(rec.wallet)
+      : Math.max(0, (stats.coins_earned || 0) + (stats.coins_refunded || 0) - (stats.coins_spent || 0)),
+    wallet: !!rec.wallet,
+    refused: (rec.wallet && rec.wallet.refused) || 0,
+    // 📏 events a faucet rule refused (by reason) and unnamed ones let through
+    rr: rec.log && rec.log.rr ? Object.values(rec.log.rr).reduce((t, v) => t + v, 0) : 0,
+    unruled: (rec.log && rec.log.unruled) || 0,
+    // 🎩 stand ownership: frozen-in ids and pushes from pre-slice tabs
+    ownFroze: rec.ownFroze || [],
+    veteran: !!rec.veteran,
+    ownLegacy: (rec.log && rec.log.ownLegacy) || 0,
+    coinsEarned: stats.coins_earned || 0,
+    coinsSpent: stats.coins_spent || 0,
+    gear,
+    glow: blob.glow === '1',
+    anon: !!rec.anon,                          // 🫧 a server pass nobody has claimed yet
+    // 📜 the tape: events kept, drift score (|slot move − events| over the
+    // money keys), pushes the drift could not judge, and the last few events
+    ev: (rec.log && rec.log.n) || 0,
+    drift: driftScore(rec.log),
+    unsure: (rec.log && rec.log.unsure) || 0,
+    evLast: ((rec.log && rec.log.ev) || []).slice(-8).map((e) => ({ t: e.t, k: e.k, d: e.d, a: e.a, ...(e.s ? { s: e.s } : {}) })),
+  };
+}
+
 async function adminScan(env) {
   const list = await env.PASSES.list({ prefix: 'pass/', limit: ADMIN_LIST });
   const keys = list.objects.map((o) => o.key);
@@ -1054,59 +1168,18 @@ async function adminScan(env) {
   const rows = [];
   for (const [k, rec] of recs) {
     if (!rec || rec.link || rec.qa) continue;    // one row per PASS, not per credential; never the proof's
-    const blob = rec.blob || {};
-    const p = blob.pass || {};
-    const stats = statsOf(p);        // totals, not the frozen scalars
+    const row = await rowOf(env, k, rec);
     const ex = extra.get(k) || { devices: 0, mail: false };
-    const gear = Object.keys(stats).filter((x) => x.startsWith('own_') && stats[x] > 0).map((x) => x.slice(4));
-    const rep = stats.rep || 0;
-    rows.push({
-      id: k.slice(5, 13),                        // stable pseudo-id, never the credId
-      // 🏷 the owner TAG — sha256 of the world id, first 8 hex. The yard room
-      // publishes the same tag on each yard, so HQ can put a homestead next
-      // to a pass without the pass id or the world id ever leaving either store
-      tag: (await sha256Hex(await worldGid(env, k.slice(5, -5)))).slice(0, 8),
-      name: (blob.name || '').slice(0, 24),
-      updated: rec.updated || 0,
-      created: p.created || 0,
-      // ⭐ THE COLUMN THE EMAIL RAIL MADE POSSIBLE: can this player get back in
-      // after losing the device? mail = yes, forever. devices only = only while
-      // the other one still works. neither = one dead phone from gone.
-      // ⚠️ null = UNKNOWN, not "no": past the read cap a recovery pointer may
-      // simply not have been read, and this column is the one an erase or a
-      // support answer leans on. Never print a guess as a fact.
-      mail: (ex.mail || isMailKey(k)) ? true : (truncated ? null : false),
-      devices: Object.keys(rec.tokens || {}).length + ex.devices,
-      days: (p.days || []).length,
-      badges: Object.keys(p.patches || {}).length,
-      shelf: (blob.shelf || []).length,
-      rep,
-      level: levelFor(rep).level,                // ⚠️ the real curve — see the import
-      jelly: stats.jelly || 0,
-      // 💰 the server wallet once frozen, the client ledger's number until then
-      coins: rec.wallet ? walletBal(rec.wallet)
-        : Math.max(0, (stats.coins_earned || 0) + (stats.coins_refunded || 0) - (stats.coins_spent || 0)),
-      wallet: !!rec.wallet,
-      refused: (rec.wallet && rec.wallet.refused) || 0,
-      // 📏 events a faucet rule refused (by reason) and unnamed ones let through
-      rr: rec.log && rec.log.rr ? Object.values(rec.log.rr).reduce((t, v) => t + v, 0) : 0,
-      unruled: (rec.log && rec.log.unruled) || 0,
-      // 🎩 stand ownership: frozen-in ids and pushes from pre-slice tabs
-      ownFroze: rec.ownFroze || [],
-      veteran: !!rec.veteran,
-      ownLegacy: (rec.log && rec.log.ownLegacy) || 0,
-      coinsEarned: stats.coins_earned || 0,
-      coinsSpent: stats.coins_spent || 0,
-      gear,
-      glow: blob.glow === '1',
-      anon: !!rec.anon,                          // 🫧 a server pass nobody has claimed yet
-      // 📜 the tape: events kept, drift score (|slot move − events| over the
-      // money keys), pushes the drift could not judge, and the last few events
-      ev: (rec.log && rec.log.n) || 0,
-      drift: driftScore(rec.log),
-      unsure: (rec.log && rec.log.unsure) || 0,
-      evLast: ((rec.log && rec.log.ev) || []).slice(-8).map((e) => ({ t: e.t, k: e.k, d: e.d, a: e.a, ...(e.s ? { s: e.s } : {}) })),
-    });
+    // ⭐ THE COLUMN THE EMAIL RAIL MADE POSSIBLE: can this player get back in
+    // after losing the device? mail = yes, forever. devices only = only while
+    // the other one still works. neither = one dead phone from gone.
+    // ⚠️ null = UNKNOWN, not "no": past the read cap a recovery pointer may
+    // simply not have been read, and this column is the one an erase or a
+    // support answer leans on. Never print a guess as a fact. (The people
+    // index has no such doubt — its walk reads every pointer.)
+    row.mail = (ex.mail || row.mail) ? true : (truncated ? null : false);
+    row.devices += ex.devices;
+    rows.push(row);
   }
   rows.sort((a, b) => b.updated - a.updated);
   return { rows, truncated, scanned: recs.size, listed: list.objects.length };

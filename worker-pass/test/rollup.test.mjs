@@ -97,10 +97,40 @@ ok('the questline reports a funnel, not a flag', d.quest > 0 && d.questDone > 0 
 console.log('5. the same day is never counted twice');
 const before = d.passes;
 r = await hit('/admin/rollup/tick?key=desk-key');
-ok('a finished day ignores further ticks', r.skipped === 1, r);
+ok('a finished day keeps walking — for the people index, not the day file', r.done === 1 && r.skipped !== 1 && r.lap > 0, r);
 r = await hit('/admin/rollup?key=desk-key&days=7');
 const d2 = (r.days || []).find((x) => x.day === today);
 ok('…and the file it wrote is unchanged', d2.passes === before, { now: d2.passes, before });
+
+console.log('7. the people index — the whole population, pointers resolved across pages');
+// a proof home stamped qa must never be a person; it goes in BEFORE the lap reads its page
+env.PASSES._m.set('pass/zzzzqa01.json', JSON.stringify({ qa: 1, anon: 1, updated: Date.now(), blob: { name: 'Proofy', pass: { created: Date.now(), days: [today], base: {}, led: {}, stats: {} } } }));
+// a bucket nobody has walked yet: the desk is told so, instead of an empty list
+{
+  const fresh = { ...env, PASSES: fakeR2() };
+  const b0 = await worker.fetch(new Request('https://w.dev/admin/people?key=desk-key', { headers: { Origin: ORIGIN } }), fresh, ctx).then((x) => x.json());
+  ok('before any lap the desk is told the index is building', b0.building === 1 && !b0.rows, b0);
+}
+// the day lap already wrote the index once (section 2); the next lap picks up the stamped record above
+guard = 0; r = { people: 0 };
+while (!r.people && guard++ < 40) r = await hit('/admin/rollup/tick?key=desk-key');
+ok('a lap ends by writing the index', r.people === N, { people: r.people, want: N });
+r = await hit('/admin/people?key=desk-key');
+ok('the desk reads every person in one get', Array.isArray(r.rows) && r.rows.length === N && r.n === N && r.at > 0, { n: r.n, rows: r.rows && r.rows.length });
+const withMail = r.rows.filter((p) => p.mail === true);
+ok('email pointers are resolved to their homes even though they list on other pages', withMail.length === Math.ceil(N / 8), { withMail: withMail.length, want: Math.ceil(N / 8) });
+ok('…and each such home counts the pointer as a device', withMail.every((p) => p.devices >= 1), withMail.slice(0, 3).map((p) => p.devices));
+ok('nobody is marked unknown — the walk had no read cap to hide behind', r.rows.every((p) => p.mail === true || p.mail === false));
+ok('the proof\'s stamped home is not a person', !r.rows.some((p) => p.name === 'Proofy'));
+ok('rows carry what the desk row needs', r.rows.every((p) => typeof p.id === 'string' && typeof p.tag === 'string' && 'level' in p && 'coins' in p && 'days' in p && 'updated' in p));
+ok('newest seen first', r.rows.every((p, i) => i === 0 || r.rows[i - 1].updated >= p.updated));
+const at1 = r.at;
+guard = 0; let r2 = { people: 0 };
+while (!r2.people && guard++ < 40) r2 = await hit('/admin/rollup/tick?key=desk-key');
+r = await hit('/admin/people?key=desk-key');
+ok('the next lap rewrites it (seen is at most a lap stale)', r.at >= at1 && r.lap && r.lap.laps >= 2, { at1, at: r.at, lap: r.lap });
+const nokey = await worker.fetch(new Request('https://w.dev/admin/people', { headers: { Origin: ORIGIN } }), env, ctx);
+ok('no key → 404, deny as nothing', nokey.status === 404, nokey.status);
 
 console.log('6. the desk is reachable FROM A BROWSER');
 // ⚠️ this route is called by the HQ page; without the header the browser

@@ -512,7 +512,14 @@ const description = 'Authorized banana personnel only.';
     .hq-tiles > :nth-child(6n+5) { --kc: var(--purp); } .hq-tiles > :nth-child(6n+6) { --kc: var(--org); }
     .hq-tile b { display: block; font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--kc, var(--nana)); }
     .hq-tile span { display: block; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--hdim); margin-top: 0.15rem; }
-    .hq-check { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; opacity: 0.85; white-space: nowrap; }
+    /* 👥 the three kinds of people: a group header, and the guests as ONE line */
+    .hq-group { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--hdim); margin: 1.1rem 0 0.45rem; }
+    .hq-group:first-child { margin-top: 0.2rem; }
+    .hq-group small { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.02em; text-transform: none; opacity: 0.8; }
+    .hq-guests { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; border: 2px dashed var(--hline); border-radius: 12px; padding: 0.5rem 0.7rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--hdim); }
+    .hq-guests b { color: var(--hink); }
+    .hq-row__name--sign { font-style: italic; opacity: 0.85; }
+    .hq-asof { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--hdim); margin: -0.2rem 0 0.6rem; }
     .hq-row__yard { color: var(--ok, #5ee08a); text-decoration: none; }
     .hq-row__yard:hover { text-decoration: underline; }
     .hq-tools { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin: 0.9rem 0 0.7rem; }
@@ -907,7 +914,6 @@ const description = 'Authorized banana personnel only.';
             <option value="new">newest</option>
             <option value="risk">can't recover</option>
           </select>
-          <label class="hq-check"><input type="checkbox" id="bmUQuiet" checked /> hide passes with no progress</label>
         </div>
         <div id="bmLedgerList"></div>
 
@@ -1717,7 +1723,7 @@ const description = 'Authorized banana personnel only.';
     // offered because it raises coins_spent, which the merge keeps.
     const PASS_ADMIN_API = 'https://banana-pass.trymstene.workers.dev';
     const LKEY = 'pass-admin-key-v1';
-    let uRows = null, uOpen = null;
+    let uRows = null, uOpen = null, uAt = 0, uSample = false, uLap = null, uShowGuests = false;
     try { el('bmLedgerKey').value = localStorage.getItem(LKEY) || ''; } catch (e) {}
     const uKey = () => el('bmLedgerKey').value.trim();
     const ago = (t) => {
@@ -1743,24 +1749,24 @@ const description = 'Authorized banana personnel only.';
       try { localStorage.setItem(LKEY, key); } catch (e) {}
       box.textContent = 'Opening the vault…';
       try {
-        const r = await fetch(PASS_ADMIN_API + '/admin/ledger?key=' + encodeURIComponent(key));
-        if (!r.ok) throw new Error(r.status);
-        const d = await r.json();
-        uRows = d.passes || [];
-        const tiles = el('bmUTiles');
-        tiles.textContent = '';
-        tiles.hidden = false;
-        tiles.append(
-          tile(d.sum.passes, 'passes'),
-          tile(d.sum.withMail, 'can log back in'),
-          tile(d.sum.passes - d.sum.withMail, 'one device only'),
-          tile(d.sum.activeWeek, 'active this week'),
-          tile(d.sum.coins.toLocaleString('en-GB'), 'coins in circulation'),
-          tile(d.sum.badges, 'badges earned'),
-        );
+        // 👥 THE WHOLE POPULATION from the people index — written by the pass
+        // worker's walk at the end of every lap, so it has read every record
+        // and resolved every email pointer. The 46-record ledger sample only
+        // until the first lap after a deploy has landed, and it says so.
+        const pr = await fetch(PASS_ADMIN_API + '/admin/people?key=' + encodeURIComponent(key));
+        if (!pr.ok) throw new Error(pr.status);
+        let d = await pr.json();
+        uSample = !Array.isArray(d.rows);
+        uLap = d.lap || null;
+        if (uSample) {
+          const r = await fetch(PASS_ADMIN_API + '/admin/ledger?key=' + encodeURIComponent(key));
+          if (!r.ok) throw new Error(r.status);
+          const l = await r.json();
+          d = { rows: l.passes || [], at: Date.now() };
+        }
+        uRows = d.rows || [];
+        uAt = d.at || 0;
         el('bmUTools').hidden = uRows.length < 2;
-        const qb = el('bmUQuiet');
-        if (qb && !qb._wired) { qb._wired = 1; qb.addEventListener('change', usersRender); }
         // 🏡 the yard next to its pass: the census carries an owner TAG per yard
         // (a hash of the world id) and the ledger prints the same tag per pass
         fetch(WORLD_API + '/yards/stats').then((r) => r.json()).then((y) => {
@@ -1768,8 +1774,6 @@ const description = 'Authorized banana personnel only.';
           (y.list || []).forEach((e) => { if (e.owner) uYard[e.owner] = e; });
           usersRender();
         }).catch(() => {});
-        el('bmUCount').textContent = '👤 ' + d.sum.passes + ' pass' + (d.sum.passes === 1 ? '' : 'es')
-          + (d.truncated ? ' (first ' + d.scanned + ' scanned)' : '');
         usersRender();
       } catch (e) {
         el('bmUTiles').hidden = true;
@@ -1778,16 +1782,41 @@ const description = 'Authorized banana personnel only.';
     }
 
     let uYard = {};
+    // 👥 THREE KINDS OF PEOPLE (Trym, 6 Sep: "profiles built well … anonymous
+    // users sorted into their own bulk"): players with an email can get back
+    // in from any device; players with something to lose but no email are one
+    // phone from gone; a pass with nothing on it yet is a GUEST, and guests
+    // are one line with a count, never a wall of "no name yet".
+    const hasProgress = (p) => !!(p.name || p.coins || p.coinsEarned || p.badges || p.shelf || (p.level || 1) > 1 || (p.tag && uYard[p.tag]));
+    const kindOf = (p) => (!hasProgress(p) ? 'guest' : p.mail ? 'mail' : 'device');
+    const hhmm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     function usersRender() {
       const box = el('bmLedgerList');
       box.textContent = '';
       if (!uRows) return;
       const q = (el('bmUSearch').value || '').trim().toLowerCase();
       const sort = el('bmUSort').value;
-      // a first visit that minted a pass and did nothing is a row nobody needs
-      // to scroll past (Trym, 6 Sep: "a ton of names just named exactly the same")
-      const quiet = el('bmUQuiet') && el('bmUQuiet').checked;
-      const hasProgress = (p) => !!(p.name || p.coins || p.badges || (p.level || 1) > 1 || (p.tag && uYard[p.tag]));
+      const week = Date.now() - 7 * 86400000;
+      const groups = { mail: [], device: [], guest: [] };
+      uRows.forEach((p) => groups[kindOf(p)].push(p));
+      const people = groups.mail.length + groups.device.length;
+      const tiles = el('bmUTiles');
+      tiles.textContent = '';
+      tiles.hidden = false;
+      tiles.append(
+        tile(people, 'people'),
+        tile(groups.mail.length, 'can get back in'),
+        tile(groups.device.length, 'one phone from gone'),
+        tile(groups.guest.length, 'guests'),
+        tile(uRows.filter((p) => p.updated > week).length, 'active this week'),
+        tile(uRows.reduce((n, p) => n + (p.coins || 0), 0).toLocaleString('en-GB'), 'coins in circulation'),
+      );
+      el('bmUCount').textContent = '👤 ' + people + ' ' + (people === 1 ? 'person' : 'people') + ' · ' + groups.guest.length + ' guest' + (groups.guest.length === 1 ? '' : 's');
+      let asof = box.previousElementSibling && box.previousElementSibling.classList && box.previousElementSibling.classList.contains('hq-asof') ? box.previousElementSibling : null;
+      if (!asof) { asof = document.createElement('p'); asof.className = 'hq-asof'; box.parentNode.insertBefore(asof, box); }
+      asof.textContent = uSample
+        ? '⚠ a 46-record sample — the people walk has not finished its first lap since the deploy' + (uLap ? ' (' + uLap.seen + ' read so far)' : '')
+        : 'the whole population · as of ' + hhmm(uAt) + (uLap && uLap.seen ? ' · next lap ' + uLap.seen + ' read' : '');
       const cmp = {
         recent: (a, b) => b.updated - a.updated,
         coins: (a, b) => b.coins - a.coins,
@@ -1796,19 +1825,55 @@ const description = 'Authorized banana personnel only.';
         new: (a, b) => b.created - a.created,
         risk: (a, b) => (a.mail === b.mail ? b.rep - a.rep : a.mail === true ? 1 : b.mail === true ? -1 : b.rep - a.rep),
       }[sort] || ((a, b) => b.updated - a.updated);
-      const rows = uRows
-        .filter((p) => !q || (p.name || '').toLowerCase().includes(q) || p.id.includes(q)
-          || (p.tag && uYard[p.tag] && ((uYard[p.tag].name || '') + ' ' + uYard[p.tag].slug).toLowerCase().includes(q)))
-        .filter((p) => q || !quiet || hasProgress(p))
-        .sort(cmp);
-      if (!rows.length) {
-        box.appendChild(Object.assign(document.createElement('p'), {
-          className: 'bm-livenote',
-          textContent: uRows.length ? 'Nobody matches that.' : 'No synced passes yet — the ledger fills as people log in.',
-        }));
+      const matches = (p) => !q || (p.name || '').toLowerCase().includes(q) || p.id.includes(q)
+        || (p.tag && uYard[p.tag] && ((uYard[p.tag].name || '') + ' ' + uYard[p.tag].slug).toLowerCase().includes(q));
+      if (!uRows.length) {
+        box.appendChild(Object.assign(document.createElement('p'), { className: 'bm-livenote', textContent: 'No synced passes yet — the ledger fills as people log in.' }));
         return;
       }
-      rows.forEach((p) => {
+      const header = (icon, title, n, note) => {
+        const h = document.createElement('p');
+        h.className = 'hq-group';
+        h.textContent = icon + ' ' + title + ' · ' + n;
+        if (note) { const s2 = document.createElement('small'); s2.textContent = note; h.appendChild(s2); }
+        box.appendChild(h);
+      };
+      if (q) {
+        const hits = uRows.filter(matches).sort(cmp);
+        if (!hits.length) { box.appendChild(Object.assign(document.createElement('p'), { className: 'bm-livenote', textContent: 'Nobody matches that.' })); return; }
+        header('🔎', 'matches', hits.length, '');
+        hits.forEach((p) => box.appendChild(rowEl(p)));
+        return;
+      }
+      header('✉️', 'can get back in', groups.mail.length, 'an email on the pass — any device, forever');
+      if (!groups.mail.length) box.appendChild(Object.assign(document.createElement('p'), { className: 'bm-livenote', textContent: 'nobody yet — the pill in the HUD is asking' }));
+      groups.mail.slice().sort(cmp).forEach((p) => box.appendChild(rowEl(p)));
+      header('📱', 'one phone from gone', groups.device.length, 'playing, but nothing survives a lost phone');
+      groups.device.slice().sort(cmp).forEach((p) => box.appendChild(rowEl(p)));
+      // 👻 the guests: one line, never a wall
+      const gl = document.createElement('div');
+      gl.className = 'hq-guests';
+      const gb = document.createElement('b');
+      gb.textContent = '👻 ' + groups.guest.length + ' guest' + (groups.guest.length === 1 ? '' : 's');
+      const gs = document.createElement('span');
+      gs.textContent = 'passes with nothing on them yet · ' + groups.guest.filter((p) => p.updated > week).length + ' seen this week';
+      gl.append(gb, gs);
+      if (groups.guest.length) {
+        const tg = document.createElement('button');
+        tg.type = 'button';
+        tg.className = 'hq-mini hq-mini--go';
+        tg.textContent = uShowGuests ? 'hide them' : 'show them';
+        tg.onclick = () => { uShowGuests = !uShowGuests; usersRender(); };
+        gl.appendChild(tg);
+      }
+      box.appendChild(gl);
+      if (uShowGuests) groups.guest.slice().sort(cmp).forEach((p) => box.appendChild(rowEl(p)));
+      if (uOpen && !uRows.some((p) => p.id === uOpen)) uOpen = null;
+    }
+    function rowEl(p) {
+      const box = el('bmLedgerList');
+      const frag = document.createDocumentFragment();
+      {
         const row = document.createElement('button');
         row.className = 'hq-row';
         row.type = 'button';
@@ -1817,11 +1882,15 @@ const description = 'Authorized banana personnel only.';
         who.className = 'hq-row__who';
         const nm = document.createElement('span');
         nm.className = 'hq-row__name';
-        nm.textContent = p.name || 'no name yet';
+        const y = p.tag && uYard[p.tag];
+        // no pass name but a homestead: the sign's name is the best handle we have — shown as the sign's
+        if (p.name) nm.textContent = p.name;
+        else if (y && y.name) { nm.textContent = y.name; nm.classList.add('hq-row__name--sign'); }
+        else nm.textContent = 'no name yet';
         const sub = document.createElement('span');
         sub.className = 'hq-row__sub';
-        sub.textContent = p.id + ' · seen ' + ago(p.updated);
-        const y = p.tag && uYard[p.tag];
+        sub.textContent = p.id + ' · seen ' + ago(p.updated) + ' · ' + (p.days || 0) + ' day' + (p.days === 1 ? '' : 's')
+          + (p.devices > 1 ? ' · ' + p.devices + ' devices' : '');
         if (y) {
           const a = document.createElement('a');
           a.className = 'hq-row__yard';
@@ -1849,9 +1918,10 @@ const description = 'Authorized banana personnel only.';
           : p.mail ? 'has an email — can log in anywhere' : 'device only — a lost device is a lost pass';
         row.append(who, lvl, coins, rec);
         row.onclick = () => { uOpen = uOpen === p.id ? null : p.id; usersRender(); };
-        box.appendChild(row);
-        if (uOpen === p.id) box.appendChild(userPanel(p));
-      });
+        frag.appendChild(row);
+        if (uOpen === p.id) frag.appendChild(userPanel(p));
+      }
+      return frag;
     }
 
     // the open row, in three LABELLED sections (Trym: the pill-wall read as
