@@ -10,7 +10,7 @@ import pxEdit from '../icons/pixelart/edit.svg?raw';
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone, pullIfStale } from '../lib/banana-pass.js';
 import { loggedIn } from '../lib/pass-sync.js';
 import { catCustom, loadCatalog, fullOutfit, noteCatch } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -37,10 +37,15 @@ const COIN = '<img class="hs-coin" src="/assets/banana-stand/coin.png" width="14
 // 🏡 THE NEIGHBOURHOOD (M1): every claimed yard has a public mirror in the
 // YardRoom DO. worldOwner() owns it; the browser's hs-v1 stays the truth.
 const YARD_API = 'https://banana-rave.trymstene.workers.dev/yards';
+// 🪪 `yPlain`: present the BROWSER id only (pass = alt, no proof) — the
+// signed-out shape the yard room has always honoured for a yard this browser
+// claimed. Switched on when the proof is refused: a phone that cannot prove
+// its pass id must not become a phone that cannot save (6 Sep 2026).
+let yPlain = false;
 async function yFetch(path, body) {
   const r = await fetch(YARD_API + path, body ? {
     method: 'POST',
-    body: JSON.stringify({ ...body, pass: worldOwner(), alt: worldSid(), wt: worldToken() }),   // 🪪 id + proof
+    body: JSON.stringify({ ...body, pass: yPlain ? worldSid() : worldOwner(), alt: worldSid(), ...(yPlain ? {} : { wt: worldToken() }) }),   // 🪪 id + proof
   } : undefined);
   if (!r.ok) {
     const e = new Error('yard ' + r.status);
@@ -420,6 +425,70 @@ function init(visitDoc, visitMiss) {
     return state.pubMark;
   }
   const ourMark = (m) => !!m && (state.pubMarks || []).includes(String(m));
+  // ── 🚨 WHEN BANANA WORLD SAYS NO — said on screen, counted, healed (6 Sep 2026)
+  // Before this only a 409 was handled; a 401 / 403 / 404 or a dead network
+  // was swallowed, and a player farmed for twelve days into a yard nobody
+  // could see. why: token | unclaimed | offline | forbidden | other.
+  const syncBar = document.getElementById('hsSync');
+  const syncMsg = document.getElementById('hsSyncMsg');
+  let syncWhy = '';
+  function syncSay(why, text) {
+    syncWhy = why;
+    if (syncBar && syncMsg) { syncMsg.textContent = text; syncBar.hidden = false; }
+  }
+  function syncOk() {
+    if (!syncWhy) return;
+    syncWhy = '';
+    if (syncBar) syncBar.hidden = true;
+    toast('✅ Banana World has your homestead again', 2600);
+  }
+  const yWhy = (e) => {
+    const st = e && e.status;
+    if (!st) return 'offline';            // the fetch itself threw: no network, DNS, a blocker
+    if (st === 401) return 'token';
+    if (st === 404) return 'unclaimed';
+    if (st === 403) return 'forbidden';
+    return 'other';
+  };
+  const refusedSaid = {};
+  // true = the caller should try its request again right away
+  async function yardHeal(e, where) {
+    const why = yWhy(e);
+    if (!refusedSaid[why]) { refusedSaid[why] = 1; track('homestead_save_refused', { why, status: (e && e.status) || 0, where }); }
+    if (why === 'token' && !yPlain) {
+      // the proof may only be stale: refresh it once, then fall back to the
+      // browser id this yard was claimed under (the pre-token shape, still honoured)
+      try { await pullIfStale(0); } catch (x) {}
+      yPlain = true;
+      syncSay('token', '⚠️ your pass could not be proven — saving with this phone’s own id instead');
+      return true;
+    }
+    if (why === 'unclaimed' && state.claimedAt) {
+      // the address is gone from under this phone (an id that changed): claim
+      // the same name again — the server hands out a fresh address and the
+      // very next save fills it with THIS phone’s whole farm. Nothing is lost;
+      // the old address stays behind as a ghost.
+      try {
+        const r = await yFetch('/claim', { name: state.name });
+        if (r && r.slug && r.slug !== state.slug) {
+          const from = state.slug;
+          state.slug = r.slug; state.pubUpdated = 0; state.dirty = 1; saveRaw();
+          track('homestead_reattach', { from, to: r.slug });
+          syncSay('unclaimed', '🏡 your homestead got a fresh address — everything came along');
+          return true;
+        }
+      } catch (x) {}
+      syncSay('unclaimed', '⚠️ Banana World does not recognise this homestead — it is safe on this phone; retrying');
+      return false;
+    }
+    if (why === 'offline') { syncSay('offline', '⚠️ Banana World can’t be reached from this phone — your homestead is safe here and syncs when it can'); return false; }
+    if (why === 'forbidden') { syncSay('forbidden', '⚠️ Banana World refused this phone — your homestead is safe here'); return false; }
+    syncSay('other', '⚠️ saving to Banana World failed (' + ((e && e.status) || 'no answer') + ') — your homestead is safe on this phone');
+    return false;
+  }
+  const syncRetry = document.getElementById('hsSyncRetry');
+  if (syncRetry) syncRetry.addEventListener('click', () => { if (state.claimedAt && state.slug) { state.dirty = 1; pushYard(); } });
+
   function pushYard() {
     if (visiting || !state.claimedAt || !state.slug) return;
     clearTimeout(pushT);
@@ -428,12 +497,17 @@ function init(visitDoc, visitMiss) {
         // ⏱ bookkeeping in SERVER time: the pull adopts a newer published yard
         // only when the server's stamp beats this one and nothing local is
         // still waiting to push — device clocks are never compared
-        if (r && r.updated) { state.pubUpdated = r.updated; state.dirty = 0; saveRaw(); }
-      }).catch((e) => {
+        if (r && r.updated) { state.pubUpdated = r.updated; state.dirty = 0; saveRaw(); syncOk(); }
+      }).catch(async (e) => {
         // 409 = this device synced before the yard's current stamp: another
         // device changed the yard since. Merge theirs in (animals, grass and
         // memories by id — a bought animal never vanishes), then save again.
-        if (!String(e && e.message || '').includes('409')) return;
+        if (!String(e && e.message || '').includes('409')) {
+          // 🚨 a 401 / 403 / 404 / dead network used to vanish HERE
+          if (await yardHeal(e, 'save')) pushYard();
+          else setTimeout(() => { if (state.dirty) pushYard(); }, 60000);   // keep knocking
+          return;
+        }
         // the stamp that refused us is OUR OWN unanswered flush: nothing was
         // lost, this device is simply holding an older receipt. Take the
         // stamp and save again — no merge, no reload under the player.
@@ -4597,7 +4671,10 @@ function init(visitDoc, visitMiss) {
   async function yardPull() {
     if (!FARM || visiting || HS_TEST) return;
     let r;
-    try { r = await yFetch('/mine', {}); } catch (e) { return; }
+    try { r = await yFetch('/mine', {}); } catch (e) {
+      // 🚨 said, not swallowed — and a refused proof falls back to the browser id
+      if (await yardHeal(e, 'pull')) { try { r = await yFetch('/mine', {}); } catch (x) { return; } } else return;
+    }
     if (!r || !r.slug) return;
     // 🪧 a renamed yard is still MINE — the server says what it used to
     // be called, so this device switches address quietly (refresh, never

@@ -30,7 +30,7 @@
 // shared/products.js; pass-defs is pure data + pure functions, no DOM.
 import { levelFor } from '../../src/lib/pass-defs.js';
 
-const MAX_BLOB = 256 * 1024;
+const MAX_BLOB = 2 * 1024 * 1024;   // 🚨 6 Sep 2026: 256 KB refused every veteran phone (a big shelf) silently, forever — see the mint
 const MAX_TOKENS = 10;
 const CHALLENGE_TTL = 5 * 60 * 1000;
 
@@ -1060,6 +1060,10 @@ async function adminScan(env) {
     const rep = stats.rep || 0;
     rows.push({
       id: k.slice(5, 13),                        // stable pseudo-id, never the credId
+      // 🏷 the owner TAG — sha256 of the world id, first 8 hex. The yard room
+      // publishes the same tag on each yard, so HQ can put a homestead next
+      // to a pass without the pass id or the world id ever leaving either store
+      tag: (await sha256Hex(await worldGid(env, k.slice(5, -5)))).slice(0, 8),
       name: (blob.name || '').slice(0, 24),
       updated: rec.updated || 0,
       created: p.created || 0,
@@ -2226,7 +2230,9 @@ async function push(request, env) {
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
   const R = await tokenRec(env, b.credId, b.token);
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-  if (!blobOk(b.blob)) return json({ error: 'bad blob' }, 400, cors(env, request));
+  // 🚨 a blob over the cap is 413, not 400: the phone shrinks and pushes again
+  if (!b.blob || typeof b.blob !== 'object') return json({ error: 'bad blob' }, 400, cors(env, request));
+  if (!blobOk(b.blob)) return json({ error: 'blob too large' }, 413, cors(env, request));
   // 📜 the pushing device's own slots, before and after the merge
   const dv = /^[\w-]{1,8}$/.test(String(b.blob.evDev || '')) ? String(b.blob.evDev) : '';
   const before = slotsOf(R.home.blob, dv);

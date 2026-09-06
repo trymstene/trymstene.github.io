@@ -2397,6 +2397,15 @@ function hsClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min
 function yardPStrip(p) {
   return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
 }
+// 🏷 the owner TAG: sha256 of the owner id, first 8 hex. HQ lines a pass up
+// with its yard through it; the pass desk prints the same tag from its side.
+// A browser-id-keyed yard (a pre-Sep phone that never minted a pass) tags to
+// nothing on the pass side, which is the honest answer.
+const yTag = async (id) => {
+  if (!id) return '';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(id)));
+  return [...new Uint8Array(buf)].slice(0, 4).map((b) => b.toString(16).padStart(2, '0')).join('');
+};
 const yStrip = (x, n) => String(x == null ? '' : x).replace(/[\x00-\x1f<>]/g, '').trim().slice(0, n);
 const yDay = () => new Date().toISOString().slice(0, 10);
 const yIso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
@@ -2679,7 +2688,7 @@ export class YardRoom {
   async indexUpsert(doc) {
     const idx = (await this.state.storage.get('index')) || [];
     const rest = idx.filter((e) => e.slug !== doc.slug);
-    rest.unshift({ slug: doc.slug, name: doc.name, stage: (doc.state && doc.state.stage) || 0, updated: doc.updated });
+    rest.unshift({ slug: doc.slug, name: doc.name, stage: (doc.state && doc.state.stage) || 0, updated: doc.updated, owner: doc.otag || '' });
     await this.state.storage.put('index', rest.slice(0, 400));
   }
 
@@ -2702,7 +2711,7 @@ export class YardRoom {
         if (!slug) continue;
         const doc = await this.state.storage.get('y:' + slug);
         if (doc && (!doc.pass || doc.pass === a || doc.pass === pass)) {
-          if (doc.pass !== pass) { doc.pass = pass; await this.state.storage.put('y:' + slug, doc); }
+          if (doc.pass !== pass) { doc.pass = pass; doc.otag = await yTag(pass); await this.state.storage.put('y:' + slug, doc); }
           await this.state.storage.put('own:' + pass, slug);
           return slug;
         }
@@ -2721,6 +2730,7 @@ export class YardRoom {
       if (doc && (!doc.pass || doc.pass === alt || doc.pass === pass)) {
         if (doc.pass !== pass) {
           doc.pass = pass;
+          doc.otag = await yTag(pass);
           await this.state.storage.put('y:' + slug, doc);
         }
         await this.state.storage.put('own:' + pass, slug);
@@ -2789,7 +2799,7 @@ export class YardRoom {
       let slug = base;
       for (let i = 2; i < 100 && await this.state.storage.get('y:' + slug); i++) slug = base + '-' + i;
       if (await this.state.storage.get('y:' + slug)) return json({ err: 'crowded' }, 409);
-      const doc = { slug, name: name || 'A Homestead', pass, created: Date.now(), updated: Date.now(), state: null };
+      const doc = { slug, name: name || 'A Homestead', pass, created: Date.now(), updated: Date.now(), state: null, otag: await yTag(pass) };
       await this.state.storage.put('y:' + slug, doc);
       await this.state.storage.put('own:' + pass, slug);
       await this.indexUpsert(doc);
@@ -2847,6 +2857,7 @@ export class YardRoom {
       if (name) doc.name = name;
       doc.mark = mark || undefined;
       doc.updated = Date.now();
+      if (!doc.otag && doc.pass) doc.otag = await yTag(doc.pass);
       await this.state.storage.put('y:' + slug, doc);
       await this.indexUpsert(doc);
       // the updated stamp rides back — the pull-sync compares SERVER times
@@ -2891,10 +2902,11 @@ export class YardRoom {
         if (age < 86400000) day++;
         if (age < 7 * 86400000) week++;
         // public fields only (all readable via /yard?slug already) — the
-        // owner's pass id never leaves the store
+        // owner's pass id never leaves the store; the TAG is a hash of it
+        if (!doc.otag && doc.pass) { doc.otag = await yTag(doc.pass); await this.state.storage.put('y:' + doc.slug, doc); }
         list.push({ slug: doc.slug, name: doc.name,
           stage: (doc.state && doc.state.stage) || 0,
-          created: doc.created || 0, updated: doc.updated || 0 });
+          created: doc.created || 0, updated: doc.updated || 0, owner: doc.otag || '' });
       }
       // 🌍 THE CENSUS — every field is already in hand, so this is arithmetic
       // inside a loop that was running anyway. QA yards are excluded the same

@@ -15,6 +15,7 @@ import json
 import os
 import re
 import urllib.request
+import time
 
 from PIL import Image
 
@@ -44,10 +45,19 @@ STRUCTS = { 1: 'ov-tent1.png', 2: 'ov-mobm3.png', 3: 'ov-country.png' }
 plate = sprite('homestead/homestead.png')
 
 stats = get(API + '/yards/stats')
+# 🏡 THE PICK (6 Sep 2026): the eight liveliest real yards — stage 1 or more,
+# saved within 45 days, newest save first. The census lists every yard (66
+# and counting) and a strip of sixty-six ghosts is not a neighbourhood.
+NOW = time.time() * 1000
+# ⚠️ the census only flags `testy` / `testy-N` as QA; the walk mints testy-final-2,
+# testy-polaroid… too, and Trym's own yards are not "built by visitors like you"
+QA = re.compile(r'^(testy|trym)')
+live = [e for e in stats.get('list', []) if not e.get('qa') and not QA.match(e.get('slug') or '')
+        and (e.get('stage') or 0) >= 1 and NOW - (e.get('updated') or 0) < 45 * 86400000]
+live.sort(key=lambda e: -(e.get('updated') or 0))
+picked = live[:8]
 cards = []
-for entry in stats.get('list', []):
-    if entry.get('qa'):
-        continue
+for entry in picked:
     slug = entry['slug']
     try:
         doc = get(API + '/yards/yard?slug=' + slug)
@@ -95,9 +105,15 @@ for entry in stats.get('list', []):
     card = im.crop((round(x0), round(y0), round(x0 + cw), round(y0 + ch))).convert('RGB')
     card = card.resize((640, 480), Image.LANCZOS)
     card.save(os.path.join(ASSETS, 'world', 'yard-' + slug + '.jpg'), quality=84)
-    cards.append({ 'slug': slug, 'name': entry['name'], 'stage': entry['stage'] })
+    cards.append({ 'slug': slug, 'name': entry['name'], 'stage': entry['stage'], 'updated': entry.get('updated') or 0,
+                   'animals': len(doc.get('animals') or []), 'items': len(doc.get('items') or []) })
     print(('yard-' + slug + '.jpg ' + entry['name']).encode('ascii', 'replace').decode())
 
+# the cards that are no longer picked leave the repo with their yard
+keep = { 'yard-' + c['slug'] + '.jpg' for c in cards }
+for fn in os.listdir(os.path.join(ASSETS, 'world')):
+    if fn.startswith('yard-') and fn.endswith('.jpg') and fn not in keep:
+        os.remove(os.path.join(ASSETS, 'world', fn))
 with io.open(os.path.join(SITE, 'src', 'data', 'yard-cards.json'), 'w', encoding='utf-8') as f:
     json.dump(cards, f, ensure_ascii=False, indent=1)
 print('manifest:', len(cards), 'yards')

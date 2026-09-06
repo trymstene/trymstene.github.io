@@ -183,6 +183,54 @@ let pushT = null, pushDue = 0, pushBound = false;
 // on. Each failure doubles the wait (30 s → 15 min, jittered), a success or a
 // fresh answer clears it. A new write never collapses the wait back to 10 s.
 let pushFail = 0, pushHold = 0;
+// ── 🚨 A REFUSED SYNC IS SAID, COUNTED AND HEALED (6 Sep 2026) ─────────────
+// Before this a 4xx from the pass worker vanished: a veteran phone pushed into
+// a void for weeks and never got a pass. Now:
+//   403 'not linked'  the credential no longer opens a pass. Three of them
+//                     over ten minutes = a DEAD LINK: drop the credential
+//                     (nothing else — every save stays on this device), mint a
+//                     fresh anonymous pass, push the whole blob into it. A
+//                     veteran's gear is grandfathered by the server's freeze.
+//   413 too large     push once WITHOUT the tape (it is re-sent next time —
+//                     nothing is acked until the server has seen it).
+// Every refusal is one `pass_sync_refused` event per path+status per visit.
+const REFUSED_KEY = 'pass-refused-v1';
+let slimNext = false, slimTried = false;
+const refusedSeen = {};
+function syncRefused(path, status) {
+  const k = path + ':' + status;
+  if (!refusedSeen[k]) { refusedSeen[k] = 1; try { if (window.gtag) window.gtag('event', 'pass_sync_refused', { path, status }); } catch (e) {} }
+  if (status === 413) {
+    if (!slimTried) { slimTried = true; slimNext = true; schedulePush(); return; }
+    passNoticeAdd({ id: 'sync-size', icon: '⚠️', text: '<b>Your pass could not sync</b><br>It is bigger than the server takes right now. Everything is safe on this device and it keeps trying.', link: '/pass/' });
+    pushBackoff();
+    return;
+  }
+  if (status === 403 || status === 404) {
+    let rec = null;
+    try { rec = JSON.parse(localStorage.getItem(REFUSED_KEY) || 'null'); } catch (e) {}
+    const now = Date.now();
+    rec = rec && now - rec.at < 3600000 ? { n: rec.n + 1, at: now, first: rec.first || now } : { n: 1, at: now, first: now };
+    try { localStorage.setItem(REFUSED_KEY, JSON.stringify(rec)); } catch (e) {}
+    if (rec.n >= 3 && now - rec.first >= 600000) {
+      try { localStorage.removeItem('pass-link'); localStorage.removeItem(REFUSED_KEY); localStorage.removeItem('anon-try-at'); } catch (e) {}
+      anonP = null;
+      ensureAnon().then((ok) => {
+        try { if (window.gtag) window.gtag('event', 'pass_reminted', { ok: ok ? 1 : 0 }); } catch (e) {}
+        if (ok) {
+          passNoticeAdd({ id: 'sync-reminted', icon: '🎫', text: '<b>Your pass got a fresh ticket</b><br>The old one had stopped syncing. Everything is safe and syncing again.', link: '/pass/' });
+          schedulePush();
+        }
+      });
+      return;
+    }
+    pushBackoff(); schedulePush();
+    return;
+  }
+  pushBackoff();
+}
+function refusedOk() { try { localStorage.removeItem(REFUSED_KEY); } catch (e) {} }
+
 function pushBackoff() {
   pushFail = Math.min(pushFail + 1, 6);
   pushHold = Date.now() + Math.round(Math.min(900000, 30000 * Math.pow(2, pushFail - 1)) * (0.75 + Math.random() * 0.5));
@@ -197,6 +245,7 @@ function pushNow() {
   try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
   if (!link || !link.credId || !link.token) return;
   const blob = collectBlob();
+  if (slimNext) { slimNext = false; delete blob.ev; }   // 🚨 a push refused for size goes once without the tape
   const sent = new Set((blob.ev || []).map((e) => e.id));
   const body = JSON.stringify({ credId: link.credId, token: link.token, blob, nakAck: nakDone() });
   // sendBeacon survives the page going away; fetch is the everyday path
@@ -204,7 +253,12 @@ function pushNow() {
     try { navigator.sendBeacon(PASS_API + '/push', new Blob([body], { type: 'application/json' })); return; } catch (e) {}
   }
   fetch(PASS_API + '/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
-    .then((r) => { if (r && r.ok) { pushFail = 0; pushHold = 0; return r.json(); } if (!r || r.status >= 500 || r.status === 429) { pushBackoff(); schedulePush(); } return null; })
+    .then((r) => {
+      if (r && r.ok) { pushFail = 0; pushHold = 0; refusedOk(); return r.json(); }
+      if (!r || r.status >= 500 || r.status === 429) { pushBackoff(); schedulePush(); return null; }
+      syncRefused('push', r.status);   // 🚨 a 4xx used to vanish right here
+      return null;
+    })
     .then((d) => { if (d && d.ok) { keepGid(d, true); evDropped = 0; } else keepGid(d); })   // acked by `seen`, never by ok alone
     .catch(() => { pushBackoff(); schedulePush(); });   // a dropped connection tries again, each time later than the last
 }
@@ -227,11 +281,24 @@ export function ensureAnon() {
     if (+(localStorage.getItem('anon-try-at') || 0) > Date.now() - 3600000) return Promise.resolve(false);
     localStorage.setItem('anon-try-at', String(Date.now()));
   } catch (e) { return Promise.resolve(false); }
-  anonP = fetch(PASS_API + '/anon', {
+  // 🚨 6 Sep 2026: a mint the worker refuses is SAID (pass_sync_refused, path
+  // anon) — a veteran phone sat unminted for days without a word. A blob too
+  // big for the mint goes once without its tape, then without its shelf: the
+  // record is what makes a phone a person; the shelf follows on the push.
+  const mint = (blob, slim) => fetch(PASS_API + '/anon', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ blob: collectBlob() }),
-  })
-    .then((r) => (r && r.ok ? r.json() : null))
+    body: JSON.stringify({ blob }),
+  }).then((r) => {
+    if (r && r.ok) return r.json();
+    if (r && r.status === 413 && blob && slim < 2) {
+      const next = { ...blob };
+      if (slim === 0) delete next.ev; else delete next.shelf;
+      return mint(next, slim + 1);
+    }
+    try { if (r && window.gtag) window.gtag('event', 'pass_sync_refused', { path: 'anon', status: r.status }); } catch (e) {}
+    return null;
+  });
+  anonP = mint(collectBlob(), 0)
     .then((d) => {
       if (!d || !d.credId || !d.token) return false;
       let cur = null;

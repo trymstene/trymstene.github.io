@@ -889,6 +889,10 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-visit b { color: #ffe135; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .hs-visit .hs-btn { font-size: 0.72rem; padding: 0.3rem 0.5rem; text-decoration: none; }
     .hs-visit[hidden] { display: none; }
+    /* 🚨 the sync bar sits at the bottom of the frame, above the actions, in a
+       warning red — the visiting bar keeps the top */
+    .hs-sync { top: auto; bottom: 64px; background: rgba(70, 22, 12, 0.94); }
+    .hs-sync b { white-space: normal; font-size: 0.74rem; line-height: 1.25; }
 
     /* 🪧 the guestbook at the sign */
     .hs-share { display: flex; gap: 0.4rem; margin: 0 0 0.7rem; }
@@ -1059,6 +1063,11 @@ const description = 'A clearing west of the park with your name on the sign: cla
         <div class="hs-visit" id="hsVisit" hidden>
           <b id="hsVisitName"></b>
           <a class="hs-btn" href="/homestead/">🏡 yours</a>
+        </div>
+        <!-- 🚨 the sync bar: Banana World said no, and the phone says so (6 Sep 2026) -->
+        <div class="hs-visit hs-sync" id="hsSync" hidden role="status" aria-live="polite">
+          <b id="hsSyncMsg"></b>
+          <button type="button" class="hs-btn" id="hsSyncRetry">retry</button>
         </div>
       </div>
       <div class="hs-actions" aria-label="homestead actions">

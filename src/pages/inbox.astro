@@ -512,6 +512,9 @@ const description = 'Authorized banana personnel only.';
     .hq-tiles > :nth-child(6n+5) { --kc: var(--purp); } .hq-tiles > :nth-child(6n+6) { --kc: var(--org); }
     .hq-tile b { display: block; font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--kc, var(--nana)); }
     .hq-tile span { display: block; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--hdim); margin-top: 0.15rem; }
+    .hq-check { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; opacity: 0.85; white-space: nowrap; }
+    .hq-row__yard { color: var(--ok, #5ee08a); text-decoration: none; }
+    .hq-row__yard:hover { text-decoration: underline; }
     .hq-tools { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin: 0.9rem 0 0.7rem; }
     .hq-tools input, .hq-tools select {
       font-family: inherit; font-size: 0.85rem; padding: 0.45rem 0.6rem;
@@ -903,6 +906,7 @@ const description = 'Authorized banana personnel only.';
             <option value="new">newest</option>
             <option value="risk">can't recover</option>
           </select>
+          <label class="hq-check"><input type="checkbox" id="bmUQuiet" checked /> hide passes with no progress</label>
         </div>
         <div id="bmLedgerList"></div>
 
@@ -1747,6 +1751,15 @@ const description = 'Authorized banana personnel only.';
           tile(d.sum.badges, 'badges earned'),
         );
         el('bmUTools').hidden = uRows.length < 2;
+        const qb = el('bmUQuiet');
+        if (qb && !qb._wired) { qb._wired = 1; qb.addEventListener('change', usersRender); }
+        // 🏡 the yard next to its pass: the census carries an owner TAG per yard
+        // (a hash of the world id) and the ledger prints the same tag per pass
+        fetch(WORLD_API + '/yards/stats').then((r) => r.json()).then((y) => {
+          uYard = {};
+          (y.list || []).forEach((e) => { if (e.owner) uYard[e.owner] = e; });
+          usersRender();
+        }).catch(() => {});
         el('bmUCount').textContent = '👤 ' + d.sum.passes + ' pass' + (d.sum.passes === 1 ? '' : 'es')
           + (d.truncated ? ' (first ' + d.scanned + ' scanned)' : '');
         usersRender();
@@ -1756,12 +1769,17 @@ const description = 'Authorized banana personnel only.';
       }
     }
 
+    let uYard = {};
     function usersRender() {
       const box = el('bmLedgerList');
       box.textContent = '';
       if (!uRows) return;
       const q = (el('bmUSearch').value || '').trim().toLowerCase();
       const sort = el('bmUSort').value;
+      // a first visit that minted a pass and did nothing is a row nobody needs
+      // to scroll past (Trym, 6 Sep: "a ton of names just named exactly the same")
+      const quiet = el('bmUQuiet') && el('bmUQuiet').checked;
+      const hasProgress = (p) => !!(p.name || p.coins || p.badges || (p.level || 1) > 1 || (p.tag && uYard[p.tag]));
       const cmp = {
         recent: (a, b) => b.updated - a.updated,
         coins: (a, b) => b.coins - a.coins,
@@ -1771,7 +1789,9 @@ const description = 'Authorized banana personnel only.';
         risk: (a, b) => (a.mail === b.mail ? b.rep - a.rep : a.mail === true ? 1 : b.mail === true ? -1 : b.rep - a.rep),
       }[sort] || ((a, b) => b.updated - a.updated);
       const rows = uRows
-        .filter((p) => !q || (p.name || '').toLowerCase().includes(q) || p.id.includes(q))
+        .filter((p) => !q || (p.name || '').toLowerCase().includes(q) || p.id.includes(q)
+          || (p.tag && uYard[p.tag] && ((uYard[p.tag].name || '') + ' ' + uYard[p.tag].slug).toLowerCase().includes(q)))
+        .filter((p) => q || !quiet || hasProgress(p))
         .sort(cmp);
       if (!rows.length) {
         box.appendChild(Object.assign(document.createElement('p'), {
@@ -1793,6 +1813,17 @@ const description = 'Authorized banana personnel only.';
         const sub = document.createElement('span');
         sub.className = 'hq-row__sub';
         sub.textContent = p.id + ' · seen ' + ago(p.updated);
+        const y = p.tag && uYard[p.tag];
+        if (y) {
+          const a = document.createElement('a');
+          a.className = 'hq-row__yard';
+          a.href = '/homestead/' + y.slug + '/';
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.textContent = ' · 🏡 ' + (y.name || y.slug);
+          a.addEventListener('click', (ev) => ev.stopPropagation());
+          sub.appendChild(a);
+        }
         who.append(nm, document.createElement('br'), sub);
         const lvl = document.createElement('span');
         lvl.className = 'hq-lvl';

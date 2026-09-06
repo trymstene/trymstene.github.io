@@ -499,6 +499,21 @@ export function renderWorld(into, S) {
   });
   div('hqp-cap', 'the rave, the park, the bay and the forge share one room until one of them is busy enough to fill its own — an empty room reads worse than a short one', s);
 
+  // ── 🚨 sync health ────────────────────────────────────────────────────
+  // Before 6 Sep 2026 every refused save vanished into a catch on the phone;
+  // a player farmed for weeks into a yard nobody could see. Four events are
+  // the alarm now; the two heals say the phone fixed it by itself.
+  const ppl = (n) => { const e = evs.find((x) => x.name === n); return e ? (+e.u || +e.v || 0) : 0; };
+  const refused = ppl('homestead_save_refused'), reatt = ppl('homestead_reattach');
+  const prefused = ppl('pass_sync_refused'), reminted = ppl('pass_reminted');
+  s = section(into, 'Sync health', 'Every time a phone could not save its homestead or its pass it now says so on screen and sends one of these. Zero is the only good number. A re-addressed homestead or a re-minted pass is a heal that worked — the phone kept everything.');
+  const gs = div('hqp-tiles', null, s);
+  tile(gs, 'homestead saves refused', nfmt(refused), refused ? 'people' : 'none');
+  tile(gs, 'homesteads re-addressed', nfmt(reatt), 'healed');
+  tile(gs, 'pass syncs refused', nfmt(prefused), prefused ? 'people' : 'none');
+  tile(gs, 'passes re-minted', nfmt(reminted), 'healed');
+  if (refused || prefused) div('hqp-warn', '⚠ ' + nfmt(refused + prefused) + ' phones hit a wall in this window — the why rides the event (token · unclaimed · offline)', s);
+
   // ── the shops inside the world ─────────────────────────────────────────
   s = section(into, 'The shops inside the world', 'Every storefront a banana can walk into. Some sell for coins and some take real money — the row says which.');
   SHOPS.forEach((sh) => {

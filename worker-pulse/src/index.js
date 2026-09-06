@@ -29,6 +29,7 @@ const LENS_EVENTS = [
   'offer_support',                              // ☕ the support ask, 27 Aug (retired 5 Sep)
   'offer_pack',                                 // 🎟 the pack card, 5 Sep
   'homestead_open',               // 🏡 the home area's door, 6 Aug
+  'homestead_save_refused', 'homestead_reattach', 'pass_sync_refused', 'pass_reminted',   // 🚨 sync health, 6 Sep
   'quest_step',                   // 🕯 chapter-1 funnel, live 13 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
   // 🏪 every in-world shopfront, 1 Aug — these are real storefronts and
@@ -569,6 +570,8 @@ const ANALYST_EVENTS = [
   // 🏡 without this the analyst structurally cannot mention the farm — the
   // busiest thing built this year was invisible to its own judgement
   'homestead_open',
+  // 🚨 a phone that could not save its homestead or its pass now SAYS so
+  'homestead_save_refused', 'homestead_reattach', 'pass_sync_refused', 'pass_reminted',
 ];
 
 // every door into the world, so the analyst can talk about all of them and not

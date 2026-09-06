@@ -48,6 +48,7 @@ export const KEYS = {
   'pass-rules-v1': { travels: 'server', why: 'a cache of the caps this person has used; the rules are enforced server-side' },
   'pass-nak-v1': { travels: 'no', why: 'the refusals THIS device has already put right, so it does not act twice' },
   'anon-try-at': { travels: 'no', why: 'a backoff clock for minting an anonymous pass when the worker is down' },
+  'pass-refused-v1': { travels: 'no', why: 'counts refused pass syncs on THIS device — three in ten minutes means the credential is dead and a fresh pass is minted' },
 
   // ---- the day's counters. The real cap is a server rule, per person; these
   // only stop a device asking for something the server would refuse anyway ----

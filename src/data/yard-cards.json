@@ -1,22 +1,66 @@
 [
  {
-  "slug": "jade-green-banana-3",
-  "name": "JADE GREEN BANANA 3",
-  "stage": 3
+  "slug": "be-s-place",
+  "name": "Be's Place",
+  "stage": 1,
+  "updated": 1788646307840,
+  "animals": 3,
+  "items": 2
  },
  {
-  "slug": "kiwirainbowrain",
-  "name": "KiwiRainbowRain's Homestead",
-  "stage": 2
+  "slug": "jade-green-banana",
+  "name": "JADE GREEN BANANA HOMESTEAD!",
+  "stage": 3,
+  "updated": 1788576244402,
+  "animals": 6,
+  "items": 5
  },
  {
-  "slug": "my",
-  "name": "My Homestead",
-  "stage": 1
+  "slug": "hi-me-name-is-zabobway",
+  "name": "HI, ME NAME IS ZABOBWAY",
+  "stage": 1,
+  "updated": 1788522845961,
+  "animals": 2,
+  "items": 2
  },
  {
   "slug": "d-j-c-o-o-k-i-e-s-homest",
   "name": "D҉J҉C҉O҉O҉K҉I҉E҉🔰's Homeste",
-  "stage": 1
+  "stage": 1,
+  "updated": 1788440445101,
+  "animals": 2,
+  "items": 8
+ },
+ {
+  "slug": "sparkly-dancing",
+  "name": "Sparkly Dancing Homestead",
+  "stage": 2,
+  "updated": 1788256897146,
+  "animals": 0,
+  "items": 0
+ },
+ {
+  "slug": "banana-dance-hometown",
+  "name": "Banana Dance hometown",
+  "stage": 1,
+  "updated": 1788195215618,
+  "animals": 0,
+  "items": 0
+ },
+ {
+  "slug": "thatoddjak",
+  "name": "ThatOddJak's Homestead",
+  "stage": 1,
+  "updated": 1788030793941,
+  "animals": 0,
+  "items": 0
+ },
+ {
+  "slug": "t-2",
+  "name": "T",
+  "stage": 2,
+  "updated": 1787951511853,
+  "animals": 0,
+  "items": 0
  }
 ]

@@ -565,6 +565,24 @@ export function buildFacts(d, upTo) {
     }));
   }
 
+  // 🚨 SYNC HEALTH (6 Sep 2026). Before this every refused save vanished into
+  // a catch on the phone — Kiwi farmed twelve days into a yard nobody could
+  // see. A refusal is now an event, and a heal (a fresh address, a fresh
+  // pass) is another, so the desk can say how many phones hit a wall.
+  const refused = ev('homestead_save_refused') + ev('pass_sync_refused');
+  const healed = ev('homestead_reattach') + ev('pass_reminted');
+  if (refused || healed) {
+    push(fact({
+      id: 'sync', area: 'world', label: 'phones that could not save',
+      value: refused, base: null, deltaPct: null, n: refused + healed, z: 0,
+      sig: refused >= 3 ? 2 : refused ? 1 : 0,
+      say: refused + (refused === 1 ? ' time' : ' times') + ' a phone was refused when saving its homestead or its pass'
+        + (healed ? ', and ' + healed + ' of those healed on the spot (a new address or a fresh pass)' : '')
+        + '. The why is on the event itself (token, unclaimed, offline).',
+      because: refused + ' refused, ' + healed + ' healed',
+    }));
+  }
+
   return facts;
 }
 
