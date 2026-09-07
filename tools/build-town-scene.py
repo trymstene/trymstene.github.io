@@ -6,18 +6,21 @@ plate, pack art at PROP scale, colliders declared on the placement and emitted
 into src/scripts/town-geo.js.
 
 THE REGISTER (decided from the sprites, not the filenames — see the contact
-sheets in the town plan): a BRICK OLD TOWN ON COBBLES. Every building is red
-brick from the same hand — the Victorian civic house as the town hall, a
-Condo_4 block with windows for real players, Market fronts with striped
-awnings for the store and the post office, stacked Floor_Modular brick
-storefronts for the print shop and the bank — and the square is laid in the
-pack's cobble tiles. The modern things are the jokes: an ATM is the bank, a
-red phone booth, a kiosk shaped like a takeaway cup. Nothing grey-city:
-no police, fire station, mall, hospital, asphalt.
+sheets in the town plan): a BRICK OLD TOWN ON COBBLES. The buildings are small
+and every one has a door that opens onto a street: the red-brick clock tower is
+the town hall, a two-floor brick house is the residence with windows for real
+players, small STORE fronts with striped awnings are the general store and the
+print shop, the real post office building is the post office, a kiosk shaped
+like a takeaway cup is the café. The bank is an ATM. Streets are grey cobbles
+with organic edges: a street along the north row, a street along the south
+row, two lanes joining them, the square in the middle and the main street
+south to the park (Trym, 7 Sep: "more streets and smaller buildings, more
+flooring to walk around, NPCs placed with purpose, transitions to grass").
 
 Outputs:
   public/assets/town/town.png        2200x1300 world plate (ground + shadows)
   public/assets/town/ov-*.png        y-sorted overlay props (everything that stands)
+  public/assets/town/a-fountain.png  the fountain, an animated strip
   src/scripts/town-geo.js            ⚠️ THE CONTRACT with the town engine
 Run: python tools/build-town-scene.py
 """
@@ -31,6 +34,7 @@ from blockify import load_pack, blockify
 
 PACK = os.path.expanduser(r'~\OneDrive\banana-art-pack\Modern_Exteriors_48x48')
 FARM = os.path.expanduser(r'~\OneDrive\banana-art-pack\Modern_Farm_v1.2\48x48\Single_Files_48x48\0_Complete_Tileset_48x48')
+ANIM = os.path.expanduser(r'~\OneDrive\banana-art-pack\Modern_Exteriors_48x48\Animated_48x48\Animated_sheets_48x48')
 SITE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(SITE, 'public', 'assets', 'town')
 os.makedirs(OUT, exist_ok=True)
@@ -44,18 +48,18 @@ W, H = 2200, 1300
 PROP = 0.76                  # the beach's heroic-banana scale rule, park's too
 BOUND = 60
 
-# ---- the square: where the cobbles are --------------------------------------
-PAVE = (560, 690, 1640, 1160)        # x0, y0, x1, y1
-ROAD = (1060, 1160, 1140, H)         # the road south, to the park
+# ---- the streets: every door opens onto one -------------------------------------
+HALL_ST = (260, 560, 2020, 660)      # along the north row's doors
+HIGH_ST = (260, 1040, 2020, 1140)    # along the south row's doors
+SQUARE = (660, 660, 1540, 1040)
+WEST_LN = (260, 560, 340, 1140)
+EAST_LN = (1940, 560, 2020, 1140)
+MAIN_ST = (1040, 1140, 1160, H)      # south, to the park
+STREETS = [HALL_ST, HIGH_ST, SQUARE, WEST_LN, EAST_LN, MAIN_ST]
 SPAWN = (1100, 1230)
 
 im = Image.new('RGBA', (W, H), (86, 152, 74, 255))
 px = im.load()
-INK = (17, 17, 17)
-
-
-def rect(x0, y0, x1, y1, col):
-    ImageDraw.Draw(im).rectangle([x0, y0, x1 - 1, y1 - 1], fill=col + (255,))
 
 
 def shadow(cx, cy, rx, ry, a=64):
@@ -71,7 +75,7 @@ def shadow(cx, cy, rx, ry, a=64):
                             int(b * (1 - k) + 18 * k), 255)
 
 
-# ---- the ground: the park's lawn recipe, then cobbles -------------------------
+# ---- the ground: the park's lawn recipe -------------------------------------------
 def luma_spread(t):
     p = t.load()
     vals = [0.3 * p[x, y][0] + 0.6 * p[x, y][1] + 0.1 * p[x, y][2] for y in range(T) for x in range(T) if p[x, y][3]]
@@ -121,26 +125,87 @@ for i in (1, 2, 3, 8, 9):
     except Exception:
         pass
 
+# ---- the paving mask: the streets' union with an organic, cobble-bitten edge ------
+mask = Image.new('L', (W, H), 0)
+md = ImageDraw.Draw(mask)
+for (x0, y0, x1, y1) in STREETS:
+    md.rectangle([x0, y0, x1 - 1, y1 - 1], fill=255)
+# bites and bumps along every edge, in 12px blocks, so the stone meets the grass
+# the way a laid square does, never as a ruler line
+erng = random.Random(31)
+B = 12
+for (x0, y0, x1, y1) in STREETS:
+    for x in range(x0, x1, B):
+        for (ey, out) in ((y0, -1), (y1, +1)):
+            r = erng.random()
+            if r < 0.28:      # a bump outward
+                md.rectangle([x, ey + (out * B if out < 0 else 0), x + B - 1, ey + (0 if out < 0 else out * B) - 1], fill=255)
+            elif r < 0.42:    # a bite inward
+                md.rectangle([x, ey + (0 if out < 0 else -B), x + B - 1, ey + (B if out < 0 else 0) - 1], fill=0)
+    for y in range(y0, y1, B):
+        for (ex, out) in ((x0, -1), (x1, +1)):
+            r = erng.random()
+            if r < 0.28:
+                md.rectangle([ex + (out * B if out < 0 else 0), y, ex + (0 if out < 0 else out * B) - 1, y + B - 1], fill=255)
+            elif r < 0.42:
+                md.rectangle([ex + (0 if out < 0 else -B), y, ex + (B if out < 0 else 0) - 1, y + B - 1], fill=0)
+# the square and the streets are one surface: refill their true rectangles so a
+# bite never cuts a street in two where two rectangles meet
+for (x0, y0, x1, y1) in STREETS:
+    md.rectangle([x0 + B, y0 + B, x1 - B - 1, y1 - B - 1], fill=255)
+mp = mask.load()
 
-def on_pave(x, y, pad=0):
-    return (PAVE[0] - pad <= x <= PAVE[2] + pad and PAVE[1] - pad <= y <= PAVE[3] + pad) or \
-           (ROAD[0] - pad <= x <= ROAD[2] + pad and ROAD[1] - pad <= y <= ROAD[3] + pad)
+
+def paved(x, y):
+    return 0 <= x < W and 0 <= y < H and mp[x, y] > 0
 
 
-for _ in range(60):
+# grey cobbles only (Others_1 + Others_3); the tan ones stay in the drawer
+COBS = [load_pack('ME_Singles_Terrains_and_Fences_48x48_Others_%d.png' % i).convert('RGBA') for i in (1, 3)]
+cob = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+crng = random.Random(5)
+for r in range(0, H // T + 1):
+    for c in range(0, W // T + 1):
+        t = COBS[crng.randrange(len(COBS))]
+        k = crng.randrange(4)
+        t = t.transpose(Image.ROTATE_90) if k == 1 else t.transpose(Image.ROTATE_180) if k == 2 else t.transpose(Image.FLIP_LEFT_RIGHT) if k == 3 else t
+        cob.alpha_composite(t, (c * T, r * T))
+im.paste(cob, (0, 0), mask)
+# the rim: a two-pixel darker seam where stone meets grass, following the bites
+rim = (92, 82, 58, 255)
+for y in range(1, H - 1):
+    row = [mp[x, y] for x in range(W)]
+    for x in range(1, W - 1):
+        if row[x] and (not row[x - 1] or not row[x + 1] or not mp[x, y - 1] or not mp[x, y + 1]):
+            px[x, y] = rim
+            px[x, y + 1] = rim if mp[x, y + 1] else px[x, y + 1]
+
+# the lawn's life, off the stone
+for _ in range(70):
     if not PATCHES:
         break
     x, y = grng.randrange(20, W - 60), grng.randrange(20, H - 60)
-    if on_pave(x, y, 40):
+    if paved(x + 24, y + 24):
         continue
     im.alpha_composite(PATCHES[grng.randrange(len(PATCHES))], (x, y))
 if TUFT:
-    for _ in range(300):
+    for _ in range(360):
         x, y = grng.randrange(10, W - 58), grng.randrange(10, H - 58)
-        if on_pave(x, y, 30):
+        if paved(x + 24, y + 24):
             continue
         t2 = TUFT.transpose(Image.FLIP_LEFT_RIGHT) if grng.random() < 0.5 else TUFT
         im.alpha_composite(t2, (x, y))
+    # and a few tufts leaning over the stone's edge — the transition (Trym)
+    n = 0
+    while n < 160:
+        x, y = grng.randrange(10, W - 58), grng.randrange(10, H - 58)
+        cx, cy = x + 24, y + 30
+        if paved(cx, cy) and not paved(cx, cy + 22) or (not paved(cx, cy) and paved(cx, cy - 22)):
+            im.alpha_composite(TUFT, (x, y)); n += 1
+        elif paved(cx, cy) and (not paved(cx - 22, cy) or not paved(cx + 22, cy)):
+            im.alpha_composite(TUFT, (x, y)); n += 1
+        else:
+            n += 0.02
 
 GRASS_TARGET = (128, 186, 96)
 for y in range(H):
@@ -151,35 +216,7 @@ for y in range(H):
             px[x, y] = (int(r * (1 - k) + GRASS_TARGET[0] * k), int(g * (1 - k) + GRASS_TARGET[1] * k),
                         int(b * (1 - k) + GRASS_TARGET[2] * k), a)
 
-# the cobbles: grey stone for the field, tan stone for the rim, the road in tan
-COB = load_pack('ME_Singles_Terrains_and_Fences_48x48_Others_1.png').convert('RGBA')
-COB2 = load_pack('ME_Singles_Terrains_and_Fences_48x48_Others_3.png').convert('RGBA')
-RIM = load_pack('ME_Singles_Terrains_and_Fences_48x48_Others_4.png').convert('RGBA')
-
-
-def pave(x0, y0, x1, y1, field, rim=None):
-    crng = random.Random(x0 * 7 + y0)
-    cols = list(range(x0, x1, T))
-    rows = list(range(y0, y1, T))
-    for r_i, y in enumerate(rows):
-        for c_i, x in enumerate(cols):
-            edge = rim is not None and (r_i == 0 or r_i == len(rows) - 1 or c_i == 0 or c_i == len(cols) - 1)
-            t = rim if edge else field[crng.randrange(len(field))]
-            k = crng.randrange(4)
-            t = t.transpose(Image.ROTATE_90) if k == 1 else t.transpose(Image.ROTATE_180) if k == 2 else t.transpose(Image.FLIP_LEFT_RIGHT) if k == 3 else t
-            tile = t.crop((0, 0, min(T, x1 - x), min(T, y1 - y)))
-            im.alpha_composite(tile, (x, y))
-
-
-pave(*PAVE, field=[COB, COB2], rim=RIM)
-pave(*ROAD, field=[RIM])
-# a soft dark edge where the stone meets the grass — the beach's road rim idea
-d = ImageDraw.Draw(im)
-d.rectangle([PAVE[0], PAVE[1], PAVE[2] - 1, PAVE[3] - 1], outline=(96, 84, 52, 255), width=2)
-d.rectangle([ROAD[0], ROAD[1], ROAD[2] - 1, ROAD[3] - 1], outline=(96, 84, 52, 255), width=2)
-rect(ROAD[0] + 2, ROAD[1] - 2, ROAD[2] - 2, ROAD[1] + 2, (150, 130, 90))   # the junction, no seam
-
-# ---- props: the park's place(), no sad twin -----------------------------------
+# ---- props: the park's place(), no sad twin ---------------------------------------
 _cache = {}
 PLACED, COLLIDERS, OVERLAYS = [], [], []
 
@@ -217,6 +254,7 @@ def place(name, cx, base, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, flip=
 
 
 def try_place(names, cx, base, **kw):
+    last = None
     for n in names if isinstance(names, (list, tuple)) else [names]:
         try:
             return place(n, cx, base, **kw)
@@ -226,25 +264,12 @@ def try_place(names, cx, base, **kw):
     return None
 
 
-def stack(*names):
-    """a Floor_Modular brick building: ground floor, a middle floor, a roof — one sprite"""
-    parts = [load_pack(n) for n in names]
-    w = max(p.width for p in parts)
-    h = sum(p.height for p in parts)
-    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    y = h
-    for p in parts:                       # first name = ground floor, at the bottom
-        y -= p.height
-        out.alpha_composite(p, ((w - p.width) // 2, y))
-    return out
-
-
 def foot(w, h_solid=22):
     """a thin solid band at a building's feet, relative to (cx, base)"""
     return ('rect', -int(w * PROP // 2) + 6, -h_solid, int(w * PROP // 2) - 6, 4)
 
 
-# ---- 📋 the notice board: our own drawn board, the supporters' board's big cousin ----
+# ---- the notice board: our own drawn board, the supporters' board's big cousin ----
 def build_noticeboard(w=130, ph=84, legh=40, K=3):
     WOOD_, LIT_, GRAIN_, DARK_ = (146, 102, 56), (178, 128, 72), (120, 83, 44), (104, 71, 38)
     INK_ = (52, 36, 21)
@@ -289,85 +314,86 @@ def build_noticeboard(w=130, ph=84, legh=40, K=3):
     return blockify(s, factor=K, colors=14, alpha_thresh=0.4, trim=False)
 
 
+# ---- ⛲ the fountain: the pack's six-frame garden fountain, one strip ------------------
+FOUNTAIN = []
+sheet = Image.open(os.path.join(ANIM, 'Garden_Fountain_6_48x48.png')).convert('RGBA')   # the grey one: the cobbles are grey
+n = 6
+fw = sheet.width // n
+strip = blockify(sheet, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, trim=False)
+sw, shh = int(fw * PROP), int(sheet.height * PROP)
+strip = strip.resize((sw * n, shh), Image.NEAREST)
+strip.save(os.path.join(OUT, 'a-fountain.png'), optimize=True)
+FX, FBASE = 1100, 900
+shadow(FX, FBASE - 6, sw * 0.5, 12)
+FOUNTAIN = [FX, FBASE, sw, shh, n]
+COLLIDERS.append(('fountain', ('circle', int(sw * 0.38)), FX, FBASE - 10))
+
 # ---- THE TOWN --------------------------------------------------------------------
 SPOTS, NPCS = {}, []
 
-# the north row: condo (real players in its windows) · town hall · post office
-place('ME_Singles_Generic_Building_48x48_Condo_4_38.png', 560, 700, solid=foot(768), sh=0.5)
-SPOTS['condo'] = (560, 700)
-place('24_Additional_Houses_Victorian_House_5_48x48.png', 1180, 700, solid=foot(864), sh=0.5)
-SPOTS['hall'] = (1180, 700)
-NPCS.append(('nib', 1150, 722, 'Nib'))
-place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Medium_7.png', 1760, 700, solid=foot(336), sh=0.45)
-SPOTS['post'] = (1760, 700)
-NPCS.append(('stamp', 1740, 722, 'Stamp'))
-try_place(['22_Post_Office_48x48_Big_Blue_Mailbox.png'], 1846, 735, solid=('rect', -12, -10, 12, 4))
-try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1568, 700, solid=('rect', -30, -14, 30, 4))
+# the north row, doors on Hall Street: the residence · the town hall · the post office
+place('ME_Singles_Generic_Building_48x48_Condo_3_45.png', 480, 560, solid=foot(288), sh=0.45)
+SPOTS['condo'] = (480, 560)
+place('ME_Singles_School_48x48_Clock_Tower_1.png', 1100, 560, solid=foot(384), sh=0.45)
+SPOTS['hall'] = (1100, 560)
+NPCS.append(('nib', 1140, 586, 'Nib'))
+place('22_Post_Office_48x48_Building_1.png', 1700, 560, solid=foot(384), sh=0.45)
+SPOTS['post'] = (1700, 560)
+NPCS.append(('stamp', 1750, 586, 'Stamp'))
+try_place(['22_Post_Office_48x48_Big_Blue_Mailbox.png'], 1830, 592, solid=('rect', -12, -10, 12, 4))
+NPCS.append(('moss', 700, 640, 'Moss'))
 
-# the west side: the general store, the bank that is an ATM
-place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Medium_2.png', 428, 920, solid=foot(336), sh=0.45)
-SPOTS['store'] = (428, 920)
-NPCS.append(('pip', 470, 942, 'Pip'))
-BANK = stack('ME_Singles_Floor_Modular_Building_48x48_Ground_Floor_Condo_2.png',
-             'ME_Singles_Floor_Modular_Building_48x48_Middle_Floor_2.png',
-             'ME_Singles_Floor_Modular_Building_48x48_Roof_2.png')
-place('__bank', 130, 700, img=BANK, solid=foot(336), sh=0.45)
-SPOTS['bank'] = (130, 700)
+# the south row, doors on High Street: the general store (+ the bank, an ATM) · the print shop · the café
+place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_1.png', 480, 1040, solid=foot(240), sh=0.45)
+SPOTS['store'] = (480, 1040)
+NPCS.append(('pip', 530, 1066, 'Pip'))
+try_place(['ME_Singles_City_Props_48x48_ATM_1.png'], 620, 1040, solid=('rect', -26, -12, 26, 4))
+SPOTS['bank'] = (620, 1040)
+place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_7.png', 1620, 1040, solid=foot(240), sh=0.45)
+SPOTS['print'] = (1620, 1040)
+try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 1830, 1040, scale=PROP * 0.8, solid=('rect', -60, -26, 60, 4), sh=0.45)
+SPOTS['cafe'] = (1830, 1040)
+NPCS.append(('bean', 1780, 1066, 'Bean'))
 
-# the south-west: the coffee cup kiosk
-try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 400, 1248, scale=PROP * 0.8, solid=('rect', -60, -26, 60, 4), sh=0.45)
-SPOTS['cafe'] = (400, 1248)
-NPCS.append(('bean', 470, 1262, 'Bean'))
+# the worksite lot, north-west: the office and the arcade, later
+for i, x in enumerate(range(70, 250, 36)):
+    try_place(['ME_Singles_Worksite_48x48_Fence_1_%d.png' % (1 + i % 3)], x, 250, shade=False, solid=('rect', -18, -12, 18, 2))
+    try_place(['ME_Singles_Worksite_48x48_Fence_1_%d.png' % (1 + (i + 1) % 3)], x, 470, shade=False, solid=('rect', -18, -12, 18, 2))
+try_place(['ME_Singles_Worksite_48x48_Stacked_Material_1.png'], 150, 380, sh=0.4)
+try_place(['ME_Singles_Worksite_48x48_Sign_2.png'], 90, 440, shade=False)
+try_place(['ME_Singles_Worksite_48x48_Cone_1.png'], 210, 430, shade=False)
+SPOTS['lot'] = (160, 470)
 
-# the south-east: the print shop, a stacked brick storefront on the road in
-PRINT = stack('ME_Singles_Floor_Modular_Building_48x48_Ground_Floor_Condo_1.png',
-              'ME_Singles_Floor_Modular_Building_48x48_Middle_Floor_1.png',
-              'ME_Singles_Floor_Modular_Building_48x48_Roof_1.png')
-place('__print', 1790, 1290, img=PRINT, solid=foot(336), sh=0.45)
-SPOTS['print'] = (1790, 1290)
-
-# the east: the worksite lot, where the office and the arcade come later
-for i, x in enumerate(range(1930, 2160, 36)):
-    try_place(['ME_Singles_Worksite_48x48_Fence_1_%d.png' % (1 + i % 3)], x, 800, shade=False,
-              solid=('rect', -18, -12, 18, 2))
-    try_place(['ME_Singles_Worksite_48x48_Fence_1_%d.png' % (1 + (i + 1) % 3)], x, 1010, shade=False,
-              solid=('rect', -18, -12, 18, 2))
-try_place(['ME_Singles_Worksite_48x48_Stacked_Material_1.png'], 2060, 930, sh=0.4)
-try_place(['ME_Singles_Worksite_48x48_Sign_2.png'], 1960, 900, shade=False)
-try_place(['ME_Singles_Worksite_48x48_Cone_1.png'], 2110, 980, shade=False)
-SPOTS['lot'] = (2045, 905)
-
-# the square itself
-try_place(['ME_Singles_Garden_48x48_Fountain_3_3.png'], 1100, 1010, solid=('circle', 58), sh=0.55)
-SPOTS['fountain'] = (1100, 1010)
-place('FARM:Market_Stand_Yellow_Big_48x48.png', 700, 860, solid=('rect', -84, -30, 84, 4), sh=0.5)
-SPOTS['exchange'] = (700, 860)
-NPCS.append(('figjr', 700, 878, 'Fig Jr.'))
-place('FARM:Market_Stand_Yellow_Big_48x48.png', 1500, 860, flip=True, solid=('rect', -84, -30, 84, 4), sh=0.5)
-SPOTS['wheel'] = (1500, 860)
-NPCS.append(('spinner', 1500, 878, 'Spinner'))
+# the square: three stalls with room between them, the board, the statue on the axis
+place('FARM:Market_Stand_Yellow_Big_48x48.png', 800, 780, solid=('rect', -84, -30, 84, 4), sh=0.5)
+SPOTS['exchange'] = (800, 780)
+NPCS.append(('figjr', 800, 800, 'Fig Jr.'))
+place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('rect', -84, -30, 84, 4), sh=0.5)
+SPOTS['wheel'] = (1400, 780)
+NPCS.append(('spinner', 1400, 800, 'Spinner'))
 _cache[('__board', 1, 28, 0.0, 1.0, 1.0)] = build_noticeboard()
-place('__board', 720, 1120, scale=1.0, solid=('rect', -60, -14, 60, 4), sh=0.5)
-SPOTS['board'] = (720, 1120)
-try_place(['ME_Singles_Garden_48x48_Statue_Putto_1.png'], 1250, 790, solid=('rect', -22, -12, 22, 4))
-SPOTS['plinth'] = (1250, 790)
-try_place(['ME_Singles_Garden_48x48_Grass_Statue_7.png'], 1330, 1010, solid=('rect', -22, -14, 22, 4))
-for (bx, by) in ((900, 770), (1400, 770), (900, 1140), (1400, 1140)):
+place('__board', 740, 990, scale=1.0, solid=('rect', -60, -14, 60, 4), sh=0.5)
+SPOTS['board'] = (740, 990)
+try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, solid=('rect', -40, -20, 40, 4), sh=0.45)
+SPOTS['cart'] = (1460, 1010)
+try_place(['ME_Singles_Garden_48x48_Statue_Putto_1.png'], 1100, 700, solid=('rect', -22, -12, 22, 4))
+SPOTS['plinth'] = (1100, 700)
+for (bx, by) in ((960, 1036), (1240, 1036)):
     try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], bx, by, solid=('rect', -50, -14, 50, 4), sh=0.4)
-for (lx, ly) in ((588, 730), (1612, 730), (588, 1150), (1612, 1150)):
+NPCS.append(('dot', 1010, 1120, 'Dot'))
+# decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
+for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
     try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 8))
-try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 880, 1080, solid=('rect', -40, -20, 40, 4), sh=0.45)
-try_place(['ME_Singles_Vehicles_48x48_Street_Food_Cart_2.png'], 1330, 1110, solid=('rect', -40, -20, 40, 4), sh=0.45)
-try_place(['ME_Singles_City_Props_48x48_ATM_1.png'], 600, 1020, solid=('rect', -26, -12, 26, 4))
-try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 1230, 1150, shade=False, solid=('circle', 8))
-try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 660, 1150, shade=False, solid=('circle', 8))
-try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1000, 745, shade=False)
-try_place(['ME_Singles_Garden_48x48_Bush_18.png'], 1580, 1150, shade=False, solid=('circle', 14))
-try_place(['ME_Singles_Garden_48x48_Bush_18.png'], 620, 760, shade=False, solid=('circle', 14))
-NPCS.append(('dot', 1000, 1180, 'Dot'))
-NPCS.append(('moss', 780, 990, 'Moss'))
+try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1330, 660, solid=('rect', -30, -14, 30, 4))
+try_place(['ME_Singles_Garden_48x48_Grass_Statue_7.png'], 1230, 760, solid=('rect', -22, -14, 22, 4))
+try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 1180, 1120, shade=False, solid=('circle', 8))
+try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 700, 1120, shade=False, solid=('circle', 8))
+try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
+try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1240, 640, shade=False)
+for (bx, by) in ((380, 700), (1900, 700), (380, 960), (1900, 960), (620, 1200), (1580, 1200)):
+    try_place(['ME_Singles_Garden_48x48_Bush_18.png'], bx, by, shade=False, solid=('circle', 14))
 
-# the treeline: the park's camping trees, the town's walls on three sides
+# the treeline: the park's camping trees, the town's walls
 BIG_TREES = ['ME_Singles_Camping_48x48_Tree_%d.png' % n for n in (1, 2, 3, 13, 14, 15, 16, 17, 18)]
 SMALLS = ['ME_Singles_City_Props_48x48_Bush_%d.png' % n for n in (1, 2, 3)]
 TRUNK = ('rect', -13, -36, 13, 0)
@@ -375,13 +401,13 @@ TRUNK = ('rect', -13, -36, 13, 0)
 
 def treeline(pts, step=104, jitter=22):
     for (x0, y0, x1, y1) in pts:
-        if x1 - x0 > y1 - y0:                 # a horizontal band
+        if x1 - x0 > y1 - y0:
             x = x0
             while x < x1:
                 try_place(BIG_TREES[rng.randrange(len(BIG_TREES))], x + rng.randrange(-jitter, jitter),
                           y0 + rng.randrange(0, max(1, y1 - y0)), shade=False, solid=TRUNK)
                 x += step
-        else:                                 # a vertical band
+        else:
             y = y0
             while y < y1:
                 try_place(BIG_TREES[rng.randrange(len(BIG_TREES))], x0 + rng.randrange(0, max(1, x1 - x0)),
@@ -389,14 +415,13 @@ def treeline(pts, step=104, jitter=22):
                 y += step
 
 
-treeline([(60, 30, 2160, 70), (20, 720, 70, 1290), (2140, 400, 2190, 1290), (300, 1290, 1000, 1300),
-          (1200, 1290, 1720, 1300), (1900, 1290, 2150, 1300), (1900, 150, 2100, 640)])
-for _ in range(14):
-    try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(1900, 2150), rng.randrange(1060, 1260),
-              shade=False, scale=PROP * 0.85)
-for _ in range(8):
-    try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(120, 500), rng.randrange(1000, 1180),
-              shade=False, scale=PROP * 0.85)
+treeline([(60, 30, 2160, 70), (20, 560, 60, 1290), (2140, 200, 2190, 1290), (300, 1290, 1000, 1300),
+          (1200, 1290, 1720, 1300), (1900, 1290, 2150, 1300), (1900, 130, 2100, 500), (700, 150, 960, 240), (1260, 150, 1520, 240),
+          (640, 300, 900, 400), (1290, 300, 1500, 400)])   # the groves between the north row's buildings
+for _ in range(16):
+    try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(1860, 2140), rng.randrange(1150, 1260), shade=False, scale=PROP * 0.85)
+for _ in range(10):
+    try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(80, 240), rng.randrange(1150, 1260), shade=False, scale=PROP * 0.85)
 
 im.save(os.path.join(OUT, 'town.png'), optimize=True)
 print('wrote town.png %dx%d, %d overlays, %d colliders' % (W, H, len(OVERLAYS), len(COLLIDERS)))
@@ -408,7 +433,8 @@ L = ['// GENERATED by tools/build-town-scene.py — DO NOT EDIT.',
      'export const BOUND = %d;' % BOUND,
      'export const SPAWN = { x: %d, y: %d };' % SPAWN,
      'export const DOORS = { south: { x: %d, y: %d } };' % (1100, H - 30),
-     'export const PAVE = %s;' % list(PAVE),
+     'export const STREETS = %s;' % [list(s) for s in STREETS],
+     'export const FOUNTAIN = %s;' % list(FOUNTAIN),
      'export const OVERLAYS = %s;' % [list(o) for o in OVERLAYS],
      'export const SPOTS = { %s };' % ', '.join('%s: { x: %d, y: %d }' % (k, v[0], v[1]) for k, v in SPOTS.items()),
      'export const NPCS = %s;' % [[n[0], n[1], n[2], n[3]] for n in NPCS]]
@@ -426,17 +452,16 @@ print('wrote town-geo.js (%d rects, %d circles, %d spots, %d npcs)' % (len(rects
 
 # ---- a preview for the eye: plate + overlays in draw order + the people ----------
 prev = im.copy()
-for fn, x, y, w, h, base in sorted(OVERLAYS, key=lambda o: o[5]):
-    prev.alpha_composite(Image.open(os.path.join(OUT, fn)).convert('RGBA'), (x, y))
+layers = [(y + h, Image.open(os.path.join(OUT, fn)).convert('RGBA'), (x, y)) for fn, x, y, w, h, base in OVERLAYS]
+layers.append((FBASE, strip.crop((0, 0, sw, shh)), (FX - sw // 2, FBASE - shh)))
+for base, img_, at in sorted(layers, key=lambda o: o[0]):
+    prev.alpha_composite(img_, at)
 pd = ImageDraw.Draw(prev)
 for key, x, y, label in NPCS:
     pd.ellipse([x - 14, y - 40, x + 14, y - 4], fill=(255, 225, 53, 255), outline=(0, 0, 0, 255), width=3)
     pd.text((x - 4 * len(label), y + 2), label, fill=(255, 255, 255, 255))
-pd.rectangle([SPAWN[0] - 295, SPAWN[1] - 330, SPAWN[0] + 295, SPAWN[1] + 230], outline=(255, 255, 255, 255), width=4)
 SCR = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'Temp', 'claude', 'C--Web-Development-trymstene-com',
                    'aef8f8b4-6bdc-40b9-830c-496f96a6f745', 'scratchpad', 'shots-town')
 os.makedirs(SCR, exist_ok=True)
 prev.convert('RGB').save(os.path.join(SCR, 'town-preview.png'), optimize=True)
-phone = prev.crop((SPAWN[0] - 295, SPAWN[1] - 330, SPAWN[0] + 295, SPAWN[1] + 230)).resize((1180, 1120), Image.NEAREST)
-phone.convert('RGB').save(os.path.join(SCR, 'town-phone.png'), optimize=True)
 print('preview written')

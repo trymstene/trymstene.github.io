@@ -29,6 +29,12 @@ const description = 'The town centre of Banana World, under construction.';
       background: url('/assets/town/town.png') 0 0 / 100% 100% no-repeat; image-rendering: pixelated;
     }
     .tw-ov { position: absolute; height: auto; image-rendering: pixelated; pointer-events: none; }
+    /* ⛲ the fountain strip steps through its frames — no rAF, no canvas */
+    /* ⚠️ the park's stepping rule: with N frames at N×100% size the end is 100% × N / (N − 1) */
+    .tw-fountain { position: absolute; image-rendering: pixelated; pointer-events: none; background-repeat: no-repeat;
+      animation: tw-fount 0.9s steps(var(--tw-frames, 6)) infinite; }
+    @keyframes tw-fount { from { background-position-x: 0%; } to { background-position-x: var(--tw-end, 120%); } }
+    @media (prefers-reduced-motion: reduce) { .tw-fountain { animation: none; } }
     .tw-me, .tw-npc { position: absolute; width: 4.5%; transform: translate(-50%, -100%); pointer-events: none; }
     .tw-me::after, .tw-npc::after {
       content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;

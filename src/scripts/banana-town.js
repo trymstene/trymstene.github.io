@@ -8,7 +8,7 @@
 // keys, foot colliders, y-sorted overlays, the shared HUD.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { mountHud } from '../lib/world-hud.js';
-import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES } from './town-geo.js';
+import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN } from './town-geo.js';
 
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
@@ -27,19 +27,36 @@ for (const [fn, x, y, w, h, base] of OVERLAYS) {
   BOXES.push([x, y, x + w, y + h, base]);
 }
 
+// ---- ⛲ the fountain: the pack's six-frame strip, CSS-stepped like the park's
+if (FOUNTAIN && FOUNTAIN.length) {
+  const [fx, fbase, fw, fh, n] = FOUNTAIN;
+  const f = document.createElement('div');
+  f.className = 'tw-fountain';
+  f.style.left = pct(fx - fw / 2, W); f.style.top = pct(fbase - fh, H); f.style.width = pct(fw, W);
+  f.style.aspectRatio = fw + ' / ' + fh;
+  f.style.backgroundImage = 'url(/assets/town/a-fountain.png)';
+  f.style.backgroundSize = (n * 100) + '% 100%';
+  f.style.setProperty('--tw-frames', String(n));
+  f.style.setProperty('--tw-end', (n / (n - 1) * 100) + '%');
+  f.style.zIndex = String(100 + fbase);
+  world.appendChild(f);
+  BOXES.push([fx - fw / 2, fbase - fh, fx + fw / 2, fbase, fbase]);
+}
+
 // ---- what each door is (the plan's words) and the plank that names it
 const ABOUT = {
-  hall: ['TOWN HALL', 120, 'Town Hall. Nib’s desk and the big book. Chapter two starts here. Not built yet.'],
-  post: ['POST OFFICE', 100, 'Post Office. Stamp sends stock postcards; your mailbox is by the door. Not built yet.'],
-  store: ['GENERAL STORE', 100, 'General Store. Pip sells fireworks, lures and duck bread. Not built yet.'],
-  bank: ['BANK', 110, 'The bank. It is an ATM. Not built yet.'],
-  print: ['STICKERS', 110, 'The print shop. The real sticker packs in the window. Not built yet.'],
-  cafe: ['CAFÉ', 236, 'The Coffee Cup. Bean pours today’s fortune and a rumour about tomorrow’s prices. Not built yet.'],
+  hall: ['TOWN HALL', 96, 'Town Hall. Nib’s desk and the big book, inside the clock tower. Chapter two starts here. Not built yet.'],
+  post: ['', 0, 'Post Office. Stamp sends stock postcards; your mailbox is by the door. Not built yet.'],
+  store: ['GENERAL STORE', 104, 'General Store. Pip sells fireworks, lures and duck bread. Not built yet.'],
+  bank: ['BANK', 118, 'The bank. It is an ATM. Not built yet.'],
+  print: ['STICKERS', 104, 'The print shop. The real sticker packs in the window. Not built yet.'],
+  cafe: ['CAFÉ', 220, 'The Coffee Cup. Bean pours today’s fortune and a rumour about tomorrow’s prices. Not built yet.'],
   board: ['NOTICES', 132, 'The notice board. Board of Works projects, today’s wants, Monday’s results. Not built yet.'],
   exchange: ['THE EXCHANGE', 154, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],
   wheel: ['WHEEL OF PEEL', 154, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
-  lot: ['COMING SOON', 90, 'The worksite lot. The office and the arcade, later.'],
-  condo: ['THE BUNCH', 140, 'The Bunch. Five real players in its windows. Not built yet.'],
+  lot: ['COMING SOON', 84, 'The worksite lot. The office and the arcade, later.'],
+  condo: ['THE BUNCH', 100, 'The Bunch. Real players in its windows. Not built yet.'],
+  cart: ['', 0, 'The fruit cart. Duck bread, later.'],
   plinth: ['', 0, 'The plinth. The Board of Works’ first statue goes here.'],
   fountain: ['', 0, 'The fountain. It works.'],
 };
