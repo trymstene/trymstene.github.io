@@ -9,7 +9,7 @@
 // PURE RENDERER: no imports, no fetching. Hand it the map data and the
 // payloads; it owns one canvas.
 //
-//   buildEarth(host, MAP, opts) -> { push, setMode, setLens, zoom, stop }
+//   buildEarth(host, MAP, opts) -> { push, setMode, setLens, setLabels, zoom, stop }
 //     MAP  = { MAP_W, MAP_H, LAND_HEX, CENTROIDS }
 //     push({ live, range, mode, lens })
 //     opts = { onTip(html|null) }
@@ -31,6 +31,8 @@
 // entirely, because a sub-pixel gutter is the stripes.
 let PX = 6;
 const MAXDPR = 2;
+// as many labels as a phone can hold before the map is all label
+const MAXLABELS = 10;
 const SEA = '#151129';
 const LAND = '#453a75';
 const COL = { live: '255,225,53', range: '255,93,143', event: '94,224,138' };
@@ -91,6 +93,9 @@ export function buildEarth(host, MAP, opts) {
 
   // the canvas is sized to the box it actually occupies, in device pixels, so
   // nothing is ever resampled on its way to the screen
+  // label text is laid out in CANVAS pixels but has to READ at a CSS size, so
+  // its metrics are scaled by the measured canvas-per-CSS-pixel ratio
+  let CSS2CV = DPR;
   function layout() {
     // ⚠️ A ZERO-WIDTH BOX IS NOT A REASON TO DRAW NOTHING. This returned early
     // when the container had no width — which is the NORMAL state when the map
@@ -101,6 +106,7 @@ export function buildEarth(host, MAP, opts) {
     // the box is measurable.
     const box = wrap.clientWidth || host.clientWidth || 960;
     const px = Math.max(1.2, (box * DPR) / W);
+    CSS2CV = (W * px) / box;
     if (Math.abs(px - PX) < 0.01 && cv.width) return false;
     PX = px;
     cv.width = Math.round(W * PX);
@@ -126,7 +132,7 @@ export function buildEarth(host, MAP, opts) {
     view.oy = Math.max(0, Math.min(H - H / view.s, view.oy));
   };
 
-  let state = { live: null, range: null, mode: 'live', lens: '' };
+  let state = { live: null, range: null, mode: 'live', lens: '', labels: false };
   let dots = [];
   let flakes = [];
   let confettiUntil = 0;
@@ -236,6 +242,7 @@ export function buildEarth(host, MAP, opts) {
           cc, name: cc, v: 0, stage: +st || 1, ghost: true });
       }
     }
+    if (state.labels) paintLabels(cw, ch);
     // ── and the eight seconds that say somebody actually paid. Drawn in
     //    SCREEN space so it does not zoom with the map.
     if (now < confettiUntil) {
@@ -246,6 +253,56 @@ export function buildEarth(host, MAP, opts) {
         ctx.fillStyle = f.c;
         ctx.fillRect(f.x * cw, yy, f.w, f.w);
       }
+    }
+  }
+
+  // ── THE LABELS — the tooltip's answer for every pin at once. A 6px dot is
+  //    not a touch target, so on a phone the only way to read the map was to
+  //    hunt for one; with this on, the map says who is on and what they are
+  //    reading without a single tap.
+  //
+  //    Loudest pin first, and a label that would land on one already placed is
+  //    dropped rather than stacked — an unreadable pile says less than nothing.
+  const cut = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  function paintLabels(cw, ch) {
+    const F = Math.max(9, Math.round(9.5 * CSS2CV));
+    const PAD = Math.round(F * 0.45), LH = Math.round(F * 1.3), GAP = Math.round(F * 0.55);
+    ctx.font = '600 ' + F + 'px system-ui, -apple-system, sans-serif';
+    ctx.textBaseline = 'top';
+    const pages = (state.mode === 'live' && state.live && state.live.countryPages) || null;
+    const placed = [];
+    const hits = (b) => placed.some((p) => b.x < p.x + p.w && b.x + b.w > p.x && b.y < p.y + p.h && b.y + b.h > p.y);
+    const ranked = dots.slice().sort((a, b) => (b.stage - a.stage) || (b.v - a.v));
+    for (const d of ranked) {
+      if (placed.length >= MAXLABELS) break;
+      if (d.cx < 0 || d.cy < 0 || d.cx > cw || d.cy > ch) continue;
+      const lines = [cut(d.name || d.cc, 16) + (d.v ? '  ' + d.v : '')];
+      if (d.stage >= 2) lines.push(HOTTXT[d.stage] + (d.ghost ? ' — left' : ''));
+      const p = pages && pages[d.cc] && pages[d.cc][0];
+      if (p) lines.push(cut(String(p.page || p), 22));
+      const w = Math.round(Math.max(...lines.map((l) => ctx.measureText(l).width))) + PAD * 2;
+      const h = lines.length * LH + PAD * 2;
+      const body = Math.max(PX, (2 * d.r - 1) * PX) * view.s;
+      const x = Math.round(Math.max(0, Math.min(cw - w, d.cx - w / 2)));
+      // above the pin by default, below when the top edge would clip it, and
+      // skipped outright when both seats are taken
+      let y = Math.round(d.cy - body / 2 - GAP - h);
+      let box = { x, y, w, h };
+      if (y < 0 || hits(box)) {
+        y = Math.round(d.cy + body / 2 + GAP);
+        box = { x, y, w, h };
+        if (y + h > ch || hits(box)) continue;
+      }
+      placed.push(box);
+      const col = d.ghost ? GREEN : (d.stage >= 4 ? GOLD : COL[state.mode] || COL.live);
+      ctx.fillStyle = 'rgba(10,8,20,0.86)';
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = 'rgb(' + col + ')';
+      ctx.fillRect(x, y, Math.max(1, Math.round(CSS2CV * 2)), h);
+      lines.forEach((l, i) => {
+        ctx.fillStyle = i === 0 ? 'rgb(' + col + ')' : 'rgba(244,238,255,0.72)';
+        ctx.fillText(l, x + PAD, y + PAD + i * LH);
+      });
     }
   }
 
@@ -318,6 +375,7 @@ export function buildEarth(host, MAP, opts) {
     push,
     setMode(m) { state.mode = m; },
     setLens(l) { state.lens = l; },
+    setLabels(on) { state.labels = !!on; },
     zoom(dir) {
       const cx = view.ox + W / view.s / 2, cy = view.oy + H / view.s / 2;
       view.s = Math.max(1, Math.min(5, view.s + dir));

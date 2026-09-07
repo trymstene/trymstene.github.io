@@ -43,6 +43,8 @@ const ROOMS = [
 const VLABEL = { notable: 'something happened', quiet: 'nothing needed',
   thin: 'too small to call', 'no-baseline': 'not enough history' };
 const RPT_KEY = 'pulse-rpt-read';
+// the map's label toggle outlives the room, which is rebuilt on every visit
+const LAB_KEY = 'pulse-map-labels';
 // the report is dated in Oslo, the property's timezone, and stepped from a UTC
 // midnight — subtracting a day from a local timestamp slips an hour twice a year
 const osloYesterday = () => {
@@ -64,8 +66,9 @@ const nfmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : String(Math.round
 export function mountPulse(host, io) {
   host.textContent = '';
   const S = { room: 'live', mode: 'live', lens: LENSES[0], from: 'today', to: 'today',
-    live: null, range: null, prev: null, analyst: null, ledger: null, err: '' };
+    live: null, range: null, prev: null, analyst: null, ledger: null, err: '', labels: false };
   try { S.room = localStorage.getItem('pulse-pane') || 'live'; } catch (e) {}
+  try { S.labels = localStorage.getItem(LAB_KEY) === '1'; } catch (e) {}
   const timers = new Set();
   const every = (fn, ms) => { const t = setInterval(fn, ms); timers.add(t); return t; };
 
@@ -133,7 +136,21 @@ export function mountPulse(host, io) {
     const zIn = el('button', 'ps-zbtn', '＋', zoomer);
     const zOut = el('button', 'ps-zbtn', '−', zoomer);
     zOut.hidden = true;
+    // ⚠️ a 6px dot is not a touch target: reading the map on a phone meant
+    // hunting for one pin at a time. This pins every answer open at once.
+    const zLab = el('button', 'ps-zbtn', '🏷', zoomer);
+    zLab.type = 'button';
+    zLab.title = 'names and pages on the map, without tapping a dot';
+    zLab.setAttribute('aria-label', 'show labels on the map');
+    zLab.setAttribute('aria-pressed', String(S.labels));
     earth = buildEarth(mapCard, MAP, {});
+    earth.setLabels(S.labels);
+    zLab.addEventListener('click', () => {
+      S.labels = !S.labels;
+      try { localStorage.setItem(LAB_KEY, S.labels ? '1' : '0'); } catch (e) {}
+      zLab.setAttribute('aria-pressed', String(S.labels));
+      earth.setLabels(S.labels);
+    });
     // ⚠️ every visit to this room builds a fresh earth, and the live poll only
     // feeds the earth that exists when it lands — so coming back from another
     // room showed an EMPTY map for up to a minute (found 5 Sep while hunting
