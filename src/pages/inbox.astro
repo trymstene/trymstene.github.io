@@ -173,6 +173,7 @@ const description = 'Authorized banana personnel only.';
     .ps-zoom { position: absolute; right: 8px; top: 8px; z-index: 2; display: grid; gap: 4px; }
     .ps-zbtn { width: 30px; height: 30px; border: 0; border-radius: 999px; background: rgba(10, 8, 20, 0.8);
       color: var(--hink); font: inherit; font-size: 0.9rem; cursor: pointer; }
+    .ps-zbtn[aria-pressed="true"] { background: var(--acc, var(--nana)); color: #14101f; }
     /* ⚠️ the three mode chips and the event selector are DIFFERENT controls —
        "theres not enough space between the LIVE, Range stickerpills and grabbed
        the gif event-selector". They get their own groups and a real gap. */

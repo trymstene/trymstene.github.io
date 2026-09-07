@@ -100,6 +100,7 @@ export const KEYS = {
   'inbox-read-v1': { travels: 'no', why: 'which HQ inbox threads are read (Trym\'s desk)' },
   'pulse-pane': { travels: 'no', why: 'which Pulse room was last open at HQ — a view preference on this desk' },
   'pulse-rpt-read': { travels: 'no', why: 'the last analyst report read on this desk, so the unread dot goes out' },
+  'pulse-map-labels': { travels: 'no', why: 'whether the world map keeps its labels open — a view preference on this desk' },
   'pk_birds_day': { travels: 'no', why: 'the park bird flock, seeded per day for this device' },
   'pk_bfly': { travels: 'no', why: 'the park butterfly state for this device' },
   'fk-t': { travels: 'no', why: 'a shop page timing marker' },
