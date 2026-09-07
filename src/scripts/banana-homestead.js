@@ -1,6 +1,4 @@
-// 🌟 the yard badges: two bundled pixel icons (the full pack is gitignored — never a pack URL)
-import pxStar from '../icons/pixelart/star-solid.svg?raw';
-import pxCrown from '../icons/pixelart/crown-solid.svg?raw';
+// ✏️ one bundled pixel icon (the full pack is gitignored — never a pack URL)
 import pxEdit from '../icons/pixelart/edit.svg?raw';
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
 //
@@ -1661,18 +1659,15 @@ function init(visitDoc, visitMiss) {
   const nameOf = (a) => a.name || (he0(a) ? 'he' : 'she');
   // 🎂 her yard-day: every 30 days from the day she arrived
   const yardDay = (a) => a.ad != null && dayNum() > a.ad && (dayNum() - a.ad) % 30 === 0;
-  // 🌟 a star from Lv 5, a crown and a golden glow at Lv 10 — worn on
-  // the sprite itself, so progress shows from across the yard
+  // 🌟 Lv 10 wears a golden glow on the sprite. The star and crown that sat
+  // over her head are gone (Trym, 6 Sep: "looks dorky") — the level shows on
+  // her card and in the family tree, where there is room for it.
   function petBadge(h) {
     const a = h.a;
     const lv = a ? lvOf(a) : 0;
-    const want = lv >= 10 ? 'crown-solid' : lv >= 5 ? 'star-solid' : '';
+    const want = lv >= 10 ? 'best' : '';
     if (h.bdg === want) return;
     h.bdg = want;
-    let s2 = h.el.querySelector('.hs-henbadge');
-    if (!want) { if (s2) s2.remove(); h.el.classList.remove('hs-hen--best'); return; }
-    if (!s2) { s2 = document.createElement('span'); s2.className = 'hs-henbadge'; h.el.appendChild(s2); }
-    s2.innerHTML = (want === 'crown-solid' ? pxCrown : pxStar).replace('<svg ', '<svg width="11" height="11" shape-rendering="crispEdges" aria-hidden="true" ');
     h.el.classList.toggle('hs-hen--best', lv >= 10);
   }
   // ---- 🎲 TRAITS FROM THE SEED ------------------------------------------
@@ -2124,7 +2119,7 @@ function init(visitDoc, visitMiss) {
     if (a.name) henNameShow(h);
   }
   // ❤️ hearts go up — the hug and a cooked treat share the moment: the
-  // level-up hop, float and badge (when she is on screen), and the two
+  // level-up hop, float and glow (when she is on screen), and the two
   // milestone toasts (a name at 3, the gate at 7)
   function bondUp(a, inc, h) {
     const gWas = greeter();
