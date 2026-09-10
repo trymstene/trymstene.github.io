@@ -2173,7 +2173,12 @@ const MAIL_COOLDOWN = 2 * 60 * 1000;   // one link per address per 2 min
 const MAIL_DAILY_CAP = 90;             // ⚠️ deliberately UNDER the provider's 100
 
 const MAIL_RE = /^[^\s@]{1,64}@[^\s@.]+(\.[^\s@.]+)+$/;
-const normMail = (e) => String(e || '').trim().toLowerCase();
+// ⚠️ NFKC FIRST (10 Sep 2026): a "fonts" keyboard types 𝓭𝓳𝓬𝓸𝓸𝓴𝓲𝓮 — Unicode
+// look-alikes that pass a loose regex and reach the provider as an address
+// nobody has. NFKC folds them back to plain letters; anything still outside
+// printable ASCII after that is refused as "bad email" rather than sent nowhere.
+const normMail = (e) => String(e || '').normalize('NFKC').trim().toLowerCase();
+const ASCII_MAIL = /^[!-~]+$/;
 
 // 🍌 THE LOGIN MAIL — it is the only piece of the world that arrives somewhere
 // we do not control, so it has to carry the brand on its own.
@@ -2268,7 +2273,7 @@ async function mailSignin(request, env) {
   let b;
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
   const email = normMail(b && b.email);
-  if (!MAIL_RE.test(email) || email.length > 160) {
+  if (!MAIL_RE.test(email) || !ASCII_MAIL.test(email) || email.length > 160) {
     await mailStat(env, 'bad');
     return json({ error: 'bad email' }, 400, cors(env, request));
   }
