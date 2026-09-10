@@ -1291,7 +1291,14 @@ async function adminRollup(request, env, url) {
   const days = [...got.values()].filter(Boolean).sort((a, b) => (a.day < b.day ? -1 : 1));
   let state = null;
   try { const o = await env.PASSES.get(ROLL_STATE); state = o ? await o.json() : null; } catch (e) {}
-  return json({ days, today: (state && state.acc) || null, keep: ROLL_KEEP }, 200,
+  // ✉️ the login-link ledger for the same days (14 at most: subrequests are a budget)
+  const mail = {};
+  try {
+    const mk = [];
+    for (let i = 0; i < Math.min(n, 14); i++) mk.push(MAIL_STAT(isoDay((t - i) * 86400000)));
+    for (const [k, v] of await readMany(env, mk)) if (v) mail[k.slice(9, 19)] = v;
+  } catch (e) {}
+  return json({ days, today: (state && state.acc) || null, keep: ROLL_KEEP, mail }, 200,
     { ...cors(env, request), 'Cache-Control': 'no-store' });
 }
 
@@ -2157,7 +2164,7 @@ function derToRaw(der) {
 // address is known. The inbox is the only channel that differs.
 // ⚠️ GDPR: the address is the ONLY personal datum stored, it is for sign-in
 // alone (never a mailing list), and it must stay deletable. See banana-id-plan.
-const MAIL_TTL = 15 * 60 * 1000;
+const MAIL_TTL = 30 * 60 * 1000;   // was 15 — a link read late is the commonest way a login dies
 // ⚠️ THE QUOTA IS THE ATTACK SURFACE. Resend's free tier allows 100 mails a
 // DAY, so without these one bot could burn the lot in a minute and lock every
 // real login out until midnight. The generic 30/min IP throttle does not help:
@@ -2194,7 +2201,7 @@ const mailHtml = (link, c = {}) => `<!doctype html>
       <a href="${link}" style="display:inline-block;background:#111111;color:#ffe135;font:bold 16px Arial,Helvetica,sans-serif;padding:15px 28px;text-decoration:none;">${c.cta || 'Log me in &rarr;'}</a>
     </td></tr>
     <tr><td align="center" style="padding:16px 24px 22px;font:12px/1.55 Arial,Helvetica,sans-serif;color:#4a4326;">
-      ${c.foot || 'Works once, for 15 minutes.<br>Did not ask for this? Ignore it &mdash; nothing happens.'}
+      ${c.foot || 'Works once, for 30 minutes.<br>Did not ask for this? Ignore it &mdash; nothing happens.'}
     </td></tr>
   </table>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;">
@@ -2223,7 +2230,7 @@ async function sendLink(env, to, link, copy) {
       // busy inbox and obviously not marketing
       subject: (copy && copy.subject) || 'Log in to Banana World',
       html: mailHtml(link, copy),
-      text: (copy && copy.text) || (`Tap to log in:\n\n${link}\n\nThe link works once and expires in 15 minutes.\n`
+      text: (copy && copy.text) || (`Tap to log in:\n\n${link}\n\nThe link works once and expires in 30 minutes.\n`
         + `Did not ask for this? Ignore it — nothing happens.\n`),
     }),
   });
@@ -2239,6 +2246,21 @@ async function sendLink(env, to, link, copy) {
   return { ok: true, why: '' };
 }
 
+// ✉️ EVERY OUTCOME IS COUNTED (10 Sep 2026). A login mail that never arrives
+// or a link that is never finished used to leave no trace at all — the only
+// symptom was a player writing in. One object a day, one field per outcome,
+// no address in it; /admin/rollup hands the last days to HQ.
+const MAIL_STAT = (d) => `mailstat/${d}.json`;
+async function mailStat(env, field) {
+  try {
+    const key = MAIL_STAT(new Date().toISOString().slice(0, 10));
+    const o = await env.PASSES.get(key);
+    const cur = o ? await o.json().catch(() => ({})) : {};
+    cur[field] = (cur[field] || 0) + 1;
+    await env.PASSES.put(key, JSON.stringify(cur), { httpMetadata: { contentType: 'application/json' } });
+  } catch (e) {}
+}
+
 // POST /mail/signin { email } → always { ok: true }
 async function mailSignin(request, env) {
   const bad = guard(env, request);
@@ -2247,9 +2269,11 @@ async function mailSignin(request, env) {
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
   const email = normMail(b && b.email);
   if (!MAIL_RE.test(email) || email.length > 160) {
+    await mailStat(env, 'bad');
     return json({ error: 'bad email' }, 400, cors(env, request));
   }
   if (!env.RESEND_KEY || !env.MAIL_FROM) {
+    await mailStat(env, 'unconfigured');
     return json({ error: 'email not configured' }, 503, cors(env, request));
   }
   // ⚠️ the cooldown answers ok:true and simply does not send — telling the
@@ -2259,7 +2283,7 @@ async function mailSignin(request, env) {
   const cdObj = await env.PASSES.get(cdKey);
   if (cdObj) {
     const cd = await cdObj.json().catch(() => null);
-    if (cd && Date.now() - cd.at < MAIL_COOLDOWN) return json({ ok: true }, 200, cors(env, request));
+    if (cd && Date.now() - cd.at < MAIL_COOLDOWN) { await mailStat(env, 'cooldown'); return json({ ok: true }, 200, cors(env, request)); }
   }
   // the day's budget. ⚠️ read-modify-write on R2 is not atomic, so this drifts
   // by a few under load — which is exactly why the cap sits under the real one
@@ -2270,6 +2294,7 @@ async function mailSignin(request, env) {
   if ((day.n || 0) >= MAIL_DAILY_CAP) {
     // ⚠️ a DISTINCT error, so the page can say something true instead of
     // "check your inbox" for a mail that is never coming
+    await mailStat(env, 'cap');
     return json({ error: 'daily limit' }, 429, cors(env, request));
   }
 
@@ -2289,6 +2314,9 @@ async function mailSignin(request, env) {
       { httpMetadata: { contentType: 'application/json' } });
     await env.PASSES.put(cdKey, JSON.stringify({ at: Date.now() }),
       { httpMetadata: { contentType: 'application/json' } });
+    await mailStat(env, 'sent');
+  } else {
+    await mailStat(env, 'sendfail');
   }
   // ⚠️ the SAME answer either way — never confirm whether an address is known
   return json({ ok: true }, 200, cors(env, request));
@@ -2316,10 +2344,11 @@ async function mailUse(request, env, url) {
   if (!t) return json({ error: 'bad link' }, 400, cors(env, request));
   const tk = `mailtkt/${await sha256Hex(t)}.json`;
   const obj = await env.PASSES.get(tk);
-  if (!obj) return json({ error: 'used or unknown' }, 404, cors(env, request));
+  if (!obj) { await mailStat(env, 'used'); return json({ error: 'used or unknown' }, 404, cors(env, request)); }
   const ticket = await obj.json();
   await env.PASSES.delete(tk);                       // single use, always
-  if (!ticket || ticket.exp < Date.now()) return json({ error: 'link expired' }, 410, cors(env, request));
+  if (!ticket || ticket.exp < Date.now()) { await mailStat(env, 'expired'); return json({ error: 'link expired' }, 410, cors(env, request)); }
+  await mailStat(env, 'opened');
 
   // `ticket.email` is the pre-hardening shape — honoured so links already in
   // somebody's inbox still work, and removable once they have all expired

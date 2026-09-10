@@ -296,6 +296,26 @@ export function renderLedger(el, data) {
     div('hqp-cap', 'active people per day', s);
   }
 
+  // ✉️ THE LOGIN LINKS (10 Sep 2026) — counted by the pass worker itself, one
+  // field per outcome, so a mail that never left or a link never finished is
+  // a number here and not a message from a player. Two weeks at most.
+  const mail = roll.mail || {};
+  const mdays = Object.keys(mail).sort();
+  if (mdays.length) {
+    const sum = (k) => mdays.reduce((t, d) => t + (mail[d][k] || 0), 0);
+    const sent = sum('sent'), opened = sum('opened'), expired = sum('expired'), used = sum('used');
+    const bad = sum('bad'), cool = sum('cooldown'), fail = sum('sendfail') + sum('unconfigured'), cap = sum('cap');
+    s = section(el, 'Login links', 'Every email login, from the worker itself: links sent, links finished, and every way one dies — read late (expired), opened twice or by a mail scanner (used), an address the box refused (rejected), a second request inside two minutes (too soon, silently unsent), the provider saying no (failed). ' + mdays.length + ' days.');
+    g = div('hqp-tiles', null, s);
+    tile(g, 'links sent', nfmt(sent), mdays[0].slice(5) + ' → ' + mdays[mdays.length - 1].slice(5));
+    tile(g, 'finished', nfmt(opened), sent ? Math.round(opened / sent * 100) + '% of sent' : 'none sent', sent && opened / sent < 0.6 ? 'warn' : '');
+    tile(g, 'expired', nfmt(expired), 'read after 30 min', expired ? 'warn' : '');
+    tile(g, 'used twice', nfmt(used), 'or opened by a scanner', used ? 'warn' : '');
+    tile(g, 'rejected', nfmt(bad), 'not an address');
+    tile(g, 'too soon', nfmt(cool), 'inside 2 min, unsent');
+    if (fail || cap) tile(g, 'failed to send', nfmt(fail + cap), cap ? 'daily cap hit' : 'the provider said no', 'warn');
+  }
+
   // ── is it growing ─────────────────────────────────────────────────────────
   // ⚠️ DAU WAS THE ONLY THING CHARTED, and it is the wrong line for this
   // question. A world that recruits slowly moves its MONTHLY number; the daily

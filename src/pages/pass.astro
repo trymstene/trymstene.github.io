@@ -72,6 +72,18 @@ const NUMBERS = [
     /* the busy strip sits directly under the card's black header, full width,
        and pushes nothing around when it appears (the card is position:relative
        and clips, so an absolute bar cannot shift the layout under the reader) */
+    .ps-finish {
+      position: absolute; left: 0; right: 0; top: 0; z-index: 4;
+      background: var(--banana); color: var(--ink); border-bottom: 3px solid var(--ink);
+      padding: 0.7rem 0.8rem 0.75rem; display: grid; gap: 0.5rem; justify-items: start;
+    }
+    .ps-finish__line { margin: 0; font-size: 0.92rem; line-height: 1.3; }
+    .ps-finish__go { white-space: nowrap; }
+    .ps-finish__alt { margin: 0; font-size: 0.74rem; line-height: 1.4; opacity: 0.85; }
+    .ps-finish__copy {
+      appearance: none; background: none; border: 0; padding: 0; font: inherit; font-weight: 800;
+      color: inherit; text-decoration: underline; cursor: pointer;
+    }
     .ps-signing {
       position: absolute; left: 0; right: 0; top: 0; z-index: 3;
       display: flex; align-items: center; gap: 0.5rem;
@@ -541,6 +553,14 @@ const NUMBERS = [
              The one signal we had said "Signing you in…" on the keep row,
              ninety lines further down the page and off the fold on a phone.
              This sits ON the card, which is where they are looking. -->
+        <!-- ✉️ a login link lands here and WAITS for a tap: a mail scanner that
+             opens links cannot spend it, and a person reading mail in an app can
+             copy it into the browser they actually play in -->
+        <div class="ps-finish" id="psFinish" hidden>
+          <p class="ps-finish__line"><b>One tap to finish logging in.</b></p>
+          <button class="btn btn--dark ps-finish__go" id="psFinishGo" type="button">Log me in</button>
+          <p class="ps-finish__alt">Playing in another browser or app? <button class="ps-finish__copy" id="psFinishCopy" type="button">Copy the link</button> and open it there. It works once, for 30 minutes.</p>
+        </div>
         <div class="ps-signing" id="psSigning" hidden>
           <span class="ps-signing__bar" aria-hidden="true"></span>
           <span class="ps-signing__txt" id="psSigningTxt">Signing you in…</span>

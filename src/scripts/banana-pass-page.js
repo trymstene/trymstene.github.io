@@ -347,7 +347,7 @@ async function init() {
   // ⚠️ the shared shelf re-renders itself after a delete, so the tile dressing
   // is hung off the host rather than off one render call
   new MutationObserver(dressTiles).observe(el('psMade'), { childList: true });
-  if (landing && landing.kind === 'in') setLine(LINE_WAIT);
+  if (landing && landing.kind === 'news') setLine(LINE_WAIT);   // a login link says nothing until it is tapped
   setTimeout(passNoticesMarkRead, 1800); // seen = read (the unread highlight gets its moment)
   catalogReady.then(renderGear);         // the catalog landed — repaint the whole closet
   await refresh(landing);
@@ -374,6 +374,11 @@ async function refresh(landing) {
   if (!landing && !linked()) return;   // nothing to reach — the local page IS the page
   let cold = false;
   if (landing) {
+    // ✉️ a login link is spent on a TAP, never on arrival (10 Sep 2026): link
+    // scanners that open every URL in a mail were burning single-use links,
+    // and a link opened inside a mail app's own browser logged in the wrong
+    // browser. The news confirmation has no such stakes and stays automatic.
+    if (landing.kind === 'in') await waitForTap(landing.t);
     signing(landing.kind === 'news' ? 'Confirming…' : 'Signing you in…');
     try {
       await withTimeout(runLanding(landing), LANDING_MS);
@@ -401,6 +406,28 @@ async function refresh(landing) {
   } catch (e) { cold = true; }
   signing(null);          // whatever happened, stop saying we are still working
   netNote(cold);
+}
+
+// ✉️ the finish strip: resolves when they tap "Log me in". "Copy the link" puts
+// the full link back on the clipboard (the address bar was scrubbed on arrival)
+// so it can be opened in the browser that holds their world; the ticket stays
+// unspent until it is tapped somewhere.
+function waitForTap(t) {
+  const box = el('psFinish'), go = el('psFinishGo'), copy = el('psFinishCopy');
+  if (!box || !go) return Promise.resolve();
+  box.hidden = false;
+  try { box.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+  return new Promise((resolve) => {
+    go.addEventListener('click', () => { box.hidden = true; setLine(LINE_WAIT); resolve(); }, { once: true });
+    if (copy) copy.addEventListener('click', async () => {
+      const link = location.origin + '/pass/?in=' + encodeURIComponent(t);
+      let ok = false;
+      try { await navigator.clipboard.writeText(link); ok = true; } catch (e) {}
+      if (!ok) { try { window.prompt('Copy this link and open it in your browser:', link); ok = true; } catch (e) {} }
+      copy.textContent = ok ? 'Copied' : 'Copy the link';
+      if (window.gtag) window.gtag('event', 'pass_mail_copylink');
+    });
+  });
 }
 
 // 📡 an unreachable account is SAID OUT LOUD, on the row that owns sync status.
