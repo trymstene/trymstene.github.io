@@ -94,6 +94,14 @@ async function tapSignUntil(page, selector) {
 const settled = async (page) => { const y = await yard(page); return !!(y && y.pubUpdated && !y.dirty); };
 const outboxEmpty = async (page) => { const ev = await lsJ(page, 'pass-ev-v1'); return !ev || ev.length === 0; };
 
+// ✉️ /pass/?in=… shows "One tap to finish logging in" and spends the ticket only
+// on that tap (10 Sep 2026: mail scanners were burning single-use links). The
+// proof taps it the way a person does.
+async function finishLogin(page) {
+  await page.waitForSelector('#psFinishGo', { state: 'visible', timeout: 15000 });
+  await page.click('#psFinishGo');
+}
+
 test.skip(!KEY, 'QA_KEY is not set — the proof needs the pass worker\'s QA login door');
 
 test('phone A plays and adds an email; phone B logs in and sees it all; B renames; A sees that', async ({ browser }, info) => {
@@ -132,6 +140,7 @@ test('phone A plays and adds an email; phone B logs in and sees it all; B rename
     await test.step('A adds the email', async () => {
       const t1 = await ticket(who);
       await A.page.goto('/pass/?in=' + t1, { waitUntil: 'domcontentloaded' });
+      await finishLogin(A.page);   // ✉️ the link waits for a tap since 10 Sep — a scanner cannot spend it, so neither can a goto
       await expect.poll(async () => ((await link(A.page)) || {}).credId || '', { timeout: 30000, message: 'the email never attached' }).toMatch(/^m:/);
       expect(await ls(A.page, 'world-gid'), 'the address joined THIS pass — same person, same world id').toBe(gid);
       await A.page.waitForSelector('.ps-card--stamped', { timeout: 15000 });
@@ -150,6 +159,7 @@ test('phone A plays and adds an email; phone B logs in and sees it all; B rename
     await test.step('B logs in with the email and sees A\'s world', async () => {
       const t2 = await ticket(who);
       await B.page.goto('/pass/?in=' + t2, { waitUntil: 'domcontentloaded' });
+      await finishLogin(B.page);
       await expect.poll(async () => ((await link(B.page)) || {}).credId || '', { timeout: 30000, message: 'B never logged in' }).toMatch(/^m:/);
       await expect.poll(() => ls(B.page, 'world-gid'), { timeout: 15000, message: 'B is not the same person' }).toBe(gid);
       await expect.poll(() => ls(B.page, 'ps-name-v1'), { timeout: 15000, message: 'the name did not follow' }).toBe(NAME_A);

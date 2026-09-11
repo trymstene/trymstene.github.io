@@ -355,14 +355,14 @@ const ITEMS = { firework: ['Firework', 15, 'Launch it where people are. Everyone
 const pocket = {};     // this session only — the real one is two pass counters per kind
 function pocketAdd(k) { pocket[k] = Math.min(5, (pocket[k] || 0) + 1); pocketPaint(); }
 function pocketPaint() {
-  const chip = document.getElementById('twPocket'), n = Object.values(pocket).reduce((a, b) => a + b, 0);
-  chip.hidden = !n;
-  chip.textContent = 'POCKET · ' + Object.entries(pocket).filter(([, v]) => v).map(([k, v]) => ITEMS[k][0] + ' ×' + v).join(' · ');
+  const n = Object.values(pocket).reduce((a, b) => a + b, 0);
+  hud.setSlot(n ? 'POCKET · ' + Object.entries(pocket).filter(([, v]) => v).map(([k, v]) => ITEMS[k][0] + ' ×' + v).join(' · ') : '');
+  if (!n) tray.hidden = true;
 }
 function storeCard() {
   let rows = '';
   for (const [k, it] of Object.entries(ITEMS)) rows += '<div class="tw-row"><div><b>' + it[0] + ' · ' + it[1] + ' coins</b><small>' + it[2] + '</small></div><button type="button" data-buy="' + k + '">buy</button></div>';
-  openCard('<h2>The General Store</h2><p class="tw-card__sub">Pip sells things you use, never things you wear. Three kinds, five of each at most. What you carry sits in your pocket, top left.</p>'
+  openCard('<h2>The General Store</h2><p class="tw-card__sub">Pip sells things you use, never things you wear. Three kinds, five of each at most. What you carry shows as POCKET in the HUD.</p>'
     + '<div class="tw-rows">' + rows + '</div>'
     + '<p class="tw-fine">Prototype: nothing is charged and nothing is saved. On the real one a buy is a pass spend and the server refuses more than five.</p>');
   cardBody.querySelectorAll('[data-buy]').forEach((b) => b.addEventListener('click', () => {
@@ -374,8 +374,7 @@ function storeCard() {
   }));
 }
 const tray = document.getElementById('twTray');
-document.getElementById('twPocket').addEventListener('click', (e) => {
-  e.stopPropagation();
+function toggleTray() {
   if (!tray.hidden) { tray.hidden = true; return; }
   let html = '';
   for (const [k, v] of Object.entries(pocket)) if (v) html += '<div class="tw-row"><div><b>' + ITEMS[k][0] + ' ×' + v + '</b></div><button type="button" data-use="' + k + '">' + (k === 'firework' ? 'use here' : k === 'lure' ? 'armed' : 'the ducks are in the park') + '</button></div>';
@@ -387,7 +386,7 @@ document.getElementById('twPocket').addEventListener('click', (e) => {
     pocket.firework--; pocketPaint(); tray.hidden = true;
     firework();
   }));
-});
+}
 
 // ---- 🎆 the firework: a burst over the square where you stand, your name under it
 let fxRuns = 0;
@@ -414,7 +413,13 @@ function firework() {
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk
-mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins'] });
+// the world HUD, the town's own tint: level, coins, the POCKET in the slot chip
+// (every player control lives in the HUD — Trym, 11 Sep), and the crowd chip,
+// which is also the save ask. No room yet, so the crowd reads solo.
+const hud = mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins', 'slot', 'crowd'] });
+hud.setCrowd('solo');
+const slotEl = hud.el.querySelector('.wh__slot');
+if (slotEl) { slotEl.style.cursor = 'pointer'; slotEl.setAttribute('role', 'button'); slotEl.addEventListener('click', (e) => { e.stopPropagation(); toggleTray(); }); }
 assetsReady().then(() => {
   for (const n of npcEls) {
     drawComposite(n.cv.getContext('2d'), 150, 0, { hat: 'none', glasses: 'none', extras: {}, ...NPC_LOOK[n.key], top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
