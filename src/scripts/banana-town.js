@@ -532,5 +532,5 @@ assetsReady().then(() => {
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
-  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []) } };   // QA seam for the walk
+  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null) } };   // QA seam for the walk
 });

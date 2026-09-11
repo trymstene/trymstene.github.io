@@ -632,7 +632,7 @@ if os.path.isdir(RBD) and os.path.isdir(BASEMENT):
     print('  arcade floor tile at', (fx, fy), 'wall at', (wx, wy))
     FT = _fl.crop((fx, fy, fx + 48, fy + 48))
     WS = _wa.crop((wx, wy, wx + 48, wy + 96))
-    TW, TH = 12, 8
+    TW, TH = 12, 9
     RW, RH = TW * 48, TH * 48
     room = Image.new('RGBA', (RW, RH), (0, 0, 0, 0))
     for j in range(0, RH, 48):
@@ -652,12 +652,15 @@ if os.path.isdir(RBD) and os.path.isdir(BASEMENT):
     # back wall: five cabinets face the room; side walls: cabinets seen from the side; a counter with
     # the TV and the consoles by the door, two stools at it
     FURN = [
-        (218, 60, 224, (0, -44, 48, 0), 'g1'), (219, 132, 224, (0, -44, 48, 0), 'g2'), (218, 204, 224, (0, -44, 48, 0), 'g3'),
-        (219, 276, 224, (0, -44, 48, 0), 'g4'), (218, 348, 224, (0, -44, 48, 0), 'g5'),
-        (221, 16, 300, (0, -40, 64, 0), 'g6'), (221, 16, 372, (0, -40, 64, 0), 'g7'),
-        (223, 496, 300, (0, -40, 64, 0), 'g8'), (223, 496, 372, (0, -40, 64, 0), 'g9'),
-        (194, 440, 224, (0, -40, 96, 0), 'counter'),
-        (151, 448, 262, (0, -10, 32, 0), None), (155, 500, 262, (0, -10, 32, 0), None),
+        # the back wall: five cabinets standing AGAINST it (their tops a hand into the wall band), then the counter
+        # with the TV and the consoles at the wall's right end, two stools in front of it
+        (218, 40, 200, (0, -44, 48, 0), 'g1'), (219, 112, 200, (0, -44, 48, 0), 'g2'), (218, 184, 200, (0, -44, 48, 0), 'g3'),
+        (219, 256, 200, (0, -44, 48, 0), 'g4'), (218, 328, 200, (0, -44, 48, 0), 'g5'),
+        (194, 420, 200, (0, -40, 96, 0), 'counter'),
+        (151, 434, 244, (0, -10, 32, 0), None), (155, 480, 244, (0, -10, 32, 0), None),
+        # the side walls: two cabinets seen from the side on each, below the back row so nothing cuts anything
+        (221, 16, 330, (0, -40, 64, 0), 'g6'), (221, 16, 402, (0, -40, 64, 0), 'g7'),
+        (223, 496, 330, (0, -40, 64, 0), 'g8'), (223, 496, 402, (0, -40, 64, 0), 'g9'),
     ]
     rcols, rspots = [], []
     for n, x, base, col, key in FURN:
