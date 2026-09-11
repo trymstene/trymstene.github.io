@@ -380,7 +380,12 @@ for i in range(n):
 FX, FBASE = 1100, 900
 shadow(FX, FBASE - 6, sw * 0.5, 12)
 FOUNTAIN = [FX, FBASE, sw, shh, n]
-COLLIDERS.append(('fountain', ('circle', int(sw * 0.38)), FX, FBASE - 10))
+# ⛔ nobody walks INTO the fountain's picture: a banana whose feet are behind the basin
+# (y < FBASE) is drawn under it, so its body must clear the silhouette by its own half
+# width (~40 px). Two circles trace that: the bowl (half-width 72 at y 814-838) and the
+# tower above it (Trym, 11 Sep: "the fountain overflows my banana").
+COLLIDERS.append(('fountain', ('circle', 112), FX, FBASE - 44))
+COLLIDERS.append(('fountain-top', ('circle', 100), FX, FBASE - 110))
 
 # ---- THE TOWN --------------------------------------------------------------------
 SPOTS, NPCS = {}, []
