@@ -458,7 +458,6 @@ NPCS.append(('dot', 1010, 1120, 'Dot'))
 for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
     try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7))
 try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1330, 660, solid=('rect', -28, -12, 28, 4))
-try_place(['ME_Singles_Garden_48x48_Grass_Statue_7.png'], 1230, 760, solid=('rect', -20, -12, 20, 4))
 try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 1180, 1120, shade=False, solid=('circle', 7))
 try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 700, 1120, shade=False, solid=('circle', 7))
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
@@ -467,42 +466,46 @@ for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
     try_place(['ME_Singles_Garden_48x48_Bush_18.png'], bx, by, shade=False, solid=('circle', 12))
 
 # ---- the mini-areas (Trym, 11 Sep evening: "see these mini-areas and develop a purpose for them") ----
-# A · THE ORCHARD, the lawn between the Bunch and the hall: a lane, three apple trees, apples under them, a table
+# Second pass, after Trym's look: an object stands where it would stand in a real cosy town. No row of
+# mailboxes on a lawn, no two lamps side by side, no lone topiary bear on the cobbles.
+# A · THE ORCHARD, between the Bunch and the hall: a lane up from Hall St, three apple trees with apples
+#     under them, the residents' washing line on the Bunch's side, a table under the trees, and the
+#     lemonade stand where a kid from the Bunch would set it up: at the lane, by the street
 for (tx, ty, tn) in ((690, 330, 16), (900, 330, 17), (790, 215, 18)):
     try_place(['ME_Singles_Camping_48x48_Tree_%d.png' % tn], tx, ty, shade=False, solid=('rect', -12, -26, 12, 2))   # = TRUNK, defined below
 for (ax, ay, an) in ((650, 352, 1), (925, 350, 2), (760, 240, 3), (860, 372, 1)):
     try_place(['ME_Singles_Camping_48x48_Apples_%d.png' % an], ax, ay, shade=False)
-try_place(['ME_Singles_Camping_48x48_Benched_Table_1.png'], 700, 470, solid=('rect', -36, -14, 36, 4), sh=0.35)
-try_place(['ME_Singles_Camping_48x48_Lantern_2.png'], 850, 470, shade=False, solid=('circle', 6))
+try_place(['ME_Singles_City_Props_48x48_Hanging_Clothes_6.png'], 680, 480, shade=False, solid=('rect', -60, -6, 60, 4))
+try_place(['ME_Singles_Camping_48x48_Benched_Table_1.png'], 890, 420, solid=('rect', -36, -14, 36, 4), sh=0.35)
+try_place(['ME_Singles_Villas_48x48_Lemonade_Stand_2.png'], 890, 545, solid=('rect', -36, -16, 36, 4), sh=0.35)
 SPOTS['orchard'] = (792, 300)
-# B · THE MAILBOX ROW, the lawn between the hall and the post office: a lane, four boxes, a bench, flowers
-for i in range(4):
-    try_place(['22_Post_Office_48x48_Black_Mailbox_1_Front.png'], 1470, 390 + i * 46, shade=False, solid=('rect', -10, -8, 10, 4))
-try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1330, 430, solid=('rect', -36, -10, 36, 4), sh=0.35)
-try_place(['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], 1330, 370, shade=False, solid=('rect', -36, -8, 36, 4))
-try_place(['ME_Singles_City_Props_48x48_Flower_Bush_3.png'], 1470, 350, shade=False, solid=('rect', -36, -8, 36, 4))
-try_place(['ME_Singles_Camping_48x48_Lantern_4.png'], 1330, 500, shade=False, solid=('circle', 6))
-SPOTS['mail'] = (1416, 320)
-# C · THE BUS STOP, the north-east corner: the east lane runs north out of town, a shelter beside it
+SPOTS['stand'] = (890, 545)
+# B · THE MONUMENT, between the hall and the post office: a lane up to a statue on the lawn, two potted
+#     bushes flanking it, a drinking fountain and a bench by the lane — the civic garden
+try_place(['ME_Singles_Garden_48x48_Grey_Statue.png'], 1416, 330, solid=('rect', -30, -16, 30, 4), sh=0.4)
+for px_ in (1350, 1482):
+    try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], px_, 340, shade=False, solid=('rect', -12, -8, 12, 4))
+try_place(['ME_Singles_City_Props_48x48_Drinking_Fountain_1.png'], 1330, 470, shade=False, solid=('rect', -14, -10, 14, 4))
+try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1500, 470, solid=('rect', -36, -10, 36, 4), sh=0.35)
+SPOTS['monument'] = (1416, 330)
+# C · THE BUS STOP, the north-east corner: the east lane runs north out of town, a shelter beside it, nothing else
 try_place(['ME_Singles_Vehicles_48x48_Bus_Stop_1.png'], 2060, 330, solid=('rect', -84, -24, 84, 4), sh=0.4)
-try_place(['ME_Singles_Vehicles_48x48_Bus_Stop_Sign_1.png'], 1900, 330, shade=False, solid=('circle', 6))
-try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], 1900, 520, shade=False, solid=('circle', 7))
 SPOTS['bus'] = (2060, 330)
 SPOTS['cut'] = (1944, 90)
-# D · THE ROW, behind the print shop and the cup: a lane, three statues, flowers between, lanterns at the ends
-for (sx, sn, fl) in ((1590, 2, False), (1730, 3, False), (1870, 2, True)):
-    try_place(['ME_Singles_Garden_48x48_Statue_Putto_%d.png' % sn], sx, 758, flip=fl, solid=('rect', -20, -10, 20, 4))
-for fx in (1660, 1800):
-    try_place(['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], fx, 752, shade=False, solid=('rect', -36, -8, 36, 4))
-for lx in (1552, 1908):
-    try_place(['ME_Singles_Camping_48x48_Lantern_2.png'], lx, 754, shade=False, solid=('circle', 6))
-SPOTS['row'] = (1730, 640)
-# E · THE STAND, behind the store: a lane, the lemonade stand, two flower beds, a lantern
-try_place(['ME_Singles_Villas_48x48_Lemonade_Stand_2.png'], 610, 766, solid=('rect', -36, -16, 36, 4), sh=0.35)
-for fx in (420, 510):
+# D · THE CAFE GARDEN, the strip behind the print shop and the cup: two benches facing the lane, potted
+#     bushes and a flower bed between — the café's seating, one lane from the square
+for bx in (1600, 1860):
+    try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], bx, 758, solid=('rect', -36, -10, 36, 4), sh=0.35)
+for px_ in (1672, 1788):
+    try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], px_, 754, shade=False, solid=('rect', -12, -8, 12, 4))
+try_place(['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], 1730, 752, shade=False, solid=('rect', -36, -8, 36, 4))
+SPOTS['garden_e'] = (1730, 640)
+# E · GRAN FIG'S GARDEN, the strip behind the store, under the Bunch: her flower beds, a bench, a potted bush
+try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], 372, 754, shade=False, solid=('rect', -12, -8, 12, 4))
+for fx in (440, 530):
     try_place(['ME_Singles_City_Props_48x48_Flower_Bush_3.png'], fx, 752, shade=False, solid=('rect', -36, -8, 36, 4))
-try_place(['ME_Singles_Camping_48x48_Lantern_4.png'], 360, 754, shade=False, solid=('circle', 6))
-SPOTS['stand'] = (610, 766)
+try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 610, 758, solid=('rect', -36, -10, 36, 4), sh=0.35)
+SPOTS['garden_w'] = (500, 640)
 
 # the treeline: the park's camping trees, the town's walls
 BIG_TREES = ['ME_Singles_Camping_48x48_Tree_%d.png' % n for n in (1, 2, 3, 13, 14, 15, 16, 17, 18)]

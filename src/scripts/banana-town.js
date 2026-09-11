@@ -67,11 +67,12 @@ const ABOUT = {
   fountain: ['', 0, 'The fountain. It works.'],
   // the mini-areas (11 Sep evening): every small place says what it is for
   orchard: ['THE ORCHARD', 0, 'The orchard. Three apples fall here a day; a treat your animals at home love. Not built yet.'],
-  mail: ['MAILBOXES', 0, 'The mailbox row. Postcards from neighbours wait in yours. Not built yet.'],
+  monument: ['THE MONUMENT', 232, 'The monument. Monday’s names are read out here. Not built yet.'],
   bus: ['BUS STOP', 122, 'The bus stop. The roads still work; this is the shortcut.'],
   cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
-  row: ['THE ROW', 0, 'The Row. The Board of Works’ statues stand here as projects complete. Two puttos and a stranger, for now.'],
-  stand: ['LEMONADE', 122, 'Dot’s lemonade stand. One coin, one small good thing. Not built yet.'],
+  garden_e: ['CAFÉ GARDEN', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
+  garden_w: ['GRAN FIG’S GARDEN', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
+  stand: ['LEMONADE', 118, 'Lemonade, from a kid at the Bunch. One coin, one small good thing. Not built yet.'],
 };
 for (const [key, spot] of Object.entries(SPOTS)) {
   const a = ABOUT[key];
