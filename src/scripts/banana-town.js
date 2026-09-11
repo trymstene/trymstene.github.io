@@ -69,10 +69,10 @@ const ABOUT = {
   condo: ['ARCADE', 100, 'The Arcade. Classics in banana wrapping, inside. Tap the door.'],
   // 🕹 the machines inside — names to be argued over; every one says what it will be
   g1: ['', 0, 'PEEL OUT. One thumb, one banana, a jelly vat to miss.'],
-  g2: ['', 0, 'BUNCH INVADERS. The bunch comes down in rows. Coming soon.'],
-  g3: ['', 0, 'PEEL PONG. Two peels and a very fast banana. Coming soon.'],
-  g4: ['', 0, 'THE LONG PEEL. It grows, and it must not bite itself. Coming soon.'],
-  g5: ['', 0, 'SPLIT. Bricks, a bat, a banana that bounces. Coming soon.'],
+  g2: ['', 0, 'BANANA SNAKE. It grows, and it must not bite itself.'],
+  g3: ['', 0, 'BANANA INVADERS. The flies come down in rows.'],
+  g4: ['', 0, 'BANANA PONG. Your peel against Spinner’s.'],
+  g5: ['', 0, 'BANANA STACK. Crates on crates, until they topple.'],
   g6: ['', 0, 'An older cabinet. Out of order, for now.'],
   g7: ['', 0, 'An older cabinet. Out of order, for now.'],
   g8: ['', 0, 'An older cabinet. Out of order, for now.'],
@@ -305,7 +305,7 @@ function openFor(key) {
   if (key === 'store') { storeCard(); return true; }
   if (key === 'bus') { travel.open(); return true; }   // the shelter is the travel door's place in the world
   if (key === 'condo') { enterArcade(); return true; }
-  if (key === 'g1') { peelOutCard(); return true; }
+  if (CABINET[key]) return gameCard(key);
   return false;
 }
 // 🕹 step inside: the shade covers the town, the room floats over it, the banana rides above both
@@ -485,115 +485,22 @@ function toggleTray() {
   tray.querySelectorAll('[data-say]').forEach((r) => r.addEventListener('click', () => { tray.hidden = true; say(r.dataset.say === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); }));
 }
 
-// ---- 🕹 PEEL OUT (cabinet one), a playable SKETCH so the flap game has a face (12 Sep 2026).
-// One thumb: tap to flap. Your own banana, drawn by the engine, flies a course built from
-// pieces: vines hanging from the top, crates stacked from the floor, a gap between them that
-// drifts, steps and zigzags on a rhythm that changes every few pieces, while the speed climbs.
-// The run ends in the jelly vat. Sketch rules: no coins move, the best lasts this visit,
-// the board comes with the rail. Zero libraries; the loop runs only while the card is open.
-let arcGame = null, arcBest = 0;
-function peelOutCard() {
-  openCard('<h2>Peel Out</h2><p class="tw-card__sub">Tap to flap. Through the vines and over the crates; the vat is waiting.</p>'
-    + '<div class="tw-arc"><canvas id="twArc" width="300" height="440"></canvas><div class="tw-arc__hud"><span id="twArcScore">0</span><span id="twArcBest">best ' + arcBest + '</span></div></div>'
-    + '<p class="tw-fine">A sketch: no coins move and the best lasts this visit. The leaderboard comes with the rail.</p>');
-  arcGame = peelOut(document.getElementById('twArc'), document.getElementById('twArcScore'), document.getElementById('twArcBest'));
-}
-function peelOut(cv, scoreEl, bestEl) {
-  const ctx = cv.getContext('2d');
-  const CW = cv.width, CH = cv.height, FLOOR = CH - 46;   // the vat is the bottom band
-  // the banana, once, from the engine: frame 1 of the dance is a fine flying pose
-  const off = document.createElement('canvas'); off.width = off.height = CV;
-  drawComposite(off.getContext('2d'), CV, 1, ME_DRAW);
-  const B = 44;   // the banana's drawn size on the screen
-  let st, raf = 0, last = 0, alive = true;
-  const rnd = mix32((Date.now() / 1000) | 0);
-  function reset() {
-    st = { y: CH * 0.42, vy: 0, x: 80, t: 0, speed: 150, pieces: [], next: 260, score: 0, dead: false, deadT: 0, started: false, mode: 0, modeLeft: 6, gapC: CH * 0.45, tilt: 0 };
+// ---- 🕹 THE CABINETS (12 Sep 2026): five games, one module, loaded the first time a cabinet is tapped.
+// The games live in town-games.js so the town's own script stays under its budget; the
+// card, the board and the score submit live there too. This side only knows which
+// cabinet holds which game, draws the banana once for it, and keeps the one handle.
+const CABINET = { g1: 'peelout', g2: 'snake', g3: 'invaders', g4: 'pong', g5: 'stack' };
+let arcGame = null, gamesMod = null;
+function bananaCanvas() { const off = document.createElement('canvas'); off.width = off.height = CV; drawComposite(off.getContext('2d'), CV, 1, ME_DRAW); return off; }
+function gameCard(key) {
+  const g = CABINET[key]; if (!g) return false;
+  const go = (m) => { if (arcGame) { arcGame.stop(); arcGame = null; } arcGame = m.openGame(g, { openCard, say, bananaCanvas }); };
+  if (gamesMod) go(gamesMod);
+  else {
+    openCard('<h2>' + ABOUT[key][2].split('.')[0] + '</h2><p class="tw-card__sub">warming up the cabinet…</p>');
+    import('./town-games.js').then((m) => { gamesMod = m; if (!panel.hidden) go(m); }).catch(() => { closeCard(); say('The cabinet is asleep. Try again in a moment.'); });
   }
-  // a piece = a vine from the top down to the gap and crates from the floor up to it
-  function addPiece() {
-    const gapH = Math.max(112, 160 - st.score * 1.4);
-    if (--st.modeLeft <= 0) { st.mode = (st.mode + 1 + Math.floor(rnd() * 2)) % 4; st.modeLeft = 5 + Math.floor(rnd() * 4); }
-    const lo = 70 + gapH / 2, hi = FLOOR - 40 - gapH / 2;
-    let c = st.gapC;
-    if (st.mode === 0) c += (rnd() - 0.5) * 120;                       // drift
-    else if (st.mode === 1) c = lo + rnd() * (hi - lo);               // steps
-    else if (st.mode === 2) c = (st.pieces.length % 2 ? hi - 20 : lo + 20) + (rnd() - 0.5) * 30;   // zigzag
-    else c += (rnd() - 0.5) * 50;                                     // tight: small moves, the gap does the work
-    c = Math.max(lo, Math.min(hi, c));
-    st.gapC = c;
-    st.pieces.push({ x: CW + 40, top: c - gapH / 2 - (st.mode === 3 ? 8 : 0), bot: c + gapH / 2 - (st.mode === 3 ? 8 : 0), leaf: Math.floor(rnd() * 3), passed: false });
-  }
-  function flap() {
-    if (st.dead) { if (st.deadT > 0.7) { reset(); } return; }
-    st.started = true; st.vy = -400;
-  }
-  function step(dt) {
-    if (!st.started) return;
-    if (st.dead) { st.deadT += dt; st.vy += 1500 * dt; st.y = Math.min(FLOOR + 10, st.y + st.vy * dt); return; }
-    st.t += dt;
-    st.vy += 1500 * dt; st.y += st.vy * dt;
-    if (st.y < 20) { st.y = 20; st.vy = 0; }
-    st.speed = Math.min(270, 150 + st.score * 4);
-    st.next -= st.speed * dt;
-    if (st.next <= 0) { addPiece(); st.next = Math.max(170, 230 - st.score * 2); }
-    for (const p of st.pieces) {
-      p.x -= st.speed * dt;
-      if (!p.passed && p.x + 30 < st.x) { p.passed = true; st.score++; scoreEl.textContent = st.score; if (st.score > arcBest) { arcBest = st.score; bestEl.textContent = 'best ' + arcBest; } }
-    }
-    st.pieces = st.pieces.filter((p) => p.x > -60);
-    // collisions: the banana as a box a little smaller than its picture
-    const bx0 = st.x - B * 0.32, bx1 = st.x + B * 0.32, by0 = st.y - B * 0.36, by1 = st.y + B * 0.36;
-    if (by1 >= FLOOR) { die(); return; }
-    for (const p of st.pieces) {
-      if (bx1 < p.x || bx0 > p.x + 30) continue;
-      if (by0 < p.top || by1 > p.bot) { die(); return; }
-    }
-  }
-  function die() { st.dead = true; st.deadT = 0; st.vy = -150; }
-  function draw() {
-    ctx.clearRect(0, 0, CW, CH);
-    // the sky: night over the town, two stripes of stars
-    ctx.fillStyle = '#17243a'; ctx.fillRect(0, 0, CW, CH);
-    ctx.fillStyle = '#243652';
-    for (let i = 0; i < 12; i++) ctx.fillRect(((i * 83 + 40 - st.t * 20) % (CW + 40) + CW + 40) % (CW + 40) - 20, 30 + (i * 37) % 200, 3, 3);
-    // pieces
-    for (const p of st.pieces) {
-      // the vine: a rope with leaves, from the ceiling to the gap
-      ctx.fillStyle = '#4c7a2f'; ctx.fillRect(p.x + 13, 0, 4, p.top);
-      ctx.fillStyle = '#6fae3f';
-      for (let y = 14; y < p.top - 6; y += 26) { const s = (y / 26 + p.leaf) % 2 ? -1 : 1; ctx.fillRect(p.x + 15 + (s > 0 ? 3 : -13), y, 10, 5); ctx.fillRect(p.x + 15 + (s > 0 ? 5 : -11), y + 5, 6, 3); }
-      ctx.fillStyle = '#e0c23a'; ctx.fillRect(p.x + 8, p.top - 10, 14, 10); ctx.fillStyle = '#b8951f'; ctx.fillRect(p.x + 8, p.top - 3, 14, 3);   // a bunch at the end
-      // the crates: stacked from the floor to the gap
-      let y = FLOOR; ctx.fillStyle = '#8a5a2b';
-      while (y > p.bot) { const h = Math.min(30, y - p.bot); ctx.fillStyle = '#8a5a2b'; ctx.fillRect(p.x, y - h, 30, h); ctx.fillStyle = '#5e3a1e'; ctx.fillRect(p.x, y - h, 30, 2); ctx.fillRect(p.x, y - 2, 30, 2); ctx.fillRect(p.x, y - h, 2, h); ctx.fillRect(p.x + 28, y - h, 2, h); ctx.fillStyle = '#a97a3e'; ctx.fillRect(p.x + 4, y - h + 6, 22, 2); y -= 30; }
-    }
-    // the vat: a jelly band that wobbles
-    ctx.fillStyle = '#7a2a6e'; ctx.fillRect(0, FLOOR, CW, CH - FLOOR);
-    ctx.fillStyle = '#c33fae';
-    for (let x = 0; x < CW; x += 12) ctx.fillRect(x, FLOOR - 2 + Math.round(Math.sin(st.t * 4 + x / 9) * 2), 12, 6);
-    // the banana, tilted by its climb or fall
-    const tilt = st.dead ? Math.min(1.4, st.deadT * 2) : Math.max(-0.5, Math.min(0.9, st.vy / 700));
-    ctx.save(); ctx.translate(st.x, st.y); ctx.rotate(tilt); ctx.imageSmoothingEnabled = false; ctx.drawImage(off, -B / 2, -B / 2, B, B); ctx.restore();
-    ctx.font = 'bold 15px "Archivo Black", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fffdf5';
-    ctx.shadowColor = '#000'; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
-    if (!st.started) ctx.fillText('tap to flap', CW / 2, CH * 0.68);
-    if (st.dead) { ctx.fillStyle = '#ffe135'; ctx.font = 'bold 26px "Archivo Black", sans-serif'; ctx.fillText('SPLAT', CW / 2, CH * 0.4); ctx.font = 'bold 13px "Archivo Black", sans-serif'; ctx.fillStyle = '#fffdf5'; if (st.deadT > 0.7) ctx.fillText('tap for another go', CW / 2, CH * 0.5); }
-    ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
-  }
-  function loop(now) {
-    if (!alive) return;
-    const dt = Math.min(0.033, (now - last) / 1000 || 0); last = now;
-    step(dt); draw();
-    raf = requestAnimationFrame(loop);
-  }
-  const onTap = (e) => { e.preventDefault(); flap(); };
-  const onKey = (e) => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); flap(); } };
-  cv.addEventListener('pointerdown', onTap);
-  addEventListener('keydown', onKey);
-  reset(); draw();
-  raf = requestAnimationFrame(loop);
-  return { stop() { alive = false; cancelAnimationFrame(raf); cv.removeEventListener('pointerdown', onTap); removeEventListener('keydown', onKey); }, flap, state: () => st };
+  return true;
 }
 
 // ---- 🎆 the firework: a burst over the square where you stand, your name under it
@@ -644,5 +551,5 @@ assetsReady().then(() => {
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
-  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: peelOutCard } };   // QA seam for the walk
+  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });
