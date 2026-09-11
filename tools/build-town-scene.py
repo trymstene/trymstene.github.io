@@ -386,7 +386,9 @@ FOUNTAIN = [FX, FBASE, sw, shh, n]
 # tower above it (Trym, 11 Sep: "the fountain overflows my banana").
 # (a first pass used +40 px and Trym found it wide: colliders stay TIGHT, +20 here, ~0 on props)
 COLLIDERS.append(('fountain', ('circle', 92), FX, FBASE - 48))
-COLLIDERS.append(('fountain-top', ('circle', 78), FX, FBASE - 114))
+# the tower is a cone, not a ball: a small circle at its tip keeps the lane between the
+# statue and the fountain open (Trym: "I cant seem to walk here")
+COLLIDERS.append(('fountain-top', ('circle', 42), FX, FBASE - 124))
 
 # ---- THE TOWN --------------------------------------------------------------------
 SPOTS, NPCS = {}, []
