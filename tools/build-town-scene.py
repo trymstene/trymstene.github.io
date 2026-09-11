@@ -367,14 +367,16 @@ FOUNTAIN = []
 sheet = Image.open(os.path.join(ANIM, 'Garden_Fountain_6_48x48.png')).convert('RGBA')   # the grey one: the cobbles are grey
 n = 6
 fw = sheet.width // n
-strip = blockify(sheet, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, trim=False)
+strip = blockify(sheet, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, trim=False)   # one palette for all six
 sw, shh = int(fw * PROP), int(sheet.height * PROP)
-strip = strip.resize((sw * n, shh), Image.NEAREST)
-# six FRAME FILES, not one strip: a strip stepped by background-position in a box of
-# fractional width lands every frame on a different sub-pixel phase, and the fountain
-# walks sideways in a loop (Trym, 11 Sep). Six images in one box sample identically.
+# ⚠️ six FRAME FILES, each cropped at the SOURCE size and resized ON ITS OWN. Resizing the
+# whole strip as one image drifted the basin a pixel across the six frames (the
+# resampler's phase walks along the strip; measured: the built frames' left edge went
+# 17, 16, 16, 16, 16, 15 while the source's was 21 in all six) — that was the nudge Trym
+# saw, twice. Same crop, same resize, same pixels: the basin cannot move.
 for i in range(n):
-    strip.crop((i * sw, 0, (i + 1) * sw, shh)).save(os.path.join(OUT, 'a-fountain-%d.png' % i), optimize=True)
+    fr = strip.crop((i * fw, 0, (i + 1) * fw, sheet.height)).resize((sw, shh), Image.NEAREST)
+    fr.save(os.path.join(OUT, 'a-fountain-%d.png' % i), optimize=True)
 FX, FBASE = 1100, 900
 shadow(FX, FBASE - 6, sw * 0.5, 12)
 FOUNTAIN = [FX, FBASE, sw, shh, n]

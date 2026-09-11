@@ -194,14 +194,16 @@ decoration in it must land on the tile's own period, or it seams.
 Glows on drawn art use `filter: drop-shadow()`, never `box-shadow` — the glow
 has to follow the silhouette, not the rectangle it sits in.
 
-An animated strip stepped by `background-position` walks. In a box whose width
-is a fraction of a pixel (anything sized in % of a scaled world) every step
-lands on a different sub-pixel phase, so the drawing shifts a pixel or two each
-frame and the town's fountain wandered sideways in a loop (Trym, 11 Sep 2026).
-Frames go in one box as separate images, shown in turn by a visibility
-animation with a positive delay per frame; six images sample identically and
-nothing moves. The same applies to any strip in the park or the bay the day it
-is noticed.
+An animation strip is never resized as one image. The resampler's phase walks
+along the strip, so a basin drawn at the same x in six source frames came out
+at 17, 16, 16, 16, 16, 15 in the built frames, and the town's fountain nudged
+sideways in a loop (Trym, 11 Sep 2026, twice — the first fix chased the CSS).
+Crop each frame at the source size and resize it on its own: same crop, same
+resize, same pixels. Then show the frames as separate images in one box, in
+turn, by a visibility animation with a positive delay per frame — a strip
+stepped by `background-position` in a box of fractional width adds its own
+sub-pixel wobble on top. The park's and the bay's strips were built the first
+way; check them the day something there seems to breathe sideways.
 
 Ground meets ground through the pack's autotiles, never through a drawn line.
 The town's first paving was rectangles with 12 px bites and a ruler-straight
