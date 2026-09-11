@@ -62,7 +62,8 @@ MAIL_PATH = (1392, 336, 1440, 576)   # north off Hall St to the mailbox row
 BUS_ROAD = (1920, 0, 1968, 576)      # the east lane runs on north, out of town: the bus stop, The Cut later
 EAST_PATH = (1536, 672, 1920, 720)   # behind the print shop and the cup: the Row
 WEST_PATH = (336, 672, 672, 720)     # behind the store: the stand and the beds
-STREETS = [HALL_ST, HIGH_ST, SQUARE, WEST_LN, EAST_LN, MAIN_ST, ORCH_PATH, MAIL_PATH, BUS_ROAD, EAST_PATH, WEST_PATH]
+TERRACE = (1680, 1152, 1920, 1248)  # a small cobbled patch below High St by the cafe: the terrace (Trym's pick)
+STREETS = [HALL_ST, HIGH_ST, SQUARE, WEST_LN, EAST_LN, MAIN_ST, ORCH_PATH, MAIL_PATH, BUS_ROAD, EAST_PATH, WEST_PATH, TERRACE]
 SPAWN = (1100, 1230)
 
 im = Image.new('RGBA', (W, H), (86, 152, 74, 255))
@@ -394,6 +395,27 @@ for i in range(n):
 FX, FBASE = 1100, 900
 shadow(FX, FBASE - 6, sw * 0.5, 12)
 FOUNTAIN = [FX, FBASE, sw, shh, n]
+
+# ---- 🎞 any other animated prop, the fountain's way: one palette for the strip, then each frame
+# cropped at the source size and resized on its own; the files are a-<key>-<i>.png and the
+# contract's ANIMS says where they stand and how fast they turn
+ANIMS = []
+
+
+def anim_prop(key, sheet_name, frames, fw, fh, cx, base, solid=None, period=0.8, sh=0.0):
+    sh_ = Image.open(os.path.join(ANIM, sheet_name)).convert('RGBA')
+    sub = Image.new('RGBA', (fw * len(frames), fh), (0, 0, 0, 0))
+    for k, i in enumerate(frames):
+        sub.alpha_composite(sh_.crop((i * fw, 0, (i + 1) * fw, fh)), (k * fw, 0))
+    sub = blockify(sub, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, trim=False)
+    w2, h2 = int(fw * PROP), int(fh * PROP)
+    for k in range(len(frames)):
+        sub.crop((k * fw, 0, (k + 1) * fw, fh)).resize((w2, h2), Image.NEAREST).save(os.path.join(OUT, 'a-%s-%d.png' % (key, k)), optimize=True)
+    if sh:
+        shadow(cx, base - 4, w2 * sh, 8)
+    ANIMS.append([key, int(cx), int(base), w2, h2, len(frames), period])
+    if solid:
+        COLLIDERS.append((key, solid, int(cx), int(base)))
 # ⛔ nobody walks INTO the fountain's picture: a banana whose feet are behind the basin
 # (y < FBASE) is drawn under it, so its body must clear the silhouette by its own half
 # width (~40 px). Two circles trace that: the bowl (half-width 72 at y 814-838) and the
@@ -454,7 +476,7 @@ try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, so
 SPOTS['cart'] = (1460, 1010)
 # (the putto that stood on the door-to-fountain axis is gone — Trym, 11 Sep: "remove the statue in the town centre")
 for (bx, by) in ((960, 1036), (1240, 1036)):
-    try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], bx, by, solid=('rect', -46, -12, 46, 4), sh=0.4)
+    try_place(['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], bx, by, solid=('rect', -50, -8, 50, 4), sh=0.4)   # flat and minimal in the centre (Trym), wooden in the outer parts
 NPCS.append(('dot', 1010, 1120, 'Dot'))
 # decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
 for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
@@ -466,6 +488,24 @@ try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, sh
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1240, 640, shade=False)
 for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
     try_place(['ME_Singles_Garden_48x48_Bush_18.png'], bx, by, shade=False, solid=('circle', 12))
+
+# ---- Trym's picks from the pack preview (11 Sep night): trees that stand on a square of grass
+# in the pavement, framing the fountain's north side and the park road's mouth; dumpsters in
+# the works yard and by the back lane behind the café
+for (tx, ty, tn) in ((980, 760, 13), (1220, 760, 14), (1260, 1148, 9)):
+    try_place(['ME_Singles_City_Props_48x48_Tree_%d.png' % tn], tx, ty, shade=False, solid=('rect', -30, -22, 30, 4))
+try_place(['ME_Singles_City_Props_48x48_Dumpster_4.png'], 200, 330, solid=('rect', -36, -20, 36, 4), sh=0.4)
+try_place(['ME_Singles_City_Props_48x48_Dumpster_1.png'], 2070, 1130, solid=('rect', -36, -20, 36, 4), sh=0.4)
+# the info point at the gate, west of the park road: the map of the town (Trym: "theres also info kiosks")
+try_place(['ME_Singles_City_Props_48x48_Kiosk_Infopoint_1.png'], 900, 1226, solid=('rect', -80, -120, 80, 4), sh=0.45)
+SPOTS['info'] = (900, 1226)
+# the terrace by the cafe: the pack's small fountain (animated), two sideways benches, two small bins (Trym's pick)
+anim_prop('smallfount', 'Fountain_48x48 - Copia.png', [0, 1, 2, 3, 4, 5, 6, 7], 96, 144, 1810, 1240, solid=('rect', -30, -26, 30, 4), period=1.2, sh=0.5)
+try_place(['ME_Singles_City_Props_48x48_Bench_5.png'], 1746, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
+try_place(['ME_Singles_City_Props_48x48_Bench_6.png'], 1874, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
+for bx in (1700, 1910):   # the small bins at the patch's street corners, clear of the benches' columns
+    try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], bx, 1170, shade=False, solid=('circle', 7))
+SPOTS['terrace'] = (1810, 1240)
 
 # ---- the mini-areas (Trym, 11 Sep evening: "see these mini-areas and develop a purpose for them") ----
 # Second pass, after Trym's look: an object stands where it would stand in a real cosy town. No row of
@@ -487,7 +527,7 @@ SPOTS['stand'] = (890, 545)
 try_place(['ME_Singles_Garden_48x48_Grey_Statue.png'], 1416, 330, solid=('rect', -30, -16, 30, 4), sh=0.4)
 for px_ in (1350, 1482):
     try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], px_, 340, shade=False, solid=('rect', -12, -8, 12, 4))
-try_place(['ME_Singles_City_Props_48x48_Drinking_Fountain_1.png'], 1330, 470, shade=False, solid=('rect', -14, -10, 14, 4))
+anim_prop('drink', 'Drinking_Fountain_1_loop_3-6_48x48.png', [2, 3, 4, 5], 48, 144, 1330, 470, solid=('rect', -14, -10, 14, 4), period=0.8)   # the water loop (Trym's pick)
 try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1500, 470, solid=('rect', -36, -10, 36, 4), sh=0.35)
 SPOTS['monument'] = (1416, 330)
 # C · THE BUS STOP, the north-east corner: the east lane runs north out of town, a shelter beside it, nothing else
@@ -531,8 +571,8 @@ def treeline(pts, step=104, jitter=22):
                 y += step
 
 
-treeline([(60, 30, 1880, 70), (2050, 30, 2160, 70), (20, 560, 60, 1290), (2140, 420, 2190, 1290), (300, 1290, 1000, 1300),
-          (1200, 1290, 1720, 1300), (1900, 1290, 2150, 1300)])   # the edges only: the groves gave way to the mini-areas, the top opens for the bus road
+treeline([(60, 30, 1880, 70), (2050, 30, 2160, 70), (20, 560, 60, 1290), (2140, 420, 2190, 1290), (300, 1290, 780, 1300),
+          (1200, 1290, 1600, 1300), (2000, 1290, 2150, 1300)])   # a gap in the south trees for the terrace   # the edges only: the groves gave way to the mini-areas, the top opens for the bus road
 for _ in range(16):
     try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(1860, 2140), rng.randrange(1150, 1260), shade=False, scale=PROP * 0.85)
 for _ in range(10):
@@ -550,6 +590,7 @@ L = ['// GENERATED by tools/build-town-scene.py — DO NOT EDIT.',
      'export const DOORS = { south: { x: %d, y: %d } };' % (1100, H - 30),
      'export const STREETS = %s;' % [list(s) for s in STREETS],
      'export const FOUNTAIN = %s;' % list(FOUNTAIN),
+     'export const ANIMS = %s;' % [list(a) for a in ANIMS],
      'export const OVERLAYS = %s;' % [list(o) for o in OVERLAYS],
      'export const SPOTS = { %s };' % ', '.join('%s: { x: %d, y: %d }' % (k, v[0], v[1]) for k, v in SPOTS.items()),
      'export const NPCS = %s;' % [[n[0], n[1], n[2], n[3]] for n in NPCS]]

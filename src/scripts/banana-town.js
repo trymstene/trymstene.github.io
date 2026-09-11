@@ -10,7 +10,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN } from './town-geo.js';
+import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS } from './town-geo.js';
 
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
@@ -29,19 +29,24 @@ for (const [fn, x, y, w, h, base] of OVERLAYS) {
   BOXES.push([x, y, x + w, y + h, base]);
 }
 
-// ---- ⛲ the fountain: the pack's six frames, one file each, CSS-shown in turn
-if (FOUNTAIN && FOUNTAIN.length) {
-  const [fx, fbase, fw, fh, n] = FOUNTAIN;
+// ---- ⛲ the animated props: the fountain and the rest, frames as files, CSS-shown in turn
+// (n frames in ONE box, one visible at a time, a positive delay per frame; a background strip
+// stepped by position walked sideways at fractional widths). Keyframes per frame count live
+// in town.astro: tw-fount for 6, tw-fount4 for 4.
+const ANIM_ALL = [];
+if (FOUNTAIN && FOUNTAIN.length) ANIM_ALL.push(['fountain', FOUNTAIN[0], FOUNTAIN[1], FOUNTAIN[2], FOUNTAIN[3], FOUNTAIN[4], 0.9]);
+for (const a of (ANIMS || [])) ANIM_ALL.push(a);
+for (const [key, fx, fbase, fw, fh, n, period] of ANIM_ALL) {
   const f = document.createElement('div');
-  f.className = 'tw-fountain';
+  f.className = 'tw-fountain'; f.dataset.key = key;
   f.style.left = pct(fx - fw / 2, W); f.style.top = pct(fbase - fh, H); f.style.width = pct(fw, W);
   f.style.aspectRatio = fw + ' / ' + fh;
-  // six frames in ONE box, one visible at a time (the keyframes in town.astro, offset per
-  // frame): a background strip stepped by position walked sideways at fractional widths
   for (let i = 0; i < n; i++) {
     const im = document.createElement('img');
-    im.src = '/assets/town/a-fountain-' + i + '.png'; im.alt = ''; im.decoding = 'async';
-    im.style.animationDelay = (i * (0.9 / n)).toFixed(3) + 's';   // positive: frame i takes the i-th sixth, in drawn order
+    im.src = '/assets/town/a-' + key + '-' + i + '.png'; im.alt = ''; im.decoding = 'async';
+    im.style.animationName = n === 4 ? 'tw-fount4' : n === 8 ? 'tw-fount8' : 'tw-fount';
+    im.style.animationDuration = period + 's';
+    im.style.animationDelay = (i * (period / n)).toFixed(3) + 's';
     f.appendChild(im);
   }
   f.style.zIndex = String(100 + fbase);
@@ -68,6 +73,8 @@ const ABOUT = {
   orchard: ['THE ORCHARD', 0, 'The orchard. Three apples fall here a day; a treat your animals at home love. Not built yet.'],
   monument: ['THE MONUMENT', 232, 'The monument. Monday’s names are read out here. Not built yet.'],
   bus: ['BUS STOP', 122, 'The bus stop. The roads still work; this is the shortcut.'],
+  info: ['INFO', 224, 'The info point. A map of the town and what is where. Not built yet.'],
+  terrace: ['TERRACE', 132, 'The terrace. Sit with the fortune. Not built yet.'],
   cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
   garden_e: ['CAFÉ GARDEN', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
   garden_w: ['GRAN FIG’S GARDEN', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
