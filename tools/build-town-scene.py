@@ -459,7 +459,7 @@ NPCS.append(('dot', 1010, 1120, 'Dot'))
 # decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
 for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
     try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7))
-try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1330, 660, solid=('rect', -28, -70, 28, 4))
+try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 690, 560, solid=('rect', -28, -70, 28, 4))   # on the Bunch's corner by the orchard lane (Trym: "move the red telephone kiosk to the empty space")
 try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 360, 1044, shade=False, solid=('circle', 7))   # on the kerb beside the store, not in the road (Trym)
 try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 662, 1040, shade=False, solid=('circle', 7))   # at the kerb between the ATM and the lamp, not in the road (Trym)
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
@@ -477,7 +477,7 @@ for (tx, ty, tn) in ((690, 330, 16), (900, 330, 17), (790, 215, 18)):
     try_place(['ME_Singles_Camping_48x48_Tree_%d.png' % tn], tx, ty, shade=False, solid=('rect', -12, -26, 12, 2))   # = TRUNK, defined below
 for (ax, ay, an) in ((650, 352, 1), (925, 350, 2), (760, 240, 3), (860, 372, 1)):
     try_place(['ME_Singles_Camping_48x48_Apples_%d.png' % an], ax, ay, shade=False)
-try_place(['ME_Singles_City_Props_48x48_Hanging_Clothes_6.png'], 680, 480, shade=False, solid=('rect', -60, -6, 60, 4))
+try_place(['ME_Singles_City_Props_48x48_Hanging_Clothes_6.png'], 680, 395, shade=False, solid=('rect', -60, -6, 60, 4))   # hung higher up the lawn, the booth stands below it
 try_place(['ME_Singles_Camping_48x48_Benched_Table_1.png'], 890, 420, solid=('rect', -36, -14, 36, 4), sh=0.35)
 try_place(['ME_Singles_Villas_48x48_Lemonade_Stand_2.png'], 890, 545, solid=('rect', -36, -16, 36, 4), sh=0.35)
 SPOTS['orchard'] = (792, 300)
