@@ -322,7 +322,7 @@ solid #000`, a centred flex row of 44 px buttons (world-travel's `.wt-row > *`
 floor sets that height for every member, present and future). Left to right:
 
 1. the VERB SLOT — yellow, `hidden` until it has something to do: the park's
-   tool, the rave's quest button, the town's POCKET. It is the only button that
+   tool, the rave's quest button, the town's pocket. It is the only button that
    comes and goes, so it sits leftmost and never shuffles the rest;
 2. the emotes — the pixel heart (`PixelIcon`, never an OS emoji); the float
    rides the button's own SVG so there is one art source;
@@ -331,6 +331,14 @@ floor sets that height for every member, present and future). Left to right:
    exceptions; it is how five maps stay one world;
 5. settings pinned right with `margin-left: auto` (the park's sound) — a
    setting is not an action and never moves.
+
+**Icons, not words.** A bar button is a glyph from the pixel pack, and a
+number rides it as a badge; it never spells its own name. "POCKET ×3" in
+yellow capitals shipped on 11 Sep 2026 and was wrong (Trym: "the HUD is
+mainly icons and visuals, not giant letters that say POCKET, or HEART, or
+FAST TRAVEL DOOR — this is game design, not a website"). Words belong in the
+cards and trays a button opens. ⚠️ The park's tool slot still says "🌿 pull"
+with an OS emoji — the same rule, owed.
 
 Same metrics in every bar, to the pixel: icon buttons `padding: 0.5rem 0.7rem;
 font-size: 1.1rem; min-width: 46px`, every button `border: 3px solid #000;

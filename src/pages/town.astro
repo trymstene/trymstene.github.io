@@ -95,7 +95,13 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-act { appearance: none; font: inherit; font-weight: 800; font-size: 0.95rem; border: 3px solid #000; box-shadow: 3px 3px 0 #000; cursor: pointer; line-height: 1; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; transition: transform 0.08s ease, box-shadow 0.08s ease; }
     .tw-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
     .tw-act--icon { background: #2a1a10; color: #fffdf5; padding: 0.5rem 0.7rem; font-size: 1.1rem; min-width: 46px; justify-content: center; }
-    .tw-act--tool { background: #ffe135; color: #241c00; padding: 0.55rem 1.05rem; }
+    /* the verb slot: a GLYPH on yellow with a count badge — the HUD is icons, not words (Trym, 11 Sep) */
+    .tw-act--tool { background: #ffe135; color: #241c00; padding: 0.5rem 0.7rem; min-width: 46px; justify-content: center; position: relative; }
+    .tw-act svg { display: block; }
+    .tw-act__n { position: absolute; top: -9px; right: -9px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #241c00; color: #ffe135; border: 2px solid #000; font-size: 0.66rem; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; }
+    .tw-row .pai { flex: none; margin-right: 0.5rem; color: #ffe135; }
+    .tw-row__it { display: flex; align-items: center; min-width: 0; }
+    .tw-row[data-say] { cursor: pointer; }
     /* the heart's float over the player — the park's .pk-float */
     .tw-float { position: absolute; transform: translate(-50%, -50%); z-index: 1950; pointer-events: none; font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffe135; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 2px 2px 0 #000; white-space: nowrap; animation: twFloat 0.9s ease-out forwards; }
     .tw-float svg { display: block; width: 22px; height: 22px; }
@@ -125,7 +131,7 @@ const description = 'The town centre of Banana World, under construction.';
            then the travel door (mounted by world-travel.js). No sound button yet:
            the town has nothing to mute. -->
       <div class="tw-actions" aria-label="town actions">
-        <button class="tw-act tw-act--tool" id="twPocket" type="button" hidden>POCKET</button>
+        <button class="tw-act tw-act--tool" id="twPocket" type="button" aria-label="Your pocket" hidden></button>
         <button class="tw-act tw-act--icon" id="twEmote" type="button" aria-label="Send a heart"><PixelIcon name="heart" size="1.25em" /></button>
       </div>
     </div>

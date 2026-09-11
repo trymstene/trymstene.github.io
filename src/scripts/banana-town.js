@@ -9,6 +9,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
+import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN } from './town-geo.js';
 
 const view = document.getElementById('twView');
@@ -368,7 +369,7 @@ function pocketPaint() {
   const n = Object.values(pocket).reduce((a, b) => a + b, 0);
   // the bar's verb slot: hidden while empty, the count when not (the park's tool-slot grammar)
   pocketBtn.hidden = !n;
-  pocketBtn.textContent = 'POCKET ×' + n;
+  pocketN.textContent = String(n);
   if (!n) tray.hidden = true;
 }
 function storeCard() {
@@ -387,20 +388,27 @@ function storeCard() {
 }
 const tray = document.getElementById('twTray');
 const pocketBtn = document.getElementById('twPocket');
+// the slot is a glyph with a count badge, never a word (the HUD is icons — Trym, 11 Sep); the pack's own pixel pocket
+pocketBtn.innerHTML = iconSvg('pocket', { size: 22 }) + '<b class="tw-act__n" id="twPocketN">0</b>';
+const pocketN = document.getElementById('twPocketN');
+const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid', bread: 'bird-solid' };
 function toggleTray() {
   if (!tray.hidden) { tray.hidden = true; return; }
   toastEl.hidden = true; clearTimeout(toastT);   // the tray is what the player asked for; the chatter yields
   let html = '';
-  for (const [k, v] of Object.entries(pocket)) if (v) html += '<div class="tw-row"><div><b>' + ITEMS[k][0] + ' ×' + v + '</b></div><button type="button" data-use="' + k + '">' + (k === 'firework' ? 'use here' : k === 'lure' ? 'armed' : 'the ducks are in the park') + '</button></div>';
+  // a row = glyph + name; the verb button only where the item works HERE, otherwise one small line
+  // saying where it does (a sentence in a button wrapped the row — buttons never line-break)
+  for (const [k, v] of Object.entries(pocket)) if (v) {
+    const here = k === 'firework';
+    html += '<div class="tw-row"' + (here ? '' : ' data-say="' + k + '" role="button"') + '><div class="tw-row__it">' + iconSvg(POCKET_ICON[k], { size: 22 })
+      + '<div><b>' + ITEMS[k][0] + ' ×' + v + '</b>' + (here ? '' : '<small>' + (k === 'lure' ? 'arms itself at the pier' : 'works in the park, by the pond') + '</small>') + '</div></div>'
+      + (here ? '<button type="button" data-use="' + k + '">use here</button>' : '') + '</div>';
+  }
   tray.innerHTML = html || '<div class="tw-row"><b>Empty.</b></div>';
   tray.hidden = false;
-  tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => {
-    const k = b.dataset.use;
-    tray.hidden = true;   // the line is the answer, and the tray folds so the toast never lands on it
-    if (k !== 'firework') { say(k === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); return; }
-    pocket.firework--; pocketPaint();
-    firework();
-  }));
+  // the tray folds first either way, so the toast never lands on it
+  tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => { tray.hidden = true; pocket.firework--; pocketPaint(); firework(); }));
+  tray.querySelectorAll('[data-say]').forEach((r) => r.addEventListener('click', () => { tray.hidden = true; say(r.dataset.say === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); }));
 }
 
 // ---- 🎆 the firework: a burst over the square where you stand, your name under it
