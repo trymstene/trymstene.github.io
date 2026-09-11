@@ -402,7 +402,7 @@ FOUNTAIN = [FX, FBASE, sw, shh, n]
 COLLIDERS.append(('fountain', ('circle', 92), FX, FBASE - 48))
 # the tower is a cone, not a ball: a small circle at its tip keeps the lane between the
 # statue and the fountain open (Trym: "I cant seem to walk here")
-COLLIDERS.append(('fountain-top', ('circle', 42), FX, FBASE - 124))
+COLLIDERS.append(('fountain-top', ('circle', 38), FX, FBASE - 108))   # hugs the tower where it widens; the ground above the tip is free (Trym, 11 Sep)
 
 # ---- THE TOWN --------------------------------------------------------------------
 SPOTS, NPCS = {}, []
