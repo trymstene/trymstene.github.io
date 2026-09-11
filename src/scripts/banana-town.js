@@ -68,7 +68,7 @@ for (const [key, spot] of Object.entries(SPOTS)) {
   p.textContent = a[0];
   p.style.left = pct(spot.x, W); p.style.top = pct(spot.y - a[1], H);
   p.style.zIndex = String(100 + spot.y + 3);
-  p.addEventListener('click', (e) => { e.stopPropagation(); say(a[2]); });
+  p.addEventListener('click', (e) => { e.stopPropagation(); if (!openFor(key)) say(a[2]); });
   world.appendChild(p);
 }
 const park = document.createElement('div');
@@ -184,14 +184,14 @@ function thingAt(wx, wy) {
   return null;
 }
 view.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('.wh, .tw-plank, .tw-toast')) return;
+  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-pocket, .tw-tray')) return;
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
   const hit = thingAt(wx, wy);
   if (hit) {
     if (hit[0] === 'npc') { say(NPC_SAY[hit[1]]); const n = npcEls.find((q) => q.key === hit[1]); tgt.x = n.x + (pos.x < n.x ? -60 : 60); tgt.y = n.y + 8; return; }
     const spot = SPOTS[hit[1]];
-    say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
+    if (!openFor(hit[1])) say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
     tgt.x = spot.x; tgt.y = spot.y + 30;
     return;
   }
@@ -235,6 +235,182 @@ function tick(now) {
   requestAnimationFrame(tick);
 }
 
+// ---- 🃏 THE CARDS (round three, 11 Sep 2026): the town's three loops, touchable.
+// The world's card grammar in the town's brick warmth. Prototype rules: nothing
+// is saved, no coins move, the wheel's roll is the phone's — on the real one the
+// server picks the wedge and writes the tape. The Exchange is the honest one:
+// it reads the farm you actually have on this device and today's real price.
+const panel = document.getElementById('twPanel'), cardBody = document.getElementById('twCardBody');
+function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
+function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; }
+document.getElementById('twCardX').addEventListener('click', closeCard);
+panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
+function openFor(key) {
+  if (key === 'wheel') { wheelCard(); return true; }
+  if (key === 'exchange') { exchangeCard(); return true; }
+  if (key === 'store') { storeCard(); return true; }
+  return false;
+}
+// splitmix32 seeded by the UTC day, the daily banana's own rhythm
+function mix32(seed) {
+  let t = seed >>> 0;
+  return () => { t = (t + 0x9e3779b9) >>> 0; let z = t; z = Math.imul(z ^ (z >>> 16), 0x21f0aaad); z = Math.imul(z ^ (z >>> 15), 0x735a2d97); z = z ^ (z >>> 15); return (z >>> 0) / 4294967296; };
+}
+const dayNum = (off) => Math.floor(Date.now() / 86400000) + (off || 0);
+const esc = (v) => String(v == null ? '' : v).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
+// ---- 📈 the Exchange: sell what the farm made, at today's price; sell now or hold
+const GOODS = [['eggs', 'Eggs', 3, ['hen']], ['milk', 'Milk', 5, ['goat', 'cow']], ['wool', 'Wool', 8, ['sheep']]];
+function priceOf(day, i) { const r = mix32(day * 7 + i * 131)(); return Math.round(GOODS[i][2] * (0.6 + r) * 10) / 10; }   // 0.6× to 1.6× the base
+function myProduce() {
+  try {
+    const st = JSON.parse(localStorage.getItem('hs-v1') || 'null');
+    const out = [0, 0, 0];
+    for (const a of (st && st.animals) || []) GOODS.forEach((g, i) => { if (g[3].includes(a.sp)) out[i] += Math.floor(a.gs || 0); });
+    return out;
+  } catch (e) { return [0, 0, 0]; }
+}
+function exchangeCard() {
+  const today = dayNum(), have = myProduce();
+  let rows = '', total = 0;
+  GOODS.forEach((g, i) => {
+    const p = priceOf(today, i), y = priceOf(today - 1, i), n = have[i];
+    total += n * p;
+    const move = p > y ? 'up from ' + y + ' yesterday' : p < y ? 'down from ' + y + ' yesterday' : 'same as yesterday';
+    rows += '<div class="tw-row"><div><b>' + g[1] + ' · ' + p + ' coins each</b><small>' + move + ' · you have ' + n + '</small></div><button type="button" data-sell="' + i + '"' + (n ? '' : ' disabled') + '>sell ' + n + '</button></div>';
+  });
+  const up = priceOf(today + 1, 0) > priceOf(today, 0), honest = mix32(today * 3 + 9)() < 0.7;
+  const rumour = (up === honest) ? 'eggs go up tomorrow' : 'eggs drop tomorrow';
+  openCard('<h2>The Exchange</h2><p class="tw-card__sub">Fig Jr. buys what your farm made, at today’s price. The price moves every day. Sell now, or hold.</p>'
+    + '<div class="tw-rows">' + rows + '</div>'
+    + '<p class="tw-result">Everything, today: <b>' + Math.round(total) + ' coins</b></p>'
+    + '<p class="tw-fine">Bean at the café says “' + rumour + '.” He is right seven times in ten.</p>'
+    + '<p class="tw-fine">Prototype: the prices are real for today, the sale is not. Your produce is read from your homestead on this device.</p>');
+  cardBody.querySelectorAll('[data-sell]').forEach((b) => b.addEventListener('click', () => {
+    const i = +b.dataset.sell; b.disabled = true; b.textContent = 'sold';
+    say('Prototype: ' + have[i] + ' ' + GOODS[i][1].toLowerCase() + ' would bring ' + Math.round(have[i] * priceOf(today, i)) + ' coins. Nothing moved.');
+  }));
+}
+
+// ---- 🎡 the Wheel of Peel: one free spin, then coins; the pot grows until a wedge takes it
+const WEDGES = [['5 coins', '#ffe135', '#141208'], ['a firework', '#ff8a3d', '#141208'], ['a peel', '#d9d2c6', '#141208'], ['20 coins', '#ffe135', '#141208'],
+  ['a lure', '#7ec8ff', '#141208'], ['spin again', '#c9f26a', '#141208'], ['a peel', '#d9d2c6', '#141208'], ['THE POT', '#ff5c8a', '#fffdf5']];
+let pot = 120 + Math.floor(mix32(dayNum())() * 300), spins = 0, spinning = false, angle = 0;
+function drawWheel(cv) {
+  const ctx = cv.getContext('2d'), R2 = cv.width / 2, n = WEDGES.length, per = Math.PI * 2 / n;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  WEDGES.forEach((w, i) => {
+    const a0 = -Math.PI / 2 + i * per, a1 = a0 + per;
+    ctx.beginPath(); ctx.moveTo(R2, R2); ctx.arc(R2, R2, R2 - 6, a0, a1); ctx.closePath();
+    ctx.fillStyle = w[1]; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#141208'; ctx.stroke();
+    ctx.save(); ctx.translate(R2, R2); ctx.rotate(a0 + per / 2); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = w[2]; ctx.font = 'bold 24px "Archivo Black", "Arial Black", sans-serif'; ctx.fillText(w[0], R2 - 26, 0); ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(R2, R2, 26, 0, Math.PI * 2); ctx.fillStyle = '#141208'; ctx.fill();
+  ctx.beginPath(); ctx.arc(R2, R2, 14, 0, Math.PI * 2); ctx.fillStyle = '#ffe135'; ctx.fill();
+}
+function wheelCard() {
+  openCard('<h2>The Wheel of Peel</h2><p class="tw-card__sub">One free spin a day. After that a few coins a spin, and every paid spin feeds the pot until one wedge takes it all.</p>'
+    + '<p class="tw-pot">THE POT · <span id="twPot">' + pot + '</span> COINS</p>'
+    + '<div class="tw-wheelwrap"><div class="tw-wheel__pin"></div><canvas class="tw-wheel" id="twWheel" width="440" height="440"></canvas></div>'
+    + '<p class="tw-result" id="twSpinRes"></p>'
+    + '<button class="tw-cta" id="twSpin" type="button"><span class="tw-cta__verb">' + (spins ? 'Spin again' : 'Free spin') + '</span><span class="tw-cta__rew">' + (spins ? '3 coins' : 'today’s free one') + '</span></button>'
+    + '<p class="tw-fine">Prototype: the wheel is real, the coins are not. On the real one the server picks the wedge and the odds stay in the code.</p>');
+  const cv = document.getElementById('twWheel');
+  drawWheel(cv);
+  cv.style.transform = 'rotate(' + angle + 'deg)';
+  document.getElementById('twSpin').addEventListener('click', () => spin(cv));
+}
+function spin(cv) {
+  if (spinning) return;
+  spinning = true;
+  const btn = document.getElementById('twSpin'); if (btn) btn.disabled = true;
+  const w = Math.floor(Math.random() * WEDGES.length), per = 360 / WEDGES.length;
+  const want = (360 - (w * per + per / 2) + 360) % 360;          // wedge w under the pin at the top
+  const delta = ((want - (angle % 360)) % 360 + 360) % 360;
+  angle += 5 * 360 + delta;                                        // always forward, never a snap back
+  cv.style.transform = 'rotate(' + angle + 'deg)';
+  if (spins > 0) { pot += 1; const p = document.getElementById('twPot'); if (p) p.textContent = pot; }
+  spins++;
+  setTimeout(() => {
+    spinning = false;
+    const won = WEDGES[w][0], res = document.getElementById('twSpinRes');
+    let line = 'You won ' + won + '.';
+    if (won === 'THE POT') { line = 'THE POT. ' + pot + ' coins, all yours. In the prototype, a very happy nothing.'; pot = 120; }
+    else if (won === 'a peel') line = 'A banana peel. Nothing, but it was a good spin.';
+    else if (won === 'spin again') line = 'Spin again, on the house.';
+    else if (won === 'a firework' || won === 'a lure') { line = 'You won ' + won + '. It goes in your pocket.'; pocketAdd(won === 'a firework' ? 'firework' : 'lure'); }
+    if (res) res.textContent = line;
+    const p = document.getElementById('twPot'); if (p) p.textContent = pot;
+    if (btn) { btn.disabled = false; btn.querySelector('.tw-cta__verb').textContent = 'Spin again'; btn.querySelector('.tw-cta__rew').textContent = won === 'spin again' ? 'free' : '3 coins'; }
+  }, 3500);
+}
+
+// ---- 🏪 the General Store and the POCKET: buy, carry at most five of three kinds, use where it works
+const ITEMS = { firework: ['Firework', 15, 'Launch it where people are. Everyone present sees the burst, with your name under it.'],
+  lure: ['Lure', 20, 'Ten casts at the pier with better odds of a rare fish. Arms itself; nothing to carry.'],
+  bread: ['Duck bread', 5, 'The park’s ducks follow you around for a minute.'] };
+const pocket = {};     // this session only — the real one is two pass counters per kind
+function pocketAdd(k) { pocket[k] = Math.min(5, (pocket[k] || 0) + 1); pocketPaint(); }
+function pocketPaint() {
+  const chip = document.getElementById('twPocket'), n = Object.values(pocket).reduce((a, b) => a + b, 0);
+  chip.hidden = !n;
+  chip.textContent = 'POCKET · ' + Object.entries(pocket).filter(([, v]) => v).map(([k, v]) => ITEMS[k][0] + ' ×' + v).join(' · ');
+}
+function storeCard() {
+  let rows = '';
+  for (const [k, it] of Object.entries(ITEMS)) rows += '<div class="tw-row"><div><b>' + it[0] + ' · ' + it[1] + ' coins</b><small>' + it[2] + '</small></div><button type="button" data-buy="' + k + '">buy</button></div>';
+  openCard('<h2>The General Store</h2><p class="tw-card__sub">Pip sells things you use, never things you wear. Three kinds, five of each at most. What you carry sits in your pocket, top left.</p>'
+    + '<div class="tw-rows">' + rows + '</div>'
+    + '<p class="tw-fine">Prototype: nothing is charged and nothing is saved. On the real one a buy is a pass spend and the server refuses more than five.</p>');
+  cardBody.querySelectorAll('[data-buy]').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.buy;
+    if ((pocket[k] || 0) >= 5) { say('Pip: “Five is plenty. Use one first.”'); return; }
+    if (k === 'lure') { pocket.lure = Math.min(5, (pocket.lure || 0) + 1); pocketPaint(); say('The lure arms itself: your next ten casts at the pier are the lucky ones. Nothing to carry.'); return; }
+    pocketAdd(k);
+    say(ITEMS[k][0] + ' bought. It is in your pocket.');
+  }));
+}
+const tray = document.getElementById('twTray');
+document.getElementById('twPocket').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!tray.hidden) { tray.hidden = true; return; }
+  let html = '';
+  for (const [k, v] of Object.entries(pocket)) if (v) html += '<div class="tw-row"><div><b>' + ITEMS[k][0] + ' ×' + v + '</b></div><button type="button" data-use="' + k + '">' + (k === 'firework' ? 'use here' : k === 'lure' ? 'armed' : 'the ducks are in the park') + '</button></div>';
+  tray.innerHTML = html || '<div class="tw-row"><b>Empty.</b></div>';
+  tray.hidden = false;
+  tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.use;
+    if (k !== 'firework') { say(k === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); return; }
+    pocket.firework--; pocketPaint(); tray.hidden = true;
+    firework();
+  }));
+});
+
+// ---- 🎆 the firework: a burst over the square where you stand, your name under it
+let fxRuns = 0;
+function firework() {
+  const cv = document.getElementById('twFx'), r = view.getBoundingClientRect();
+  cv.width = Math.round(r.width); cv.height = Math.round(r.height); cv.hidden = false;
+  const ctx = cv.getContext('2d');
+  const x0 = pos.x * scale - camX, y0 = pos.y * scale - camY - 150 * scale;
+  let name = ''; try { name = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
+  const parts = [];
+  for (let i = 0; i < 70; i++) { const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 4; parts.push({ x: x0, y: y0, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, c: ['#ffe135', '#ff5c8a', '#fffdf5', '#7ec8ff'][i % 4], life: 60 + Math.random() * 30 }); }
+  const t0 = performance.now();
+  fxRuns++;
+  say((name ? name + '’s' : 'Your') + ' firework went up over the square.');
+  (function frame(now) {
+    const t = (now - t0) / 1000;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    let alive = 0;
+    for (const p of parts) { if (p.life <= 0) continue; alive++; p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.life -= 1; ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 40)); ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), 4, 4); }
+    ctx.globalAlpha = 1;
+    if (name && t < 1.6) { ctx.font = 'bold 14px "Archivo Black", sans-serif'; ctx.fillStyle = '#fffdf5'; ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1; ctx.fillText(name, x0, y0 + 46); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
+    if (alive && t < 2.2) requestAnimationFrame(frame); else { ctx.clearRect(0, 0, cv.width, cv.height); cv.hidden = true; }
+  })(t0);
+}
+
 // ---- boot: the engine's assets first, then the people, then the walk
 mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins'] });
 assetsReady().then(() => {
@@ -244,5 +420,5 @@ assetsReady().then(() => {
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
-  window.__town = { pos, tgt, SPOTS, NPCS, say };   // QA seam for the walk
+  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns };   // QA seam for the walk
 });
