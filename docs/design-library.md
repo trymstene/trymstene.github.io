@@ -303,3 +303,47 @@ is deliberate. Every new phone screen copies the `.hs-row` family, and every
 phone-screen change is verified at the shell's real height (375×812 emulation),
 never in a squat pane — a stretched list floats its rows to the middle and a
 short viewport cannot show it.
+
+## 15. The HUD is two things, and every control lives in one of them
+
+A walkable area (park, bay, homestead, rave, town) wears the world HUD in two
+halves, and a player control lives in one of the two — never as a button
+floated into a corner of the map. The town's pocket shipped top-left, then as
+a chip in the strip, and was wrong both times (Trym, 11 Sep 2026: "the action
+bar at the bottom is part of the HUD").
+
+**The strip** (`src/lib/world-hud.js`, `mountHud`): LVL · COINS · [an area
+chip] · CROWD, top-right over the map. It is read, not pressed — level and
+coins come from the pass, the crowd chip doubles as the save ask, the area
+chip is a status (the bay's rally). Nothing in the strip opens anything.
+
+**The action bar** sits under the view: a full-width band, `border-top: 4px
+solid #000`, a centred flex row of 44 px buttons (world-travel's `.wt-row > *`
+floor sets that height for every member, present and future). Left to right:
+
+1. the VERB SLOT — yellow, `hidden` until it has something to do: the park's
+   tool, the rave's quest button, the town's POCKET. It is the only button that
+   comes and goes, so it sits leftmost and never shuffles the rest;
+2. the emotes — the pixel heart (`PixelIcon`, never an OS emoji); the float
+   rides the button's own SVG so there is one art source;
+3. the area's own verbs — the homestead's hammer and Banana Phone;
+4. the TRAVEL DOOR, `initTravel({ here, mount, btnClass })` — every area, no
+   exceptions; it is how five maps stay one world;
+5. settings pinned right with `margin-left: auto` (the park's sound) — a
+   setting is not an action and never moves.
+
+Same metrics in every bar, to the pixel: icon buttons `padding: 0.5rem 0.7rem;
+font-size: 1.1rem; min-width: 46px`, every button `border: 3px solid #000;
+box-shadow: 3px 3px 0 #000`, pressed = `translate(2px, 2px)`. Only the band's
+fill changes with the area (park `#101a10`, bay `#17121f`, homestead `#10200c`,
+town `#140d08`). ⚠️ The bar's CSS is still one copy per area (`.pk-act`,
+`.bh-act`, `.hs-act`, `.rv-emote-btn`, `.tw-act`); §5 says it should be one
+file, that move is owed, and until it lands a change to one bar is a change to
+five.
+
+A tray or popover a bar button opens rises from the bar's edge, inside the
+view, and folds before its toast speaks (§8: nothing lands on what the player
+just opened).
+
+`tools/check-design.mjs` fails an area script that mounts the strip without
+mounting the door.

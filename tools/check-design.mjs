@@ -59,6 +59,13 @@ for (const f of files) {
       }
     }
   }
+
+  // 🎛 a walkable area wears BOTH halves of the HUD: the strip (mountHud) and the
+  // action bar with its travel door (initTravel). The town shipped with the strip
+  // alone on 11 Sep 2026 — design library §15.
+  if (rel.startsWith('src/scripts/') && /\bmountHud\(/.test(code) && !/\binitTravel\(/.test(code)) {
+    problems.push([rel, "mounts the world HUD strip without the action bar's travel door (initTravel) — an area wears both, see design library §15"]);
+  }
 }
 
 if (problems.length) {
@@ -67,4 +74,4 @@ if (problems.length) {
   console.error(`${problems.length} problem(s). See docs/design-library.md.\n`);
   process.exit(1);
 }
-console.log(`✅ design gate — ${files.length} files, no [hidden] traps, no stray payment hosts`);
+console.log(`✅ design gate — ${files.length} files, no [hidden] traps, no stray payment hosts, every HUD strip has its bar`);

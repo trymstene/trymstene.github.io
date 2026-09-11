@@ -8,6 +8,7 @@
 // keys, foot colliders, y-sorted overlays, the shared HUD.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { mountHud } from '../lib/world-hud.js';
+import { initTravel } from './world-travel.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN } from './town-geo.js';
 
 const view = document.getElementById('twView');
@@ -184,7 +185,7 @@ function thingAt(wx, wy) {
   return null;
 }
 view.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-pocket, .tw-tray')) return;
+  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray')) return;
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
   const hit = thingAt(wx, wy);
@@ -203,6 +204,15 @@ function say(text) {
   toastEl.hidden = false;
   clearTimeout(toastT);
   toastT = setTimeout(() => { toastEl.hidden = true; }, 4200);
+}
+// a float over the player — the park's .pk-float: one node, gone in 900 ms
+function float(x, y, node) {
+  const d = document.createElement('div');
+  d.className = 'tw-float';
+  if (node && node.nodeType) d.appendChild(node); else d.textContent = node || '';
+  d.style.left = pct(x, W); d.style.top = pct(y, H);
+  world.appendChild(d);
+  setTimeout(() => d.remove(), 900);
 }
 
 // ---- the loop
@@ -356,7 +366,9 @@ const pocket = {};     // this session only — the real one is two pass counter
 function pocketAdd(k) { pocket[k] = Math.min(5, (pocket[k] || 0) + 1); pocketPaint(); }
 function pocketPaint() {
   const n = Object.values(pocket).reduce((a, b) => a + b, 0);
-  hud.setSlot(n ? 'POCKET · ' + Object.entries(pocket).filter(([, v]) => v).map(([k, v]) => ITEMS[k][0] + ' ×' + v).join(' · ') : '');
+  // the bar's verb slot: hidden while empty, the count when not (the park's tool-slot grammar)
+  pocketBtn.hidden = !n;
+  pocketBtn.textContent = 'POCKET ×' + n;
   if (!n) tray.hidden = true;
 }
 function storeCard() {
@@ -374,16 +386,19 @@ function storeCard() {
   }));
 }
 const tray = document.getElementById('twTray');
+const pocketBtn = document.getElementById('twPocket');
 function toggleTray() {
   if (!tray.hidden) { tray.hidden = true; return; }
+  toastEl.hidden = true; clearTimeout(toastT);   // the tray is what the player asked for; the chatter yields
   let html = '';
   for (const [k, v] of Object.entries(pocket)) if (v) html += '<div class="tw-row"><div><b>' + ITEMS[k][0] + ' ×' + v + '</b></div><button type="button" data-use="' + k + '">' + (k === 'firework' ? 'use here' : k === 'lure' ? 'armed' : 'the ducks are in the park') + '</button></div>';
   tray.innerHTML = html || '<div class="tw-row"><b>Empty.</b></div>';
   tray.hidden = false;
   tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.use;
+    tray.hidden = true;   // the line is the answer, and the tray folds so the toast never lands on it
     if (k !== 'firework') { say(k === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); return; }
-    pocket.firework--; pocketPaint(); tray.hidden = true;
+    pocket.firework--; pocketPaint();
     firework();
   }));
 }
@@ -413,13 +428,22 @@ function firework() {
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk
-// the world HUD, the town's own tint: level, coins, the POCKET in the slot chip
-// (every player control lives in the HUD — Trym, 11 Sep), and the crowd chip,
-// which is also the save ask. No room yet, so the crowd reads solo.
-const hud = mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins', 'slot', 'crowd'] });
+// the world HUD, both halves (design library §15): the strip up top — level,
+// coins, the crowd chip that is also the save ask (no room yet, so it reads
+// solo) — and the ACTION BAR under the view: POCKET as the verb slot, the
+// heart, the travel door. Every player control lives in one of the two.
+const hud = mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins', 'crowd'] });
 hud.setCrowd('solo');
-const slotEl = hud.el.querySelector('.wh__slot');
-if (slotEl) { slotEl.style.cursor = 'pointer'; slotEl.setAttribute('role', 'button'); slotEl.addEventListener('click', (e) => { e.stopPropagation(); toggleTray(); }); }
+pocketBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleTray(); });
+document.getElementById('twEmote').addEventListener('click', function () {
+  // the float rides the button's own pixel heart — one art source (the park's grammar)
+  const s = this.querySelector('svg');
+  float(pos.x, pos.y - 44, s ? s.cloneNode(true) : '');
+});
+// 🚪 the travel door lands last in the bar. 'town' is not in the module's area
+// list, so the card offers the four known areas and no area's card offers the
+// town — the prototype stays unlisted (Rule Zero) while still being leavable.
+initTravel({ here: 'town', mount: document.querySelector('.tw-actions'), btnClass: 'tw-act tw-act--icon' });
 assetsReady().then(() => {
   for (const n of npcEls) {
     drawComposite(n.cv.getContext('2d'), 150, 0, { hat: 'none', glasses: 'none', extras: {}, ...NPC_LOOK[n.key], top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });

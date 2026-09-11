@@ -4,6 +4,7 @@
 // exists to be walked and judged while the town is being planned — see the
 // town-centre plan. Rule Zero: the world advertises an area when it is ready.
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 
 const title = 'Banana Town — prototype';
 const description = 'The town centre of Banana World, under construction.';
@@ -23,6 +24,8 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-view {
       position: relative; height: min(74vh, 580px); overflow: hidden; cursor: pointer;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent; background: #1c2a14;
+      /* one stacking context for everything on the map, so the travel veil on <body> outranks the toast (design library 8) */
+      isolation: isolate;
     }
     .tw-world {
       position: absolute; left: 0; top: 0; will-change: transform;
@@ -83,8 +86,20 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-row button { font: inherit; font-weight: 800; font-size: 0.78rem; padding: 0.35rem 0.6rem; border: 2px solid #000; background: #ffe135; color: #141208; cursor: pointer; box-shadow: 2px 2px 0 #000; white-space: nowrap; }
     .tw-row button[disabled] { opacity: 0.45; cursor: default; box-shadow: none; }
     .tw-fine { font-size: 0.72rem; opacity: 0.7; margin: 0.6rem 0 0; line-height: 1.35; }
-    .tw-tray { position: absolute; right: 10px; top: 52px; z-index: 901; background: #1a120c; color: #fffdf5; border: 3px solid #000; box-shadow: 4px 4px 0 #000; padding: 0.5rem 0.6rem; display: grid; gap: 0.4rem; min-width: 210px; }
+    .tw-tray { position: absolute; left: 10px; bottom: 12px; z-index: 901; background: #1a120c; color: #fffdf5; border: 3px solid #000; box-shadow: 4px 4px 0 #000; padding: 0.5rem 0.6rem; display: grid; gap: 0.4rem; min-width: 210px; }
     .tw-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1400; pointer-events: none; }
+    /* 🎛 THE ACTION BAR — the HUD's bottom half (design library §15): the park's
+       .pk-actions metrics to the pixel, in the town's brick. The verb slot left,
+       the heart, the travel door (world-travel.js mounts it and floors every row at 44px). */
+    .tw-actions { display: flex; align-items: center; justify-content: center; gap: 0.6rem; background: #140d08; border-top: 4px solid #000; padding: 0.6rem 0.8rem; flex-wrap: wrap; touch-action: manipulation; }
+    .tw-act { appearance: none; font: inherit; font-weight: 800; font-size: 0.95rem; border: 3px solid #000; box-shadow: 3px 3px 0 #000; cursor: pointer; line-height: 1; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; transition: transform 0.08s ease, box-shadow 0.08s ease; }
+    .tw-act:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+    .tw-act--icon { background: #2a1a10; color: #fffdf5; padding: 0.5rem 0.7rem; font-size: 1.1rem; min-width: 46px; justify-content: center; }
+    .tw-act--tool { background: #ffe135; color: #241c00; padding: 0.55rem 1.05rem; }
+    /* the heart's float over the player — the park's .pk-float */
+    .tw-float { position: absolute; transform: translate(-50%, -50%); z-index: 1950; pointer-events: none; font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffe135; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 2px 2px 0 #000; white-space: nowrap; animation: twFloat 0.9s ease-out forwards; }
+    .tw-float svg { display: block; width: 22px; height: 22px; }
+    @keyframes twFloat { to { transform: translate(-50%, calc(-50% - 34px)); opacity: 0; } }
   </style>
 
   <main class="tw-wrap">
@@ -101,9 +116,17 @@ const description = 'The town centre of Banana World, under construction.';
             <div id="twCardBody"></div>
           </div>
         </div>
-        <!-- 👝 the pocket's tray: opens from the HUD's POCKET chip -->
+        <!-- 👝 the pocket's tray: rises from the action bar's POCKET button -->
         <div class="tw-tray" id="twTray" hidden></div>
         <canvas class="tw-fx" id="twFx" hidden></canvas>
+      </div>
+      <!-- 🎛 the action bar: the HUD's bottom half. POCKET is the verb slot (hidden
+           until it holds something — the park's tool-slot grammar), then the heart,
+           then the travel door (mounted by world-travel.js). No sound button yet:
+           the town has nothing to mute. -->
+      <div class="tw-actions" aria-label="town actions">
+        <button class="tw-act tw-act--tool" id="twPocket" type="button" hidden>POCKET</button>
+        <button class="tw-act tw-act--icon" id="twEmote" type="button" aria-label="Send a heart"><PixelIcon name="heart" size="1.25em" /></button>
       </div>
     </div>
     <p class="tw-note">Walk with a tap or the arrow keys. Tap a door, a sign or a banana to read what it will be. The road south goes back to the park.</p>
