@@ -324,7 +324,10 @@ def try_place(names, cx, base, **kw):
 
 
 def foot(w, h_solid=18):
-    """a thin solid band at a building's feet, relative to (cx, base) — tight (Trym, 11 Sep)"""
+    """a building's footprint, relative to (cx, base): tight at the sides, and DEEP — up to the line
+    where the front face meets the roof, so a building is a block you walk around, never a sheet
+    you slip behind from its own doorstep (Trym, 11 Sep: "thin as a paper"). Per building:
+    hall 143 (its lower block; the tower is sky), Bunch 200, post office 273, the two shops 180/184."""
     return ('rect', -int(w * PROP // 2) + 8, -h_solid, int(w * PROP // 2) - 8, 4)
 
 
@@ -405,26 +408,26 @@ COLLIDERS.append(('fountain-top', ('circle', 42), FX, FBASE - 124))
 SPOTS, NPCS = {}, []
 
 # the north row, doors on Hall Street: the residence · the town hall · the post office
-place('ME_Singles_Generic_Building_48x48_Condo_3_45.png', 480, 560, solid=foot(288), sh=0.45)
+place('ME_Singles_Generic_Building_48x48_Condo_3_45.png', 480, 560, solid=foot(288, 200), sh=0.45)
 SPOTS['condo'] = (480, 560)
-place('ME_Singles_School_48x48_Clock_Tower_1.png', 1100, 560, solid=foot(384), sh=0.45)
+place('ME_Singles_School_48x48_Clock_Tower_1.png', 1100, 560, solid=foot(384, 143), sh=0.45)
 SPOTS['hall'] = (1100, 560)
 NPCS.append(('nib', 1140, 586, 'Nib'))
-place('22_Post_Office_48x48_Building_1.png', 1700, 560, solid=foot(384), sh=0.45)
+place('22_Post_Office_48x48_Building_1.png', 1700, 560, solid=foot(384, 273), sh=0.45)
 SPOTS['post'] = (1700, 560)
 NPCS.append(('stamp', 1750, 586, 'Stamp'))
 try_place(['22_Post_Office_48x48_Big_Blue_Mailbox.png'], 1830, 592, solid=('rect', -12, -10, 12, 4))
 NPCS.append(('moss', 700, 640, 'Moss'))
 
 # the south row, doors on High Street: the general store (+ the bank, an ATM) · the print shop · the café
-place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_1.png', 480, 1040, solid=foot(240), sh=0.45)
+place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_1.png', 480, 1040, solid=foot(240, 180), sh=0.45)
 SPOTS['store'] = (480, 1040)
 NPCS.append(('pip', 530, 1066, 'Pip'))
-try_place(['ME_Singles_City_Props_48x48_ATM_1.png'], 620, 1040, solid=('rect', -24, -10, 24, 4))
+try_place(['ME_Singles_City_Props_48x48_ATM_1.png'], 620, 1040, solid=('rect', -24, -40, 24, 4))
 SPOTS['bank'] = (620, 1040)
-place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_7.png', 1620, 1040, solid=foot(240), sh=0.45)
+place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_7.png', 1620, 1040, solid=foot(240, 184), sh=0.45)
 SPOTS['print'] = (1620, 1040)
-try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 1830, 1040, scale=PROP * 0.8, solid=('rect', -54, -20, 54, 4), sh=0.45)
+try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 1830, 1040, scale=PROP * 0.8, solid=('rect', -54, -150, 54, 4), sh=0.45)
 SPOTS['cafe'] = (1830, 1040)
 NPCS.append(('bean', 1780, 1066, 'Bean'))
 
@@ -457,7 +460,7 @@ NPCS.append(('dot', 1010, 1120, 'Dot'))
 # decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
 for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
     try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7))
-try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1330, 660, solid=('rect', -28, -12, 28, 4))
+try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1330, 660, solid=('rect', -28, -70, 28, 4))
 try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 1180, 1120, shade=False, solid=('circle', 7))
 try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 700, 1120, shade=False, solid=('circle', 7))
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
