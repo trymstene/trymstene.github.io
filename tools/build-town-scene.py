@@ -492,7 +492,7 @@ for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
 # ---- Trym's picks from the pack preview (11 Sep night): trees that stand on a square of grass
 # in the pavement, framing the fountain's north side and the park road's mouth; dumpsters in
 # the works yard and by the back lane behind the café
-for (tx, ty, tn) in ((980, 760, 13), (1220, 760, 14), (1260, 1148, 9)):
+for (tx, ty, tn) in ((980, 760, 13), (1220, 760, 13), (1260, 1148, 13)):   # Tree_13, the tan stone kerb — not the white-framed ones (Trym)
     try_place(['ME_Singles_City_Props_48x48_Tree_%d.png' % tn], tx, ty, shade=False, solid=('rect', -30, -22, 30, 4))
 try_place(['ME_Singles_City_Props_48x48_Dumpster_4.png'], 200, 330, solid=('rect', -36, -20, 36, 4), sh=0.4)
 try_place(['ME_Singles_City_Props_48x48_Dumpster_1.png'], 2070, 1130, solid=('rect', -36, -20, 36, 4), sh=0.4)
@@ -527,7 +527,7 @@ SPOTS['stand'] = (890, 545)
 try_place(['ME_Singles_Garden_48x48_Grey_Statue.png'], 1416, 330, solid=('rect', -30, -16, 30, 4), sh=0.4)
 for px_ in (1350, 1482):
     try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], px_, 340, shade=False, solid=('rect', -12, -8, 12, 4))
-anim_prop('drink', 'Drinking_Fountain_1_loop_3-6_48x48.png', [2, 3, 4, 5], 48, 144, 1330, 470, solid=('rect', -14, -10, 14, 4), period=0.8)   # the water loop (Trym's pick)
+anim_prop('drink', 'Drinking_Fountain_1_loop_3-6_48x48.png', [2, 3, 4, 5], 96, 144, 1330, 470, solid=('rect', -14, -10, 14, 4), period=0.8)   # the water loop: 8 frames of 96 px (not 48 — the first cut split the fountain in halves), frames 3-6 loop
 try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1500, 470, solid=('rect', -36, -10, 36, 4), sh=0.35)
 SPOTS['monument'] = (1416, 330)
 # C · THE BUS STOP, the north-east corner: the east lane runs north out of town, a shelter beside it, nothing else
