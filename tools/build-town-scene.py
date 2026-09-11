@@ -55,7 +55,14 @@ SQUARE = (660, 660, 1540, 1040)
 WEST_LN = (260, 560, 340, 1140)
 EAST_LN = (1940, 560, 2020, 1140)
 MAIN_ST = (1040, 1140, 1160, H)      # south, to the park
-STREETS = [HALL_ST, HIGH_ST, SQUARE, WEST_LN, EAST_LN, MAIN_ST]
+# the thin lanes, one tile wide and tile-aligned: the mini-areas' roads (Trym, 11 Sep evening:
+# "tiny park sections with small objects and more thin cobble-roads")
+ORCH_PATH = (768, 288, 816, 576)     # north off Hall St into the orchard
+MAIL_PATH = (1392, 336, 1440, 576)   # north off Hall St to the mailbox row
+BUS_ROAD = (1920, 0, 1968, 576)      # the east lane runs on north, out of town: the bus stop, The Cut later
+EAST_PATH = (1536, 672, 1920, 720)   # behind the print shop and the cup: the Row
+WEST_PATH = (336, 672, 672, 720)     # behind the store: the stand and the beds
+STREETS = [HALL_ST, HIGH_ST, SQUARE, WEST_LN, EAST_LN, MAIN_ST, ORCH_PATH, MAIL_PATH, BUS_ROAD, EAST_PATH, WEST_PATH]
 SPAWN = (1100, 1230)
 
 im = Image.new('RGBA', (W, H), (86, 152, 74, 255))
@@ -134,11 +141,15 @@ for i in (1, 2, 3, 8, 9):
 # the lawn the way the pack draws it, never as a straight line.
 TC, TR = W // T + 1, H // T + 1
 paved_t = [[False] * TC for _ in range(TR)]
+THIN = set()   # tiles of the one-tile lanes: no bumps, a lane stays a lane
 for (x0, y0, x1, y1) in STREETS:
+    thin = (x1 - x0) <= T or (y1 - y0) <= T
     for r in range(TR):
         for c in range(TC):
             if x0 <= c * T + T // 2 < x1 and y0 <= r * T + T // 2 < y1:
                 paved_t[r][c] = True
+                if thin:
+                    THIN.add((r, c))
 
 
 def pav(r, c):
@@ -151,7 +162,7 @@ erng = random.Random(31)
 bumps = []
 for r in range(TR):
     for c in range(TC):
-        if not pav(r, c):
+        if not pav(r, c) or (r, c) in THIN:
             continue
         for (dr, dc) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             rr, cc = r + dr, c + dc
@@ -452,8 +463,46 @@ try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 1180, 1120, shade=False
 try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 700, 1120, shade=False, solid=('circle', 7))
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1240, 640, shade=False)
-for (bx, by) in ((380, 700), (1900, 700), (380, 960), (1900, 960), (620, 1200), (1580, 1200)):
+for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
     try_place(['ME_Singles_Garden_48x48_Bush_18.png'], bx, by, shade=False, solid=('circle', 12))
+
+# ---- the mini-areas (Trym, 11 Sep evening: "see these mini-areas and develop a purpose for them") ----
+# A · THE ORCHARD, the lawn between the Bunch and the hall: a lane, three apple trees, apples under them, a table
+for (tx, ty, tn) in ((690, 330, 16), (900, 330, 17), (790, 215, 18)):
+    try_place(['ME_Singles_Camping_48x48_Tree_%d.png' % tn], tx, ty, shade=False, solid=('rect', -12, -26, 12, 2))   # = TRUNK, defined below
+for (ax, ay, an) in ((650, 352, 1), (925, 350, 2), (760, 240, 3), (860, 372, 1)):
+    try_place(['ME_Singles_Camping_48x48_Apples_%d.png' % an], ax, ay, shade=False)
+try_place(['ME_Singles_Camping_48x48_Benched_Table_1.png'], 700, 470, solid=('rect', -36, -14, 36, 4), sh=0.35)
+try_place(['ME_Singles_Camping_48x48_Lantern_2.png'], 850, 470, shade=False, solid=('circle', 6))
+SPOTS['orchard'] = (792, 300)
+# B · THE MAILBOX ROW, the lawn between the hall and the post office: a lane, four boxes, a bench, flowers
+for i in range(4):
+    try_place(['22_Post_Office_48x48_Black_Mailbox_1_Front.png'], 1470, 390 + i * 46, shade=False, solid=('rect', -10, -8, 10, 4))
+try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1330, 430, solid=('rect', -36, -10, 36, 4), sh=0.35)
+try_place(['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], 1330, 370, shade=False, solid=('rect', -36, -8, 36, 4))
+try_place(['ME_Singles_City_Props_48x48_Flower_Bush_3.png'], 1470, 350, shade=False, solid=('rect', -36, -8, 36, 4))
+try_place(['ME_Singles_Camping_48x48_Lantern_4.png'], 1330, 500, shade=False, solid=('circle', 6))
+SPOTS['mail'] = (1416, 320)
+# C · THE BUS STOP, the north-east corner: the east lane runs north out of town, a shelter beside it
+try_place(['ME_Singles_Vehicles_48x48_Bus_Stop_1.png'], 2060, 330, solid=('rect', -84, -24, 84, 4), sh=0.4)
+try_place(['ME_Singles_Vehicles_48x48_Bus_Stop_Sign_1.png'], 1900, 330, shade=False, solid=('circle', 6))
+try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], 1900, 520, shade=False, solid=('circle', 7))
+SPOTS['bus'] = (2060, 330)
+SPOTS['cut'] = (1944, 90)
+# D · THE ROW, behind the print shop and the cup: a lane, three statues, flowers between, lanterns at the ends
+for (sx, sn, fl) in ((1590, 2, False), (1730, 3, False), (1870, 2, True)):
+    try_place(['ME_Singles_Garden_48x48_Statue_Putto_%d.png' % sn], sx, 758, flip=fl, solid=('rect', -20, -10, 20, 4))
+for fx in (1660, 1800):
+    try_place(['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], fx, 752, shade=False, solid=('rect', -36, -8, 36, 4))
+for lx in (1552, 1908):
+    try_place(['ME_Singles_Camping_48x48_Lantern_2.png'], lx, 754, shade=False, solid=('circle', 6))
+SPOTS['row'] = (1730, 640)
+# E · THE STAND, behind the store: a lane, the lemonade stand, two flower beds, a lantern
+try_place(['ME_Singles_Villas_48x48_Lemonade_Stand_2.png'], 610, 766, solid=('rect', -36, -16, 36, 4), sh=0.35)
+for fx in (420, 510):
+    try_place(['ME_Singles_City_Props_48x48_Flower_Bush_3.png'], fx, 752, shade=False, solid=('rect', -36, -8, 36, 4))
+try_place(['ME_Singles_Camping_48x48_Lantern_4.png'], 360, 754, shade=False, solid=('circle', 6))
+SPOTS['stand'] = (610, 766)
 
 # the treeline: the park's camping trees, the town's walls
 BIG_TREES = ['ME_Singles_Camping_48x48_Tree_%d.png' % n for n in (1, 2, 3, 13, 14, 15, 16, 17, 18)]
@@ -477,9 +526,8 @@ def treeline(pts, step=104, jitter=22):
                 y += step
 
 
-treeline([(60, 30, 2160, 70), (20, 560, 60, 1290), (2140, 200, 2190, 1290), (300, 1290, 1000, 1300),
-          (1200, 1290, 1720, 1300), (1900, 1290, 2150, 1300), (1900, 130, 2100, 500), (700, 150, 960, 240), (1260, 150, 1520, 240),
-          (640, 300, 900, 400), (1290, 300, 1500, 400)])   # the groves between the north row's buildings
+treeline([(60, 30, 1880, 70), (2050, 30, 2160, 70), (20, 560, 60, 1290), (2140, 420, 2190, 1290), (300, 1290, 1000, 1300),
+          (1200, 1290, 1720, 1300), (1900, 1290, 2150, 1300)])   # the edges only: the groves gave way to the mini-areas, the top opens for the bus road
 for _ in range(16):
     try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(1860, 2140), rng.randrange(1150, 1260), shade=False, scale=PROP * 0.85)
 for _ in range(10):

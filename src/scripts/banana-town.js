@@ -65,6 +65,13 @@ const ABOUT = {
   cart: ['', 0, 'The fruit cart. Duck bread, later.'],
   plinth: ['', 0, 'The plinth. The Board of Works’ first statue goes here.'],
   fountain: ['', 0, 'The fountain. It works.'],
+  // the mini-areas (11 Sep evening): every small place says what it is for
+  orchard: ['THE ORCHARD', 0, 'The orchard. Three apples fall here a day; a treat your animals at home love. Not built yet.'],
+  mail: ['MAILBOXES', 0, 'The mailbox row. Postcards from neighbours wait in yours. Not built yet.'],
+  bus: ['BUS STOP', 122, 'The bus stop. The roads still work; this is the shortcut.'],
+  cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
+  row: ['THE ROW', 0, 'The Row. The Board of Works’ statues stand here as projects complete. Two puttos and a stranger, for now.'],
+  stand: ['LEMONADE', 122, 'Dot’s lemonade stand. One coin, one small good thing. Not built yet.'],
 };
 for (const [key, spot] of Object.entries(SPOTS)) {
   const a = ABOUT[key];
@@ -264,6 +271,7 @@ function openFor(key) {
   if (key === 'wheel') { wheelCard(); return true; }
   if (key === 'exchange') { exchangeCard(); return true; }
   if (key === 'store') { storeCard(); return true; }
+  if (key === 'bus') { travel.open(); return true; }   // the shelter is the travel door's place in the world
   return false;
 }
 // splitmix32 seeded by the UTC day, the daily banana's own rhythm
@@ -455,7 +463,7 @@ document.getElementById('twEmote').addEventListener('click', function () {
 // 🚪 the travel door lands last in the bar. 'town' is not in the module's area
 // list, so the card offers the four known areas and no area's card offers the
 // town — the prototype stays unlisted (Rule Zero) while still being leavable.
-initTravel({ here: 'town', mount: document.querySelector('.tw-actions'), btnClass: 'tw-act tw-act--icon' });
+const travel = initTravel({ here: 'town', mount: document.querySelector('.tw-actions'), btnClass: 'tw-act tw-act--icon' });
 assetsReady().then(() => {
   for (const n of npcEls) {
     drawComposite(n.cv.getContext('2d'), 150, 0, { hat: 'none', glasses: 'none', extras: {}, ...NPC_LOOK[n.key], top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
