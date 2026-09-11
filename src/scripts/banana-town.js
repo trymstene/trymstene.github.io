@@ -63,7 +63,6 @@ const ABOUT = {
   lot: ['COMING SOON', 84, 'The worksite lot. The office and the arcade, later.'],
   condo: ['THE BUNCH', 100, 'The Bunch. Real players in its windows. Not built yet.'],
   cart: ['', 0, 'The fruit cart. Duck bread, later.'],
-  plinth: ['', 0, 'The plinth. The Board of Works’ first statue goes here.'],
   fountain: ['', 0, 'The fountain. It works.'],
   // the mini-areas (11 Sep evening): every small place says what it is for
   orchard: ['THE ORCHARD', 0, 'The orchard. Three apples fall here a day; a treat your animals at home love. Not built yet.'],
