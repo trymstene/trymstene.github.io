@@ -175,6 +175,7 @@ function init() {
       if (val === 'none') return; // no 'none' chip — click the worn item to take it off (like extras)
       const def = defFor && defFor(val);
       if (def && !earnedUnlocked(def)) {
+        if (def.secret) return;   // 🕹 earned somewhere not public yet: no chip, no door
         // a locked drop is a DOOR: the chip links to where you catch it
         const door = earnDoor(def);
         el(host).appendChild(wardChip({
@@ -229,6 +230,7 @@ function init() {
     if (d.zone === 'body') return; // body garments too — one garment on the body at a time
     const art = SVG[d.front || d.art];
     if (!earnedUnlocked(d)) {
+      if (d.secret) return;   // 🕹 earned somewhere not public yet: no chip, no door
       // a locked souvenir is a DOOR: the chip links to where you earn it
       const dr = earnDoor(d);
       el('bbExtrasChips').appendChild(wardChip({
@@ -273,6 +275,7 @@ function init() {
       // daisy pin became visible here, it was wearable without ever growing
       // one. A locked souvenir is a DOOR, in every row that can hold one.
       if (!earnedUnlocked(d)) {
+        if (d.secret) return;   // 🕹 earned somewhere not public yet: no chip, no door
         const dr = earnDoor(d);
         el('bbBodyChips').appendChild(wardChip({
           art: SVG[d.front || d.art], label: d.label,

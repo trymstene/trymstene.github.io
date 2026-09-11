@@ -1077,7 +1077,7 @@ const ARC_GAMES = {
   pong: { rate: 0.7, grace: 2, prize: ['goldtoken', 5] },        // points against Spinner: one per rally
   stack: { rate: 2.5, grace: 3, prize: ['joycap', 15] },         // crates: one per swing, ~0.5 s at the top
 };
-const ARC_TROPHY = 'trophy', ARC_MEDAL = 'medal';
+const ARC_TROPHY = 'arctrophy', ARC_MEDAL = 'arcmedal';   // ⚠️ 'trophy' and 'medal' are the stand's; these are the arcade's own
 const ARC_KEY = (g) => 'arcade/' + g + '.json';
 function isoWeek(ms) {
   const d = new Date(ms); d.setUTCHours(0, 0, 0, 0);

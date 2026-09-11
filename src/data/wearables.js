@@ -22,6 +22,8 @@
 //   earned        gates the item behind proof — 'rave' | 'golden' (builder shows a locked chip)
 //   raveOnly      server-granted / draw-time only; never a builder chip, never randomized, excluded from the daily
 //   lock          the locked-chip explanation shown in the builder
+//   secret        earned somewhere not public yet: a LOCKED chip is not shown at all (no door);
+//                 owned, it is a normal chip. Drop the flag the day the place opens.
 //
 // Packs group wearables; `always:true` = the core set. A seasonal pack adds a
 // `window: { from:'MM-DD', to:'MM-DD' }` and auto-activates in that range.
@@ -56,6 +58,14 @@ export const WEARABLE_PACKS = {
       { id: 'woolbeanie', label: 'Wool beanie', phrase: 'a hand-knitted wool beanie', art: 'woolbeanie', seat: -1,
         earned: 'homestead', stat: 'knit_woolbeanie', lock: 'knitted, never bought: shear a sheep at your homestead and knit the wool at the tailor' },
       { id: 'backwardscap', label: 'Backwards cap', phrase: 'a backwards cap', art: 'backwardscap', seat: 0 },
+      // 🕹 ARCADE PRIZES (12 Sep 2026) — won on the town Arcade's boards, never bought. The pass
+      // worker grants own_<id> the admin way at a threshold per board (art: src/data/arcadewear.js)
+      { id: 'arcvisor', label: 'Arcade visor', phrase: 'an arcade visor', art: 'arcvisor', seat: -1,
+        earned: 'arcade', stat: 'own_arcvisor', secret: true, lock: 'won at the Arcade: 10 on the Peel Out board' },
+      { id: 'pixelcrown', label: 'Pixel crown', phrase: 'a pixel crown', art: 'pixelcrown', seat: -1,
+        earned: 'arcade', stat: 'own_pixelcrown', secret: true, lock: 'won at the Arcade: 15 on the Banana Snake board' },
+      { id: 'joycap', label: 'Joy cap', phrase: 'a joystick cap', art: 'joycap', seat: -1,
+        earned: 'arcade', stat: 'own_joycap', secret: true, lock: 'won at the Arcade: 15 on the Banana Stack board' },
       { id: 'gradcap', label: 'Graduation cap', phrase: 'a graduation cap', art: 'gradcap', seat: -1 },
       { id: 'tricorn', label: 'Pirate tricorn', phrase: 'a pirate tricorn', art: 'tricorn', seat: -1 },
       { id: 'jester', label: 'Jester hat', phrase: 'a jester hat with bells', art: 'jester', seat: -1 },
@@ -212,6 +222,15 @@ export const WEARABLE_PACKS = {
       // `golden` is the proof of the moment); worn from the pass or the builder
       { id: 'goldbanana', label: 'Golden Banana', anchor: 'hand', hand: 'left', grip: 2, art: 'goldbanana', earned: 'golden', patch: 'golden',
         lock: 'the trophy: catch the golden banana at the rave — it strikes every half hour' },
+      // 🕹 ARCADE PRIZES (12 Sep 2026) — see the hats' note; the medal rides the body zone like the participation medal
+      { id: 'joystick', label: 'Joystick', phrase: 'an arcade joystick', anchor: 'hand', hand: 'right', grip: 8, art: 'joystick',
+        earned: 'arcade', stat: 'own_joystick', secret: true, lock: 'won at the Arcade: 25 on the Banana Invaders board' },
+      { id: 'goldtoken', label: 'Gold token', phrase: 'a gold arcade token', anchor: 'hand', hand: 'left', grip: 3.5, art: 'goldtoken',
+        earned: 'arcade', stat: 'own_goldtoken', secret: true, lock: 'won at the Arcade: 5 points against Spinner at Banana Pong' },
+      { id: 'arctrophy', label: 'Arcade trophy', phrase: 'a golden arcade cabinet', anchor: 'hand', hand: 'left', grip: 9, art: 'arctrophy',
+        earned: 'arcade', stat: 'own_arctrophy', secret: true, lock: 'won at the Arcade: a score on every cabinet' },
+      { id: 'arcmedal', label: 'Arcade medal', phrase: 'an arcade medal', art: 'arcmedal', anchor: 'chest', zone: 'body', dy: 11,
+        earned: 'arcade', stat: 'own_arcmedal', secret: true, lock: 'won at the Arcade: a top three on any board' },
       // happy-hour trophy: lives for one rave session, granted by the worker (first
       // banana at the bar). raveOnly = never a builder chip, never randomized.
       { id: 'cone', label: 'Traffic cone', anchor: 'face', dy: -10.5, sideDx: 0, front: 'cone', side: 'cone', raveOnly: true },
