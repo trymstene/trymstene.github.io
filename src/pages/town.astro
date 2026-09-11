@@ -93,6 +93,11 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-fine { font-size: 0.72rem; opacity: 0.7; margin: 0.6rem 0 0; line-height: 1.35; }
     .tw-tray { position: absolute; left: 10px; bottom: 12px; z-index: 901; background: #1a120c; color: #fffdf5; border: 3px solid #000; box-shadow: 4px 4px 0 #000; padding: 0.5rem 0.6rem; display: grid; gap: 0.4rem; min-width: 210px; }
     .tw-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1400; pointer-events: none; }
+    /* 🕹 inside: the room floats over a shade in the same world (the homestead's grammar); the town's
+       props, people and planks stop painting while indoors, the banana rides above the shade */
+    .tw-inshade { position: absolute; inset: 0; z-index: 2000; background: #0d0b14; pointer-events: none; }
+    .tw-room { position: absolute; z-index: 2010; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
+    .tw-world.is-inside :is(.tw-ov, .tw-npc, .tw-plank, .tw-fountain) { visibility: hidden; }
     /* 🎛 THE ACTION BAR — the HUD's bottom half (design library §15): the park's
        .pk-actions metrics to the pixel, in the town's brick. The verb slot left,
        the heart, the travel door (world-travel.js mounts it and floors every row at 44px). */

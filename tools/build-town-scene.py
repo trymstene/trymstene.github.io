@@ -430,7 +430,7 @@ COLLIDERS.append(('fountain-top', ('circle', 38), FX, FBASE - 108))   # hugs the
 SPOTS, NPCS = {}, []
 
 # the north row, doors on Hall Street: the residence · the town hall · the post office
-place('ME_Singles_Generic_Building_48x48_Condo_3_45.png', 480, 560, solid=foot(288, 200), sh=0.45)
+place('ME_Singles_Generic_Building_48x48_Condo_3_45.png', 480, 560, solid=foot(288, 200), sh=0.45)   # 🕹 THE ARCADE (was The Bunch — Trym, 11 Sep night)
 SPOTS['condo'] = (480, 560)
 place('ME_Singles_School_48x48_Clock_Tower_1.png', 1100, 560, solid=foot(384, 143), sh=0.45)
 SPOTS['hall'] = (1100, 560)
@@ -584,6 +584,104 @@ im.save(os.path.join(OUT, 'town.png'), optimize=True)
 print('wrote town.png %dx%d, %d overlays, %d colliders' % (W, H, len(OVERLAYS), len(COLLIDERS)))
 
 # ---- the contract ----------------------------------------------------------------
+# ---- 🕹 THE ARCADE (Trym, 11 Sep night): The Bunch's door opens on a room. Built the homestead's
+# way — Room_Builder floor + wall band at 48-px tiles, the pack's furniture at 1:1, the plate floats
+# over a shade in the same world; the contract carries box/spawn/exit/cols/spots.
+import glob as _glob
+import re as _re
+MI48 = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\1_Interiors\48x48')
+RBD = os.path.join(MI48, 'Room_Builder_subfiles_48x48')
+BASEMENT = os.path.join(MI48, 'Theme_Sorter_Singles_48x48', '14_Basement_Singles_48x48')
+ARCADE = None
+
+
+def _single(n):
+    fs = [f for f in _glob.glob(os.path.join(BASEMENT, '*.png')) if _re.search(r'_%d\.png$' % n, f)]
+    return Image.open(fs[0]).convert('RGBA')
+
+
+def _darkest(sheet, tw, th, step=48):
+    """the darkest low-chroma tile in a builder sheet: an arcade is dim"""
+    best, bk = None, 1e9
+    px = sheet.load()
+    for y in range(0, sheet.height - th + 1, step):
+        for x in range(0, sheet.width - tw + 1, step):
+            t = sheet.crop((x, y, x + tw, y + th))
+            if t.getbbox() is None or min(t.getchannel('A').getextrema()) < 250:
+                continue
+            r = g = b = 0
+            n = tw * th
+            for yy in range(y, y + th, 4):
+                for xx in range(x, x + tw, 4):
+                    p = px[xx, yy]; r += p[0]; g += p[1]; b += p[2]
+            n = ((th + 3) // 4) * ((tw + 3) // 4)
+            r, g, b = r / n, g / n, b / n
+            lum = 0.3 * r + 0.59 * g + 0.11 * b
+            chroma = max(r, g, b) - min(r, g, b)
+            k = lum + chroma * 2
+            if 36 < lum < 110 and k < bk:
+                bk, best = k, (x, y)
+    return best
+
+
+if os.path.isdir(RBD) and os.path.isdir(BASEMENT):
+    _fl = Image.open(os.path.join(RBD, 'Room_Builder_Floors_48x48.png')).convert('RGBA')
+    _wa = Image.open(os.path.join(RBD, 'Room_Builder_Walls_48x48.png')).convert('RGBA')
+    fx, fy = _darkest(_fl, 48, 48)
+    wx, wy = _darkest(_wa, 48, 96)
+    print('  arcade floor tile at', (fx, fy), 'wall at', (wx, wy))
+    FT = _fl.crop((fx, fy, fx + 48, fy + 48))
+    WS = _wa.crop((wx, wy, wx + 48, wy + 96))
+    TW, TH = 12, 8
+    RW, RH = TW * 48, TH * 48
+    room = Image.new('RGBA', (RW, RH), (0, 0, 0, 0))
+    for j in range(0, RH, 48):
+        for i in range(0, RW, 48):
+            room.alpha_composite(FT, (i, j))
+    for i in range(TW):
+        room.alpha_composite(WS, (i * 48, 0))
+    dr2 = ImageDraw.Draw(room)
+    FR = (24, 20, 30, 255)
+    FRAME = 14
+    rcx = RW // 2
+    dr2.rectangle([0, 0, FRAME - 1, RH - 1], fill=FR)
+    dr2.rectangle([RW - FRAME, 0, RW - 1, RH - 1], fill=FR)
+    dr2.rectangle([0, RH - FRAME, rcx - 61, RH - 1], fill=FR)
+    dr2.rectangle([rcx + 60, RH - FRAME, RW - 1, RH - 1], fill=FR)
+    # the furniture, at 1:1: (single number, x, base y, collider rect rel. to (x, base) or None, spot key)
+    # back wall: five cabinets face the room; side walls: cabinets seen from the side; a counter with
+    # the TV and the consoles by the door, two stools at it
+    FURN = [
+        (218, 60, 224, (0, -44, 48, 0), 'g1'), (219, 132, 224, (0, -44, 48, 0), 'g2'), (218, 204, 224, (0, -44, 48, 0), 'g3'),
+        (219, 276, 224, (0, -44, 48, 0), 'g4'), (218, 348, 224, (0, -44, 48, 0), 'g5'),
+        (221, 16, 300, (0, -40, 64, 0), 'g6'), (221, 16, 372, (0, -40, 64, 0), 'g7'),
+        (223, 496, 300, (0, -40, 64, 0), 'g8'), (223, 496, 372, (0, -40, 64, 0), 'g9'),
+        (194, 440, 224, (0, -40, 96, 0), 'counter'),
+        (151, 448, 262, (0, -10, 32, 0), None), (155, 500, 262, (0, -10, 32, 0), None),
+    ]
+    rcols, rspots = [], []
+    for n, x, base, col, key in FURN:
+        im_ = _single(n)
+        room.alpha_composite(im_, (x, base - im_.height))
+        if col:
+            rcols.append([x + col[0], base + col[1], x + col[2], base + col[3]])
+        if key:
+            rspots.append([key, x, base - im_.height, x + im_.width, base])
+    room.save(os.path.join(OUT, 'in-arcade.png'), optimize=True)
+    AX, AY = 300, 120   # where the plate floats in world coordinates (over the town's north-west)
+    ARCADE = {
+        'img': 'in-arcade.png', 'box': [AX, AY, RW, RH],
+        'spawn': [AX + rcx, AY + RH - 56],
+        'exit': [AX + rcx - 46, AY + RH - 18, AX + rcx + 46, AY + RH],
+        'cols': [[AX, AY, AX + RW, AY + 100], [AX, AY, AX + FRAME, AY + RH], [AX + RW - FRAME, AY, AX + RW, AY + RH],
+                 [AX, AY + RH - FRAME, AX + rcx - 60, AY + RH], [AX + rcx + 60, AY + RH - FRAME, AX + RW, AY + RH]]
+                + [[AX + a, AY + b, AX + c, AY + d] for a, b, c, d in rcols],
+        'spots': [[k, AX + a, AY + b, AX + c, AY + d] for k, a, b, c, d in rspots],
+    }
+    print('  in-arcade.png %dx%d, %d cols, %d spots' % (RW, RH, len(ARCADE['cols']), len(ARCADE['spots'])))
+else:
+    print('  ! interiors pack not found — no arcade room')
+
 L = ['// GENERATED by tools/build-town-scene.py — DO NOT EDIT.',
      '// Every collider here was declared on the place() call that drew its prop.',
      'export const WORLD = { w: %d, h: %d };' % (W, H),
@@ -593,6 +691,7 @@ L = ['// GENERATED by tools/build-town-scene.py — DO NOT EDIT.',
      'export const STREETS = %s;' % [list(s) for s in STREETS],
      'export const FOUNTAIN = %s;' % list(FOUNTAIN),
      'export const ANIMS = %s;' % [list(a) for a in ANIMS],
+     'export const ARCADE = %s;' % __import__('json').dumps(ARCADE),
      'export const OVERLAYS = %s;' % [list(o) for o in OVERLAYS],
      'export const SPOTS = { %s };' % ', '.join('%s: { x: %d, y: %d }' % (k, v[0], v[1]) for k, v in SPOTS.items()),
      'export const NPCS = %s;' % [[n[0], n[1], n[2], n[3]] for n in NPCS]]

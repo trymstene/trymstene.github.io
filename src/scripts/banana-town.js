@@ -10,7 +10,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS } from './town-geo.js';
+import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE } from './town-geo.js';
 
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
@@ -66,7 +66,18 @@ const ABOUT = {
   exchange: ['THE EXCHANGE', 154, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],
   wheel: ['WHEEL OF PEEL', 154, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
   lot: ['COMING SOON', 84, 'The worksite lot. The office and the arcade, later.'],
-  condo: ['THE BUNCH', 100, 'The Bunch. Real players in its windows. Not built yet.'],
+  condo: ['ARCADE', 100, 'The Arcade. Classics in banana wrapping, inside. Tap the door.'],
+  // 🕹 the machines inside — names to be argued over; every one says what it will be
+  g1: ['', 0, 'PEEL OUT. One thumb, one banana, a jelly vat to miss. Coming soon.'],
+  g2: ['', 0, 'BUNCH INVADERS. The bunch comes down in rows. Coming soon.'],
+  g3: ['', 0, 'PEEL PONG. Two peels and a very fast banana. Coming soon.'],
+  g4: ['', 0, 'THE LONG PEEL. It grows, and it must not bite itself. Coming soon.'],
+  g5: ['', 0, 'SPLIT. Bricks, a bat, a banana that bounces. Coming soon.'],
+  g6: ['', 0, 'An older cabinet. Out of order, for now.'],
+  g7: ['', 0, 'An older cabinet. Out of order, for now.'],
+  g8: ['', 0, 'An older cabinet. Out of order, for now.'],
+  g9: ['', 0, 'An older cabinet. Out of order, for now.'],
+  counter: ['', 0, 'The counter. Tokens and the high-score book, later.'],
   cart: ['', 0, 'The fruit cart. Duck bread, later.'],
   fountain: ['', 0, 'The fountain. It works.'],
   // the mini-areas (11 Sep evening): every small place says what it is for
@@ -189,13 +200,25 @@ addEventListener('keydown', (e) => {
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) { keys[k] = true; e.preventDefault(); }
 });
 addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+// 🕹 inside the arcade the room's own walls and machines are the only colliders
+let inside = false, inShade = null, inPlate = null;
 function blocked(x, y) {
+  if (inside && ARCADE) {
+    const [bx, by, bw, bh] = ARCADE.box;
+    if (x < bx || x > bx + bw || y < by || y > by + bh) return true;
+    for (const [x0, y0, x1, y1] of ARCADE.cols) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
+    return false;
+  }
   if (x < BOUND || x > W - BOUND || y < BOUND || y > H - 6) return true;
   for (const [x0, y0, x1, y1] of OB_RECTS) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
   for (const [cx, cy, r] of OB_CIRCLES) if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r) return true;
   return false;
 }
 function thingAt(wx, wy) {
+  if (inside && ARCADE) {
+    for (const [key, x0, y0, x1, y1] of ARCADE.spots) if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) return ['spot', key];
+    return null;
+  }
   for (const n of npcEls) if (Math.abs(wx - n.x) < 34 && wy < n.y + 6 && wy > n.y - 90) return ['npc', n.key];
   for (const [key, spot] of Object.entries(SPOTS)) {
     const box = BOXES.find((b) => spot.x >= b[0] && spot.x <= b[2] && spot.y - 2 >= b[1] && spot.y - 2 <= b[3] && Math.abs(b[4] - spot.y) < 4);
@@ -212,7 +235,8 @@ view.addEventListener('pointerdown', (e) => {
     if (hit[0] === 'npc') { say(NPC_SAY[hit[1]]); const n = npcEls.find((q) => q.key === hit[1]); tgt.x = n.x + (pos.x < n.x ? -60 : 60); tgt.y = n.y + 8; return; }
     const spot = SPOTS[hit[1]];
     if (!openFor(hit[1])) say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
-    tgt.x = spot.x; tgt.y = spot.y + 30;
+    if (spot) { tgt.x = spot.x; tgt.y = spot.y + 30; }
+    else if (inside && ARCADE) { const r2 = ARCADE.spots.find((q) => q[0] === hit[1]); if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; } }   // a machine: stand at its front
     return;
   }
   tgt.x = Math.max(BOUND, Math.min(W - BOUND, wx)); tgt.y = Math.max(BOUND, Math.min(H - 8, wy));
@@ -253,10 +277,11 @@ function tick(now) {
     else if (!blocked(pos.x, ny)) pos.y = ny;
     else { tgt.x = pos.x; tgt.y = pos.y; }
   }
-  me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String(100 + Math.round(pos.y));
+  me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inside ? 2100 : 100) + Math.round(pos.y));
   cam(false);
   drawMe();
-  if (!leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
+  if (inside && ARCADE) { const [x0, y0, x1, y1] = ARCADE.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitArcade(); }
+  if (!inside && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
     say('Back down the road to the park…');
     setTimeout(() => { location.href = '/park/'; }, 600);
@@ -279,7 +304,36 @@ function openFor(key) {
   if (key === 'exchange') { exchangeCard(); return true; }
   if (key === 'store') { storeCard(); return true; }
   if (key === 'bus') { travel.open(); return true; }   // the shelter is the travel door's place in the world
+  if (key === 'condo') { enterArcade(); return true; }
   return false;
+}
+// 🕹 step inside: the shade covers the town, the room floats over it, the banana rides above both
+function enterArcade() {
+  if (!ARCADE || inside) return;
+  inside = true;
+  world.classList.add('is-inside');
+  if (!inShade) { inShade = document.createElement('div'); inShade.className = 'tw-inshade'; world.appendChild(inShade); }
+  if (!inPlate) {
+    inPlate = document.createElement('div'); inPlate.className = 'tw-room';
+    const [bx, by, bw, bh] = ARCADE.box;
+    inPlate.style.left = pct(bx, W); inPlate.style.top = pct(by, H); inPlate.style.width = pct(bw, W); inPlate.style.height = pct(bh, H);
+    inPlate.style.backgroundImage = 'url(/assets/town/' + ARCADE.img + ')';
+    world.appendChild(inPlate);
+  }
+  inShade.hidden = false; inPlate.hidden = false;
+  pos.x = ARCADE.spawn[0]; pos.y = ARCADE.spawn[1];
+  tgt.x = pos.x; tgt.y = pos.y - 34;   // a step into the room, never back out through the door
+  cam(true);
+  say('The Arcade. The door takes you back out.');
+}
+function exitArcade() {
+  inside = false;
+  world.classList.remove('is-inside');
+  if (inShade) inShade.hidden = true;
+  if (inPlate) inPlate.hidden = true;
+  pos.x = SPOTS.condo.x; pos.y = SPOTS.condo.y + 30;
+  tgt.x = pos.x; tgt.y = pos.y + 30;
+  cam(true);
 }
 // splitmix32 seeded by the UTC day, the daily banana's own rhythm
 function mix32(seed) {
@@ -478,5 +532,5 @@ assetsReady().then(() => {
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
-  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns };   // QA seam for the walk
+  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []) } };   // QA seam for the walk
 });
