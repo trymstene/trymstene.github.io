@@ -303,8 +303,10 @@ function drawWheel(cv) {
     const a0 = -Math.PI / 2 + i * per, a1 = a0 + per;
     ctx.beginPath(); ctx.moveTo(R2, R2); ctx.arc(R2, R2, R2 - 6, a0, a1); ctx.closePath();
     ctx.fillStyle = w[1]; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#141208'; ctx.stroke();
-    ctx.save(); ctx.translate(R2, R2); ctx.rotate(a0 + per / 2); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = w[2]; ctx.font = 'bold 24px "Archivo Black", "Arial Black", sans-serif'; ctx.fillText(w[0], R2 - 26, 0); ctx.restore();
+    // the label reads upright on both halves: left-side wedges are turned half a circle and drawn from the rim inward
+    const mid = a0 + per / 2, left = Math.cos(mid) < 0;
+    ctx.save(); ctx.translate(R2, R2); ctx.rotate(left ? mid + Math.PI : mid); ctx.textAlign = left ? 'left' : 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = w[2]; ctx.font = 'bold 24px "Archivo Black", "Arial Black", sans-serif'; ctx.fillText(w[0], left ? -(R2 - 26) : R2 - 26, 0); ctx.restore();
   });
   ctx.beginPath(); ctx.arc(R2, R2, 26, 0, Math.PI * 2); ctx.fillStyle = '#141208'; ctx.fill();
   ctx.beginPath(); ctx.arc(R2, R2, 14, 0, Math.PI * 2); ctx.fillStyle = '#ffe135'; ctx.fill();
