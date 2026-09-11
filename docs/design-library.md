@@ -194,6 +194,24 @@ decoration in it must land on the tile's own period, or it seams.
 Glows on drawn art use `filter: drop-shadow()`, never `box-shadow` — the glow
 has to follow the silhouette, not the rectangle it sits in.
 
+An animated strip stepped by `background-position` walks. In a box whose width
+is a fraction of a pixel (anything sized in % of a scaled world) every step
+lands on a different sub-pixel phase, so the drawing shifts a pixel or two each
+frame and the town's fountain wandered sideways in a loop (Trym, 11 Sep 2026).
+Frames go in one box as separate images, shown in turn by a visibility
+animation with a positive delay per frame; six images sample identically and
+nothing moves. The same applies to any strip in the park or the bay the day it
+is noticed.
+
+Ground meets ground through the pack's autotiles, never through a drawn line.
+The town's first paving was rectangles with 12 px bites and a ruler-straight
+rim, and it read "technical, not organic". The autotile sheet has 47 edge and
+corner pieces per family; index them by probing each tile's border pixels
+(stone or grass at the four edge midpoints and four corners), cut the flat
+fill away, and lay the pieces over the real ground texture. Pick a family whose
+grass is the world's grass palette — a dull family shows as a band along every
+edge.
+
 ## 7. Commit to a silhouette
 
 Four variants of a thing should be four **objects**, not four colours of one

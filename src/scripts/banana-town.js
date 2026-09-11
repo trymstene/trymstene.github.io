@@ -29,17 +29,21 @@ for (const [fn, x, y, w, h, base] of OVERLAYS) {
   BOXES.push([x, y, x + w, y + h, base]);
 }
 
-// ---- ⛲ the fountain: the pack's six-frame strip, CSS-stepped like the park's
+// ---- ⛲ the fountain: the pack's six frames, one file each, CSS-shown in turn
 if (FOUNTAIN && FOUNTAIN.length) {
   const [fx, fbase, fw, fh, n] = FOUNTAIN;
   const f = document.createElement('div');
   f.className = 'tw-fountain';
   f.style.left = pct(fx - fw / 2, W); f.style.top = pct(fbase - fh, H); f.style.width = pct(fw, W);
   f.style.aspectRatio = fw + ' / ' + fh;
-  f.style.backgroundImage = 'url(/assets/town/a-fountain.png)';
-  f.style.backgroundSize = (n * 100) + '% 100%';
-  f.style.setProperty('--tw-frames', String(n));
-  f.style.setProperty('--tw-end', (n / (n - 1) * 100) + '%');
+  // six frames in ONE box, one visible at a time (the keyframes in town.astro, offset per
+  // frame): a background strip stepped by position walked sideways at fractional widths
+  for (let i = 0; i < n; i++) {
+    const im = document.createElement('img');
+    im.src = '/assets/town/a-fountain-' + i + '.png'; im.alt = ''; im.decoding = 'async';
+    im.style.animationDelay = (i * (0.9 / n)).toFixed(3) + 's';   // positive: frame i takes the i-th sixth, in drawn order
+    f.appendChild(im);
+  }
   f.style.zIndex = String(100 + fbase);
   world.appendChild(f);
   BOXES.push([fx - fw / 2, fbase - fh, fx + fw / 2, fbase, fbase]);

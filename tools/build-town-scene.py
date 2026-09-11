@@ -20,7 +20,7 @@ flooring to walk around, NPCs placed with purpose, transitions to grass").
 Outputs:
   public/assets/town/town.png        2200x1300 world plate (ground + shadows)
   public/assets/town/ov-*.png        y-sorted overlay props (everything that stands)
-  public/assets/town/a-fountain.png  the fountain, an animated strip
+  public/assets/town/a-fountain-N.png  the fountain, one file per frame
   src/scripts/town-geo.js            ⚠️ THE CONTRACT with the town engine
 Run: python tools/build-town-scene.py
 """
@@ -125,60 +125,108 @@ for i in (1, 2, 3, 8, 9):
     except Exception:
         pass
 
-# ---- the paving mask: the streets' union with an organic, cobble-bitten edge ------
+# ---- the paving: a TILE MAP wearing the pack's own grass-edge autotile (Trym, 11 Sep) ---
+# Family 1 of the Godot autotile sheet (rows 1-4) is the pack's dirt path with ORGANIC
+# grass lips on every edge and corner, in the SAME green as the world's grass tiles
+# (family 4, the graveyard's dull green, showed as a band). Its flat fill is cut away so
+# the grey cobbles show through: cobbles, with the pack's own art where stone meets grass.
+# The hand-drawn 12px bites and the ruler rim are gone with it — a laid square meets
+# the lawn the way the pack draws it, never as a straight line.
+TC, TR = W // T + 1, H // T + 1
+paved_t = [[False] * TC for _ in range(TR)]
+for (x0, y0, x1, y1) in STREETS:
+    for r in range(TR):
+        for c in range(TC):
+            if x0 <= c * T + T // 2 < x1 and y0 <= r * T + T // 2 < y1:
+                paved_t[r][c] = True
+
+
+def pav(r, c):
+    return 0 <= r < TR and 0 <= c < TC and paved_t[r][c]
+
+
+# a few one-tile bumps along the long edges (never two side by side, never a bite —
+# a bite narrows a two-tile street), so no edge runs dead straight for a whole block
+erng = random.Random(31)
+bumps = []
+for r in range(TR):
+    for c in range(TC):
+        if not pav(r, c):
+            continue
+        for (dr, dc) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            rr, cc = r + dr, c + dc
+            if pav(rr, cc) or not (0 <= rr < TR and 0 <= cc < TC):
+                continue
+            if erng.random() < 0.14 and not any(abs(br - rr) + abs(bc - cc) == 1 for br, bc in bumps):
+                bumps.append((rr, cc))
+for br, bc in bumps:
+    paved_t[br][bc] = True
+
+FAM = Image.open(os.path.join(PACK, 'Autotiles_48x48', 'Godot_Autotiles_48x48.png')).convert('RGBA').crop((0, 0, 12 * T, 4 * T))
+
+
+def _grass(p):
+    return p[3] >= 128 and p[1] > p[0] + 8 and p[1] > p[2] + 8
+
+
+def _stone(p):
+    return p[3] >= 128 and not _grass(p) and (0.3 * p[0] + 0.59 * p[1] + 0.11 * p[2]) >= 95
+
+
+# every family tile is indexed by what its border pixels say (stone or grass at the four
+# edge midpoints and four corners) — 47 tiles, 47 distinct signatures, no layout table
+PROBES = (('N', 24, 0), ('S', 24, 47), ('W', 0, 24), ('E', 47, 24), ('NW', 0, 0), ('NE', 47, 0), ('SW', 0, 47), ('SE', 47, 47))
+FAMO = {}
+for fr in range(4):
+    for fc in range(12):
+        ft = FAM.crop((fc * T, fr * T, (fc + 1) * T, (fr + 1) * T))
+        if ft.getbbox() is None:
+            continue
+        fp = ft.load()
+        sig = tuple(k for k, x, y in PROBES if _stone(fp[x, y]))
+        # cut the flat fill away: the grass lips and their dark outline stay, cobbles show through
+        for y in range(T):
+            for x in range(T):
+                if _stone(fp[x, y]):
+                    fp[x, y] = (0, 0, 0, 0)
+        FAMO[sig] = ft
+assert len(FAMO) == 47, len(FAMO)
+
+# grey cobbles only: Others_1 and Others_2 (Others_3 is the TAN one — Trym, 11 Sep)
+COBS = [load_pack('ME_Singles_Terrains_and_Fences_48x48_Others_%d.png' % i).convert('RGBA') for i in (1, 2)]
+crng = random.Random(5)
 mask = Image.new('L', (W, H), 0)
 md = ImageDraw.Draw(mask)
-for (x0, y0, x1, y1) in STREETS:
-    md.rectangle([x0, y0, x1 - 1, y1 - 1], fill=255)
-# bites and bumps along every edge, in 12px blocks, so the stone meets the grass
-# the way a laid square does, never as a ruler line
-erng = random.Random(31)
-B = 12
-for (x0, y0, x1, y1) in STREETS:
-    for x in range(x0, x1, B):
-        for (ey, out) in ((y0, -1), (y1, +1)):
-            r = erng.random()
-            if r < 0.28:      # a bump outward
-                md.rectangle([x, ey + (out * B if out < 0 else 0), x + B - 1, ey + (0 if out < 0 else out * B) - 1], fill=255)
-            elif r < 0.42:    # a bite inward
-                md.rectangle([x, ey + (0 if out < 0 else -B), x + B - 1, ey + (B if out < 0 else 0) - 1], fill=0)
-    for y in range(y0, y1, B):
-        for (ex, out) in ((x0, -1), (x1, +1)):
-            r = erng.random()
-            if r < 0.28:
-                md.rectangle([ex + (out * B if out < 0 else 0), y, ex + (0 if out < 0 else out * B) - 1, y + B - 1], fill=255)
-            elif r < 0.42:
-                md.rectangle([ex + (0 if out < 0 else -B), y, ex + (B if out < 0 else 0) - 1, y + B - 1], fill=0)
-# the square and the streets are one surface: refill their true rectangles so a
-# bite never cuts a street in two where two rectangles meet
-for (x0, y0, x1, y1) in STREETS:
-    md.rectangle([x0 + B, y0 + B, x1 - B - 1, y1 - B - 1], fill=255)
+for r in range(TR):
+    for c in range(TC):
+        if not pav(r, c):
+            continue
+        t = COBS[crng.randrange(len(COBS))]
+        k = crng.randrange(4)
+        t = t.transpose(Image.ROTATE_90) if k == 1 else t.transpose(Image.ROTATE_180) if k == 2 else t.transpose(Image.FLIP_LEFT_RIGHT) if k == 3 else t
+        im.alpha_composite(t, (c * T, r * T))
+        md.rectangle([c * T, r * T, c * T + T - 1, r * T + T - 1], fill=255)
+        n_, s_, w_, e_ = pav(r - 1, c), pav(r + 1, c), pav(r, c - 1), pav(r, c + 1)
+        sig = []
+        if n_: sig.append('N')
+        if s_: sig.append('S')
+        if w_: sig.append('W')
+        if e_: sig.append('E')
+        if n_ and w_ and pav(r - 1, c - 1): sig.append('NW')
+        if n_ and e_ and pav(r - 1, c + 1): sig.append('NE')
+        if s_ and w_ and pav(r + 1, c - 1): sig.append('SW')
+        if s_ and e_ and pav(r + 1, c + 1): sig.append('SE')
+        if len(sig) < 8:
+            ov = FAMO.get(tuple(sig))
+            if ov is None:
+                raise SystemExit('no autotile for %r at tile %d,%d' % (sig, r, c))
+            im.alpha_composite(ov, (c * T, r * T))
 mp = mask.load()
+px = im.load()
 
 
 def paved(x, y):
     return 0 <= x < W and 0 <= y < H and mp[x, y] > 0
-
-
-# grey cobbles only (Others_1 + Others_3); the tan ones stay in the drawer
-COBS = [load_pack('ME_Singles_Terrains_and_Fences_48x48_Others_%d.png' % i).convert('RGBA') for i in (1, 3)]
-cob = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-crng = random.Random(5)
-for r in range(0, H // T + 1):
-    for c in range(0, W // T + 1):
-        t = COBS[crng.randrange(len(COBS))]
-        k = crng.randrange(4)
-        t = t.transpose(Image.ROTATE_90) if k == 1 else t.transpose(Image.ROTATE_180) if k == 2 else t.transpose(Image.FLIP_LEFT_RIGHT) if k == 3 else t
-        cob.alpha_composite(t, (c * T, r * T))
-im.paste(cob, (0, 0), mask)
-# the rim: a two-pixel darker seam where stone meets grass, following the bites
-rim = (92, 82, 58, 255)
-for y in range(1, H - 1):
-    row = [mp[x, y] for x in range(W)]
-    for x in range(1, W - 1):
-        if row[x] and (not row[x - 1] or not row[x + 1] or not mp[x, y - 1] or not mp[x, y + 1]):
-            px[x, y] = rim
-            px[x, y + 1] = rim if mp[x, y + 1] else px[x, y + 1]
 
 # the lawn's life, off the stone
 for _ in range(70):
@@ -322,7 +370,11 @@ fw = sheet.width // n
 strip = blockify(sheet, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, trim=False)
 sw, shh = int(fw * PROP), int(sheet.height * PROP)
 strip = strip.resize((sw * n, shh), Image.NEAREST)
-strip.save(os.path.join(OUT, 'a-fountain.png'), optimize=True)
+# six FRAME FILES, not one strip: a strip stepped by background-position in a box of
+# fractional width lands every frame on a different sub-pixel phase, and the fountain
+# walks sideways in a loop (Trym, 11 Sep). Six images in one box sample identically.
+for i in range(n):
+    strip.crop((i * sw, 0, (i + 1) * sw, shh)).save(os.path.join(OUT, 'a-fountain-%d.png' % i), optimize=True)
 FX, FBASE = 1100, 900
 shadow(FX, FBASE - 6, sw * 0.5, 12)
 FOUNTAIN = [FX, FBASE, sw, shh, n]

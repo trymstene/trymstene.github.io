@@ -32,12 +32,15 @@ const description = 'The town centre of Banana World, under construction.';
       background: url('/assets/town/town.png') 0 0 / 100% 100% no-repeat; image-rendering: pixelated;
     }
     .tw-ov { position: absolute; height: auto; image-rendering: pixelated; pointer-events: none; }
-    /* ⛲ the fountain strip steps through its frames — no rAF, no canvas */
-    /* ⚠️ the park's stepping rule: with N frames at N×100% size the end is 100% × N / (N − 1) */
-    .tw-fountain { position: absolute; image-rendering: pixelated; pointer-events: none; background-repeat: no-repeat;
-      animation: tw-fount 0.9s steps(var(--tw-frames, 6)) infinite; }
-    @keyframes tw-fount { from { background-position-x: 0%; } to { background-position-x: var(--tw-end, 120%); } }
-    @media (prefers-reduced-motion: reduce) { .tw-fountain { animation: none; } }
+    /* ⛲ the fountain: six frame images stacked in one box, each visible for a sixth of the
+       cycle (its own negative delay picks the sixth). ⚠️ NOT a position-stepped strip: in a box
+       of fractional width every step lands on a different sub-pixel phase and the fountain
+       walks sideways. Windows overlap by 0.3% so no paint ever finds every frame hidden. */
+    .tw-fountain { position: absolute; pointer-events: none; }
+    .tw-fountain img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated;
+      visibility: hidden; animation: tw-fount 0.9s linear infinite; }
+    @keyframes tw-fount { 0%, 16.9% { visibility: visible; } 17%, 100% { visibility: hidden; } }
+    @media (prefers-reduced-motion: reduce) { .tw-fountain img { animation: none; } .tw-fountain img:first-child { visibility: visible; } }
     .tw-me, .tw-npc { position: absolute; width: 4.5%; transform: translate(-50%, -100%); pointer-events: none; }
     .tw-me::after, .tw-npc::after {
       content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
