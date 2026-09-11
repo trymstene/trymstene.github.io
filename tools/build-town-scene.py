@@ -312,9 +312,9 @@ def try_place(names, cx, base, **kw):
     return None
 
 
-def foot(w, h_solid=22):
-    """a thin solid band at a building's feet, relative to (cx, base)"""
-    return ('rect', -int(w * PROP // 2) + 6, -h_solid, int(w * PROP // 2) - 6, 4)
+def foot(w, h_solid=18):
+    """a thin solid band at a building's feet, relative to (cx, base) — tight (Trym, 11 Sep)"""
+    return ('rect', -int(w * PROP // 2) + 8, -h_solid, int(w * PROP // 2) - 8, 4)
 
 
 # ---- the notice board: our own drawn board, the supporters' board's big cousin ----
@@ -384,8 +384,9 @@ FOUNTAIN = [FX, FBASE, sw, shh, n]
 # (y < FBASE) is drawn under it, so its body must clear the silhouette by its own half
 # width (~40 px). Two circles trace that: the bowl (half-width 72 at y 814-838) and the
 # tower above it (Trym, 11 Sep: "the fountain overflows my banana").
-COLLIDERS.append(('fountain', ('circle', 112), FX, FBASE - 44))
-COLLIDERS.append(('fountain-top', ('circle', 100), FX, FBASE - 110))
+# (a first pass used +40 px and Trym found it wide: colliders stay TIGHT, +20 here, ~0 on props)
+COLLIDERS.append(('fountain', ('circle', 92), FX, FBASE - 48))
+COLLIDERS.append(('fountain-top', ('circle', 78), FX, FBASE - 114))
 
 # ---- THE TOWN --------------------------------------------------------------------
 SPOTS, NPCS = {}, []
@@ -406,11 +407,11 @@ NPCS.append(('moss', 700, 640, 'Moss'))
 place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_1.png', 480, 1040, solid=foot(240), sh=0.45)
 SPOTS['store'] = (480, 1040)
 NPCS.append(('pip', 530, 1066, 'Pip'))
-try_place(['ME_Singles_City_Props_48x48_ATM_1.png'], 620, 1040, solid=('rect', -26, -12, 26, 4))
+try_place(['ME_Singles_City_Props_48x48_ATM_1.png'], 620, 1040, solid=('rect', -24, -10, 24, 4))
 SPOTS['bank'] = (620, 1040)
 place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_7.png', 1620, 1040, solid=foot(240), sh=0.45)
 SPOTS['print'] = (1620, 1040)
-try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 1830, 1040, scale=PROP * 0.8, solid=('rect', -60, -26, 60, 4), sh=0.45)
+try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 1830, 1040, scale=PROP * 0.8, solid=('rect', -54, -20, 54, 4), sh=0.45)
 SPOTS['cafe'] = (1830, 1040)
 NPCS.append(('bean', 1780, 1066, 'Bean'))
 
@@ -424,38 +425,38 @@ try_place(['ME_Singles_Worksite_48x48_Cone_1.png'], 210, 430, shade=False)
 SPOTS['lot'] = (160, 470)
 
 # the square: three stalls with room between them, the board, the statue on the axis
-place('FARM:Market_Stand_Yellow_Big_48x48.png', 800, 780, solid=('rect', -84, -30, 84, 4), sh=0.5)
+place('FARM:Market_Stand_Yellow_Big_48x48.png', 800, 780, solid=('rect', -80, -24, 80, 4), sh=0.5)
 SPOTS['exchange'] = (800, 780)
 NPCS.append(('figjr', 800, 800, 'Fig Jr.'))
-place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('rect', -84, -30, 84, 4), sh=0.5)
+place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('rect', -80, -24, 80, 4), sh=0.5)
 SPOTS['wheel'] = (1400, 780)
 NPCS.append(('spinner', 1400, 800, 'Spinner'))
 _cache[('__board', 1, 28, 0.0, 1.0, 1.0)] = build_noticeboard()
-place('__board', 740, 990, scale=1.0, solid=('rect', -60, -14, 60, 4), sh=0.5)
+place('__board', 740, 990, scale=1.0, solid=('rect', -48, -12, 48, 4), sh=0.5)
 SPOTS['board'] = (740, 990)
-try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, solid=('rect', -40, -20, 40, 4), sh=0.45)
+try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, solid=('rect', -36, -16, 36, 4), sh=0.45)
 SPOTS['cart'] = (1460, 1010)
-try_place(['ME_Singles_Garden_48x48_Statue_Putto_1.png'], 1100, 700, solid=('rect', -22, -12, 22, 4))
+try_place(['ME_Singles_Garden_48x48_Statue_Putto_1.png'], 1100, 700, solid=('rect', -20, -10, 20, 4))
 SPOTS['plinth'] = (1100, 700)
 for (bx, by) in ((960, 1036), (1240, 1036)):
-    try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], bx, by, solid=('rect', -50, -14, 50, 4), sh=0.4)
+    try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], bx, by, solid=('rect', -46, -12, 46, 4), sh=0.4)
 NPCS.append(('dot', 1010, 1120, 'Dot'))
 # decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
 for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
-    try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 8))
-try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1330, 660, solid=('rect', -30, -14, 30, 4))
-try_place(['ME_Singles_Garden_48x48_Grass_Statue_7.png'], 1230, 760, solid=('rect', -22, -14, 22, 4))
-try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 1180, 1120, shade=False, solid=('circle', 8))
-try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 700, 1120, shade=False, solid=('circle', 8))
+    try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7))
+try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 1330, 660, solid=('rect', -28, -12, 28, 4))
+try_place(['ME_Singles_Garden_48x48_Grass_Statue_7.png'], 1230, 760, solid=('rect', -20, -12, 20, 4))
+try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 1180, 1120, shade=False, solid=('circle', 7))
+try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 700, 1120, shade=False, solid=('circle', 7))
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1240, 640, shade=False)
 for (bx, by) in ((380, 700), (1900, 700), (380, 960), (1900, 960), (620, 1200), (1580, 1200)):
-    try_place(['ME_Singles_Garden_48x48_Bush_18.png'], bx, by, shade=False, solid=('circle', 14))
+    try_place(['ME_Singles_Garden_48x48_Bush_18.png'], bx, by, shade=False, solid=('circle', 12))
 
 # the treeline: the park's camping trees, the town's walls
 BIG_TREES = ['ME_Singles_Camping_48x48_Tree_%d.png' % n for n in (1, 2, 3, 13, 14, 15, 16, 17, 18)]
 SMALLS = ['ME_Singles_City_Props_48x48_Bush_%d.png' % n for n in (1, 2, 3)]
-TRUNK = ('rect', -13, -36, 13, 0)
+TRUNK = ('rect', -12, -26, 12, 2)
 
 
 def treeline(pts, step=104, jitter=22):
