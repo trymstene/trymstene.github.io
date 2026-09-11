@@ -62,7 +62,7 @@ MAIL_PATH = (1392, 336, 1440, 576)   # north off Hall St to the mailbox row
 BUS_ROAD = (1920, 0, 1968, 576)      # the east lane runs on north, out of town: the bus stop, The Cut later
 EAST_PATH = (1536, 672, 1920, 720)   # behind the print shop and the cup: the Row
 WEST_PATH = (336, 672, 672, 720)     # behind the store: the stand and the beds
-TERRACE = (1680, 1152, 1920, 1248)  # a small cobbled patch below High St by the cafe: the terrace (Trym's pick)
+TERRACE = (1584, 1152, 1920, 1248)  # a small cobbled patch below High St by the cafe: the terrace (Trym's pick)
 STREETS = [HALL_ST, HIGH_ST, SQUARE, WEST_LN, EAST_LN, MAIN_ST, ORCH_PATH, MAIL_PATH, BUS_ROAD, EAST_PATH, WEST_PATH, TERRACE]
 SPAWN = (1100, 1230)
 
@@ -480,7 +480,8 @@ for (bx, by) in ((960, 1036), (1240, 1036)):
 NPCS.append(('dot', 1010, 1120, 'Dot'))
 # decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
 for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
-    try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7))
+    # the arm hangs over the street, never into a building: the sprite's arm points right, so the east-side lamps are mirrored (Trym)
+    try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7), flip=(lx > 1100))
 try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 690, 560, solid=('rect', -28, -70, 28, 4))   # on the Bunch's corner by the orchard lane (Trym: "move the red telephone kiosk to the empty space")
 try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 360, 1044, shade=False, solid=('circle', 7))   # on the kerb beside the store, not in the road (Trym)
 try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 662, 1040, shade=False, solid=('circle', 7))   # at the kerb between the ATM and the lamp, not in the road (Trym)
@@ -500,12 +501,13 @@ try_place(['ME_Singles_City_Props_48x48_Dumpster_1.png'], 2070, 1130, solid=('re
 try_place(['ME_Singles_City_Props_48x48_Kiosk_Infopoint_1.png'], 900, 1226, solid=('rect', -80, -120, 80, 4), sh=0.45)
 SPOTS['info'] = (900, 1226)
 # the terrace by the cafe: the pack's small fountain (animated), two sideways benches, two small bins (Trym's pick)
-anim_prop('smallfount', 'Fountain_48x48 - Copia.png', [0, 1, 2, 3, 4, 5, 6, 7], 96, 144, 1810, 1240, solid=('rect', -30, -26, 30, 4), period=1.2, sh=0.5)
-try_place(['ME_Singles_City_Props_48x48_Bench_5.png'], 1746, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
-try_place(['ME_Singles_City_Props_48x48_Bench_6.png'], 1874, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
-for bx in (1700, 1910):   # the small bins at the patch's street corners, clear of the benches' columns
+anim_prop('smallfount', 'Fountain_48x48 - Copia.png', [0, 1, 2, 3, 4, 5, 6, 7], 96, 144, 1770, 1240, solid=('rect', -30, -26, 30, 4), period=1.2, sh=0.5)
+# the benches face the fountain (6 on the left looks right, 5 on the right looks left) with air between (Trym)
+try_place(['ME_Singles_City_Props_48x48_Bench_6.png'], 1670, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
+try_place(['ME_Singles_City_Props_48x48_Bench_5.png'], 1870, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
+for bx in (1610, 1912):   # the small bins at the patch's street corners, outside the benches
     try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], bx, 1170, shade=False, solid=('circle', 7))
-SPOTS['terrace'] = (1810, 1240)
+SPOTS['terrace'] = (1770, 1240)
 
 # ---- the mini-areas (Trym, 11 Sep evening: "see these mini-areas and develop a purpose for them") ----
 # Second pass, after Trym's look: an object stands where it would stand in a real cosy town. No row of
@@ -572,7 +574,7 @@ def treeline(pts, step=104, jitter=22):
 
 
 treeline([(60, 30, 1880, 70), (2050, 30, 2160, 70), (20, 560, 60, 1290), (2140, 420, 2190, 1290), (300, 1290, 780, 1300),
-          (1200, 1290, 1600, 1300), (2000, 1290, 2150, 1300)])   # a gap in the south trees for the terrace   # the edges only: the groves gave way to the mini-areas, the top opens for the bus road
+          (1200, 1290, 1500, 1300), (2000, 1290, 2150, 1300)])   # a gap in the south trees for the terrace   # the edges only: the groves gave way to the mini-areas, the top opens for the bus road
 for _ in range(16):
     try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(1860, 2140), rng.randrange(1150, 1260), shade=False, scale=PROP * 0.85)
 for _ in range(10):
