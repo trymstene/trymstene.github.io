@@ -268,6 +268,9 @@ function googleBlock(el, an, live) {
   if (an.confidence) div('hqp-cap', an.confidence + (an.sessions != null ? ' · ' + nfmt(an.sessions) + ' sessions vs ' + nfmt(an.avgSessions) + ' usual' : ''), card);
 }
 
+// 🕹 the Arcade's cabinets, by the key the pass worker's boards use
+const ARC_NAMES = { peelout: 'Peel Out', snake: 'Banana Snake', invaders: 'Banana Invaders', pong: 'Banana Pong', stack: 'Banana Stack' };
+
 export function renderLedger(el, data) {
   const roll = data.roll || {};
   const world = data.world || {};
@@ -403,6 +406,29 @@ export function renderLedger(el, data) {
   const refRows = Object.entries(now.refuse || {}).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
   barsH(s, refRows, { mono: BAD, empty: 'nothing has been refused' });
   div('hqp-cap', 'refusals by reason', s);
+
+  // ── 🕹 the Arcade boards (12 Sep 2026): one board per cabinet, from the pass worker ──
+  const arc = data.arcade && data.arcade.boards;
+  if (arc && Object.keys(arc).length) {
+    s = section(el, 'The Arcade boards', 'One board per cabinet, kept by the pass worker: how many bananas have a score on it, how many runs were posted, and who leads. A browser game can be fooled, so a board can be wiped from here when a score looks impossible; every pass keeps its own bests.');
+    g = div('hqp-tiles', null, s);
+    for (const [gk, b] of Object.entries(arc)) {
+      const lead = b.top && b.top[0];
+      tile(g, ARC_NAMES[gk] || gk, nfmt(b.players || 0), nfmt(b.runs || 0) + ' runs' + (lead ? ' · ' + lead.n + ' leads with ' + nfmt(lead.s) : ' · nobody yet'));
+    }
+    if (typeof data.arcadeWipe === 'function') {
+      const row = div('hqp-cap', 'wipe a board:', s);
+      for (const gk of Object.keys(arc)) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'hqp-wipe'; b.textContent = ARC_NAMES[gk] || gk;
+        b.addEventListener('click', () => {
+          if (!confirm('Wipe the ' + (ARC_NAMES[gk] || gk) + ' board? Every score on it goes. The passes keep their own bests.')) return;
+          b.disabled = true;
+          data.arcadeWipe(gk).then((ok) => { b.textContent = ok ? (ARC_NAMES[gk] || gk) + ' · wiped' : (ARC_NAMES[gk] || gk) + ' · failed'; });
+        });
+        row.appendChild(b);
+      }
+    }
+  }
 
   const foot = div('hqp-foot', null, el);
   foot.textContent = 'rolled up ' + (now.done ? 'in full' : 'part-way') + ' · '

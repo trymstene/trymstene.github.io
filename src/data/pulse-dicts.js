@@ -84,6 +84,8 @@ export const AREAS=[
    q:'Do they FINISH and SUBMIT? — an unfinished item helps nobody'},
   {key:'stand', name:'The Banana Stand', icon:'🏪', door:'stand_counter',
    q:'Do they SPEND? — coins buy cosmetics, and the till is the proof'},
+  {key:'arcade', name:'The Arcade', icon:'🕹', door:'arcade_board',
+   q:'Do they PLAY AGAIN? — runs per cabinet opened; a prize is the proof of a chase'},
 ];
 
 // 🏳 FLAGS, AND THE MACHINE THAT CANNOT DRAW THEM.

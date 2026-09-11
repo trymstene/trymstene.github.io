@@ -38,6 +38,8 @@ const LENS_EVENTS = [
   // deserve the map lens as much as any download does
   'stand_counter', 'stand_buy', 'stand_cart_view',
   'beach_hut_view', 'park_seedshop', 'rave_screen_ad',
+  // 🕹 the town's Arcade, 12 Sep — a cabinet opened, a run, a score posted, a prize won
+  'arcade_board', 'arcade_run', 'arcade_score', 'arcade_prize',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -569,6 +571,7 @@ const ANALYST_EVENTS = [
   'offer_pack', 'offer_swap',      // 🎟 the pack card, 5 Sep
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
   'quest_step', 'stand_counter',
+  'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
   // 🏡 without this the analyst structurally cannot mention the farm — the
   // busiest thing built this year was invisible to its own judgement
   'homestead_open',
@@ -589,6 +592,7 @@ const WORLD_DOORS = [
   { key: 'homestead', name: 'the homestead', door: 'homestead_open' },
   { key: 'forge', name: 'the Pixel Forge', door: 'forge_open' },
   { key: 'stand', name: 'the Banana Stand', door: 'stand_counter' },
+  { key: 'arcade', name: 'the Arcade', door: 'arcade_board' },
 ];
 
 // the world's own state — free (our own worker, no GA4 quota) and the only

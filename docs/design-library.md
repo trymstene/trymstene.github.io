@@ -375,3 +375,35 @@ just opened).
 
 `tools/check-design.mjs` fails an area script that mounts the strip without
 mounting the door.
+
+## 16. A cabinet game is one card, and the board lives under the screen
+
+The town's Arcade (12 Sep 2026) set the shape every in-world mini-game wears
+from now on, so the next one is a copy, not a design:
+
+- **one card, one canvas.** The game draws on a 300×440 canvas inside the
+  world's card (`.tw-arc`), pixelated, with the score and the best as a small
+  HUD in the canvas's top corners. The player is their own banana, drawn once
+  by the engine and handed in as a bitmap; the game never draws a banana.
+- **the board is part of the card.** Under the screen: two tabs (all time /
+  this week), five rows (rank, name, score), and one line for you (your best,
+  your rank). A game without its board is a demo.
+- **the run has one end.** Every game reports exactly one `end(score)` with
+  the run's duration; a tap on the ended screen is a new run; closing the card
+  stops the loop. Nothing runs while the card is closed.
+- **the score goes through the pass.** `POST /arcade/score` with the pass
+  credential; anonymous runs keep a local best and never reach a board. The
+  worker caps score per second of play (an implausible score is refused, never
+  "proved"), throttles runs, and grants prizes the admin way. The desk (HQ →
+  ledger room) can wipe a board.
+- **prizes are gear, never coins.** A threshold per board grants `own_<id>`;
+  the catalog entry carries `earned: 'arcade'` + `stat: 'own_<id>'`, and
+  `secret: true` while the place that earns it is not public: a locked chip
+  is not shown at all, so no door can point at a hidden page.
+- **the names are ours.** Mechanics are free; names, art, sounds and layouts
+  are not. Banana names, every pixel through our pipeline, one twist each,
+  never "a clone of" anything on the site.
+
+The games ship as one on-demand module (`src/scripts/town-games.js`, loaded
+the first time a cabinet is tapped) so the area's own script keeps its budget.
+

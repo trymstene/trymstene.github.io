@@ -53,6 +53,8 @@ const RANGE = {
     { name: 'shop_view', v: 50, u: 45 }, { name: 'select_item', v: 28, u: 24 }, { name: 'view_item', v: 33, u: 28 },
     // the save ask (6 Sep): the HUD pill -> the pass page's email row -> a kept pass
     { name: 'pass_ask_shown', v: 61, u: 40 }, { name: 'pass_ask_tap', v: 9, u: 8 }, { name: 'pass_mail_signin', v: 6, u: 5 }, { name: 'pass_mail_login', v: 3, u: 3 }, { name: 'pass_mail_attached', v: 1, u: 1 },
+    // 🕹 the Arcade (12 Sep): cabinets opened -> runs -> scores posted -> prizes
+    { name: 'arcade_board', v: 14, u: 9 }, { name: 'arcade_run', v: 41, u: 9 }, { name: 'arcade_score', v: 37, u: 8 }, { name: 'arcade_prize', v: 2, u: 2 },
   ],
   eventMap: { gif_download: { US: 100, NO: 20, DE: 12 }, offer_pack: { US: 15, NO: 4 } },
   stepTimes: {},
@@ -90,7 +92,17 @@ await page.route('https://banana-contact.trymstene.workers.dev/**', (route) => {
   }
   return json(route, { err: 'stubbed out' }, 500);
 });
-await page.route('https://banana-pass.trymstene.workers.dev/**', (route) => json(route, { err: 'stub' }, 500));
+// 🕹 the pass worker answers the ledger room (12 Sep): one finished rollup day and the Arcade's boards
+const ROLL = { days: [{"day": "2026-09-11", "done": true, "refuse": {}, "pages": 7, "mau": 7, "passes": 7, "wau": 7, "anon": 7, "born7": 7, "scanned": 7, "member": 7, "quest": 7, "faucet": 7, "events": 7, "area": 7, "dau": 7, "named": 7, "unruled": 7, "ret": {"c7": 3, "r30": 3, "r7": 3, "c1": 3, "r1": 3, "c30": 3}, "coins": {"earned": 3, "spent": 3, "held": 3}}] };
+const BOARDS = { wk: '2026-37', boards: {
+  peelout: { players: 6, runs: 40, top: [{ n: 'Kiwi', s: 31, at: 1 }], updated: 1 }, snake: { players: 4, runs: 22, top: [{ n: 'Gran Fig', s: 17, at: 1 }], updated: 1 },
+  invaders: { players: 0, runs: 0, top: [], updated: 0 }, pong: { players: 2, runs: 9, top: [{ n: 'Spinner', s: 5, at: 1 }], updated: 1 }, stack: { players: 3, runs: 15, top: [{ n: 'DJ Cookie', s: 24, at: 1 }], updated: 1 } } };
+await page.route('https://banana-pass.trymstene.workers.dev/**', (route) => {
+  const u = new URL(route.request().url());
+  if (u.pathname === '/admin/rollup') return json(route, ROLL);
+  if (u.pathname === '/admin/arcade') return json(route, BOARDS);
+  return json(route, { err: 'stub' }, 500);
+});
 await page.route('https://banana-rave.trymstene.workers.dev/**', (route) => json(route, { err: 'stub' }, 500));
 await page.route(/googletagmanager|google-analytics|connect\.facebook/, (route) => route.abort());
 
@@ -131,8 +143,17 @@ out.shop = {
 const wd = await roomShot('WORLD', 'world');
 out.world = {
   sections: ['The ask', 'Sync health'].map((t) => [t, has(wd, t)]),
+  // 🕹 the Arcade area (12 Sep): the prefix reader lists its four events under its own heading
+  arcade: ['The Arcade', 'opened an arcade cabinet', 'played an arcade run', 'posted an arcade score', 'WON an arcade prize'].map((t) => [t, has(wd, t)]),
   tiles: ['saw the pill', 'tapped it', 'asked for a link', 'logged in'].map((t) => [t, has(wd, t)]),
   rate: (wd.match(/[0-9.]+% of them/) || [''])[0],
+};
+// ── 🕹 the ledger room reads the Arcade boards (12 Sep): a tile per cabinet, the leader, the wipe row
+const lg = await roomShot('LEDGER', 'ledger');
+out.ledger = {
+  sections: ['The Arcade boards'].map((t) => [t, has(lg, t)]),
+  tiles: ['Peel Out', 'Banana Snake', 'Banana Invaders', 'Banana Pong', 'Banana Stack'].map((t) => [t, has(lg, t)]),
+  leads: ['Kiwi leads with 31', 'DJ Cookie leads with 24', 'nobody yet', 'wipe a board'].map((t) => [t, has(lg, t)]),
 };
 // ── the map tooltip must stay inside the card at every pin (it used to be
 // drawn above the pin and clipped for countries high on the map)
