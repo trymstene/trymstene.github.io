@@ -67,6 +67,9 @@ export default {
       if (url.pathname === '/admin/rollup/tick') return adminTick(request, env, url);
       if (url.pathname === '/admin/people') return adminPeople(request, env, url);
       if (url.pathname === '/citizen') return citizen(request, env);
+      if (url.pathname === '/arcade/board') return arcadeBoard(request, env, url);
+      if (url.pathname === '/arcade/score') return arcadeScore(request, env);
+      if (url.pathname === '/admin/arcade') return adminArcade(request, env, url);
       if (url.pathname === '/kofi-hook') return kofiHook(request, env);
       if (url.pathname === '/polar-hook') return polarHook(request, env);
       if (url.pathname === '/pay/checkout') return payCheckout(request, env, url);
@@ -1057,6 +1060,138 @@ async function citFinals(env, st, rows, week) {
   return file;
 }
 // the public board: names, tags, looks and scores — never an id, never a key
+// ---------- 🕹 THE ARCADE BOARDS (12 Sep 2026) ----------
+// One board PER GAME, never per place: the machine is the door to the board wherever it
+// stands (the town's Arcade today, a bought cabinet at home later). Identity is the pass:
+// a verified {credId, token} pair, exactly like /push. The file arcade/<game>.json holds
+// every player's best (keyed by the home record, so several devices are one player) and
+// the current ISO week's bests; the top lists are computed on read. A browser game can
+// never be cheat-proof — the rate cap below makes a fake score IMPLAUSIBLE, the per-run
+// throttle makes it slow, and the desk's wipe makes it reversible. Never "proof".
+// Prizes are gear: a threshold on a board grants own_<id> on the home record the admin
+// way (base + mirror), once; the trophy needs a score on every board; the medal a top-3.
+const ARC_GAMES = {
+  peelout: { rate: 1.6, grace: 3, prize: ['arcvisor', 10] },     // pieces passed: ~1 per 1.2 s at the top speed
+  snake: { rate: 2.2, grace: 3, prize: ['pixelcrown', 15] },     // jellies: ~1 per 0.6 s, golden ones worth 3
+  invaders: { rate: 4, grace: 5, prize: ['joystick', 25] },      // flies: a wave of 20 falls in ~6 s at best
+  pong: { rate: 0.7, grace: 2, prize: ['goldtoken', 5] },        // points against Spinner: one per rally
+  stack: { rate: 2.5, grace: 3, prize: ['joycap', 15] },         // crates: one per swing, ~0.5 s at the top
+};
+const ARC_TROPHY = 'trophy', ARC_MEDAL = 'medal';
+const ARC_KEY = (g) => 'arcade/' + g + '.json';
+function isoWeek(ms) {
+  const d = new Date(ms); d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return d.getUTCFullYear() + '-' + String(Math.ceil((((d - y0) / 86400000) + 1) / 7)).padStart(2, '0');
+}
+async function arcLoad(env, g) {
+  const obj = await env.PASSES.get(ARC_KEY(g));
+  return obj ? remember(await obj.json(), obj) : { best: {}, week: {}, n: 0 };
+}
+async function arcSave(env, g, rec) {
+  rec.updated = Date.now();
+  const etag = rec[ETAG];
+  const res = await env.PASSES.put(ARC_KEY(g), JSON.stringify(rec),
+    { httpMetadata: { contentType: 'application/json' }, ...(etag ? { onlyIf: { etagMatches: etag } } : {}) });
+  if (res === null) throw new Conflict(g);
+  remember(rec, res);
+}
+const arcClean = (name) => String(name || '').replace(/[^\p{L}\p{N} _'.\-]/gu, '').trim().slice(0, 18);
+// 🧪 the proof's people score but never rank: their entries carry q:1 and stay off every list
+const arcRows = (map) => Object.entries(map || {}).filter(([, v]) => !v.q).map(([k, v]) => ({ k, s: +v.s || 0, n: v.n || 'a banana', at: +v.at || 0 }))
+  .sort((a, b) => b.s - a.s || a.at - b.at);
+const arcOut = (rows, n) => rows.slice(0, n).map(({ s, n: nm, at }) => ({ n: nm, s, at }));
+function arcRank(rows, key) { const i = rows.findIndex((r) => r.k === key); return i < 0 ? 0 : i + 1; }
+
+// GET /arcade/board?game=snake → { game, wk, players, top[20], week[20] } (public, 30 s)
+async function arcadeBoard(request, env, url) {
+  const g = String(url.searchParams.get('game') || '');
+  if (!ARC_GAMES[g]) return json({ error: 'no such game' }, 404, cors(env, request));
+  const rec = await arcLoad(env, g);
+  const wk = isoWeek(Date.now());
+  return json({ game: g, wk, players: Object.keys(rec.best || {}).length, runs: rec.n || 0,
+    top: arcOut(arcRows(rec.best), 20), week: arcOut(arcRows((rec.week || {})[wk]), 20) },
+  200, { ...cors(env, request), 'Cache-Control': 'public, max-age=30' });
+}
+
+// POST /arcade/score { credId, token, game, score, dur } → { ok, best, newBest, rank, players, top[10], week[10], wk, prizes[] }
+async function arcadeScore(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const g = String((b && b.game) || '');
+  const G = ARC_GAMES[g];
+  if (!G) return json({ error: 'no such game' }, 404, cors(env, request));
+  const score = Math.max(0, Math.floor(Number(b.score) || 0));
+  const dur = Math.max(0, Math.floor(Number(b.dur) || 0));
+  // 📏 no score faster than the game can produce it, no run longer than half an hour
+  if (score > 100000 || dur > 30 * 60000 || score > G.rate * (dur / 1000) + G.grace) {
+    return json({ error: 'implausible' }, 422, cors(env, request));
+  }
+  return retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+    const key = R.homeKey;
+    const name = arcClean((R.home.blob || {}).name) || 'a banana';
+    const now = Date.now();
+    const wk = isoWeek(now);
+    const rec = await arcLoad(env, g);
+    rec.best = rec.best || {}; rec.week = rec.week || {};
+    const cur = rec.best[key];
+    if (cur && now - (+cur.last || 0) < 4000) return json({ error: 'slow down' }, 429, cors(env, request));
+    const was = cur ? +cur.s : -1;
+    const newBest = score > was;
+    rec.n = (rec.n || 0) + 1;
+    const qa = R.home.qa ? { q: 1 } : {};
+    rec.best[key] = { s: newBest ? score : was, n: name, at: newBest ? now : (+cur.at || now), last: now, runs: ((cur && +cur.runs) || 0) + 1, ...qa };
+    for (const k of Object.keys(rec.week)) if (k !== wk) delete rec.week[k];   // the current week only; history is the desk's, later
+    const W = rec.week[wk] = rec.week[wk] || {};
+    if (!W[key] || score > +W[key].s) W[key] = { s: score, n: name, at: now, ...qa }; else W[key].n = name;
+    await arcSave(env, g, rec);
+    const rows = arcRows(rec.best), wrows = arcRows(W);
+    const rank = arcRank(rows, key);
+    // 🎁 prizes on the home record, the admin way: base + mirror, once
+    const blob = R.home.blob || (R.home.blob = {});
+    const p = blob.pass || (blob.pass = { created: now, patches: {}, stats: {}, days: [] });
+    const st = p.stats || (p.stats = {});
+    if (!p.base) p.base = { ...(p.stats || {}) };
+    let changed = false;
+    const prizes = [];
+    const grant = (id) => { if (!((+st['own_' + id] || 0) > 0)) { st['own_' + id] = 1; p.base['own_' + id] = 1; prizes.push(id); changed = true; } };
+    const best = rec.best[key].s;
+    if ((+p.base['arc_' + g] || 0) < best) { p.base['arc_' + g] = best; changed = true; }   // the pass remembers its best per game
+    if (best >= G.prize[1]) grant(G.prize[0]);
+    if (Object.keys(ARC_GAMES).every((k) => (+p.base['arc_' + k] || 0) > 0)) grant(ARC_TROPHY);
+    if (rank && rank <= 3) grant(ARC_MEDAL);
+    if (changed) { p.stats = statsOf(p); await saveKey(env, R.homeKey, R.home); }
+    return json({ ok: true, game: g, score, best, newBest, rank, players: rows.length, wk,
+      top: arcOut(rows, 10), week: arcOut(wrows, 10), wrank: arcRank(wrows, key), prizes }, 200, cors(env, request));
+  });
+}
+
+// GET /admin/arcade?key=… → every board's summary · POST /admin/arcade { key, game, wipe: true } → the board is gone
+async function adminArcade(request, env, url) {
+  if (throttled(request.headers.get('CF-Connecting-IP') || 'admin')) return json({ error: 'slow down' }, 429, cors(env, request));
+  if (request.method === 'POST') {
+    let b;
+    try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+    if (!adminOk(env, (b && b.key) || '')) return notFound();
+    const g = String((b && b.game) || '');
+    if (!ARC_GAMES[g] || !b.wipe) return json({ error: 'nothing to do' }, 400, cors(env, request));
+    await env.PASSES.delete(ARC_KEY(g));
+    return json({ ok: true, wiped: g }, 200, cors(env, request));
+  }
+  if (!adminOk(env, url.searchParams.get('key') || '')) return notFound();
+  const out = {};
+  for (const g of Object.keys(ARC_GAMES)) {
+    const rec = await arcLoad(env, g);
+    out[g] = { players: Object.keys(rec.best || {}).length, runs: rec.n || 0, top: arcOut(arcRows(rec.best), 5), updated: rec.updated || 0 };
+  }
+  return json({ boards: out, wk: isoWeek(Date.now()) }, 200, cors(env, request));
+}
+
 async function citizen(request, env) {
   let live = null, last = null;
   try { const o = await env.PASSES.get(CIT_LIVE); live = o ? await o.json() : null; } catch (e) {}
