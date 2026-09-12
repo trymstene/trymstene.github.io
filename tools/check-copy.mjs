@@ -12,7 +12,7 @@
 // Run: node tools/check-copy.mjs
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { jobs, jobForFile } from './copy-jobs.mjs';
+import { jobs, jobForFile, lockedTops, mergeLocked, schemaFor } from './copy-jobs.mjs';
 import { checkFile, report, strings } from './copy-rules.mjs';
 
 const ROOT = process.cwd();
@@ -45,6 +45,38 @@ for (const name of readdirSync(join(ROOT, DIR)).filter((f) => f.endsWith('.json'
 for (const j of jobs()) {
   if (!existsSync(join(ROOT, j.brief))) problems.push(`${j.id} — its brief ${j.brief} is gone; GPT would be asked to write blind`);
   if (!existsSync(join(ROOT, j.approved))) problems.push(`${j.id} — no approved copy at ${j.approved} (write one with \`node tools/copy.mjs ${j.id}\`, review at /dev/copy/, then --approve)`);
+}
+
+// 🔒 THE LOCK, TESTED — not described. A locked section is copy Trym wrote
+// himself (Old Peel), and the only thing standing between his words and a
+// `--approve` is tools/copy-jobs.mjs `mergeLocked`. So the gate poisons a draft
+// and proves the approved words still win, every run, in about a millisecond.
+// If someone simplifies the merge away, this is what says so.
+for (const j of jobs()) {
+  const locked = lockedTops(j);
+  if (!locked.length) continue;
+  const at = join(ROOT, j.approved);
+  if (!existsSync(at)) { problems.push(`${j.id} — locks ${locked.join(', ')} but ${j.approved} is gone; there is nothing left to protect`); continue; }
+  let approved;
+  try { approved = JSON.parse(readFileSync(at, 'utf8')); } catch (e) { continue; }   // already reported above
+  const gone = locked.filter((k) => approved[k] === undefined);
+  if (gone.length) { problems.push(`${j.id} — "${gone.join('", "')}" is locked but missing from ${j.approved}; the words it protects are not there`); continue; }
+
+  const poison = { ...approved };
+  for (const k of locked) poison[k] = { poisoned: 'a draft trying to overwrite words it does not own' };
+  let held = null;
+  try { held = mergeLocked(j, poison, approved); }
+  catch (e) { problems.push(`${j.id} — the lock threw while protecting ${locked.join(', ')}: ${e.message}`); }
+  const schema = schemaFor(j);
+  for (const k of locked) {
+    if (held && JSON.stringify(held[k]) !== JSON.stringify(approved[k])) {
+      problems.push(`${j.id} — LOCK BROKEN: a draft can overwrite "${k}" in ${j.approved}. ${j.locked[k]}`);
+    }
+    if ((schema.properties || {})[k] || (schema.required || []).includes(k)) {
+      problems.push(`${j.id} — "${k}" is locked but still in the schema the writer answers in, so the model is being asked for words it must not write`);
+    }
+  }
+  if (!gone.length) console.log(`🔒 ${j.id}: ${locked.map((k) => `"${k}"`).join(', ')} held — ${locked.map((k) => j.locked[k]).join(' ')}`);
 }
 
 if (problems.length) {

@@ -1,10 +1,17 @@
-# The job — the three voices of the Park
+# The job — the voices of the Park
+
+> 🔒 **Old Peel is already written, by Trym, and is not part of this job.** Everything below
+> about him — who he is, how he sounds, his five bands, what each of his lines is for — is here
+> because Inka and the stand keeper share his park and his weather, and because his voice sets
+> the tone you are writing beside. Read it as the world's background. You are writing **Inka**
+> and **the stand keeper**, and the schema has nowhere to put anything else.
 
 The Park is the green heart of Banana World, and the only area that can be in a bad way. It has
 **health**: players pull weeds, pick up litter, plant seeds and water what other people planted, and
 the whole park visibly recovers or slides back. Everything below turns on that.
 
-Three bananas speak here. They already exist. Their names and jobs are fixed; the words are yours.
+Three bananas speak here and they already exist. Their names and jobs are fixed. Two of their voices
+are yours to write; Old Peel's are his own.
 
 ---
 
@@ -59,7 +66,7 @@ The stand keeper sells the gear. Dry, quick, a bit of a showman about other peop
 
 ## What each line is for
 
-**Old Peel**
+**Old Peel** 🔒 *(his lines exist and are Trym's — listed here so you know what the park already says, never as a request)*
 
 - `greet` — the first thing he says when his card opens. An invitation to sit, not a menu.
 - `bench` — what he mutters to himself from the bench, when nobody has tapped him. **Five groups, one
@@ -99,4 +106,5 @@ The stand keeper sells the gear. Dry, quick, a bit of a showman about other peop
 
 ## Return
 
-All three, with every field above. `old peel`, `inka` and `the stand keeper` keep their names exactly.
+**Inka** and **the stand keeper**, with every field listed for them above. Their names are exactly
+`inka` and `the stand keeper`. Old Peel's section is his own and is not yours to return.

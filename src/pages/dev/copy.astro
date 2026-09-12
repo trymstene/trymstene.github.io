@@ -10,7 +10,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { jobs } from '../../../tools/copy-jobs.mjs';
+import { jobs, lockedTops, isLocked, topOf } from '../../../tools/copy-jobs.mjs';
 import { faults, overAim, strings, patternOf, indexOf, checkFile } from '../../../tools/copy-rules.mjs';
 
 const ROOT = process.cwd();
@@ -21,9 +21,12 @@ function rowsFor(job, live, draft) {
   const drafted = draft ? new Map([...strings(draft)].map((s) => [s.path, s.value])) : null;
   return [...strings(live || {})].filter((s) => !s.path.startsWith('_meta')).map(({ path, value }) => {
     const spec = { ...(job.fields[patternOf(path)] || {}), _index: indexOf(path) };
-    const next = drafted ? drafted.get(path) : undefined;
+    // 🔒 a locked row has no draft column, whatever a stale draft on disk still holds
+    // for it: the rig will not write these, so showing a "would change to" is a lie.
+    const locked = isLocked(job, path);
+    const next = locked || !drafted ? undefined : drafted.get(path);
     const check = (v) => (v == null ? { bad: [], aim: 0 } : { bad: faults(v, spec), aim: overAim(v, spec) });
-    return { path, spec, live: value, draft: next, changed: next != null && next !== value, now: check(value), then: check(next) };
+    return { path, spec, locked, live: value, draft: next, changed: next != null && next !== value, now: check(value), then: check(next) };
   });
 }
 // 🧍 the desk groups by CHARACTER, and a job may name its people either way:
@@ -57,6 +60,8 @@ const desks = jobs().map((job) => {
   for (const g of groups) {
     const name = g.rows.find((r) => r.field === 'name');
     if (name) g.title = (name.draft ?? name.live) + '  ·  ' + g.key;
+    // 🔒 why these words are not up for review — the job's own sentence, not mine
+    g.locked = g.rows.some((r) => r.locked) ? (job.locked || {})[topOf(g.key)] || 'written by hand; the rig does not touch it' : null;
   }
   const gate = live ? checkFile(job, live, { draft: false }) : { bad: [], warn: [] };
   const gateDraft = draft ? checkFile(job, draft, { draft: true }) : null;
@@ -101,6 +106,10 @@ const title = '✍️ The copy desk — drafts beside the live copy';
     .cp-flag { display: block; font-size: 0.74rem; font-weight: 700; color: #b30026; margin-top: 0.15rem; }
     .cp-flag--warn { color: #8a6100; }
     .cp-empty { font-size: 0.85rem; opacity: 0.75; }
+    /* 🔒 a section the rig will not write: Trym's own words */
+    .cp-tag--lock { background: #e7ddff; }
+    .cp-who--lock { background: #faf7ff; box-shadow: -0.6rem 0 0 #6b4fd0; padding-left: 0.5rem; }
+    .cp-lock { margin: 0 0 0.6rem; font-size: 0.78rem; font-weight: 700; color: #4a2fa8; line-height: 1.45; }
     @media (max-width: 620px) { .cp-row { grid-template-columns: 1fr; } }
   </style>
 
@@ -112,7 +121,9 @@ const title = '✍️ The copy desk — drafts beside the live copy';
       (<code>tools/copy-out/</code>, never committed). Flags come from <code>tools/copy-rules.mjs</code>,
       the same module the CI gate runs, so nothing passes here and fails there.<br />
       Write a draft: <code>node tools/copy.mjs &lt;job&gt;</code> · see the prompt first:
-      <code>--dry</code> · ship it: <code>node tools/copy.mjs --approve &lt;job&gt;</code>
+      <code>--dry</code> · ship it: <code>node tools/copy.mjs --approve &lt;job&gt;</code><br />
+      A 🔒 section is copy you wrote yourself: it is never sent to the writer and <code>--approve</code>
+      puts it back untouched, so a draft cannot overwrite it even by hand.
     </p>
 
     {desks.map((d) => (
@@ -133,13 +144,15 @@ const title = '✍️ The copy desk — drafts beside the live copy';
               </span>
             : <span class="cp-tag">no draft waiting</span>}
           {d.draft && d.draft._meta && <span class="cp-tag">{d.draft._meta.model} · {String(d.draft._meta.when).slice(0, 16).replace('T', ' ')}</span>}
+          {lockedTops(d.job).map((k) => <span class="cp-tag cp-tag--lock">🔒 {k} is yours, not the writer’s</span>)}
         </div>
 
         {!d.live && <p class="cp-empty">Nothing approved yet. Run <code>node tools/copy.mjs {d.job.id}</code>.</p>}
 
         {d.groups.map((g) => (
-          <div class="cp-who">
-            <h3>{g.title}</h3>
+          <div class={'cp-who' + (g.locked ? ' cp-who--lock' : '')}>
+            <h3>{g.locked ? '🔒 ' : ''}{g.title}</h3>
+            {g.locked && <p class="cp-lock">{g.locked} Nothing below is up for review, and no draft can replace it.</p>}
             {g.rows.map((r) => (r.divider ? (
               <p class="cp-beat">{r.live}{r.now.bad.map((f) => <span class="cp-flag">{f.msg}</span>)}</p>
             ) : (

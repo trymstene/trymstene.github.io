@@ -2,7 +2,7 @@
 // commentator and first full RPG NPC (the pattern the Gardener reuses).
 // Split from banana-park.js (P5); wired through the shared ctx.
 import { drawComposite, assetsReady } from '../lib/banana-engine.js';
-import PARK_COPY from '../data/copy/park-npcs.json';   // ✍️ his words: written by GPT, approved by Trym, never edited here
+import PARK_COPY from '../data/copy/park-npcs.json';   // 🔒 HIS WORDS ARE TRYM'S OWN — locked in tools/copy-jobs.mjs, the rig never rewrites them
 import { OLDBENCH } from './park-geo.js';
 import { track, esc } from './park-util.js';
 

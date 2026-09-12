@@ -239,6 +239,12 @@ export const JOBS = {
     approved: 'src/data/copy/park-npcs.json',
     reads: 'src/scripts/park-npc.js + src/scripts/park-shops.js',
     top: ['peel', 'inka', 'stand'],
+    // 🔒 Old Peel is Trym's. He wrote the bench mutters, the five band answers
+    // and the lore beats himself, and tuned them again on 13 Sep 2026. The rig
+    // reads them so the game can import one file; it does not write them.
+    locked: {
+      peel: 'Trym wrote and tuned Old Peel himself (13 Sep 2026). These are his words: the rig never drafts or replaces them.',
+    },
     fields: parkFields,
     shape: parkShape,
     schema: parkSchema,
@@ -249,3 +255,54 @@ export const jobs = () => Object.values(JOBS);
 export const jobFor = (id) => JOBS[id] || null;
 /** The job a tracked copy file belongs to — src/data/copy/<job>.json. */
 export const jobForFile = (file) => JOBS[String(file).replace(/\\/g, '/').split('/').pop().replace(/\.json$/, '')] || null;
+
+// 🔒 LOCKED SECTIONS — the words Trym wrote himself.
+//
+// The rig's whole premise is that GPT owns src/data/copy. Old Peel is the
+// exception: Trym wrote and tuned his dialogue by hand and told me so on
+// 13 Sep 2026 — "ive already optimized old peels dialogue myself, no need to
+// change it". A sentence in a document cannot survive a compaction, so it is a
+// mechanism instead: a locked section is never asked for, never drafted and
+// never written, and `--approve` splices the approved file's own words back in
+// before it saves. Poison the draft by hand and the locked words still win.
+//
+// A lock names a TOP-LEVEL key of the job's file. Unlock by deleting the entry,
+// which is a deliberate act with Trym's name on it in the commit message.
+/** The top-level keys this job will not write. */
+export const lockedTops = (job) => Object.keys((job && job.locked) || {});
+/** The top-level key a field path belongs to: peel.bench[][] -> peel. */
+export const topOf = (path) => String(path).split(/[.[]/)[0];
+/** Is this field path inside a locked section? */
+export const isLocked = (job, path) => lockedTops(job).includes(topOf(path));
+
+/** The schema the writer actually answers in: locked sections are not in it, so
+ *  the model cannot return them even if the brief tempts it. */
+export function schemaFor(job) {
+  const locked = lockedTops(job);
+  if (!locked.length) return job.schema;
+  const s = JSON.parse(JSON.stringify(job.schema));
+  for (const k of locked) delete (s.properties || {})[k];
+  if (Array.isArray(s.required)) s.required = s.required.filter((k) => !locked.includes(k));
+  return s;
+}
+
+/** Put the approved file's locked sections back into `data`, keeping the
+ *  approved file's key order so a diff shows only what really moved.
+ *  Throws if a locked section has nothing to be held back FROM. */
+export function mergeLocked(job, data, approved) {
+  const locked = lockedTops(job);
+  if (!locked.length) return data;
+  const missing = locked.filter((k) => !approved || approved[k] === undefined);
+  if (missing.length) {
+    throw new Error(`${job.id}: "${missing.join('", "')}" is locked, but ${job.approved} has no such section to keep. `
+      + 'A lock protects words that already exist; write them first, or drop the lock.');
+  }
+  const out = {};
+  for (const k of [...new Set([...Object.keys(approved), ...Object.keys(data)])]) {
+    if (locked.includes(k)) out[k] = approved[k];
+    else if (k in data) out[k] = data[k];
+    // a non-locked section the writer did not return is LEFT OUT on purpose:
+    // the shape check must fail loudly rather than quietly reship stale copy
+  }
+  return out;
+}

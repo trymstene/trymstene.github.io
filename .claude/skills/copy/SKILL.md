@@ -50,6 +50,30 @@ hand-written copy ships.
    The game imports `src/data/copy/*.json`. Code holds mechanics — where an NPC
    stands, what they carry, when they walk — and never prose.
 
+## 🔒 Locked sections — the words Trym wrote himself
+
+The rig owns `src/data/copy`, with one exception. When Trym writes or tunes a
+character's lines himself, that section is **locked** in `tools/copy-jobs.mjs`:
+
+```js
+locked: { peel: 'Trym wrote and tuned Old Peel himself (13 Sep 2026). …' },
+```
+
+Today that is **Old Peel** in `park-npcs` — Trym, 13 Sep 2026: *"ive already
+optimized old peels dialogue myself, no need to change it"*.
+
+A locked section is not a request to be careful. It is enforced:
+
+- it is stripped from the JSON schema sent to the model, so a draft cannot contain it;
+- its field notes are left out of the prompt, and the prompt says whose words they are;
+- `--approve` splices the approved file's own words back in **before** it validates
+  and writes, so even a hand-edited draft cannot replace them;
+- `tools/check-copy.mjs` poisons a draft every run and fails if the lock lets it through.
+
+So you may run a locked job freely: the other voices get rewritten, the locked one
+never moves. **Never unlock a section to "refresh" it.** Removing a `locked` entry
+needs Trym asking for it, in that commit message, by name.
+
 ## Hard rules
 
 - **No key anywhere but `tools/copy.local.json`** (gitignored). Never print it, not

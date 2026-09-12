@@ -16,7 +16,7 @@
 // same rules in CI, so a draft that fails here cannot reach the game by hand.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
-import { JOBS, jobFor } from './copy-jobs.mjs';
+import { JOBS, jobFor, lockedTops, isLocked, schemaFor, mergeLocked } from './copy-jobs.mjs';
 import { checkFile, report, strings } from './copy-rules.mjs';
 
 const ROOT = process.cwd();
@@ -81,7 +81,7 @@ async function call(path, { key, body, method = 'POST' }) {
 // In order: the house voice, the job's brief, then the fields with their limits.
 // Nothing else — a model given a fourth source starts averaging them.
 function fieldNotes(job) {
-  const rows = Object.entries(job.fields).map(([path, spec]) => {
+  const rows = Object.entries(job.fields).filter(([path]) => !isLocked(job, path)).map(([path, spec]) => {
     const aim = spec.aim && spec.aim !== spec.max ? ` (aim for ${spec.aim})` : '';
     const limit = spec.values ? `one of: ${spec.values.join(', ')}`
       : spec.maxByIndex ? `max ${spec.maxByIndex.map((n, i) => `rung ${i}: ${n}`).join(', ')} characters`
@@ -115,12 +115,28 @@ function assemble(job) {
     steerParts.join('\n\n'),
     '', '---', '',
   ].join('\n') : '';
+  // 🔒 what the brief describes but you are NOT writing. The schema already makes it
+  // impossible to return; saying so stops the model spending its attention there.
+  const locked = lockedTops(job);
+  const held = locked.length ? [
+    '# NOT YOURS TO WRITE',
+    '',
+    ...locked.map((k) => `**${k}** — ${job.locked[k]}`),
+    '',
+    'The brief still describes ' + locked.join(' and ') + ', because the voices you ARE writing share a place',
+    'with them. Read every word about them as background, never as a request. The schema below has no',
+    'room for them, so there is nowhere to put those words even if you wanted to.',
+    '',
+  ].join('\n') : '';
   const user = [
     steer,
     `# THE BRIEF — ${job.title}`,
     '',
     read(job.brief).trim(),
     '',
+    // spread, never a bare '' — a job with no lock must assemble a prompt byte for byte
+    // identical to the one before locks existed. An empty slot here is a newline nobody asked for.
+    ...(held ? [held] : []),
     '# THE FIELDS YOU ARE RETURNING',
     '',
     'Character counts are hard limits. Most good lines land far under them.',
@@ -133,6 +149,25 @@ function assemble(job) {
     'Keys and names are copied from the brief exactly. Every line is new words for the same person.',
   ].join('\n');
   return { system, user, text: system + '\n\n' + user };
+}
+
+/** The approved file as it stands, or null. Locked sections are read from here. */
+function approvedNow(job) {
+  const at = join(ROOT, job.approved);
+  if (!existsSync(at)) return null;
+  try { return JSON.parse(readFileSync(at, 'utf8')); }
+  catch (e) { die(`${job.approved} does not parse: ${e.message}`); }
+  return null;
+}
+/** Splice the locked sections back in, and say out loud that it happened. */
+function holdLocked(job, data, why) {
+  const locked = lockedTops(job);
+  if (!locked.length) return data;
+  let out;
+  try { out = mergeLocked(job, data, approvedNow(job)); }
+  catch (e) { die(e.message); }
+  for (const k of locked) console.log(`🔒 ${k}: kept from ${job.approved}, ${why}. ${job.locked[k]}`);
+  return out;
 }
 
 // --- the jobs ---------------------------------------------------------------
@@ -159,11 +194,12 @@ async function write(job) {
   const bytes = Buffer.byteLength(text, 'utf8');
   console.log(`${job.id}: ${model} via /v1/${api === 'chat' ? 'chat/completions' : 'responses'}, prompt ${bytes.toLocaleString()} bytes`);
   const name = job.id.replace(/-/g, '_');
+  const schema = schemaFor(job);       // 🔒 locked sections are not in it
   const json = api === 'chat'
     ? await call('/chat/completions', { key, body: { model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      response_format: { type: 'json_schema', json_schema: { name, strict: true, schema: job.schema } } } })
+      response_format: { type: 'json_schema', json_schema: { name, strict: true, schema } } } })
     : await call('/responses', { key, body: { model, input: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      text: { format: { type: 'json_schema', name, strict: true, schema: job.schema } } } });
+      text: { format: { type: 'json_schema', name, strict: true, schema } } } });
   const raw = api === 'chat'
     ? ((json.choices || [])[0] || {}).message?.content
     : (typeof json.output_text === 'string' && json.output_text) ||
@@ -187,6 +223,9 @@ async function write(job) {
   };
   reply = tidy(reply);
   if (tidied) console.log(`tidied ${tidied} straight apostrophe${tidied === 1 ? '' : 's'} into the house ’`);
+  // a draft is always a WHOLE file, so the desk can show it beside the live copy —
+  // the locked sections in it are the approved words, copied, never generated
+  reply = holdLocked(job, reply, 'never sent to the model');
   const draft = { _meta: { job: job.id, model, api, when: new Date().toISOString(), promptBytes: bytes }, ...reply };
   mkdirSync(join(ROOT, dirname(job.out)), { recursive: true });
   writeFileSync(join(ROOT, job.out), JSON.stringify(draft, null, 2) + '\n');
@@ -204,8 +243,13 @@ function approve(job) {
   if (!existsSync(at)) die(`no draft at ${job.out} — run \`node tools/copy.mjs ${job.id}\` first`);
   let draft;
   try { draft = JSON.parse(readFileSync(at, 'utf8')); } catch (e) { die(`${job.out} does not parse: ${e.message}`); }
-  if (!validate(job, draft, true)) die('the draft breaks the rules above — it cannot be approved');
-  const { _meta, ...clean } = draft;
+  const { _meta, ...rest } = draft;
+  // 🔒 THE LAST GATE before the game's own copy is overwritten. Whatever the draft
+  // holds for a locked section — a generated one, a hand-pasted one, a stale one from
+  // before the lock existed — the approved file's words go back in here. Then we
+  // validate the EXACT object about to be written, not the thing we read.
+  const clean = holdLocked(job, rest, 'not replaced by this approval');
+  if (!validate(job, clean, false)) die('the draft breaks the rules above — it cannot be approved');
   const before = existsSync(join(ROOT, job.approved)) ? JSON.parse(read(job.approved)) : null;
   writeFileSync(join(ROOT, job.approved), JSON.stringify(clean, null, 2) + '\n');
   if (before) {
@@ -272,7 +316,8 @@ else if (flag('dry')) {
   console.log(`\n--- user: ${job.brief} + the field notes (${Buffer.byteLength(user)} bytes) ---\n`);
   console.log(user);
   console.log(`\n--- schema: strict json_schema "${job.id.replace(/-/g, '_')}" ---\n`);
-  console.log(JSON.stringify(job.schema, null, 2));
+  console.log(JSON.stringify(schemaFor(job), null, 2));
+  for (const k of lockedTops(job)) console.log(`\n🔒 "${k}" is NOT in that schema. ${job.locked[k]}`);
   console.log(`\n--- the assembled prompt is ${Buffer.byteLength(text, 'utf8').toLocaleString()} bytes ---`);
   // the model is read, never chosen here; --dry says which one WOULD be asked
   let model = null;
