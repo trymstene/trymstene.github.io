@@ -26,15 +26,22 @@ function rowsFor(job, live, draft) {
     return { path, spec, live: value, draft: next, changed: next != null && next !== value, now: check(value), then: check(next) };
   });
 }
-// the desk groups by resident: everything under residents[n]
+// 🧍 the desk groups by CHARACTER, and a job may name its people either way:
+// the town's are an array (residents[0], residents[1]…), the park's are named
+// keys (peel.greet, inka.lines[0], stand.sold[0]). Take the first segment plus
+// an index if it has one, and strip exactly that prefix off the field label —
+// a fixed-width slice chopped nine characters off every park path and left the
+// desk showing "t" where it meant "peel.greet".
 const groupsFor = (job, rows) => {
   const out = new Map();
+  const tops = new Set(job.top || []);
   for (const r of rows) {
-    const m = /^(\w+)\[(\d+)\]/.exec(r.path);
-    const k = m ? `${m[1]}[${m[2]}]` : 'the file';
+    const m = /^(\w+)(\[\d+\])?/.exec(r.path);
+    const k = m && (m[2] || tops.has(m[1])) ? m[1] + (m[2] || '') : 'the file';
     if (!out.has(k)) out.set(k, { key: k, title: k, rows: [] });
+    const field = k === 'the file' ? r.path : r.path.slice(k.length).replace(/^\./, '') || r.path;
     // a beat's name is not copy: it is the heading its three lines sit under
-    out.get(k).rows.push({ ...r, field: r.path.slice(k.length + 1) || r.path, divider: /\.beats\[\d+\]\.beat$/.test(r.path) });
+    out.get(k).rows.push({ ...r, field, divider: /\.beats\[\d+\]\.beat$/.test(r.path) });
   }
   return [...out.values()];
 };
