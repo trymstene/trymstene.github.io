@@ -1,0 +1,164 @@
+---
+// ✍️ THE COPY DESK — where Trym reads what GPT wrote before the game gets it.
+//
+// The approved copy (tracked, what the game imports) beside the draft GPT just
+// wrote (tools/copy-out/, gitignored), line by line, with the length and every
+// mechanical fault from tools/copy-rules.mjs — the SAME module the CI gate runs,
+// so nothing can look fine here and fail there.
+// Read it, then: node tools/copy.mjs --approve <job>
+// Noindexed, never linked, absent from the sitemap, and it ships no client JS.
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { jobs } from '../../../tools/copy-jobs.mjs';
+import { faults, overAim, strings, patternOf, indexOf, checkFile } from '../../../tools/copy-rules.mjs';
+
+const ROOT = process.cwd();
+const load = (rel) => (existsSync(join(ROOT, rel)) ? JSON.parse(readFileSync(join(ROOT, rel), 'utf8')) : null);
+
+// one row per string: where it lives, what it says now, what the draft says
+function rowsFor(job, live, draft) {
+  const drafted = draft ? new Map([...strings(draft)].map((s) => [s.path, s.value])) : null;
+  return [...strings(live || {})].filter((s) => !s.path.startsWith('_meta')).map(({ path, value }) => {
+    const spec = { ...(job.fields[patternOf(path)] || {}), _index: indexOf(path) };
+    const next = drafted ? drafted.get(path) : undefined;
+    const check = (v) => (v == null ? { bad: [], aim: 0 } : { bad: faults(v, spec), aim: overAim(v, spec) });
+    return { path, spec, live: value, draft: next, changed: next != null && next !== value, now: check(value), then: check(next) };
+  });
+}
+// the desk groups by resident: everything under residents[n]
+const groupsFor = (job, rows) => {
+  const out = new Map();
+  for (const r of rows) {
+    const m = /^(\w+)\[(\d+)\]/.exec(r.path);
+    const k = m ? `${m[1]}[${m[2]}]` : 'the file';
+    if (!out.has(k)) out.set(k, { key: k, title: k, rows: [] });
+    // a beat's name is not copy: it is the heading its three lines sit under
+    out.get(k).rows.push({ ...r, field: r.path.slice(k.length + 1) || r.path, divider: /\.beats\[\d+\]\.beat$/.test(r.path) });
+  }
+  return [...out.values()];
+};
+// the limit this row is measured against (the ladder's rungs each have their own)
+const maxOf = (spec) => (spec.maxByIndex ? spec.maxByIndex[spec._index] : spec.max) || 0;
+
+const desks = jobs().map((job) => {
+  const live = load(job.approved);
+  const draft = load(job.out);
+  const rows = rowsFor(job, live, draft);
+  const groups = groupsFor(job, rows);
+  // name the group after the thing it is: the character, not the array index
+  for (const g of groups) {
+    const name = g.rows.find((r) => r.field === 'name');
+    if (name) g.title = (name.draft ?? name.live) + '  ·  ' + g.key;
+  }
+  const gate = live ? checkFile(job, live, { draft: false }) : { bad: [], warn: [] };
+  const gateDraft = draft ? checkFile(job, draft, { draft: true }) : null;
+  return {
+    job, live: !!live, draft, groups,
+    counts: {
+      lines: rows.length,
+      changed: rows.filter((r) => r.changed).length,
+      bad: gate.bad.length, warn: gate.warn.length,
+      draftBad: gateDraft ? gateDraft.bad.length : 0,
+    },
+  };
+});
+const title = '✍️ The copy desk — drafts beside the live copy';
+---
+
+<BaseLayout title={title} description="Internal copy review desk." showFooter={false} robots="noindex">
+  <style is:inline slot="head">
+    .cp { max-width: 1040px; margin: 0 auto; padding: 1.6rem 1rem 4rem; }
+    .cp h1 { margin: 0 0 0.2rem; font-size: 1.5rem; }
+    .cp-sub { opacity: 0.75; margin: 0 0 1.2rem; font-size: 0.9rem; line-height: 1.5; }
+    .cp-sub code { background: #0001; padding: 0.1em 0.35em; }
+    .cp-job { border: var(--line); background: var(--paper); box-shadow: var(--shadow-sm); padding: 1rem; margin: 0 0 1.6rem; }
+    .cp-job > h2 { margin: 0 0 0.3rem; font-size: 1.15rem; }
+    .cp-meta { font-size: 0.8rem; opacity: 0.8; margin: 0 0 0.9rem; line-height: 1.6; }
+    .cp-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0.9rem; }
+    .cp-tag { border: 2px solid var(--ink); padding: 0.1rem 0.45rem; font-size: 0.72rem; font-weight: 700; }
+    .cp-tag--ok { background: #d8f5c8; }
+    .cp-tag--warn { background: #ffe9a8; }
+    .cp-tag--bad { background: var(--hot); color: #fff; }
+    .cp-who { border-top: 3px solid var(--ink); padding: 0.7rem 0 0.2rem; margin-top: 0.7rem; }
+    .cp-who > h3 { margin: 0 0 0.5rem; font-size: 0.98rem; }
+    .cp-beat { margin: 0.7rem 0 0; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.65; }
+    .cp-row { display: grid; grid-template-columns: 8.5rem 1fr; gap: 0.4rem 0.7rem; padding: 0.35rem 0; border-top: 1px dashed #0003; }
+    .cp-field { font-size: 0.72rem; font-family: ui-monospace, monospace; opacity: 0.8; word-break: break-all; padding-top: 0.15rem; }
+    /* block, or the draft runs on from the live line and the pair stops reading as a pair */
+    .cp-line { display: block; font-size: 0.92rem; line-height: 1.45; }
+    .cp-line + .cp-line { margin-top: 0.3rem; }
+    .cp-line b { font-size: 0.68rem; font-family: ui-monospace, monospace; opacity: 0.65; margin-right: 0.4rem; letter-spacing: 0.04em; }
+    .cp-len { font-size: 0.7rem; font-family: ui-monospace, monospace; opacity: 0.6; margin-left: 0.35rem; white-space: nowrap; }
+    .cp-line--new { background: #eef7ff; box-shadow: -0.45rem 0 0 #2f6fd0; padding-left: 0.35rem; }
+    .cp-flag { display: block; font-size: 0.74rem; font-weight: 700; color: #b30026; margin-top: 0.15rem; }
+    .cp-flag--warn { color: #8a6100; }
+    .cp-empty { font-size: 0.85rem; opacity: 0.75; }
+    @media (max-width: 620px) { .cp-row { grid-template-columns: 1fr; } }
+  </style>
+
+  <div class="cp">
+    <h1>{title}</h1>
+    <p class="cp-sub">
+      GPT writes, this page reads, you approve. The left of each pair is what the game ships today
+      (<code>src/data/copy/</code>); a blue line is what the newest draft would change it to
+      (<code>tools/copy-out/</code>, never committed). Flags come from <code>tools/copy-rules.mjs</code>,
+      the same module the CI gate runs, so nothing passes here and fails there.<br />
+      Write a draft: <code>node tools/copy.mjs &lt;job&gt;</code> · see the prompt first:
+      <code>--dry</code> · ship it: <code>node tools/copy.mjs --approve &lt;job&gt;</code>
+    </p>
+
+    {desks.map((d) => (
+      <section class="cp-job">
+        <h2>{d.job.title}</h2>
+        <p class="cp-meta">
+          {d.job.what}<br />
+          brief <code>{d.job.brief}</code> · approved <code>{d.job.approved}</code> · the game reads it through <code>{d.job.reads}</code>
+        </p>
+        <div class="cp-tags">
+          <span class={'cp-tag ' + (d.counts.bad ? 'cp-tag--bad' : 'cp-tag--ok')}>
+            {d.live ? (d.counts.bad ? d.counts.bad + ' violations' : d.counts.lines + ' lines, gate green') : 'no approved copy yet'}
+          </span>
+          {d.counts.warn > 0 && <span class="cp-tag cp-tag--warn">{d.counts.warn} over the guide’s target</span>}
+          {d.draft
+            ? <span class={'cp-tag ' + (d.counts.draftBad ? 'cp-tag--bad' : 'cp-tag--ok')}>
+                draft: {d.counts.changed} changed{d.counts.draftBad ? `, ${d.counts.draftBad} violations` : ', clean'}
+              </span>
+            : <span class="cp-tag">no draft waiting</span>}
+          {d.draft && d.draft._meta && <span class="cp-tag">{d.draft._meta.model} · {String(d.draft._meta.when).slice(0, 16).replace('T', ' ')}</span>}
+        </div>
+
+        {!d.live && <p class="cp-empty">Nothing approved yet. Run <code>node tools/copy.mjs {d.job.id}</code>.</p>}
+
+        {d.groups.map((g) => (
+          <div class="cp-who">
+            <h3>{g.title}</h3>
+            {g.rows.map((r) => (r.divider ? (
+              <p class="cp-beat">{r.live}{r.now.bad.map((f) => <span class="cp-flag">{f.msg}</span>)}</p>
+            ) : (
+              <div class="cp-row">
+                <span class="cp-field">{r.field}</span>
+                <span>
+                  <span class="cp-line">
+                    {r.changed && <b>now</b>}{r.live}
+                    <span class="cp-len">{r.live.length}{maxOf(r.spec) ? '/' + maxOf(r.spec) : ''}</span>
+                    {r.now.bad.map((f) => <span class="cp-flag">{f.msg}</span>)}
+                    {!r.now.bad.length && r.now.aim > 0 && <span class="cp-flag cp-flag--warn">over the guide’s {r.now.aim}</span>}
+                  </span>
+                  {r.changed && (
+                    <span class="cp-line cp-line--new">
+                      <b>draft</b>{r.draft}
+                      <span class="cp-len">{r.draft.length}{maxOf(r.spec) ? '/' + maxOf(r.spec) : ''}</span>
+                      {r.then.bad.map((f) => <span class="cp-flag">{f.msg}</span>)}
+                      {!r.then.bad.length && r.then.aim > 0 && <span class="cp-flag cp-flag--warn">over the guide’s {r.then.aim}</span>}
+                    </span>
+                  )}
+                </span>
+              </div>
+            )))}
+          </div>
+        ))}
+      </section>
+    ))}
+  </div>
+</BaseLayout>
