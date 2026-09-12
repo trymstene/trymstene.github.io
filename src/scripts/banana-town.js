@@ -100,6 +100,7 @@ for (const [key, spot] of Object.entries(SPOTS)) {
   p.style.left = pct(spot.x, W); p.style.top = pct(spot.y - a[1], H);
   p.style.zIndex = String(100 + spot.y + 3);
   p.addEventListener('click', (e) => { e.stopPropagation(); if (!openFor(key)) say(a[2]); });
+  p.addEventListener('pointerdown', (e) => { if (panel && !panel.hidden) e.stopPropagation(); });   // a prop under an open card is not tappable
   world.appendChild(p);
 }
 const park = document.createElement('div');
@@ -226,15 +227,25 @@ function thingAt(wx, wy) {
   }
   return null;
 }
+let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
 view.addEventListener('pointerdown', (e) => {
+  if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
   if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray')) return;
+  arriveThen = null;   // a new tap cancels a pending cabinet
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
   const hit = thingAt(wx, wy);
   if (hit) {
+    if (inside && ARCADE && CABINET[hit[1]]) {   // walk to the machine's front; the card opens when you get there
+      const r2 = ARCADE.spots.find((q) => q[0] === hit[1]);
+      if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; }
+      const key = hit[1]; arriveThen = () => gameCard(key);
+      return;
+    }
     if (hit[0] === 'npc') { say(NPC_SAY[hit[1]]); const n = npcEls.find((q) => q.key === hit[1]); tgt.x = n.x + (pos.x < n.x ? -60 : 60); tgt.y = n.y + 8; return; }
-    const spot = SPOTS[hit[1]];
+    const spot = SPOTS[hit[1]], wasInside = inside;
     if (!openFor(hit[1])) say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
+    if (inside !== wasInside) return;   // 🚪 a door was used: the room placed the banana; a walk target here would march it straight back out
     if (spot) { tgt.x = spot.x; tgt.y = spot.y + 30; }
     else if (inside && ARCADE) { const r2 = ARCADE.spots.find((q) => q[0] === hit[1]); if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; } }   // a machine: stand at its front
     return;
@@ -263,10 +274,11 @@ let last = performance.now(), leaving = false;
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   let dx = 0, dy = 0;
-  if (keys.arrowleft || keys.a) dx -= 1;
-  if (keys.arrowright || keys.d) dx += 1;
-  if (keys.arrowup || keys.w) dy -= 1;
-  if (keys.arrowdown || keys.s) dy += 1;
+  const kb = panel.hidden;   // 🃏 an open card owns the keyboard (Snake's arrows must not walk the town banana)
+  if (kb && (keys.arrowleft || keys.a)) dx -= 1;
+  if (kb && (keys.arrowright || keys.d)) dx += 1;
+  if (kb && (keys.arrowup || keys.w)) dy -= 1;
+  if (kb && (keys.arrowdown || keys.s)) dy += 1;
   if (dx || dy) { tgt.x = pos.x; tgt.y = pos.y; const n = Math.hypot(dx, dy); dx /= n; dy /= n; }
   else { const ex = tgt.x - pos.x, ey = tgt.y - pos.y, d = Math.hypot(ex, ey); if (d > 2) { dx = ex / d; dy = ey / d; } }
   if (dx || dy) {
@@ -277,6 +289,7 @@ function tick(now) {
     else if (!blocked(pos.x, ny)) pos.y = ny;
     else { tgt.x = pos.x; tgt.y = pos.y; }
   }
+  if (arriveThen && Math.hypot(tgt.x - pos.x, tgt.y - pos.y) <= 2) { const f = arriveThen; arriveThen = null; f(); }   // arrived, or stuck: the cabinet opens
   me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inside ? 2100 : 100) + Math.round(pos.y));
   cam(false);
   drawMe();
