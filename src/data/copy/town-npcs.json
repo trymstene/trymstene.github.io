@@ -3,64 +3,63 @@
     {
       "key": "nib",
       "name": "Nib",
-      "role": "Town Hall clerk: keeps the big book, answers the Mayor’s notes, stamps things so they are real.",
-      "tap": "Ah. You. The Mayor said somebody might come by the hall. I believe it was you.",
-      "want": "Come and stand by me at the statue one dawn. Two people is a committee.",
+      "role": "Town Hall clerk, keeping every resident’s name, plot and arrival in the big book.",
+      "tap": "I keep the big book. A name entered properly is less likely to be lost.",
+      "want": "I would like someone to sit in the hall while I finish the last entry.",
       "hi": [
-        "Good day. You are not in the book yet. That is not a crime. It is a form.",
-        "The new one. I have your page ready. It only needs a person on it.",
-        "{name}. Plot Eleven. Page thirty. I do not need to look it up.",
-        "Ah, Plot Eleven. I say it fondly, {name}. The book has no column for fondly.",
-        "{name}. Next of kin, mine. I wrote you in this morning. I hope that is all right."
+        "Good day. The book is available for legitimate consultation.",
+        "You have returned. Continuity is a useful quality.",
+        "Good day, {name}. Your entry remains in good order.",
+        "Margin Friend, {name}, you arrive without requiring a new form.",
+        "{name}, the blank next-of-kin field is mine. I leave it blank on purpose."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Good morning. Nobody knows who you are. I am working on it.",
-            "A statue with no plaque. It is an open case. I keep it open.",
-            "I bring a cloth. Somebody should. So it is me."
+            "The fountain has not begun making administrative noise yet.",
+            "Ink behaves better before the square has opinions.",
+            "One suitcase is sufficient, provided the contents are orderly."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "The book is open. The hall is open. I am, in most respects, open.",
-            "Forms to the left. Questions to the right. Sighs to me.",
-            "Every name goes in once. Yours went in twice. I fixed it."
+            "The mail bus makes arrivals look more official than they are.",
+            "A new name always needs room to breathe on the page.",
+            "The Mayor’s note requested clarity. It received clarity."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Dot reads me the wants. I write them down. It is a good lunch.",
-            "I eat here so the hall can breathe. It has a lot of paper in it.",
-            "Next of kin. I leave mine blank. Anyway. Lovely fountain."
+            "The noon light finds every erasure eventually.",
+            "Dot reads the wants with admirable commitment to recordkeeping.",
+            "A plot number is a small promise with corners."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "The Mayor left a note. I answered it. That is how we talk.",
-            "There is a page in the book that somebody scratched out. In 1999.",
-            "Stamp calls her drawer an archive. It is a drawer. I file that."
+            "The book opens itself near the frequently consulted pages.",
+            "I have sharpened this pen to a responsible length.",
+            "Some arrivals have no stated reason. The book permits that."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Board of Works. I pin the official ones straight. The rest lean.",
-            "Somebody wants a fish. That one has been up a long time.",
-            "A town is a list of people who stayed. I keep the list.",
-            "That light? The Mayor. Late, or early. I have never learned which. I knock; a note comes back."
+            "The upper window is lit. A note may be forthcoming.",
+            "I answer each note as if the door were listening.",
+            "The fountain has completed another day without filing anything."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "The book sleeps in a drawer. I sleep above the drawer.",
-            "I count the names before bed. Tonight there is one more.",
-            "Good night, town. Every one of you. Alphabetically."
+            "The final entry is often the neatest one.",
+            "A closed book still contains everyone.",
+            "Tomorrow’s blank lines are properly ruled and waiting."
           ]
         }
       ]
@@ -68,63 +67,63 @@
     {
       "key": "stamp",
       "name": "Stamp",
-      "role": "Runs the Post Office: weighs the mail, sells stock postcards to neighbours, meets the bus.",
-      "tap": "Postcards go out, mail comes in. I weigh everything. Stand still, I am weighing you.",
-      "want": "Send a card to somebody who does not expect one. Not today. When you think of them.",
+      "role": "Postmistress, weighing the town’s post and meeting the morning mail bus.",
+      "tap": "Stamp. Post weighed, sack checked, figures correct. Noted.",
+      "want": "I would like someone beside me when the mail bus pulls away.",
       "hi": [
-        "New face. Stand on the scale a moment. No. That was a joke. Nearly.",
-        "The new one. You have no post yet. That changes. It always changes.",
-        "{name}. Nothing for you today. I checked twice. I always check twice.",
-        "Featherweight. I mean you, {name}. You walk like a letter with good news in it.",
-        "{name}. There is a postcard in my drawer with my name on it. Nobody knows. Now you do."
+        "Post office. Mind the scale.",
+        "Back again. The scale remembers no one, but I do.",
+        "{name}. Your weight is not required today.",
+        "Return Address, {name}. You keep turning up without postage.",
+        "{name}, I write myself a card on market day and keep it in the drawer."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "The bus is late. Four minutes. I weigh that against last time.",
-            "One sack, a morning’s worth. I can tell by the shape.",
-            "Nothing for me. Noted. Something for everyone else. Good."
+            "Sack opened. String saved. Noted.",
+            "The bus arrives dusty and leaves lighter.",
+            "Nothing addressed to me. Accurate enough."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "Postcards. Stock. No words on them. The honest kind.",
-            "Put it on the scale. Everything goes on the scale. Even hats.",
-            "Two hundred grams of somebody’s grandmother. Careful with that."
+            "This envelope weighs more than its handwriting suggests.",
+            "Scale steady. Good machine.",
+            "The bus driver never waits for a second look."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Bean says my cup shows a long journey. It shows coffee.",
-            "Lunch is short. I weigh the bread. Habit.",
-            "The little fountain here is lighter than the big one. I can hear it."
+            "Bean’s cup goes quiet on the terrace. Correct.",
+            "Two stamps make a pair. One stamp makes a decision.",
+            "A bent corner is not a crime. Noted."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "A card to your neighbour costs nothing to write. It is blank. Go on.",
-            "Somebody posted a leaf. Moss, I think. It weighed nothing. I sent it.",
-            "That card is four grams. Three of it is hello."
+            "Outgoing post has a determined lean today.",
+            "The scale dislikes crumbs. I share that view.",
+            "A blank card still has somewhere to go."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Last round. The hall gets the heavy envelope. It always does.",
-            "I walk the street once so the day has been delivered.",
-            "The hall light is on. Nib is at the board. Somebody is upstairs."
+            "Sack tied. Counter wiped. Figures agree.",
+            "The post office sounds larger after closing.",
+            "I checked the drawer. The card is still there."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "The scale is off. My feet are on. Two hundred and something.",
-            "One postcard, blank, in the drawer. Mine. Not sent. Not yet.",
-            "The bus comes back tomorrow. So do I. That is the arrangement."
+            "Tomorrow’s string is cut to length.",
+            "The scale needle rests exactly at zero.",
+            "Wrong side of the bus. Right side of the counter."
           ]
         }
       ]
@@ -132,63 +131,63 @@
     {
       "key": "moss",
       "name": "Moss",
-      "role": "The sweeper: keeps the streets and the square clear of flyers, leaves and opinions.",
-      "tap": "Leaves. Again. Stand still, you are on a leaf.",
-      "want": "Pick one flyer up off the street some day. Just one. I will know which.",
+      "role": "Street sweeper, keeping the cobbles clear from dawn until the arcade goes quiet.",
+      "tap": "Moss. I sweep the square because somebody left a broom there.",
+      "want": "I would like someone to sit above the arcade while the wall hums.",
       "hi": [
-        "New. Feet clean. Keep them that way.",
-        "The new one. You walked round the flyer. Noticed.",
-        "{name}. You are on the clean bit. Stay there.",
-        "Boots. That is what I call you, {name}. Boots that mind where they go.",
-        "{name}. I have a flyer under my mattress. Do not tell Stamp. Not a word."
+        "Morning. Watch the cobbles.",
+        "Back again. You missed a leaf last time.",
+        "There you are, {name}. The square keeps track.",
+        "Soft Steps, {name}, you do not kick the tidy bits loose.",
+        "{name}, I keep the best flyer each week under my mattress. All of them."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Leaves. Again.",
-            "Flyers. Somebody printed these. Somebody will answer for it.",
-            "Clean before the light. That way it was always clean."
+            "Cold cobbles. Clean start.",
+            "The first leaf always acts surprised to be found.",
+            "A broom leaning somewhere is practically an appointment."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "Hall street. Nib’s paper. Nib’s paper gets everywhere.",
-            "Morning, lamp. Morning, bin. Morning, bin’s little friend.",
-            "A town is just a floor. Somebody has to hold it."
+            "Bus dust. Again.",
+            "It settles into the cracks like it pays rent.",
+            "Stamp gets the sack. I get what follows it."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Sandwich. Bench. Gran.",
-            "She talks, I chew. Fair split.",
-            "The fountain is loud. Good. Nobody hears me not talking."
+            "Bell crumbs. Fine.",
+            "Pip’s doorway sheds paper like an old tree.",
+            "The statue has never thanked me, which keeps things simple."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "Cups. Sleeves. Bean.",
-            "Cafe end. Worst end. She leaves it like this so I come by. I know.",
-            "Crumbs are litter. Legally."
+            "Long shadow. Short litter.",
+            "A good sweep leaves the square looking unbothered.",
+            "Someone posted a flyer crooked. I noticed."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Look at it. Nobody looks at it. Clean.",
-            "I stand here till the first leaf lands. Then I have lost. Fine.",
-            "If you are looking at the square, thank you. Do not say it back."
+            "Arcade glow. Nearly.",
+            "Spinner’s Pong ball is practicing through my wall.",
+            "I sweep around the fountain because it has been here longer."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "Wall. Pong. Wall. Good night, Spinner.",
-            "Broom by the door. Beanie on the broom. Done.",
-            "One flyer under the mattress. Nobody’s business."
+            "Last pass. Quiet.",
+            "The cobbles look better when nobody is judging them.",
+            "One flyer came loose. I know where it is going."
           ]
         }
       ]
@@ -196,63 +195,63 @@
     {
       "key": "pip",
       "name": "Pip",
-      "role": "Runs the General Store: fireworks, lures, duck bread, every one the last one.",
-      "tap": "Fireworks, lures, duck bread. Every one of them the last one. Roughly.",
-      "want": "Ring the bell one day just to ring it. No buying. I like the sound.",
+      "role": "General store keeper, selling the last one of everything until the shelves say otherwise.",
+      "tap": "Pip. General store. If it is on the shelf, it is probably the last one.",
+      "want": "I would like someone to stand by the counter when the bell has nothing to announce.",
       "hi": [
-        "New face. Fireworks, lures, duck bread. Pick one. Bread, honestly.",
-        "The new one’s back. Last duck bread’s in. Third one today.",
-        "{name}. Saved you a lure. Also everyone else. It’s a big box.",
-        "Bread. Hi, Bread. That’s you now, {name}. Best customer. Only customer.",
-        "{name}. I’ve never lit a firework. You can be the first. I’ll watch from here."
+        "Welcome. Rope, cups, fireworks. Last ones.",
+        "You are back. Good timing, apparently.",
+        "{name}. The bell has registered your return.",
+        "Last One, {name}, you always arrive when the shelf looks convincing.",
+        "{name}, I have never lit a firework. I sell them by description."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Restocking the last ones. Don’t tell anyone.",
-            "Duck bread’s in. The ducks know first.",
-            "Fireworks, lures, bread. Bread first. Always."
+            "Cups, string, fireworks. Last stock.",
+            "The shelves look honest before anyone touches them.",
+            "My uncle’s note was brief. Unfortunately, it was useful."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "Last lure. Also the second-last. Roughly.",
-            "Fireworks. Never lit one. Great reviews.",
-            "Duck bread. For ducks. Or not. Your call."
+            "Bell, basket, button. Last conveniences.",
+            "Someone moved the rope display into a better argument.",
+            "The fireworks are facing forward. That is enough excitement."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Checking the machine. Still no. Still checking.",
-            "One day this thing gives out money. I’d like to be here.",
-            "It hums. Good sign. Everything hums before it pays."
+            "Cash machine humming. Still.",
+            "Coins, notes, promise. No actual money.",
+            "The town may be saving up for a surprise. I am not."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "Someone bought two once. Big day. Still is.",
-            "Last duck bread. I baked six. Last one.",
-            "Lures. Dot asks about fish. I sell hope."
+            "Buttons, jars, brushes. Last choices.",
+            "A shelf gap is just a shelf thinking.",
+            "I have made the labels smaller. The scarcity remains large."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Invaders. One more go. Last one. Roughly.",
-            "Spinner’s narrating. I’m losing. Both loud.",
-            "Top of the board says Pip. Under four other names."
+            "Bell, dust, lock. Last duties.",
+            "The fireworks have had a full day of not happening.",
+            "One basket is upside down. It knows what it did."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "Shelves counted. All last ones.",
-            "Fireworks in the back. Sleeping. Hopefully.",
-            "Bell rang eleven times today. Good day. Roughly."
+            "Shelves counted. Mostly.",
+            "Everything is the last one after closing.",
+            "The cash machine hums like it knows a secret."
           ]
         }
       ]
@@ -260,63 +259,63 @@
     {
       "key": "bean",
       "name": "Bean",
-      "role": "Runs The Coffee Cup kiosk: today’s coffee, today’s fortune, and the price rumour.",
-      "tap": "Your fortune is in the cup. So is the coffee. Only one of them is hot.",
-      "want": "Bring me one thing that happened to you. Later, when it has. I’ll find it in the cup.",
+      "role": "Coffee kiosk keeper, reading small fortunes in cups beneath the propeller roof.",
+      "tap": "Bean. Coffee poured, cup turned, small fortune observed.",
+      "want": "I would like someone to share a quiet table after the propeller slows.",
       "hi": [
-        "A stranger. The cup said so. The cup says most things.",
-        "The new one. I saw a second visit. This is it.",
-        "{name}. Your cup is waiting. It has opinions.",
-        "Sugar. You’re Sugar now, {name}. Don’t ask what the cup said.",
-        "{name}. I have never read my own cup. I might, if you sat with me."
+        "Coffee is hot. The day is not decided.",
+        "You came back. Your cup had a patient rim.",
+        "{name}, your coffee says the chair remembers you.",
+        "Warm Handle, {name}, you hold a cup like it has news.",
+        "{name}, I rinsed my own cup before reading it. I have not tried again."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Kettle’s on. So is fate.",
-            "First cup. It says: more cups.",
-            "I see a morning. Then another one."
+            "The propeller turns. Something begins without asking.",
+            "First cup says: the square will wake in sections.",
+            "Steam always leaves before the difficult part."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "Your fortune is in the cup. So is the coffee.",
-            "I see a queue. Behind you. Small one.",
-            "Grounds say rain. Sky says maybe."
+            "This cup says: a bell will interrupt a thought.",
+            "The coffee is dark. The fortune is modest.",
+            "One sugar grain has chosen independence."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Stamp and I are talking. Listen.",
-            "Same bench. Same silence. Best one.",
-            "I see a postcard in her drawer. She knows."
+            "Stamp sits beside me. The silence is excellent.",
+            "This cup says: a letter will weigh what it means.",
+            "The terrace table has stopped pretending it needs polishing."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "Afternoon cups. Bitter and honest.",
-            "I see a nap. Not yours. Mine.",
-            "Moss is sweeping. I left the crumbs. She knows."
+            "A cup says: someone will find a coin-shaped shadow.",
+            "The propeller has opinions about windy afternoons.",
+            "Foam makes a map, then declines to explain it."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Empty cups in the garden. Each one says milk.",
-            "I see stars. Behind the cloud. Trust me.",
-            "Light on at the hall. Cup didn’t mention it."
+            "This cup says: the hall window will matter tonight.",
+            "The last pour always sounds more serious.",
+            "The square tastes faintly of lemonade from here."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "Cups rinsed. Futures too.",
-            "I see sleep. Finally. Mine.",
-            "Propeller’s still. Good coffee today."
+            "The propeller coasts. The day loosens.",
+            "An empty cup says nothing. It is often right.",
+            "I stack the saucers by the sound they make."
           ]
         }
       ]
@@ -324,63 +323,63 @@
     {
       "key": "figjr",
       "name": "Fig Jr.",
-      "role": "Runs the lemonade stand at the family orchard and wheels the fruit cart into the square at noon.",
-      "tap": "Fig’s Lemonade. Locally sourced. From behind me. That’s the orchard.",
-      "want": "Bring Gran a flower from somewhere else one day. She likes knowing where things came from.",
+      "role": "Lemonade seller and fruit-cart operator, bringing Gran Fig’s orchard into the square.",
+      "tap": "Fig Jr. Lemonade and fruit, with strong growth potential and one actual cart.",
+      "want": "I would like someone to walk with me when I take Gran Fig to her bench.",
       "hi": [
-        "Welcome to Fig’s. Family firm. I’m the firm.",
-        "The new one. Our returning customer base. Singular.",
-        "{name}. Loyalty programme starts now. It’s a cup.",
-        "Partner. I call you Partner, {name}. No paperwork, the supplier said no.",
-        "{name}. The sign says FIG’S. Gran’s. It’s fine. It’s good, actually."
+        "Welcome to a premium refreshment operation.",
+        "Repeat visitor detected. Excellent retention.",
+        "{name}, the lemonade division recognizes your face.",
+        "Market Leader, {name}, you inspect the cart like a board member.",
+        "{name}, I water the supplier’s trees before dawn. She thinks the rain did it."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Early inspection of the supply chain. Trees.",
-            "Nobody sees this. Quarterly secret.",
-            "The supplier sleeps. The enterprise does not."
+            "Orchard support completed. Rain receives the credit.",
+            "The supplier’s trees look thirsty in a very managerial way.",
+            "One leaf fell during operations. No losses reported."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "Fig’s Lemonade. Established before I was.",
-            "Fresh batch. Strong quarter. One cup so far.",
-            "The brand is the hat. The hat is the brand."
+            "Cup inventory is ready for public demand.",
+            "Lemons, ice, confidence. The first two are measurable.",
+            "Gran Fig’s sign has survived another inspection."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Cart’s in the square. That’s expansion.",
-            "Spinner wants the cart on the Wheel. Not for sale. Not a prize.",
-            "Lunch rush. Rush is a strong word."
+            "Cart deployed. Expansion is visible from the fountain.",
+            "The square has strong footfall, if feet count.",
+            "One cup sold is proof of concept."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "Sold two. Reinvesting. In lemons.",
-            "Growth strategy: more sun. Working on it.",
-            "Pip calls the shelf local. I call it an exclusive."
+            "The fruit cart is holding its market position.",
+            "Lemonade improves when discussed with certainty.",
+            "Pip calls everything the last one. I call that branding."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Walking the supplier to her bench. It’s on the way. It isn’t.",
-            "Carried out full. Carrying back most.",
-            "She calls me Figgy out here. That’s off the record."
+            "I am merely heading toward Gran Fig’s bench. Coincidentally.",
+            "The supplier walks slowly because she has earned it.",
+            "Cart wheels complain. They are committed to the mission."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "Jug’s in. Books closed. Page one.",
-            "Tomorrow: lemons. Same as today.",
-            "The supplier said goodnight. I said noted."
+            "Operations concluded. The numbers remain private.",
+            "A squeezed lemon has given everything to the enterprise.",
+            "Tomorrow’s expansion fits in the same square."
           ]
         }
       ]
@@ -388,63 +387,63 @@
     {
       "key": "spinner",
       "name": "Spinner",
-      "role": "Runs the Wheel of Peel, one free spin a day, and holds the Pong paddle in the arcade.",
-      "tap": "One free spin a day! The pot is watching you. So is Spinner. Both are friendly.",
-      "want": "Come and lose to me at Pong one day. Properly. I would like to know how it feels.",
+      "role": "Wheel of Peel host and arcade Pong keeper, making a free daily spin feel enormous.",
+      "tap": "Spinner keeps the Wheel of Peel turning and the Pong paddle lively.",
+      "want": "I would like someone to linger after the bells stop and hear the square echo.",
       "hi": [
-        "A stranger, folks! Step up! One spin, free, no strings, no catch, some bells!",
-        "The new one! Back for the pot! The pot remembers you. The pot is like that.",
-        "{name}! Say it with me, folks! {name}! The Wheel heard you. It is blushing!",
-        "Champ! My Pong champ, {name}! Beat me by a point! I was inches off! Inches!",
-        "{name}. Whisper now. I let them win. Every kid. By one. Keep it. Loud again!"
+        "Step right up. The wheel has excellent instincts.",
+        "Back for another look. The bells approve.",
+        "{name}, the wheel recognizes a face with style.",
+        "Lucky Peel, {name}, you stand near a wheel like fate owes you.",
+        "{name}, I let the little bananas win Pong by one point. Every time."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Step up, step up, nobody! Practising, fountain. You are doing great.",
-            "The voice needs warming, like the Wheel needs oiling. Both squeak.",
-            "Spinner at dawn, folks! Quiet as anything! Do not tell the Wheel."
+            "Three bells polished. The square is not ready, but I am.",
+            "The wheel looks best before it has disappointed anyone.",
+            "Spinner calls this the soft opening."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "One free spin a day! The pot is watching you. The pot is patient.",
-            "Round she goes, where she stops, Spinner does not know. Honest!",
-            "Every spin equal, folks! Rich, poor, hat, no hat. That is the Wheel."
+            "One free spin. A growing pot. History awaits.",
+            "The arcade paddle has warmed up its opinions.",
+            "No crowd yet. Plenty of room for a dramatic entrance."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Lunch is an apple, folks! Fig Jr. sells them! Spinner buys them!",
-            "Put the cart on the Wheel, Fig! No? The pot would love a cart!",
-            "Bean says my cup shows a spin. Every cup shows a spin. Round!"
+            "The square is packed with possibilities, which count as a crowd.",
+            "That wheel sound means destiny is thinking.",
+            "Fig Jr. calls his cart expansion. I call it competition with ice."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "Luck in the afternoon, folks! It tastes the same. It tastes like luck!",
-            "Spun today? No? Then it is still waiting. The pot does not forget.",
-            "Quiet now. Just you and me and the Wheel. There. Loud again!"
+            "Pong ball, paddle, glory. Simple ingredients.",
+            "I lost a point to the left wall. It played beautifully.",
+            "The bells are doing most of the advertising, frankly."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Pong! Two paddles, one Spinner, no mercy! Very little mercy! Some!",
-            "Lost again, folks! By a point! How does Spinner keep doing it!",
-            "Pip is on Invaders. Pip is losing to Invaders. Go on, Pip!"
+            "Last bright spin before the square goes gold.",
+            "Spinner believes in a grand finish, even for one spectator.",
+            "The pot looks hopeful under the arcade light."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "Paddle practice. Bang on the wall. Good night, Moss. Good night!",
-            "Three bells on the hat, all asleep. Spinner too. Nearly.",
-            "Nobody asked Spinner what Spinner wants. Spinner would say a spin."
+            "Bells off. Hat still excellent.",
+            "The wheel sleeps with its best number facing forward.",
+            "Pong makes a lonely sound when nobody is nearly winning."
           ]
         }
       ]
@@ -452,63 +451,63 @@
     {
       "key": "dot",
       "name": "Dot",
-      "role": "Keeps the town’s wants at the info kiosk: what everyone is looking for, read to Nib at lunch.",
-      "tap": "Have you seen a fish? A real one? Tell me what you want instead, then?",
-      "want": "One day, will you look in the fountain with me? Not today. It is shy today.",
+      "role": "Info kiosk keeper, recording what Banana Town is looking for, beginning with a fish.",
+      "tap": "Dot. Wants recorded, wishes sorted, fish still outstanding.",
+      "want": "I would like someone to sit at the kiosk and imagine a fish with me.",
       "hi": [
-        "Are you new? Have you seen a fish? A real one?",
-        "The new one? Are you still new? When does it stop?",
-        "{name}? Did you look in the fountain on the way? Properly?",
-        "Fish! No, sorry, I mean you, {name}. Can I call you that? Too late?",
-        "{name}? Can I tell you where it is? Will you still look with me if I do?"
+        "Looking for something? Missing something? Remembering something?",
+        "Back again? Still looking? Found a better question?",
+        "{name}, seeking anything today? Avoiding anything?",
+        "Fish Friend, {name}, you pause like you have seen scales somewhere.",
+        "{name}, I have never seen a fish. I still put it first."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Have you seen a fish? A real one? In here?",
-            "Does the fountain go anywhere? Do fish know?",
-            "If I stand very still, does it count as fishing?"
+            "What is missing? What is wanted? What has fins?",
+            "A clean page? A new wish? A fish before breakfast?",
+            "Who woke up needing something unnamed?"
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "Somebody wants a lure? Somebody wants a hat back? Shall I write it?",
-            "Does the board lean? Or is it the wants?",
-            "What are you looking for? Everyone is? Can I keep it?"
+            "Mail for a wish? A wish for mail? Both possible?",
+            "Who needs a chair filled? Who needs a thought kept?",
+            "Could the fountain be holding out on me?"
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Nib, shall I read the wants? Is the fish still first? Always?",
-            "Is lunch a want or a need? Can I keep it if it is both?",
-            "Why does the bench face the fountain? Does it know something?"
+            "Nib hears the list? Nib writes it down? Is that comfort?",
+            "Fish first? Always fish first? Naturally?",
+            "What does a quiet lunch ask for?"
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "What do you want? Not to buy? To want? Shall I write it down?",
-            "Is a want a wish that has not asked yet?",
-            "Did you know Nib wants a committee? Is two enough?"
+            "A lost button? A found purpose? A fish in a jar?",
+            "Who wants company? Who admits it? Who writes it smaller?",
+            "Could the orchard hide a pond behind good manners?"
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Evening, statue? Seen a fish? You face the water, don’t you?",
-            "Does a statue want a name? Has anyone asked it?",
-            "Nib says no fish on record? Does the record swim?"
+            "What glows in the hall window? What does it want?",
+            "A wish after dark? A fish after dark? Promising?",
+            "Who goes home with an empty chair?"
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "Does the press sound like water? Is that why I sleep?",
-            "Do fish sleep? Do they know they are being looked for?",
-            "Is tomorrow the day? Is it always?"
+            "List closed? Want still open? Fish still theoretical?",
+            "What swims without being seen? What waits without leaving?",
+            "Tomorrow’s first question? Already written?"
           ]
         }
       ]
@@ -516,63 +515,63 @@
     {
       "key": "granfig",
       "name": "Gran Fig",
-      "role": "Grows the orchard and the west garden; keeps everyone’s names, as they were and as they are.",
-      "tap": "You’ll want a coat. No, you won’t. Sit. Water that.",
-      "want": "Come and sit in the second chair some evening. It’s for guests. It always was.",
+      "role": "Orchard grower and west-garden keeper, supplying the town with fruit and firm opinions.",
+      "tap": "Gran Fig. I grow the fruit and keep the west garden from getting ideas.",
+      "want": "I would like someone to take the second chair and stay until the garden cools.",
       "hi": [
-        "Stand up straight. There. Now, who are you.",
-        "The new one. I’ve decided. Don’t wander off.",
-        "{name}. I had you down as somebody else. You’ll do.",
-        "Pet. I call you Pet now, {name}. It was your grandmother’s. Probably.",
-        "{name}. Plot eleven. Somebody asked me before you. I know who. Ask me properly."
+        "There you are. Do not step on the beds.",
+        "Back already. Good. The path looks better used.",
+        "{name}, stand in the shade. You look overripe.",
+        "Bench Sprout, {name}, you keep turning up where the sun is sensible.",
+        "{name}, I keep the second chair out because I miss having someone in it."
       ],
       "beats": [
         {
           "beat": "dawn",
           "lines": [
-            "Beds first. Everything else can wait.",
-            "Snail’s up. So am I. Just.",
-            "Water before the sun sees. The beds like to be first."
+            "Water the roots. Ignore the sky.",
+            "The beds were thirsty. I was correct.",
+            "Fig Jr. calls this rain. Let him enjoy the story."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "The trees were watered. Rain, was it.",
-            "Apples don’t hurry. Nor do I.",
-            "Jr.’s at the stand. Good. Keeps busy."
+            "Pick the ripe ones. Leave the show-offs.",
+            "Your mother’s hat was yellow. Terrible choice near bees.",
+            "The orchard knows who pulls too hard."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Moss is here. Good. Say nothing.",
-            "I knew your mother’s hat. Same slant.",
-            "Nib says the book’s complete. Bless him."
+            "Shade first. Opinions later.",
+            "That cart needs its wheels checked. I told the boy so.",
+            "A lemon does not need a slogan."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "My window box. Pip keeps a plant in it. He thinks I don’t know.",
-            "Pip’s uncle had this shop. Same bell. Same everything.",
-            "I buy nothing. I stay. That’s a customer."
+            "Pull weeds. They never bring a useful note.",
+            "The west bed is sulking. Give it water, not sympathy.",
+            "Moss sweeps well. A sensible banana."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "Here he comes. On his way, he says. Sit, Figgy.",
-            "Evening does the talking. We let it.",
-            "Sold some, he says. Some is a number. It isn’t."
+            "Walk steady. The bench is not going anywhere.",
+            "Fig Jr. is going my way again. He thinks I do not notice.",
+            "Sit down before you become dramatic."
           ]
         },
         {
           "beat": "night",
           "lines": [
-            "Can’s by the door. Full. Always.",
-            "Figgy’s in. Snail’s in. Town’s in.",
-            "Goodnight, whoever you are. You’ll do."
+            "Cover the tender shoots. Night has sharp fingers.",
+            "The second chair can wait. It has good manners.",
+            "Tomorrow, the beans will need talking to."
           ]
         }
       ]
