@@ -1,0 +1,61 @@
+---
+// 🏳️‍🌈 Community rules — the safe-space promise, the five rules, how they are kept, and the Discord.
+// Indexed (default robots) and listed in sitemap-pages.xml.js. Trym, 12 Sep 2026: "a place where
+// they feel safe through community rules, standards and moderation. This should also be applied to
+// the Discord." The footer's pride flag links here.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PrideFlag from '../components/PrideFlag.astro';
+
+const title = 'Community rules — a safe place for everyone';
+const description = 'trymstene.com and Banana World are a safe space. The five rules, how they are kept, and where to report. The same rules hold on the Discord.';
+---
+<BaseLayout title={title} description={description}>
+  <section class="hero">
+    <div class="hero__banana cm-flag"><PrideFlag width={130} /></div>
+    <p class="kicker">The house rules</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);">a safe place</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">Everyone is welcome here. This is how that stays true.</p>
+  </section>
+
+  <section class="block">
+    <div class="pv">
+      <p class="cm-promise"><strong>trymstene.com and Banana World are a safe space.</strong> Everyone is welcome:
+        every orientation, gender, colour, faith, age, body and brain. If you make a banana, you belong.</p>
+
+      <h2>The rules</h2>
+      <ol class="cm-rules">
+        <li><strong>Be kind.</strong> Tease the banana, never the person.</li>
+        <li><strong>No hate.</strong> No slurs, no “jokes” about who someone is, no harassment. That includes the
+          name on your pass, the things you make, and the boards.</li>
+        <li><strong>Keep it fine for a ten-year-old.</strong> No sexual content, no gore, nothing pushed at kids.</li>
+        <li><strong>No spam, no scams,</strong> no begging for coins.</li>
+        <li><strong>Nobody’s real life without their say.</strong> No real names, addresses, photos or screenshots of people.</li>
+      </ol>
+
+      <h2>How it is kept</h2>
+      <ul>
+        <li>The pictures and wearables people make go past a person before everyone can see them.</li>
+        <li>Anything reported is read by me, Trym.</li>
+        <li>What can happen: a name reset, an item unlisted, a pass taken off the boards, a ban from the Discord.
+          Hate gets no warning.</li>
+      </ul>
+
+      <h2>The Discord</h2>
+      <p>Same rules, same door. The moderators can remove messages and people. If something is wrong there,
+        message a moderator, or write to me below.</p>
+
+      <h2>Seen something?</h2>
+      <p><a href="/contact/">Write to me</a>. You will not have to argue your case.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .cm-flag { display: flex; justify-content: center; }
+  .pv { max-width: 62ch; margin: 0 auto; text-align: left; }
+  .pv h2 { font-size: 1.15rem; margin: 1.8rem 0 0.6rem; }
+  .pv ul, .pv ol { padding-left: 1.2rem; }
+  .pv li { margin-bottom: 0.6rem; line-height: 1.5; }
+  .cm-promise { font-size: 1.05rem; line-height: 1.55; }
+  .cm-rules li::marker { font-weight: 800; }
+</style>

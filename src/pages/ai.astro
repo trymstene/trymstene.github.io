@@ -1,0 +1,58 @@
+---
+// 🤖 How AI is used here — the transparency page. Trym, 12 Sep 2026: "many are concerned by AI use and
+// I want to be transparent without saying too much. The code is mostly built by AI, but visuals are
+// created by me or licensed bought visuals from creators with a link to them." Indexed, in the sitemap,
+// linked from the footer's host line.
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const title = 'How AI is used at trymstene.com';
+const description = 'AI helps write the code here. It does not draw the banana or its world, and it does not run the place. The whole list, and who made the art.';
+---
+<BaseLayout title={title} description={description}>
+  <section class="hero">
+    <div class="hero__banana">
+      <img src="/assets/dancing-banana-transparent.gif" alt="The Dancing Banana" style="width:110px;height:auto;image-rendering:pixelated;">
+    </div>
+    <p class="kicker">The honest page</p>
+    <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);text-transform:none;">AI, and what it does here</h1>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">It helps me build this place. It does not draw it, and it does not run it.</p>
+  </section>
+
+  <section class="block">
+    <div class="pv">
+      <h2>The code</h2>
+      <p>Most of the code on trymstene.com and in Banana World is written with AI (Claude), working with me.
+        I decide what gets built, I test it, and I ship it. Nothing goes live because a machine said so.</p>
+
+      <h2>The pictures</h2>
+      <p>The dancing banana and its world are mine, or bought from the artists who made them:</p>
+      <ul>
+        <li>The places and the rooms of Banana World: the Modern Exteriors and Modern Interiors packs by
+          <a href="https://limezu.itch.io/" target="_blank" rel="noopener">LimeZu ↗</a>.</li>
+        <li>The small icons: <a href="https://pixelarticons.com/" target="_blank" rel="noopener">Pixelarticons ↗</a>
+          by Gerrit Halfmann.</li>
+        <li>The type: <a href="https://fonts.google.com/specimen/Space+Grotesk" target="_blank" rel="noopener">Space Grotesk ↗</a>
+          by Florian Karsten and <a href="https://fonts.google.com/specimen/Archivo+Black" target="_blank" rel="noopener">Archivo Black ↗</a>
+          by Omnibus-Type.</li>
+      </ul>
+      <p>No image generators are used. A few small pixel pieces are drawn in code with AI’s help, and every one
+        of them goes past me before it ships.</p>
+
+      <h2>You</h2>
+      <p>AI is not used to watch you, judge you or talk to you. The characters’ lines are written by hand.
+        Reports are read by a person.</p>
+
+      <h2>Where AI does show up</h2>
+      <p>Writing code, and reading the site’s own numbers so I can see what works. That is the list.</p>
+
+      <p><a href="/contact/">Questions? Write to me.</a></p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .pv { max-width: 62ch; margin: 0 auto; text-align: left; }
+  .pv h2 { font-size: 1.15rem; margin: 1.8rem 0 0.6rem; }
+  .pv ul { padding-left: 1.2rem; }
+  .pv li { margin-bottom: 0.6rem; line-height: 1.5; }
+</style>

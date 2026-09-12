@@ -3,6 +3,7 @@
 // via showFooter={false}. Links are CATEGORIZED (15 Jul, Trym: the flat line
 // got unreadable) — keep every link, group by what the visitor is doing.
 import PixelIcon from './PixelIcon.astro';
+import PrideFlag from './PrideFlag.astro';
 
 const COLS = [
   {
@@ -31,6 +32,7 @@ const COLS = [
       ['/beach/', 'Join the beach'],
       ['/park/', 'Join the park'],
       ['/banana-of-the-day/', 'Banana of the day'],
+      ['/community/', 'The rules'],
       ['https://discord.gg/cuF6BHfZT4', 'The Discord ↗'],
     ],
   },
@@ -66,8 +68,11 @@ const COLS = [
     <a href="https://www.djsentry.com" target="_blank" rel="noopener">Music ↗</a> ·
     <a href="/contact/">Contact</a> ·
     <a href="/privacy/">Privacy</a> ·
+    <a href="/ai/">AI</a> ·
     <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener"><PixelIcon name="coffee" /> Tip</a>
   </p>
+  <!-- 🏳️‍🌈 the safe-space line (12 Sep 2026): the pixel flag links to the rules -->
+  <p class="footer__safe"><a href="/community/"><PrideFlag /> A safe space for everyone · the rules</a></p>
   <p class="copyright">© <span id="year">2026</span> Trym Stene · the banana guy <PixelIcon name="banana" /></p>
 </footer>
 
@@ -92,6 +97,8 @@ const COLS = [
     margin-bottom: 0.45rem;
     line-height: 1.35;
   }
+  .footer__safe { margin: 0.2rem 0 0.7rem; font-size: 0.9rem; }
+  .footer__safe a { display: inline-flex; align-items: center; gap: 0.5rem; }
   @media (max-width: 719px) {
     .ft-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 26rem; }
   }

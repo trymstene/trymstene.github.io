@@ -19,6 +19,8 @@ const REMIX_IMAGES = remixes.map((r) => [
 // images: [path, title] pairs surfaced to Google Images for that page.
 const PAGES = [
   { path: '/', images: [['/assets/og/default.png', 'The Dancing Banana — trymstene.com']] },
+  { path: '/community/', images: [] },   // 🏳️‍🌈 the rules (12 Sep 2026)
+  { path: '/ai/', images: [] },          // 🤖 how AI is used here
   {
     path: '/dancing-banana-gif-meme/',
     images: [
