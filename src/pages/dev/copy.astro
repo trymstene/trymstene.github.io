@@ -10,7 +10,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { jobs, lockedTops, isLocked, topOf } from '../../../tools/copy-jobs.mjs';
+import { jobs, lockedTops, isLocked, topOf, mergeLocked } from '../../../tools/copy-jobs.mjs';
 import { faults, overAim, strings, patternOf, indexOf, checkFile } from '../../../tools/copy-rules.mjs';
 
 const ROOT = process.cwd();
@@ -64,7 +64,12 @@ const desks = jobs().map((job) => {
     g.locked = g.rows.some((r) => r.locked) ? (job.locked || {})[topOf(g.key)] || 'written by hand; the rig does not touch it' : null;
   }
   const gate = live ? checkFile(job, live, { draft: false }) : { bad: [], warn: [] };
-  const gateDraft = draft ? checkFile(job, draft, { draft: true }) : null;
+  // 🔒 flag the draft as `--approve` would SEE it: locked sections spliced back from the
+  // live file, because that is what gets written. Checking the raw draft blamed it for
+  // a stale locked half it cannot ship — "1 violation" on a draft that approves clean.
+  let forCheck = draft;
+  if (draft && live) { try { forCheck = mergeLocked(job, draft, live); } catch (e) { forCheck = draft; } }
+  const gateDraft = draft ? checkFile(job, forCheck, { draft: true }) : null;
   return {
     job, live: !!live, draft, groups,
     counts: {
