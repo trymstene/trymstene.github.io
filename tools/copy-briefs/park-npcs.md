@@ -88,6 +88,8 @@ The stand keeper sells the gear. Dry, quick, a bit of a showman about other peop
     off with something small and warm that fits the state of the park.
   - Every topic's `q` is **the player's own voice on a button**: short, lowercase, plain. The wit is
     his answer, never the question.
+- `wx` — what he mutters while it is raining, in three tiers (`drizzle`, `heavy`, `storm`). The sky
+  overrides the health band for as long as it falls. He never leaves the bench for any of them.
 - `bed` — three lines about his own flowerbed. Proud, gentle, look-do-not-touch.
 
 **Inka**

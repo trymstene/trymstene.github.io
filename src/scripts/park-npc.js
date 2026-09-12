@@ -19,18 +19,7 @@ const OLD_DRAW = {
 // 🌦 …and what he says about the WEATHER, which overrides the health band
 // while it is falling: the park's mood is the sky's for as long as it lasts.
 // He is the only one who never leaves the bench.
-const OLD_WX = {
-  drizzle: ['just a bit of drizzle. does the beds good.',
-    'nothing wrong with a soft day like this.',
-    'smell that? that’s the soil waking up.'],
-  heavy: ['proper rain, this. beds’ll drink well tonight.',
-    'the hens have all found a tree. sensible birds.',
-    'don’t mind me. i’ve sat through worse.'],
-  storm: ['now THIS is weather.',
-    'hold on to something, lad.',
-    'we’ll be picking this up for days, mark me.',
-    'the birds knew. they always know first.'],
-};
+const OLD_WX = PARK_COPY.peel.wx;
 const OLD_LINES = PARK_COPY.peel.bench;
 // 💬 his DIALOGUE — a topic answers with `byPhase` (index = health band 0-4),
 // one static `line`, or a `seq` of lore beats stepped per ask; `close` ends

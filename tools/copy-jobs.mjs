@@ -140,6 +140,11 @@ const parkFields = {
   'peel.name': { kind: 'name', max: 14, note: 'FIXED: old peel.' },
   'peel.greet': { kind: 'prose', aim: 70, max: 90, note: 'The first thing he says when the card opens. An invitation to sit, not a menu.' },
   'peel.bench[][]': { kind: 'prose', aim: 70, max: 90, note: 'What he mutters from his bench, to nobody. One inner array per health band, worst park first. Three or four each.' },
+  // 🌦 the weather overrides the health band while it is falling — these are the same
+  // bench mutter, for a sky instead of a state. They lived in park-npc.js until 13 Sep.
+  'peel.wx.drizzle[]': { kind: 'prose', aim: 70, max: 90, note: 'What he mutters in light rain. The park likes it and so does he.' },
+  'peel.wx.heavy[]': { kind: 'prose', aim: 70, max: 90, note: 'What he mutters in proper rain. Unbothered; he has sat through worse.' },
+  'peel.wx.storm[]': { kind: 'prose', aim: 70, max: 90, note: 'What he mutters in a real storm. Still not leaving the bench.' },
   'peel.topics[].id': { kind: 'key', max: 10, note: 'FIXED. Return the ids exactly as the brief gives them.' },
   'peel.topics[].q': { kind: 'prose', aim: 34, max: 40, note: 'The question as the PLAYER would ask it, on a button. Lowercase, plain, no wit — the wit is his answer.' },
   'peel.topics[].line': { kind: 'prose', aim: 150, max: 180, note: 'A single answer, for a topic whose answer never changes.' },
@@ -160,6 +165,12 @@ function parkShape(data) {
   if (!P || !I || !S) { say('', 'the file needs peel, inka and stand'); return bad; }
   if (!Array.isArray(P.bench) || P.bench.length !== 5) say('peel.bench', 'five health bands, worst park first');
   else P.bench.forEach((b, i) => { if (!Array.isArray(b) || b.length < 3) say(`peel.bench[${i}]`, 'three or four mutters for this band'); });
+  // 🌦 park-npc.js reads OLD_WX[wx] where wx is the weather's own name, so a missing
+  // tier is not a copy problem — it is a silent fall back to the health band's lines
+  if (!P.wx || typeof P.wx !== 'object') say('peel.wx', 'the three weather tiers are missing: drizzle, heavy, storm');
+  else for (const tier of ['drizzle', 'heavy', 'storm']) {
+    if (!Array.isArray(P.wx[tier]) || P.wx[tier].length < 3) say(`peel.wx.${tier}`, `at least three mutters for ${tier} — park-npc.js falls back to the health band without them`);
+  }
   const ids = ['park', 'help', 'lore', 'shop', 'bye'];
   const got = (P.topics || []).map((t) => t && t.id);
   for (const id of ids) if (!got.includes(id)) say('peel.topics', `the topic "${id}" is missing — the deck is fixed`);
@@ -182,11 +193,20 @@ const parkSchema = {
   type: 'object', additionalProperties: false, required: ['peel', 'inka', 'stand'],
   properties: {
     peel: {
-      type: 'object', additionalProperties: false, required: ['name', 'greet', 'bench', 'topics', 'bed'],
+      type: 'object', additionalProperties: false, required: ['name', 'greet', 'bench', 'wx', 'topics', 'bed'],
       properties: {
         name: str('Exactly: old peel'),
         greet: str(parkFields['peel.greet'].note),
         bench: { type: 'array', description: parkFields['peel.bench[][]'].note, items: { type: 'array', items: { type: 'string' } } },
+        wx: {
+          type: 'object', additionalProperties: false, required: ['drizzle', 'heavy', 'storm'],
+          description: 'What he mutters while it is raining, which overrides the health band for as long as it lasts.',
+          properties: {
+            drizzle: { type: 'array', description: parkFields['peel.wx.drizzle[]'].note, items: { type: 'string' } },
+            heavy: { type: 'array', description: parkFields['peel.wx.heavy[]'].note, items: { type: 'string' } },
+            storm: { type: 'array', description: parkFields['peel.wx.storm[]'].note, items: { type: 'string' } },
+          },
+        },
         topics: {
           type: 'array',
           description: 'His five topics, ids fixed: park, help, lore, shop, bye.',

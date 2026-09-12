@@ -30,8 +30,12 @@ node tools/copy.mjs <job> --approve # Trym has read it: move it into src/data/co
 - 🔒 **Some sections are Trym's own words and the rig will not write them.** They
   carry a `locked` entry in `tools/copy-jobs.mjs` — today that is **Old Peel** in
   `park-npcs`. Locked copy is cut out of the model's schema, spliced back on
-  `--approve`, and the gate proves it every run. Run the job all you like; never
-  remove a lock unless Trym asks for it by name.
+  `--approve`, and the gate proves it by running a real `--approve` every time. Run
+  the job all you like; never remove a lock unless Trym asks for it by name.
+- ✋ **Editing `src/data/copy/*.json` directly is blocked** (`tools/guard-copy.mjs`,
+  a PreToolUse hook). Being denied there is the rule working — use the rig. And
+  `--approve` refuses any draft with no `_meta` receipt, so a hand-typed draft
+  cannot ship either.
 - The skill `/copy` has the full procedure.
 
 ## ⭐ A RULE TRYM STATES TWICE BECOMES A CHECK, NOT A PARAGRAPH

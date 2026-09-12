@@ -10,13 +10,16 @@
 // Everything else is judgement and lives in the voice guide.
 //
 // Run: node tools/check-copy.mjs
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { jobs, jobForFile, lockedTops, mergeLocked, schemaFor } from './copy-jobs.mjs';
-import { checkFile, report, strings } from './copy-rules.mjs';
+import { checkFile, report, strings, patternOf } from './copy-rules.mjs';
 
 const ROOT = process.cwd();
 const DIR = 'src/data/copy';
+const VOICE = 'docs/voice.md';
 const problems = [];
 let files = 0, lines = 0;
 
@@ -47,11 +50,70 @@ for (const j of jobs()) {
   if (!existsSync(join(ROOT, j.approved))) problems.push(`${j.id} — no approved copy at ${j.approved} (write one with \`node tools/copy.mjs ${j.id}\`, review at /dev/copy/, then --approve)`);
 }
 
-// 🔒 THE LOCK, TESTED — not described. A locked section is copy Trym wrote
-// himself (Old Peel), and the only thing standing between his words and a
-// `--approve` is tools/copy-jobs.mjs `mergeLocked`. So the gate poisons a draft
-// and proves the approved words still win, every run, in about a millisecond.
-// If someone simplifies the merge away, this is what says so.
+// 🔒 THE LOCK, TESTED — not described. A locked section is copy Trym wrote himself
+// (Old Peel). The gate poisons a draft and proves his words still win, every run.
+//
+// ⚠️ It runs the REAL `node tools/copy.mjs --approve <job>` in a throwaway copy of the
+// repo, not the merge helper on its own. An earlier version called mergeLocked directly
+// and was self-referential: an audit deleted the splice from copy.mjs's approve() and
+// this gate stayed green while Old Peel's greeting was overwritten. A test that only
+// proves a helper is faithful proves nothing about whether anyone still calls it.
+function locksHold(j, locked) {
+  const sand = mkdtempSync(join(tmpdir(), 'copylock-'));
+  try {
+    for (const rel of ['tools/copy.mjs', 'tools/copy-jobs.mjs', 'tools/copy-rules.mjs', VOICE, j.brief, j.approved]) {
+      mkdirSync(join(sand, rel, '..'), { recursive: true });
+      copyFileSync(join(ROOT, rel), join(sand, rel));
+    }
+    const approved = JSON.parse(readFileSync(join(ROOT, j.approved), 'utf8'));
+    // A draft that would be ACCEPTED on every other count, and differs only in the locked
+    // words. That matters: a poison that breaks the shape makes approve() die before it
+    // writes, which is red for the wrong reason and hides a real lock failure behind
+    // "inconclusive". So only `prose` fields are rewritten — never ids, keys or names —
+    // each to the same length with its {placeholders} intact, which keeps every mechanical
+    // rule (length, apostrophes, brands, placeholders) satisfied.
+    const rewrite = (v, path) => {
+      if (typeof v === 'string') {
+        const spec = j.fields[patternOf(path)];
+        if (!spec || spec.kind !== 'prose') return v;
+        return v.replace(/\{[^}]*\}|[A-Za-z]/g, (m) => (m.length > 1 ? m : 'x'));
+      }
+      if (Array.isArray(v)) return v.map((x, i) => rewrite(x, `${path}[${i}]`));
+      if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, rewrite(x, `${path}.${k}`)]));
+      return v;
+    };
+    const poison = JSON.parse(JSON.stringify(approved));
+    for (const k of locked) poison[k] = rewrite(poison[k], k);
+    poison._meta = { job: j.id, model: 'the-lock-test', api: 'none', when: '1970-01-01T00:00:00.000Z' };
+    mkdirSync(join(sand, j.out, '..'), { recursive: true });
+    writeFileSync(join(sand, j.out), JSON.stringify(poison, null, 2) + '\n');
+
+    const run = spawnSync(process.execPath, ['tools/copy.mjs', '--approve', j.id], { cwd: sand, encoding: 'utf8' });
+    const after = JSON.parse(readFileSync(join(sand, j.approved), 'utf8'));
+    const out = [];
+    for (const k of locked) {
+      if (JSON.stringify(after[k]) !== JSON.stringify(approved[k])) {
+        out.push(`${j.id} — LOCK BROKEN: \`node tools/copy.mjs --approve ${j.id}\` overwrote "${k}" in ${j.approved}. ${j.locked[k]}`
+          + `\n      the splice lives in approve() in tools/copy.mjs (holdLocked) and in mergeLocked in tools/copy-jobs.mjs`
+          + (run.status ? `\n      (the command also exited ${run.status})` : ''));
+      }
+    }
+    // the other half: --approve must have RUN to the write. A command that died early
+    // leaves the locked words intact for the wrong reason and would pass silently.
+    const wrote = run.status === 0 && String(run.stdout || '').includes(`✓ ${j.approved}:`);
+    if (!wrote) {
+      out.push(`${j.id} — the lock test is inconclusive: \`--approve\` never reached the write, so it never had the chance to touch ${locked.join(', ')}`
+        + `\n      exit ${run.status}` + (run.stderr ? ` · ${String(run.stderr).trim().split('\n')[0]}` : '')
+        + (run.error ? ` · ${run.error.message}` : ''));
+    }
+    return out;
+  } catch (e) {
+    return [`${j.id} — the lock test could not run: ${e.message}`];
+  } finally {
+    rmSync(sand, { recursive: true, force: true });
+  }
+}
+
 for (const j of jobs()) {
   const locked = lockedTops(j);
   if (!locked.length) continue;
@@ -62,21 +124,25 @@ for (const j of jobs()) {
   const gone = locked.filter((k) => approved[k] === undefined);
   if (gone.length) { problems.push(`${j.id} — "${gone.join('", "')}" is locked but missing from ${j.approved}; the words it protects are not there`); continue; }
 
+  // 1 · the helper is faithful
+  let held = null;
   const poison = { ...approved };
   for (const k of locked) poison[k] = { poisoned: 'a draft trying to overwrite words it does not own' };
-  let held = null;
   try { held = mergeLocked(j, poison, approved); }
   catch (e) { problems.push(`${j.id} — the lock threw while protecting ${locked.join(', ')}: ${e.message}`); }
-  const schema = schemaFor(j);
   for (const k of locked) {
     if (held && JSON.stringify(held[k]) !== JSON.stringify(approved[k])) {
-      problems.push(`${j.id} — LOCK BROKEN: a draft can overwrite "${k}" in ${j.approved}. ${j.locked[k]}`);
+      problems.push(`${j.id} — mergeLocked let a draft through for "${k}". ${j.locked[k]}`);
     }
+    // 2 · the model is never asked for the words in the first place
+    const schema = schemaFor(j);
     if ((schema.properties || {})[k] || (schema.required || []).includes(k)) {
       problems.push(`${j.id} — "${k}" is locked but still in the schema the writer answers in, so the model is being asked for words it must not write`);
     }
   }
-  if (!gone.length) console.log(`🔒 ${j.id}: ${locked.map((k) => `"${k}"`).join(', ')} held — ${locked.map((k) => j.locked[k]).join(' ')}`);
+  // 3 · and the command a person actually types still honours it
+  problems.push(...locksHold(j, locked));
+  console.log(`🔒 ${j.id}: ${locked.map((k) => `"${k}"`).join(', ')} held through a real --approve — ${locked.map((k) => j.locked[k]).join(' ')}`);
 }
 
 if (problems.length) {

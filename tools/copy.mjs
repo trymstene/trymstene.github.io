@@ -244,6 +244,15 @@ function approve(job) {
   let draft;
   try { draft = JSON.parse(readFileSync(at, 'utf8')); } catch (e) { die(`${job.out} does not parse: ${e.message}`); }
   const { _meta, ...rest } = draft;
+  // ✍️ THE RECEIPT. _meta (job, model, when) is written by write() and by nothing else,
+  // so it is the one mechanical answer to CLAUDE.md's "never hand-write player-facing
+  // words": no receipt, no approval. This used to be enforced as a side effect of
+  // validating with { draft: true }; validating the SPLICED object (below) has no _meta
+  // by construction, which quietly deleted the requirement for a day. Say it outright.
+  if (!_meta) {
+    die(`${job.out} carries no _meta receipt, so it was not written by the rig.\n`
+      + `  Drafts come from \`node tools/copy.mjs ${job.id}\`. Copy is never typed by hand — see CLAUDE.md.`);
+  }
   // 🔒 THE LAST GATE before the game's own copy is overwritten. Whatever the draft
   // holds for a locked section — a generated one, a hand-pasted one, a stale one from
   // before the lock existed — the approved file's words go back in here. Then we
@@ -257,7 +266,7 @@ function approve(job) {
     const changed = [...strings(clean)].filter((s) => was.get(s.path) !== s.value);
     console.log(`\n✓ ${job.approved}: ${changed.length} of ${countLines(clean)} lines changed`);
   } else console.log(`\n✓ ${job.approved}: ${countLines(clean)} lines, first write`);
-  console.log(`  ${_meta ? `written by ${_meta.model} on ${String(_meta.when).slice(0, 10)}` : 'no _meta on the draft'} — _meta is not copied`);
+  console.log(`  written by ${_meta.model} on ${String(_meta.when).slice(0, 10)} — the receipt is checked, then not copied`);
   console.log(`  the game reads it through ${job.reads}. Run: npx astro build && node tools/check-copy.mjs`);
 }
 

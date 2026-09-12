@@ -32,6 +32,24 @@
         "some days this bench is the best seat in the world."
       ]
     ],
+    "wx": {
+      "drizzle": [
+        "just a bit of drizzle. does the beds good.",
+        "nothing wrong with a soft day like this.",
+        "smell that? that’s the soil waking up."
+      ],
+      "heavy": [
+        "proper rain, this. beds’ll drink well tonight.",
+        "the hens have all found a tree. sensible birds.",
+        "don’t mind me. i’ve sat through worse."
+      ],
+      "storm": [
+        "now THIS is weather.",
+        "hold on to something, lad.",
+        "we’ll be picking this up for days, mark me.",
+        "the birds knew. they always know first."
+      ]
+    },
     "topics": [
       {
         "id": "park",

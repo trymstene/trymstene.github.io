@@ -68,11 +68,25 @@ A locked section is not a request to be careful. It is enforced:
 - its field notes are left out of the prompt, and the prompt says whose words they are;
 - `--approve` splices the approved file's own words back in **before** it validates
   and writes, so even a hand-edited draft cannot replace them;
-- `tools/check-copy.mjs` poisons a draft every run and fails if the lock lets it through.
+- `tools/check-copy.mjs` runs a real `--approve` against a poisoned draft in a throwaway
+  copy of the repo every time, and fails if the locked words moved. It runs the CLI, not
+  the merge helper, because a test that only proves a helper is faithful proves nothing
+  about whether anyone still calls it.
 
 So you may run a locked job freely: the other voices get rewritten, the locked one
 never moves. **Never unlock a section to "refresh" it.** Removing a `locked` entry
 needs Trym asking for it, in that commit message, by name.
+
+Two more things hold the line, and you will meet both:
+
+- **`--approve` refuses a draft with no `_meta` receipt.** `_meta` is written by the rig
+  and by nothing else, so a hand-typed `tools/copy-out/<job>.json` cannot be approved.
+- **Editing `src/data/copy/*.json` with Edit or Write is blocked** by `tools/guard-copy.mjs`,
+  a PreToolUse hook. If you are denied there, that is the rule working: run the rig. A hook
+  only sees Claude's tool calls, so Trym's own editing is untouched.
+- The park's walk (`tests/park-peel.spec.mjs`) asserts on the built site that Old Peel says
+  what the file says — his greeting, his deck, his five bands, his lore beats, his weather
+  lines. Change the wiring and CI says so.
 
 ## Hard rules
 
