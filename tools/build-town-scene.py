@@ -583,6 +583,23 @@ for _ in range(10):
 im.save(os.path.join(OUT, 'town.png'), optimize=True)
 print('wrote town.png %dx%d, %d overlays, %d colliders' % (W, H, len(OVERLAYS), len(COLLIDERS)))
 
+
+# ---- 🗞 the litter: the pack's paper flyers, blockified at the town's PROP scale like any prop,
+# but exported as loose files — the life system (town-life.js) puts six of them on the streets at
+# dawn, Moss sweeps them, the player may pick one up
+def export_prop(name, out_name, scale=PROP):
+    s = blockify(load_pack(name), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+    s = s.resize((max(1, int(s.width * scale)), max(1, int(s.height * scale))), Image.NEAREST)
+    s.save(os.path.join(OUT, out_name), optimize=True)
+    return s.size
+
+
+for i in (1, 2):
+    try:
+        print('  litter-%d.png' % i, export_prop('ME_Singles_Generic_Building_48x48_Condo_8_Flyer_%d.png' % i, 'litter-%d.png' % i))
+    except Exception as e:
+        print('  ! litter', i, e)
+
 # ---- the contract ----------------------------------------------------------------
 # ---- 🕹 THE ARCADE (Trym, 11 Sep night): The Bunch's door opens on a room. Built the homestead's
 # way — Room_Builder floor + wall band at 48-px tiles, the pack's furniture at 1:1, the plate floats

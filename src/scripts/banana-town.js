@@ -11,6 +11,7 @@ import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE } from './town-geo.js';
+import { initLife } from './town-life.js';
 
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
@@ -109,30 +110,8 @@ park.textContent = 'THE PARK ↓';
 park.style.left = pct(DOORS.south.x, W); park.style.top = pct(H - 60, H); park.style.zIndex = String(100 + H);
 world.appendChild(park);
 
-// ---- the people: engine bananas standing where the plan puts them
-const NPC_LOOK = { nib: { hat: 'tophat' }, pip: { hat: 'backwardscap' }, stamp: { hat: 'buckethat' }, figjr: { hat: 'cowboy' },
-  spinner: { hat: 'jester' }, bean: { hat: 'beanieprop' }, dot: {}, moss: { hat: 'woolbeanie' } };
-const NPC_SAY = {
-  nib: 'Nib: “Ah. You. The Mayor said somebody might come by the hall.”',
-  pip: 'Pip: “Fireworks, lures, duck bread. Every one of them the last one.”',
-  stamp: 'Stamp: “Postcards go out, mail comes in. I weigh everything.”',
-  figjr: 'Fig Jr.: “Eggs are up today. Or down. One of those.”',
-  spinner: 'Spinner: “One free spin a day. The pot is watching you.”',
-  bean: 'Bean: “Your fortune is in the cup. So is the coffee.”',
-  dot: 'Dot: “Have you seen a fish? A real one?”',
-  moss: 'Moss: “Leaves. Again.”',
-};
-const npcEls = [];
-for (const [key, x, y, name] of NPCS) {
-  const el = document.createElement('div');
-  el.className = 'tw-npc';
-  el.style.left = pct(x, W); el.style.top = pct(y, H); el.style.zIndex = String(100 + y);
-  const cv = document.createElement('canvas'); cv.width = cv.height = 150;
-  const tag = document.createElement('span'); tag.textContent = name;
-  el.appendChild(cv); el.appendChild(tag);
-  world.appendChild(el);
-  npcEls.push({ key, x, y, cv, el });
-}
+// ---- the people: the residents live in town-life.js (their days, walks, speech, the litter, the windows)
+const life = initLife({ world, W, H, pct });
 
 // ---- me
 let myOutfit = { hat: 'none', glasses: 'none', extras: {} };
@@ -220,7 +199,8 @@ function thingAt(wx, wy) {
     for (const [key, x0, y0, x1, y1] of ARCADE.spots) if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) return ['spot', key];
     return null;
   }
-  for (const n of npcEls) if (Math.abs(wx - n.x) < 34 && wy < n.y + 6 && wy > n.y - 90) return ['npc', n.key];
+  const lk = life.at(wx, wy);   // a flyer on the street, or a resident where they stand right now
+  if (lk) return lk;
   for (const [key, spot] of Object.entries(SPOTS)) {
     const box = BOXES.find((b) => spot.x >= b[0] && spot.x <= b[2] && spot.y - 2 >= b[1] && spot.y - 2 <= b[3] && Math.abs(b[4] - spot.y) < 4);
     if (box && wx >= box[0] && wx <= box[2] && wy >= box[1] && wy <= box[3]) return ['spot', key];
@@ -242,7 +222,8 @@ view.addEventListener('pointerdown', (e) => {
       const key = hit[1]; arriveThen = () => gameCard(key);
       return;
     }
-    if (hit[0] === 'npc') { say(NPC_SAY[hit[1]]); const n = npcEls.find((q) => q.key === hit[1]); tgt.x = n.x + (pos.x < n.x ? -60 : 60); tgt.y = n.y + 8; return; }
+    if (hit[0] === 'npc') { const n = life.tap(hit[1]); if (n) { tgt.x = n.x + (pos.x < n.x ? -60 : 60); tgt.y = n.y + 8; } return; }
+    if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => life.pick(hit[1]); } return; }   // walk to it, then it is picked up
     const spot = SPOTS[hit[1]], wasInside = inside;
     if (!openFor(hit[1])) say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
     if (inside !== wasInside) return;   // 🚪 a door was used: the room placed the banana; a walk target here would march it straight back out
@@ -293,6 +274,7 @@ function tick(now) {
   me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inside ? 2100 : 100) + Math.round(pos.y));
   cam(false);
   drawMe();
+  life.tick(now, dt, pos);
   if (inside && ARCADE) { const [x0, y0, x1, y1] = ARCADE.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitArcade(); }
   if (!inside && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -558,11 +540,9 @@ document.getElementById('twEmote').addEventListener('click', function () {
 // town — the prototype stays unlisted (Rule Zero) while still being leavable.
 const travel = initTravel({ here: 'town', mount: document.querySelector('.tw-actions'), btnClass: 'tw-act tw-act--icon' });
 assetsReady().then(() => {
-  for (const n of npcEls) {
-    drawComposite(n.cv.getContext('2d'), 150, 0, { hat: 'none', glasses: 'none', extras: {}, ...NPC_LOOK[n.key], top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
-  }
+  life.start();   // the residents take their stations for this hour of the town's day
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
-  window.__town = { pos, tgt, SPOTS, NPCS, say, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
+  window.__town = { pos, tgt, SPOTS, NPCS, say, life: life.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

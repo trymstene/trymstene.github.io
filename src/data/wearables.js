@@ -243,6 +243,10 @@ export const WEARABLE_PACKS = {
       // dinner props: worn while the rave's 'slice'/'box' fx runs (draw-time inject)
       { id: 'slice', label: 'Pizza slice', anchor: 'hand', hand: 'right', grip: 1, art: 'pizzaslice', raveOnly: true },
       { id: 'pizzabox', label: 'Pizza box', anchor: 'hand', hand: 'left', grip: 3.5, art: 'pizzaboxheld', raveOnly: true },
+      // 🏘️ the town residents' tools (12 Sep 2026) — draw-time only, worn by Stamp, Fig Jr. and Gran Fig (art: src/data/townwear.js)
+      { id: 'letter', label: 'Letter', anchor: 'hand', hand: 'left', grip: 4, art: 'letter', raveOnly: true },
+      { id: 'lemonjug', label: 'Lemonade jug', anchor: 'hand', hand: 'left', grip: 5.5, art: 'lemonjug', raveOnly: true },
+      { id: 'wateringcan', label: 'Watering can', anchor: 'hand', hand: 'left', grip: 3, art: 'wateringcan', raveOnly: true },
     ],
   },
   // Example future pack (art not drawn yet):

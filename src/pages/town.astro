@@ -114,7 +114,34 @@ const description = 'The town centre of Banana World, under construction.';
        props, people and planks stop painting while indoors, the banana rides above the shade */
     .tw-inshade { position: absolute; inset: 0; z-index: 2000; background: #0d0b14; pointer-events: none; }
     .tw-room { position: absolute; z-index: 2010; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
-    .tw-world.is-inside :is(.tw-ov, .tw-npc, .tw-plank, .tw-fountain) { visibility: hidden; }
+    .tw-world.is-inside :is(.tw-ov, .tw-npc, .tw-plank, .tw-fountain, .tw-bubble, .tw-litter, .tw-glow) { visibility: hidden; }
+    /* 🏘️ the life system (town-life.js): a resident's speech bubble — the toast's paper and ink, small,
+       over the head; it lives in the world's stacking context so the toast and the cards always win */
+    .tw-bubble {
+      position: absolute; transform: translate(-50%, calc(-100% - 18px)); z-index: 1900; pointer-events: none;
+      width: max-content; max-width: 150px; background: #fffdf5; color: #141208; border: 2px solid #000; box-shadow: 2px 2px 0 #000;
+      padding: 4px 7px; font-size: 0.6rem; font-weight: 700; line-height: 1.25; text-align: center;
+    }
+    .tw-bubble::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 8px; height: 8px; background: #fffdf5; border-right: 2px solid #000; border-bottom: 2px solid #000; transform: translateX(-50%) rotate(45deg); }
+    /* the puff: the park's .pk-poof to the pixel — a flyer swept or picked up, water on the beds */
+    .tw-poof { position: absolute; transform: translate(-50%, -50%); width: 3%; z-index: 1800; pointer-events: none; }
+    .tw-poof span { position: absolute; inset: 0; opacity: 0; }
+    .tw-poof svg { width: 100%; height: auto; image-rendering: pixelated; }
+    .tw-poof__1 { animation: twPoofStep 0.75s steps(1) forwards; }
+    .tw-poof__2 { animation: twPoofStep 0.75s steps(1) 0.25s forwards; }
+    .tw-poof__3 { animation: twPoofStep 0.75s steps(1) 0.5s forwards; }
+    @keyframes twPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
+    /* the flyers on the street: baked by the generator (litter-N.png), sized to their own pixels */
+    .tw-litter { position: absolute; transform: translate(-50%, -100%); height: auto; image-rendering: pixelated; pointer-events: none; }
+    /* a home's window at night, the Mayor's in the evening: a warm glow that breathes */
+    .tw-glow {
+      position: absolute; width: 3.6%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+      background: radial-gradient(circle, rgba(255, 214, 110, 1) 0%, rgba(255, 176, 50, 0.7) 34%, rgba(255, 150, 30, 0) 66%);
+      animation: twGlow 2.6s ease-in-out infinite alternate;
+    }
+    .tw-glow--mayor { width: 4.2%; background: radial-gradient(circle, rgba(255, 200, 120, 1) 0%, rgba(255, 140, 50, 0.72) 34%, rgba(255, 110, 30, 0) 66%); }
+    @keyframes twGlow { from { opacity: 0.72; } to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .tw-glow { animation: none; } }
     /* 🎛 THE ACTION BAR — the HUD's bottom half (design library §15): the park's
        .pk-actions metrics to the pixel, in the town's brick. The verb slot left,
        the heart, the travel door (world-travel.js mounts it and floors every row at 44px). */
