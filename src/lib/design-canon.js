@@ -193,13 +193,18 @@ export function heightsOf(rel, selector) {
 /** Old Peel's talk content, read from park-npc.js: greeting, the question deck,
  *  one real answer, and the portrait draw calls. */
 export function oldPeel() {
+  // ✍️ his WORDS come from the copy file now (GPT writes them, Trym approves them), so the showroom
+  // reads the DATA instead of scraping the module — scraping is what broke the day the park was wired
+  // to src/data/copy/park-npcs.json. Only the portrait maths still lives in code.
   const text = src('src/scripts/park-npc.js');
-  const greet = /const OLD_GREET = '([^']+)';/.exec(text)?.[1];
-  const topics = /const OLD_TOPICS = \[([\s\S]*?)\n\];/.exec(text)?.[1];
-  const questions = [...topics.matchAll(/q: '([^']+)'/g)].map((m) => m[1]);
-  const answer = /id: 'park', q: [^\n]*byPhase: \[\s*\n?\s*'([^']+)'/.exec(text)?.[1];
+  const copy = JSON.parse(src('src/data/copy/park-npcs.json'));
+  const greet = copy && copy.peel && copy.peel.greet;
+  const topics = (copy && copy.peel && copy.peel.topics) || [];
+  const questions = topics.map((t) => t.q);
+  const parkTopic = topics.find((t) => t.id === 'park');
+  const answer = parkTopic && parkTopic.byPhase && parkTopic.byPhase[0];
   const portrait = text.split('\n').filter((l) => /pc\.(scale|translate)|drawComposite\(pc/.test(l)).map((l) => l.trim());
-  if (!greet || !questions.length || !answer) throw new Error('design-canon: Old Peel content not found in park-npc.js');
+  if (!greet || !questions.length || !answer) throw new Error('design-canon: src/data/copy/park-npcs.json has no Old Peel content');
   return { greet, questions, answer, portrait };
 }
 

@@ -55,7 +55,10 @@ export function faults(value, spec = {}) {
     if (value.includes('"')) say('apostrophe', 'a straight double quote — the house uses “ ”');
     if (/\p{Extended_Pictographic}/u.test(value)) say('emoji', 'an emoji in a spoken line');
     const brace = /\{[^}]*\}/g;
-    for (const m of value.match(brace) || []) if (m !== '{name}') say('placeholder', `${m} is not a placeholder the game fills — {name} is the only one`);
+    // a field may declare its own placeholders (the stand's sold line holds {item}); {name} is
+    // universal, and anything else is a brace the game would print raw
+    const ok = new Set(['{name}', ...(spec.holds || [])]);
+    for (const m of value.match(brace) || []) if (!ok.has(m)) say('placeholder', `${m} is not a placeholder the game fills here — allowed: ${[...ok].join(', ')}`);
     if (DIGIT_CLOCK.test(value) || WORD_CLOCK.test(value)) say('clock', 'a published interval — name the rhythm, never the number');
     if (/\bclone of\b/i.test(value)) say('name', '"clone of" — ours has a banana name and one real twist');
     const low = value.toLowerCase();

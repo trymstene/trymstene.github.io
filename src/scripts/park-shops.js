@@ -2,6 +2,7 @@
 // and the Banana Stand coin shop. Split from banana-park.js (P5); wired
 // through the shared ctx (ME_DRAW/invalidateMe/sendOutfit = the equip seam).
 import { drawComposite, assetsReady, outfitParams, SVG as ART } from '../lib/banana-engine.js';
+import PARK_COPY from '../data/copy/park-npcs.json';   // ✍️ their words: src/data/copy, written by GPT
 import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
 import { passStat, passGet, passPush, passSpend, passFlush, pullIfStale } from '../lib/banana-pass.js';
 import { catCustom, noteCatch } from '../lib/drops.js';
@@ -16,13 +17,8 @@ import { shopWindow } from '../../shared/products.js';
 const MERCH_PRODUCTS = shopWindow();
 // 🍌 INKA, keeper of the merch shop — monocle + a drawn print-shop apron
 // (banana NPCs are our own art; the apron is painted over the composite)
-const KEEPER_GREET = 'welcome in. everything on this wall is real — printed, packed and posted.';
-const KEEPER_LINES = [
-  'that wall is your banana, printed. tap one down and have a look.',
-  'no coins in here. real things cost real money — that is what makes them real.',
-  'stickers go everywhere. laptops, fridges, somebody’s forehead once.',
-  'we post anywhere on earth. i checked twice.',
-];
+const KEEPER_GREET = PARK_COPY.inka.greet;
+const KEEPER_LINES = PARK_COPY.inka.lines;
 // the apron, painted in 3px blocks on the 150 grid (inner-shadowed hem + a
 // little banana on the pocket) — scaled to whatever canvas it lands on
 function drawApron(ctx2d, S) {
@@ -41,7 +37,7 @@ function drawApron(ctx2d, S) {
 
 // 🍌🏪 THE BANANA STAND — the coin shop, ported from the old /park/ page
 // (banana-stand.js). Same manifest stock, same DESC voice, same lock art.
-const ST_HELLO = 'what can i get you? everything on the wall is for sale. finally.';
+const ST_HELLO = PARK_COPY.stand.greet;
 const ST_DESC = {
   potato: "it's a potato.",
   squidhat: "the squid. 120 coins. i don't make the rules. i am the rules.",
@@ -51,11 +47,7 @@ const ST_DESC = {
   duckhat: 'the duck stays on your head at all times.',
   flamingoring: 'flotation certified. dance floor approved.',
 };
-const ST_SOLD = [
-  (l) => `SOLD. the ${l} is yours. wear it loud.`,
-  (l) => `the ${l}. excellent taste. probably.`,
-  (l) => `one ${l}, no receipt. we don't do receipts.`,
-];
+const ST_SOLD = PARK_COPY.stand.sold.map((s) => (l) => s.replace('{item}', l));
 const ST_LOCK_SVG = '<svg viewBox="0 0 8 9" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="4" height="1" fill="#b8781b"/><rect x="1" y="1" width="1" height="2" fill="#b8781b"/><rect x="6" y="1" width="1" height="2" fill="#b8781b"/><rect x="0" y="3" width="8" height="5" fill="#ffd23f"/><rect x="0" y="8" width="8" height="1" fill="#e6a817"/><rect x="3" y="4" width="2" height="2" fill="#7a4a21"/><rect x="3" y="6" width="1" height="1" fill="#7a4a21"/></svg>';
 const ST_BACKCAT_PRICE = 50;
 

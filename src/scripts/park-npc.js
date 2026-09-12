@@ -2,13 +2,14 @@
 // commentator and first full RPG NPC (the pattern the Gardener reuses).
 // Split from banana-park.js (P5); wired through the shared ctx.
 import { drawComposite, assetsReady } from '../lib/banana-engine.js';
+import PARK_COPY from '../data/copy/park-npcs.json';   // ✍️ his words: written by GPT, approved by Trym, never edited here
 import { OLDBENCH } from './park-geo.js';
 import { track, esc } from './park-util.js';
 
 // A NORMAL engine banana (drawComposite) LOCKED to the first standing frame —
 // no dancing, too old — round glasses + walking cane (the cap/beard drafts
 // were dropped; his look is glasses and cane).
-const OLD_NAME = 'old peel';
+const OLD_NAME = PARK_COPY.peel.name;
 const OLD_DRAW = {
   hat: 'none', glasses: 'potter', extras: { oldcane: true },
   top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
@@ -30,59 +31,18 @@ const OLD_WX = {
     'we’ll be picking this up for days, mark me.',
     'the birds knew. they always know first.'],
 };
-const OLD_LINES = [
-  ['its so sad to see the park like this…',
-    'someone should clean up this mess…',
-    'i remember when this lawn was all green. long time ago now.',
-    'even the fountain gave up. dry as my elbows.'],
-  ['she’s hurting, this old park. weeds everywhere.',
-    'the hens won’t lay in a place like this, you know.',
-    'a little weeding would go a long way…'],
-  ['wish someone could tend to the plants',
-    'the soil’s still good, you know',
-    'green in patches. she’s trying, i can tell.',
-    'a bit of water works wonders. always has.'],
-  ['the squirrels came back. good sign, that.',
-    'she’s nearly herself again. keep at it.',
-    'sat here all morning. didn’t want to leave.'],
-  ['haven’t seen her this beautiful in years',
-    'butterflies! my missus loved the butterflies.',
-    'this is how i remember it. exactly this.',
-    'some days this bench is the best seat in the world.'],
-];
+const OLD_LINES = PARK_COPY.peel.bench;
 // 💬 his DIALOGUE — a topic answers with `byPhase` (index = health band 0-4),
 // one static `line`, or a `seq` of lore beats stepped per ask; `close` ends
 // the talk after the answer. Lowercase, warm, lean.
-const OLD_GREET = 'ah, company. sit a while — what’s on your mind?';
-const OLD_TOPICS = [
-  { id: 'park', q: 'what happened to the park?', byPhase: [
-    'she used to be the pride of banana world. then the footsteps stopped, and the weeds moved in.',
-    'she’s coming back from a rough patch. parks don’t heal alone, you know.',
-    'she’s half herself again. green in patches, like spring remembering the way.',
-    'look at her. nearly the park i first sat down in, all those years ago.',
-    'this is her. the real her. i knew she had it in her.',
-  ] },
-  { id: 'help', q: 'what can i do to help?', byPhase: [
-    'pull the weeds, pick up the rubbish. small hands make green grass.',
-    'keep weeding — and water anything anyone’s planted. she notices.',
-    'plant something. and water the thirsty ones, even a stranger’s flowers.',
-    'keep her watered and she’ll keep blooming. we’re nearly there.',
-    'you’ve done it, friend. sit down. enjoy her. that helps too.',
-  ] },
-  { id: 'lore', q: 'tell me about yourself', seq: [
-    'kept this park for forty years, i did. mowed her, planted her, knew every bench by its wobble.',
-    'my missus and i had our first picnic right here. she loved the butterflies — said they were flowers that got restless.',
-    'now i just sit. somebody else’s turn to keep her. maybe yours, eh?',
-  ] },
-  { id: 'shop', q: 'what’s that mushroom house?', line: 'inka’s little print shop, past the stand. everything else in this park costs coins — her wall is the one real thing. good sort, inka.' },
-  { id: 'bye', q: 'goodbye', byPhase: [
-    'mind the weeds on your way, friend.',
-    'come back soon. she needs the footsteps.',
-    'off you go. bring a watering can next time, eh?',
-    'lovely day for it. off you go.',
-    'enjoy her, friend. that’s what she’s for.',
-  ], close: true },
-];
+const OLD_GREET = PARK_COPY.peel.greet;
+const OLD_TOPICS = PARK_COPY.peel.topics.map((t) => ({
+  id: t.id, q: t.q,
+  ...(t.line ? { line: t.line } : {}),
+  ...(t.byPhase ? { byPhase: t.byPhase } : {}),
+  ...(t.seq ? { seq: t.seq } : {}),
+  ...(t.close ? { close: true } : {}),
+}));
 
 // 🌼 OLD PEEL'S FLOWERBED — his pride: three REAL bed ditches (g-bed
 // grammar) holding a daisy, a sunflower and a midnight tulip, in the OPEN
@@ -103,11 +63,7 @@ const PEEL_BED = [
 export const PEEL_BED_SOLID = [
   [2392, 280, 2448, 334], [2452, 280, 2508, 334], [2512, 280, 2568, 334],
 ];
-const PEEL_BED_LINES = [
-  'my flowerbed. a daisy, a sunflower, and one midnight tulip.',
-  'i water them before the sun comes up. never missed a morning.',
-  'look, don’t touch, eh? forty years of practice in that little bed.',
-];
+const PEEL_BED_LINES = PARK_COPY.peel.bed;
 
 export function initOldPeel(ctx) {
   const { W, H, world, pct, depth, onScreen, pos, tgt } = ctx;

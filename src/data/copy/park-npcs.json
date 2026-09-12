@@ -1,0 +1,110 @@
+{
+  "peel": {
+    "name": "old peel",
+    "greet": "ah, company. sit a while — what’s on your mind?",
+    "bench": [
+      [
+        "its so sad to see the park like this…",
+        "someone should clean up this mess…",
+        "i remember when this lawn was all green. long time ago now.",
+        "even the fountain gave up. dry as my elbows."
+      ],
+      [
+        "she’s hurting, this old park. weeds everywhere.",
+        "the hens won’t lay in a place like this, you know.",
+        "a little weeding would go a long way…"
+      ],
+      [
+        "wish someone could tend to the plants",
+        "the soil’s still good, you know",
+        "green in patches. she’s trying, i can tell.",
+        "a bit of water works wonders. always has."
+      ],
+      [
+        "the squirrels came back. good sign, that.",
+        "she’s nearly herself again. keep at it.",
+        "sat here all morning. didn’t want to leave."
+      ],
+      [
+        "haven’t seen her this beautiful in years",
+        "butterflies! my missus loved the butterflies.",
+        "this is how i remember it. exactly this.",
+        "some days this bench is the best seat in the world."
+      ]
+    ],
+    "topics": [
+      {
+        "id": "park",
+        "q": "what happened to the park?",
+        "byPhase": [
+          "she used to be the pride of banana world. then the footsteps stopped, and the weeds moved in.",
+          "she’s coming back from a rough patch. parks don’t heal alone, you know.",
+          "she’s half herself again. green in patches, like spring remembering the way.",
+          "look at her. nearly the park i first sat down in, all those years ago.",
+          "this is her. the real her. i knew she had it in her."
+        ]
+      },
+      {
+        "id": "help",
+        "q": "what can i do to help?",
+        "byPhase": [
+          "pull the weeds, pick up the rubbish. small hands make green grass.",
+          "keep weeding — and water anything anyone’s planted. she notices.",
+          "plant something. and water the thirsty ones, even a stranger’s flowers.",
+          "keep her watered and she’ll keep blooming. we’re nearly there.",
+          "you’ve done it, friend. sit down. enjoy her. that helps too."
+        ]
+      },
+      {
+        "id": "lore",
+        "q": "tell me about yourself",
+        "seq": [
+          "kept this park for forty years, i did. mowed her, planted her, knew every bench by its wobble.",
+          "my missus and i had our first picnic right here. she loved the butterflies — said they were flowers that got restless.",
+          "now i just sit. somebody else’s turn to keep her. maybe yours, eh?"
+        ]
+      },
+      {
+        "id": "shop",
+        "q": "what’s that mushroom house?",
+        "line": "inka’s little print shop, past the stand. everything else in this park costs coins — her wall is the one real thing. good sort, inka."
+      },
+      {
+        "id": "bye",
+        "q": "goodbye",
+        "byPhase": [
+          "mind the weeds on your way, friend.",
+          "come back soon. she needs the footsteps.",
+          "off you go. bring a watering can next time, eh?",
+          "lovely day for it. off you go.",
+          "enjoy her, friend. that’s what she’s for."
+        ],
+        "close": true
+      }
+    ],
+    "bed": [
+      "my flowerbed. a daisy, a sunflower, and one midnight tulip.",
+      "i water them before the sun comes up. never missed a morning.",
+      "look, don’t touch, eh? forty years of practice in that little bed."
+    ]
+  },
+  "inka": {
+    "name": "inka",
+    "greet": "welcome in. everything on this wall is real — printed, packed and posted.",
+    "lines": [
+      "that wall is your banana, printed. tap one down and have a look.",
+      "no coins in here. real things cost real money — that is what makes them real.",
+      "stickers go everywhere. laptops, fridges, somebody’s forehead once.",
+      "we post anywhere on earth. i checked twice."
+    ]
+  },
+  "stand": {
+    "name": "the stand keeper",
+    "greet": "what can i get you? everything on the wall is for sale. finally.",
+    "sold": [
+      "SOLD. the {item} is yours. wear it loud.",
+      "the {item}. excellent taste. probably.",
+      "one {item}, no receipt. we don’t do receipts."
+    ]
+  }
+}
