@@ -54,6 +54,11 @@ dist/
 
 __pycache__/
 
+# ✍️ copy GPT has just written, waiting to be read at /dev/copy/. A draft is
+# never committed — `node tools/copy.mjs --approve <job>` promotes it into
+# src/data/copy/, which IS tracked, and that is the only copy the game imports.
+tools/copy-out/
+
 # Local secret configs (API tokens/keys) — NEVER commit. Catch-all + specifics.
 tools/*.local.json
 # GA4 pull — secrets, NEVER commit (service-account key + property id)
