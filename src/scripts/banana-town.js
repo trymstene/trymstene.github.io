@@ -227,7 +227,7 @@ view.addEventListener('pointerdown', (e) => {
       if (n) { tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8; const key = hit[1]; arriveThen = () => npcCard(key); }
       return;
     }
-    if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { const r = life.pick(hit[1]); if (typeof r === 'string') say(r); }; } return; }   // walk to it, then it is picked up
+    if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => life.pick(hit[1]); } return; }   // walk to it, then it is picked up
     const spot = SPOTS[hit[1]], wasInside = inside;
     if (!openFor(hit[1])) say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
     if (inside !== wasInside) return;   // 🚪 a door was used: the room placed the banana; a walk target here would march it straight back out

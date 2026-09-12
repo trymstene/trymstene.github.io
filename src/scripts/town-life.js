@@ -6,6 +6,17 @@
 // centrelines, Dijkstra per leg). At a station the act decides what they do:
 // Moss sweeps the flyers off the street, the Figs water the beds, the rest
 // stand at their counter, read the board, or sit out the noon on a bench with
+// ⭐ THE POSES (12 Sep, Trym: "they all line up in this riverdance-pose … nothing feels quite natural"):
+// the engine's eight frames are a DANCE. Front-facing (2, 3, 6, 7) has the arms up and out — that is
+// the jazz-hands pose that made nine residents look like a chorus line. Only the side frames have the
+// arms down: 0/1 facing right, 4/5 facing left. So a resident NEVER stands front-facing; they stand
+// side-on and sway slowly between their two frames, each on their own period. Front is for walking
+// toward or away from you, and for the portrait in the dialogue card.
+//
+// ⭐ AND NOBODY MOVES IN LOCKSTEP. Each resident leaves for the next station at their own seeded moment
+// in the beat, and at a station they POTTER between a few marks on their own rhythm, so what you see is
+// one banana crossing the square while another turns from a shelf — not a migration on the whistle.
+//
 // ⭐ THE TOWN IS QUIET (Trym, 12 Sep: "you dont see speechbubbles yapping away in stardew valley …
 // with lots of npcs yapping away at the same time it gets chaotic and just noisy … theres no speech
 // bubbles, but npcs stand next to eachother when they talk — when you go up to them and click them, a
@@ -121,7 +132,6 @@ const R = [
     hi: ["Stand up straight. There. Now, who are you.", "The new one. I've decided. Don't wander off.", "{name}. I had you down as somebody else. You'll do.", "Pet. I call you Pet now, {name}. It was your grandmother's. Probably.", "{name}. Plot eleven. Somebody asked me before you. I know who. Ask me properly."],
     tap: "You'll want a coat. No, you won't. Sit. Water that." },
 ];
-const MOSS_FLYER = "That one. I said I would know which one.";   // her want, kept: the player picked a flyer up with her near
 
 // ---- where a place's station is (feet, world px): at a lane's edge next to the place. A second
 // (third) point is for the residents who share the place in one beat — the bible's lunches.
@@ -163,6 +173,13 @@ const N = { hw: [310, 615], h1: [720, 615], h2: [792, 615], h3: [1100, 615], h4:
 const E = 'hw-h1 h1-h2 h2-h3 h3-h4 h4-h5 h5-h6 h6-he gw-g1 g1-g2 g2-g3 g3-g4 g4-ge hw-wl wl-gw he-el el-ge wl-wp wp-nw el-ep ep-ne h1-nw h5-ne g1-sw g3-se g2-ss nw-ne nw-sw sw-ss ss-se se-ne h2-or h4-mb mb-mo h6-bu g2-ms g4-t1 t1-t2'
   .split(' ').map((s) => s.split('-'));
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+// a stable 0..1 from three small numbers: the rhythms differ per resident and per beat, and they are
+// the same for everybody who is looking (no Math.random anywhere in the town's clockwork)
+function h01(a, b, c) {
+  let x = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
+  x = Math.imul(x ^ (x >>> 16), 0x7feb352d); x = Math.imul(x ^ (x >>> 15), 0x846ca68b);
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+}
 function attach(p) {   // the closest point on the closest edge
   let best = null;
   for (const [a, b] of E) {
@@ -223,8 +240,36 @@ function nameOf() {
 }
 const fill = (s) => s.replace(/\{name\}/g, nameOf());
 
-const WALK = 110, BOB_MS = 333, SWEEP_R = 120, NEAR_MOSS = 200;
-const FACE_FRAME = { front: 2, left: 4, right: 0 };
+const WALK = 110, BOB_MS = 333, SWEEP_R = 120;
+const POTTER = 34, POTTER_SPD = 46;   // how far a resident drifts around their station, and how slowly
+const SWAY_MIN = 2100, SWAY_VAR = 2600;   // the standing sway: slow, and a different period each
+// how long they stand at a mark before moving to the next one: a wide spread so two neighbours never
+// shift at the same moment (which is what made the pairs look choreographed)
+const DWELL_MIN = 4200, DWELL_VAR = 11000;
+// a station's marks: the base point, then a few nearby ones with their own facing. `act` decides the
+// shape — a counter keeper stays behind it and only turns, a bench sitter shifts along it, someone
+// standing about wanders a little wider.
+function marksFor(n, st, beat) {
+  const near = (dx, dy, face) => [st.x + dx, st.y + dy, face];
+  const r = (k) => h01(n.idx + 1, beat + 1, k);
+  const side = st.x > 1100 ? 'left' : 'right';   // they face into the square, not off the map
+  if (st.act === 'counter' || st.act === 'stand') {
+    return [near(0, 0, st.face), near(st.act === 'counter' ? 22 : 30, -4, side === 'left' ? 'left' : 'right'),
+      near(-(18 + Math.round(r(3) * 14)), 2, side === 'left' ? 'right' : 'left'), near(Math.round(r(4) * 16) - 8, -8, st.face)];
+  }
+  if (st.act === 'bench') return [near(0, 0, st.face), near(14, 2, st.face), near(-10, 0, st.face === 'left' ? 'right' : 'left')];
+  if (st.act === 'read') return [near(0, 0, st.face), near(20, 0, st.face), near(-16, 4, st.face)];
+  if (st.act === 'water') return [near(0, 0, st.face), near(26, 6, st.face), near(-22, -4, st.face === 'left' ? 'right' : 'left')];
+  return [near(0, 0, st.face)];
+}
+// 🧍 the standing pose: side-on always (the front frames are arms-up dance poses), with a slow sway
+// between the facing's two frames on the resident's own period. Used while they stand AND while they
+// wait for their moment to set off.
+function standFrame(n, now) {
+  const base = n.face === 'left' ? 4 : n.face === 'right' ? 0 : (n.x > 1100 ? 4 : 0);
+  if (now - n.swayAt > n.sway) { n.swayAt = now; n.swayF = n.swayF ? 0 : 1; n.sway = SWAY_MIN + h01(n.idx + 1, n.beat + 2, n.swayF + 30) * SWAY_VAR; }
+  return base + n.swayF;
+}
 
 export function initLife({ world, W, H, pct }) {
   let ready = false, curBeat = -1, lastSweep = 0, mayorEl = null;
@@ -241,7 +286,8 @@ export function initLife({ world, W, H, pct }) {
     world.appendChild(el);
     const outfit = { hat: r.hat || 'none', glasses: r.glasses || 'none', extras: r.tool ? { [r.tool]: true } : {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
     return { ...r, idx, el, cv, ctx: cv.getContext('2d'), outfit, x: 0, y: 0, px: NaN, py: NaN, drawn: '', face: 'front',
-      path: [], wait: 0, walking: false, loop: null, li: 0, ldir: 1, hidden: true, beat: -1, place: '', act: '', talked: false, lastWater: 0, bedI: 0, glow: null };
+      path: [], wait: 0, walking: false, loop: null, li: 0, ldir: 1, hidden: true, beat: -1, place: '', act: '', talked: false, lastWater: 0, bedI: 0, glow: null,
+      marks: [], mi: 0, dwell: 0, drift: null, sway: SWAY_MIN, swayAt: 0, swayF: 0 };
   });
   // glows: one per home window; two residents above the arcade, the Figs share a lantern
   const glowCount = {};
@@ -275,12 +321,13 @@ export function initLife({ world, W, H, pct }) {
     const p = pts[Math.min(k, pts.length - 1)];
     // 🗣 two residents at one place TURN TOWARD EACH OTHER — with no bubbles that is the only way you
     // see a conversation, and it is how Stardew does it. The one on the left looks right, and vice versa.
-    let f = face;
+    let f = face, x = p[0], y = p[1];
     if (group.length > 1 && pts.length > 1) {
       const other = pts[Math.min(k === 0 ? 1 : 0, pts.length - 1)];
-      if (Math.abs(other[0] - p[0]) > 24) f = other[0] > p[0] ? 'right' : 'left';
+      if (Math.abs(other[0] - x) > 24) f = other[0] > x ? 'right' : 'left';
+      y += k === 0 ? -7 : 7;   // half a step apart in depth: two on one line is a chorus line
     }
-    return { place, act, face: f, lines, x: p[0], y: p[1], loop: null };
+    return { place, act, face: f, lines, x, y, loop: null };
   }
   function goHome(n) {
     n.hidden = true; n.el.hidden = true;
@@ -300,10 +347,14 @@ export function initLife({ world, W, H, pct }) {
       const st = stationFor(n, beat);
       n.beat = beat; n.place = st.place; n.act = st.act; n.face = st.face; n.lines = st.lines; n.loop = st.loop; n.li = 0; n.ldir = 1;
       n.lastWater = 0;
+      n.marks = marksFor(n, st, beat); n.mi = 0; n.drift = null;
+      n.dwell = DWELL_MIN + h01(n.idx + 1, beat + 1, 11) * DWELL_VAR;
+      n.sway = SWAY_MIN + h01(n.idx + 1, beat + 1, 12) * SWAY_VAR;
       if (walk) {
         if (st.act !== 'home' || !n.hidden) leaveHome(n);
         n.path = route([n.x, n.y], [st.x, st.y]);
-        n.wait = 300 + n.idx * 260;
+        // ⏳ their OWN moment to set off: up to two thirds of the beat, so the town never migrates at once
+        n.wait = 400 + h01(n.idx + 1, beat + 1, 5) * 74000;
         n.walking = false;
       } else {
         n.path = []; n.walking = false; n.wait = 0;
@@ -342,9 +393,8 @@ export function initLife({ world, W, H, pct }) {
     const f = flyers.find((q) => q.i === i && !q.gone);
     if (!f) return false;
     takeFlyer(f);
-    const m = byKey('moss');
-    // her one reaction to something the PLAYER did — the town's narration line, not a bubble over her head
-    if (m && !m.hidden && Math.hypot(m.x - f.x, m.y - f.y) < NEAR_MOSS) return 'Moss: \u201c' + MOSS_FLYER + '\u201d';
+    // 🤫 and nothing is said about it: she notices, and noticing is silent (Trym, 12 Sep). Her line
+    // about the flyer lives in her dialogue card, where every line belongs.
     return true;
   }
 
@@ -394,7 +444,7 @@ export function initLife({ world, W, H, pct }) {
     for (const n of res) {
       let frame;
       if (n.path.length) {
-        if (n.wait > 0) { n.wait -= dt * 1000; frame = FACE_FRAME[n.face]; }
+        if (n.wait > 0) { n.wait -= dt * 1000; frame = standFrame(n, now); }   // still at their post, not posing
         else {
           n.walking = true;
           const p = n.path[0];
@@ -409,9 +459,28 @@ export function initLife({ world, W, H, pct }) {
           n.li += n.ldir;
         }
         frame = (n.dir === 'left' ? 4 : n.dir === 'right' ? 0 : 2) + bob;
+      } else if (n.drift) {
+        // a short shuffle to the next mark: slower than a walk, and it is still the walking bob
+        n.walking = true;
+        if (step(n, n.drift[0], n.drift[1], dt * (POTTER_SPD / WALK))) {
+          n.face = n.drift[2] || n.face; n.drift = null;
+          n.dwell = DWELL_MIN + h01(n.idx + 1, n.beat + 1, n.mi + 20) * DWELL_VAR;
+        }
+        frame = (n.dir === 'left' ? 4 : n.dir === 'right' ? 0 : 2) + bob;
       } else {
         n.walking = false;
-        frame = FACE_FRAME[n.face] || 2;
+        frame = standFrame(n, now);
+        // …and every so often they move to another mark round the station: the pottering that makes a
+        // shopkeeper look like they are working rather than posing
+        if (n.marks.length > 1 && !n.path.length) {
+          n.dwell -= dt * 1000;
+          if (n.dwell <= 0) {
+            n.mi = (n.mi + 1 + Math.floor(h01(n.idx + 1, n.beat + 1, n.mi + 40) * (n.marks.length - 1))) % n.marks.length;
+            const m = n.marks[n.mi];
+            n.drift = (Math.hypot(m[0] - n.x, m[1] - n.y) > 4) ? m : null;
+            if (!n.drift) { n.face = m[2] || n.face; n.dwell = DWELL_MIN + h01(n.idx + 1, n.beat + 1, n.mi + 21) * DWELL_VAR; }
+          }
+        }
       }
       if (n.hidden) continue;
       draw(n, frame);
@@ -421,7 +490,7 @@ export function initLife({ world, W, H, pct }) {
         const f = flyers.find((q) => !q.gone && Math.hypot(q.x - n.x, q.y - n.y) < SWEEP_R);
         if (f) { takeFlyer(f); lastSweep = now; }
       }
-      if (n.act === 'water' && !n.path.length) {
+      if (n.act === 'water' && !n.path.length && !n.drift) {
         if (!n.lastWater) n.lastWater = now - 6500;
         if (now - n.lastWater > 8000) {
           n.lastWater = now;
@@ -449,7 +518,7 @@ export function initLife({ world, W, H, pct }) {
   const seam = {
     hour: () => hourNow(),
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
-    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden })),
+    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
     rung,
     talk,
