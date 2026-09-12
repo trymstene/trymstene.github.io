@@ -75,7 +75,7 @@ const SAID = new Map((COPY.residents || []).map((c) => [c.key, c]));
 const R = MECH.map((m) => {
   const c = SAID.get(m.key);
   if (!c) throw new Error('town-life: src/data/copy/town-npcs.json has no lines for ' + m.key);
-  return { ...m, name: c.name, role: c.role, want: c.want, tap: c.tap, hi: c.hi,
+  return { ...m, name: c.name, role: c.role, want: c.want, tap: c.tap, hi: c.hi, ask: c.ask,
     day: m.day.map(([place, act, face], beat) => [place, act, face, c.beats[beat].lines]) };
 });
 
@@ -359,9 +359,14 @@ export function initLife({ world, W, H, pct }) {
     // the two questions every resident answers: what they are at right now, and the one thing they
     // would like of you some day (their want — a promise for later, never a task with a timer on it)
     const doing = () => fill((n.lines && n.lines.length) ? n.lines[(Math.floor(hourNow() * 2) + n.idx) % n.lines.length] : n.tap);
-    const topics = [{ q: 'What are you at?', a: doing }];
-    if (n.want) topics.push({ q: 'Anything you want?', a: fill(n.want) });
-    return { key: n.key, name: n.name, role: n.role || '', line: fill(line), outfit: n.outfit, topics, at: { x: n.x, y: n.y } };
+    // ✍️ the two questions are the PLAYER's voice and they are copy like any other: they come from
+    // src/data/copy/town-npcs.json (`ask`), never from this file. Trym, 12 Sep, on the pair I had
+    // hardcoded: "What are you at? is a very weird sentence and question."
+    const ask = n.ask || {};
+    const topics = [];
+    if (ask.doing) topics.push({ q: ask.doing, a: doing });
+    if (ask.want && n.want) topics.push({ q: ask.want, a: fill(n.want) });
+    return { key: n.key, name: n.name, line: fill(line), outfit: n.outfit, topics, at: { x: n.x, y: n.y } };
   }
   function standBy(key) {   // where the player waits to talk: beside them, never on them
     const n = byKey(key);

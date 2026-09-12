@@ -121,6 +121,11 @@ const description = 'The town centre of Banana World, under construction.';
        town's brick instead of the park's green. ⭐ There is no speech bubble anywhere in the town on
        purpose (Trym, 12 Sep): a resident speaks only in this card, and only after you walk up and tap.
        .tw-card--npc lets the tilted portrait lean out past the card's corner (the card scrolls otherwise). */
+    /* ⚠️ the town's own `.tw-card h2` (1rem, a 0.15rem margin) beats the template's `.wd-card h2`
+       on source order, which shortens the header and pulls the spoken line up UNDER the tilted
+       portrait. The park clears its line by 8px; the town was cutting 11px into it. Give the
+       dialogue card the template's own heading back. */
+    .tw-card--npc h2 { font-size: 1.15rem; margin: 0 0 0.5rem; min-height: 58px; }
     .tw-card--npc { overflow: visible; --wd-btn: #2a1a10; --wd-btn-hi: #3d2818; --wd-box: #120c07; --wd-box-line: #4a3320; --wd-more: #ffb347; }
     /* the puff: the park's .pk-poof to the pixel — a flyer swept or picked up, water on the beds */
     .tw-poof { position: absolute; transform: translate(-50%, -50%); width: 3%; z-index: 1800; pointer-events: none; }

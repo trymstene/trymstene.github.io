@@ -311,7 +311,7 @@ function npcCard(key) {
   openCard('');
   card.classList.add('tw-card--npc');   // the portrait leans out past the corner: let it
   dialog = mountDialogue(cardBody, {
-    name: d.name, role: d.role, line: d.line, topics: d.topics,
+    name: d.name, line: d.line, topics: d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
     portrait: (ctx, size) => drawComposite(ctx, size, 0, d.outfit),
     onClose: closeCard,
   });

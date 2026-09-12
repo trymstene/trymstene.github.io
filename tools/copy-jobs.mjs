@@ -32,6 +32,8 @@ const townFields = {
   'residents[].tap': { kind: 'prose', max: 100, note: 'The fallback when there is nothing else: who they are and what this counter is for, in their voice. Teaches without instructing.' },
   'residents[].want': { kind: 'prose', max: 110, note: 'What they wish for: ALWAYS company, never goods, money or a count. No reward named, no timer, no number.' },
   'residents[].hi[]': { kind: 'prose', maxByIndex: [90, 90, 90, 90, 100], note: 'The meeting ladder, rungs 0-4. 0 a stranger, 1 they have noticed you, 2 they use your name, 3 their own nickname for you, 4 ONE private thing given away — the only warm line they have.' },
+  'residents[].ask.doing': { kind: 'prose', aim: 26, max: 34, note: 'The button the PLAYER presses to ask what this resident is doing right now. The player’s own voice, plain and natural, and it may be phrased for this character. Ends in a question mark.' },
+  'residents[].ask.want': { kind: 'prose', aim: 26, max: 34, note: 'The button the PLAYER presses to ask whether this resident needs anything. The player’s own voice, plain and natural. Ends in a question mark.' },
   'residents[].beats[].beat': { kind: 'enum', values: BEATS },
   'residents[].beats[].lines[]': { kind: 'prose', aim: 90, max: 95, note: 'What they are doing at this station at this time of day. Nobody hears it out loud; it is read off their dialogue card later. Three per beat, and one may hint at another resident.' },
 };
@@ -83,7 +85,7 @@ const townSchema = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['key', 'name', 'role', 'tap', 'want', 'hi', 'beats'],
+        required: ['key', 'name', 'role', 'tap', 'want', 'hi', 'ask', 'beats'],
         properties: {
           key: { type: 'string', description: 'The resident’s key, copied from the brief. Never shown to a player.' },
           name: { type: 'string', description: townFields['residents[].name'].note },
@@ -93,6 +95,14 @@ const townSchema = {
           hi: {
             type: 'array', description: townFields['residents[].hi[]'].note,
             items: { type: 'string' },
+          },
+          ask: {
+            type: 'object', additionalProperties: false, required: ['doing', 'want'],
+            description: 'The two buttons the player can press, in the PLAYER’s voice, not the resident’s.',
+            properties: {
+              doing: { type: 'string', description: townFields['residents[].ask.doing'].note },
+              want: { type: 'string', description: townFields['residents[].ask.want'].note },
+            },
           },
           beats: {
             type: 'array',
@@ -113,6 +123,99 @@ const townSchema = {
   },
 };
 
+// --- park-npcs ---------------------------------------------------------------
+// The park's three voices. What makes this job different from the town's: the
+// park has HEALTH, five bands from neglected to perfect, and Old Peel's answers
+// change with it. So his bench mutters and three of his topics come as five
+// versions of the same thought, one per band, and they have to read as one man
+// watching a place get better — not five unrelated lines.
+export const PHASES = [
+  'neglected — weeds, litter, bare soil',
+  'coming back — the first green, somebody has started',
+  'half herself — green in patches',
+  'nearly there — blooming, a few gaps',
+  'perfect — the park at its best',
+];
+const parkFields = {
+  'peel.name': { kind: 'name', max: 14, note: 'FIXED: old peel.' },
+  'peel.greet': { kind: 'prose', aim: 70, max: 90, note: 'The first thing he says when the card opens. An invitation to sit, not a menu.' },
+  'peel.bench[][]': { kind: 'prose', aim: 70, max: 90, note: 'What he mutters from his bench, to nobody. One inner array per health band, worst park first. Three or four each.' },
+  'peel.topics[].id': { kind: 'key', max: 10, note: 'FIXED. Return the ids exactly as the brief gives them.' },
+  'peel.topics[].q': { kind: 'prose', aim: 34, max: 40, note: 'The question as the PLAYER would ask it, on a button. Lowercase, plain, no wit — the wit is his answer.' },
+  'peel.topics[].line': { kind: 'prose', aim: 150, max: 180, note: 'A single answer, for a topic whose answer never changes.' },
+  'peel.topics[].byPhase[]': { kind: 'prose', aim: 130, max: 160, note: 'The same answer at each of the five health bands, worst first. One man, one thought, five stages of a place healing.' },
+  'peel.topics[].seq[]': { kind: 'prose', aim: 150, max: 180, note: 'His life, one beat per tap. Each must land on its own and still lead to the next.' },
+  'peel.bed[]': { kind: 'prose', aim: 80, max: 100, note: 'His own flowerbed: a daisy, a sunflower, one midnight tulip. Proud, gentle, do-not-touch.' },
+  'inka.name': { kind: 'name', max: 14, note: 'FIXED: inka.' },
+  'inka.greet': { kind: 'prose', aim: 80, max: 100, note: 'The print shop, in one line. The one place in the park where things are real and cost real money.' },
+  'inka.lines[]': { kind: 'prose', aim: 90, max: 110, note: 'What she says while you browse the wall. Warm, never a sales pitch, never pushy about money.' },
+  'stand.name': { kind: 'name', max: 18, note: 'FIXED: the stand keeper.' },
+  'stand.greet': { kind: 'prose', aim: 70, max: 90, note: 'The stand, opening. Coins buy the gear on this wall.' },
+  'stand.sold[]': { kind: 'prose', aim: 60, max: 80, holds: ['{item}'], note: 'Said when somebody buys. MUST contain {item} — the game puts the thing they bought there.' },
+};
+function parkShape(data) {
+  const bad = [];
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
+  const P = data.peel, I = data.inka, S = data.stand;
+  if (!P || !I || !S) { say('', 'the file needs peel, inka and stand'); return bad; }
+  if (!Array.isArray(P.bench) || P.bench.length !== 5) say('peel.bench', 'five health bands, worst park first');
+  else P.bench.forEach((b, i) => { if (!Array.isArray(b) || b.length < 3) say(`peel.bench[${i}]`, 'three or four mutters for this band'); });
+  const ids = ['park', 'help', 'lore', 'shop', 'bye'];
+  const got = (P.topics || []).map((t) => t && t.id);
+  for (const id of ids) if (!got.includes(id)) say('peel.topics', `the topic "${id}" is missing — the deck is fixed`);
+  for (const t of P.topics || []) {
+    const path = `peel.topics[${got.indexOf(t.id)}]`;
+    const kinds = ['line', 'byPhase', 'seq'].filter((k) => t[k] != null);
+    if (kinds.length !== 1) say(path, 'a topic answers with exactly one of line, byPhase or seq');
+    if (t.byPhase && t.byPhase.length !== 5) say(path + '.byPhase', 'one answer per health band: five');
+    if (t.seq && t.seq.length < 3) say(path + '.seq', 'at least three beats');
+  }
+  if ((P.topics || []).some((t) => t.id === 'bye' && !t.close)) say('peel.topics', 'the goodbye topic keeps close: true');
+  for (const [k, n] of [['inka.lines', (I.lines || []).length], ['stand.sold', (S.sold || []).length]]) {
+    if (n < 3) say(k, 'at least three');
+  }
+  (S.sold || []).forEach((l, i) => { if (!String(l).includes('{item}')) say(`stand.sold[${i}]`, 'must contain {item} — the game puts the purchase there'); });
+  return bad;
+}
+const str = (note) => ({ type: 'string', description: note });
+const parkSchema = {
+  type: 'object', additionalProperties: false, required: ['peel', 'inka', 'stand'],
+  properties: {
+    peel: {
+      type: 'object', additionalProperties: false, required: ['name', 'greet', 'bench', 'topics', 'bed'],
+      properties: {
+        name: str('Exactly: old peel'),
+        greet: str(parkFields['peel.greet'].note),
+        bench: { type: 'array', description: parkFields['peel.bench[][]'].note, items: { type: 'array', items: { type: 'string' } } },
+        topics: {
+          type: 'array',
+          description: 'His five topics, ids fixed: park, help, lore, shop, bye.',
+          items: {
+            type: 'object', additionalProperties: false, required: ['id', 'q', 'line', 'byPhase', 'seq', 'close'],
+            properties: {
+              id: str('park, help, lore, shop or bye.'),
+              q: str(parkFields['peel.topics[].q'].note),
+              line: { type: ['string', 'null'], description: parkFields['peel.topics[].line'].note + ' null unless this topic uses it.' },
+              byPhase: { type: ['array', 'null'], description: parkFields['peel.topics[].byPhase[]'].note + ' null unless this topic uses it.', items: { type: 'string' } },
+              seq: { type: ['array', 'null'], description: parkFields['peel.topics[].seq[]'].note + ' null unless this topic uses it.', items: { type: 'string' } },
+              close: { type: ['boolean', 'null'], description: 'true only on the goodbye.' },
+            },
+          },
+        },
+        bed: { type: 'array', description: parkFields['peel.bed[]'].note, items: { type: 'string' } },
+      },
+    },
+    inka: {
+      type: 'object', additionalProperties: false, required: ['name', 'greet', 'lines'],
+      properties: { name: str('Exactly: inka'), greet: str(parkFields['inka.greet'].note), lines: { type: 'array', description: parkFields['inka.lines[]'].note, items: { type: 'string' } } },
+    },
+    stand: {
+      type: 'object', additionalProperties: false, required: ['name', 'greet', 'sold'],
+      properties: { name: str('Exactly: the stand keeper'), greet: str(parkFields['stand.greet'].note), sold: { type: 'array', description: parkFields['stand.sold[]'].note, items: { type: 'string' } } },
+    },
+  },
+};
+
 export const JOBS = {
   'town-npcs': {
     id: 'town-npcs',
@@ -126,6 +229,19 @@ export const JOBS = {
     fields: townFields,
     shape: townShape,
     schema: townSchema,
+  },
+  'park-npcs': {
+    id: 'park-npcs',
+    title: 'The Park — old peel, inka, the stand',
+    what: 'Old Peel’s bench, his topics and his flowerbed; Inka at the print shop; the stand keeper.',
+    brief: 'tools/copy-briefs/park-npcs.md',
+    out: 'tools/copy-out/park-npcs.json',
+    approved: 'src/data/copy/park-npcs.json',
+    reads: 'src/scripts/park-npc.js + src/scripts/park-shops.js',
+    top: ['peel', 'inka', 'stand'],
+    fields: parkFields,
+    shape: parkShape,
+    schema: parkSchema,
   },
 };
 

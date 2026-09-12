@@ -25,8 +25,11 @@
 .wd-card { position: relative; overflow: visible; }
 
 /* the name: pushed clear of the portrait that overlaps the corner */
+/* ⚠️ min-height is CLEARANCE, not decoration: the tilted portrait hangs into the card and the spoken
+   line has to start below it. 58px (not the park's original 50) because a host card with tighter top
+   padding — the town's — pulled the line up under the banana's feet. Measured, not guessed. */
 .wd-card h2 {
-  margin: 0 0 0.4rem; padding-left: 116px; min-height: 50px;
+  margin: 0 0 0.5rem; padding-left: 116px; min-height: 58px;
   display: flex; align-items: center; font-size: 1.15rem;
 }
 /* an optional second line under the name — who they are in the world */

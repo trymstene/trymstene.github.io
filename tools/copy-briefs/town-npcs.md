@@ -28,6 +28,19 @@ way you would really say it: “Margin Walker, {name}, you always arrive between
 **A tap line.** The fallback the resident says when they have nothing new — their job and themselves, in
 one breath. It will be read many times, so it must not wear out.
 
+**Two question buttons — in the PLAYER’S voice, not the resident’s.** Under the spoken line sit two
+buttons the player can press. They are what the player would say out loud standing in front of this
+character, so they are plain and natural, and short enough for a button on a phone.
+
+- `ask.doing` asks what this resident is doing right now. Pressing it shows a line from their
+  current beat.
+- `ask.want` asks whether they need anything. Pressing it shows their want.
+
+Write them the way a person really asks — “What are you working on?”, “Need a hand with anything?” —
+and you may bend the phrasing to suit who is being asked. Both end in a question mark. ⚠️ Do not write
+them in the character’s voice or with their tics: the player is asking, and the player is not a
+showman or a clerk.
+
 **A want.** One thing they would like from the player some day. Not a task and not a request for now: a
 door left open, warm, specific, and slightly more than they meant to say.
 
