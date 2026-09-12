@@ -652,12 +652,15 @@ if os.path.isdir(RBD) and os.path.isdir(BASEMENT):
     # back wall: five cabinets face the room; side walls: cabinets seen from the side; a counter with
     # the TV and the consoles by the door, two stools at it
     FURN = [
-        # the back wall: five cabinets standing AGAINST it (their tops a hand into the wall band), then the counter
-        # with the TV and the consoles at the wall's right end, two stools in front of it
-        (218, 40, 200, (0, -44, 48, 0), 'g1'), (219, 112, 200, (0, -44, 48, 0), 'g2'), (218, 184, 200, (0, -44, 48, 0), 'g3'),
-        (219, 256, 200, (0, -44, 48, 0), 'g4'), (218, 328, 200, (0, -44, 48, 0), 'g5'),
-        (194, 420, 200, (0, -40, 96, 0), 'counter'),
-        (151, 434, 244, (0, -10, 32, 0), None), (155, 480, 244, (0, -10, 32, 0), None),
+        # the back wall: five cabinets pushed BACK INTO the wall band (Trym, 12 Sep: "further up / back into the
+        # wall") — base 172 puts their top half over the wall; the collider runs up to the wall band (y 96) so a
+        # banana can never stand between a cabinet and the wall and draw over it
+        (218, 24, 172, (0, -76, 48, 0), 'g1'), (219, 88, 172, (0, -76, 48, 0), 'g2'), (218, 152, 172, (0, -76, 48, 0), 'g3'),
+        (219, 216, 172, (0, -76, 48, 0), 'g4'), (218, 280, 172, (0, -76, 48, 0), 'g5'),
+        # the counter is a PAIR in the pack: 194 = the drinks and the shelf, 195 = the TV and the consoles; one half
+        # alone looks sawn off (Trym: "cut in half") — both, edge to edge, against the wall; two bar stools in front
+        (194, 366, 172, (0, -76, 96, 0), 'counter'), (195, 462, 172, (0, -76, 96, 0), 'counter'),
+        (151, 404, 236, (0, -10, 32, 0), None), (155, 484, 236, (0, -10, 32, 0), None),
         # the side walls: two cabinets seen from the side on each, below the back row so nothing cuts anything
         (221, 16, 330, (0, -40, 64, 0), 'g6'), (221, 16, 402, (0, -40, 64, 0), 'g7'),
         (223, 496, 330, (0, -40, 64, 0), 'g8'), (223, 496, 402, (0, -40, 64, 0), 'g9'),
