@@ -1,9 +1,18 @@
 #!/usr/bin/env node
 // 🎨 THE DESIGN GATE — the mechanical half of docs/design-library.md.
 //
-// A rule nobody can check is a rule that gets broken again, and both of these
-// have now shipped to production at least once. Everything else in the design
-// library is judgement; these two are greppable, so they are enforced.
+// A rule nobody can check is a rule that gets broken again, and every one of
+// these has now shipped to production at least once. Everything else in the
+// design library is judgement; these are greppable, so they are enforced.
+//
+// ⭐ THE RULE ABOUT RULES (Trym, 12 Sep 2026: "how can it be guaranteed without
+// me having to think that i need to remind you?"). A doctrine in a .md file is
+// advisory: it only works if it is read at the moment of the decision, and after
+// a context compaction it often is not. What has held in this repo is the
+// mechanical half. So: ANY RULE TRYM HAS TO STATE TWICE BECOMES A CHECK HERE —
+// and if it cannot be checked, that is itself worth knowing (say so out loud
+// rather than filing another paragraph). The footer and the dialogue template
+// below are exactly that: both were prose, both drifted, both are greps now.
 //
 //   1. [hidden] LOSES to any author `display:`. A page that toggles `hidden`
 //      from script and has no `[hidden] { display: none !important }` renders
@@ -33,6 +42,19 @@ const walk = (dir, out = []) => {
   }
   return out;
 };
+
+// 🦶 §17 — pages that may sit without the footer: the desk and the dev pages. A
+// VISITOR page never may, area pages included: the park shipped footerless and
+// Trym had to ask for it ("make sure the footer is available on all our 400+
+// pages, even banana world area pages").
+const NO_FOOTER_OK = ['src/pages/inbox.astro', 'src/pages/dev-wearables.astro', 'src/pages/dev/design.astro', 'src/pages/dev/copy.astro'];
+
+// 🗣 §18 — the world has ONE NPC dialogue card (src/lib/world-dialogue.js +
+// /css/dialogue.css). These two still run the hand-written copies it was lifted
+// from; the list must only ever SHRINK. A new area hand-rolling one fails here.
+// (dev/design.astro RENDERS the card as documentation of its own classes — it is the
+// design system's showroom, not an area building a dialogue.)
+const OWN_DIALOGUE_OK = ['src/scripts/park-npc.js', 'src/pages/park.astro', 'src/pages/beach.astro', 'src/scripts/banana-beach.js', 'src/pages/dev/design.astro'];
 
 const files = walk(SRC);
 const problems = [];
@@ -66,6 +88,16 @@ for (const f of files) {
   if (rel.startsWith('src/scripts/') && /\bmountHud\(/.test(code) && !/\binitTravel\(/.test(code)) {
     problems.push([rel, "mounts the world HUD strip without the action bar's travel door (initTravel) — an area wears both, see design library §15"]);
   }
+
+  // 🦶 the footer is on every page a visitor can reach — design library §17
+  if (rel.startsWith('src/pages/') && rel.endsWith('.astro') && /showFooter\s*=\s*\{\s*false\s*\}/.test(code) && !NO_FOOTER_OK.includes(rel)) {
+    problems.push([rel, 'opts out of the footer (showFooter={false}) — only the desk and the dev pages may, see design library §17']);
+  }
+
+  // 🗣 an NPC dialogue uses the world's card, never a new one — design library §18
+  if (/npcpop|npcsay\b|-npcq\b|__talk|tw-talk/.test(code) && !/mountDialogue|world-dialogue/.test(code) && !OWN_DIALOGUE_OK.includes(rel)) {
+    problems.push([rel, 'builds its own NPC dialogue instead of the shared card (mountDialogue, /css/dialogue.css) — see design library §18']);
+  }
 }
 
 if (problems.length) {
@@ -74,4 +106,4 @@ if (problems.length) {
   console.error(`${problems.length} problem(s). See docs/design-library.md.\n`);
   process.exit(1);
 }
-console.log(`✅ design gate — ${files.length} files, no [hidden] traps, no stray payment hosts, every HUD strip has its bar`);
+console.log(`✅ design gate — ${files.length} files, no [hidden] traps, no stray payment hosts, every HUD strip has its bar, every visitor page its footer, one dialogue card`);

@@ -472,3 +472,29 @@ shared layer was lifted from them verbatim, but they are three copies of one
 design, and until they move onto `mountDialogue` a change to the template is a
 change in four places.
 
+## The enforcement ledger — which of these rules can actually fail a build
+
+Trym, 12 Sep 2026: *"how can it be guaranteed without me having to think that i
+need to remind you?"* This table is the honest answer. A rule with a gate has never
+drifted. A rule with only a paragraph has drifted at least once.
+
+| § | The rule | Defended by |
+|---|---|---|
+| 2 | `[hidden]` loses to an author `display:` | `check-design.mjs` (the site-wide guard must exist) |
+| 12 | Payment URLs live in one constant | `check-design.mjs` (no other file may name a host) |
+| 15 | The HUD is a strip AND an action bar | `check-design.mjs` (`mountHud` without `initTravel` fails) |
+| 17 | The footer is on every visitor page | `check-design.mjs` (`showFooter={false}` outside the allowlist fails) |
+| 18 | One NPC dialogue card | `check-design.mjs` (own dialogue markup without `mountDialogue` fails; the legacy list may only shrink) |
+| — | Every device key is declared | `check-storage.mjs` |
+| — | Per-surface JS budgets | `check-budgets.mjs` (needs a build) |
+| — | A new event is READ by Pulse | `check-pulse-areas.mjs` + `tools/pulse-stub-walk.mjs` |
+| — | Copy came through the GPT rig and obeys the voice | `check-copy.mjs` |
+| 16 | A cabinet game is one card with its board | the town walk's 19 checks |
+| — | The quiet rule: no floating text over an NPC | the town walk's `silence` check |
+| — | No front-facing standing pose | the town walk's `standingPose` check |
+| 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
+
+`node tools/check-all.mjs` runs the source-only gates in about a second and is the
+Stop hook, so a turn cannot end red. When a rule in the bottom row keeps drifting,
+the answer is to move it up a row, not to make the paragraph longer.
+

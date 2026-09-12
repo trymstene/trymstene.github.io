@@ -9,8 +9,14 @@ Desktop.ini
 .idea/
 *.swp
 
-# Claude Code local settings
-.claude/
+# Claude Code: the LOCAL state is ignored, but the parts that make the rig work on
+# every machine and every fresh clone are TRACKED (12 Sep 2026). The /copy skill and
+# the Stop hook that runs the gates are the guarantee that a lost context cannot lose
+# a house rule — a guarantee that only holds if they are in the repo.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+.claude/worktrees/
 .mcp.json
 
 # wrangler local-dev secrets (any worker folder)
