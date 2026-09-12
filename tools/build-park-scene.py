@@ -1541,7 +1541,7 @@ if HAVE_PACK:
     # south-east of Old Peel's bench (1583, 722) — far enough that the two do
     # not read as one arrangement. It was 117 right and 78 down and still felt
     # like it was leaning on him (Trym); this is 247 right and 178 down.
-    SUP_BOARD = (1830, 900)
+    SUP_BOARD = (1760, 900)   # 12 Sep: 70 left again — at 1830 its right end sat on the first bed (Trym)
     _SUPB = '__supporters_board.png'
     _cache[(_SUPB, 1, 28, 0.0, 1.0, 1.0)] = build_supboard()
     place(_SUPB, SUP_BOARD[0], SUP_BOARD[1], scale=1.0, sh=0.55,

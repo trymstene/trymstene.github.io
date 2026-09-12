@@ -208,7 +208,7 @@ export function initCritters(ctx) {
     b.perchUntil = 0;
   }
   function tapBfly(wx, wy) {
-    const b = bflyOn && bflys.find((q) => !q.gone && Math.hypot(wx - q.x, wy - (q.y - 26)) < 46);
+    const b = bflyOn && bflys.find((q) => !q.gone && Math.hypot(wx - q.x, wy - (q.y - 26)) < 30);   // the birds' tight rule: it took taps meant for the board behind it
     if (!b) return false;
     if (Math.hypot(pos.x - b.x, pos.y - b.y) < 78) { startleBfly(b); return true; }
     // approach: stop SHORT of it, so the last steps are yours to take slowly

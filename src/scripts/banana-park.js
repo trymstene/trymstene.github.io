@@ -913,10 +913,12 @@ function init() {
     npc.clearPending();
     garden.clearPending();
     if (garden.tapEgg(wx, wy)) return;
-    if (birds.tapBird(wx, wy)) return;      // 🔭 they fly above everything
+    // 🏷 the two boards answer BEFORE the flying and wandering things: a butterfly over the
+    // supporters board took its taps (Trym, 12 Sep: 'most of the times they dont open')
+    if (tapSupBoard(wx, wy) || tapCitBoard(wx, wy)) return;
+    if (birds.tapBird(wx, wy)) return;      // 🔭 they fly above everything else
     if (critters.tapBfly(wx, wy)) return;
     if (critters.tapAnimal(wx, wy)) return;
-    if (tapSupBoard(wx, wy) || tapCitBoard(wx, wy)) return;
     if (npc.tapOld(wx, wy)) return;
     if (npc.tapPeelBed(wx, wy)) return;   // 🌼 his flowerbed answers with fussing
     // ⚠️ NO tapWeed HERE (30 Jul). Weeds are a CHORE, and the park's grammar

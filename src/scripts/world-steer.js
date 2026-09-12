@@ -19,7 +19,11 @@
 //    because the follow-cam shifts the world beneath a held-still finger
 //  - first(): fired once per page load on the first steer (analytics)
 
-const HOLD = 200, SLOP = 10;
+// ⚠️ 350, not 200 (12 Sep 2026). At 200 a deliberate tap on a park board — the kind that lands
+// on a target, not a flick — armed the leash, the ghost click was eaten, and the board 'did not
+// open most of the time' (Trym). A hold that never DRAGS and ends within QUICK is a tap: its
+// click goes through to the area's dispatch instead of being swallowed.
+const HOLD = 350, SLOP = 10, QUICK = 600;
 
 let cssDone = false;
 function injectCss() {
@@ -41,7 +45,7 @@ function injectCss() {
 export function initSteer({ view, blocked, toWorld, onArm, onMove, first }) {
   if (!view) return;
   injectCss();
-  let timer = 0, on = false, endAt = 0, fired = false;
+  let timer = 0, on = false, endAt = 0, fired = false, t0 = 0, dragged = false;
   let cx = 0, cy = 0, ring = null, raf = 0;
 
   const clampView = () => {
@@ -57,10 +61,10 @@ export function initSteer({ view, blocked, toWorld, onArm, onMove, first }) {
     onMove(toWorld(p.x, p.y));
     if (ring) { ring.style.left = (p.x - p.r.left) + 'px'; ring.style.top = (p.y - p.r.top) + 'px'; }
   };
-  const stop = () => {
+  const stop = (asTap) => {
     clearTimeout(timer); timer = 0;
     cancelAnimationFrame(raf); raf = 0;
-    if (on) { on = false; endAt = Date.now(); }
+    if (on) { on = false; endAt = asTap ? 0 : Date.now(); }
     if (ring) { ring.remove(); ring = null; }
   };
   const frame = () => { if (!on) return; feed(); raf = requestAnimationFrame(frame); };
@@ -79,6 +83,7 @@ export function initSteer({ view, blocked, toWorld, onArm, onMove, first }) {
   view.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1 || (blocked && blocked(e))) { stop(); return; }
     cx = e.touches[0].clientX; cy = e.touches[0].clientY;
+    t0 = Date.now(); dragged = false;
     clearTimeout(timer);
     timer = setTimeout(arm, HOLD);
   }, { passive: true });
@@ -88,6 +93,7 @@ export function initSteer({ view, blocked, toWorld, onArm, onMove, first }) {
     if (on) {
       if (!e.cancelable) { stop(); return; } // a scroll won after all — let go
       e.preventDefault();
+      if (Math.hypot(t.clientX - cx, t.clientY - cy) > SLOP) dragged = true;
       cx = t.clientX; cy = t.clientY;
       return; // the rAF feeds onMove
     }
@@ -101,8 +107,10 @@ export function initSteer({ view, blocked, toWorld, onArm, onMove, first }) {
   // stays and the banana keeps walking at a finger that has let go.
   addEventListener('touchend', (e) => {
     if (!on && !timer) return;
-    if (on && e.cancelable) e.preventDefault(); // no ghost tap after a steer
-    stop();
+    // a still press that ends quickly is a TAP: let its click reach the area's dispatch
+    const asTap = on && !dragged && Date.now() - t0 < QUICK;
+    if (on && !asTap && e.cancelable) e.preventDefault(); // no ghost tap after a real steer
+    stop(asTap);
   }, { passive: false });
   addEventListener('touchcancel', stop, { passive: true });
   // belt + braces: some engines still deliver the click a steer produced
