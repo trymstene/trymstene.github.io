@@ -1,12 +1,15 @@
 ---
-// 🤖 How AI is used here — the transparency page. Trym, 12 Sep 2026: "many are concerned by AI use and
-// I want to be transparent without saying too much. The code is mostly built by AI, but visuals are
-// created by me or licensed bought visuals from creators with a link to them." Indexed, in the sitemap,
-// linked from the footer's host line.
+// 🤖 How AI is used here — the transparency page. Trym, 12 Sep 2026: "transparent without saying too
+// much. The code is mostly built by AI, but visuals are created by me or licensed bought visuals from
+// creators with a link to them." Same day: say I make no money on it and what it costs (about 300 USD a
+// month, with a visual), that I have a normal 9-5 job, that AI is in the code like in all software today
+// while the visuals are bought human work or my own, and — humbly — that I recognise AI's bad sides
+// (energy, slop, media made by AI) and would rather pay independent artists within a one-person budget.
+// Indexed, in the sitemap, linked from the footer's host line.
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const title = 'How AI is used at trymstene.com';
-const description = 'AI helps write the code here. It does not draw the banana or its world, and it does not run the place. The whole list, and who made the art.';
+const description = 'AI helps write the code here, like in most software today. It does not draw the banana or its world. What it costs to run the place, who made the art, and what I think about AI.';
 ---
 <BaseLayout title={title} description={description}>
   <section class="hero">
@@ -15,17 +18,42 @@ const description = 'AI helps write the code here. It does not draw the banana o
     </div>
     <p class="kicker">The honest page</p>
     <h1 class="hero__title" style="font-size:clamp(2rem,8vw,3.6rem);text-transform:none;">AI, and what it does here</h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">It helps me build this place. It does not draw it, and it does not run it.</p>
+    <p class="hero__tag" style="text-transform:none;font-weight:500;">It helps me write the code. It does not draw the banana, and it does not run the place.</p>
   </section>
 
   <section class="block">
     <div class="pv">
-      <h2>The code</h2>
-      <p>Most of the code on trymstene.com and in Banana World is written with AI (Claude), working with me.
-        I decide what gets built, I test it, and I ship it. Nothing goes live because a machine said so.</p>
+      <h2>First, the money</h2>
+      <p>I don’t make money on this. Running Banana World costs me about 300 dollars a month: the AI
+        subscription, the shop platform, the domain and Cloudflare, a few ads here and there, test products
+        for the shop, and small tools. What the shop and the tip jar bring in goes back into the place.
+        There is no salary in it. I have a normal nine-to-five job; this is what I do with the evenings.</p>
 
-      <h2>The pictures</h2>
-      <p>The dancing banana and its world are mine, or bought from the artists who made them:</p>
+      <!-- 📊 two bars, one number each. The second bar is empty on purpose. -->
+      <figure class="ai-cost" aria-label="What Banana World costs a month against what it pays me">
+        <div class="ai-cost__row">
+          <span class="ai-cost__label">What it costs</span>
+          <span class="ai-cost__bar"><span class="ai-cost__fill" style="width:100%"></span></span>
+          <span class="ai-cost__val">about $300 <small>a month</small></span>
+        </div>
+        <div class="ai-cost__row">
+          <span class="ai-cost__label">What it pays me</span>
+          <span class="ai-cost__bar ai-cost__bar--empty"><span class="ai-cost__fill" style="width:0"></span></span>
+          <span class="ai-cost__val">$0</span>
+        </div>
+        <figcaption>Roughly, averaged over a year. It goes up in a month with a new test product or an ad.</figcaption>
+      </figure>
+
+      <h2>Where AI is</h2>
+      <p>In the code. Most of the code on trymstene.com and in Banana World is written with AI (Claude),
+        working with me. That is true of most software you use today, from Discord to almost any website;
+        here I want to say it out loud. I decide what gets built, I test it, and I ship it. Nothing goes
+        live because a machine said so.</p>
+
+      <h2>Where AI is not</h2>
+      <p>In the pictures. The dancing banana is mine, since 1999. The world’s places and rooms are built
+        from art I bought and licensed from the people who drew it, and I take pride in that: paying for
+        human work, and making my own on top of it.</p>
       <ul>
         <li>The places and the rooms of Banana World: the Modern Exteriors and Modern Interiors packs by
           <a href="https://limezu.itch.io/" target="_blank" rel="noopener">LimeZu ↗</a>.</li>
@@ -35,15 +63,24 @@ const description = 'AI helps write the code here. It does not draw the banana o
           by Florian Karsten and <a href="https://fonts.google.com/specimen/Archivo+Black" target="_blank" rel="noopener">Archivo Black ↗</a>
           by Omnibus-Type.</li>
       </ul>
-      <p>No image generators are used. A few small pixel pieces are drawn in code with AI’s help, and every one
-        of them goes past me before it ships.</p>
+      <p>No image generators are used. A few small pixel pieces are drawn in code with AI’s help, and every
+        one of them goes past me before it ships.</p>
+
+      <h2>What I think about it</h2>
+      <p>AI has real problems. It costs energy and water. It fills the internet with slop. It is trained on,
+        and used to replace, the work of artists and writers who never agreed to it. I use it for code with
+        that in mind, and I try to keep it out of the parts that should stay human. As far as I can, within
+        what one person with no funding can do, I would rather pay independent artists and creatives than let
+        a model imitate them. This place and its community stay alive on that budget, and stay a place for
+        everyone.</p>
 
       <h2>You</h2>
       <p>AI is not used to watch you, judge you or talk to you. The characters’ lines are written by hand.
-        Reports are read by a person.</p>
+        Reports are read by a person: me.</p>
 
-      <h2>Where AI does show up</h2>
-      <p>Writing code, and reading the site’s own numbers so I can see what works. That is the list.</p>
+      <h2>The whole list</h2>
+      <p>Where AI shows up here: writing code, and reading the site’s own numbers so I can see what works.
+        That is the list, and this page changes if it does.</p>
 
       <p><a href="/contact/">Questions? Write to me.</a></p>
     </div>
@@ -55,4 +92,18 @@ const description = 'AI helps write the code here. It does not draw the banana o
   .pv h2 { font-size: 1.15rem; margin: 1.8rem 0 0.6rem; }
   .pv ul { padding-left: 1.2rem; }
   .pv li { margin-bottom: 0.6rem; line-height: 1.5; }
+  /* 📊 the cost figure: the site's card grammar, one hue, the empty bar says the rest */
+  .ai-cost { margin: 1.2rem 0 0; padding: 0.9rem 1rem 0.7rem; border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); background: #fff; }
+  .ai-cost__row { display: grid; grid-template-columns: 8.5em 1fr auto; gap: 0.7rem; align-items: center; margin: 0 0 0.6rem; }
+  .ai-cost__label { font-weight: 700; font-size: 0.9rem; }
+  .ai-cost__bar { display: block; height: 18px; border: 2px solid var(--ink); background: transparent; overflow: hidden; }
+  .ai-cost__bar--empty { border-style: dashed; }
+  .ai-cost__fill { display: block; height: 100%; background: var(--banana); }
+  .ai-cost__val { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ai-cost__val small { font-family: inherit; font-weight: 400; font-size: 0.75rem; opacity: 0.7; }
+  .ai-cost figcaption { font-size: 0.78rem; opacity: 0.7; margin: 0.2rem 0 0; line-height: 1.4; }
+  @media (max-width: 420px) {
+    .ai-cost__row { grid-template-columns: 1fr auto; }
+    .ai-cost__bar { grid-column: 1 / -1; }
+  }
 </style>
