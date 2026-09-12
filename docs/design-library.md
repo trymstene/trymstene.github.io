@@ -422,3 +422,53 @@ An area page's own bottom bar stays in flow above the footer, never fixed over
 it; the safe-space line is centred by its own flex rule so no paragraph rule
 around it can pull it left.
 
+## 18. Dialogue has ONE template: the NPC card
+
+Every character in Banana World speaks in the same card. It was drawn for the
+park's Old Peel, the world's first full RPG NPC, and his own source comment
+already said "future NPCs reuse pk-card--npc" — then the beach hand-copied it
+for Shelly, Cap and Gil, and the town hand-copied the *shape* and got it wrong
+(Trym, 12 Sep 2026: "the dialogue popups for the NPCs should follow the existing
+dialogue popups we have … like Old Peel in the park … dialogue has a template,
+with or without dialogue options for the users"). So it is a shared layer now,
+the way `/css/wardrobe.css` holds the chip and tray grammar:
+
+- **`/css/dialogue.css`** — the looks. `.wd-card` on a wrapper inside the
+  area's own card, `.wd-pop` the portrait, `.wd-role` an optional line under the
+  name, `.wd-say` what they say, `.wd-q` the question deck, `.wd-box` the
+  console answer with its typing cursor and ▼.
+- **`src/lib/world-dialogue.js`** — `mountDialogue(host, { name, role, line,
+  portrait(ctx, size), topics, onClose })`. One call builds it and returns
+  `{ say, ask, back, stop }`.
+
+**The shape, which never changes per area.** A waist-up portrait, tilted −8°,
+peeking over the card's top-left corner (180 px, 156 on a phone; the canvas is
+drawn at 390 and zoomed `scale(1.5)` + `translate(-0.167, -0.22)` so the crop
+fills the frame). The name beside it, inset 116 px so the portrait never covers
+it. Their line under that. Then the two variants:
+
+- **Without options** — portrait, name, line. A character with one thing to say.
+- **With options** — a column of question buttons; pressing one hides the
+  questions and TYPES the answer into the console box at 32 ms a character; a
+  tap mid-type skips to the end, a tap when it is done walks a `seq` of beats or
+  goes back to the questions. A topic with `close: true` says goodbye and shuts
+  the card. `prefers-reduced-motion` gets the text instantly, same flow.
+
+**Per area, only the colours change**, through variables on the card:
+`--wd-btn`, `--wd-btn-hi`, `--wd-box`, `--wd-box-line`, `--wd-box-ink`,
+`--wd-more`. The park's greens are the defaults; the town sets brick browns.
+⚠️ The host card needs `overflow: visible` (the town adds `.tw-card--npc`) or
+the portrait leaning past the corner is clipped.
+
+**Rules that come with it.** A character never speaks anywhere else: no floating
+text over a head, no ambient chatter (§ the quiet rule in the town's own notes).
+You walk up to them first and the card opens on arrival, never on the tap
+itself. The area's toast line is the WORLD talking to the player about what the
+player just did, never a character's voice.
+
+⚠️ **Owed:** the park's Old Peel and the beach's three still run their
+hand-written copies (`.pk-npc*`, `.bh-npcpop`). They look right because the
+shared layer was lifted from them verbatim, but they are three copies of one
+design, and until they move onto `mountDialogue` a change to the template is a
+change in four places.
+

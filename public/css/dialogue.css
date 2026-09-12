@@ -1,0 +1,80 @@
+/* 🗣 THE WORLD'S DIALOGUE CARD — ONE template for every NPC in Banana World.
+ *
+ * Lifted verbatim from the park's Old Peel card (the first full RPG NPC, whose
+ * own comment already said "future NPCs reuse pk-card--npc"), and promoted to a
+ * shared layer the way /css/wardrobe.css holds the chip/tray/tooltip grammar.
+ * Trym, 12 Sep 2026: "the dialogue popups for the NPCs should follow the
+ * existing dialogue popups we have … like Old Peel in the park … dialogue has a
+ * template — with or without dialogue options for the users."
+ *
+ * The shape, which does not change per area: a waist-up portrait tilted and
+ * peeking over the card's top-left corner, the name beside it, the character's
+ * line under that, then EITHER nothing (a one-line character) OR a deck of
+ * question buttons whose answers TYPE OUT in a console box with a ▼ to go back.
+ *
+ * Only the colours change per area, through these variables on the card:
+ *   --wd-btn / --wd-btn-hi   the question buttons
+ *   --wd-box / --wd-box-line / --wd-box-ink / --wd-more   the answer box
+ * The park's greens are the defaults, since the park is where this was drawn.
+ *
+ * ⚠️ The card also needs its host panel's own card class (.pk-card, .tw-card…)
+ * for the paper, border and shadow: this layer is the NPC half, not the box.
+ * See docs/design-library.md §18.
+ */
+
+.wd-card { position: relative; overflow: visible; }
+
+/* the name: pushed clear of the portrait that overlaps the corner */
+.wd-card h2 {
+  margin: 0 0 0.4rem; padding-left: 116px; min-height: 50px;
+  display: flex; align-items: center; font-size: 1.15rem;
+}
+/* an optional second line under the name — who they are in the world */
+.wd-role { margin: -0.25rem 0 0.6rem; padding-left: 116px; font-size: 0.76rem; opacity: 0.75; line-height: 1.3; }
+
+/* 🖼 the portrait: waist-up, tilted, peeking over the top-left corner */
+.wd-pop {
+  position: absolute; top: -76px; left: -26px; z-index: 3; width: 180px; height: 180px;
+  transform: rotate(-8deg); transform-origin: center bottom; pointer-events: none;
+  clip-path: inset(0 0 26% 0);
+  filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.4));
+}
+.wd-pop canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+
+/* what they say when the card opens */
+.wd-say { min-height: 2.8em; font-size: 0.84rem; line-height: 1.45; margin: 0 0 0.7rem; }
+
+/* 💬 the question deck — the WITH-OPTIONS half of the template */
+.wd-q { display: flex; flex-direction: column; gap: 6px; }
+.wd-q button {
+  appearance: none; text-align: left; font: inherit; font-size: 0.78rem; font-weight: 700;
+  background: var(--wd-btn, #182a18); color: #fffdf5; border: 2px solid #000;
+  padding: 0.45rem 0.6rem; cursor: pointer;
+}
+.wd-q button:hover { background: var(--wd-btn-hi, #234023); }
+.wd-q[hidden], .wd-say[hidden] { display: none; }
+
+/* 📟 the console answer box: the answer types out with a blinking ▌, and ▼ = next / back */
+.wd-box {
+  min-height: 5em; background: var(--wd-box, #0b130b); border: 3px solid #000;
+  box-shadow: inset 0 0 0 2px var(--wd-box-line, #2c4a2c); padding: 0.55rem 0.65rem 0.8rem;
+  cursor: pointer; position: relative;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.wd-box[hidden] { display: none; }
+.wd-box p { margin: 0; font-size: 0.84rem; line-height: 1.5; color: var(--wd-box-ink, inherit); }
+.wd-box.is-typing p::after { content: '▌'; margin-left: 1px; animation: wdCursor 0.9s steps(1) infinite; }
+@keyframes wdCursor { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.wd-box__more {
+  position: absolute; right: 8px; bottom: 3px; color: var(--wd-more, #8de08d); font-size: 0.8rem;
+  display: none; animation: wdMore 1s ease-in-out infinite;
+}
+.wd-box.is-done .wd-box__more { display: block; }
+@keyframes wdMore { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+@media (prefers-reduced-motion: reduce) { .wd-box.is-typing p::after, .wd-box__more { animation: none; } }
+
+@media (max-width: 420px) {
+  .wd-pop { width: 156px; height: 156px; top: -64px; left: -20px; }
+  .wd-card h2 { padding-left: 100px; min-height: 44px; }
+  .wd-role { padding-left: 100px; }
+}

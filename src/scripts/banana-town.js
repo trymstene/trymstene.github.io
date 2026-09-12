@@ -12,6 +12,7 @@ import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE } from './town-geo.js';
 import { initLife } from './town-life.js';
+import { mountDialogue } from '../lib/world-dialogue.js';
 
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
@@ -293,22 +294,27 @@ function tick(now) {
 // is saved, no coins move, the wheel's roll is the phone's — on the real one the
 // server picks the wedge and writes the tape. The Exchange is the honest one:
 // it reads the farm you actually have on this device and today's real price.
-const panel = document.getElementById('twPanel'), cardBody = document.getElementById('twCardBody');
+const panel = document.getElementById('twPanel'), cardBody = document.getElementById('twCardBody'), card = panel.querySelector('.tw-card');
 function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
-function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; if (arcGame) { arcGame.stop(); arcGame = null; } }
+function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } }
 document.getElementById('twCardX').addEventListener('click', closeCard);
 panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
-// 🗣 A RESIDENT'S DIALOGUE — the park's Old Peel card in the town's brick: their banana big in the
-// corner, their name, what they do, and the one thing they say to you right now. Nothing a resident
-// says is ever drawn over their head (Trym, 12 Sep): this card is the only place they speak.
+// 🗣 A RESIDENT'S DIALOGUE — THE WORLD'S card, not a new one (Trym, 12 Sep: "the dialogue popups for
+// the NPCs should follow the existing dialogue popups we have … like Old Peel in the park"). The
+// template is src/lib/world-dialogue.js + /css/dialogue.css, lifted from Old Peel: the tilted waist-up
+// portrait over the corner, the name, their line, and the question deck whose answers type out.
+// Nothing a resident says is ever drawn over their head; this card is the only place they speak.
+let dialog = null;
 function npcCard(key) {
   const d = life.talk(key);
   if (!d) return;
-  openCard('<div class="tw-talk"><div class="tw-talk__who"><canvas id="twTalkCv" width="300" height="300" aria-hidden="true"></canvas></div>'
-    + '<div class="tw-talk__txt"><h2>' + d.name + '</h2><p class="tw-card__sub">' + d.role + '</p>'
-    + '<p class="tw-talk__line">\u201c' + d.line + '\u201d</p></div></div>');
-  const cv = document.getElementById('twTalkCv');
-  if (cv) drawComposite(cv.getContext('2d'), 300, 2, d.outfit);   // frame 2: standing, facing you
+  openCard('');
+  card.classList.add('tw-card--npc');   // the portrait leans out past the corner: let it
+  dialog = mountDialogue(cardBody, {
+    name: d.name, role: d.role, line: d.line, topics: d.topics,
+    portrait: (ctx, size) => drawComposite(ctx, size, 0, d.outfit),
+    onClose: closeCard,
+  });
 }
 function openFor(key) {
   if (key === 'wheel') { wheelCard(); return true; }

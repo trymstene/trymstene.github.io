@@ -41,7 +41,7 @@ const beatOf = (h) => Math.floor(h / 4) % 6;
 // ---- the bible: who they are, where they stand, what they say (writers' room, 12 Sep 2026)
 // day: six beats of [place, act, face, lines]; hi: what they say to you at ladder rung 0-4; tap: the fallback line
 const R = [
-  { key: 'nib', name: 'Nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall', role: "Town Hall clerk: keeps the big book, answers the Mayor's notes, stamps things so they are real.",
+  { key: 'nib', name: 'Nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall', role: "Town Hall clerk: keeps the big book, answers the Mayor's notes, stamps things so they are real.", want: "Come and stand by me at the statue one dawn. Two people is a committee.",
     day: [
       ['monument', 'stand', 'front', ["Good morning. Nobody knows who you are. I am working on it.", "A statue with no plaque. It is an open case. I keep it open.", "I bring a cloth. Somebody should. So it is me."]],
       ['hall', 'counter', 'front', ["The book is open. The hall is open. I am, in most respects, open.", "Forms to the left. Questions to the right. Sighs to me.", "Every name goes in once. Yours went in twice. I fixed it."]],
@@ -51,7 +51,7 @@ const R = [
       ['home', 'home', 'front', ["The book sleeps in a drawer. I sleep above the drawer.", "I count the names before bed. Tonight there is one more.", "Good night, town. Every one of you. Alphabetically."]]],
     hi: ["Good day. You are not in the book yet. That is not a crime. It is a form.", "The new one. I have your page ready. It only needs a person on it.", "{name}. Plot Eleven. Page thirty. I do not need to look it up.", "Ah, Plot Eleven. I say it fondly, {name}. The book has no column for fondly.", "{name}. Next of kin, mine. I wrote you in this morning. I hope that is all right."],
     tap: "Ah. You. The Mayor said somebody might come by the hall. I believe it was you." },
-  { key: 'stamp', name: 'Stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post', role: "Runs the Post Office: weighs the mail, sells stock postcards to neighbours, meets the bus.",
+  { key: 'stamp', name: 'Stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post', role: "Runs the Post Office: weighs the mail, sells stock postcards to neighbours, meets the bus.", want: "Send a card to somebody who does not expect one. Not today. When you think of them.",
     day: [
       ['bus', 'stand', 'right', ["The bus is late. Four minutes. I weigh that against last time.", "One sack, a morning's worth. I can tell by the shape.", "Nothing for me. Noted. Something for everyone else. Good."]],
       ['post', 'counter', 'front', ["Postcards. Stock. No words on them. The honest kind.", "Put it on the scale. Everything goes on the scale. Even hats.", "Two hundred grams of somebody's grandmother. Careful with that."]],
@@ -61,7 +61,7 @@ const R = [
       ['home', 'home', 'front', ["The scale is off. My feet are on. Two hundred and something.", "One postcard, blank, in the drawer. Mine. Not sent. Not yet.", "The bus comes back tomorrow. So do I. That is the arrangement."]]],
     hi: ["New face. Stand on the scale a moment. No. That was a joke. Nearly.", "The new one. You have no post yet. That changes. It always changes.", "{name}. Nothing for you today. I checked twice. I always check twice.", "Featherweight. I mean you, {name}. You walk like a letter with good news in it.", "{name}. There is a postcard in my drawer with my name on it. Nobody knows. Now you do."],
     tap: "Postcards go out, mail comes in. I weigh everything. Stand still, I am weighing you." },
-  { key: 'moss', name: 'Moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'condo', role: "The sweeper: keeps the streets and the square clear of flyers, leaves and opinions.",
+  { key: 'moss', name: 'Moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'condo', role: "The sweeper: keeps the streets and the square clear of flyers, leaves and opinions.", want: "Pick one flyer up off the street some day. Just one. I will know which.",
     day: [
       ['square', 'sweep', 'left', ["Leaves. Again.", "Flyers. Somebody printed these. Somebody will answer for it.", "Clean before the light. That way it was always clean."]],
       ['hall', 'sweep', 'right', ["Hall street. Nib's paper. Nib's paper gets everywhere.", "Morning, lamp. Morning, bin. Morning, bin's little friend.", "A town is just a floor. Somebody has to hold it."]],
@@ -71,7 +71,7 @@ const R = [
       ['home', 'home', 'front', ["Wall. Pong. Wall. Good night, Spinner.", "Broom by the door. Beanie on the broom. Done.", "One flyer under the mattress. Nobody's business."]]],
     hi: ["New. Feet clean. Keep them that way.", "The new one. You walked round the flyer. Noticed.", "{name}. You are on the clean bit. Stay there.", "Boots. That is what I call you, {name}. Boots that mind where they go.", "{name}. I have a flyer under my mattress. Do not tell Stamp. Not a word."],
     tap: "Leaves. Again. Stand still, you are on a leaf." },
-  { key: 'pip', name: 'Pip', hat: 'backwardscap', glasses: '', tool: 'rubberchicken', home: 'store', role: "Runs the General Store: fireworks, lures, duck bread, every one the last one.",
+  { key: 'pip', name: 'Pip', hat: 'backwardscap', glasses: '', tool: 'rubberchicken', home: 'store', role: "Runs the General Store: fireworks, lures, duck bread, every one the last one.", want: "Ring the bell one day just to ring it. No buying. I like the sound.",
     day: [
       ['store', 'stand', 'front', ["Restocking the last ones. Don't tell anyone.", "Duck bread's in. The ducks know first.", "Fireworks, lures, bread. Bread first. Always."]],
       ['store', 'counter', 'front', ["Last lure. Also the second-last. Roughly.", "Fireworks. Never lit one. Great reviews.", "Duck bread. For ducks. Or not. Your call."]],
@@ -81,7 +81,7 @@ const R = [
       ['home', 'home', 'front', ["Shelves counted. All last ones.", "Fireworks in the back. Sleeping. Hopefully.", "Bell rang eleven times today. Good day. Roughly."]]],
     hi: ["New face. Fireworks, lures, duck bread. Pick one. Bread, honestly.", "The new one's back. Last duck bread's in. Third one today.", "{name}. Saved you a lure. Also everyone else. It's a big box.", "Bread. Hi, Bread. That's you now, {name}. Best customer. Only customer.", "{name}. I've never lit a firework. You can be the first. I'll watch from here."],
     tap: "Fireworks, lures, duck bread. Every one of them the last one. Roughly." },
-  { key: 'bean', name: 'Bean', hat: 'beanieprop', glasses: '', tool: 'mug', home: 'cafe', role: "Runs The Coffee Cup kiosk: today's coffee, today's fortune, and the price rumour.",
+  { key: 'bean', name: 'Bean', hat: 'beanieprop', glasses: '', tool: 'mug', home: 'cafe', role: "Runs The Coffee Cup kiosk: today's coffee, today's fortune, and the price rumour.", want: "Bring me one thing that happened to you. Later, when it has. I'll find it in the cup.",
     day: [
       ['cafe', 'counter', 'front', ["Kettle's on. So is fate.", "First cup. It says: more cups.", "I see a morning. Then another one."]],
       ['cafe', 'counter', 'front', ["Your fortune is in the cup. So is the coffee.", "I see a queue. Behind you. Small one.", "Grounds say rain. Sky says maybe."]],
@@ -91,7 +91,7 @@ const R = [
       ['home', 'home', 'front', ["Cups rinsed. Futures too.", "I see sleep. Finally. Mine.", "Propeller's still. Good coffee today."]]],
     hi: ["A stranger. The cup said so. The cup says most things.", "The new one. I saw a second visit. This is it.", "{name}. Your cup is waiting. It has opinions.", "Sugar. You're Sugar now, {name}. Don't ask what the cup said.", "{name}. I have never read my own cup. I might, if you sat with me."],
     tap: "Your fortune is in the cup. So is the coffee. Only one of them is hot." },
-  { key: 'figjr', name: 'Fig Jr.', hat: 'cowboy', glasses: 'shades', tool: 'lemonjug', home: 'garden_w', role: "Runs the lemonade stand at the family orchard and wheels the fruit cart into the square at noon.",
+  { key: 'figjr', name: 'Fig Jr.', hat: 'cowboy', glasses: 'shades', tool: 'lemonjug', home: 'garden_w', role: "Runs the lemonade stand at the family orchard and wheels the fruit cart into the square at noon.", want: "Bring Gran a flower from somewhere else one day. She likes knowing where things came from.",
     day: [
       ['orchard', 'water', 'right', ["Early inspection of the supply chain. Trees.", "Nobody sees this. Quarterly secret.", "The supplier sleeps. The enterprise does not."]],
       ['stand', 'counter', 'front', ["Fig's Lemonade. Established before I was.", "Fresh batch. Strong quarter. One cup so far.", "The brand is the hat. The hat is the brand."]],
@@ -101,7 +101,7 @@ const R = [
       ['home', 'home', 'front', ["Jug's in. Books closed. Page one.", "Tomorrow: lemons. Same as today.", "The supplier said goodnight. I said noted."]]],
     hi: ["Welcome to Fig's. Family firm. I'm the firm.", "The new one. Our returning customer base. Singular.", "{name}. Loyalty programme starts now. It's a cup.", "Partner. I call you Partner, {name}. No paperwork, the supplier said no.", "{name}. The sign says FIG'S. Gran's. It's fine. It's good, actually."],
     tap: "Fig's Lemonade. Locally sourced. From behind me. That's the orchard." },
-  { key: 'spinner', name: 'Spinner', hat: 'jester', glasses: '', tool: 'balloons', home: 'condo', role: "Runs the Wheel of Peel, one free spin a day, and holds the Pong paddle in the arcade.",
+  { key: 'spinner', name: 'Spinner', hat: 'jester', glasses: '', tool: 'balloons', home: 'condo', role: "Runs the Wheel of Peel, one free spin a day, and holds the Pong paddle in the arcade.", want: "Come and lose to me at Pong one day. Properly. I would like to know how it feels.",
     day: [
       ['square', 'stand', 'front', ["Step up, step up, nobody! Practising, fountain. You are doing great.", "The voice needs warming, like the Wheel needs oiling. Both squeak.", "Spinner at dawn, folks! Quiet as anything! Do not tell the Wheel."]],
       ['wheel', 'counter', 'front', ["One free spin a day! The pot is watching you. The pot is patient.", "Round she goes, where she stops, Spinner does not know. Honest!", "Every spin equal, folks! Rich, poor, hat, no hat. That is the Wheel."]],
@@ -111,7 +111,7 @@ const R = [
       ['home', 'home', 'front', ["Paddle practice. Bang on the wall. Good night, Moss. Good night!", "Three bells on the hat, all asleep. Spinner too. Nearly.", "Nobody asked Spinner what Spinner wants. Spinner would say a spin."]]],
     hi: ["A stranger, folks! Step up! One spin, free, no strings, no catch, some bells!", "The new one! Back for the pot! The pot remembers you. The pot is like that.", "{name}! Say it with me, folks! {name}! The Wheel heard you. It is blushing!", "Champ! My Pong champ, {name}! Beat me by a point! I was inches off! Inches!", "{name}. Whisper now. I let them win. Every kid. By one. Keep it. Loud again!"],
     tap: "One free spin a day! The pot is watching you. So is Spinner. Both are friendly." },
-  { key: 'dot', name: 'Dot', hat: '', glasses: '', tool: '', home: 'print', role: "Keeps the town's wants at the info kiosk: what everyone is looking for, read to Nib at lunch.",
+  { key: 'dot', name: 'Dot', hat: '', glasses: '', tool: '', home: 'print', role: "Keeps the town's wants at the info kiosk: what everyone is looking for, read to Nib at lunch.", want: "One day, will you look in the fountain with me? Not today. It is shy today.",
     day: [
       ['square', 'stand', 'front', ["Have you seen a fish? A real one? In here?", "Does the fountain go anywhere? Do fish know?", "If I stand very still, does it count as fishing?"]],
       ['board', 'read', 'front', ["Somebody wants a lure? Somebody wants a hat back? Shall I write it?", "Does the board lean? Or is it the wants?", "What are you looking for? Everyone is? Can I keep it?"]],
@@ -121,7 +121,7 @@ const R = [
       ['home', 'home', 'front', ["Does the press sound like water? Is that why I sleep?", "Do fish sleep? Do they know they are being looked for?", "Is tomorrow the day? Is it always?"]]],
     hi: ["Are you new? Have you seen a fish? A real one?", "The new one? Are you still new? When does it stop?", "{name}? Did you look in the fountain on the way? Properly?", "Fish! No, sorry, I mean you, {name}. Can I call you that? Too late?", "{name}? Can I tell you where it is? Will you still look with me if I do?"],
     tap: "Have you seen a fish? A real one? Tell me what you want instead, then?" },
-  { key: 'granfig', name: 'Gran Fig', hat: 'snailhat', glasses: 'nerd', tool: 'wateringcan', home: 'garden_w', role: "Grows the orchard and the west garden; keeps everyone's names, as they were and as they are.",
+  { key: 'granfig', name: 'Gran Fig', hat: 'snailhat', glasses: 'nerd', tool: 'wateringcan', home: 'garden_w', role: "Grows the orchard and the west garden; keeps everyone's names, as they were and as they are.", want: "Come and sit in the second chair some evening. It's for guests. It always was.",
     day: [
       ['garden_w', 'water', 'left', ["Beds first. Everything else can wait.", "Snail's up. So am I. Just.", "Water before the sun sees. The beds like to be first."]],
       ['orchard', 'water', 'right', ["The trees were watered. Rain, was it.", "Apples don't hurry. Nor do I.", "Jr.'s at the stand. Good. Keeps busy."]],
@@ -250,7 +250,9 @@ const DWELL_MIN = 4200, DWELL_VAR = 11000;
 // shape — a counter keeper stays behind it and only turns, a bench sitter shifts along it, someone
 // standing about wanders a little wider.
 function marksFor(n, st, beat) {
-  const near = (dx, dy, face) => [st.x + dx, st.y + dy, face];
+  // 👀 in a pair the facing is the conversation: every mark keeps it (st.paired), so they never drift
+  //    into standing side by side looking the same way, which reads as two strangers
+  const near = (dx, dy, face) => [st.x + dx, st.y + dy, st.paired ? st.face : face];
   const r = (k) => h01(n.idx + 1, beat + 1, k);
   const side = st.x > 1100 ? 'left' : 'right';   // they face into the square, not off the map
   if (st.act === 'counter' || st.act === 'stand') {
@@ -327,7 +329,7 @@ export function initLife({ world, W, H, pct }) {
       if (Math.abs(other[0] - x) > 24) f = other[0] > x ? 'right' : 'left';
       y += k === 0 ? -7 : 7;   // half a step apart in depth: two on one line is a chorus line
     }
-    return { place, act, face: f, lines, x, y, loop: null };
+    return { place, act, face: f, lines, x, y, loop: null, paired: group.length > 1 && pts.length > 1 };
   }
   function goHome(n) {
     n.hidden = true; n.el.hidden = true;
@@ -408,7 +410,12 @@ export function initLife({ world, W, H, pct }) {
     n.talked = true;
     const line = first ? n.hi[rung(n.key)] : (n.lines && n.lines.length ? n.lines[Math.floor(hourNow()) % n.lines.length] : n.tap);
     met(n.key);
-    return { key: n.key, name: n.name, role: n.role || '', line: fill(line), outfit: n.outfit, at: { x: n.x, y: n.y } };
+    // the two questions every resident answers: what they are at right now, and the one thing they
+    // would like of you some day (their want — a promise for later, never a task with a timer on it)
+    const doing = () => fill((n.lines && n.lines.length) ? n.lines[(Math.floor(hourNow() * 2) + n.idx) % n.lines.length] : n.tap);
+    const topics = [{ q: 'What are you at?', a: doing }];
+    if (n.want) topics.push({ q: 'Anything you want?', a: fill(n.want) });
+    return { key: n.key, name: n.name, role: n.role || '', line: fill(line), outfit: n.outfit, topics, at: { x: n.x, y: n.y } };
   }
   function standBy(key) {   // where the player waits to talk: beside them, never on them
     const n = byKey(key);

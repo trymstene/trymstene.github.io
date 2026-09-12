@@ -10,6 +10,8 @@ const title = 'Banana Town — prototype';
 const description = 'The town centre of Banana World, under construction.';
 ---
 <BaseLayout title={title} description={description} robots="noindex,nofollow">
+  <!-- 🗣 the world's shared NPC dialogue card (design library §18) -->
+  <link rel="stylesheet" href="/css/dialogue.css" slot="head" />
   <style is:inline slot="head">
     .tw-wrap [hidden] { display: none !important; }
     body { background: #1a120c; }
@@ -115,15 +117,11 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-inshade { position: absolute; inset: 0; z-index: 2000; background: #0d0b14; pointer-events: none; }
     .tw-room { position: absolute; z-index: 2010; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
     .tw-world.is-inside :is(.tw-ov, .tw-npc, .tw-plank, .tw-fountain, .tw-litter, .tw-glow) { visibility: hidden; }
-    /* 🗣 A RESIDENT'S DIALOGUE CARD (town-life.js) — the park's Old Peel shape: the portrait beside the
-       words. ⭐ There is no speech bubble anywhere in the town on purpose (Trym, 12 Sep): a resident
-       speaks only in this card, and only after you walk up and tap them. */
-    .tw-talk { display: flex; gap: 0.7rem; align-items: flex-start; }
-    .tw-talk__who { flex: none; width: 34%; max-width: 110px; background: #2a1a10; border: 2px solid #000; box-shadow: 2px 2px 0 #000; }
-    .tw-talk__who canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
-    .tw-talk__txt { flex: 1 1 auto; min-width: 0; }
-    .tw-talk__txt h2 { margin-bottom: 0.1rem; }
-    .tw-talk__line { margin: 0.5rem 0 0; font-size: 0.88rem; line-height: 1.45; }
+    /* 🗣 A RESIDENT'S DIALOGUE — the shared card (/css/dialogue.css, src/lib/world-dialogue.js), in the
+       town's brick instead of the park's green. ⭐ There is no speech bubble anywhere in the town on
+       purpose (Trym, 12 Sep): a resident speaks only in this card, and only after you walk up and tap.
+       .tw-card--npc lets the tilted portrait lean out past the card's corner (the card scrolls otherwise). */
+    .tw-card--npc { overflow: visible; --wd-btn: #2a1a10; --wd-btn-hi: #3d2818; --wd-box: #120c07; --wd-box-line: #4a3320; --wd-more: #ffb347; }
     /* the puff: the park's .pk-poof to the pixel — a flyer swept or picked up, water on the beds */
     .tw-poof { position: absolute; transform: translate(-50%, -50%); width: 3%; z-index: 1800; pointer-events: none; }
     .tw-poof span { position: absolute; inset: 0; opacity: 0; }
