@@ -26,10 +26,11 @@ const description = 'AI helps write the code here, like in most software today. 
       <h2>First, the money</h2>
       <p>I don’t make money on this. Running Banana World costs me about 300 dollars a month: the AI
         subscription, the shop platform, the domain and Cloudflare, a few ads here and there, test products
-        for the shop, and small tools. What the shop and the tip jar bring in goes back into the place.
-        There is no salary in it. I have a normal nine-to-five job; this is what I do with the evenings.</p>
+        for the shop, and small tools. The tip jar brings in five or ten dollars a month, and it all goes back
+        into the place. There is no salary in it. I have a normal nine-to-five job; this is what I do with
+        the evenings.</p>
 
-      <!-- 📊 two bars, one number each. The second bar is empty on purpose. -->
+      <!-- 📊 two bars, one number each. The second is small, not empty: the tip jar is real (Trym, 12 Sep). -->
       <figure class="ai-cost" aria-label="What Banana World costs a month against what it pays me">
         <div class="ai-cost__row">
           <span class="ai-cost__label">What it costs</span>
@@ -38,8 +39,8 @@ const description = 'AI helps write the code here, like in most software today. 
         </div>
         <div class="ai-cost__row">
           <span class="ai-cost__label">What it pays me</span>
-          <span class="ai-cost__bar ai-cost__bar--empty"><span class="ai-cost__fill" style="width:0"></span></span>
-          <span class="ai-cost__val">$0</span>
+          <span class="ai-cost__bar"><span class="ai-cost__fill" style="width:3%"></span></span>
+          <span class="ai-cost__val">$5–10 <small>a month, the tip jar</small></span>
         </div>
         <figcaption>Roughly, averaged over a year. It goes up in a month with a new test product or an ad.</figcaption>
       </figure>
@@ -92,12 +93,11 @@ const description = 'AI helps write the code here, like in most software today. 
   .pv h2 { font-size: 1.15rem; margin: 1.8rem 0 0.6rem; }
   .pv ul { padding-left: 1.2rem; }
   .pv li { margin-bottom: 0.6rem; line-height: 1.5; }
-  /* 📊 the cost figure: the site's card grammar, one hue, the empty bar says the rest */
+  /* 📊 the cost figure: the site’s card grammar, one hue, the small second bar says the rest */
   .ai-cost { margin: 1.2rem 0 0; padding: 0.9rem 1rem 0.7rem; border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); background: #fff; }
   .ai-cost__row { display: grid; grid-template-columns: 8.5em 1fr auto; gap: 0.7rem; align-items: center; margin: 0 0 0.6rem; }
   .ai-cost__label { font-weight: 700; font-size: 0.9rem; }
   .ai-cost__bar { display: block; height: 18px; border: 2px solid var(--ink); background: transparent; overflow: hidden; }
-  .ai-cost__bar--empty { border-style: dashed; }
   .ai-cost__fill { display: block; height: 100%; background: var(--banana); }
   .ai-cost__val { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .ai-cost__val small { font-family: inherit; font-weight: 400; font-size: 0.75rem; opacity: 0.7; }
