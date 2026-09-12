@@ -222,8 +222,12 @@ view.addEventListener('pointerdown', (e) => {
       const key = hit[1]; arriveThen = () => gameCard(key);
       return;
     }
-    if (hit[0] === 'npc') { const n = life.tap(hit[1]); if (n) { tgt.x = n.x + (pos.x < n.x ? -60 : 60); tgt.y = n.y + 8; } return; }
-    if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => life.pick(hit[1]); } return; }   // walk to it, then it is picked up
+    if (hit[0] === 'npc') {   // 🗣 walk up first, THEN the dialogue opens (the park's Old Peel rule)
+      const n = life.standBy(hit[1]);
+      if (n) { tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8; const key = hit[1]; arriveThen = () => npcCard(key); }
+      return;
+    }
+    if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { const r = life.pick(hit[1]); if (typeof r === 'string') say(r); }; } return; }   // walk to it, then it is picked up
     const spot = SPOTS[hit[1]], wasInside = inside;
     if (!openFor(hit[1])) say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
     if (inside !== wasInside) return;   // 🚪 a door was used: the room placed the banana; a walk target here would march it straight back out
@@ -274,7 +278,7 @@ function tick(now) {
   me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inside ? 2100 : 100) + Math.round(pos.y));
   cam(false);
   drawMe();
-  life.tick(now, dt, pos);
+  life.tick(now, dt);
   if (inside && ARCADE) { const [x0, y0, x1, y1] = ARCADE.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitArcade(); }
   if (!inside && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -294,6 +298,18 @@ function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
 function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; if (arcGame) { arcGame.stop(); arcGame = null; } }
 document.getElementById('twCardX').addEventListener('click', closeCard);
 panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
+// 🗣 A RESIDENT'S DIALOGUE — the park's Old Peel card in the town's brick: their banana big in the
+// corner, their name, what they do, and the one thing they say to you right now. Nothing a resident
+// says is ever drawn over their head (Trym, 12 Sep): this card is the only place they speak.
+function npcCard(key) {
+  const d = life.talk(key);
+  if (!d) return;
+  openCard('<div class="tw-talk"><div class="tw-talk__who"><canvas id="twTalkCv" width="300" height="300" aria-hidden="true"></canvas></div>'
+    + '<div class="tw-talk__txt"><h2>' + d.name + '</h2><p class="tw-card__sub">' + d.role + '</p>'
+    + '<p class="tw-talk__line">\u201c' + d.line + '\u201d</p></div></div>');
+  const cv = document.getElementById('twTalkCv');
+  if (cv) drawComposite(cv.getContext('2d'), 300, 2, d.outfit);   // frame 2: standing, facing you
+}
 function openFor(key) {
   if (key === 'wheel') { wheelCard(); return true; }
   if (key === 'exchange') { exchangeCard(); return true; }

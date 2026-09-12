@@ -6,29 +6,31 @@
 // centrelines, Dijkstra per leg). At a station the act decides what they do:
 // Moss sweeps the flyers off the street, the Figs water the beds, the rest
 // stand at their counter, read the board, or sit out the noon on a bench with
-// somebody. Speech is a bubble over the head: an ambient line from the
-// station's list on a schedule seeded per beat, a greeting when the player
-// comes close (chosen by the ladder: how often this player has met them, a
-// pass stat), and the tap line. At night they go home: the element hides and
-// a warm window glows. The Mayor is never seen; a light in the hall's upper
-// window in the evening is all of him.
+// ⭐ THE TOWN IS QUIET (Trym, 12 Sep: "you dont see speechbubbles yapping away in stardew valley …
+// with lots of npcs yapping away at the same time it gets chaotic and just noisy … theres no speech
+// bubbles, but npcs stand next to eachother when they talk — when you go up to them and click them, a
+// dialogue window opens"). So: NOTHING a resident says appears over their head, ever. They work in
+// silence; two of them at one place stand FACING EACH OTHER, and that is how you see they are talking.
+// You hear one only by walking up and tapping: then a dialogue card opens with their portrait, and the
+// line depends on how often you two have met (the ladder, a pass stat). At night they go home: the
+// element hides and a warm window glows. The Mayor is never seen; a light in the hall's upper window
+// in the evening is all of him.
 import { drawComposite } from '../lib/banana-engine.js';
 import { poofInto } from '../lib/world.js';
 import { passStat, passRaw, statTotal } from '../lib/banana-pass.js';
 
 // ---- the clock
-const DAY_MS = 720000, BEAT_MS = 120000, HOUR_MS = 30000;
+const DAY_MS = 720000, HOUR_MS = 30000;   // a town day is twelve real minutes: six beats of two
 const BEATS = ['dawn', 'morning', 'noon', 'afternoon', 'evening', 'night'];
 let setHour = null, setAt = 0;   // QA: a pinned hour that keeps running from the moment it was set
 const townMs = () => setHour == null ? Date.now() % DAY_MS : (setHour * HOUR_MS + (performance.now() - setAt)) % DAY_MS;
 const hourNow = () => townMs() / HOUR_MS;
 const beatOf = (h) => Math.floor(h / 4) % 6;
-const dayNum = () => Math.floor(Date.now() / DAY_MS);
 
 // ---- the bible: who they are, where they stand, what they say (writers' room, 12 Sep 2026)
-// day: six beats of [place, act, face, lines]; hi: the greeting per ladder rung 0-4; tap: on a tap
+// day: six beats of [place, act, face, lines]; hi: what they say to you at ladder rung 0-4; tap: the fallback line
 const R = [
-  { key: 'nib', name: 'Nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall',
+  { key: 'nib', name: 'Nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall', role: "Town Hall clerk: keeps the big book, answers the Mayor's notes, stamps things so they are real.",
     day: [
       ['monument', 'stand', 'front', ["Good morning. Nobody knows who you are. I am working on it.", "A statue with no plaque. It is an open case. I keep it open.", "I bring a cloth. Somebody should. So it is me."]],
       ['hall', 'counter', 'front', ["The book is open. The hall is open. I am, in most respects, open.", "Forms to the left. Questions to the right. Sighs to me.", "Every name goes in once. Yours went in twice. I fixed it."]],
@@ -38,7 +40,7 @@ const R = [
       ['home', 'home', 'front', ["The book sleeps in a drawer. I sleep above the drawer.", "I count the names before bed. Tonight there is one more.", "Good night, town. Every one of you. Alphabetically."]]],
     hi: ["Good day. You are not in the book yet. That is not a crime. It is a form.", "The new one. I have your page ready. It only needs a person on it.", "{name}. Plot Eleven. Page thirty. I do not need to look it up.", "Ah, Plot Eleven. I say it fondly, {name}. The book has no column for fondly.", "{name}. Next of kin, mine. I wrote you in this morning. I hope that is all right."],
     tap: "Ah. You. The Mayor said somebody might come by the hall. I believe it was you." },
-  { key: 'stamp', name: 'Stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post',
+  { key: 'stamp', name: 'Stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post', role: "Runs the Post Office: weighs the mail, sells stock postcards to neighbours, meets the bus.",
     day: [
       ['bus', 'stand', 'right', ["The bus is late. Four minutes. I weigh that against last time.", "One sack, a morning's worth. I can tell by the shape.", "Nothing for me. Noted. Something for everyone else. Good."]],
       ['post', 'counter', 'front', ["Postcards. Stock. No words on them. The honest kind.", "Put it on the scale. Everything goes on the scale. Even hats.", "Two hundred grams of somebody's grandmother. Careful with that."]],
@@ -48,7 +50,7 @@ const R = [
       ['home', 'home', 'front', ["The scale is off. My feet are on. Two hundred and something.", "One postcard, blank, in the drawer. Mine. Not sent. Not yet.", "The bus comes back tomorrow. So do I. That is the arrangement."]]],
     hi: ["New face. Stand on the scale a moment. No. That was a joke. Nearly.", "The new one. You have no post yet. That changes. It always changes.", "{name}. Nothing for you today. I checked twice. I always check twice.", "Featherweight. I mean you, {name}. You walk like a letter with good news in it.", "{name}. There is a postcard in my drawer with my name on it. Nobody knows. Now you do."],
     tap: "Postcards go out, mail comes in. I weigh everything. Stand still, I am weighing you." },
-  { key: 'moss', name: 'Moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'condo',
+  { key: 'moss', name: 'Moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'condo', role: "The sweeper: keeps the streets and the square clear of flyers, leaves and opinions.",
     day: [
       ['square', 'sweep', 'left', ["Leaves. Again.", "Flyers. Somebody printed these. Somebody will answer for it.", "Clean before the light. That way it was always clean."]],
       ['hall', 'sweep', 'right', ["Hall street. Nib's paper. Nib's paper gets everywhere.", "Morning, lamp. Morning, bin. Morning, bin's little friend.", "A town is just a floor. Somebody has to hold it."]],
@@ -58,7 +60,7 @@ const R = [
       ['home', 'home', 'front', ["Wall. Pong. Wall. Good night, Spinner.", "Broom by the door. Beanie on the broom. Done.", "One flyer under the mattress. Nobody's business."]]],
     hi: ["New. Feet clean. Keep them that way.", "The new one. You walked round the flyer. Noticed.", "{name}. You are on the clean bit. Stay there.", "Boots. That is what I call you, {name}. Boots that mind where they go.", "{name}. I have a flyer under my mattress. Do not tell Stamp. Not a word."],
     tap: "Leaves. Again. Stand still, you are on a leaf." },
-  { key: 'pip', name: 'Pip', hat: 'backwardscap', glasses: '', tool: 'rubberchicken', home: 'store',
+  { key: 'pip', name: 'Pip', hat: 'backwardscap', glasses: '', tool: 'rubberchicken', home: 'store', role: "Runs the General Store: fireworks, lures, duck bread, every one the last one.",
     day: [
       ['store', 'stand', 'front', ["Restocking the last ones. Don't tell anyone.", "Duck bread's in. The ducks know first.", "Fireworks, lures, bread. Bread first. Always."]],
       ['store', 'counter', 'front', ["Last lure. Also the second-last. Roughly.", "Fireworks. Never lit one. Great reviews.", "Duck bread. For ducks. Or not. Your call."]],
@@ -68,7 +70,7 @@ const R = [
       ['home', 'home', 'front', ["Shelves counted. All last ones.", "Fireworks in the back. Sleeping. Hopefully.", "Bell rang eleven times today. Good day. Roughly."]]],
     hi: ["New face. Fireworks, lures, duck bread. Pick one. Bread, honestly.", "The new one's back. Last duck bread's in. Third one today.", "{name}. Saved you a lure. Also everyone else. It's a big box.", "Bread. Hi, Bread. That's you now, {name}. Best customer. Only customer.", "{name}. I've never lit a firework. You can be the first. I'll watch from here."],
     tap: "Fireworks, lures, duck bread. Every one of them the last one. Roughly." },
-  { key: 'bean', name: 'Bean', hat: 'beanieprop', glasses: '', tool: 'mug', home: 'cafe',
+  { key: 'bean', name: 'Bean', hat: 'beanieprop', glasses: '', tool: 'mug', home: 'cafe', role: "Runs The Coffee Cup kiosk: today's coffee, today's fortune, and the price rumour.",
     day: [
       ['cafe', 'counter', 'front', ["Kettle's on. So is fate.", "First cup. It says: more cups.", "I see a morning. Then another one."]],
       ['cafe', 'counter', 'front', ["Your fortune is in the cup. So is the coffee.", "I see a queue. Behind you. Small one.", "Grounds say rain. Sky says maybe."]],
@@ -78,7 +80,7 @@ const R = [
       ['home', 'home', 'front', ["Cups rinsed. Futures too.", "I see sleep. Finally. Mine.", "Propeller's still. Good coffee today."]]],
     hi: ["A stranger. The cup said so. The cup says most things.", "The new one. I saw a second visit. This is it.", "{name}. Your cup is waiting. It has opinions.", "Sugar. You're Sugar now, {name}. Don't ask what the cup said.", "{name}. I have never read my own cup. I might, if you sat with me."],
     tap: "Your fortune is in the cup. So is the coffee. Only one of them is hot." },
-  { key: 'figjr', name: 'Fig Jr.', hat: 'cowboy', glasses: 'shades', tool: 'lemonjug', home: 'garden_w',
+  { key: 'figjr', name: 'Fig Jr.', hat: 'cowboy', glasses: 'shades', tool: 'lemonjug', home: 'garden_w', role: "Runs the lemonade stand at the family orchard and wheels the fruit cart into the square at noon.",
     day: [
       ['orchard', 'water', 'right', ["Early inspection of the supply chain. Trees.", "Nobody sees this. Quarterly secret.", "The supplier sleeps. The enterprise does not."]],
       ['stand', 'counter', 'front', ["Fig's Lemonade. Established before I was.", "Fresh batch. Strong quarter. One cup so far.", "The brand is the hat. The hat is the brand."]],
@@ -88,7 +90,7 @@ const R = [
       ['home', 'home', 'front', ["Jug's in. Books closed. Page one.", "Tomorrow: lemons. Same as today.", "The supplier said goodnight. I said noted."]]],
     hi: ["Welcome to Fig's. Family firm. I'm the firm.", "The new one. Our returning customer base. Singular.", "{name}. Loyalty programme starts now. It's a cup.", "Partner. I call you Partner, {name}. No paperwork, the supplier said no.", "{name}. The sign says FIG'S. Gran's. It's fine. It's good, actually."],
     tap: "Fig's Lemonade. Locally sourced. From behind me. That's the orchard." },
-  { key: 'spinner', name: 'Spinner', hat: 'jester', glasses: '', tool: 'balloons', home: 'condo',
+  { key: 'spinner', name: 'Spinner', hat: 'jester', glasses: '', tool: 'balloons', home: 'condo', role: "Runs the Wheel of Peel, one free spin a day, and holds the Pong paddle in the arcade.",
     day: [
       ['square', 'stand', 'front', ["Step up, step up, nobody! Practising, fountain. You are doing great.", "The voice needs warming, like the Wheel needs oiling. Both squeak.", "Spinner at dawn, folks! Quiet as anything! Do not tell the Wheel."]],
       ['wheel', 'counter', 'front', ["One free spin a day! The pot is watching you. The pot is patient.", "Round she goes, where she stops, Spinner does not know. Honest!", "Every spin equal, folks! Rich, poor, hat, no hat. That is the Wheel."]],
@@ -98,7 +100,7 @@ const R = [
       ['home', 'home', 'front', ["Paddle practice. Bang on the wall. Good night, Moss. Good night!", "Three bells on the hat, all asleep. Spinner too. Nearly.", "Nobody asked Spinner what Spinner wants. Spinner would say a spin."]]],
     hi: ["A stranger, folks! Step up! One spin, free, no strings, no catch, some bells!", "The new one! Back for the pot! The pot remembers you. The pot is like that.", "{name}! Say it with me, folks! {name}! The Wheel heard you. It is blushing!", "Champ! My Pong champ, {name}! Beat me by a point! I was inches off! Inches!", "{name}. Whisper now. I let them win. Every kid. By one. Keep it. Loud again!"],
     tap: "One free spin a day! The pot is watching you. So is Spinner. Both are friendly." },
-  { key: 'dot', name: 'Dot', hat: '', glasses: '', tool: '', home: 'print',
+  { key: 'dot', name: 'Dot', hat: '', glasses: '', tool: '', home: 'print', role: "Keeps the town's wants at the info kiosk: what everyone is looking for, read to Nib at lunch.",
     day: [
       ['square', 'stand', 'front', ["Have you seen a fish? A real one? In here?", "Does the fountain go anywhere? Do fish know?", "If I stand very still, does it count as fishing?"]],
       ['board', 'read', 'front', ["Somebody wants a lure? Somebody wants a hat back? Shall I write it?", "Does the board lean? Or is it the wants?", "What are you looking for? Everyone is? Can I keep it?"]],
@@ -108,7 +110,7 @@ const R = [
       ['home', 'home', 'front', ["Does the press sound like water? Is that why I sleep?", "Do fish sleep? Do they know they are being looked for?", "Is tomorrow the day? Is it always?"]]],
     hi: ["Are you new? Have you seen a fish? A real one?", "The new one? Are you still new? When does it stop?", "{name}? Did you look in the fountain on the way? Properly?", "Fish! No, sorry, I mean you, {name}. Can I call you that? Too late?", "{name}? Can I tell you where it is? Will you still look with me if I do?"],
     tap: "Have you seen a fish? A real one? Tell me what you want instead, then?" },
-  { key: 'granfig', name: 'Gran Fig', hat: 'snailhat', glasses: 'nerd', tool: 'wateringcan', home: 'garden_w',
+  { key: 'granfig', name: 'Gran Fig', hat: 'snailhat', glasses: 'nerd', tool: 'wateringcan', home: 'garden_w', role: "Grows the orchard and the west garden; keeps everyone's names, as they were and as they are.",
     day: [
       ['garden_w', 'water', 'left', ["Beds first. Everything else can wait.", "Snail's up. So am I. Just.", "Water before the sun sees. The beds like to be first."]],
       ['orchard', 'water', 'right', ["The trees were watered. Rain, was it.", "Apples don't hurry. Nor do I.", "Jr.'s at the stand. Good. Keeps busy."]],
@@ -205,23 +207,6 @@ function route(from, to) {   // the points to walk, from (exclusive) to `to` (in
   return out;
 }
 
-// ---- the schedule: seeded per beat, so every visitor hears the same line at the same moment
-function mix32(seed) {
-  let t = seed >>> 0;
-  return () => { t = (t + 0x9e3779b9) >>> 0; let z = t; z = Math.imul(z ^ (z >>> 16), 0x21f0aaad); z = Math.imul(z ^ (z >>> 15), 0x735a2d97); z = z ^ (z >>> 15); return (z >>> 0) / 4294967296; };
-}
-function schedule(beat, idx, n) {
-  const rng = mix32((dayNum() * 6 + beat) * 97 + idx * 131 + 7), out = [];
-  let t = 8000 + rng() * 24000, last = -1;
-  while (t < BEAT_MS - 5000) {
-    let i = Math.floor(rng() * n);
-    if (i === last) i = (i + 1) % n;
-    out.push({ at: t, i }); last = i;
-    t += 20000 + rng() * 20000;
-  }
-  return out;
-}
-
 // ---- the ladder: how often this player has met them, a pass stat that travels
 const metNow = new Set();   // at most once per page session per resident
 const total = (key) => { try { return statTotal(passRaw(), 'tw_met_' + key); } catch (e) { return 0; } };
@@ -238,15 +223,14 @@ function nameOf() {
 }
 const fill = (s) => s.replace(/\{name\}/g, nameOf());
 
-const WALK = 110, BOB_MS = 333, GREET_R = 110, SWEEP_R = 120, NEAR_MOSS = 200, BUB_R = 190;
+const WALK = 110, BOB_MS = 333, SWEEP_R = 120, NEAR_MOSS = 200;
 const FACE_FRAME = { front: 2, left: 4, right: 0 };
 
 export function initLife({ world, W, H, pct }) {
-  const toastEl = document.getElementById('twToast');
-  let ready = false, curBeat = -1, lastSweep = 0, lastGreet = -1e9, mayorEl = null;   // (performance.now() starts near 0: a zero here would gag the first greeting)
+  let ready = false, curBeat = -1, lastSweep = 0, mayorEl = null;
   const flyers = [];
 
-  // the residents: one .tw-npc each (canvas + name), one bubble each, their window glows
+  // the residents: one .tw-npc each (canvas + name) and their home's window glow
   const res = R.map((r, idx) => {
     const el = document.createElement('div');
     el.className = 'tw-npc';
@@ -255,12 +239,9 @@ export function initLife({ world, W, H, pct }) {
     el.appendChild(cv); el.appendChild(tag);
     el.hidden = true;
     world.appendChild(el);
-    const bub = document.createElement('div');
-    bub.className = 'tw-bubble'; bub.hidden = true;
-    world.appendChild(bub);
     const outfit = { hat: r.hat || 'none', glasses: r.glasses || 'none', extras: r.tool ? { [r.tool]: true } : {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
-    return { ...r, idx, el, cv, ctx: cv.getContext('2d'), bub, bubT: 0, bubTxt: '', outfit, x: 0, y: 0, px: NaN, py: NaN, drawn: '', face: 'front',
-      path: [], wait: 0, walking: false, loop: null, li: 0, ldir: 1, hidden: true, beat: -1, place: '', act: '', amb: [], ambNext: 0, greeted: false, lastWater: 0, bedI: 0, glow: null };
+    return { ...r, idx, el, cv, ctx: cv.getContext('2d'), outfit, x: 0, y: 0, px: NaN, py: NaN, drawn: '', face: 'front',
+      path: [], wait: 0, walking: false, loop: null, li: 0, ldir: 1, hidden: true, beat: -1, place: '', act: '', talked: false, lastWater: 0, bedI: 0, glow: null };
   });
   // glows: one per home window; two residents above the arcade, the Figs share a lantern
   const glowCount = {};
@@ -280,7 +261,6 @@ export function initLife({ world, W, H, pct }) {
   world.appendChild(mayorEl);
 
   const byKey = (key) => res.find((n) => n.key === key);
-  const toastUp = () => toastEl && !toastEl.hidden;
 
   // ---- stations
   function stationFor(n, beat) {
@@ -293,7 +273,14 @@ export function initLife({ world, W, H, pct }) {
     const group = res.filter((m) => { const d = m.day[beat]; return d[0] === place && d[1] !== 'sweep' && d[1] !== 'stroll' && d[1] !== 'home'; });
     const k = Math.max(0, group.indexOf(n));
     const p = pts[Math.min(k, pts.length - 1)];
-    return { place, act, face, lines, x: p[0], y: p[1], loop: null };
+    // 🗣 two residents at one place TURN TOWARD EACH OTHER — with no bubbles that is the only way you
+    // see a conversation, and it is how Stardew does it. The one on the left looks right, and vice versa.
+    let f = face;
+    if (group.length > 1 && pts.length > 1) {
+      const other = pts[Math.min(k === 0 ? 1 : 0, pts.length - 1)];
+      if (Math.abs(other[0] - p[0]) > 24) f = other[0] > p[0] ? 'right' : 'left';
+    }
+    return { place, act, face: f, lines, x: p[0], y: p[1], loop: null };
   }
   function goHome(n) {
     n.hidden = true; n.el.hidden = true;
@@ -312,10 +299,7 @@ export function initLife({ world, W, H, pct }) {
     for (const n of res) {
       const st = stationFor(n, beat);
       n.beat = beat; n.place = st.place; n.act = st.act; n.face = st.face; n.lines = st.lines; n.loop = st.loop; n.li = 0; n.ldir = 1;
-      n.greeted = false; n.lastWater = 0;
-      n.amb = schedule(beat, n.idx, st.lines.length);
-      const bm = townMs() % BEAT_MS;
-      n.ambNext = walk ? 0 : n.amb.findIndex((a) => a.at > bm); if (n.ambNext < 0) n.ambNext = n.amb.length;
+      n.lastWater = 0;
       if (walk) {
         if (st.act !== 'home' || !n.hidden) leaveHome(n);
         n.path = route([n.x, n.y], [st.x, st.y]);
@@ -325,7 +309,6 @@ export function initLife({ world, W, H, pct }) {
         n.path = []; n.walking = false; n.wait = 0;
         n.x = st.x; n.y = st.y;
         if (st.act === 'home') goHome(n); else leaveHome(n);
-        hideBubble(n);
       }
     }
     if (mayorEl) mayorEl.hidden = beat !== 4;
@@ -360,45 +343,26 @@ export function initLife({ world, W, H, pct }) {
     if (!f) return false;
     takeFlyer(f);
     const m = byKey('moss');
-    if (m && !m.hidden && Math.hypot(m.x - f.x, m.y - f.y) < NEAR_MOSS) bubble(m, MOSS_FLYER);
+    // her one reaction to something the PLAYER did — the town's narration line, not a bubble over her head
+    if (m && !m.hidden && Math.hypot(m.x - f.x, m.y - f.y) < NEAR_MOSS) return 'Moss: \u201c' + MOSS_FLYER + '\u201d';
     return true;
   }
 
-  // ---- speech
-  function bubble(n, text) {
-    n.bubTxt = fill(text);
-    n.bub.textContent = n.bubTxt;
-    n.bub.hidden = false;
-    placeBubble(n);
-    clearTimeout(n.bubT);
-    n.bubT = setTimeout(() => hideBubble(n), 4200);
-  }
-  function hideBubble(n) { n.bub.hidden = true; n.bubTxt = ''; clearTimeout(n.bubT); }
-  // 🗨 an AMBIENT line waits for a talking neighbour: at the noon benches two residents stand 70 px
-  // apart and two bubbles side by side are one unreadable smudge. A greeting and a tap never wait —
-  // those are the player's own doing, and the line they asked for must arrive.
-  const crowded = (n) => res.some((m) => m !== n && !m.bub.hidden && !m.hidden && Math.hypot(m.x - n.x, m.y - n.y) < BUB_R);
-  function placeBubble(n) {
-    const home = n.hidden && n.glowAt;
-    const x = home ? n.glowAt[0] : n.x, y = home ? n.glowAt[1] - 30 : n.y - 100;
-    n.bub.style.left = pct(x, W); n.bub.style.top = pct(y, H);
-    if (home) n.bub.style.zIndex = '1900';
-  }
-  function greet(n, force) {
-    if (n.hidden) return '';
-    if (!force && n.greeted) return '';
-    n.greeted = true;
-    const line = n.hi[rung(n.key)];   // the rung BEFORE this meeting counts: the first time, you are the stranger
-    met(n.key);
-    bubble(n, line);
-    return n.bubTxt;
-  }
-  function tap(key) {
+  // ---- the dialogue: only ever on a tap, and only after you have walked up to them
+  // The line is chosen by the ladder — how often you two have met — and the SECOND tap in a session
+  // gives you what they are doing right now instead of the greeting again.
+  function talk(key) {
     const n = byKey(key);
     if (!n) return null;
+    const first = !n.talked;
+    n.talked = true;
+    const line = first ? n.hi[rung(n.key)] : (n.lines && n.lines.length ? n.lines[Math.floor(hourNow()) % n.lines.length] : n.tap);
     met(n.key);
-    n.greeted = true;
-    bubble(n, n.tap);
+    return { key: n.key, name: n.name, role: n.role || '', line: fill(line), outfit: n.outfit, at: { x: n.x, y: n.y } };
+  }
+  function standBy(key) {   // where the player waits to talk: beside them, never on them
+    const n = byKey(key);
+    if (!n || n.hidden) return null;
     return { x: n.x, y: n.y };
   }
 
@@ -422,11 +386,10 @@ export function initLife({ world, W, H, pct }) {
     return false;
   }
 
-  function tick(now, dt, player) {
+  function tick(now, dt) {
     if (!ready) return;
     const beat = beatOf(hourNow());
     if (beat !== curBeat) changeBeat(beat, true);
-    const bm = townMs() % BEAT_MS, inside = world.classList.contains('is-inside');
     const bob = Math.floor(now / BOB_MS) % 2;
     for (const n of res) {
       let frame;
@@ -450,10 +413,9 @@ export function initLife({ world, W, H, pct }) {
         n.walking = false;
         frame = FACE_FRAME[n.face] || 2;
       }
-      if (n.hidden) { if (!n.bub.hidden) placeBubble(n); continue; }
+      if (n.hidden) continue;
       draw(n, frame);
       placeEl(n);
-      if (!n.bub.hidden) placeBubble(n);
       // the act
       if (n.act === 'sweep' && !n.path.length && now - lastSweep > 900) {
         const f = flyers.find((q) => !q.gone && Math.hypot(q.x - n.x, q.y - n.y) < SWEEP_R);
@@ -467,21 +429,6 @@ export function initLife({ world, W, H, pct }) {
           const b = beds[n.bedI++ % beds.length];
           poof(b[0], b[1]);
         }
-      }
-      // ambient speech, on the beat's schedule; a greeting when the player comes close
-      while (n.ambNext < n.amb.length && n.amb[n.ambNext].at <= bm) {
-        const a = n.amb[n.ambNext++];
-        if (n.bub.hidden && !toastUp() && !inside && !crowded(n)) bubble(n, n.lines[a.i]);
-      }
-      // one greeting at a time: walking into the square meets three people, not a wall of paper
-      if (!inside && !n.greeted && player && now - lastGreet > 1200 && Math.hypot(player.x - n.x, player.y - n.y) < GREET_R) { greet(n, false); lastGreet = now; }
-    }
-    // the ones at home still talk, from the window
-    for (const n of res) {
-      if (!n.hidden) continue;
-      while (n.ambNext < n.amb.length && n.amb[n.ambNext].at <= bm) {
-        const a = n.amb[n.ambNext++];
-        if (n.bub.hidden && !toastUp() && !inside && n.glowAt && !crowded(n)) bubble(n, n.lines[a.i]);
       }
     }
   }
@@ -503,12 +450,12 @@ export function initLife({ world, W, H, pct }) {
     hour: () => hourNow(),
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
     residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden })),
-    bubble: (key) => { const n = byKey(key); return n && !n.bub.hidden ? n.bubTxt : ''; },
     litter: () => flyers.filter((f) => !f.gone).length,
     rung,
-    greet: (key) => { const n = byKey(key); return n ? greet(n, true) : ''; },
+    talk,
+    facing: () => res.filter((n) => !n.hidden).map((n) => ({ key: n.key, face: n.face, place: n.place })),
     pick,
     mayor: () => !!(mayorEl && !mayorEl.hidden),
   };
-  return { tick, at, tap, pick, flyer, start, seam };
+  return { tick, at, talk, standBy, pick, flyer, start, seam };
 }
