@@ -97,7 +97,8 @@ const COLS = [
     margin-bottom: 0.45rem;
     line-height: 1.35;
   }
-  .footer__safe { margin: 0.2rem 0 0.7rem; font-size: 0.9rem; }
+  /* a global prose rule caps every <p> at ~62ch and leaves it at the left; this line is the whole width, centred */
+  .footer__safe { display: flex; justify-content: center; max-width: none; margin: 0.2rem auto 0.7rem; font-size: 0.9rem; text-align: center; }
   .footer__safe a { display: inline-flex; align-items: center; gap: 0.5rem; }
   @media (max-width: 719px) {
     .ft-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 26rem; }

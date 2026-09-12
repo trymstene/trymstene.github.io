@@ -407,3 +407,18 @@ from now on, so the next one is a copy, not a design:
 The games ship as one on-demand module (`src/scripts/town-games.js`, loaded
 the first time a cabinet is tapped) so the area's own script keeps its budget.
 
+## 17. The footer is on every page a visitor can reach
+
+Every page a visitor can land on carries the footer (`src/components/Footer.astro`
+through `BaseLayout`), the world's areas included: the park, the bay, the
+homestead, the rave, the town, and the translated GIF pages. The footer is where
+the safe-space line, the rules, the AI page, privacy and the host live; a page
+without it is a page where a visitor cannot find them (Trym, 12 Sep 2026: "make
+sure the footer is available on all our 400+ pages, even banana world area
+pages"). Only the desk (`/inbox/`) and the dev pages (`/dev-wearables/`,
+`/dev/design/`) pass `showFooter={false}`; nothing else may.
+
+An area page's own bottom bar stays in flow above the footer, never fixed over
+it; the safe-space line is centred by its own flex rule so no paragraph rule
+around it can pull it left.
+
