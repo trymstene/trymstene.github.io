@@ -21,6 +21,8 @@ import { checkFile, report, strings } from './copy-rules.mjs';
 
 const ROOT = process.cwd();
 const VOICE = 'docs/voice.md';
+// 🎛 the steer that applies to EVERY job, read before the job's own
+const ALL_STEER = 'tools/copy-briefs/_all.steer.md';
 // --steer "…" : one run only. --reject "…" : file a line as a NOT-THIS for every run after this one.
 const argOf = (flag) => { const i = process.argv.indexOf(flag); return i > 0 ? process.argv[i + 1] : null; };
 const extraSteer = argOf('--steer');
@@ -95,14 +97,23 @@ function assemble(job) {
   // 🎛 THE STEER — Trym's own words, first in the brief and outranking it. The house voice and the
   // brief are written by Claude; this block is the only place the person whose world it is speaks
   // directly to the writer, so it goes at the top and the writer is told it wins any argument.
-  const steerFile = job.brief.replace(/\.md$/, '.steer.md');
-  const steerParts = [];
-  if (existsSync(join(ROOT, steerFile))) {
-    const t = read(steerFile)
+  //
+  // TWO steer files, widest first: ALL_STEER applies to every job in the world (Trym,
+  // 13 Sep 2026, after steering one shopkeeper: "that goes for all shopkeepers, and NPCs
+  // for that matter"), then the job's own. A direction about how EVERYONE speaks belongs
+  // in one file, or it is a thing to remember to copy into the next brief — and that is
+  // the failure this whole rig exists to stop.
+  const readSteer = (rel) => {
+    if (!existsSync(join(ROOT, rel))) return '';
+    return read(rel)
       .replace(/<!--[\s\S]*?-->/g, '')          // the how-to comments are for Trym, not the writer
       .split('\n')
       .filter((l) => !/^\s*#/.test(l) && !/^\s*\(nothing yet/.test(l))   // headings and the placeholder are not instructions
       .join('\n').trim();
+  };
+  const steerParts = [];
+  for (const rel of [ALL_STEER, job.brief.replace(/\.md$/, '.steer.md')]) {
+    const t = readSteer(rel);
     if (t) steerParts.push(t);
   }
   if (extraSteer) steerParts.push(extraSteer.trim());

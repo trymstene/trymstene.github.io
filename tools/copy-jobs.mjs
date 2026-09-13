@@ -185,6 +185,23 @@ function parkShape(data) {
   for (const [k, n] of [['inka.lines', (I.lines || []).length], ['stand.sold', (S.sold || []).length]]) {
     if (n < 3) say(k, 'at least three');
   }
+  // 🧾 THE FACTS INKA CARRIES. Trym, 13 Sep 2026: "be more clear, precise and concrete,
+  // while still being humorous and fun … that goes for all shopkeepers, and NPCs for that
+  // matter". Her shop is the only place in the world that takes REAL money, and her lines
+  // are the only place a player is told so — a draft that swapped all three facts for
+  // atmosphere read beautifully and left the shop unexplained. Style is judgement and lives
+  // in the steer; THESE are facts, and a missing fact is greppable.
+  const inkaSays = [I.greet || '', ...(I.lines || [])].join(' \n ').toLowerCase();
+  for (const [what, re, why] of [
+    ['the wall can be tapped', /\b(tap|taps|tapping|press|pressing|poke|pokes|click|touch)\b/,
+      'nothing tells the player the wall does anything — one line must invite a tap on it'],
+    ['it costs real money, not coins', /\b(money|cash|paid|pay for|real thing|coins?)\b/,
+      'nothing says this is real money rather than bananacoins — the one shop in the world that takes it'],
+    ['she posts it out', /\b(post|posts|posted|posting|ship|ships|shipped|mail|mailed|deliver|delivers|delivered|parcel|envelope)\b/,
+      'nothing says it is printed and sent to them — a player cannot tell what they would be buying'],
+  ]) {
+    if (!re.test(inkaSays)) say('inka.lines', `${why} (the fact: ${what}). Her greet and her four lines together must carry all three.`);
+  }
   (S.sold || []).forEach((l, i) => { if (!String(l).includes('{item}')) say(`stand.sold[${i}]`, 'must contain {item} — the game puts the purchase there'); });
   return bad;
 }

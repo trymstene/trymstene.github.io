@@ -94,9 +94,19 @@ The stand keeper sells the gear. Dry, quick, a bit of a showman about other peop
 
 **Inka**
 
-- `greet` — the print shop in one line: the wall is real, printed and posted.
-- `lines` — four things she says while you browse. Warm, never a sales pitch. One of them may be about
-  where the stickers end up.
+She is the only character in Banana World who handles REAL money, so her lines are the only place a
+player learns it. Vagueness here costs him sales. Every line still has to be fun — the joke is how
+the fact arrives, never instead of it.
+
+- `greet` — the print shop in one line: the wall is real, printed and posted for real money.
+- `lines` — four things she says while you browse. Warm, never a sales pitch. Between them they MUST
+  carry three facts, and it is fine for one line to carry two:
+  1. **The wall is tappable.** One line tells the player, in their own words, to tap or press a thing
+     on the wall to see it. This is how anyone learns the wall does anything at all.
+  2. **This costs real money, not bananacoins.** Coins buy the gear at the stand; they buy nothing
+     here. Say the word money, or say coins do not work here. She is not apologetic about it.
+  3. **She posts it anywhere in the world.** A real parcel, to a real address, wherever they are.
+- One of them may also be about where the stickers end up — name a real surface, not "somewhere".
 
 **The stand keeper**
 
