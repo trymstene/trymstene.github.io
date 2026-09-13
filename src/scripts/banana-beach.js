@@ -12,6 +12,7 @@ import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { mountHud } from '../lib/world-hud.js';
+import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 import { shopWindow } from '../../shared/products.js';
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
 // tools/build-beach-scene.py, which declares each collider on the place()
@@ -3351,6 +3352,12 @@ function init() {
     return true;
   }
 
+  // ---- 🌦 the weather ------------------------------------------------------
+  // Visuals only here. The bay has no health to lose and no roster to thin out
+  // — Trym, 13 Sep 2026: "thats not needed for the other places". Rain falls on
+  // #bhView, never #bhWorld, which the camera translates every frame.
+  const weather = mountWeather(view, { track: (k) => track('beach_weather', { kind: k }) });
+
   // ---- the loop -----------------------------------------------------------
   // ⚠️ GATED TO ~60Hz — see the park's copy for the full reasoning. rAF fires
   // at the DISPLAY's rate (120Hz on a ProMotion iPhone, measured 161/s here),
@@ -3366,6 +3373,10 @@ function init() {
     if (now - gateAt < FRAME_MS) return;
     gateAt = now;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    // 🌦 the sky runs whether or not a room is open, so walking out shows the
+    // weather as it is NOW — but the sheet comes off while the room covers the view
+    weather.tick(now);
+    weather.indoors(inside());
     if (inside()) return;   // the coconut shy covers the view — nothing to run
     const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
@@ -3713,6 +3724,9 @@ function init() {
     try { sessionStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 this QA TAB reads its own ledger (the server denies 'qa')
     if (coinBal() < 100) passStat('coins_earned', 100 - coinBal(), 'qa');
     window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
+      // 🌦 force a tier — the clock only rains a few % of the time, so waiting for
+      // real weather is not a test plan. Pass null to hand the sky back to the clock.
+      wx: (k) => weather.setKind(k),
       bump, playBall, NET, GRAV, lastKickReset: () => { lastKick = 0; },
       sandy, HIT_SANDY, bumpFrom, sandyHome: SANDY_HOME, sandyFire: SANDY_FIRE,
       dig, treasureAt, treasureFound, piecesGot, addMapPiece, mapX, xStrip, pieceOrder, drifts, spawnDrift,

@@ -1,0 +1,119 @@
+/* 🌦 THE WORLD'S WEATHER — ONE rain layer for every area in Banana World.
+ *
+ * Lifted from the park, which had it first and paid for every number in here,
+ * and promoted to a shared layer the way /css/dialogue.css and
+ * /css/wardrobe.css hold the card and chip grammars. Trym, 13 Sep 2026:
+ * "i want to add the weather from the Park, to Homestead, Banana Bay, and Town
+ *  … The weather can follow the same clock for all areas."
+ *
+ * Four composited elements whatever is falling: two tiling streak sheets, a
+ * scrim and a lightning flash, plus five blown leaves in a storm. No canvas, no
+ * element per drop, nothing added to anybody's rAF loop.
+ *
+ * ⚠️ THE WRAPPER GOES IN THE AREA'S **VIEW**, NEVER ITS **WORLD**. Every area
+ * translates its world element by the camera each frame; rain parented to that
+ * pans with the map instead of falling on the screen. src/scripts/
+ * world-weather.js takes the host element and refuses a few known-wrong ones.
+ *
+ * Per-area knobs, set on the host or the wrapper:
+ *   --wx-z      stacking order inside the view (park: 8)
+ *   --wx-leaf   the blown-leaf sprite (default: the park's own leaves)
+ * See docs/design-library.md §19.
+ */
+
+.wx { position: absolute; inset: 0; pointer-events: none; z-index: var(--wx-z, 8); overflow: hidden; }
+/* 🏠 INDOORS. The park's shop is a sibling of the view and paints over the rain on
+   its own; the town's arcade room and the homestead's house are appended INSIDE
+   their panning world, which carries will-change: transform and is therefore its
+   own stacking context — so their z-2000 interiors are sealed below a z-8 sheet on
+   the view, and it rains in the kitchen. Those areas call indoors(true) instead.
+   ⚠️ a class, not [hidden]: an author display: rule beats the hidden attribute
+   (see the hidden-attribute trap), and .wx sets display through position/inset. */
+.wx.is-indoors { display: none !important; }
+.wx__scrim, .wx__rain, .wx__flash {
+  /* generous horizontal slack: the storm SKEWS these sheets, and a skew
+     eats width proportional to HEIGHT — a tall narrow phone shifts the
+     bottom edge ~138px sideways, which -30% of a 360px width cannot cover */
+  position: absolute; inset: -30% -50%; display: block; opacity: 0;
+  transition: opacity 2.4s ease;
+}
+.wx__scrim { background: #16283a; inset: 0; }
+.wx__rain {
+  background-image: url('/assets/park/rain.png');
+  background-repeat: repeat; background-size: 256px 256px;
+}
+.wx__flash { background: #eaf4ff; inset: 0; opacity: 0; }
+
+/* 🌧 THE SHEETS SCROLL BY BACKGROUND-POSITION, NOT BY TRANSFORM.
+   The reason is arithmetic: a tiling sheet has to travel a whole multiple of its
+   256px tile to loop seamlessly, and these travel 1024px — while inset:-30% only
+   buys ~90px of slack. The old transform version marched the sheet clean off the
+   bottom-right and snapped it back. Measured 9 Aug on the live park: ZERO of 40
+   frames covered the view, the sheet's top edge sitting 86-389px BELOW a 302px
+   park. Rain was missing more often than it was there, and nobody saw it because
+   drizzle is the only tier that really runs, at 0.34 opacity, where patchy reads
+   as light. Scrolling the BACKGROUND keeps the element still and always covering,
+   loops at any tile multiple, and costs a repaint only while it is raining.
+   ⚠️ Every number here must stay a multiple of 256 or the loop visibly jumps.
+
+   DIRECTION (Trym, 9 Aug): both textures lean DOWN-RIGHT — measured, the (+1,+1)
+   pixel correlation is 130 on rain.png and 658 on rain-hard.png against ~0 the
+   other way. Positive X and Y is the way the art points. */
+@keyframes wxRainFar  { to { background-position: 256px 1024px; } }
+@keyframes wxRainNear { to { background-position: 512px 1024px; } }
+.wx__rain--far  { animation: wxRainFar 3.4s linear infinite; }
+.wx__rain--near { animation: wxRainNear 1.9s linear infinite; }
+
+/* ☁ DRIZZLE — one thin layer, a hint of grey. Costs nothing, ever. */
+.wx.is-drizzle .wx__scrim { opacity: 0.20; }
+.wx.is-drizzle .wx__rain--far { opacity: 0.34; }
+
+/* 🌧 HEAVY — both layers, faster, properly dark */
+.wx.is-heavy .wx__scrim { opacity: 0.30; }
+.wx.is-heavy .wx__rain--far { opacity: 0.5; animation-duration: 2.2s; }
+.wx.is-heavy .wx__rain--near { opacity: 0.62; animation-duration: 1.25s; }
+.wx.is-heavy .wx__rain { background-image: url('/assets/park/rain-hard.png'); }
+
+/* ⛈ STORM — the hard sheet, wind-tilted, and the sky goes off */
+.wx.is-storm .wx__scrim { opacity: 0.40; }
+.wx.is-storm .wx__rain { background-image: url('/assets/park/rain-hard.png'); }
+.wx.is-storm .wx__rain--far { opacity: 0.62; animation-duration: 1.5s; }
+.wx.is-storm .wx__rain--near { opacity: 0.8; animation-duration: 0.8s; }
+/* the WIND is the tilt: skew both sheets and they read as driven rain.
+   ⚠️ POSITIVE skew. skewX(a) shifts x by y·tan(a) and CSS +y is DOWN, so a
+   NEGATIVE angle pushes the bottom of the sheet LEFT — tilting the rain against
+   the lean of its own texture. The skew is STATIC (same at both ends, nothing
+   animating it), so it stays free. */
+.wx.is-storm .wx__rain--far  { animation-name: wxRainGustFar;  transform: skewX(9deg); }
+.wx.is-storm .wx__rain--near { animation-name: wxRainGustNear; transform: skewX(13deg); }
+/* ⚠️ 620 and 980 were NOT multiples of the 256px tile — the storm sheets jumped
+   108px and 212px sideways every loop. Snapped to 512 and 1024. */
+@keyframes wxRainGustFar  { to { background-position: 512px 1024px; } }
+@keyframes wxRainGustNear { to { background-position: 1024px 1024px; } }
+.wx.is-storm .wx__flash { animation: wxFlash 11s steps(1) infinite; }
+@keyframes wxFlash {
+  0%, 3.2%, 100% { opacity: 0; }
+  1.4% { opacity: 0.62; }  1.8% { opacity: 0; }
+  2.2% { opacity: 0.44; }  2.6% { opacity: 0; }
+  41%  { opacity: 0.5; }   41.5% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wx__rain { animation: none !important; }
+  .wx__flash { animation: none !important; }
+}
+
+/* 🍂 STORM DEBRIS — torn off and driven across the view. Reuses the park's leaf
+   sprites, so it costs no art; any area can point --wx-leaf somewhere else.
+   Five elements, transform-animated, storm only. */
+.wx-leaf {
+  position: absolute; width: 1.5%; aspect-ratio: 42 / 22; pointer-events: none;
+  background: var(--wx-leaf, url('/assets/park/l-leaf1.png')) center/contain no-repeat;
+  image-rendering: pixelated; opacity: 0; will-change: transform;
+}
+.wx-leaf.is-on { opacity: 0.9; }
+@keyframes wxLeafBlow {
+  from { transform: translate3d(-12vw, 0, 0) rotate(0deg); }
+  to   { transform: translate3d(112vw, 26vh, 0) rotate(720deg); }
+}
+.wx-leaf.is-on { animation: wxLeafBlow linear infinite; }
+@media (prefers-reduced-motion: reduce) { .wx-leaf { display: none; } }

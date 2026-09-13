@@ -22,6 +22,7 @@ import { worldOwner, worldSid, worldToken, presenceRoom, poofInto } from '../lib
 import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
+import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 
 const view = document.getElementById('hsView');
 
@@ -929,6 +930,25 @@ function init(visitDoc, visitMiss) {
   };
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
+  // ---- 🌦 THE WEATHER -----------------------------------------------------
+  // Visuals, plus one thing the yard does about it: the animals GATHER. No health,
+  // no roster thinning, no morning-after notice — those stay the park's
+  // (Trym, 13 Sep 2026: "thats not needed for the other places").
+  // ⚠️ hsWx, not wx: `wx` is WORLD-X everywhere else in this file.
+  // ⚠️ #hsView, never #hsWorld — the camera translates the world every frame.
+  let huddle = 0;   // 0 clear · 1 rain · 2 storm. Read by henTick and birdTick.
+  const hsWx = mountWeather(view, {
+    onKind: (k) => { huddle = k === 'storm' ? 2 : (k === 'drizzle' || k === 'heavy') ? 1 : 0; },
+    track: (k) => track('homestead_weather', { kind: k }),
+  });
+  // 🐾 where the herd is standing, for the gather. Cheap: called only when an
+  // animal picks its next spot, which is every few seconds each.
+  function herdAt() {
+    let x = 0, y = 0, c = 0;
+    for (const o of hens) { if (!o.a) continue; x += o.x; y += o.y; c++; }
+    return c ? { x: x / c, y: y / c } : null;
+  }
+
   function enterHome() {
     standUp();
     if (planner) exitPlanner();
@@ -938,6 +958,7 @@ function init(visitDoc, visitMiss) {
     // ⚡ the shade covers the whole yard — a CSS class stops painting it
     // (items, critters, the animated fountain/campfire GIFs) while indoors
     world.classList.add('is-inside');
+    hsWx.indoors(true);   // 🏠 or it rains in the kitchen (see world-weather.js)
     if (!inShade) {
       inShade = document.createElement('div');
       inShade.className = 'hs-inshade';
@@ -976,6 +997,7 @@ function init(visitDoc, visitMiss) {
     cancelPlacing();
     inside = 0;
     world.classList.remove('is-inside');
+    hsWx.indoors(false);
     refreshInItems();
     clearChip();
     if (inShade) inShade.hidden = true;
@@ -1419,13 +1441,44 @@ function init(visitDoc, visitMiss) {
               if (sp2) { h.tx = sp2.x + (Math.random() * 120 - 60); h.ty = sp2.y + (Math.random() * 60 - 20); }
             }
           }
+          // 🌦 RAIN GATHERS THEM. The same hop, aimed at the middle of the herd
+          // instead of at nothing much — more often and tighter in a storm. They
+          // are never removed: Trym, 13 Sep 2026, "not dissappear".
+          if (huddle && h.a) {
+            const c = herdAt();
+            if (c && Math.random() < (huddle === 2 ? 0.85 : 0.5)) {
+              const sp = huddle === 2 ? 42 : 72;
+              h.tx = c.x + (Math.random() * sp * 2 - sp);
+              h.ty = c.y + (Math.random() * sp - sp / 2);
+            }
+          }
           // 🐾 PERSONAL SPACE (Trym: "one big overlapping clump of
           // sprites") — a target on top of another animal's spot is pushed
-          // 40px away from it before she commits
-          for (const o of hens) {
-            if (o === h) continue;
-            const ox = h.tx - o.x, oy = h.ty - o.y, od = Math.hypot(ox, oy);
-            if (od < 40) { h.tx += (od ? ox / od : 1) * (40 - od); h.ty += (od ? oy / od : 0) * (40 - od); }
+          // away from it before she commits. ⚠️ this is the thing that fights a
+          // huddle, so it gives ground in the wet: 40px dry, 26 in rain, 20 in a
+          // storm. Never 0 — the clump it was written to stop is still a clump.
+          const near = huddle === 2 ? 20 : huddle ? 26 : 40;
+          if (huddle) {
+            // ⚠️ the NEAREST only. Summed over eight neighbours these shoves fling a
+            // huddle apart — measured, a storm made them 48% MORE spread out than a dry
+            // day. One push keeps "nobody stands on anybody" without the runaway.
+            let cl = null, cd = 1e9;
+            for (const o of hens) {
+              if (o === h) continue;
+              const od = Math.hypot(h.tx - o.x, h.ty - o.y);
+              if (od < cd) { cd = od; cl = o; }
+            }
+            if (cl && cd < near) {
+              const ox = h.tx - cl.x, oy = h.ty - cl.y;
+              h.tx += (cd ? ox / cd : 1) * (near - cd);
+              h.ty += (cd ? oy / cd : 0) * (near - cd);
+            }
+          } else {
+            for (const o of hens) {
+              if (o === h) continue;
+              const ox = h.tx - o.x, oy = h.ty - o.y, od = Math.hypot(ox, oy);
+              if (od < near) { h.tx += (od ? ox / od : 1) * (near - od); h.ty += (od ? oy / od : 0) * (near - od); }
+            }
           }
           // 🚧 the paddock rules her wander too, and the gate its route (walkTo)
           if (h.a) walkTo(h, h.tx, h.ty);
@@ -2215,10 +2268,13 @@ function init(visitDoc, visitMiss) {
       birdsLive.push(b);
     }
     if (HS_TEST) window.__hsBird = () => { makeBird(); return birdsLive.length; };
+    if (HS_TEST) window.__hsBirds = () => birdsLive.length;
     return (now, dt) => {
       if (now > nextAt) {
-        if (birdsLive.length < birdCap()) makeBird();
-        nextAt = now + 16000 + Math.random() * 26000;
+        // 🌦 the ONE thing the weather may take away (Trym: "except the birds that
+        // comes and goes"). A storm brings none; rain brings them half as often.
+        if (huddle < 2 && birdsLive.length < birdCap()) makeBird();
+        nextAt = now + (huddle ? 2 : 1) * (16000 + Math.random() * 26000);
       }
       for (let i = birdsLive.length - 1; i >= 0; i--) {
         const b = birdsLive[i];
@@ -2245,8 +2301,8 @@ function init(visitDoc, visitMiss) {
             b.y += dy / d * 300 * dt;
             if (Math.abs(dx) > 4) b.img.style.transform = dx > 0 ? 'scaleX(-1)' : '';
           }
-        } else if (Math.hypot(pos.x - b.x, pos.y - b.y) < 80 || now > b.until) {
-          b.mode = 'out';   // scared (or bored) — off over the treeline
+        } else if (huddle === 2 || Math.hypot(pos.x - b.x, pos.y - b.y) < 80 || now > b.until) {
+          b.mode = 'out';   // scared, bored, or the sky opened — off over the treeline
           b.tx = b.x + (b.x > W / 2 ? 600 : -600);
           b.ty = -80;
         } else if (now > b.hopAt) {
@@ -4615,6 +4671,7 @@ function init(visitDoc, visitMiss) {
     }
     drawMe();
     doorTick();
+    hsWx.tick(now);   // 🌦 the sky runs indoors too — only the sheet is hidden
     // ⚡ indoors the yard is under the shade — its critters neither move nor
     // paint until you step back out ("what nobody sees doesn't run")
     if (!inside) {
@@ -4793,6 +4850,12 @@ function init(visitDoc, visitMiss) {
   if (HS_TEST) {
     window.__hs = {
       pos, tgt, peers, birds: birdsLive,
+      // 🌦 force a tier — the clock rains a few % of the time, so waiting for real
+      // weather is not a test plan. null hands the sky back to the clock.
+      wx: (k) => hsWx.setKind(k),
+      // where the animals are standing, so the walk can prove they gather and that
+      // none of them vanished
+      herd: () => hens.filter((h) => h.a).map((h) => ({ x: Math.round(h.x), y: Math.round(h.y) })),
       // 🐔 farm QA: morning(d) walks the clock d days and relays the morning
       morning: (d) => { qaDayOfs += (d || 1) * 86400000; morningTick(); return farmStats().hs_day; },
       pull: yardPull,

@@ -13,6 +13,7 @@ import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE } from './town-geo.js';
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
+import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
@@ -255,6 +256,11 @@ function float(x, y, node) {
   setTimeout(() => d.remove(), 900);
 }
 
+// ---- 🌦 the weather — visuals only. The town has no health and no roster to thin
+// out; it just gets the same sky as everywhere else (Trym, 13 Sep 2026). It hangs on
+// #twView, never #twWorld, which the camera translates every frame.
+const weather = mountWeather(view);
+
 // ---- the loop
 let last = performance.now(), leaving = false;
 function tick(now) {
@@ -280,6 +286,7 @@ function tick(now) {
   cam(false);
   drawMe();
   life.tick(now, dt);
+  weather.tick(now);
   if (inside && ARCADE) { const [x0, y0, x1, y1] = ARCADE.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitArcade(); }
   if (!inside && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -339,6 +346,10 @@ function enterArcade() {
     world.appendChild(inPlate);
   }
   inShade.hidden = false; inPlate.hidden = false;
+  // 🏠 the room is appended to #twWorld, which carries will-change: transform and is
+  // therefore its own stacking context — its z-2010 cannot out-stack a z-8 sheet on the
+  // view. Without this it rains inside the arcade.
+  weather.indoors(true);
   pos.x = ARCADE.spawn[0]; pos.y = ARCADE.spawn[1];
   tgt.x = pos.x; tgt.y = pos.y - 34;   // a step into the room, never back out through the door
   cam(true);
@@ -349,6 +360,7 @@ function exitArcade() {
   world.classList.remove('is-inside');
   if (inShade) inShade.hidden = true;
   if (inPlate) inPlate.hidden = true;
+  weather.indoors(false);
   pos.x = SPOTS.condo.x; pos.y = SPOTS.condo.y + 30;
   tgt.x = pos.x; tgt.y = pos.y + 30;
   cam(true);
@@ -566,5 +578,5 @@ assetsReady().then(() => {
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
-  window.__town = { pos, tgt, SPOTS, NPCS, say, life: life.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
+  window.__town = { pos, tgt, SPOTS, NPCS, say, life: life.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, wx: (k) => weather.setKind(k), arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });
