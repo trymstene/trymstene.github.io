@@ -1,0 +1,35 @@
+/* 📐 THE WORLD'S FRAME — every walkable area is the same box.
+ *
+ * Trym, 13 Sep 2026: *"why does frame sizes differ? … homestead, park, banana bay
+ * and town should all have the same frame size … the frames for new areas differ
+ * from what we already have set up."*
+ *
+ * He was right, and the drift is measurable. Beach (22 Jul) and park (27 Jul) set
+ * the frame at 1000px with 0.8rem of side padding. The homestead widened it to
+ * 1100/1rem on 12 Aug, and the town copied the homestead on 7 Sep. Measured on the
+ * built site at 1280 wide: park and beach 966px across, homestead and town 1060.
+ * At 393 it went the other way — 359 against 353 — because only the padding binds
+ * on a phone. Nobody chose either number twice; the second one was a copy.
+ *
+ * So the numbers live here, once. An area still owns its own class names and its
+ * own background; what it must NOT own is the size. See docs/design-library.md §20.
+ *
+ * ⚠️ THE RAVE IS NOT ONE OF THESE. It is a room, not a map, and Trym keeps it
+ * "something for itself" on purpose. It never loads this file.
+ */
+
+:root {
+  /* how wide the frame may grow, and the gutter beside it on a phone */
+  --world-w: 1000px;
+  --world-pad: 0.8rem;
+
+  /* 🍪 the cookie banner's band, in px, set by an area that measures it (the
+     homestead does). The frame gives that height back so the world is not pushed
+     off the bottom of a phone. 0 when the banner is gone, which is almost always. */
+  --world-ccb: 0px;
+
+  /* the frame's height: three quarters of the viewport, capped, never smaller than
+     a usable strip. ⚠️ the 240px floor is what stops the banner eating the world
+     entirely on a short phone. */
+  --world-h: max(240px, calc(min(74vh, 580px) - var(--world-ccb, 0px)));
+}

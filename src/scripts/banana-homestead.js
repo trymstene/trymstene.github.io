@@ -2366,7 +2366,7 @@ function init(visitDoc, visitMiss) {
   // ⚠️ layout() only, never camSnap(): this runs at BOOT and camTarget() reads
   // `pos`, which is still in its TDZ up here — cam() eases to the new frame
   function fitFrame() {
-    document.documentElement.style.setProperty('--hs-ccb', ccbBand() + 'px');
+    document.documentElement.style.setProperty('--world-ccb', ccbBand() + 'px');   // 📐 the shared frame reads this — design library §20
     layout();
   }
   function alignFrame(smooth) {

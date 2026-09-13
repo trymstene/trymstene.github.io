@@ -521,6 +521,58 @@ Storm' screen message there."*
 4. If the area has an interior inside its world, call `.indoors(true)` and `(false)` at
    the door.
 
+## 20. Every walkable area is the SAME frame
+
+Trym, 13 Sep 2026: *"why does frame sizes differ? The rave is something for itself, but
+homestead, park, banana bay and town should all have the same frame size — looks like
+thats part of the consistency issues you have like with the HUD, the frames for new areas
+differ from what we already have set up."*
+
+He was right, and it was measurable. Measured on the built site before the fix:
+
+| area | 1280 wide | 393 wide | wrap | side padding | set |
+|---|---|---|---|---|---|
+| beach | 966 x 580 | 359 x 580 | 1000px | 0.8rem | 22 Jul |
+| park | 966 x 580 | 359 x 580 | 1000px | 0.8rem | 27 Jul |
+| homestead | **1060** x 580 | **353** x 580 | 1100px | 1rem | 12 Aug |
+| town | **1060** x 580 | **353** x 580 | 1100px | 1rem | 7 Sep |
+
+Height was never the problem. **Width was**, in two knobs at once, and it inverted on a
+phone: wider on desktop, *narrower* on mobile, because only the padding binds there.
+Nobody chose 1100 twice — the town copied the homestead, which is how the HUD's action
+bar went missing too. A number that is only written down in the last area that used it
+is a number the next area gets wrong.
+
+### The rule
+
+**`public/css/world-frame.css` owns the size. An area owns its own names and its own
+background, never its dimensions.**
+
+```css
+--world-w     how wide the frame may grow          (1000px)
+--world-pad   the gutter beside it on a phone      (0.8rem)
+--world-h     its height                            max(240px, calc(min(74vh, 580px) - var(--world-ccb)))
+--world-ccb   the cookie banner's band, in px, written by any area that measures it
+```
+
+So a page says `max-width: var(--world-w)` and `height: var(--world-h)`, and changing
+every area at once is one number in one file.
+
+**🍪 `--world-ccb` is why the height looks complicated.** The cookie banner pushes a
+short phone's world off the bottom, so the frame gives that height back. Only the
+homestead measures the banner today (`banana-homestead.js` writes the variable); every
+other area reads 0 and is unaffected. When a second area learns to measure it, it gets
+the behaviour for free instead of reinventing it.
+
+**⚠️ The rave is deliberately outside this.** It is a room, not a map — Trym keeps it
+*"something for itself"*. It never loads the file and is not in the gate's list.
+
+### What the gate checks
+
+`tools/check-design.mjs` fails an area page that sets its own `max-width` on a `-wrap`
+rule, sets its own `height` on a `-view` rule, or does not link the stylesheet. Proven
+to fail on all three.
+
 ## The enforcement ledger — which of these rules can actually fail a build
 
 Trym, 12 Sep 2026: *"how can it be guaranteed without me having to think that i
@@ -535,6 +587,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 17 | The footer is on every visitor page | `check-design.mjs` (`showFooter={false}` outside the allowlist fails) |
 | 18 | One NPC dialogue card | `check-design.mjs` (own dialogue markup without `mountDialogue` fails; the legacy list may only shrink) |
 | 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
+| 20 | Every walkable area is the same frame | `check-design.mjs` (an area that sets its own frame width or view height, or skips `/css/world-frame.css`, fails) |
 | — | Every device key is declared | `check-storage.mjs` |
 | — | Per-surface JS budgets | `check-budgets.mjs` (needs a build) |
 | — | A new event is READ by Pulse | `check-pulse-areas.mjs` + `tools/pulse-stub-walk.mjs` |

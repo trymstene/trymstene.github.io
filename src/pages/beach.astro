@@ -49,10 +49,11 @@ const faq = {
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
   <link rel="preload" as="image" href="/assets/beach/beach.png" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />
+  <link rel="stylesheet" href="/css/world-frame.css" slot="head" />
   <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
   <style is:inline slot="head">
     body { background: #180f22; }
-    .bh-wrap { max-width: 1000px; margin: 0 auto; padding: 0.6rem 0.8rem 2.5rem; color: #fffdf5; }
+    .bh-wrap { max-width: var(--world-w); margin: 0 auto; padding: 0.6rem var(--world-pad) 2.5rem; color: #fffdf5; }   /* 📐 the size is /css/world-frame.css — design library §20 */
     .bh-sign {
       font-family: "Archivo Black", sans-serif; text-align: center;
       color: #ffb347; font-size: clamp(1.4rem, 6.4vw, 2.2rem); line-height: 1.05;
@@ -66,7 +67,7 @@ const faq = {
     .bh-stage { border: 4px solid #000; box-shadow: 8px 8px 0 #000; }
     /* the VIEWPORT: a window onto a world bigger than it, both axes */
     .bh-view {
-      position: relative; height: min(74vh, 580px); overflow: hidden; cursor: pointer;
+      position: relative; height: var(--world-h); overflow: hidden; cursor: pointer;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
       background: #5c2a52;
     }

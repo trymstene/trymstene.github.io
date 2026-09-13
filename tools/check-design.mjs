@@ -61,6 +61,13 @@ const OWN_DIALOGUE_OK = ['src/scripts/park-npc.js', 'src/pages/park.astro', 'src
 // for there; on 13 Sep 2026 the beach, the town and the homestead started rendering
 // the same sky, and a second copy of those keyframes is exactly the drift this file
 // exists to catch. An area that renders weather MOUNTS it and LINKS the stylesheet.
+// 📐 §20 — every walkable area is the SAME box, and the numbers live in
+// /css/world-frame.css. Trym, 13 Sep 2026: "why does frame sizes differ? … homestead,
+// park, banana bay and town should all have the same frame size". They had drifted into
+// two pairs, 1000/0.8rem against 1100/1rem, because the second pair was a copy of a copy.
+// ⚠️ THE RAVE IS DELIBERATELY NOT ONE OF THESE — it is a room, not a map.
+const WORLD_PAGES = ['src/pages/park.astro', 'src/pages/beach.astro', 'src/pages/homestead.astro', 'src/pages/town.astro'];
+const FRAME_CSS = '/css/world-frame.css';
 const WX_MODULE = 'src/scripts/world-weather.js';
 const WX_CSS = '/css/weather.css';
 // which page loads each script that mounts the weather. A new area adds a line here,
@@ -118,6 +125,25 @@ for (const f of files) {
     } else {
       const html = readFileSync(join(ROOT, page), 'utf8');
       if (!html.includes(WX_CSS)) problems.push([page, `loads ${rel}, which mounts the weather, but never links ${WX_CSS} — the rain would be invisible, see design library §19`]);
+    }
+  }
+
+  // 📐 a walkable area wears the world's frame, never its own — design library §20
+  if (WORLD_PAGES.includes(rel)) {
+    // ⚠️ the LINK, not the path: the wrap rule's own comment names the file, so a
+    // page that dropped the <link> still "included" the string and passed.
+    if (!new RegExp('<link[^>]+href=["\']' + FRAME_CSS + '["\']').test(src)) {
+      problems.push([rel, `never links ${FRAME_CSS}, so its frame is whatever it happens to say — see design library §20`]);
+    }
+    for (const m of code.matchAll(/\.[\w-]*-view\s*\{([^}]*)\}/g)) {
+      if (/height\s*:/.test(m[1]) && !m[1].includes('var(--world-h)')) {
+        problems.push([rel, 'sets its own view height instead of var(--world-h) — every area is the same box, see design library §20']);
+      }
+    }
+    for (const m of code.matchAll(/\.[\w-]*-wrap\s*\{([^}]*)\}/g)) {
+      if (/max-width\s*:/.test(m[1]) && !m[1].includes('var(--world-w)')) {
+        problems.push([rel, 'sets its own frame width instead of var(--world-w) — every area is the same box, see design library §20']);
+      }
     }
   }
 
