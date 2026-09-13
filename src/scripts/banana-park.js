@@ -63,7 +63,7 @@ const inside = () => document.body.classList.contains('pk-inside');
 // a tap on park health walked you out of the park and a press-hold on it armed
 // a steer instead of opening the card). A new overlay goes here, nowhere else.
 const CHROME = '.wh,.pk-actions,.pk-panel,.pk-shop,.pk-stand,.pk-hbar,'
-  + '.pk-hint,.pk-exitstrip,.pk-toast,.pk-wx,.pk-stormnote';
+  + '.pk-hint,.pk-exitstrip,.pk-toast,.wx,.pk-stormnote';   // 🌦 .wx is the shared rain layer now
 const onChrome = (e) => !!(e.target.closest && e.target.closest(CHROME));
 
 function init() {

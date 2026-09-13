@@ -56,6 +56,22 @@ const NO_FOOTER_OK = ['src/pages/inbox.astro', 'src/pages/dev-wearables.astro', 
 // design system's showroom, not an area building a dialogue.)
 const OWN_DIALOGUE_OK = ['src/scripts/park-npc.js', 'src/pages/park.astro', 'src/pages/beach.astro', 'src/scripts/banana-beach.js', 'src/pages/dev/design.astro'];
 
+// 🌦 §19 — the world has ONE weather layer (src/scripts/world-weather.js +
+// /css/weather.css). The park had rain first and every number in that CSS was paid
+// for there; on 13 Sep 2026 the beach, the town and the homestead started rendering
+// the same sky, and a second copy of those keyframes is exactly the drift this file
+// exists to catch. An area that renders weather MOUNTS it and LINKS the stylesheet.
+const WX_MODULE = 'src/scripts/world-weather.js';
+const WX_CSS = '/css/weather.css';
+// which page loads each script that mounts the weather. A new area adds a line here,
+// which is the point: forgetting the stylesheet is a silent bug (rain with no art).
+const WX_PAGE_OF = {
+  'src/scripts/park-weather.js': 'src/pages/park.astro',
+  'src/scripts/banana-beach.js': 'src/pages/beach.astro',
+  'src/scripts/banana-town.js': 'src/pages/town.astro',
+  'src/scripts/banana-homestead.js': 'src/pages/homestead.astro',
+};
+
 const files = walk(SRC);
 const problems = [];
 
@@ -87,6 +103,22 @@ for (const f of files) {
   // alone on 11 Sep 2026 — design library §15.
   if (rel.startsWith('src/scripts/') && /\bmountHud\(/.test(code) && !/\binitTravel\(/.test(code)) {
     problems.push([rel, "mounts the world HUD strip without the action bar's travel door (initTravel) — an area wears both, see design library §15"]);
+  }
+
+  // 🌦 nobody rolls their own rain — design library §19
+  if (rel !== WX_MODULE && rel !== 'src/pages/dev/design.astro'
+    && /rain-hard\.png|@keyframes\s+\w*Rain\w*|__rain--far/.test(code)) {
+    problems.push([rel, 'renders its own rain instead of the shared layer (mountWeather, /css/weather.css) — see design library §19']);
+  }
+  // …and an area that mounts it must LINK the stylesheet, or it rains invisibly
+  if (rel.startsWith('src/scripts/') && rel !== WX_MODULE && /\bmountWeather\(/.test(code)) {
+    const page = WX_PAGE_OF[rel];
+    if (!page) {
+      problems.push([rel, 'mounts the weather but tools/check-design.mjs does not know which page loads it — add it to WX_PAGE_OF so the stylesheet can be checked']);
+    } else {
+      const html = readFileSync(join(ROOT, page), 'utf8');
+      if (!html.includes(WX_CSS)) problems.push([page, `loads ${rel}, which mounts the weather, but never links ${WX_CSS} — the rain would be invisible, see design library §19`]);
+    }
   }
 
   // 🦶 the footer is on every page a visitor can reach — design library §17

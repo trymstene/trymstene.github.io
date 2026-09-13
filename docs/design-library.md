@@ -472,6 +472,55 @@ shared layer was lifted from them verbatim, but they are three copies of one
 design, and until they move onto `mountDialogue` a change to the template is a
 change in four places.
 
+## 19. The weather is ONE layer, and it hangs on the view
+
+Trym, 13 Sep 2026: *"i want to add the weather from the Park, to Homestead, Banana Bay,
+and Town … The weather can follow the same clock for all areas."*
+
+The park had rain first and paid for every number in it. Four areas render it now, so it
+is a shared layer like the dialogue card and the wardrobe chips:
+
+- **`public/css/weather.css`** — two tiling rain sheets, a scrim, a lightning flash and
+  five blown leaves. Every comment in it is a bug somebody already had: why the sheets
+  scroll by `background-position` instead of `transform`, why the numbers must stay
+  multiples of 256, why the storm's skew is positive.
+- **`src/scripts/world-weather.js`** — `mountWeather(host, opts)` builds those elements,
+  checks the clock once a second from the area's own rAF tick, and returns
+  `{ tick, now, setKind, indoors, stop }`.
+
+**The clock is already shared and is not a service.** `weatherAt` in `src/lib/world.js` is
+a pure function of time, mirrored in the worker. Nothing asks a server what the weather is,
+which is why rain starts on the same second for everyone, in every area, with no messages.
+
+### The three rules
+
+**1. It hangs on the area's VIEW, never its WORLD.** Every area translates its world
+element by the camera each frame. Rain parented there pans with the map, and that does not
+read as a bug — it reads as slightly wrong rain, and it survives review. `mountWeather`
+refuses a host that is already transformed and says so in the console.
+
+**2. An interior inside the panning world must call `indoors(true)`.** The town's arcade
+room and the homestead's house are appended to the world element, which carries
+`will-change: transform` and is therefore its own stacking context — so their z-2000
+interiors cannot out-stack a z-8 sheet on the view, and it rains in the kitchen. The park
+escapes this only because its shop is a sibling of the view. The sky keeps running while
+you are inside; only the sheet is hidden, so stepping out shows the weather as it is now.
+
+**3. What an area DOES about the weather stays in that area.** The shared layer is the
+sheets and the tier. The park charges health, fills the pond with puddles you can splash,
+stands the butterflies down and gives Old Peel new words; the homestead gathers its
+animals. Those live in `park-weather.js` and `banana-homestead.js`, behind `onKind`.
+**The morning-after notice is the park's alone** — Trym: *"no need for the Park 'After the
+Storm' screen message there."*
+
+### Adding weather to a new area
+
+1. `mountWeather(view)` where `view` is the fixed box, and call `.tick(now)` from the loop.
+2. Link `/css/weather.css` in the page's head.
+3. Add the script and its page to `WX_PAGE_OF` in `tools/check-design.mjs`.
+4. If the area has an interior inside its world, call `.indoors(true)` and `(false)` at
+   the door.
+
 ## The enforcement ledger — which of these rules can actually fail a build
 
 Trym, 12 Sep 2026: *"how can it be guaranteed without me having to think that i
@@ -485,6 +534,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 15 | The HUD is a strip AND an action bar | `check-design.mjs` (`mountHud` without `initTravel` fails) |
 | 17 | The footer is on every visitor page | `check-design.mjs` (`showFooter={false}` outside the allowlist fails) |
 | 18 | One NPC dialogue card | `check-design.mjs` (own dialogue markup without `mountDialogue` fails; the legacy list may only shrink) |
+| 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
 | — | Every device key is declared | `check-storage.mjs` |
 | — | Per-surface JS budgets | `check-budgets.mjs` (needs a build) |
 | — | A new event is READ by Pulse | `check-pulse-areas.mjs` + `tools/pulse-stub-walk.mjs` |

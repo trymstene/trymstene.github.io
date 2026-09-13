@@ -5,13 +5,15 @@
 // the same answer the ParkRoom is charging health from. That is why rain starts
 // on the same second for everyone in the park without a single message.
 //
-// ⚠️ RENDERING IS CSS ONLY. Two tiling streak layers translated by keyframes,
-// one scrim, one lightning flash — four composited elements whatever the
-// weather, versus the ~200 positioned children we spent 30 Jul removing. No
-// canvas, no element per drop, and NOTHING added to the rAF loop.
-// ⚠️ They live in .pk-view, NOT .pk-world: rain falls on the viewport, not on
-// the map, so it must not pan with the camera.
-import { weatherAt, seedRand } from '../lib/world.js';
+// ⚠️ RENDERING LIVES IN src/scripts/world-weather.js + /css/weather.css NOW.
+// The park had rain first and paid for every number in that CSS, but three other
+// areas render from it too (13 Sep 2026) and a second copy is the drift the design
+// library exists to stop. What stays HERE is everything the PARK does about
+// weather and nobody else does: puddles you can splash, the morning-after notice,
+// the butterflies and squirrels standing down, and Old Peel finding new words.
+// See docs/design-library.md §19.
+import { seedRand } from '../lib/world.js';
+import { mountWeather } from './world-weather.js';   // 🌦 the layers and the tier switch, shared with every area
 import { passStat } from '../lib/banana-pass.js';
 import { track } from './park-util.js';
 
@@ -24,37 +26,12 @@ export function initWeather(ctx) {
   const view = document.getElementById('pkView');
   if (!view) return { wxTick: () => {}, now: () => 'clear' };
 
-  // ---- the layers ---------------------------------------------------------
-  const wrap = document.createElement('div');
-  wrap.className = 'pk-wx';
-  wrap.setAttribute('aria-hidden', 'true');
-  wrap.innerHTML = '<i class="pk-wx__scrim"></i>'
-    + '<i class="pk-wx__rain pk-wx__rain--far"></i>'
-    + '<i class="pk-wx__rain pk-wx__rain--near"></i>'
-    + '<i class="pk-wx__flash"></i>';
-  view.appendChild(wrap);
-
   let kind = 'clear';
   const puddles = [];
   // one seed per DAY per tier — the same rain leaves the same puddles for
   // everybody, and they are still somewhere new tomorrow
   const wxSeed = () => Math.floor(Date.now() / 86400000) * 7919
     + { clear: 0, drizzle: 1, heavy: 2, storm: 3 }[kind] * 104729;
-
-  // 🍂 the storm's debris: five leaves driven across the VIEW (not the map),
-  // each on its own duration and delay so they never march in step. Built once
-  // and switched by class — nothing is created or destroyed per storm.
-  const leaves = [];
-  for (let i = 0; i < 5; i++) {
-    const l = document.createElement('i');
-    l.className = 'pk-leafblow';
-    l.style.top = (8 + i * 17) + '%';
-    l.style.animationDuration = (2.4 + i * 0.6) + 's';
-    l.style.animationDelay = (-i * 1.3) + 's';
-    if (i % 2) l.style.backgroundImage = "url('/assets/park/l-leaf2.png')";
-    wrap.appendChild(l);
-    leaves.push(l);
-  }
 
   // 🌦 THE POST-STORM NOTICE. Deliberately NOT a broadcast during the storm
   // — it is for the visitor who arrives later and finds a wrecked park with no
@@ -131,11 +108,11 @@ export function initWeather(ctx) {
     }
   }
 
-  // ---- the tier switch ----------------------------------------------------
-  function setKind(k) {
-    if (k === kind) return;
+  // ---- what the PARK does about it ----------------------------------------
+  // The sheets, the leaves and the once-a-second clock check are the shared
+  // module's; this is the half that is only true here.
+  function onKind(k) {
     kind = k;
-    wrap.className = 'pk-wx' + (k === 'clear' ? '' : ' is-' + k);
     // puddles build up while it rains and are left behind when it stops
     const want = PUDDLES[k] || 0;
     while (puddles.length < want) puddleAdd(puddles.length);
@@ -152,20 +129,19 @@ export function initWeather(ctx) {
       ctx.critters.setBflies(fair && ctx.phase() >= 4);
       ctx.critters.setSquirrels(fair && ctx.phase() >= 3);
     }
-    leaves.forEach((l) => l.classList.toggle('is-on', k === 'storm'));
     if (ctx.npc && ctx.npc.oldPhasePoke) ctx.npc.oldPhasePoke();   // he has a view on this
-    if (k !== 'clear') track('park_weather', { kind: k });
   }
 
-  // one cheap check a second — the clock is arithmetic, not a fetch
-  let checkAt = 0;
+  const sky = mountWeather(view, { onKind, track: (k) => track('park_weather', { kind: k }) });
+  // ⚠️ the park's own ?wx QA door forces a tier through ctx.wxForce; the shared
+  // module owns that now, so keep them in step on every tick rather than reading
+  // the clock here a second time.
+  let forced = null;
   function wxTick(now) {
-    if (now > checkAt) {
-      checkAt = now + 1000;
-      setKind(ctx.wxForce || weatherAt(Date.now()).type);
-    }
+    if (ctx.wxForce !== forced) { forced = ctx.wxForce; sky.setKind(forced); }
+    sky.tick(now);
     puddleTick();
   }
 
-  return { wxTick, stormNote, now: () => kind, qa: { puddles, setKind, note } };
+  return { wxTick, stormNote, now: () => kind, qa: { puddles, setKind: (k) => sky.setKind(k), note } };
 }
