@@ -525,14 +525,28 @@ function ensureCss() {
    Its FIRST appearance of a visit holds back ~5s and then pops (the world
    deserves a beat before the UI starts talking); re-renders after a talk
    show instantly. Toggling animation:none off is what replays the pop. */
+/* ⚠️ z-index 10, and it is load-bearing. It must sit ABOVE the map and the weather
+   sheet (8) and BELOW every cover the world has — the beach's cards are z-12, the park's
+   panels and shops are 40, the town's are 1500, and the shared travel veil is a FIXED
+   z-70 in the root context. At 900 the chip beat all of them and sat on top of the
+   fast-travel card (Trym, 13 Sep 2026). A chip that out-ranks the UI is not a chip. */
 .bwq-hint {
-  position:absolute; left:18px; top:48px; z-index:900; max-width:62%;
+  position:absolute; left:18px; top:48px; z-index:10; max-width:62%;
   background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
   border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
   font-size:0.78rem; font-weight:800; padding:7px 11px 7px 22px; line-height:1.35;
   pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
 .bwq-hint[hidden] { display:none !important; }
+/* 🏠 INSIDE IS NOT THE WORLD. A shop, a room or a house is appended inside the area's
+   panning world element, which is its own stacking context and therefore cannot paint over
+   anything sitting on the view — so no z-index hides the chip there and it has to be said.
+   These four hooks already existed; this is the whole list, in one place.
+   (Trym: "…or when youre in a shop or in a different context than an open world area".) */
+body.pk-inside .bwq-hint,
+body.bh-inside .bwq-hint,
+.hs-world.is-inside ~ .bwq-hint,
+.tw-world.is-inside ~ .bwq-hint { display:none !important; }
 .bwq-hint--wait { visibility:hidden; animation:none; }
 /* 📕 folded — the card drops to a 0×0 anchor rather than hiding, so the badge
    holds the exact spot the finger just tapped. Transparent border, not
