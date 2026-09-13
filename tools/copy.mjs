@@ -92,6 +92,42 @@ function fieldNotes(job) {
   });
   return rows.join('\n');
 }
+// 🧍 WHO THEY ARE — a job may point at another job's approved file as its character bible
+// (`personas: 'town-personas'`), and that bible is pasted into the prompt under the brief.
+// Trym, 13 Sep 2026: "when creating dialogue for them, their personalitys needs to be a
+// part of the dialogue generation." A persona sheet nobody hands to the writer is a
+// document, and documents lose — so this is wiring, not a note in a brief.
+//
+// Generic on purpose: it renders whatever fields the bible happens to carry, so the park,
+// the beach and the homestead can each get one without touching this function.
+const LABELS = {
+  temper: 'temperament', born: 'where they came from', loves: 'loves', hates: 'hates',
+  interest: 'their own interest', quirk: 'a habit you could watch', voice: 'how they talk',
+  soft: 'the thing underneath, said to nobody',
+};
+function personaBlock(job) {
+  const src = job.personas && JOBS[job.personas];
+  if (!src || !existsSync(join(ROOT, src.approved))) return '';
+  let bible;
+  try { bible = JSON.parse(read(src.approved)); } catch (e) { return ''; }
+  const people = bible.residents || [];
+  if (!people.length) return '';
+  const lines = ['# WHO THEY ARE', '',
+    'These are the same people the brief lists, in full. Every line you write for one of them comes',
+    'out of this, not out of their job title. Where the brief and this disagree about a person, this',
+    'is the person. Do not quote these words back — they are what the character knows, not what they say.',
+    ''];
+  for (const p of people) {
+    lines.push(`### ${p.name}${p.key ? ` (\`${p.key}\`)` : ''}`, '');
+    for (const [k, v] of Object.entries(p)) {
+      if (k === 'name' || k === 'key' || typeof v !== 'string') continue;
+      lines.push(`- **${LABELS[k] || k}** — ${v}`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
 function assemble(job) {
   const system = read(VOICE);
   // 🎛 THE STEER — Trym's own words, first in the brief and outranking it. The house voice and the
@@ -145,6 +181,7 @@ function assemble(job) {
     '',
     read(job.brief).trim(),
     '',
+    ...(personaBlock(job) ? [personaBlock(job)] : []),
     // spread, never a bare '' — a job with no lock must assemble a prompt byte for byte
     // identical to the one before locks existed. An empty slot here is a newline nobody asked for.
     ...(held ? [held] : []),

@@ -16,10 +16,15 @@ import { faults, overAim, strings, patternOf, indexOf, checkFile } from '../../.
 const ROOT = process.cwd();
 const load = (rel) => (existsSync(join(ROOT, rel)) ? JSON.parse(readFileSync(join(ROOT, rel), 'utf8')) : null);
 
-// one row per string: where it lives, what it says now, what the draft says
+// one row per string: where it lives, what it says now, what the draft says.
+// ⚠️ The rows come from the LIVE file normally, but a brand-new job has no live file at
+// all — and a desk that renders nothing is a draft Trym cannot read, which is the one
+// job this page has. So a first draft supplies its own rows and every line reads as new.
 function rowsFor(job, live, draft) {
   const drafted = draft ? new Map([...strings(draft)].map((s) => [s.path, s.value])) : null;
-  return [...strings(live || {})].filter((s) => !s.path.startsWith('_meta')).map(({ path, value }) => {
+  const spine = live || draft || {};
+  return [...strings(spine)].filter((s) => !s.path.startsWith('_meta')).map(({ path, value: spineValue }) => {
+    const value = live ? spineValue : undefined;
     const spec = { ...(job.fields[patternOf(path)] || {}), _index: indexOf(path) };
     // 🔒 a locked row has no draft column, whatever a stale draft on disk still holds
     // for it: the rig will not write these, so showing a "would change to" is a lie.
@@ -28,6 +33,11 @@ function rowsFor(job, live, draft) {
     const check = (v) => (v == null ? { bad: [], aim: 0 } : { bad: faults(v, spec), aim: overAim(v, spec) });
     return { path, spec, locked, live: value, draft: next, changed: next != null && next !== value, now: check(value), then: check(next) };
   });
+}
+// the group's name row: the draft's name when there is no live file yet
+function nameOf(rows) {
+  const r = rows.find((x) => x.field === 'name');
+  return r ? (r.draft ?? r.live) : null;
 }
 // 🧍 the desk groups by CHARACTER, and a job may name its people either way:
 // the town's are an array (residents[0], residents[1]…), the park's are named
@@ -58,8 +68,8 @@ const desks = jobs().map((job) => {
   const groups = groupsFor(job, rows);
   // name the group after the thing it is: the character, not the array index
   for (const g of groups) {
-    const name = g.rows.find((r) => r.field === 'name');
-    if (name) g.title = (name.draft ?? name.live) + '  ·  ' + g.key;
+    const name = nameOf(g.rows);
+    if (name) g.title = name + '  ·  ' + g.key;
     // 🔒 why these words are not up for review — the job's own sentence, not mine
     g.locked = g.rows.some((r) => r.locked) ? (job.locked || {})[topOf(g.key)] || 'written by hand; the rig does not touch it' : null;
   }
@@ -145,14 +155,15 @@ const title = '✍️ The copy desk — drafts beside the live copy';
           {d.counts.warn > 0 && <span class="cp-tag cp-tag--warn">{d.counts.warn} over the guide’s target</span>}
           {d.draft
             ? <span class={'cp-tag ' + (d.counts.draftBad ? 'cp-tag--bad' : 'cp-tag--ok')}>
-                draft: {d.counts.changed} changed{d.counts.draftBad ? `, ${d.counts.draftBad} violations` : ', clean'}
+                {d.live ? `draft: ${d.counts.changed} changed` : `first draft: ${d.counts.lines} lines`}{d.counts.draftBad ? `, ${d.counts.draftBad} violations` : ', clean'}
               </span>
             : <span class="cp-tag">no draft waiting</span>}
           {d.draft && d.draft._meta && <span class="cp-tag">{d.draft._meta.model} · {String(d.draft._meta.when).slice(0, 16).replace('T', ' ')}</span>}
           {lockedTops(d.job).map((k) => <span class="cp-tag cp-tag--lock">🔒 {k} is yours, not the writer’s</span>)}
         </div>
 
-        {!d.live && <p class="cp-empty">Nothing approved yet. Run <code>node tools/copy.mjs {d.job.id}</code>.</p>}
+        {!d.live && !d.draft && <p class="cp-empty">Nothing written yet. Run <code>node tools/copy.mjs {d.job.id}</code>.</p>}
+        {!d.live && d.draft && <p class="cp-empty">⏳ <b>First draft — nothing is approved yet.</b> Every line below is new. Ship it with <code>node tools/copy.mjs --approve {d.job.id}</code>.</p>}
 
         {d.groups.map((g) => (
           <div class={'cp-who' + (g.locked ? ' cp-who--lock' : '')}>
@@ -164,15 +175,17 @@ const title = '✍️ The copy desk — drafts beside the live copy';
               <div class="cp-row">
                 <span class="cp-field">{r.field}</span>
                 <span>
-                  <span class="cp-line">
-                    {r.changed && <b>now</b>}{r.live}
-                    <span class="cp-len">{r.live.length}{maxOf(r.spec) ? '/' + maxOf(r.spec) : ''}</span>
-                    {r.now.bad.map((f) => <span class="cp-flag">{f.msg}</span>)}
-                    {!r.now.bad.length && r.now.aim > 0 && <span class="cp-flag cp-flag--warn">over the guide’s {r.now.aim}</span>}
-                  </span>
+                  {r.live != null && (
+                    <span class="cp-line">
+                      {r.changed && <b>now</b>}{r.live}
+                      <span class="cp-len">{r.live.length}{maxOf(r.spec) ? '/' + maxOf(r.spec) : ''}</span>
+                      {r.now.bad.map((f) => <span class="cp-flag">{f.msg}</span>)}
+                      {!r.now.bad.length && r.now.aim > 0 && <span class="cp-flag cp-flag--warn">over the guide’s {r.now.aim}</span>}
+                    </span>
+                  )}
                   {r.changed && (
                     <span class="cp-line cp-line--new">
-                      <b>draft</b>{r.draft}
+                      <b>{r.live == null ? 'new' : 'draft'}</b>{r.draft}
                       <span class="cp-len">{r.draft.length}{maxOf(r.spec) ? '/' + maxOf(r.spec) : ''}</span>
                       {r.then.bad.map((f) => <span class="cp-flag">{f.msg}</span>)}
                       {!r.then.bad.length && r.then.aim > 0 && <span class="cp-flag cp-flag--warn">over the guide’s {r.then.aim}</span>}

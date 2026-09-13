@@ -47,7 +47,16 @@ for (const name of readdirSync(join(ROOT, DIR)).filter((f) => f.endsWith('.json'
 // approved file has nothing for the game to import
 for (const j of jobs()) {
   if (!existsSync(join(ROOT, j.brief))) problems.push(`${j.id} — its brief ${j.brief} is gone; GPT would be asked to write blind`);
-  if (!existsSync(join(ROOT, j.approved))) problems.push(`${j.id} — no approved copy at ${j.approved} (write one with \`node tools/copy.mjs ${j.id}\`, review at /dev/copy/, then --approve)`);
+  const has = existsSync(join(ROOT, j.approved));
+  // ⏳ A NEW JOB WAITING ON TRYM is not a broken one. A job is registered, briefed and
+  // drafted before he has read it, and the draft is gitignored, so "no approved file" is
+  // the correct state for a day or two — failing on it would hold every gate and all of
+  // CI red until he got to his desk, which is how a gate gets switched off.
+  // `awaiting: true` says that out loud, and the flag cannot be left behind: the moment
+  // the approved file appears, the gate fails until somebody removes it.
+  if (!has && j.awaiting) console.log(`⏳ ${j.id}: no approved copy yet — the draft is on Trym's desk at /dev/copy/. Nothing imports ${j.approved} until he says so.`);
+  else if (!has) problems.push(`${j.id} — no approved copy at ${j.approved} (write one with \`node tools/copy.mjs ${j.id}\`, review at /dev/copy/, then --approve)`);
+  else if (j.awaiting) problems.push(`${j.id} — ${j.approved} exists now, so drop \`awaiting: true\` from its entry in tools/copy-jobs.mjs`);
 }
 
 // 🔒 THE LOCK, TESTED — not described. A locked section is copy Trym wrote himself

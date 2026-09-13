@@ -7,6 +7,9 @@
 //
 // No node builtins: an Astro page imports this at build time.
 
+// one schema property, described for the model in the same words the gate uses
+const str = (note) => ({ type: 'string', description: note });
+
 export const BEATS = ['dawn', 'morning', 'noon', 'afternoon', 'evening', 'night'];
 
 // The nine residents, by the key the game uses. The NAMES ARE FIXED — a rewrite
@@ -123,6 +126,104 @@ const townSchema = {
   },
 };
 
+// --- town-personas -----------------------------------------------------------
+// 🧍 THE CHARACTER BIBLE. Not dialogue — nobody reads these words in the game. They are
+// handed to the writer every time it writes a line for one of the nine, so the lines come
+// out of a person instead of a job title. Trym, 13 Sep 2026: "they need to be strong
+// identifyable characters all of them in their own way … when creating dialogue for them,
+// their personalitys needs to be a part of the dialogue generation".
+//
+// The temperament ladder is an ENUM because his ask was a RANGE — "some NPCs are grumpy,
+// some are normal happy, some are ecstatic" — and a range is the one thing a writer left
+// to itself will not produce. Nine pleasant people is the failure mode, and it is
+// greppable, so it is checked rather than requested.
+export const TEMPERS = ['grumpy', 'gruff', 'wry', 'steady', 'warm', 'sunny', 'ecstatic'];
+const SOUR = ['grumpy', 'gruff'];
+const BRIGHT = ['sunny', 'ecstatic'];
+
+const personaFields = {
+  'residents[].key': { kind: 'key', max: 12, note: 'FIXED. Copy the key from the brief exactly.' },
+  'residents[].name': { kind: 'name', max: 14, note: 'FIXED. Copy the name from the brief exactly.' },
+  'residents[].temper': { kind: 'enum', values: TEMPERS, note: 'Their default setting. One word from the list — the true one, not the nicest one.' },
+  'residents[].born': { kind: 'prose', aim: 170, max: 220, note: 'Where they come from and how they ended up here. Concrete: a road, a bus, a season, an inheritance.' },
+  'residents[].loves': { kind: 'prose', aim: 90, max: 120, note: 'One thing they genuinely love, named exactly — a thing you could put in front of them, never a category.' },
+  'residents[].hates': { kind: 'prose', aim: 90, max: 120, note: 'One thing that reliably annoys them, named exactly. Small and specific beats grand. No two residents hate the same thing.' },
+  'residents[].interest': { kind: 'prose', aim: 120, max: 160, note: 'What they do that has nothing to do with their job. Most of them are slightly odd.' },
+  'residents[].quirk': { kind: 'prose', aim: 100, max: 140, note: 'A habit you could watch them do. Physical, repeatable, theirs alone.' },
+  'residents[].voice': { kind: 'prose', aim: 150, max: 200, note: 'How they talk, as instructions to a writer: sentence length, rhythm, a word they overuse, a thing they never do. Practical, never poetic.' },
+  'residents[].soft': { kind: 'prose', aim: 130, max: 170, note: 'The thing underneath they would not say out loud. The payoff at the top of the acquaintance ladder, so it must be worth arriving at.' },
+};
+
+function personaShape(data) {
+  const bad = [];
+  const say = (path, msg, rule) => bad.push({ path, msg, rule: rule || 'shape' });
+  const list = data.residents;
+  if (!Array.isArray(list)) { say('residents', 'residents must be an array'); return bad; }
+  const seen = new Map(list.map((r, i) => [r && r.key, i]));
+  for (const [key, name] of TOWN_CAST) {
+    const i = seen.get(key);
+    if (i == null) { say(`residents[${key}]`, `"${key}" (${name}) has no persona — the cast is fixed`, 'cast'); continue; }
+    if (list[i].name !== name) say(`residents[${i}].name`, `this resident is ${name}; the name is not the writer's to change`, 'cast');
+  }
+  for (const r of list) if (!TOWN_CAST.some(([k]) => k === r.key)) say(`residents[${r && r.key}]`, `"${r && r.key}" is not one of the nine`, 'cast');
+
+  // 🌡 THE RANGE. Nine agreeable people is not a town, and it is exactly what a writer
+  // produces when nobody asks otherwise. These four checks are Trym's "some grumpy, some
+  // normal happy, some ecstatic" in the only form that survives a lost context.
+  const tempers = list.map((r) => r && r.temper).filter(Boolean);
+  const distinct = new Set(tempers);
+  if (distinct.size < 5) {
+    say('residents[].temper', `only ${distinct.size} temperaments across the nine (${[...distinct].join(', ')}) — the town needs at least five different ones`, 'range');
+  }
+  for (const t of distinct) {
+    const n = tempers.filter((x) => x === t).length;
+    if (n > 3) say('residents[].temper', `${n} of the nine are "${t}" — no more than three may share a temperament`, 'range');
+  }
+  if (!tempers.some((t) => SOUR.includes(t))) say('residents[].temper', `nobody here is ${SOUR.join(' or ')} — at least one resident is genuinely hard work`, 'range');
+  if (!tempers.some((t) => BRIGHT.includes(t))) say('residents[].temper', `nobody here is ${BRIGHT.join(' or ')} — at least one resident runs hot`, 'range');
+
+  // and the individuality itself: two residents who hate the same thing are one resident
+  for (const field of ['hates', 'loves', 'quirk']) {
+    const byValue = new Map();
+    list.forEach((r, i) => {
+      const v = String((r && r[field]) || '').trim().toLowerCase();
+      if (!v) return;
+      if (byValue.has(v)) say(`residents[${i}].${field}`, `the same ${field} as ${list[byValue.get(v)].name} — each of the nine needs their own`, 'range');
+      else byValue.set(v, i);
+    });
+  }
+  return bad;
+}
+
+const personaSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['residents'],
+  properties: {
+    residents: {
+      type: 'array',
+      description: 'All nine residents, in the order the brief lists them.',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['key', 'name', 'temper', 'born', 'loves', 'hates', 'interest', 'quirk', 'voice', 'soft'],
+        properties: {
+          key: str('The resident’s key, copied from the brief. Never shown to a player.'),
+          name: str(personaFields['residents[].name'].note),
+          temper: { type: 'string', enum: TEMPERS, description: personaFields['residents[].temper'].note },
+          born: str(personaFields['residents[].born'].note),
+          loves: str(personaFields['residents[].loves'].note),
+          hates: str(personaFields['residents[].hates'].note),
+          interest: str(personaFields['residents[].interest'].note),
+          quirk: str(personaFields['residents[].quirk'].note),
+          voice: str(personaFields['residents[].voice'].note),
+          soft: str(personaFields['residents[].soft'].note),
+        },
+      },
+    },
+  },
+};
+
 // --- park-npcs ---------------------------------------------------------------
 // The park's three voices. What makes this job different from the town's: the
 // park has HEALTH, five bands from neglected to perfect, and Old Peel's answers
@@ -205,7 +306,6 @@ function parkShape(data) {
   (S.sold || []).forEach((l, i) => { if (!String(l).includes('{item}')) say(`stand.sold[${i}]`, 'must contain {item} — the game puts the purchase there'); });
   return bad;
 }
-const str = (note) => ({ type: 'string', description: note });
 const parkSchema = {
   type: 'object', additionalProperties: false, required: ['peel', 'inka', 'stand'],
   properties: {
@@ -254,6 +354,22 @@ const parkSchema = {
 };
 
 export const JOBS = {
+  'town-personas': {
+    id: 'town-personas',
+    title: 'Banana Town — who the nine residents are',
+    what: 'The character bible: temperament, where they came from, what they love and hate, their interest, quirk, voice and the thing underneath.',
+    brief: 'tools/copy-briefs/town-personas.md',
+    out: 'tools/copy-out/town-personas.json',
+    approved: 'src/data/copy/town-personas.json',
+    reads: 'the writer, on every town-npcs run — no player ever reads these words',
+    top: ['residents'],
+    // ⏳ drafted 13 Sep 2026, waiting on Trym at /dev/copy/. Remove this line in the same
+    // commit that approves it — the gate fails if the approved file exists and this stays.
+    awaiting: true,
+    fields: personaFields,
+    shape: personaShape,
+    schema: personaSchema,
+  },
   'town-npcs': {
     id: 'town-npcs',
     title: 'Banana Town — the nine residents',
@@ -263,6 +379,11 @@ export const JOBS = {
     approved: 'src/data/copy/town-npcs.json',
     reads: 'src/scripts/town-life.js',
     top: ['residents'],
+    // 🧍 every line for these nine is written WITH the character bible in the prompt.
+    // Trym, 13 Sep 2026: "when creating dialogue for them, their personalitys needs to be
+    // a part of the dialogue generation". A persona sheet nobody feeds to the writer is a
+    // document, and documents lose.
+    personas: 'town-personas',
     fields: townFields,
     shape: townShape,
     schema: townSchema,
