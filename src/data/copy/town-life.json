@@ -1,0 +1,138 @@
+{
+  "bands": [
+    {
+      "key": "abandoned",
+      "name": "Hushed Square",
+      "line": "The fountain is dry, shutters are down, and crows have claimed the cobbles."
+    },
+    {
+      "key": "struggling",
+      "name": "Thin Going",
+      "line": "A few lamps work; rubbish gathers by the dry fountain and most kiosks are shut."
+    },
+    {
+      "key": "recovering",
+      "name": "Mending Along",
+      "line": "The fountain runs again, though several shutters still wait to be lifted."
+    },
+    {
+      "key": "lively",
+      "name": "Good Footing",
+      "line": "Kiosks are open, lamps are lit, and the square has visitors around the fountain."
+    },
+    {
+      "key": "thriving",
+      "name": "Full Bloom",
+      "line": "Lanterns shine at the stalls, every kiosk is open, and visitors fill the square."
+    }
+  ],
+  "store": {
+    "greet": "Take a good look. By tomorrow, every last thing will be gone.",
+    "shut": "The bell is quiet, the shutters are down, and Pip has taken the shelf indoors.",
+    "needs": "House needs another room",
+    "van": "Sent by morning van",
+    "sold": [
+      "{item} is yours. I had nearly named it.",
+      "There goes {item}. The shelf looks surprised.",
+      "{item} will sit nicely at home.",
+      "A fine choice: {item}. I was saving it for nobody."
+    ]
+  },
+  "board": {
+    "title": "Square Report",
+    "fixes": "Things mended today",
+    "people": "Bananas lending hands",
+    "found": "Cursed things found"
+  },
+  "merchant": {
+    "name": "Fine Goods",
+    "greet": "Rare pieces cost extra coins. They have travelled farther than the fountain water.",
+    "lines": [
+      "{item} has crossed several cobbles to meet you.",
+      "A costly piece, but the crate was exceptionally stubborn.",
+      "{item} is wrapped up. The wrapping is complimentary.",
+      "That one does not visit Pip’s shelf.",
+      "Coins well spent. The stall approves."
+    ]
+  },
+  "vendor": {
+    "name": "Night Trading",
+    "greet": "The dark makes a tidy shop. These pieces are waiting quietly.",
+    "bought": "{item} is back where it can misbehave politely.",
+    "lines": [
+      "{item} prefers the dark, but it will manage indoors.",
+      "A small trade for a long night.",
+      "Take {item}. Leave the moonlight where it is.",
+      "That piece has been waiting beside the monument.",
+      "The lanterns do not mind a little competition."
+    ]
+  },
+  "ghosts": [
+    "The bench remembers me better than I do.",
+    "The dry fountain made a very convincing swimming pool.",
+    "I used to admire that statue. It never returned the effort.",
+    "One lamp blinked at me all evening. I blinked back.",
+    "These cobbles were warmer when I had feet.",
+    "The bench has a wobble. It is doing its best."
+  ],
+  "closed": [
+    "Closed today: the coffee propeller needs a new bolt.",
+    "Closed today: lemonade jars need washing.",
+    "Closed today: the arcade has a loose floor tile.",
+    "Closed today: the post office scale is stuck.",
+    "Closed today: garden hose has a split.",
+    "Closed today: the wheel needs its handle tightened."
+  ],
+  "objects": [
+    {
+      "id": "humlantern",
+      "name": "Humming Waylight",
+      "desc": "The tall lantern hums one steady note, even with its switch off."
+    },
+    {
+      "id": "coldfire",
+      "name": "Winter Campfire",
+      "desc": "Its flames flicker blue and give the air no warmth at all."
+    },
+    {
+      "id": "wetchair",
+      "name": "Dewy Seat",
+      "desc": "The camp chair is damp beneath every cushion, as if it has just sighed."
+    },
+    {
+      "id": "drycrate",
+      "name": "Featherweight Crate",
+      "desc": "The apple crate is empty and light enough to nudge with one peel."
+    },
+    {
+      "id": "nightbush",
+      "name": "Moonhumming Bush",
+      "desc": "The round bush hums faintly after dark, mostly to its own leaves."
+    },
+    {
+      "id": "redcap",
+      "name": "Blinking Redcaps",
+      "desc": "The mushroom caps flicker like tiny lamps that cannot settle down."
+    },
+    {
+      "id": "emptyhouse",
+      "name": "Vacant Birdhouse",
+      "desc": "The little birdhouse has a neat doorway, but nothing will go inside."
+    },
+    {
+      "id": "watcher",
+      "name": "Turncoat Scarecrow",
+      "desc": "It faces away whenever you look back, straw hat perfectly level."
+    },
+    {
+      "id": "secondangel",
+      "name": "Second-Facing Angel",
+      "desc": "The angel statue has turned away again, despite its very heavy wings."
+    },
+    {
+      "id": "lastlamp",
+      "name": "Lasting Camp Lamp",
+      "desc": "The camp lantern hums softly and stays lit, even in a closed crate."
+    }
+  ]
+}

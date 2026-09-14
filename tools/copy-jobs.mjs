@@ -439,9 +439,7 @@ export const JOBS = {
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
     top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects'],
-    // ⏳ drafted 14 Sep 2026, waiting on Trym at /dev/copy/. Remove this line in the same
-    // commit that approves it — the gate fails if the approved file exists and this stays.
-    awaiting: true,
+    // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',
     fields: lifeFields,
