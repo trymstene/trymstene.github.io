@@ -153,7 +153,10 @@ export function bootTownLife(ctx) {
       else if (s.mode === 'flicker') { const on = Math.random() < 0.72; s.el.hidden = !on; if (on) show(s, Math.floor(Math.random() * s.n)); }
     }
   }
-  const mark = (x, y) => { const m = document.createElement('i'); m.className = 'tw-mark'; m.style.left = pct(x, W); m.style.top = pct(y, H); m.style.zIndex = String(100 + Math.round(y) - 1); world.appendChild(m); return m; };
+  // 🔧 a problem's mark: the ring on the ground AND a tools icon bobbing above the thing, day or
+  // night — a ring alone among the cobbles was missed (Trym, 14 Sep: "which streetlight must I fix?")
+  const mark = (x, y, lift) => { const m = document.createElement('i'); m.className = 'tw-mark'; m.style.left = pct(x, W); m.style.top = pct(y, H); m.style.zIndex = String(100 + Math.round(y) - 1);
+    const ic = document.createElement('span'); ic.className = 'tw-mark__ic'; ic.innerHTML = iconSvg('tools', { size: 18 }); ic.style.top = (-(lift || 40)) + 'px'; m.appendChild(ic); world.appendChild(m); return m; };
   const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof)
   // a banana body that is not a resident: a visitor, the merchant, the vendor
   function body(x, y, outfit, name) {
@@ -248,8 +251,12 @@ export function bootTownLife(ctx) {
     for (const k of ANCHORS.lamps) {
       const s = lampHalo[k]; if (!s) continue;
       const st = cond.lamps[k];
-      const on = dark && st !== 'out';
+      // by day a dead lamp is grey and a faulty one stutters faintly — Trym, 14 Sep: "it's daytime
+      // and they are all off so I don't understand if any of them is broken"
+      const p = propOf(k); if (p) p.el.classList.toggle('is-dark', st === 'out');
+      const on = (dark && st !== 'out') || (!dark && st === 'flicker');
       s.el.hidden = !on;
+      s.el.style.opacity = !dark && st === 'flicker' ? '0.45' : '';
       s.mode = !on ? 'off' : st === 'flicker' ? 'flicker' : 'pulse';
       if (s.mode === 'pulse') s.fps = 3; else if (s.mode === 'flicker') s.fps = 9;
     }
@@ -315,7 +322,7 @@ export function bootTownLife(ctx) {
       const c = cands.find((q) => q.t.on === 'kiosks' && q.key === k);
       if (!c || isFixed(c.t.id + ':' + k)) continue;
       cands.splice(cands.indexOf(c), 1);
-      const p = { id: c.t.id + ':' + k, type: c.t.id, x: c.x, y: c.y, key: k, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y), sprite: null };
+      const p = { id: c.t.id + ':' + k, type: c.t.id, x: c.x, y: c.y, key: k, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y, 120), sprite: null };
       problems.push(p);
     }
     for (let i = 0; i < n && cands.length; i++) {
@@ -326,7 +333,8 @@ export function bootTownLife(ctx) {
       if (isFixed(id)) continue;
       const p = { id, type: pick.t.id, x: pick.x, y: pick.y, key: pick.key, pays: pick.t.pays, rep: pick.t.rep, el: null, sprite: null,
         foot: pick.t.id === 'crows' ? (propOf(pick.key) || { base: pick.y + 100 }).base : pick.y };   // where the tap's walk ends (a crow's perch is a roof)
-      p.el = mark(p.x, p.type === 'crows' ? ((propOf(p.key) || { base: p.y + 100 }).base + 4) : p.y);
+      p.el = mark(p.x, p.type === 'crows' ? ((propOf(p.key) || { base: p.y + 100 }).base + 4) : p.y,
+        p.type === 'lamp' ? 150 : p.type === 'shutter' ? 120 : p.type === 'fountain' ? 200 : p.type === 'crows' ? ((propOf(p.key) || { base: p.y + 100 }).base - p.y + 40) : 40);
       if (p.type === 'litter') p.sprite = sprite(['pile', 'trash1', 'trash2', 'trash3'][Math.floor(h(seed, i, 4) * 4)], p.x, p.y);
       else if (p.type === 'graffiti') p.sprite = sprite(h(seed, i, 2) < 0.5 ? 'graffiti1' : 'graffiti2', p.x, p.y, { z: (propOf(p.key) || { base: p.y }).base + 1 });
       else if (p.type === 'crows') p.sprite = sprite('crow', p.x, p.y, { fps: 2, z: perchZ(p.key) });
