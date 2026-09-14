@@ -186,14 +186,14 @@ const description = 'The town centre of Banana World, under construction.';
     @keyframes twFlicker { 0%, 100% { opacity: 1; } 71% { opacity: 0.35; } 74% { opacity: 1; } 86% { opacity: 0.5; } 89% { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .tw-state.is-hum, .tw-state.is-flicker { animation: none; } }
     /* a problem's mark: the questline's dashed ring, on the ground under the thing that is wrong */
-    .tw-mark { position: absolute; width: 2.6%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 3px dashed #ffe135; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55); pointer-events: none; animation: twMark 1.5s ease-in-out infinite alternate; }
-    @keyframes twMark { from { opacity: 0.55; transform: translate(-50%, -50%) scale(0.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } }
+    /* a problem's mark: the anchor on the ground is INVISIBLE — only the repair icon above the thing
+       shows (Trym, 14 Sep: the rings "are just placed weirdly on top of the object") */
+    .tw-mark { position: absolute; width: 0; height: 0; pointer-events: none; }
     /* the tools icon over the thing to fix: yellow on black, bobbing, the world's "this wants you" */
     .tw-mark__ic { position: absolute; left: 50%; width: 30px; height: 30px; margin-left: -15px; display: flex; align-items: center; justify-content: center; background: #ffe135; color: #241c00; border: 2px solid #000; box-shadow: 2px 2px 0 #000; animation: twBob 1.1s ease-in-out infinite alternate; }
     .tw-mark__ic .pai { display: block; }
     @keyframes twBob { from { transform: translateY(0); } to { transform: translateY(-7px); } }
     @media (prefers-reduced-motion: reduce) { .tw-mark__ic { animation: none; } }
-    @media (prefers-reduced-motion: reduce) { .tw-mark { animation: none; } }
     /* the shopfront's dark window and the fountain's dry basin are the props themselves, dimmed */
     .tw-ov.is-dark { filter: brightness(0.62) saturate(0.7); }
     .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor) { visibility: hidden; }

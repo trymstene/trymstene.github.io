@@ -30,11 +30,11 @@ export const ANCHORS = {
   street: [[1180, 985], [1300, 850], [900, 650], [1350, 640], [1650, 1100], [1860, 1120], [560, 620], [1560, 620],
     [800, 1100], [1440, 1100], [320, 900], [1990, 900], [1100, 1190], [1230, 830], [980, 830]],
   walls: [[560, 1000, 'store'], [1700, 1000, 'print'], [1780, 520, 'post'], [400, 520, 'condo']],
-  // a perch is a SURFACE of a prop (measured on the plate: the statue's head, the board's top rail,
-  // the cart's umbrella, the fountain's upper rim, the shelter's roof), named so the sprite can
-  // outrank the prop. The pack's crow frame is a PAIR of birds with their feet 3px above the
-  // frame's bottom, so y = surface + 3 puts the feet on it (14 Sep: they hovered over the spire).
-  perches: [[1416, 127, 'statue'], [740, 867, 'board'], [1472, 892, 'cart'], [1100, 770, 'fountain'], [2060, 225, 'bus']],
+  // a perch is a SURFACE of a prop, measured on the plate by the builder's twin of this table in
+  // tools/… (the top of each bench at its middle, the cart's umbrella, the shelter's roof, the
+  // board's rail, the fountain's upper rim) plus the crow's own feet offset, named so the sprite
+  // can outrank the prop. Benches first: that is where crows sit (Trym, 14 Sep).
+  perches: [[960, 1000, 'benchsq0'], [1240, 1000, 'benchsq1'], [960, 588, 'benchh0'], [1240, 588, 'benchh1'], [1500, 423, 'benchm'], [1600, 711, 'benchc0'], [1860, 711, 'benchc1'], [610, 711, 'benchg'], [1670, 1133, 'bencht0'], [1870, 1133, 'bencht1'], [1472, 891, 'cart'], [2060, 224, 'bus'], [800, 866, 'board'], [1100, 768, 'fountain']],
   lamps: ['lamp0', 'lamp1', 'lamp2', 'lamp3', 'lamp4', 'lamp5', 'lamp6', 'lamp7'],
   kiosks: ['cafe', 'info'],
   bin: ['bin'],

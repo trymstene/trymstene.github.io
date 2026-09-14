@@ -160,7 +160,7 @@ export function bootTownLife(ctx) {
   }
   // 🔧 a problem's mark: the ring on the ground AND a tools icon bobbing above the thing, day or
   // night — a ring alone among the cobbles was missed (Trym, 14 Sep: "which streetlight must I fix?")
-  const mark = (x, y, lift) => { const m = document.createElement('i'); m.className = 'tw-mark'; m.style.left = pct(x, W); m.style.top = pct(y, H); m.style.zIndex = String(100 + Math.round(y) - 1);
+  const mark = (x, y, lift, z) => { const m = document.createElement('i'); m.className = 'tw-mark'; m.style.left = pct(x, W); m.style.top = pct(y, H); m.style.zIndex = String(z != null ? z : 100 + Math.round(y) - 1);
     const ic = document.createElement('span'); ic.className = 'tw-mark__ic'; ic.innerHTML = iconSvg('tools', { size: 18 }); ic.style.top = (-(lift || 40)) + 'px'; m.appendChild(ic); world.appendChild(m); return m; };
   const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof)
   // a banana body that is not a resident: a visitor, the merchant, the vendor
@@ -338,8 +338,16 @@ export function bootTownLife(ctx) {
       if (isFixed(id)) continue;
       const p = { id, type: pick.t.id, x: pick.x, y: pick.y, key: pick.key, pays: pick.t.pays, rep: pick.t.rep, el: null, sprite: null,
         foot: pick.t.id === 'crows' ? (propOf(pick.key) || { base: pick.y + 100 }).base : pick.y };   // where the tap's walk ends (a crow's perch is a roof)
-      p.el = mark(p.x, p.type === 'crows' ? ((propOf(p.key) || { base: p.y + 100 }).base + 4) : p.y,
-        p.type === 'lamp' ? 150 : p.type === 'shutter' ? 120 : p.type === 'fountain' ? 200 : p.type === 'crows' ? ((propOf(p.key) || { base: p.y + 100 }).base - p.y + 40) : 40);
+      // ⚠️ a mark must paint IN FRONT of the prop it belongs to: a tag sits on a wall above the
+      // building's foot, and a ring at the tag's own y painted BEHIND the shopfront (Trym, 14 Sep:
+      // "its a task, but its hidden behind the building"). The ring goes to the prop's foot, in
+      // front, and the icon rides above the thing itself.
+      const pb = propOf(p.key) ? propOf(p.key).base : null;
+      const onProp = p.type === 'crows' || p.type === 'graffiti';
+      const my = onProp && pb != null ? pb + 4 : p.y;
+      p.el = mark(p.x, my,
+        p.type === 'lamp' ? 150 : p.type === 'shutter' ? 120 : p.type === 'fountain' ? 200 : onProp && pb != null ? (pb + 4 - p.y + 46) : 40,
+        pb != null ? 100 + pb + 3 : null);
       if (p.type === 'litter') p.sprite = sprite(['pile', 'trash1', 'trash2', 'trash3'][Math.floor(h(seed, i, 4) * 4)], p.x, p.y);
       else if (p.type === 'graffiti') p.sprite = sprite(h(seed, i, 2) < 0.5 ? 'graffiti1' : 'graffiti2', p.x, p.y, { z: (propOf(p.key) || { base: p.y }).base + 1 });
       else if (p.type === 'crows') p.sprite = sprite('crow', p.x, p.y, { fps: 2, z: perchZ(p.key) });

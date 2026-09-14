@@ -473,13 +473,13 @@ place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('re
 SPOTS['wheel'] = (1400, 780)
 NPCS.append(('spinner', 1400, 800, 'Spinner'))
 _cache[('__board', 1, 28, 0.0, 1.0, 1.0)] = build_noticeboard()
-place('__board', 740, 990, scale=1.0, solid=('rect', -48, -12, 48, 4), sh=0.5, key='board')
-SPOTS['board'] = (740, 990)
+place('__board', 800, 990, scale=1.0, solid=('rect', -48, -12, 48, 4), sh=0.5, key='board')   # 800: clear of the lamp at 690 (Trym, 14 Sep: "cramped into a street light")
+SPOTS['board'] = (800, 990)
 try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, solid=('rect', -36, -16, 36, 4), sh=0.45, key='cart')
 SPOTS['cart'] = (1460, 1010)
 # (the putto that stood on the door-to-fountain axis is gone — Trym, 11 Sep: "remove the statue in the town centre")
-for (bx, by) in ((960, 1036), (1240, 1036)):
-    try_place(['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], bx, by, solid=('rect', -50, -8, 50, 4), sh=0.4)   # flat and minimal in the centre (Trym), wooden in the outer parts
+for bi, (bx, by) in enumerate(((960, 1036), (1240, 1036))):
+    try_place(['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], bx, by, solid=('rect', -50, -8, 50, 4), sh=0.4, key='benchsq%d' % bi)   # flat and minimal in the centre (Trym), wooden in the outer parts
 NPCS.append(('dot', 1010, 1120, 'Dot'))
 # decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
 for li, (lx, ly) in enumerate(((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100))):
@@ -488,8 +488,8 @@ for li, (lx, ly) in enumerate(((690, 690), (1510, 690), (690, 1030), (1510, 1030
 try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 690, 560, solid=('rect', -28, -70, 28, 4), key='phone')   # on the Bunch's corner by the orchard lane (Trym: "move the red telephone kiosk to the empty space")
 try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 360, 1044, shade=False, solid=('circle', 7), key='hydrant')   # on the kerb beside the store, not in the road (Trym)
 try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 662, 1040, shade=False, solid=('circle', 7), key='bin')   # at the kerb between the ATM and the lamp, not in the road (Trym)
-try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
-try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1240, 640, shade=False)
+try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False, key='benchh0')
+try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1240, 640, shade=False, key='benchh1')
 for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
     try_place(['ME_Singles_Garden_48x48_Bush_18.png'], bx, by, shade=False, solid=('circle', 12))
 
@@ -506,8 +506,8 @@ SPOTS['info'] = (900, 1226)
 # the terrace by the cafe: the pack's small fountain (animated), two sideways benches, two small bins (Trym's pick)
 anim_prop('smallfount', 'Fountain_48x48 - Copia.png', [0, 1, 2, 3, 4, 5, 6, 7], 96, 144, 1770, 1240, solid=('rect', -30, -26, 30, 4), period=1.2, sh=0.5)
 # the benches face the fountain (6 on the left looks right, 5 on the right looks left) with air between (Trym)
-try_place(['ME_Singles_City_Props_48x48_Bench_6.png'], 1670, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
-try_place(['ME_Singles_City_Props_48x48_Bench_5.png'], 1870, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3)
+try_place(['ME_Singles_City_Props_48x48_Bench_6.png'], 1670, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3, key='bencht0')
+try_place(['ME_Singles_City_Props_48x48_Bench_5.png'], 1870, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3, key='bencht1')
 for bx in (1610, 1912):   # the small bins at the patch's street corners, outside the benches
     try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], bx, 1170, shade=False, solid=('circle', 7))
 SPOTS['terrace'] = (1770, 1240)
@@ -533,7 +533,7 @@ try_place(['ME_Singles_Garden_48x48_Grey_Statue.png'], 1416, 330, solid=('rect',
 for px_ in (1350, 1482):
     try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], px_, 340, shade=False, solid=('rect', -12, -8, 12, 4))
 anim_prop('drink', 'Drinking_Fountain_1_loop_3-6_48x48.png', [2, 3, 4, 5], 96, 144, 1330, 470, solid=('rect', -14, -10, 14, 4), period=0.8)   # the water loop: 8 frames of 96 px (not 48 — the first cut split the fountain in halves), frames 3-6 loop
-try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1500, 470, solid=('rect', -36, -10, 36, 4), sh=0.35)
+try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1500, 470, solid=('rect', -36, -10, 36, 4), sh=0.35, key='benchm')
 SPOTS['monument'] = (1416, 330)
 # C · THE BUS STOP, the north-east corner: the east lane runs north out of town, a shelter beside it, nothing else
 try_place(['ME_Singles_Vehicles_48x48_Bus_Stop_1.png'], 2060, 330, solid=('rect', -84, -24, 84, 4), sh=0.4, key='bus')
@@ -541,8 +541,8 @@ SPOTS['bus'] = (2060, 330)
 SPOTS['cut'] = (1944, 90)
 # D · THE CAFE GARDEN, the strip behind the print shop and the cup: two benches facing the lane, potted
 #     bushes and a flower bed between — the café's seating, one lane from the square
-for bx in (1600, 1860):
-    try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], bx, 758, solid=('rect', -36, -10, 36, 4), sh=0.35)
+for bi, bx in enumerate((1600, 1860)):
+    try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], bx, 758, solid=('rect', -36, -10, 36, 4), sh=0.35, key='benchc%d' % bi)
 for px_ in (1672, 1788):
     try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], px_, 754, shade=False, solid=('rect', -12, -8, 12, 4))
 try_place(['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], 1730, 752, shade=False, solid=('rect', -36, -8, 36, 4))
@@ -551,7 +551,7 @@ SPOTS['garden_e'] = (1730, 640)
 try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], 372, 754, shade=False, solid=('rect', -12, -8, 12, 4))
 for fx in (440, 530):
     try_place(['ME_Singles_City_Props_48x48_Flower_Bush_3.png'], fx, 752, shade=False, solid=('rect', -36, -8, 36, 4))
-try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 610, 758, solid=('rect', -36, -10, 36, 4), sh=0.35)
+try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 610, 758, solid=('rect', -36, -10, 36, 4), sh=0.35, key='benchg')
 SPOTS['garden_w'] = (500, 640)
 
 # the treeline: the park's camping trees, the town's walls
@@ -645,7 +645,7 @@ for key, args in (
     ('ghostw', ('Ghost_Friendly_48x48.png', list(range(8, 16)), 96, 96, 2)),   # …waving at you (row 2's "interact")
     ('drift', ('Graveyard_Ghosts_2_48x48.png', list(range(1, 16)), 96, 192, 0, PROP, True)),  # the tall grey one that fades in and out
     ('wisp', ('Graveyard_Ghosts_1_48x48.png', list(range(0, 6)), 96, 96, 0, PROP, True)),     # a small one rising and gone
-    ('crow', ('Crow_idle_Down_48x48.png', [0, 1, 2], 96, 96)),
+    ('crow', ('Crow_idle_Down_48x48.png', [0, 1, 2], 96, 96, 0, PROP * 0.55)),   # a pair of birds at a bird's size, not a banana's (Trym, 14 Sep: "crows look too big")
     ('candle', ('Graveyard_Candle_Standing_48x48.png', [0, 1, 2, 3], 48, 144, 0, PROP, True)),
     ('lantern', ('Camping_Lantern_48x48_1.png', list(range(6)), 96, 144, 0, PROP, True)),
     ('fountainoff', ('Garden_Fountain_6_Turn_Off_48x48.png', [9], 192, 240)),   # the last frame of the turn-off: dry
