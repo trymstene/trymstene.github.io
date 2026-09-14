@@ -12,6 +12,31 @@ are ecstatic."*
 So the test for every record below is simple: **cover the name, and could anyone still tell which
 one this is?** If two records could swap owners, both are wrong.
 
+## ⚠️ And the same test against the REST of Banana World
+
+The town is one area of several, and the other areas already have people in them. A resident who
+duplicates one of these is wrong even if they are perfectly distinct from the other eight. Trym,
+13 Sep 2026, on a draft that made Gran Fig a second Old Peel: *"gran fig is a boring character,
+and that the character is also tending a garden is boring - we already have that in Old Peel"*.
+
+| Who | Where | Taken, and not yours to use again |
+|---|---|---|
+| **Old Peel** | the Park | the elder. Kept the park forty years, sits on a bench, tends a small flowerbed, remembers a wife he mentions rarely, keeps a place for somebody who is gone. Gentle, unhurried, nostalgic. |
+| **Inka** | the Park | the maker. Runs the print shop, proud that her wall is the one real thing, straightforward about money. |
+| **the stand keeper** | the Park | the dry showman behind a counter, amused by other people's taste. |
+| **Barty** | the Rave | the over-cheerful cowboy bartender, all patter and specials. |
+| **Shelly** | Banana Bay | the collector, trades and boards what you find. |
+| **Gil** | Banana Bay | the appraiser, keeps the ledger and the map, judges what you turn up. |
+| **Sandy** | Banana Bay | the beach regular. |
+
+**So, forbidden in the town:** a second gentle elder who tends plants and misses somebody. A second
+dry counter-showman. A second appraiser-with-a-ledger. A second over-cheerful barker. If a resident
+is drifting toward one of those, the fix is not a different hobby — it is a different person.
+
+⚠️ **Sharing a JOB with someone is fine; sharing a SOUL is not.** Gran Fig and Old Peel both stand
+near growing things. That is the town's geography and it does not move. What must differ is
+everything else: what she wants, how she talks, what she is like to meet, and what she is hiding.
+
 ---
 
 ## The town
@@ -60,9 +85,17 @@ someone new. Keep every fact below true.
 - `dot` — **Dot**, the info kiosk, keeper of the town's wants. Writes down what everyone is looking
   for. Speaks almost entirely in questions, stacked, and does not wait for answers. Is looking for a
   fish. A real one. Has been for a while.
-- `granfig` — **Gran Fig**, the orchard and the west garden. Grows everything the Figs sell, waters
-  before the sun sees. Remembers everyone's name, and their mother's, and what their mother's hat
-  looked like. Short imperatives and old gossip. Keeps a second chair by her bench, usually empty.
+- `granfig` — **Gran Fig**, the orchard and the west garden. Grows everything the Figs sell and
+  supplies her grandson's stand. Short imperatives, and an opinion about everybody.
+  ⚠️ **SHE IS BEING RESET.** The last draft made her Old Peel in a different hat: an old woman who
+  waters before dawn, remembers whose mother wore which hat, and keeps an empty chair for somebody
+  who used to sit in it. Every one of those is the park elder's, and Trym said so.
+  What is FIXED: she is old, she owns the orchard and the west garden, she is Fig Jr.'s grandmother
+  and his supplier. **Everything else is open, and should be the opposite of a gentle elder.**
+  She does not have to love the trees. She does not have to be sentimental about the past — the most
+  useful version of her may be the only person in town who refuses to look backwards at all. She does
+  not need a memorial object, and she must not have one. Give her something she WANTS, not something
+  she lost, and let her be difficult about it.
 
 ---
 
