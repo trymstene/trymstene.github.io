@@ -86,6 +86,9 @@ export const AREAS=[
    q:'Do they SPEND? — coins buy cosmetics, and the till is the proof'},
   {key:'arcade', name:'The Arcade', icon:'🕹', door:'arcade_board',
    q:'Do they PLAY AGAIN? — runs per cabinet opened; a prize is the proof of a chase'},
+  // 🏘️ the town (14 Sep): a HIDDEN page still — a card here reads the walks, not a launch
+  {key:'town', name:'Banana Town', icon:'🏘️', door:'town_open',
+   q:'Do they CARE? — fixes per visit is the town’s whole bet; a buy or a cursed find is the payoff'},
 ];
 
 // 🏳 FLAGS, AND THE MACHINE THAT CANNOT DRAW THEM.
@@ -132,6 +135,7 @@ export const WORLD_TITLES=[
   {page:'park/',      title:'The Park'},
   {page:'beach/',     title:'Banana Bay'},
   {page:'homestead/', title:'The Homestead'},
+  {page:'town/',      title:'Banana Town'},
 ];
 export const inWorld=(t)=>WORLD_TITLES.some((w)=>String(t||'').startsWith(w.title));
 
@@ -150,6 +154,9 @@ export const SHOPS=[
    steps:[['beach_hut_view','walked in'],['beach_hut_click','tapped a product']]},
   {name:'The seed shop', where:'the park garden', icon:'🍄', real:false,
    steps:[['park_seedshop','opened the seeds'],['park_plant','planted one']]},
+  {name:'Pip’s counter', where:'Banana Town', icon:'🏘️', real:false,
+   steps:[['town_open','walked in'],['town_buy','bought a piece for home']],
+   aside:['town_merchant','met the travelling stall']},
   {name:'The LED club screen', where:'the rave', icon:'📺', real:false,
    steps:[['rave_screen_ad','clicked a house ad']]},
 ];

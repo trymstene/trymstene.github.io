@@ -21,6 +21,7 @@ Outputs:
   public/assets/town/town.png        2200x1300 world plate (ground + shadows)
   public/assets/town/ov-*.png        y-sorted overlay props (everything that stands)
   public/assets/town/a-fountain-N.png  the fountain, one file per frame
+  public/assets/town/s-<key>-N.png   the STATE sprites the condition system swaps in (Town Life)
   src/scripts/town-geo.js            ⚠️ THE CONTRACT with the town engine
 Run: python tools/build-town-scene.py
 """
@@ -288,12 +289,14 @@ def load_any(name):
 
 
 def place(name, cx, base, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, flip=False,
-          shade=True, sh=0.30, scale=PROP, solid=None, layer=True, img=None):
-    key = (name, factor, colors, warm, sat, con)
-    if key not in _cache:
+          shade=True, sh=0.30, scale=PROP, solid=None, layer=True, img=None, key=None):
+    # `key` names the prop for the town's condition system (town-room.js): a keyed overlay
+    # can be swapped, hidden or marked at runtime; an unkeyed one is scenery
+    ck = (name, factor, colors, warm, sat, con)   # the blockify cache key (NOT the prop's `key`)
+    if ck not in _cache:
         src = img if img is not None else load_any(name)
-        _cache[key] = blockify(src, factor=factor, colors=colors, warm=warm, sat=sat, con=con)
-    s = _cache[key]
+        _cache[ck] = blockify(src, factor=factor, colors=colors, warm=warm, sat=sat, con=con)
+    s = _cache[ck]
     if scale != 1.0:
         s = s.resize((max(1, int(s.width * scale)), max(1, int(s.height * scale))), Image.NEAREST)
     if flip:
@@ -304,7 +307,7 @@ def place(name, cx, base, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, flip=
     if layer:
         fn = 'ov-%d.png' % len(OVERLAYS)
         s.save(os.path.join(OUT, fn), optimize=True)
-        OVERLAYS.append((fn, box[0], box[1], s.width, s.height, int(base)))
+        OVERLAYS.append((fn, box[0], box[1], s.width, s.height, int(base), key or ''))
     else:
         im.alpha_composite(s, box[:2])
     PLACED.append((name, box))
@@ -430,26 +433,26 @@ COLLIDERS.append(('fountain-top', ('circle', 38), FX, FBASE - 108))   # hugs the
 SPOTS, NPCS = {}, []
 
 # the north row, doors on Hall Street: the residence · the town hall · the post office
-place('ME_Singles_Generic_Building_48x48_Condo_3_45.png', 480, 560, solid=foot(288, 200), sh=0.45)   # 🕹 THE ARCADE (was The Bunch — Trym, 11 Sep night)
+place('ME_Singles_Generic_Building_48x48_Condo_3_45.png', 480, 560, solid=foot(288, 200), sh=0.45, key='condo')   # 🕹 THE ARCADE (was The Bunch — Trym, 11 Sep night)
 SPOTS['condo'] = (480, 560)
-place('ME_Singles_School_48x48_Clock_Tower_1.png', 1100, 560, solid=foot(384, 143), sh=0.45)
+place('ME_Singles_School_48x48_Clock_Tower_1.png', 1100, 560, solid=foot(384, 143), sh=0.45, key='hall')
 SPOTS['hall'] = (1100, 560)
 NPCS.append(('nib', 1140, 586, 'Nib'))
-place('22_Post_Office_48x48_Building_1.png', 1700, 560, solid=foot(384, 273), sh=0.45)
+place('22_Post_Office_48x48_Building_1.png', 1700, 560, solid=foot(384, 273), sh=0.45, key='post')
 SPOTS['post'] = (1700, 560)
 NPCS.append(('stamp', 1750, 586, 'Stamp'))
 try_place(['22_Post_Office_48x48_Big_Blue_Mailbox.png'], 1830, 592, solid=('rect', -12, -10, 12, 4))
 NPCS.append(('moss', 700, 640, 'Moss'))
 
 # the south row, doors on High Street: the general store (+ the bank, an ATM) · the print shop · the café
-place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_1.png', 480, 1040, solid=foot(240, 180), sh=0.45)
+place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_1.png', 480, 1040, solid=foot(240, 180), sh=0.45, key='store')
 SPOTS['store'] = (480, 1040)
 NPCS.append(('pip', 530, 1066, 'Pip'))
 try_place(['ME_Singles_City_Props_48x48_ATM_1.png'], 620, 1040, solid=('rect', -24, -40, 24, 4))
 SPOTS['bank'] = (620, 1040)
-place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_7.png', 1620, 1040, solid=foot(240, 184), sh=0.45)
+place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_7.png', 1620, 1040, solid=foot(240, 184), sh=0.45, key='print')
 SPOTS['print'] = (1620, 1040)
-try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 1830, 1040, scale=PROP * 0.8, solid=('rect', -54, -150, 54, 4), sh=0.45)
+try_place(['ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup.png'], 1830, 1040, scale=PROP * 0.8, solid=('rect', -54, -150, 54, 4), sh=0.45, key='cafe')
 SPOTS['cafe'] = (1830, 1040)
 NPCS.append(('bean', 1780, 1066, 'Bean'))
 
@@ -463,28 +466,28 @@ try_place(['ME_Singles_Worksite_48x48_Cone_1.png'], 210, 430, shade=False)
 SPOTS['lot'] = (160, 470)
 
 # the square: three stalls with room between them, the board, the statue on the axis
-place('FARM:Market_Stand_Yellow_Big_48x48.png', 800, 780, solid=('rect', -80, -24, 80, 4), sh=0.5)
+place('FARM:Market_Stand_Yellow_Big_48x48.png', 800, 780, solid=('rect', -80, -24, 80, 4), sh=0.5, key='exchange')
 SPOTS['exchange'] = (800, 780)
 NPCS.append(('figjr', 800, 800, 'Fig Jr.'))
-place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('rect', -80, -24, 80, 4), sh=0.5)
+place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('rect', -80, -24, 80, 4), sh=0.5, key='wheel')
 SPOTS['wheel'] = (1400, 780)
 NPCS.append(('spinner', 1400, 800, 'Spinner'))
 _cache[('__board', 1, 28, 0.0, 1.0, 1.0)] = build_noticeboard()
-place('__board', 740, 990, scale=1.0, solid=('rect', -48, -12, 48, 4), sh=0.5)
+place('__board', 740, 990, scale=1.0, solid=('rect', -48, -12, 48, 4), sh=0.5, key='board')
 SPOTS['board'] = (740, 990)
-try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, solid=('rect', -36, -16, 36, 4), sh=0.45)
+try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, solid=('rect', -36, -16, 36, 4), sh=0.45, key='cart')
 SPOTS['cart'] = (1460, 1010)
 # (the putto that stood on the door-to-fountain axis is gone — Trym, 11 Sep: "remove the statue in the town centre")
 for (bx, by) in ((960, 1036), (1240, 1036)):
     try_place(['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], bx, by, solid=('rect', -50, -8, 50, 4), sh=0.4)   # flat and minimal in the centre (Trym), wooden in the outer parts
 NPCS.append(('dot', 1010, 1120, 'Dot'))
 # decor, which may sit tight: lamps at the corners, a hydrant, a bin, a bear, bushes, a phone booth
-for (lx, ly) in ((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100)):
+for li, (lx, ly) in enumerate(((690, 690), (1510, 690), (690, 1030), (1510, 1030), (300, 600), (1980, 600), (300, 1100), (1980, 1100))):
     # the arm hangs over the street, never into a building: the sprite's arm points right, so the east-side lamps are mirrored (Trym)
-    try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7), flip=(lx > 1100))
-try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 690, 560, solid=('rect', -28, -70, 28, 4))   # on the Bunch's corner by the orchard lane (Trym: "move the red telephone kiosk to the empty space")
-try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 360, 1044, shade=False, solid=('circle', 7))   # on the kerb beside the store, not in the road (Trym)
-try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 662, 1040, shade=False, solid=('circle', 7))   # at the kerb between the ATM and the lamp, not in the road (Trym)
+    try_place(['ME_Singles_City_Props_48x48_Street_Lamp_1.png'], lx, ly, shade=False, solid=('circle', 7), flip=(lx > 1100), key='lamp%d' % li)
+try_place(['ME_Singles_City_Props_48x48_Phone_Booth_1.png'], 690, 560, solid=('rect', -28, -70, 28, 4), key='phone')   # on the Bunch's corner by the orchard lane (Trym: "move the red telephone kiosk to the empty space")
+try_place(['ME_Singles_City_Props_48x48_Hydrant_1.png'], 360, 1044, shade=False, solid=('circle', 7), key='hydrant')   # on the kerb beside the store, not in the road (Trym)
+try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], 662, 1040, shade=False, solid=('circle', 7), key='bin')   # at the kerb between the ATM and the lamp, not in the road (Trym)
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 960, 640, shade=False)
 try_place(['ME_Singles_Garden_48x48_Flowers_Bench_Horizontal.png'], 1240, 640, shade=False)
 for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
@@ -498,7 +501,7 @@ for (tx, ty, tn) in ((980, 760, 13), (1220, 760, 13), (1260, 1148, 13)):   # Tre
 try_place(['ME_Singles_City_Props_48x48_Dumpster_4.png'], 200, 330, solid=('rect', -36, -20, 36, 4), sh=0.4)
 try_place(['ME_Singles_City_Props_48x48_Dumpster_1.png'], 2070, 1130, solid=('rect', -36, -20, 36, 4), sh=0.4)
 # the info point at the gate, west of the park road: the map of the town (Trym: "theres also info kiosks")
-try_place(['ME_Singles_City_Props_48x48_Kiosk_Infopoint_1.png'], 900, 1226, solid=('rect', -80, -120, 80, 4), sh=0.45)
+try_place(['ME_Singles_City_Props_48x48_Kiosk_Infopoint_1.png'], 900, 1226, solid=('rect', -80, -120, 80, 4), sh=0.45, key='info')
 SPOTS['info'] = (900, 1226)
 # the terrace by the cafe: the pack's small fountain (animated), two sideways benches, two small bins (Trym's pick)
 anim_prop('smallfount', 'Fountain_48x48 - Copia.png', [0, 1, 2, 3, 4, 5, 6, 7], 96, 144, 1770, 1240, solid=('rect', -30, -26, 30, 4), period=1.2, sh=0.5)
@@ -526,14 +529,14 @@ SPOTS['orchard'] = (792, 300)
 SPOTS['stand'] = (890, 545)
 # B · THE MONUMENT, between the hall and the post office: a lane up to a statue on the lawn, two potted
 #     bushes flanking it, a drinking fountain and a bench by the lane — the civic garden
-try_place(['ME_Singles_Garden_48x48_Grey_Statue.png'], 1416, 330, solid=('rect', -30, -16, 30, 4), sh=0.4)
+try_place(['ME_Singles_Garden_48x48_Grey_Statue.png'], 1416, 330, solid=('rect', -30, -16, 30, 4), sh=0.4, key='statue')
 for px_ in (1350, 1482):
     try_place(['ME_Singles_Garden_48x48_Bush_Potted_3.png'], px_, 340, shade=False, solid=('rect', -12, -8, 12, 4))
 anim_prop('drink', 'Drinking_Fountain_1_loop_3-6_48x48.png', [2, 3, 4, 5], 96, 144, 1330, 470, solid=('rect', -14, -10, 14, 4), period=0.8)   # the water loop: 8 frames of 96 px (not 48 — the first cut split the fountain in halves), frames 3-6 loop
 try_place(['ME_Singles_City_Props_48x48_Bench_2.png'], 1500, 470, solid=('rect', -36, -10, 36, 4), sh=0.35)
 SPOTS['monument'] = (1416, 330)
 # C · THE BUS STOP, the north-east corner: the east lane runs north out of town, a shelter beside it, nothing else
-try_place(['ME_Singles_Vehicles_48x48_Bus_Stop_1.png'], 2060, 330, solid=('rect', -84, -24, 84, 4), sh=0.4)
+try_place(['ME_Singles_Vehicles_48x48_Bus_Stop_1.png'], 2060, 330, solid=('rect', -84, -24, 84, 4), sh=0.4, key='bus')
 SPOTS['bus'] = (2060, 330)
 SPOTS['cut'] = (1944, 90)
 # D · THE CAFE GARDEN, the strip behind the print shop and the cup: two benches facing the lane, potted
@@ -599,6 +602,90 @@ for i in (1, 2):
         print('  litter-%d.png' % i, export_prop('ME_Singles_Generic_Building_48x48_Condo_8_Flyer_%d.png' % i, 'litter-%d.png' % i))
     except Exception as e:
         print('  ! litter', i, e)
+
+# ---- 🏘️ THE STATES (Town Life, 14 Sep 2026): what a prop looks like when something is wrong
+# with it, or when the town is thriving, or on a Curse Night. Loose files like the litter,
+# never placed here — town-room.js puts them on the map from the condition tables, keyed by
+# the prop's `key`. Frames the fountain's way: one palette for the strip, each frame cropped
+# at the source size and resized on its own. STATE says how big each one is, so the client
+# can position a sprite before it has loaded.
+STATE = {}
+for f in os.listdir(OUT):
+    if f.startswith('s-'):
+        os.remove(os.path.join(OUT, f))
+
+
+def export_frames(key, sheet_name, cols, fw, fh, row=0, scale=PROP, soft=False):
+    sh_ = Image.open(os.path.join(ANIM, sheet_name)).convert('RGBA')
+    sub = Image.new('RGBA', (fw * len(cols), fh), (0, 0, 0, 0))
+    for k, i in enumerate(cols):
+        sub.alpha_composite(sh_.crop((i * fw, row * fh, (i + 1) * fw, (row + 1) * fh)), (k * fw, 0))
+    # ⚠️ LIGHT AND GHOSTS ARE SOFT. blockify thresholds alpha into a hard silhouette (by
+    # design, for props) — which deletes a lamp's halo, a lantern's glow and a ghost's fade
+    # outright (14 Sep: the lamps lit at night and nothing showed). Those keep their alpha.
+    if not soft:
+        sub = blockify(sub, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, trim=False)
+    w2, h2 = int(fw * scale), int(fh * scale)
+    for k in range(len(cols)):
+        sub.crop((k * fw, 0, (k + 1) * fw, fh)).resize((w2, h2), Image.NEAREST).save(os.path.join(OUT, 's-%s-%d.png' % (key, k)), optimize=True)
+    STATE[key] = [w2, h2, len(cols)]
+    print('  s-%s-*.png %dx%d x%d' % (key, w2, h2, len(cols)))
+
+
+def export_still(key, name, scale=PROP):
+    w, h = export_prop(name, 's-%s-0.png' % key, scale=scale)
+    STATE[key] = [w, h, 1]
+    print('  s-%s-0.png %dx%d' % (key, w, h))
+
+
+for key, args in (
+    ('lamp', ('Street_Lamp_48x48.png', [0, 1, 2, 3], 240, 240, 0, PROP, True)),            # the SAME lamp, lit: four frames of a pulsing halo (240 wide — the halo is the frame)
+    ('ghost', ('Ghost_Friendly_48x48.png', list(range(0, 8)), 96, 96, 1)),   # the friendly ghost, floating, facing right (row 1: eight frames a facing)
+    ('ghostf', ('Ghost_Friendly_48x48.png', list(range(24, 32)), 96, 96, 1)),  # …facing front
+    ('ghostw', ('Ghost_Friendly_48x48.png', list(range(8, 16)), 96, 96, 2)),   # …waving at you (row 2's "interact")
+    ('drift', ('Graveyard_Ghosts_2_48x48.png', list(range(1, 16)), 96, 192, 0, PROP, True)),  # the tall grey one that fades in and out
+    ('wisp', ('Graveyard_Ghosts_1_48x48.png', list(range(0, 6)), 96, 96, 0, PROP, True)),     # a small one rising and gone
+    ('crow', ('Crow_idle_Down_48x48.png', [0, 1, 2], 96, 96)),
+    ('candle', ('Graveyard_Candle_Standing_48x48.png', [0, 1, 2, 3], 48, 144, 0, PROP, True)),
+    ('lantern', ('Camping_Lantern_48x48_1.png', list(range(6)), 96, 144, 0, PROP, True)),
+    ('fountainoff', ('Garden_Fountain_6_Turn_Off_48x48.png', [9], 192, 240)),   # the last frame of the turn-off: dry
+):
+    try:
+        export_frames(key, *args)
+    except Exception as e:
+        print('  ! state', key, e)
+# 🔦 the lit lamp must sit EXACTLY on the placed one: the frame is the halo's box, the lamp
+# body inside it is the static sprite's body. Measure both and record where the frame's
+# top-left lands relative to the placed overlay's top-left (dx for the west lamps, dxf for
+# the mirrored east ones), so the client can lay the halo over the lamp it already has.
+try:
+    _st = blockify(load_pack('ME_Singles_City_Props_48x48_Street_Lamp_1.png'), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)
+    _sb = _st.getchannel('A').getbbox()                      # the body inside the trimmed sprite (a 1px margin)
+    _fr = Image.open(os.path.join(ANIM, 'Street_Lamp_48x48.png')).convert('RGBA').crop((0, 0, 240, 240))
+    _fb = _fr.point(lambda v: 255 if v >= 250 else 0, 'L') if False else Image.eval(_fr.getchannel('A'), lambda v: 255 if v >= 250 else 0).getbbox()   # the opaque body, not the halo
+    _bw = _fb[2] - _fb[0]
+    _dx = int(round((_sb[0] - _fb[0]) * PROP))
+    _dy = int(round((_sb[1] - _fb[1]) * PROP))
+    _dxf = int(round(((_st.width - _sb[0] - _bw) - (240 - _fb[2])) * PROP))
+    STATE['lamp'] = STATE['lamp'][:3] + [_dx, _dy, _dxf]
+    print('  lamp halo offsets dx %d dy %d dxf %d (body %dx%d in frame, %dx%d placed)' % (_dx, _dy, _dxf, _bw, _fb[3] - _fb[1], _sb[2] - _sb[0], _sb[3] - _sb[1]))
+except Exception as e:
+    print('  ! lamp offsets', e)
+for key, name, sc in (
+    ('shutcafe', 'ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup_Shutter_Closed.png', PROP * 0.8),   # the cup kiosk stands at 0.8, so does its shutter
+    ('shutinfo', 'ME_Singles_City_Props_48x48_Kiosk_Infopoint_Shutter_Closed.png', PROP),
+    ('binfull', 'ME_Singles_City_Props_48x48_Small_Full_Trash_Can.png', PROP),
+    ('pile', 'ME_Singles_City_Props_48x48_Small_Trash_Pile_1.png', PROP),
+    ('trash1', 'ME_Singles_City_Props_48x48_Paper_Trash.png', PROP),
+    ('trash2', 'ME_Singles_City_Props_48x48_Pizza_Trash.png', PROP),
+    ('trash3', 'ME_Singles_City_Props_48x48_Blue_Can_Trash.png', PROP),
+    ('graffiti1', 'ME_Singles_Garage_Sales_48x48_Graffiti_1.png', PROP),
+    ('graffiti2', 'ME_Singles_Garage_Sales_48x48_Graffiti_2.png', PROP),
+):
+    try:
+        export_still(key, name, sc)
+    except Exception as e:
+        print('  ! state', key, e)
 
 # ---- the contract ----------------------------------------------------------------
 # ---- 🕹 THE ARCADE (Trym, 11 Sep night): The Bunch's door opens on a room. Built the homestead's
@@ -714,6 +801,7 @@ L = ['// GENERATED by tools/build-town-scene.py — DO NOT EDIT.',
      'export const STREETS = %s;' % [list(s) for s in STREETS],
      'export const FOUNTAIN = %s;' % list(FOUNTAIN),
      'export const ANIMS = %s;' % [list(a) for a in ANIMS],
+     'export const STATE = %s;' % __import__('json').dumps(STATE),
      'export const ARCADE = %s;' % __import__('json').dumps(ARCADE),
      'export const OVERLAYS = %s;' % [list(o) for o in OVERLAYS],
      'export const SPOTS = { %s };' % ', '.join('%s: { x: %d, y: %d }' % (k, v[0], v[1]) for k, v in SPOTS.items()),
@@ -732,7 +820,7 @@ print('wrote town-geo.js (%d rects, %d circles, %d spots, %d npcs)' % (len(rects
 
 # ---- a preview for the eye: plate + overlays in draw order + the people ----------
 prev = im.copy()
-layers = [(y + h, Image.open(os.path.join(OUT, fn)).convert('RGBA'), (x, y)) for fn, x, y, w, h, base in OVERLAYS]
+layers = [(y + h, Image.open(os.path.join(OUT, fn)).convert('RGBA'), (x, y)) for fn, x, y, w, h, base, _k in OVERLAYS]
 layers.append((FBASE, strip.crop((0, 0, sw, shh)), (FX - sw // 2, FBASE - shh)))
 for base, img_, at in sorted(layers, key=lambda o: o[0]):
     prev.alpha_composite(img_, at)

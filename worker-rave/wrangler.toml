@@ -43,6 +43,15 @@ class_name = "YardRoom"
 tag = "v4"
 new_sqlite_classes = ["YardRoom"]
 
+# 🏘️ Banana Town's shared life (14 Sep 2026) — one room, idFromName('the-town')
+[[durable_objects.bindings]]
+name = "TOWN"
+class_name = "TownRoom"
+
+[[migrations]]
+tag = "v5"
+new_sqlite_classes = ["TownRoom"]
+
 [vars]
 ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # 🪪 the world token rollout (2 Sep 2026). "0" = SOFT: a wrong token is

@@ -55,6 +55,8 @@ const RANGE = {
     { name: 'pass_ask_shown', v: 61, u: 40 }, { name: 'pass_ask_tap', v: 9, u: 8 }, { name: 'pass_mail_signin', v: 6, u: 5 }, { name: 'pass_mail_login', v: 3, u: 3 }, { name: 'pass_mail_attached', v: 1, u: 1 },
     // 🕹 the Arcade (12 Sep): cabinets opened -> runs -> scores posted -> prizes
     { name: 'arcade_board', v: 14, u: 9 }, { name: 'arcade_run', v: 41, u: 9 }, { name: 'arcade_score', v: 37, u: 8 }, { name: 'arcade_prize', v: 2, u: 2 },
+    // 🏘️ Town Life (14 Sep): the door -> fixes -> a buy, a night, a ghost, a find
+    { name: 'town_open', v: 11, u: 7 }, { name: 'town_fix', v: 38, u: 6 }, { name: 'town_buy', v: 3, u: 3 }, { name: 'town_curse', v: 4, u: 4 }, { name: 'town_ghost', v: 2, u: 2 }, { name: 'town_object', v: 3, u: 2 }, { name: 'town_merchant', v: 1, u: 1 },
   ],
   eventMap: { gif_download: { US: 100, NO: 20, DE: 12 }, offer_pack: { US: 15, NO: 4 } },
   stepTimes: {},
@@ -145,6 +147,8 @@ out.world = {
   sections: ['The ask', 'Sync health'].map((t) => [t, has(wd, t)]),
   // 🕹 the Arcade area (12 Sep): the prefix reader lists its four events under its own heading
   arcade: ['The Arcade', 'opened an arcade cabinet', 'played an arcade run', 'posted an arcade score', 'WON an arcade prize'].map((t) => [t, has(wd, t)]),
+  // 🏘️ the town's card (14 Sep): the prefix reader lists its events under its own heading
+  town: ['Banana Town', 'walked into Banana Town', 'put something right in the town', 'bought a piece for home in the town', 'was in the town on a Curse Night'].map((t) => [t, has(wd, t)]),
   tiles: ['saw the pill', 'tapped it', 'asked for a link', 'logged in'].map((t) => [t, has(wd, t)]),
   rate: (wd.match(/[0-9.]+% of them/) || [''])[0],
 };

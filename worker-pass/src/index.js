@@ -1856,6 +1856,14 @@ const RULES = {
     quest: { max: 30,  count: 2 },    // c1_peel_memory 15 + c1_peel_tin 10, once ever each
     qa:    { deny: 1 },               // window.__park.coins(n), ?parktest shim weeds/eggs
   },
+  // 🏘️ the town (14 Sep 2026) — `fix` is a problem put right (3-6 nominal, ×2 buff;
+  // at most nine a day per person, so the day cap is the ceiling and never bites
+  // a real player), `object` a cursed object turned in to the night vendor.
+  town: {
+    fix:    { max: 12,  day: 120 },
+    object: { max: 80,  day: 240 },
+    qa:     { deny: 1 },              // ?towntest shim coins
+  },
   // 🎫 the pass page — the questline's finale pays there (bootQuest area 'pass')
   pass: {
     quest: { max: 100, total: 300 },

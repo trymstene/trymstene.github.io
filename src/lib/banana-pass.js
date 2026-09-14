@@ -594,7 +594,7 @@ const areaOf = () => {
   return p.indexOf('/rave') === 0 ? 'rave' : p.indexOf('/park') === 0 ? 'park'
     : p.indexOf('/beach') === 0 ? 'beach' : p.indexOf('/forge') === 0 ? 'forge'
     : p.indexOf('/homestead') === 0 ? 'homestead' : p.indexOf('/make-a-banana') === 0 ? 'builder'
-    : p.indexOf('/pass') === 0 ? 'pass' : 'site';
+    : p.indexOf('/pass') === 0 ? 'pass' : p.indexOf('/town') === 0 ? 'town' : 'site';
 };
 
 // 📜 THE LEDGER TAPE (2 Sep 2026, slice 1 of the server-side ledger). Every

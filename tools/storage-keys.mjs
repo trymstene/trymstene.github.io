@@ -57,6 +57,7 @@ export const KEYS = {
   'hs-roadcoins-v1': { travels: 'no', why: 'the roadside coin faucet\'s day counter; capped per person on the server' },
   'hs-keepnote-v1': { travels: 'no', why: 'the one-time "add your email and this follows you" note has been shown. Deliberately per-device: the whole point of the note is that this BROWSER holds an anonymous pass, so a device that has not been told yet is exactly the one that needs telling' },
   'bh-fishcoins-v1': { travels: 'no', why: 'the fishing day counter; capped per person on the server' },
+  'tw-fixed-v1': { travels: 'no', why: 'which of today\'s town problems this device has put right. The problems themselves are seeded per person per day, the coins are capped per person on the pass worker and the contribution per person on the TownRoom — so a second device seeing them unfixed again costs nothing but a repeat' },
   'rv-fq-slot': { travels: 'no', why: 'which half-hour floor-quest slot this device has played' },
   'pk-seed-voucher': { travels: 'no', why: 'a one-shot free seed from the fountain' },
   'hs-buff-v1': { travels: 'no', why: 'the stew buff, a short timer; it expires long before it would matter elsewhere' },

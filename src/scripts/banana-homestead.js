@@ -1,5 +1,6 @@
 // ✏️ one bundled pixel icon (the full pack is gitignored — never a pack URL)
 import pxEdit from '../icons/pixelart/edit.svg?raw';
+import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
 //
 // The world's first PERSONAL space: claim the plot, name it, buy decor at the
@@ -3042,8 +3043,7 @@ function init(visitDoc, visitMiss) {
   // 🚚 THE DELIVERY TIERS (Trym): commons build instantly, furniture and
   // statement pieces take a van — short waits (hours, never days), and the
   // arrival is an EVENT. Community pieces ride the van too (Trym, 7 Aug).
-  const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 60, lighting: 30, furniture: 60, display: 240,
-    kitchen: 45, living: 45, bedroom: 45, bathroom: 45, hallway: 45, music: 45 };
+  // (the tiers live in src/lib/homestead-inventory.js since 14 Sep — the town's shop ships by the same table)
   const shipMin = (d) => SHIP_MIN[d.cat] || 0;
   const fmtShip = (ms) => {
     const m = Math.max(1, Math.round(ms / 60000));
@@ -3051,11 +3051,8 @@ function init(visitDoc, visitMiss) {
   };
   function checkOrders() {
     if (document.hidden || visiting || !state.orders.length) return;
-    const now = Date.now();
-    const due = state.orders.filter((o) => o.at <= now);
+    const due = dueOrders(state, Date.now());   // the van's arrival, the lib's way (the town's orders ride the same queue)
     if (!due.length) return;
-    state.orders = state.orders.filter((o) => o.at > now);
-    due.forEach((o) => state.shed.push({ id: o.id }));
     save();
     shopNote(due.length === 1
       ? '📦 your ' + (DEX[due[0].id] ? DEX[due[0].id].name.toLowerCase() : 'order') + ' arrived — it’s in the shed'
@@ -3309,11 +3306,11 @@ function init(visitDoc, visitMiss) {
           track('homestead_buy', { id: d.id, price: d.price, ship: shipMin(d) });
           const mins = shipMin(d);
           if (mins) {
-            state.orders.push({ id: d.id, at: Date.now() + mins * 60000 });
+            orderFor(d.id, mins, state);
             save();
             shopNote('🚚 ordered — arrives in ' + fmtShip(mins * 60000));
           } else {
-            state.shed.push({ id: d.id });
+            grantToShed(d.id, state);
             save();
             shopNote('📦 ' + d.name + ' → your shed');
           }

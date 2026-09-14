@@ -573,6 +573,34 @@ the behaviour for free instead of reinventing it.
 rule, sets its own `height` on a `-view` rule, or does not link the stylesheet. Proven
 to fail on all three.
 
+## 21. A world area's STATE is drawn onto the props it already has
+
+Trym, 14 Sep 2026 (the Town Life brief): *"the town should feel like a living community
+that changes over time … reflected physically (lights, shop windows, closures, damage, NPC
+activity, visitors, supernatural activity)."*
+
+The town was the first area whose condition changes what is on the map, and three things
+had to be true for that to work without a second art set:
+
+**1. Every prop a state can touch has a NAME.** `place(…, key='cafe')` in
+`tools/build-town-scene.py` rides OVERLAYS as a seventh column, `banana-town.js` mirrors it
+onto `img.dataset.key` and a `PROPS` map. Before that, "the café's shutter" was
+`querySelectorAll('.tw-ov')[7]`, which survives exactly until somebody adds a bush.
+
+**2. A state is a SPRITE OVER the prop, never a repaint of the plate.** Loose files
+(`public/assets/town/s-<key>-<i>.png`, sizes in `STATE`), stacked frames in one box the
+fountain's way, stepped by the area's own clock. Light and ghosts are exported SOFT —
+`blockify` thresholds alpha into a hard silhouette, which deletes a lamp's halo, a lantern's
+glow and a fading ghost outright; that is right for props and wrong for light.
+
+**3. Hide a frame stack with `[hidden]`, never `visibility`.** The frame that is on carries
+`visibility: visible`, and a child's visible beats a hidden parent — five dark lamps kept
+shining until this was found. `[hidden]` is `display`, and every world page already has
+`[hidden] { display: none !important }` (§4).
+
+The sky is the area's own: a scrim on the VIEW like the rain (§19), under the rain sheet,
+with the beat's opacity; the shared weather layer is not asked to know about nights.
+
 ## The enforcement ledger — which of these rules can actually fail a build
 
 Trym, 12 Sep 2026: *"how can it be guaranteed without me having to think that i
@@ -588,6 +616,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 18 | One NPC dialogue card | `check-design.mjs` (own dialogue markup without `mountDialogue` fails; the legacy list may only shrink) |
 | 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
 | 20 | Every walkable area is the same frame | `check-design.mjs` (an area that sets its own frame width or view height, or skips `/css/world-frame.css`, fails) |
+| 21 | An area's state is drawn onto named props; light stays soft; frame stacks hide with `[hidden]` | the town walk (`tests/town-life.spec.mjs`: dark lamps counted by `display`, the band's look asserted per band) |
 | — | Every device key is declared | `check-storage.mjs` |
 | — | Per-surface JS budgets | `check-budgets.mjs` (needs a build) |
 | — | A new event is READ by Pulse | `check-pulse-areas.mjs` + `tools/pulse-stub-walk.mjs` |

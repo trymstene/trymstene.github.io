@@ -40,6 +40,8 @@ const LENS_EVENTS = [
   'beach_hut_view', 'park_seedshop', 'rave_screen_ad',
   // 🕹 the town's Arcade, 12 Sep — a cabinet opened, a run, a score posted, a prize won
   'arcade_board', 'arcade_run', 'arcade_score', 'arcade_prize',
+  // 🏘️ Town Life, 14 Sep — the door, a fix, a buy, a Curse Night, a ghost, a cursed object, the stall
+  'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_ghost', 'town_object', 'town_merchant',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -572,6 +574,7 @@ const ANALYST_EVENTS = [
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
   'quest_step', 'stand_counter',
   'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
+  'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
   // 🏡 without this the analyst structurally cannot mention the farm — the
   // busiest thing built this year was invisible to its own judgement
   'homestead_open',
@@ -593,6 +596,7 @@ const WORLD_DOORS = [
   { key: 'forge', name: 'the Pixel Forge', door: 'forge_open' },
   { key: 'stand', name: 'the Banana Stand', door: 'stand_counter' },
   { key: 'arcade', name: 'the Arcade', door: 'arcade_board' },
+  { key: 'town', name: 'Banana Town', door: 'town_open' },
 ];
 
 // the world's own state — free (our own worker, no GA4 quota) and the only

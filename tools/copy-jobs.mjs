@@ -353,7 +353,101 @@ const parkSchema = {
   },
 };
 
+// --- town-life -----------------------------------------------------------------
+// 🏘️ TOWN LIFE (14 Sep 2026): the few words the town's condition needs — the notice
+// board's word for each band, Pip's counter, the travelling stall, the night vendor, the
+// ghosts' lines, the closed-today notes and the cursed objects' names. The systems run
+// wordless until this is approved (town-room.js reads the file through a glob), so
+// nothing here is a placeholder in code and nothing ships unread.
+export const TOWN_BANDS = ['abandoned', 'struggling', 'recovering', 'lively', 'thriving'];
+export const CURSED_IDS = ['humlantern', 'coldfire', 'wetchair', 'drycrate', 'nightbush', 'redcap', 'emptyhouse', 'watcher', 'secondangel', 'lastlamp'];
+const lifeFields = {
+  'bands[].key': { kind: 'key', max: 12, note: 'FIXED: abandoned, struggling, recovering, lively, thriving, in that order.' },
+  'bands[].name': { kind: 'prose', aim: 18, max: 24, note: 'The town’s own word for itself in this state, as the notice board would print it. One or two words. Never the key, a score or a percentage.' },
+  'bands[].line': { kind: 'prose', aim: 90, max: 110, note: 'One line under it in the board’s voice: what is true of the square right now, so a player who looks up sees it. No number, no rate, no instruction.' },
+  'store.greet': { kind: 'prose', aim: 80, max: 100, note: 'The line at the top of Pip’s shelf, in Pip’s voice. One breath.' },
+  'store.shut': { kind: 'prose', aim: 90, max: 110, note: 'Shown instead of the shelf when the store is shut and Pip is indoors. Not an apology; it should make a player want to fix things.' },
+  'store.needs': { kind: 'prose', aim: 24, max: 34, note: 'A row the player cannot buy yet: their house is too small for it. Four or five words.' },
+  'store.van': { kind: 'prose', aim: 18, max: 26, note: 'A row that arrives by van rather than at once. Three or four words.' },
+  'store.sold[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said when somebody buys. MUST contain {item} — the game puts the thing’s name there.' },
+  'board.title': { kind: 'prose', aim: 12, max: 18, note: 'The board’s heading. One or two words.' },
+  'board.fixes': { kind: 'prose', aim: 20, max: 28, note: 'The label under the count of things put right today, by everyone. Two to four words, no number.' },
+  'board.people': { kind: 'prose', aim: 20, max: 28, note: 'The label under the count of different bananas who did that today.' },
+  'board.found': { kind: 'prose', aim: 20, max: 28, note: 'The label under the cursed objects this player has found, out of all of them.' },
+  'merchant.name': { kind: 'prose', aim: 20, max: 28, note: 'The travelling stall’s heading: a trade, not a person.' },
+  'merchant.greet': { kind: 'prose', aim: 80, max: 100, note: 'One line at the top of the travelling stall’s shelf.' },
+  'merchant.lines[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said on a sale at the travelling stall.' },
+  'vendor.name': { kind: 'prose', aim: 20, max: 28, note: 'The night vendor’s heading.' },
+  'vendor.greet': { kind: 'prose', aim: 80, max: 100, note: 'One line at the top of the night vendor’s shelf. Odd, unhurried, at home in the dark; never frightening.' },
+  'vendor.bought': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said when the vendor buys a cursed object from the player. MUST contain {item}.' },
+  'vendor.lines[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said on a sale at the night vendor.' },
+  'ghosts[]': { kind: 'prose', aim: 80, max: 100, note: 'What a ghost on the bench says when tapped. Small, odd, a little sad or funny; never a threat, never a riddle, never a question.' },
+  'closed[]': { kind: 'prose', aim: 70, max: 90, note: 'Why a kiosk is shut today, the way a note on a door reads. Something a person could put right.' },
+  'objects[].id': { kind: 'key', max: 14, note: 'FIXED. The ten ids from the brief, in order.' },
+  'objects[].name': { kind: 'prose', aim: 20, max: 28, note: 'Two or three words: the name it has in a collection. More than the ordinary thing’s plain name.' },
+  'objects[].desc': { kind: 'prose', aim: 80, max: 100, note: 'One line: what is wrong with it. Cosmetic, specific, a little unsettling and a little funny; never harmful.' },
+};
+function lifeShape(data) {
+  const bad = [];
+  const say = (path, msg, rule) => bad.push({ path, msg, rule: rule || 'shape' });
+  const bands = data.bands;
+  if (!Array.isArray(bands) || bands.length !== TOWN_BANDS.length) say('bands', `five bands: ${TOWN_BANDS.join(', ')}`);
+  else bands.forEach((b, i) => { if (!b || b.key !== TOWN_BANDS[i]) say(`bands[${i}].key`, `band ${i} must be "${TOWN_BANDS[i]}" — worst first, the order is fixed`); });
+  const names = new Set((bands || []).map((b) => b && String(b.name || '').trim().toLowerCase()).filter(Boolean));
+  if (bands && names.size < bands.length) say('bands[].name', 'two bands share a name — each state needs its own word', 'range');
+  for (const [path, list, min] of [['store.sold', data.store && data.store.sold, 3], ['merchant.lines', data.merchant && data.merchant.lines, 3], ['vendor.lines', data.vendor && data.vendor.lines, 3], ['ghosts', data.ghosts, 4], ['closed', data.closed, 4]]) {
+    if (!Array.isArray(list) || list.length < min) say(path, `at least ${min}`);
+  }
+  for (const [path, v] of [['store.sold', data.store && data.store.sold], ['vendor.bought', data.vendor && [data.vendor.bought]]]) {
+    (v || []).forEach((l, i) => { if (!String(l || '').includes('{item}')) say(`${path}[${i}]`, 'must contain {item} — the game puts the thing there'); });
+  }
+  const objs = data.objects;
+  if (!Array.isArray(objs) || objs.length !== CURSED_IDS.length) say('objects', `ten objects: ${CURSED_IDS.join(', ')}`);
+  else objs.forEach((o, i) => { if (!o || o.id !== CURSED_IDS[i]) say(`objects[${i}].id`, `object ${i} must be "${CURSED_IDS[i]}" — the ids are fixed and in order`); });
+  // a ghost must not ask the player anything (the player types nothing, ever)
+  (data.ghosts || []).forEach((l, i) => { if (/\?\s*$/.test(String(l || ''))) say(`ghosts[${i}]`, 'ends in a question — nobody may ask the player one'); });
+  return bad;
+}
+const lifeSchema = {
+  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects'],
+  properties: {
+    bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'line'],
+      properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), line: str(lifeFields['bands[].line'].note) } } },
+    store: { type: 'object', additionalProperties: false, required: ['greet', 'shut', 'needs', 'van', 'sold'],
+      properties: { greet: str(lifeFields['store.greet'].note), shut: str(lifeFields['store.shut'].note), needs: str(lifeFields['store.needs'].note), van: str(lifeFields['store.van'].note),
+        sold: { type: 'array', description: lifeFields['store.sold[]'].note, items: { type: 'string' } } } },
+    board: { type: 'object', additionalProperties: false, required: ['title', 'fixes', 'people', 'found'],
+      properties: { title: str(lifeFields['board.title'].note), fixes: str(lifeFields['board.fixes'].note), people: str(lifeFields['board.people'].note), found: str(lifeFields['board.found'].note) } },
+    merchant: { type: 'object', additionalProperties: false, required: ['name', 'greet', 'lines'],
+      properties: { name: str(lifeFields['merchant.name'].note), greet: str(lifeFields['merchant.greet'].note), lines: { type: 'array', description: lifeFields['merchant.lines[]'].note, items: { type: 'string' } } } },
+    vendor: { type: 'object', additionalProperties: false, required: ['name', 'greet', 'bought', 'lines'],
+      properties: { name: str(lifeFields['vendor.name'].note), greet: str(lifeFields['vendor.greet'].note), bought: str(lifeFields['vendor.bought'].note), lines: { type: 'array', description: lifeFields['vendor.lines[]'].note, items: { type: 'string' } } } },
+    ghosts: { type: 'array', description: lifeFields['ghosts[]'].note, items: { type: 'string' } },
+    closed: { type: 'array', description: lifeFields['closed[]'].note, items: { type: 'string' } },
+    objects: { type: 'array', description: 'The ten cursed objects, ids fixed and in order.', items: { type: 'object', additionalProperties: false, required: ['id', 'name', 'desc'],
+      properties: { id: str(lifeFields['objects[].id'].note), name: str(lifeFields['objects[].name'].note), desc: str(lifeFields['objects[].desc'].note) } } },
+  },
+};
+
 export const JOBS = {
+  'town-life': {
+    id: 'town-life',
+    title: 'Banana Town — the town’s life',
+    what: 'The notice board’s word for each band, Pip’s counter, the travelling stall, the night vendor, the ghosts, the closed-today notes and the cursed objects.',
+    brief: 'tools/copy-briefs/town-life.md',
+    out: 'tools/copy-out/town-life.json',
+    approved: 'src/data/copy/town-life.json',
+    reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects'],
+    // ⏳ drafted 14 Sep 2026, waiting on Trym at /dev/copy/. Remove this line in the same
+    // commit that approves it — the gate fails if the approved file exists and this stays.
+    awaiting: true,
+    // 🧍 Pip speaks here, so the writer gets the bible
+    personas: 'town-personas',
+    fields: lifeFields,
+    shape: lifeShape,
+    schema: lifeSchema,
+  },
   'town-personas': {
     id: 'town-personas',
     title: 'Banana Town — who the nine residents are',

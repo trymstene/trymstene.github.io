@@ -15,6 +15,7 @@ import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 
+const track = (n, p) => { try { if (window.gtag) window.gtag('event', n, p || {}); } catch (e) {} };
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
 const toastEl = document.getElementById('twToast');
@@ -23,9 +24,13 @@ const pct = (v, span) => (v / span * 100) + '%';
 
 // ---- the props: y-sorted overlays, % of the world so they ride the camera free
 const BOXES = [];
-for (const [fn, x, y, w, h, base] of OVERLAYS) {
+// 🏘️ a keyed prop (the lamps, the kiosks, the bin, the shopfronts — OVERLAYS' 7th column
+// since 14 Sep) is findable by name, so Town Life can swap, mark or darken it (town-room.js)
+const PROPS = {};
+for (const [fn, x, y, w, h, base, key] of OVERLAYS) {
   const img = new Image();
   img.src = '/assets/town/' + fn; img.className = 'tw-ov'; img.draggable = false; img.alt = '';
+  if (key) { img.dataset.key = key; PROPS[key] = { el: img, x, y, w, h, base }; }
   img.style.left = pct(x, W); img.style.top = pct(y, H); img.style.width = pct(w, W);
   img.style.zIndex = String(100 + base);
   world.appendChild(img);
@@ -201,6 +206,8 @@ function thingAt(wx, wy) {
     for (const [key, x0, y0, x1, y1] of ARCADE.spots) if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) return ['spot', key];
     return null;
   }
+  const rk = room && room.at(wx, wy);   // 🏘️ a problem to fix, a ghost, an object on the ground, a stall
+  if (rk) return rk;
   const lk = life.at(wx, wy);   // a flyer on the street, or a resident where they stand right now
   if (lk) return lk;
   for (const [key, spot] of Object.entries(SPOTS)) {
@@ -224,6 +231,7 @@ view.addEventListener('pointerdown', (e) => {
       const key = hit[1]; arriveThen = () => gameCard(key);
       return;
     }
+    if (hit[0] === 'room') { room.tap(hit[1], (x, y, then) => { tgt.x = x; tgt.y = y; arriveThen = then; }); return; }   // 🏘️ walk to it, then it happens
     if (hit[0] === 'npc') {   // 🗣 walk up first, THEN the dialogue opens (the park's Old Peel rule)
       const n = life.standBy(hit[1]);
       if (n) { tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8; const key = hit[1]; arriveThen = () => npcCard(key); }
@@ -287,6 +295,7 @@ function tick(now) {
   drawMe();
   life.tick(now, dt);
   weather.tick(now);
+  if (room) room.tick(now, dt);
   if (inside && ARCADE) { const [x0, y0, x1, y1] = ARCADE.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitArcade(); }
   if (!inside && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -312,6 +321,9 @@ panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); })
 // portrait over the corner, the name, their line, and the question deck whose answers type out.
 // Nothing a resident says is ever drawn over their head; this card is the only place they speak.
 let dialog = null;
+// 🏘️ TOWN LIFE (14 Sep 2026): the town's condition, problems, shop, nights and ghosts — its own
+// chunk (town-room.js), loaded after the assets so this script stays under its budget
+let room = null;
 function npcCard(key) {
   const d = life.talk(key);
   if (!d) return;
@@ -324,6 +336,7 @@ function npcCard(key) {
   });
 }
 function openFor(key) {
+  if (room && room.openFor(key)) return true;   // 🏘️ the store's shelf, the notice board, a shut kiosk, a stall
   if (key === 'wheel') { wheelCard(); return true; }
   if (key === 'exchange') { exchangeCard(); return true; }
   if (key === 'store') { storeCard(); return true; }
@@ -578,5 +591,12 @@ assetsReady().then(() => {
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
-  window.__town = { pos, tgt, SPOTS, NPCS, say, life: life.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, wx: (k) => weather.setKind(k), arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
+  track('town_open', { test: /[?&]towntest/.test(location.search) ? 1 : 0 });
+  // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
+  import('./town-room.js').then((m) => {
+    room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos,
+      hud, esc, track, inside: () => inside, drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
+    if (window.__town) window.__town.room = room.seam;
+  }).catch((e) => { console.warn('[town] life did not load', e); });
+  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, wx: (k) => weather.setKind(k), arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

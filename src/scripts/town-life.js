@@ -108,6 +108,9 @@ const MAYOR = [1098, 468];
 const BEDS = { garden_w: [[440, 748], [530, 748]], orchard: [[690, 336], [900, 336], [790, 222]] };
 // the flyers: six spots on the streets, and the beat in which Moss's sweep reaches each
 const LITTER = [[1180, 985, 1, 0], [1300, 850, 2, 0], [900, 650, 2, 1], [1350, 640, 1, 1], [1650, 1100, 1, 3], [1860, 1120, 2, 3]];
+// 🏘️ Town Life adds litter OFF Moss's route when the town is low (town-room.js sets the level:
+// four more at 1, eight at 2). Nobody sweeps these — sweepBeat 9 never comes — the player may.
+const LITTER_MORE = [[560, 620, 1, 9], [1560, 620, 2, 9], [800, 1100, 1, 9], [1440, 1100, 2, 9], [320, 900, 2, 9], [1990, 900, 1, 9], [1230, 830, 1, 9], [980, 830, 2, 9]];
 
 // ---- the lanes as a graph: nodes on STREETS' centrelines, edges along them; a station attaches to
 // the nearest edge (its projection), and a leg is Dijkstra from one attachment to the other
@@ -222,6 +225,10 @@ function standFrame(n, now) {
 export function initLife({ world, W, H, pct }) {
   let ready = false, curBeat = -1, lastSweep = 0, mayorEl = null;
   const flyers = [];
+  // 🏘️ TOWN LIFE's seams (14 Sep 2026): who stays in this beat, whose window may glow, who
+  // stands somewhere odd today, and how much litter the streets carry. Set from town-room.js;
+  // null = the town as it always was.
+  let keepFn = null, glowFn = null, overrideFn = null, litterLevel = 0;
 
   // the residents: one .tw-npc each (canvas + name) and their home's window glow
   const res = R.map((r, idx) => {
@@ -259,12 +266,16 @@ export function initLife({ world, W, H, pct }) {
   // ---- stations
   function stationFor(n, beat) {
     const [place, act, face, lines] = n.day[beat];
+    // 🏘️ today's oddity: a resident standing where they never stand, for this one beat
+    const odd = overrideFn && overrideFn(n, beat);
+    if (odd && ST[odd] && act !== 'home') { const p = ST[odd][0]; return { place: odd, act: 'stand', face: p[0] > 1100 ? 'left' : 'right', lines, x: p[0], y: p[1], loop: null }; }
     const loop = PATHS[n.key + '|' + beat] || null;
     if (loop) return { place, act, face, lines, x: loop[0][0], y: loop[0][1], loop };
     if (act === 'home') { const d = HOME[n.home]; return { place, act, face, lines, x: d[0], y: d[1], loop: null }; }
     const pts = ST[place + '|' + act] || ST[place] || [[1100, 990]];
     // who else stands at this place this beat (walkers excluded): the k-th takes the k-th point
-    const group = res.filter((m) => { const d = m.day[beat]; return d[0] === place && d[1] !== 'sweep' && d[1] !== 'stroll' && d[1] !== 'home'; });
+    // ⚠️ a resident kept indoors today is not at the place, so nobody turns to face them
+    const group = res.filter((m) => { const d = m.day[beat]; return d[0] === place && d[1] !== 'sweep' && d[1] !== 'stroll' && d[1] !== 'home' && !(keepFn && keepFn(m, beat)) && !(overrideFn && overrideFn(m, beat)); });
     const k = Math.max(0, group.indexOf(n));
     const p = pts[Math.min(k, pts.length - 1)];
     // 🗣 two residents at one place TURN TOWARD EACH OTHER — with no bubbles that is the only way you
@@ -279,7 +290,9 @@ export function initLife({ world, W, H, pct }) {
   }
   function goHome(n) {
     n.hidden = true; n.el.hidden = true;
-    if (n.glow) n.glow.hidden = false;
+    // the window lights when they are home for the NIGHT; a resident kept in by the day (or
+    // a Curse Night) sits behind a dark window, and a low town leaves some windows dark
+    if (n.glow) n.glow.hidden = !!n.kept || !!(glowFn && !glowFn(n));
   }
   function leaveHome(n) {
     if (!n.hidden) return;
@@ -293,6 +306,14 @@ export function initLife({ world, W, H, pct }) {
     if (!walk || beat === 0) spawnLitter(beat, walk);
     for (const n of res) {
       const st = stationFor(n, beat);
+      // 🏘️ kept in: they go home (walking, if they are out) and stay there behind a dark window
+      n.kept = !!(keepFn && keepFn(n, beat) && st.act !== 'home');
+      if (n.kept) {
+        n.beat = beat; n.place = 'home'; n.act = 'home'; n.lines = st.lines; n.loop = null; n.marks = []; n.drift = null;
+        if (walk && !n.hidden) { const d = HOME[n.home]; n.path = route([n.x, n.y], [d[0], d[1]]); n.wait = 400 + h01(n.idx + 1, beat + 1, 7) * 12000; n.walking = false; }
+        else { n.path = []; n.walking = false; n.wait = 0; goHome(n); }
+        continue;
+      }
       n.beat = beat; n.place = st.place; n.act = st.act; n.face = st.face; n.lines = st.lines; n.loop = st.loop; n.li = 0; n.ldir = 1;
       n.lastWater = 0;
       n.marks = marksFor(n, st, beat); n.mi = 0; n.drift = null;
@@ -321,7 +342,7 @@ export function initLife({ world, W, H, pct }) {
   function spawnLitter(beat, respawn) {
     for (const f of flyers) f.el.remove();
     flyers.length = 0;
-    LITTER.forEach(([x, y, art, sweepBeat], i) => {
+    [...LITTER, ...LITTER_MORE.slice(0, litterLevel * 4)].forEach(([x, y, art, sweepBeat], i) => {
       if (!respawn && sweepBeat < beat) return;   // Moss has already been past it today
       const el = document.createElement('img');
       el.className = 'tw-litter'; el.alt = ''; el.draggable = false; el.decoding = 'async';
@@ -473,8 +494,18 @@ export function initLife({ world, W, H, pct }) {
     changeBeat(beatOf(hourNow()), false);
   }
   // the QA seam (window.__town.life)
+  // 🏘️ the seams. A change re-runs the beat as a WALK, so a resident sent in crosses the
+  // square to their door instead of vanishing where they stood.
+  const refresh = () => { if (ready) changeBeat(curBeat, true); };
+  const setKeep = (fn) => { keepFn = fn || null; refresh(); };
+  const setGlow = (fn) => { glowFn = fn || null; for (const n of res) if (n.hidden && n.glow) n.glow.hidden = !!n.kept || !!(glowFn && !glowFn(n)); };
+  const setOverride = (fn) => { overrideFn = fn || null; refresh(); };
+  const setLitter = (level) => { const l = Math.max(0, Math.min(2, level | 0)); if (l === litterLevel) return; litterLevel = l; if (ready) spawnLitter(curBeat, true); };
   const seam = {
     hour: () => hourNow(),
+    kept: () => res.filter((n) => n.kept).map((n) => n.key),
+    glows: () => res.filter((n) => n.glow && !n.glow.hidden).map((n) => n.key),
+    beat: () => curBeat,
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
     residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
@@ -484,5 +515,5 @@ export function initLife({ world, W, H, pct }) {
     pick,
     mayor: () => !!(mayorEl && !mayorEl.hidden),
   };
-  return { tick, at, talk, standBy, pick, flyer, start, seam };
+  return { tick, at, talk, standBy, pick, flyer, start, seam, setKeep, setGlow, setOverride, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
 }

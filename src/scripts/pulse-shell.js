@@ -23,11 +23,11 @@ import { renderOverview, renderNow, renderDownloads, renderShop, renderWorld, pr
 
 const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 'sticker_pdp_view',
   'checkout_redirect', 'begin_checkout', 'purchase', 'view_item', 'select_item', 'wallpaper_download',
-  'license_click', 'homestead_open', 'offer_pack', 'offer_world', 'offer_discord', 'offer_support', 'quest_step', 'arcade_board'];
+  'license_click', 'homestead_open', 'offer_pack', 'offer_world', 'offer_discord', 'offer_support', 'quest_step', 'arcade_board', 'town_open'];
 const WINDOWS = [['today', 'today', 'TODAY'], ['yesterday', 'yesterday', 'YESTERDAY'],
   ['6daysAgo', 'today', '7 DAYS'], ['27daysAgo', 'today', '28 DAYS']];
 // the six doors into the world, for the WORLD badge
-const DOORS = ['rave_join', 'park_join', 'beach_join', 'homestead_open', 'forge_open', 'stand_counter', 'arcade_board'];
+const DOORS = ['rave_join', 'park_join', 'beach_join', 'homestead_open', 'forge_open', 'stand_counter', 'arcade_board', 'town_open'];
 const ROOMS = [
   ['live', 'LIVE', '#ffe135'],
   ['overview', 'OVERVIEW', '#ffe135'],

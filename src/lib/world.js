@@ -201,11 +201,16 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ⚠️ everything between CLOCK-START and CLOCK-END is copied into worker-rave by
+// tools/build-worker-allowlists.mjs with the `export` keywords stripped, and
+// `--check` (a gate in tools/check-all.mjs) fails while the copy is stale.
+// CLOCK-START
 // 🌦 THE WEATHER CLOCK — a PURE FUNCTION OF TIME. No state, no cron, no sync
 // message: the client renders from it and the ParkRoom charges health from it,
 // and they agree because they run the same arithmetic over the same clock.
 // (The coin-window pattern, one level up.)
-// ⚠️⚠️ MIRRORED VERBATIM IN worker-rave/src/index.js — CHANGE BOTH OR NEITHER.
+// ⚠️⚠️ ONE SOURCE, src/lib/world.js — worker-rave/src/index.js carries a GENERATED copy
+// (tools/build-worker-allowlists.mjs, CLOCK-START/END): edit here, rerun, deploy.
 //
 // ⚠️ EVENTS PER DAY, NOT DICE PER WINDOW. Rolling weather every 20 minutes is
 // 72 draws a day, so even a 5% chance compounds to near-certainty and hand-
@@ -233,7 +238,8 @@ const WEATHER_MINS = { drizzle: [30, 62], heavy: [15, 26], storm: [8, 13] };
 // 8-13 minutes long. The most dramatic thing the park can do had never once
 // happened. This is how we fire one on purpose — for a launch, an event, or a
 // quest beat that needs the tide to have thrown something up the beach.
-// ⚠️⚠️ MIRRORED VERBATIM IN worker-rave/src/index.js — CHANGE BOTH OR NEITHER.
+// ⚠️⚠️ ONE SOURCE, src/lib/world.js — worker-rave/src/index.js carries a GENERATED copy
+// (tools/build-worker-allowlists.mjs, CLOCK-START/END): edit here, rerun, deploy.
 const STORMS_SCHEDULED = [
   [Date.UTC(2026, 7, 9, 14, 0), 15],   // 9 Aug 16:00 CEST — the park's first storm
 ];
@@ -308,3 +314,82 @@ export function weatherBetween(from, to) {
   }
   return out.sort((a, b) => a.at - b.at);
 }
+
+// 🌑 THE CURSE CLOCK — the weather clock's twin, for Banana Town. A pure function
+// of time: no state, no cron, no message. Seeded per UTC day, ONE night at most, so
+// a curse is something you either lived through or walked into the morning after.
+// The TownRoom charges Town Life from curseBetween on its lazy read, exactly the way
+// the ParkRoom charges the park from the weather.
+//
+// Three tiers. `hush` is cosmetic — the town goes quiet, a ghost or two, nothing
+// charged. `creep` charges. `deep` charges hard and opens what is normally shut.
+// ⚠️ its own salt AND its own day multiplier: share either with the weather and
+// every curse lands on a storm day, which is a coincidence a player would notice.
+// ⚠️ the window stays inside ONE UTC day (18:00–23:30 UTC, an evening in Europe),
+// so curseAt only ever needs one day's list — the same invariant weatherAt relies on.
+// ⚠️ never a fetch, never published: the voice guide's clock rule rejects any line
+// that names how often a night comes.
+export const CURSE_SALT = 0x2f1d;
+export const CURSE_DAY_MS = WEATHER_DAY_MS;
+const CURSE_TIERS = {                       // [share of days, minutes lo, minutes hi]
+  hush:  [0.12, 45, 90],
+  creep: [0.09, 25, 45],
+  deep:  [0.03, 12, 20],
+};
+const CURSE_WINDOW = [18 * 3600000, 23.5 * 3600000];
+// 🌑 hand-placed nights on top of the seeded ones — a story chapter's own night, a
+// launch, a date. Still a pure function of time: the table IS part of the function,
+// so the town and the TownRoom keep agreeing without a message. [utcMs, minutes, tier]
+const CURSES_SCHEDULED = [];
+
+// one day's curse, from its day index alone — [] on most days
+export function curseDay(d) {
+  const r = seedRand(CURSE_SALT + d * 6151);
+  const deep = CURSE_TIERS.deep[0], creep = CURSE_TIERS.creep[0], hush = CURSE_TIERS.hush[0];
+  const type = r < deep ? 'deep' : r < deep + creep ? 'creep' : r < deep + creep + hush ? 'hush' : null;
+  const out = [];
+  if (type) {
+    const [, lo, hi] = CURSE_TIERS[type];
+    const ms = Math.round((lo + seedRand(CURSE_SALT + d * 313 + 53) * (hi - lo)) * 60000);
+    const [w0, w1] = CURSE_WINDOW;
+    const at = Math.floor(w0 + seedRand(CURSE_SALT + d * 131 + 17) * Math.max(0, (w1 - w0) - ms));
+    out.push({ type, at, ms });
+  }
+  for (const [when, mins, tier] of CURSES_SCHEDULED) {
+    const sd = Math.floor(when / CURSE_DAY_MS);
+    if (sd !== d) continue;
+    const c = { type: tier || 'deep', at: when - sd * CURSE_DAY_MS, ms: mins * 60000 };
+    // a scheduled night clears whatever it lands on — events are read first-match
+    for (let i = out.length - 1; i >= 0; i--) {
+      if (out[i].at < c.at + c.ms && c.at < out[i].at + out[i].ms) out.splice(i, 1);
+    }
+    out.push(c);
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+
+// is the town cursed at t? → { type:'none'|'hush'|'creep'|'deep', since, left }
+export function curseAt(t) {
+  const d = Math.floor(t / CURSE_DAY_MS);
+  const inDay = t - d * CURSE_DAY_MS;
+  for (const e of curseDay(d)) {
+    if (inDay >= e.at && inDay < e.at + e.ms) {
+      return { type: e.type, since: inDay - e.at, left: e.at + e.ms - inDay };
+    }
+  }
+  return { type: 'none', since: 0, left: 0 };
+}
+
+// every night that STARTED in (from, to] — the TownRoom walks this on its lazy read,
+// so a night nobody was present for still lands
+export function curseBetween(from, to) {
+  const out = [];
+  for (let d = Math.floor(from / CURSE_DAY_MS); d <= Math.floor(to / CURSE_DAY_MS); d++) {
+    for (const e of curseDay(d)) {
+      const at = d * CURSE_DAY_MS + e.at;
+      if (at > from && at <= to) out.push({ type: e.type, at, ms: e.ms });
+    }
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+// CLOCK-END
