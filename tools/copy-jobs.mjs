@@ -463,9 +463,7 @@ export const JOBS = {
     approved: 'src/data/copy/town-personas.json',
     reads: 'the writer, on every town-npcs run — no player ever reads these words',
     top: ['residents'],
-    // ⏳ drafted 13 Sep 2026, waiting on Trym at /dev/copy/. Remove this line in the same
-    // commit that approves it — the gate fails if the approved file exists and this stays.
-    awaiting: true,
+    // ✅ approved by Trym 14 Sep 2026 ("approve town-personas") — the bible reaches every town-npcs run now
     fields: personaFields,
     shape: personaShape,
     schema: personaSchema,

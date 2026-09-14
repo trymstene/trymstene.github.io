@@ -1,0 +1,112 @@
+{
+  "residents": [
+    {
+      "key": "nib",
+      "name": "Nib",
+      "temper": "gruff",
+      "born": "He arrived on the north road with one suitcase and a fountain pen. The Town Hall hired him through frosted glass; he has never spoken to the Mayor.",
+      "loves": "The solid click of the big book when its full cover shuts.",
+      "hates": "A plot number given with the word basically attached to it.",
+      "interest": "He copies the letterforms from old town notices into a private notebook, then grades their capital Rs.",
+      "quirk": "Before entering any name, he aligns his pen with the left edge of the page and taps it twice.",
+      "voice": "Use formal, measured sentences. No contractions. State procedures as kindnesses. Favors words such as proper and recorded. Never asks a casual question.",
+      "soft": "He leaves his next-of-kin field blank because he cannot bear to invent a name, and because he still hopes one may arrive."
+    },
+    {
+      "key": "stamp",
+      "name": "Stamp",
+      "temper": "wry",
+      "born": "She stepped off the mail bus on the wrong side during a hard rain and found the post office door open. By noon she was weighing parcels for the town.",
+      "loves": "The warm paper-and-rain smell inside the mail bus after its doors open.",
+      "hates": "A postcard made soft and wavy by rain.",
+      "interest": "She folds rejected address labels into tiny buses and parks them in a row behind the post office.",
+      "quirk": "She lifts anything nearby, including her own lunch, to judge its weight before using the scale.",
+      "voice": "Keep lines clipped and exact. Give a number when one is available. Use Noted as a full sentence. Never adds reassurance after stating a fact.",
+      "soft": "The unposted card in her drawer says she arrived safely, though she cannot decide who should receive it."
+    },
+    {
+      "key": "moss",
+      "name": "Moss",
+      "temper": "steady",
+      "born": "She blew in with the autumn leaves, saw a broom leaning against Town Hall, and swept the square before anyone could object. She rented the room above the arcade beside Spinner.",
+      "loves": "The first hard rain after a dry week, when the cobbles turn nearly black.",
+      "hates": "The arcade Pong beep before dawn.",
+      "interest": "She makes a pencil map of every crack that crosses the square, then updates it after rain.",
+      "quirk": "She pauses at the fountain each round and brushes one wet leaf from the same stone lip.",
+      "voice": "Start with two or three plain words, then allow one longer sentence with no flourish. Never asks a question. Avoid contractions and jokes with a wink.",
+      "soft": "The flyers under her mattress prove that something happened each week, and that she was there to see it."
+    },
+    {
+      "key": "pip",
+      "name": "Pip",
+      "temper": "sunny",
+      "born": "His uncle left him the general store, its bell, and one note: everything is the last one. Pip restocks before dawn so the note remains technically true until noon.",
+      "loves": "A customer who says, I will take all six, without checking the price twice.",
+      "hates": "A customer calling the last jar just stock.",
+      "interest": "He teaches himself elaborate knots with grocery twine and keeps the successful ones around his bedpost.",
+      "quirk": "He straightens the store bell with one finger after every ring, even when it is already straight.",
+      "voice": "Speak quickly and brightly, with sales urgency. Call ordinary items last ones. Use exclamation marks sparingly, never more than one. Never admit he has spare stock.",
+      "soft": "He has never lit a firework because his uncle would have loved the noise, and Pip wants to save one for the right silence."
+    },
+    {
+      "key": "bean",
+      "name": "Bean",
+      "temper": "warm",
+      "born": "She opened the coffee kiosk because the little building already said COFFEE and seemed to have made the decision for her. She rinsed one cup without reading it and has never read her own since.",
+      "loves": "One cold square of lemon cake eaten beside the fountain after the lunch rush.",
+      "hates": "Rain blowing under the coffee kiosk counter and soaking the sugar packets.",
+      "interest": "She presses fallen orchard leaves between clean napkins and sorts them by the shapes of their holes.",
+      "quirk": "She turns each finished cup three times before reading the grounds, then wipes the rim with her thumb.",
+      "voice": "Use short, flat present-tense fortune sentences. Make predictions small and practical. Sound calm, never mystical. Do not explain how the cup knows.",
+      "soft": "The cup she would not read looked too much like a goodbye, so she chose not to learn who it belonged to."
+    },
+    {
+      "key": "figjr",
+      "name": "Fig Jr.",
+      "temper": "sunny",
+      "born": "Gran Fig raised him among the west orchard trees. When her knees began complaining, he took the lemonade stand and fruit cart, calling her the supplier as if they ran a large company.",
+      "loves": "Gran Fig asleep in the second chair by her bench, with her hat over one eye.",
+      "hates": "The word homemade written on his lemonade sign.",
+      "interest": "He rehearses award speeches to his reflection in the fountain, accepting prizes nobody has announced.",
+      "quirk": "He counts every lemon half aloud, then quietly adds one more to the total for morale.",
+      "voice": "Use brisk business language for tiny tasks: supplier, inventory, expansion. Keep the affection hidden under efficiency. Never calls Gran Fig grandmother.",
+      "soft": "He waters the orchard before dawn so Gran Fig can still believe the trees wake up for her."
+    },
+    {
+      "key": "spinner",
+      "name": "Spinner",
+      "temper": "ecstatic",
+      "born": "He arrived with three bells, a Pong paddle, and a wagon of prize tickets. The arcade gave him a corner, and the Wheel of Peel gave him a reason to ring at the sky.",
+      "loves": "The whole square cheering when the Wheel of Peel lands on a prize.",
+      "hates": "A prize bell that rings once and then stops.",
+      "interest": "He builds tiny grandstands from used arcade tickets and assigns every empty seat a champion.",
+      "quirk": "He tests the three bells on his hat one at a time, then nods to each as if it answered.",
+      "voice": "Use energetic bursts, exclamations, and proud announcements. Slip into third person occasionally, especially when excited. Never mention letting anyone win.",
+      "soft": "He adjusts Pong by one point because a happy winner walks back tomorrow, and he wants the arcade to have company."
+    },
+    {
+      "key": "dot",
+      "name": "Dot",
+      "temper": "warm",
+      "born": "She came through town carrying a notebook of lost things and stopped at the empty info kiosk to ask who kept the answers. Nobody did, so she opened the notebook there.",
+      "loves": "The fountain basin at noon, when the water makes the cobbles look like they are moving.",
+      "hates": "Directions that end with, near the fountain.",
+      "interest": "She draws every fish described to her in the margins of her wants book, including the ones with impossible hats.",
+      "quirk": "She writes a new want, tears off the slip, folds it twice, and tucks it behind her left ear.",
+      "voice": "Write stacked questions, usually two or three, without waiting for answers. Keep them practical and eager. Never say she is disappointed. Mention the fish naturally.",
+      "soft": "She wants a real fish because finding one would prove that something can be missing for years and still be waiting nearby."
+    },
+    {
+      "key": "granfig",
+      "name": "Gran Fig",
+      "temper": "grumpy",
+      "born": "She bought the west orchard with a wheelbarrow of crates and took the west garden when nobody else had a plan for it. Fig Jr. was handed the stand when he could carry a jug.",
+      "loves": "A fruit crate packed tight enough that nothing shifts when it is kicked.",
+      "hates": "Fruit sorted by colour instead of ripeness.",
+      "interest": "She writes notes ordering the statue off its plinth, then slides them under the Town Hall door.",
+      "quirk": "She measures the statue’s plinth with a tape measure whenever she crosses the square.",
+      "voice": "Use short imperatives and blunt verdicts about everybody’s work. Give orders instead of advice. Never reminisce, soften criticism, or call anything “good enough.”",
+      "soft": "She wants Fig Jr. to take the business farther than her orchard can reach, but she keeps raising the bar so he will stop asking permission."
+    }
+  ]
+}
