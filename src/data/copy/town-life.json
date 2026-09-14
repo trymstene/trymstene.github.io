@@ -3,27 +3,32 @@
     {
       "key": "abandoned",
       "name": "Hushed Square",
-      "line": "The fountain is dry, shutters are down, and crows have claimed the cobbles."
+      "line": "The fountain is dry, shutters are down, and crows have claimed the cobbles.",
+      "brings": "Working lamps and open shutters"
     },
     {
       "key": "struggling",
       "name": "Thin Going",
-      "line": "A few lamps work; rubbish gathers by the dry fountain and most kiosks are shut."
+      "line": "A few lamps work; rubbish gathers by the dry fountain and most kiosks are shut.",
+      "brings": "A running fountain and lifted shutters"
     },
     {
       "key": "recovering",
       "name": "Mending Along",
-      "line": "The fountain runs again, though several shutters still wait to be lifted."
+      "line": "The fountain runs again, though several shutters still wait to be lifted.",
+      "brings": "Lit lamps, open kiosks and visitors"
     },
     {
       "key": "lively",
       "name": "Good Footing",
-      "line": "Kiosks are open, lamps are lit, and the square has visitors around the fountain."
+      "line": "Kiosks are open, lamps are lit, and the square has visitors around the fountain.",
+      "brings": "Stall lanterns, visitors and fine goods"
     },
     {
       "key": "thriving",
       "name": "Full Bloom",
-      "line": "Lanterns shine at the stalls, every kiosk is open, and visitors fill the square."
+      "line": "Lanterns shine at the stalls, every kiosk is open, and visitors fill the square.",
+      "brings": "A travelling stall and a full square"
     }
   ],
   "store": {
@@ -42,7 +47,13 @@
     "title": "Square Report",
     "fixes": "Things fixed today",
     "people": "Bananas lending hands",
-    "found": "Cursed things found"
+    "found": "Cursed things found",
+    "next": "Next",
+    "why": "Every fix lifts the square: lamps return, shutters rise, and better shelves open.",
+    "curse": "Some nights curse the square: lamps go dark, doors shut, ghosts wander, and stray things may be taken.",
+    "omen": "Crows fill every perch, a ghost walks by daylight, and the sky is wrong at the edges.",
+    "night": "Keep to the lit lamps. The night stall trades, and anything lying about may be taken.",
+    "after": "The curse left dark lamps, shut doors and litter. The square needs hands today."
   },
   "merchant": {
     "name": "Fine Goods",
