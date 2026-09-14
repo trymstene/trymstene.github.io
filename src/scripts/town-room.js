@@ -30,6 +30,7 @@ import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
 import { STATE } from './town-geo.js';
+import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_COUNT, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, MERCHANT, CURSE_SHELF } from '../data/town/stock.js';
@@ -67,7 +68,7 @@ const fill = (s, item) => String(s || '').replace(/\{name\}/g, nameOf()).replace
 const one = (list, seed) => (Array.isArray(list) && list.length ? list[Math.floor(h(seed, list.length) * list.length)] : '');
 
 export function bootTownLife(ctx) {
-  const { world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, panel, hud, esc, track, inside, drawMe } = ctx;
+  const { world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, hud, esc, track, inside, drawMe } = ctx;
   const me = () => worldOwner().slice(0, 8);
 
   // ═══════════════════════════════════════ the room ═══════════════════════════════════
@@ -429,15 +430,51 @@ export function bootTownLife(ctx) {
     }));
     return true;
   }
-  // the notice board: the town's word for itself, today's tally, the collection
+  // 📌 THE NOTICE BOARD — the card IS the board (Trym, 14 Sep: "make this more visual and look
+  // like a game-popup, not a website popup"): a wooden frame, the title on a plank, the
+  // town's word for itself stamped on a pinned notice with five street lamps under it (as
+  // many lit as the town is well — the one place its state is drawn), and three pinned
+  // notes for the tally. The words are the copy file's; the pictures are the town's own.
   function boardCard() {
     const w = COPY.board || {}, wb = W_BAND[band] || {};
     const foundN = OBJECTS.filter((o) => found(o.id)).length;
-    openCard('<h2>' + esc(w.title || 'Notices') + '</h2>'
-      + (wb.name ? '<p class="tw-band">' + esc(wb.name) + '</p>' : '') + (wb.line ? '<p class="tw-card__sub">' + esc(fill(wb.line)) + '</p>' : '')
-      + '<div class="tw-tally"><div><b>' + (L.today.fixes | 0) + '</b><small>' + esc(w.fixes || '') + '</small></div><div><b>' + (L.today.people | 0) + '</b><small>' + esc(w.people || '') + '</small></div><div><b>' + foundN + '/' + OBJECTS.length + '</b><small>' + esc(w.found || '') + '</small></div></div>'
-      + (foundN ? '<div class="tw-store">' + OBJECTS.filter((o) => found(o.id)).map((o) => { const d = DEX[o.decor], wo = W_OBJ[o.id] || {}; return '<div class="tw-row"><div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(wo.name || d.name) + '</b>' + (wo.desc ? '<small>' + esc(wo.desc) + '</small>' : '') + '</div></div></div>'; }).join('') + '</div>' : ''));
+    const note = (icon, n, label, cls) => '<div class="tw-paper tw-paper--note ' + (cls || '') + '"><i class="tw-pin"></i>' + iconSvg(icon, { size: 26 }) + '<b>' + n + '</b><small>' + esc(label) + '</small></div>';
+    openCard('<div class="tw-board2">'
+      + '<div class="tw-board2__head"><span class="tw-plank tw-plank--card">' + esc(w.title || 'Notices') + '</span></div>'
+      + '<div class="tw-paper tw-paper--notice"><i class="tw-pin tw-pin--b"></i>'
+      + (wb.name ? '<div class="tw-stamp">' + esc(wb.name) + '</div>' : '')
+      + '<canvas class="tw-lamps" width="220" height="56" aria-hidden="true"></canvas>'
+      + (wb.line ? '<p>' + esc(fill(wb.line)) + '</p>' : '')
+      + '</div>'
+      + '<div class="tw-tally">' + note('tools', L.today.fixes | 0, w.fixes || '', 'is-a') + note('users', L.today.people | 0, w.people || '', 'is-b') + note('moon-solid', foundN + '/' + OBJECTS.length, w.found || '', 'is-c') + '</div>'
+      + (foundN ? '<div class="tw-paper tw-paper--list"><i class="tw-pin"></i>' + OBJECTS.filter((o) => found(o.id)).map((o) => { const d = DEX[o.decor], wo = W_OBJ[o.id] || {}; return '<div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(wo.name || d.name) + '</b>' + (wo.desc ? '<small>' + esc(wo.desc) + '</small>' : '') + '</div></div>'; }).join('') + '</div>' : '')
+      + '</div>');
+    if (card) card.classList.add('tw-card--board');
+    drawLamps(cardBody.querySelector('.tw-lamps'), BANDS.indexOf(band) + 1);
     return true;
+  }
+  // five of the town's own lamps in a row, `lit` of them glowing — drawn from the placed
+  // lamp's sprite so the board never needs art of its own
+  function drawLamps(cv, lit) {
+    if (!cv) return;
+    const p = propOf('lamp0'); if (!p) return;
+    const img = new Image();
+    img.src = p.el.src;
+    img.onload = () => {
+      const g = cv.getContext('2d'); if (!g) return;
+      g.imageSmoothingEnabled = false;
+      const n = 5, slot = cv.width / n, lw = 20, lh = Math.round(lw * img.naturalHeight / img.naturalWidth);
+      for (let i = 0; i < n; i++) {
+        const x = Math.round(i * slot + slot / 2), on = i < lit, top = cv.height - lh - 2;
+        if (on) {
+          const r = g.createRadialGradient(x + 4, top + 8, 2, x + 4, top + 8, 20);
+          r.addColorStop(0, 'rgba(255, 225, 90, 0.75)'); r.addColorStop(1, 'rgba(255, 200, 40, 0)');
+          g.fillStyle = r; g.fillRect(x - 18, top - 14, 44, 44);
+        }
+        g.drawImage(img, x - lw / 2, top, lw, lh);
+        if (!on) { g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(20, 16, 30, 0.55)'; g.fillRect(x - lw / 2, top, lw, lh); g.globalCompositeOperation = 'source-over'; }
+      }
+    };
   }
   function openFor(key) {
     if (key === 'store') return storeCard();

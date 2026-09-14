@@ -312,7 +312,7 @@ function tick(now) {
 // it reads the farm you actually have on this device and today's real price.
 const panel = document.getElementById('twPanel'), cardBody = document.getElementById('twCardBody'), card = panel.querySelector('.tw-card');
 function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
-function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } }
+function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } }
 document.getElementById('twCardX').addEventListener('click', closeCard);
 panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
 // 🗣 A RESIDENT'S DIALOGUE — THE WORLD'S card, not a new one (Trym, 12 Sep: "the dialogue popups for

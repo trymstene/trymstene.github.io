@@ -182,5 +182,11 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   await seam(page, () => window.__town.room.cards.board());
   await page.waitForTimeout(200);
   expect(await page.locator('.tw-tally b').count()).toBe(3);
+  expect(await page.locator('.tw-card--board .tw-lamps').count()).toBe(1);
   await page.screenshot({ path: SHOT + 'board.png' });
+  // and the board at a desktop width, the card alone
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await page.waitForTimeout(400);
+  await page.locator('.tw-card').screenshot({ path: SHOT + 'board-desktop.png' });
+  await page.setViewportSize({ width: 393, height: 852 });
 });
