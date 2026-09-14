@@ -261,7 +261,8 @@ async function write(job) {
   let tidied = 0;
   const tidy = (v) => {
     if (typeof v === 'string') {
-      const t = v.replace(/(\w)'(\w)/g, '$1’$2').replace(/(\w)'(?=\s|$|[.,!?])/g, '$1’');
+      // (\w|\.) — the possessive after an abbreviation, Fig Jr.'s, slipped through on 14 Sep
+      const t = v.replace(/(\w|\.)'(\w)/g, '$1’$2').replace(/(\w)'(?=\s|$|[.,!?])/g, '$1’');
       if (t !== v) tidied += 1;
       return t;
     }
