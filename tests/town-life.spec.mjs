@@ -109,6 +109,11 @@ test('a fix clears the mark, pays on the pass and counts on the room', async ({ 
   await page.waitForTimeout(600);
   const after = await room(page, 'problems');
   expect(after.find((q) => q.id === p.id)).toBeUndefined();
+  // the meter moved and your first pip lit; the clock reads m:ss
+  const mt = await room(page, 'meter');
+  expect(mt.pips).toBe(1);
+  expect(parseInt(mt.fill, 10)).toBeGreaterThan(0);
+  expect(await room(page, 'clock')).toMatch(/^\d+:\d\d$/);
   expect(after.length).toBe(4);
   expect(await room(page, 'fixed')).toContain(p.id);
   expect(await room(page, 'coins')).toBeGreaterThan(before);

@@ -131,6 +131,18 @@ problem type is adding a row.
 
 ## 4. The town shows its condition; nobody reads a number
 
+**Amended 14 Sep, evening, after Trym played it:** *"repairing doesn't really give any
+satisfaction, i just go pick stuff up that disappear — but then what?"* and *"i don't as a
+player understand when nightfall is."* So the town has the park's health-bar logic after
+all, on its own terms — a METER under the HUD strip: the band's name, a fill that is how
+far through the band the town is (one fix moves it a visible notch), the next state at its
+end, and ten pips for your own share of today, gold when done. A NIGHTFALL CLOCK in the
+HUD's slot (sun or moon, m:ss until the other). A fix is a MOMENT (the lamp flashes on,
+the shutter rolls up, the crows flap off, the meter pulses); a band change is an EVENT
+(the new name and what it brings); tomorrow's stall parks its cart at the bus stop today.
+The rule below still holds for the NUMBER: nothing prints it.
+
+
 The band drives a **condition table** (`src/data/town/condition.js`): how many lamps are
 dark or stutter at night, the share of windows that stay dark, which kiosks have their
 shutter down, the litter level, the square's bin, the fountain, the share of residents

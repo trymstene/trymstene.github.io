@@ -649,6 +649,9 @@ for key, args in (
     ('candle', ('Graveyard_Candle_Standing_48x48.png', [0, 1, 2, 3], 48, 144, 0, PROP, True)),
     ('lantern', ('Camping_Lantern_48x48_1.png', list(range(6)), 96, 144, 0, PROP, True)),
     ('fountainoff', ('Garden_Fountain_6_Turn_Off_48x48.png', [9], 192, 240)),   # the last frame of the turn-off: dry
+    ('rollcafe', ('Kiosk_Coffee_Cup_Shutter_48x48.png', list(range(20)), 192, 96, 0, PROP * 0.8)),   # the cup's shutter coming down; played backwards it rises
+    ('rollinfo', ('Kiosk_Information_Shutter_48x48.png', list(range(16)), 144, 96)),
+    ('flap', ('Crow_Flap_Left_48x48.png', list(range(6)), 96, 96, 0, PROP * 0.55)),   # the pair taking off
 ):
     try:
         export_frames(key, *args)
@@ -681,6 +684,7 @@ for key, name, sc in (
     ('trash3', 'ME_Singles_City_Props_48x48_Blue_Can_Trash.png', PROP),
     ('graffiti1', 'ME_Singles_Garage_Sales_48x48_Graffiti_1.png', PROP),
     ('graffiti2', 'ME_Singles_Garage_Sales_48x48_Graffiti_2.png', PROP),
+    ('cartp', 'ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png', PROP),   # tomorrow's stall, parked at the bus stop today
 ):
     try:
         export_still(key, name, sc)

@@ -229,6 +229,26 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-paper--news .tw-news__now { font-weight: 800; }
     .tw-paper--news.is-omen { background: #efd9d6; }
     .tw-stamp--night { color: #4a2a86; border-color: #4a2a86; }
+    /* 🎯 THE TOWN METER — the park's meter grammar (label · value · track), under the HUD strip:
+       the band's name, how far through the band the town is, the next state, and ten pips for
+       your own share of today (Trym, 14 Sep: "the same health bar logic that the park has") */
+    .tw-meter { position: absolute; left: 10px; top: 50px; width: min(250px, 64%); z-index: 12; background: rgba(30, 18, 10, 0.84); border: 2px solid rgba(255, 200, 120, 0.35); padding: 4px 7px 5px; pointer-events: none; }
+    .tw-meter__top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.4rem; margin-bottom: 3px; font-family: "Archivo Black", sans-serif; font-size: 0.54rem; letter-spacing: 0.03em; text-transform: uppercase; color: #ffb347; }
+    .tw-meter__top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tw-meter__top em { font-style: normal; color: #fffdf5; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tw-meter__track { display: block; position: relative; height: 10px; overflow: hidden; border: 2px solid #000; background: #0c0806; }
+    .tw-meter__track i { position: absolute; left: 0; top: 0; bottom: 0; display: block; background: #ffe135; transition: width 0.6s ease; }
+    .tw-meter__pips { display: flex; gap: 2px; margin-top: 3px; }
+    .tw-meter__pips i { flex: 1; height: 5px; background: #3a2a10; border: 1px solid #000; }
+    .tw-meter__pips i.is-on { background: #ffe135; }
+    .tw-meter.is-done .tw-meter__pips i { background: #ffd23f; box-shadow: 0 0 5px rgba(255, 225, 53, 0.8); }
+    .tw-meter.is-hit { animation: twHit 0.45s ease; }
+    @keyframes twHit { 35% { transform: scale(1.05); border-color: #ffe135; } }
+    @media (prefers-reduced-motion: reduce) { .tw-meter__track i { transition: none; } .tw-meter.is-hit { animation: none; } }
+    /* 🌙 the nightfall clock in the HUD's slot: sun or moon, and how long until the other */
+    .wh__slot .tw-clock { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+    .wh__slot .tw-clock b { color: #ffe135; }
+    .wh__slot .tw-clock .pai { display: block; color: #ffd23f; }
     .tw-tally { display: flex; gap: 0.6rem; margin: 0.35rem 0 0; align-items: stretch; }
     .tw-paper--note { flex: 1; text-align: center; padding: 0.85rem 0.3rem 0.5rem; }
     .tw-paper--note.is-a { transform: rotate(1.6deg); } .tw-paper--note.is-b { transform: rotate(-1.2deg); } .tw-paper--note.is-c { transform: rotate(2deg); }

@@ -575,7 +575,7 @@ function firework() {
 // coins, the crowd chip that is also the save ask (no room yet, so it reads
 // solo) — and the ACTION BAR under the view: POCKET as the verb slot, the
 // heart, the travel door. Every player control lives in one of the two.
-const hud = mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins', 'crowd'] });
+const hud = mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins', 'slot', 'crowd'] });   // the slot carries the town's nightfall clock (town-room.js)
 hud.setCrowd('solo');
 pocketBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleTray(); });
 document.getElementById('twEmote').addEventListener('click', function () {

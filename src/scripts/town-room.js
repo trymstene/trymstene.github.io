@@ -103,6 +103,7 @@ export function bootTownLife(ctx) {
   let toldArrival = false;
   function apply(j) {
     if (!j || typeof j.life !== 'number') return;
+    Object.assign(lampWas, cond.lamps);
     L = j;
     const b = bandOf(Math.max(0, Math.min(100, j.life + nudge)));
     // today first (it decides what is shut), then the look, then what you can put right
@@ -111,7 +112,14 @@ export function bootTownLife(ctx) {
     // player knows at once what the fixing is about (Trym, 14 Sep: "i dont understand for what and why")
     const wb = W_BAND[band] || {};
     if (!toldArrival && wb.name) { toldArrival = true; say(wb.name + ' — ' + fill(wb.line || '')); }
+    // 🎉 a band change while you are here is an EVENT: the new name, and what it brings (up) or
+    // what it looks like (down) — and a puff on every lamp whose state changed
+    else if (wasBand && wasBand !== band && wb.name) { say(wb.name + ' — ' + fill((BANDS.indexOf(band) > BANDS.indexOf(wasBand) ? wb.brings : wb.line) || '')); for (const k of ANCHORS.lamps) { const p = propOf(k); if (p && lampWas[k] && lampWas[k] !== cond.lamps[k]) poof(p.x + p.w / 2, p.base - 40); } }
+    wasBand = band;
+    paintMeter();
   }
+  let wasBand = null;
+  const lampWas = {};
   async function read() { readAt = Date.now(); apply(await lifeFetch('')); }
   // a read on arrival, then every minute while the tab is looked at; a tab that comes back
   // reads at once (a storm may have passed)
@@ -122,6 +130,41 @@ export function bootTownLife(ctx) {
   // 🪧 the board's sign in the square says what the board's card says (the copy's title), so the
   // plank and the card agree the day the words land; without words it keeps its old label
   if (COPY.board && COPY.board.title) { const pl = world.querySelector('.tw-plank[data-key="board"]'); if (pl) pl.textContent = String(COPY.board.title).toUpperCase(); }
+
+  // 🎯 THE TOWN METER — the park's health-bar logic, on the town's own terms: the band's name,
+  // the fill is how far through the band the town is (one fix moves it by a visible notch),
+  // the next state at the end, and ten pips for YOUR share of today. Gold when done.
+  const meter = document.createElement('div');
+  meter.className = 'tw-meter';
+  meter.innerHTML = '<span class="tw-meter__top"><b></b><em></em></span><span class="tw-meter__track"><i></i></span><span class="tw-meter__pips">' + '<i></i>'.repeat(10) + '</span>';
+  view.appendChild(meter);
+  const mTop = meter.querySelector('b'), mNext = meter.querySelector('em'), mFill = meter.querySelector('.tw-meter__track i'), mPips = [...meter.querySelectorAll('.tw-meter__pips i')];
+  function paintMeter() {
+    if (!band) return;
+    const wb = W_BAND[band] || {}, bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null;
+    const lo = BAND_LO[band], hi = bi + 1 < BANDS.length ? BAND_LO[BANDS[bi + 1]] : 100;
+    const frac = Math.max(0, Math.min(1, ((L.life + nudge) - lo) / Math.max(1, hi - lo)));
+    mTop.textContent = wb.name || '';
+    mNext.textContent = nb && nb.name ? '→ ' + nb.name : '';
+    mFill.style.width = Math.round(frac * 100) + '%';
+    const used = Math.min(10, (L.cap && L.cap.used) | 0);
+    mPips.forEach((pip, i) => pip.classList.toggle('is-on', i < used));
+    meter.classList.toggle('is-done', used >= 10);
+  }
+  const hitMeter = () => { meter.classList.remove('is-hit'); void meter.offsetWidth; meter.classList.add('is-hit'); };
+  // 🌙 THE NIGHTFALL CLOCK in the HUD's slot: the town's day is twelve real minutes and night is
+  // its last two; the chip says how long until it falls (or, at night, until dawn) — so a player
+  // knows whether to stick around (Trym, 14 Sep: "i dont as a player understand when nightfall is")
+  const slot = hud && hud.el ? hud.el.querySelector('.wh__slot') : null;
+  let clockAt = 0;
+  function paintClock(now) {
+    if (!slot || now < clockAt) return;
+    clockAt = now + 1000;
+    const h = life.seam.hour();   // 0–24 town hours, 30 real seconds each; night is 20–24 (the hour lives on the QA seam)
+    const isNight = h >= 20, left = Math.max(0, ((isNight ? 24 : 20) - h) * 30);
+    const m = Math.floor(left / 60), sec = Math.floor(left % 60);
+    slot.innerHTML = '<span class="tw-clock">' + iconSvg(isNight ? 'sun-solid' : 'moon-solid', { size: 14 }) + '<b>' + m + ':' + (sec < 10 ? '0' : '') + sec + '</b></span>';
+  }
 
   // ═══════════════════════════════ sprites, marks, bodies ══════════════════════════════
   // a state sprite: STATE[key] frames stacked in one box (the fountain's way), stepped from
@@ -154,7 +197,7 @@ export function bootTownLife(ctx) {
       else if (s.mode === 'pulse') { let ni = s.i + s.dir; if (ni >= s.n || ni < 0) { s.dir = -s.dir; ni = s.i + s.dir; } show(s, ni); }
       // ⚠️ hidden, never visibility: a child's `visibility: visible` (the is-on frame) beats a
       // hidden PARENT, so the halos of five dark lamps kept shining (14 Sep). [hidden] is display.
-      else if (s.mode === 'once') { if (s.i + 1 >= s.n) { s.el.hidden = true; s.mode = 'done'; if (s.onDone) s.onDone(s); } else show(s, s.i + 1); }
+      else if (s.mode === 'once') { const ni = s.i + (s.rev ? -1 : 1); if (ni < 0 || ni >= s.n) { s.el.hidden = true; s.mode = 'done'; if (s.onDone) s.onDone(s); } else show(s, ni); }
       else if (s.mode === 'flicker') { const on = Math.random() < 0.72; s.el.hidden = !on; if (on) show(s, Math.floor(Math.random() * s.n)); }
     }
   }
@@ -279,6 +322,34 @@ export function bootTownLife(ctx) {
       } else if (!want && shutSprites[k]) { kill(shutSprites[k]); shutSprites[k] = null; }
     }
   }
+  // 🎬 a shutter goes UP: the pack's roll played backwards, then the kiosk is open
+  function rollUp(k) {
+    const still = shutSprites[k]; if (!still) { shutters(); return; }
+    const p = propOf(k); const key = k === 'cafe' ? 'rollcafe' : 'rollinfo';
+    if (!STATE[key] || !p) { shutters(); return; }
+    const s = sprite(key, still.x, still.y, { z: p.base + 1, fps: 22, mode: 'once' });
+    kill(still); shutSprites[k] = null;
+    if (!s) return;
+    s.rev = true; show(s, s.n - 1); s.onDone = () => kill(s);
+  }
+  // 🐦 crows leave: the pair flaps off up and away, then is gone
+  const flying = [];
+  function flyOff(s) {
+    if (!s || s.gone) return;
+    const f = sprite('flap', s.x, s.y, { z: 100 + Math.round(s.y) + 900, fps: 12, mode: 'loop' });
+    kill(s);
+    if (!f) return;
+    f.el.classList.add('is-fade');
+    flying.push({ s: f, t: 0 });
+  }
+  function stepFlying(dt) {
+    for (let i = flying.length - 1; i >= 0; i--) {
+      const fl = flying[i]; fl.t += dt;
+      moveSprite(fl.s, fl.s.x - 70 * dt, fl.s.y - 110 * dt);
+      if (fl.t > 0.5) fl.s.el.style.opacity = '0';
+      if (fl.t > 1.6) { kill(fl.s); flying.splice(i, 1); }
+    }
+  }
   function setBin(full) {
     const p = propOf('bin'); if (!p) return;
     cond.binFull = full;
@@ -358,14 +429,21 @@ export function bootTownLife(ctx) {
   async function fix(id) {
     const i = problems.findIndex((p) => p.id === id); if (i < 0) return false;
     const p = problems.splice(i, 1)[0];
-    if (p.el) p.el.remove(); kill(p.sprite);
-    poof(p.x, p.y - 8);
+    if (p.el) p.el.remove();
+    if (p.type === 'crows') flyOff(p.sprite); else kill(p.sprite);
+    if (p.type !== 'crows') poof(p.x, p.y - 8);
     remember(id);
-    // what the fix changes for THIS player
-    if (p.type === 'lamp') { cond.lamps[p.key] = 'ok'; lampsByHour(); }
+    // what the fix changes for THIS player — and the moment it makes: the lamp flashes on even by
+    // day, the shutter rolls up, the crows flap off, the meter pulses (Trym, 14 Sep: "repairing
+    // doesnt really give any satisfaction, i just go pick stuff up that disappear")
+    if (p.type === 'lamp') { cond.lamps[p.key] = 'ok'; lampsByHour(); const s = lampHalo[p.key]; if (s) { s.el.hidden = false; s.el.style.opacity = ''; s.mode = 'pulse'; s.fps = 6; setTimeout(() => lampsByHour(), 1400); } }
     else if (p.type === 'bin') setBin(false);
     else if (p.type === 'fountain') setFountain(false);
-    else if (p.type === 'shutter') { cond.fixedShut.add(p.key); shutters(); life.setKeep(keepFn); }
+    else if (p.type === 'shutter') { cond.fixedShut.add(p.key); rollUp(p.key); life.setKeep(keepFn); }
+    hitMeter();
+    // the optimistic notch: the room's word replaces it on the reply (and if the day's share is
+    // spent the notch is not drawn at all — the bar never lies and comes back)
+    if (L.cap && L.cap.used < L.cap.max) { L.life = Math.min(100, L.life + 1.2); L.cap.used += 1; paintMeter(); }
     // the pay: on the pass, area 'town', faucet 'fix' (worker-pass RULES.town.fix)
     const coins = p.pays[0] + Math.floor(h(dayNum(), i, 99) * (p.pays[1] - p.pays[0] + 1));
     const got = passStat('coins_earned', coins, 'fix') != null ? coins : 0;
@@ -521,17 +599,19 @@ export function bootTownLife(ctx) {
   }
 
   // ════════════════════════════════════ today ════════════════════════════════════════
-  let today = [];
+  let today = [], parked = null;
   const todayShut = new Set();
+  // the day's picks, for any day: today's, or tomorrow's for the parked cart
+  function picksFor(d) {
+    const n = TODAY_N[band] || 2, left = TODAY.filter((t) => (t.w[band] || 0) > 0), out = [];
+    for (let i = 0; i < n && left.length; i++) { const r = weighted(left, (t) => t.w[band], d * 11 + i * 5 + 3); out.push(r.id); left.splice(left.indexOf(r), 1); }
+    return out;
+  }
   const todayHas = (id) => today.includes(id);
   let oddKey = null;
   function todayStage() {
-    const d = dayNum(), n = TODAY_N[band] || 2;
-    const rowsOk = TODAY.filter((t) => (t.w[band] || 0) > 0);
-    const picks = [];
-    const left = rowsOk.slice();
-    for (let i = 0; i < n && left.length; i++) { const r = weighted(left, (t) => t.w[band], d * 11 + i * 5 + 3); picks.push(r.id); left.splice(left.indexOf(r), 1); }
-    today = picks;
+    const d = dayNum();
+    today = picksFor(d);
     todayShut.clear();
     if (todayHas('closed')) todayShut.add(CLOSABLE[Math.floor(h(d, 21) * CLOSABLE.length)]);
     cond.shut = new Set([...LOOK[band].shut, ...todayShut]);
@@ -542,6 +622,10 @@ export function bootTownLife(ctx) {
     // the merchant
     killBody(merchant); merchant = null;
     if (todayHas('merchant') && MERCHANT.bands.includes(band)) { merchant = body(MERCHANT.at[0], MERCHANT.at[1], { hat: 'cowboy', glasses: 'shades', extras: { backpack: true } }, (COPY.merchant || {}).name || ''); bodies.add(merchant); }
+    // 🧳 and if the stall comes TOMORROW, its cart is parked at the bus stop today — a promise a
+    // player can see and come back for (a sign, not a timetable)
+    kill(parked); parked = null;
+    if (!merchant && MERCHANT.bands.includes(band) && picksFor(d + 1).includes('merchant')) parked = sprite('cartp', 1990, 296, { z: 296 });
     // a strange object by daylight
     if (todayHas('object') && !objects.some((o) => o.day)) spawnObject(d * 3 + 1, true);
   }
@@ -677,7 +761,9 @@ export function bootTownLife(ctx) {
   function tick(now, dt) {
     stepSprites(dt);
     stepGhosts(dt);
+    stepFlying(dt);
     swayBodies(now);
+    paintClock(now);
     if (now < secAt) return;
     secAt = now + 500;
     const c = curseNow(), cType = c === 'none' ? null : c;
@@ -687,11 +773,12 @@ export function bootTownLife(ctx) {
     const beat = life.beat();
     if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); }
     night.hidden = inside();
+    meter.hidden = inside();
     if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;
     // crows fly when you come close (and settle again on the next condition)
-    for (const s of cond.crows) if (!s.gone && Math.hypot(ctx.pos.x - s.x, ctx.pos.y - s.y) < 70) { poof(s.x, s.y - 10); kill(s); }
+    for (const s of cond.crows) if (!s.gone && Math.hypot(ctx.pos.x - s.x, ctx.pos.y - s.y) < 70) flyOff(s);
     // a day changes under a long visit: the seeds move on
     if (dayNum() !== dayAt) { dayAt = dayNum(); todayStage(); condition(); reseedProblems(); }
   }
@@ -747,6 +834,8 @@ export function bootTownLife(ctx) {
     cards: { store: storeCard, board: boardCard, merchant: merchantCard, vendor: vendorCard },
     story, copy: () => Object.keys(COPY),
     coins: () => coinsNow(), found,
+    meter: () => ({ band: mTop.textContent, next: mNext.textContent, fill: mFill.style.width, pips: mPips.filter((p) => p.classList.contains('is-on')).length, done: meter.classList.contains('is-done') }),
+    clock: () => (slot ? slot.textContent : ''), parked: () => !!parked,
     // 🧪 a QA purse (the pass worker refuses the 'qa' faucet; the coins stay on the local ledger)
     rich: () => (TEST ? passStat('coins_earned', 500, 'qa') : 0),
   };
