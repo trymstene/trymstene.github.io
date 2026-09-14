@@ -25,7 +25,7 @@
 // banana or ghost — a ghost with a line says it in the town's toast. ⚠️ EVERY WORD is copy:
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
-import { seedRand, worldOwner, worldSid, worldToken, curseAt, poofInto } from '../lib/world.js';
+import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto } from '../lib/world.js';
 import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
@@ -100,12 +100,17 @@ export function bootTownLife(ctx) {
       return await r.json();
     } catch (e) { lastErr = String(e && e.message || e); return null; }   // no worker, no life — the town stands as it always did
   }
+  let toldArrival = false;
   function apply(j) {
     if (!j || typeof j.life !== 'number') return;
     L = j;
     const b = bandOf(Math.max(0, Math.min(100, j.life + nudge)));
     // today first (it decides what is shut), then the look, then what you can put right
     if (b !== band) { band = b; todayStage(); condition(); reseedProblems(); }
+    // 🪧 on arrival the town says what state it is in — the board's own words for the band — so a
+    // player knows at once what the fixing is about (Trym, 14 Sep: "i dont understand for what and why")
+    const wb = W_BAND[band] || {};
+    if (!toldArrival && wb.name) { toldArrival = true; say(wb.name + ' — ' + fill(wb.line || '')); }
   }
   async function read() { readAt = Date.now(); apply(await lifeFetch('')); }
   // a read on arrival, then every minute while the tab is looked at; a tab that comes back
@@ -451,23 +456,33 @@ export function bootTownLife(ctx) {
     const w = COPY.board || {}, wb = W_BAND[band] || {};
     const foundN = OBJECTS.filter((o) => found(o.id)).length;
     const note = (icon, n, label, cls) => '<div class="tw-paper tw-paper--note ' + (cls || '') + '"><i class="tw-pin"></i>' + iconSvg(icon, { size: 26 }) + '<b>' + n + '</b><small>' + esc(label) + '</small></div>';
+    // the second notice: what is going on — a night tonight, a night on, the morning after — or,
+    // on an ordinary day, that nights exist at all; and always what fixing is for
+    const om = omenNow(), after = !curse && !om && L.curseAt && Date.now() - L.curseAt < 8 * 3600000;
+    const news = curse && curse !== 'hush' ? w.night : om ? w.omen : after ? w.after : w.curse;
+    const bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null;
     openCard('<div class="tw-board2">'
       + '<div class="tw-board2__head"><span class="tw-plank tw-plank--card">' + esc(w.title || 'Notices') + '</span></div>'
       + '<div class="tw-paper tw-paper--notice"><i class="tw-pin tw-pin--b"></i>'
-      + (wb.name ? '<div class="tw-stamp">' + esc(wb.name) + '</div>' : '')
-      + '<canvas class="tw-lamps" width="220" height="56" aria-hidden="true"></canvas>'
+      + (wb.name ? '<div class="tw-stamp' + (curse && curse !== 'hush' ? ' tw-stamp--night' : '') + '">' + esc(wb.name) + '</div>' : '')
+      + '<canvas class="tw-lamps" width="220" height="66" aria-hidden="true"></canvas>'
+      + (nb && nb.name ? '<small class="tw-next">' + (w.next ? esc(w.next) + ' ' : '') + '<b>' + esc(nb.name) + '</b>' + (nb.brings ? ' — ' + esc(fill(nb.brings)) : '') + '</small>' : '')
       + (wb.line ? '<p>' + esc(fill(wb.line)) + '</p>' : '')
       + '</div>'
+      + (w.why || news ? '<div class="tw-paper tw-paper--news' + (om || (curse && curse !== 'hush') ? ' is-omen' : '') + '"><i class="tw-pin' + (om || (curse && curse !== 'hush') ? '' : ' tw-pin--b') + '"></i>'
+        + (news ? '<p class="tw-news__now">' + esc(fill(news)) + '</p>' : '') + (w.why ? '<p>' + esc(fill(w.why)) + '</p>' : '') + '</div>' : '')
       + '<div class="tw-tally">' + note('tools', L.today.fixes | 0, w.fixes || '', 'is-a') + note('users', L.today.people | 0, w.people || '', 'is-b') + note('moon-solid', foundN + '/' + OBJECTS.length, w.found || '', 'is-c') + '</div>'
       + (foundN ? '<div class="tw-paper tw-paper--list"><i class="tw-pin"></i>' + OBJECTS.filter((o) => found(o.id)).map((o) => { const d = DEX[o.decor], wo = W_OBJ[o.id] || {}; return '<div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(wo.name || d.name) + '</b>' + (wo.desc ? '<small>' + esc(wo.desc) + '</small>' : '') + '</div></div>'; }).join('') + '</div>' : '')
       + '</div>');
     if (card) card.classList.add('tw-card--board');
-    drawLamps(cardBody.querySelector('.tw-lamps'), BANDS.indexOf(band) + 1);
+    // the way to the next state: how far the town is through this band, no number
+    const lo = BAND_LO[band], hi = bi + 1 < BANDS.length ? BAND_LO[BANDS[bi + 1]] : 100;
+    drawLamps(cardBody.querySelector('.tw-lamps'), bi + 1, Math.max(0, Math.min(1, ((L.life + nudge) - lo) / Math.max(1, hi - lo))));
     return true;
   }
   // five of the town's own lamps in a row, `lit` of them glowing — drawn from the placed
   // lamp's sprite so the board never needs art of its own
-  function drawLamps(cv, lit) {
+  function drawLamps(cv, lit, frac) {
     if (!cv) return;
     const p = propOf('lamp0'); if (!p) return;
     const img = new Image();
@@ -476,8 +491,10 @@ export function bootTownLife(ctx) {
       const g = cv.getContext('2d'); if (!g) return;
       g.imageSmoothingEnabled = false;
       const n = 5, slot = cv.width / n, lw = 20, lh = Math.round(lw * img.naturalHeight / img.naturalWidth);
+      // the bar under the lamps: this band's stretch, filled as far as the town has come
+      if (frac != null) { g.fillStyle = '#3a2a10'; g.fillRect(10, cv.height - 7, cv.width - 20, 6); g.fillStyle = '#ffe135'; g.fillRect(11, cv.height - 6, Math.round((cv.width - 22) * frac), 4); }
       for (let i = 0; i < n; i++) {
-        const x = Math.round(i * slot + slot / 2), on = i < lit, top = cv.height - lh - 2;
+        const x = Math.round(i * slot + slot / 2), on = i < lit, top = cv.height - lh - 12;
         if (on) {
           const r = g.createRadialGradient(x + 4, top + 8, 2, x + 4, top + 8, 20);
           r.addColorStop(0, 'rgba(255, 225, 90, 0.75)'); r.addColorStop(1, 'rgba(255, 200, 40, 0)');
@@ -619,8 +636,29 @@ export function bootTownLife(ctx) {
     for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); }
     lampsByHour();
   }
+  // 🌒 THE OMENS. A night that will charge the town is foreshadowed for three hours before it:
+  // crows gather on every perch, a wisp shows by daylight, the sky goes wrong at the edges, and
+  // the board pins a red notice. A sign, never a time — the clock is still nobody's to read.
+  const OMEN_MS = 3 * 3600000;
+  let omenOn = false, omenCrows = [], omenWisp = null;
+  function omenNow() {
+    if (forced) return forced === 'omen' ? { type: 'deep' } : null;   // a chapter, or the QA seam, can call the omen up
+    const d = Math.floor(Date.now() / CURSE_DAY_MS), t = Date.now();
+    for (const e of curseDay(d)) { if (e.type === 'hush') continue; const at = d * CURSE_DAY_MS + e.at; if (t >= at - OMEN_MS && t < at) return { at, type: e.type }; }
+    return null;
+  }
+  function omens(on) {
+    omenOn = on;
+    omenCrows.forEach(kill); omenCrows = [];
+    if (on) {
+      const taken = new Set([...cond.crows.filter((s) => !s.gone).map((s) => s.perch.join(',')), ...problems.filter((p) => p.type === 'crows').map((p) => p.x + ',' + p.y)]);
+      for (const [x, y, k] of ANCHORS.perches) if (!taken.has(x + ',' + y)) { const s = sprite('crow', x, y, { fps: 2, z: perchZ(k) }); if (s) omenCrows.push(s); }
+      if (!omenWisp) omenWisp = ghostOf('wisp');
+      night.style.background = '#2a1040';
+    } else { kill(omenWisp); omenWisp = null; night.style.background = ''; }
+  }
   function curseNow() {
-    if (forced && Date.now() < forcedUntil) return forced;   // a chapter's own night — or 'none', a chapter's own calm
+    if (forced && Date.now() < forcedUntil) return forced === 'omen' ? 'none' : forced;   // a chapter's own night — or 'none', a chapter's own calm
     if (forced) forced = null;
     return curseAt(Date.now()).type;
   }
@@ -636,10 +674,12 @@ export function bootTownLife(ctx) {
     secAt = now + 500;
     const c = curseNow(), cType = c === 'none' ? null : c;
     if (cType !== curse) { if (curse) leaveCurse(); if (cType) enterCurse(cType); }
+    const om = !curse && !!omenNow();
+    if (om !== omenOn) omens(om);
     const beat = life.beat();
     if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); }
     night.hidden = inside();
-    if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : 0);
+    if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;
     // crows fly when you come close (and settle again on the next condition)
@@ -683,7 +723,8 @@ export function bootTownLife(ctx) {
   const seam = {
     life: () => L, band: () => band, test: TEST, err: () => lastErr,
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
-    curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm
+    curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
+    omen: () => omenOn, nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
     problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y })),
     fix, fixed,
     lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,

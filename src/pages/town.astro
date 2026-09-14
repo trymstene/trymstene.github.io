@@ -219,7 +219,16 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-pin--b { background: radial-gradient(circle at 35% 35%, #9ad4ff, #2f7fd6 60%, #164a86); }
     /* the band, stamped: a rubber stamp's red, slightly crooked, never quite even */
     .tw-stamp { display: inline-block; font-family: "Archivo Black", sans-serif; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.98rem; color: #b8302a; border: 3px solid #b8302a; padding: 3px 10px; transform: rotate(-3deg); opacity: 0.92; margin: 0.15rem 0 0.35rem; mask-image: linear-gradient(90deg, #000 0 88%, rgba(0, 0, 0, 0.5) 100%); -webkit-mask-image: linear-gradient(90deg, #000 0 88%, rgba(0, 0, 0, 0.5) 100%); }
-    .tw-lamps { display: block; width: 220px; max-width: 100%; height: 56px; margin: 0 auto; image-rendering: pixelated; }
+    .tw-lamps { display: block; width: 220px; max-width: 100%; height: 66px; margin: 0 auto; image-rendering: pixelated; }
+    .tw-next { display: block; font-size: 0.68rem; line-height: 1.3; margin: 2px 0 0; opacity: 0.9; }
+    .tw-next b { color: #b8302a; }
+    /* the second notice: what is going on. Red-pinned and tinted when a night is near or on */
+    .tw-paper--news { transform: rotate(0.9deg); padding-top: 0.9rem; }
+    .tw-paper--news p { margin: 0; font-size: 0.78rem; line-height: 1.35; }
+    .tw-paper--news p + p { margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dashed rgba(0, 0, 0, 0.25); }
+    .tw-paper--news .tw-news__now { font-weight: 800; }
+    .tw-paper--news.is-omen { background: #efd9d6; }
+    .tw-stamp--night { color: #4a2a86; border-color: #4a2a86; }
     .tw-tally { display: flex; gap: 0.6rem; margin: 0.35rem 0 0; align-items: stretch; }
     .tw-paper--note { flex: 1; text-align: center; padding: 0.85rem 0.3rem 0.5rem; }
     .tw-paper--note.is-a { transform: rotate(1.6deg); } .tw-paper--note.is-b { transform: rotate(-1.2deg); } .tw-paper--note.is-c { transform: rotate(2deg); }

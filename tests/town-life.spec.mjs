@@ -126,6 +126,20 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   await seam(page, () => window.__town.life.set(3));   // dawn, so "in" is a change
   await page.waitForTimeout(400);
   expect((await seam(page, () => window.__town.life.kept())).length).toBe(0);
+  // the omens first: a night on its way shows in the world before it comes
+  await seam(page, () => window.__town.room.curse('omen'));
+  await page.waitForTimeout(900);
+  expect(await room(page, 'omen')).toBe(true);
+  expect(await room(page, 'crows')).toBeGreaterThanOrEqual(1);
+  expect(await page.evaluate(() => [...document.querySelectorAll('.tw-state')].filter((el) => /s-crow-/.test((el.querySelector('img') || {}).src || '')).length)).toBeGreaterThanOrEqual(5);
+  expect((await room(page, 'ghosts')).some((g) => g.id === 'wisp')).toBe(true);
+  await seam(page, () => window.__town.room.cards.board());
+  await page.waitForTimeout(300);
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await page.waitForTimeout(400);
+  await page.locator('.tw-card').screenshot({ path: SHOT + 'board-omen.png' });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.evaluate(() => document.getElementById('twCardX').click());
   await seam(page, () => window.__town.room.curse('deep'));
   await page.waitForTimeout(1500);
   expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.45);

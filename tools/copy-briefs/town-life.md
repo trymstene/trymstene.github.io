@@ -21,6 +21,11 @@ The board is the ONE place the town's state is named. Five bands, keys fixed, wo
   town hall pins up. What is true of the square right now, so a player who reads it and
   then looks up sees it. Never a number, never a rate, never an instruction to the player.
 
+- `brings` — what this state BRINGS, written as the promise the board makes for the state
+  above the town's: what it opens, lights or fills (the shutters up, the lamps lit, the
+  lanterns, the visitors, the rare shelf, the travelling stall). A fragment of a few words,
+  no number.
+
 Worst band: the lamps are out, the kiosks are shut, there is rubbish and there are crows,
 the fountain is dry. Best band: everything lit and open, lanterns at the stalls, visitors
 in the square, a travelling stall some days.
@@ -50,6 +55,19 @@ at home, or goes on the van and arrives later.
 - `people` — the label under the second number: how many different bananas did that today.
 - `found` — the label under the third number: cursed objects this player has found, out
   of all of them. Two to four words.
+- `next` — the one or two words before the next state's name on the bar under the five
+  lamps, like a signpost.
+- `why` — the standing notice: what putting things right does for the square. That every
+  fix lifts it, and what a lifted square opens. No number, no rate.
+- `curse` — the standing notice on an ordinary day: that some nights the square is cursed,
+  and what such a night brings — dark lamps, shut doors, ghosts, things left lying about
+  that may be taken. Never when.
+- `omen` — pinned when a night is coming: the signs a player can see right now (crows on
+  every perch, a ghost by daylight, the sky wrong at the edges). A warning, not a time.
+- `night` — pinned while a Curse Night is on: keep to the lit lamps, the night stall
+  trades, what lies about may be taken.
+- `after` — pinned the morning after: what the night cost the square, and that today
+  needs hands.
 
 ## The travelling stall
 
