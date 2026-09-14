@@ -114,6 +114,10 @@ export function bootTownLife(ctx) {
   setInterval(() => { if (!document.hidden && Date.now() - readAt > 55000) read(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - readAt > 20000) read(); });
 
+  // 🪧 the board's sign in the square says what the board's card says (the copy's title), so the
+  // plank and the card agree the day the words land; without words it keeps its old label
+  if (COPY.board && COPY.board.title) { const pl = world.querySelector('.tw-plank[data-key="board"]'); if (pl) pl.textContent = String(COPY.board.title).toUpperCase(); }
+
   // ═══════════════════════════════ sprites, marks, bodies ══════════════════════════════
   // a state sprite: STATE[key] frames stacked in one box (the fountain's way), stepped from
   // tick() at its own fps. mode: 'loop' | 'pulse' (0..n-1 and back) | 'once' (then hide) |

@@ -70,9 +70,9 @@ const ABOUT = {
   bank: ['BANK', 118, 'The bank. It is an ATM. Not built yet.'],
   print: ['STICKERS', 104, 'The print shop. The real sticker packs in the window. Not built yet.'],
   cafe: ['CAFÉ', 220, 'The Coffee Cup. Bean pours today’s fortune and a rumour about tomorrow’s prices. Not built yet.'],
-  board: ['NOTICES', 132, 'The notice board. Board of Works projects, today’s wants, Monday’s results. Not built yet.'],
-  exchange: ['THE EXCHANGE', 154, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],
-  wheel: ['WHEEL OF PEEL', 154, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
+  board: ['NOTICES', 112, 'The notice board. Board of Works projects, today’s wants, Monday’s results. Not built yet.'],   // 112: the plank's foot 14px into the board's top rail (Trym: "sits on top of the board")
+  exchange: ['THE EXCHANGE', 134, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],   // 134: on the awning, not above it
+  wheel: ['WHEEL OF PEEL', 134, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
   lot: ['COMING SOON', 84, 'The worksite lot. The office and the arcade, later.'],
   condo: ['ARCADE', 100, 'The Arcade. Classics in banana wrapping, inside. Tap the door.'],
   // 🕹 the machines inside — names to be argued over; every one says what it will be
@@ -103,7 +103,8 @@ for (const [key, spot] of Object.entries(SPOTS)) {
   const a = ABOUT[key];
   if (!a || !a[0]) continue;
   const p = document.createElement('div');
-  p.className = 'tw-plank';
+  p.className = 'tw-plank' + (key === 'exchange' || key === 'wheel' ? ' tw-plank--big' : '');   // the stalls' signs at double size (Trym, 14 Sep)
+  p.dataset.key = key;   // 🏘️ Town Life renames the board's sign to what the board says (town-room.js)
   p.textContent = a[0];
   p.style.left = pct(spot.x, W); p.style.top = pct(spot.y - a[1], H);
   p.style.zIndex = String(100 + spot.y + 3);
