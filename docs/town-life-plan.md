@@ -133,14 +133,17 @@ problem type is adding a row.
 
 **Amended 14 Sep, evening, after Trym played it:** *"repairing doesn't really give any
 satisfaction, i just go pick stuff up that disappear — but then what?"* and *"i don't as a
-player understand when nightfall is."* So the town has the park's health-bar logic after
-all, on its own terms — a METER under the HUD strip: the band's name, a fill that is how
-far through the band the town is (one fix moves it a visible notch), the next state at its
-end, and ten pips for your own share of today, gold when done. A NIGHTFALL CLOCK in the
-HUD's slot (sun or moon, m:ss until the other). A fix is a MOMENT (the lamp flashes on,
-the shutter rolls up, the crows flap off, the meter pulses); a band change is an EVENT
-(the new name and what it brings); tomorrow's stall parks its cart at the bus stop today.
-The rule below still holds for the NUMBER: nothing prints it.
+player understand when nightfall is."* — and then, on my first answer (a meter under the
+HUD strip): *"no, im talking about the same health bar like in the park … make it the
+same."* So the town has THE PARK'S HEALTH BAR, to the pixel: bottom-docked, a face and a
+palette per band, the fill is the town's number with the % riding it, the (i) cap; tap it
+and the park's health card opens — the band's name, the big %, one continuous bar with the
+five bands as zones (ticks at 15/40/65/85, a glyph per band, tap a zone to read that band's
+line), today's tally, and ten pips for your own share of today (gold at ten). A NIGHTFALL
+CLOCK in the HUD's slot (sun or moon, m:ss until the other). A fix is a MOMENT (the lamp
+flashes on, the shutter rolls up, the crows flap off); a band change is an EVENT (the new
+name and what it brings); tomorrow's stall parks its cart at the bus stop today. So the
+number IS read now, the park's way — the rule below is superseded by Trym's call.
 
 
 The band drives a **condition table** (`src/data/town/condition.js`): how many lamps are

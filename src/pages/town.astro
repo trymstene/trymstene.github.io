@@ -229,22 +229,79 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-paper--news .tw-news__now { font-weight: 800; }
     .tw-paper--news.is-omen { background: #efd9d6; }
     .tw-stamp--night { color: #4a2a86; border-color: #4a2a86; }
-    /* 🎯 THE TOWN METER — the park's meter grammar (label · value · track), under the HUD strip:
-       the band's name, how far through the band the town is, the next state, and ten pips for
-       your own share of today (Trym, 14 Sep: "the same health bar logic that the park has") */
-    .tw-meter { position: absolute; left: 10px; top: 50px; width: min(250px, 64%); z-index: 12; background: rgba(30, 18, 10, 0.84); border: 2px solid rgba(255, 200, 120, 0.35); padding: 4px 7px 5px; pointer-events: none; }
-    .tw-meter__top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.4rem; margin-bottom: 3px; font-family: "Archivo Black", sans-serif; font-size: 0.54rem; letter-spacing: 0.03em; text-transform: uppercase; color: #ffb347; }
-    .tw-meter__top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tw-meter__top em { font-style: normal; color: #fffdf5; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tw-meter__track { display: block; position: relative; height: 10px; overflow: hidden; border: 2px solid #000; background: #0c0806; }
-    .tw-meter__track i { position: absolute; left: 0; top: 0; bottom: 0; display: block; background: #ffe135; transition: width 0.6s ease; }
-    .tw-meter__pips { display: flex; gap: 2px; margin-top: 3px; }
-    .tw-meter__pips i { flex: 1; height: 5px; background: #3a2a10; border: 1px solid #000; }
-    .tw-meter__pips i.is-on { background: #ffe135; }
-    .tw-meter.is-done .tw-meter__pips i { background: #ffd23f; box-shadow: 0 0 5px rgba(255, 225, 53, 0.8); }
-    .tw-meter.is-hit { animation: twHit 0.45s ease; }
-    @keyframes twHit { 35% { transform: scale(1.05); border-color: #ffe135; } }
-    @media (prefers-reduced-motion: reduce) { .tw-meter__track i { transition: none; } .tw-meter.is-hit { animation: none; } }
+    /* 🌸 THE TOWN HEALTH BAR — the park's .pk-hbar, to the pixel (Trym, 15 Sep: "make it the same"):
+       bottom-docked, the rave jellymeter's language (chunky dark box, hard border, bordered inner
+       track), the face and the whole palette riding the band, the % riding the fill, the (i) cap
+       that says it opens. Tap = the town-health card. */
+    .tw-hbar {
+      position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 8;
+      width: min(520px, calc(100% - 16px)); box-sizing: border-box;
+      display: flex; align-items: center; gap: 8px;
+      appearance: none; font: inherit; cursor: pointer;
+      background: rgba(13, 18, 11, 0.9); border: 3px solid #000; padding: 6px 8px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+    }
+    .tw-hbar:active { transform: translateX(-50%) translateY(2px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55); }
+    .tw-hbar__more { display: grid; place-items: center; flex: none; opacity: 0.75; color: #e8f4e8; }
+    .tw-hbar__more .pai { display: block; }
+    @media (hover: hover) { .tw-hbar:hover .tw-hbar__more { opacity: 1; } .tw-hbar:hover { filter: brightness(1.12); } }
+    .tw-hbar__face { display: grid; place-items: center; width: 22px; height: 22px; flex: none; }
+    .tw-hbar__face .pai { display: block; }
+    .tw-hbar__track { position: relative; flex: 1; height: 16px; border: 2px solid #000; overflow: hidden; }
+    .tw-hbar__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width 0.5s ease; }
+    .tw-hbar__pct {
+      position: absolute; top: 50%; left: 0; transform: translate(-100%, -50%);
+      padding: 0 4px; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em;
+      white-space: nowrap; transition: left 0.5s ease; color: #0d120b;
+    }
+    .tw-hbar__pct.is-out { transform: translate(2px, -50%); color: #fffdf5; }
+    /* the five band palettes — the park's own, dusty browns → olive → lush green */
+    .tw-hbar--p0 { border-color: #1c140c; }
+    .tw-hbar--p0 .tw-hbar__face { color: #8a6a44; }
+    .tw-hbar--p0 .tw-hbar__track { background: #2a2118; }
+    .tw-hbar--p0 .tw-hbar__fill { background: #6b4a2c; }
+    .tw-hbar--p0 .tw-hbar__pct { color: #f0e2c8; }
+    .tw-hbar--p1 .tw-hbar__face { color: #b08a4a; }
+    .tw-hbar--p1 .tw-hbar__track { background: #322718; }
+    .tw-hbar--p1 .tw-hbar__fill { background: #8a6a38; }
+    .tw-hbar--p1 .tw-hbar__pct { color: #f5ecd8; }
+    .tw-hbar--p2 .tw-hbar__face { color: #c0c050; }
+    .tw-hbar--p2 .tw-hbar__track { background: #2a2c16; }
+    .tw-hbar--p2 .tw-hbar__fill { background: #a8a83a; }
+    .tw-hbar--p3 .tw-hbar__face { color: #7cc465; }
+    .tw-hbar--p3 .tw-hbar__track { background: #1c2a18; }
+    .tw-hbar--p3 .tw-hbar__fill { background: #5cb04a; }
+    .tw-hbar--p4 .tw-hbar__face { color: #6ff0a0; }
+    .tw-hbar--p4 .tw-hbar__track { background: #16281a; }
+    .tw-hbar--p4 .tw-hbar__fill { background: #35d97a; }
+    .tw-hbar--p4 .tw-hbar__fill::after { content: ''; position: absolute; left: 0; right: 0; top: 2px; height: 3px; background: rgba(255, 255, 255, 0.32); }
+    .tw-hbar__pct.is-out { color: #fffdf5; }
+    /* the toast clears the bar's dock, the park's way */
+    .tw-toast { bottom: 52px; }
+    /* the card: the park's health card — ONE continuous bar, the five bands as zones, ticks at the
+       band lines, a glyph per band (the live one ringed), invisible tap zones over each for the
+       one-line reveal. The fill + number track live while the card is open. */
+    .tw-bbar { position: relative; margin: 0.55rem 0 0.45rem; --ramp: linear-gradient(90deg, #8a8a96, #b08a4a, #d9c25a, #7cc465, #35d97a); }
+    .tw-bglyphs { display: flex; padding-bottom: 5px; }
+    .tw-bglyph { text-align: center; font-size: 15px; line-height: 1; filter: grayscale(0.5); opacity: 0.45; transition: opacity 0.3s ease, transform 0.3s ease; }
+    .tw-bglyph.is-now { filter: none; opacity: 1; transform: scale(1.2); }
+    .tw-bglyph.is-open { filter: none; opacity: 0.9; }
+    .tw-btrack { position: relative; height: 22px; border: 2px solid #000; border-radius: 6px; overflow: hidden; background: #0c140c; }
+    .tw-bramp, .tw-bfill { position: absolute; inset: 0; background: var(--ramp); }
+    .tw-bramp { opacity: 0.18; }
+    .tw-bfill { transition: clip-path 0.5s ease; }
+    @media (prefers-reduced-motion: reduce) { .tw-bfill { transition: none; } }
+    .tw-btick { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(0, 0, 0, 0.55); }
+    .tw-bzone { position: absolute; top: 0; bottom: 0; appearance: none; background: transparent; border: 0; padding: 0; cursor: pointer; }
+    .tw-bexp { margin: 0.1rem 0 0.55rem; font-size: 0.92rem; font-weight: 800; color: #8de08d; text-align: center; }
+    .tw-bexp--sad { color: #c9913a; }
+    .tw-bmeta { margin: 0.2rem 0 0; font-size: 0.76rem; font-weight: 700; opacity: 0.7; text-align: center; }
+    .tw-bmeta svg { vertical-align: -2px; color: #ffd23f; }
+    .tw-bpips { display: flex; gap: 3px; margin: 0.5rem auto 0; width: min(220px, 82%); }
+    .tw-bpips i { flex: 1; height: 8px; background: #3a2a10; border: 2px solid #000; }
+    .tw-bpips i.is-on { background: #ffe135; }
+    .tw-bpips.is-done i { background: #ffd23f; box-shadow: 0 0 5px rgba(255, 225, 53, 0.8); }
     /* 🌙 the nightfall clock in the HUD's slot: sun or moon, and how long until the other */
     .wh__slot .tw-clock { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
     .wh__slot .tw-clock b { color: #ffe135; }

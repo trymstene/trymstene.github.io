@@ -109,10 +109,21 @@ test('a fix clears the mark, pays on the pass and counts on the room', async ({ 
   await page.waitForTimeout(600);
   const after = await room(page, 'problems');
   expect(after.find((q) => q.id === p.id)).toBeUndefined();
-  // the meter moved and your first pip lit; the clock reads m:ss
-  const mt = await room(page, 'meter');
-  expect(mt.pips).toBe(1);
-  expect(parseInt(mt.fill, 10)).toBeGreaterThan(0);
+  // the health bar moved (the park's bar, the town's number) and the clock reads m:ss
+  const hb = await room(page, 'hbar');
+  expect(hb.used).toBe(1);
+  expect(parseFloat(hb.fill)).toBeGreaterThan(42);
+  expect(hb.pct).toMatch(/^\d+%$/);
+  // tap the bar: the park's health card, with the five bands as zones
+  await page.click('.tw-hbar');
+  await page.waitForTimeout(300);
+  expect(await page.locator('.tw-bbar .tw-bzone').count()).toBe(5);
+  expect(await page.locator('#twBnum').textContent()).toMatch(/^\d+%$/);
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await page.waitForTimeout(400);
+  await page.locator('.tw-card').screenshot({ path: SHOT + 'health-card.png' });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.evaluate(() => document.getElementById('twCardX').click());
   expect(await room(page, 'clock')).toMatch(/^\d+:\d\d$/);
   expect(after.length).toBe(4);
   expect(await room(page, 'fixed')).toContain(p.id);

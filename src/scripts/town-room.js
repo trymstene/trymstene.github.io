@@ -131,27 +131,69 @@ export function bootTownLife(ctx) {
   // plank and the card agree the day the words land; without words it keeps its old label
   if (COPY.board && COPY.board.title) { const pl = world.querySelector('.tw-plank[data-key="board"]'); if (pl) pl.textContent = String(COPY.board.title).toUpperCase(); }
 
-  // 🎯 THE TOWN METER — the park's health-bar logic, on the town's own terms: the band's name,
-  // the fill is how far through the band the town is (one fix moves it by a visible notch),
-  // the next state at the end, and ten pips for YOUR share of today. Gold when done.
-  const meter = document.createElement('div');
-  meter.className = 'tw-meter';
-  meter.innerHTML = '<span class="tw-meter__top"><b></b><em></em></span><span class="tw-meter__track"><i></i></span><span class="tw-meter__pips">' + '<i></i>'.repeat(10) + '</span>';
-  view.appendChild(meter);
-  const mTop = meter.querySelector('b'), mNext = meter.querySelector('em'), mFill = meter.querySelector('.tw-meter__track i'), mPips = [...meter.querySelectorAll('.tw-meter__pips i')];
-  function paintMeter() {
+  // 🌸 THE TOWN HEALTH BAR — the park's, to the pixel (Trym, 15 Sep: "look at the health bar in
+  // the park for park health, make it the same"): bottom-docked, the face and the palette ride
+  // the band, the fill takes the RAW value (one decimal, so one fix visibly moves it), the (i)
+  // cap says it opens. Tap = the town-health card below.
+  const FACES = ['skull', 'frown', 'meh', 'smile', 'laugh'];
+  const hbar = document.createElement('button');
+  hbar.type = 'button'; hbar.className = 'tw-hbar tw-hbar--p2'; hbar.setAttribute('aria-label', 'town health');
+  hbar.innerHTML = '<span class="tw-hbar__face" aria-hidden="true"></span>'
+    + '<span class="tw-hbar__track"><i class="tw-hbar__fill"></i><b class="tw-hbar__pct">—</b></span>'
+    + '<span class="tw-hbar__more" aria-hidden="true">' + iconSvg('info-box', { size: 15 }) + '</span>';
+  view.appendChild(hbar);
+  const hFace = hbar.querySelector('.tw-hbar__face'), hFill = hbar.querySelector('.tw-hbar__fill'), hPct = hbar.querySelector('.tw-hbar__pct');
+  let hbarPhase = -1;
+  function renderHBar() {
     if (!band) return;
-    const wb = W_BAND[band] || {}, bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null;
-    const lo = BAND_LO[band], hi = bi + 1 < BANDS.length ? BAND_LO[BANDS[bi + 1]] : 100;
-    const frac = Math.max(0, Math.min(1, ((L.life + nudge) - lo) / Math.max(1, hi - lo)));
-    mTop.textContent = wb.name || '';
-    mNext.textContent = nb && nb.name ? '→ ' + nb.name : '';
-    mFill.style.width = Math.round(frac * 100) + '%';
-    const used = Math.min(10, (L.cap && L.cap.used) | 0);
-    mPips.forEach((pip, i) => pip.classList.toggle('is-on', i < used));
-    meter.classList.toggle('is-done', used >= 10);
+    const v = Math.max(0, Math.min(100, L.life + nudge)), p = BANDS.indexOf(band);
+    hFill.style.width = v + '%';
+    hPct.textContent = Math.round(v) + '%';
+    hPct.style.left = v + '%';
+    hPct.classList.toggle('is-out', v < 20);   // slim fill: the % steps outside
+    if (hbarPhase !== p) { hbarPhase = p; hbar.className = 'tw-hbar tw-hbar--p' + p; hFace.innerHTML = iconSvg(FACES[p], { size: 20 }); }
+    // the card is open — nudge it live
+    const f = document.getElementById('twBfill');
+    if (f) {
+      f.style.clipPath = 'inset(0 ' + (100 - v) + '% 0 0)';
+      cardBody.querySelectorAll('.tw-bglyph').forEach((g, i) => g.classList.toggle('is-now', i === p));
+      const num = document.getElementById('twBnum'); if (num) num.textContent = Math.round(v) + '%';
+    }
   }
-  const hitMeter = () => { meter.classList.remove('is-hit'); void meter.offsetWidth; meter.classList.add('is-hit'); };
+  const paintMeter = renderHBar;
+  // 🌸 THE TOWN-HEALTH CARD — the park's health card: the band's name, the big number, ONE
+  // continuous bar with the five bands as zones (ticks at the band lines, a glyph over each,
+  // the live one ringed), tap a zone and read that band's line; then today's tally and your
+  // ten pips. Every word is the copy file's.
+  function healthCard() {
+    const v = Math.max(0, Math.min(100, L.life + nudge)), p = BANDS.indexOf(band), w = COPY.board || {}, wb = W_BAND[band] || {};
+    const starts = BANDS.map((k) => BAND_LO[k]), ends = starts.slice(1).concat([100]);
+    const used = Math.min(10, (L.cap && L.cap.used) | 0);
+    openCard('<div class="whg"><p class="whg__label">' + esc(wb.name || '') + '</p><p class="whg__num" id="twBnum">' + Math.round(v) + '%</p></div>'
+      + '<div class="tw-bbar">'
+      + '<div class="tw-bglyphs">' + FACES.map((f, i) => '<span class="tw-bglyph' + (i === p ? ' is-now' : '') + '" style="flex:' + (ends[i] - starts[i]) + '">' + iconSvg(f, { size: 17 }) + '</span>').join('') + '</div>'
+      + '<div class="tw-btrack"><i class="tw-bramp"></i><i class="tw-bfill" id="twBfill" style="clip-path:inset(0 ' + (100 - v) + '% 0 0)"></i>'
+      + starts.slice(1).map((t) => '<i class="tw-btick" style="left:' + t + '%"></i>').join('') + '</div>'
+      + FACES.map((f, i) => '<button class="tw-bzone" type="button" data-p="' + i + '" style="left:' + starts[i] + '%;width:' + (ends[i] - starts[i]) + '%" aria-label="town health band ' + (i + 1) + ' of 5"></button>').join('')
+      + '</div>'
+      + '<p id="twBexp"></p>'
+      + '<p class="tw-bmeta">' + (L.today.fixes | 0) + ' ' + esc((w.fixes || '').toLowerCase()) + ' · ' + (L.today.people | 0) + ' ' + esc((w.people || '').toLowerCase()) + '</p>'
+      + '<div class="tw-bpips' + (used >= 10 ? ' is-done' : '') + '">' + FACES.concat(FACES).map((_, i) => '<i' + (i < used ? ' class="is-on"' : '') + '></i>').join('') + '</div>');
+    const exp = document.getElementById('twBexp');
+    const show = (i) => {
+      const bw = W_BAND[BANDS[i]] || {};
+      exp.className = 'tw-bexp' + (i <= 1 ? ' tw-bexp--sad' : '');
+      exp.textContent = fill(bw.line || bw.name || '');
+      cardBody.querySelectorAll('.tw-bglyph').forEach((g, gi) => g.classList.toggle('is-open', gi === i));
+    };
+    cardBody.querySelectorAll('.tw-bzone').forEach((bz) => bz.addEventListener('click', () => show(+bz.dataset.p)));
+    show(Math.max(0, p));
+    track('town_health', { life: Math.round(v) });
+    return true;
+  }
+  hbar.addEventListener('click', (e) => { e.stopPropagation(); healthCard(); });
+  hbar.addEventListener('pointerdown', (e) => e.stopPropagation());   // the view's tap-to-walk must not fire under it
+
   // 🌙 THE NIGHTFALL CLOCK in the HUD's slot: the town's day is twelve real minutes and night is
   // its last two; the chip says how long until it falls (or, at night, until dawn) — so a player
   // knows whether to stick around (Trym, 14 Sep: "i dont as a player understand when nightfall is")
@@ -440,7 +482,6 @@ export function bootTownLife(ctx) {
     else if (p.type === 'bin') setBin(false);
     else if (p.type === 'fountain') setFountain(false);
     else if (p.type === 'shutter') { cond.fixedShut.add(p.key); rollUp(p.key); life.setKeep(keepFn); }
-    hitMeter();
     // the optimistic notch: the room's word replaces it on the reply (and if the day's share is
     // spent the notch is not drawn at all — the bar never lies and comes back)
     if (L.cap && L.cap.used < L.cap.max) { L.life = Math.min(100, L.life + 1.2); L.cap.used += 1; paintMeter(); }
@@ -773,7 +814,7 @@ export function bootTownLife(ctx) {
     const beat = life.beat();
     if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); }
     night.hidden = inside();
-    meter.hidden = inside();
+    hbar.hidden = inside();
     if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;
@@ -831,10 +872,10 @@ export function bootTownLife(ctx) {
     shelf: () => shelfFor(), today: () => today.slice(), odd: () => oddKey,
     merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, crows: () => cond.crows.filter((s) => !s.gone).length,
     bin: () => cond.binFull, fountain: () => (cond.fountainDry ? 'dry' : 'on'),
-    cards: { store: storeCard, board: boardCard, merchant: merchantCard, vendor: vendorCard },
+    cards: { store: storeCard, board: boardCard, merchant: merchantCard, vendor: vendorCard, health: healthCard },
     story, copy: () => Object.keys(COPY),
     coins: () => coinsNow(), found,
-    meter: () => ({ band: mTop.textContent, next: mNext.textContent, fill: mFill.style.width, pips: mPips.filter((p) => p.classList.contains('is-on')).length, done: meter.classList.contains('is-done') }),
+    hbar: () => ({ pct: hPct.textContent, fill: hFill.style.width, phase: hbarPhase, used: Math.min(10, (L.cap && L.cap.used) | 0) }),
     clock: () => (slot ? slot.textContent : ''), parked: () => !!parked,
     // 🧪 a QA purse (the pass worker refuses the 'qa' faucet; the coins stay on the local ledger)
     rich: () => (TEST ? passStat('coins_earned', 500, 'qa') : 0),
