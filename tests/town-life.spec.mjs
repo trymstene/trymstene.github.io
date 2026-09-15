@@ -272,6 +272,10 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   await seam(page, () => window.__town.room.cards.board());
   await page.waitForTimeout(200);
   expect(await page.locator('.tw-tally b').count()).toBe(3);
+  // the report lists what wants doing today, one entry per kind of thing open (or one line when nothing is)
+  const kinds = new Set((await room(page, 'problems')).map((q) => q.type)).size;
+  expect(((await page.locator('.tw-todo').textContent()) || '').split(' · ').length).toBe(Math.max(1, kinds));
+  expect(await page.locator('.tw-stamp').count()).toBe(0);
   expect(await page.locator('.tw-card--board .tw-lamps').count()).toBe(1);
   await page.screenshot({ path: SHOT + 'board.png' });
   // and the board at a desktop width, the card alone

@@ -112,7 +112,7 @@ export function bootTownLife(ctx) {
     // band's words used to show on every load; the board and the health card say the same — Trym, 15 Sep:
     // "i dont get why its there … if it doesnt bring any value remove it")
     const wb = W_BAND[band] || {};
-    if (wasBand && wasBand !== band && wb.name) { say(wb.name + ' — ' + fill((BANDS.indexOf(band) > BANDS.indexOf(wasBand) ? wb.brings : wb.line) || '')); for (const k of ANCHORS.lamps) { const p = propOf(k); if (p && lampWas[k] && lampWas[k] !== cond.lamps[k]) poof(p.x + p.w / 2, p.base - 40); } }
+    if (wasBand && wasBand !== band && wb.name) { say(BANDS.indexOf(band) > BANDS.indexOf(wasBand) && wb.brings ? wb.name + ' — ' + fill(wb.brings) : wb.name); for (const k of ANCHORS.lamps) { const p = propOf(k); if (p && lampWas[k] && lampWas[k] !== cond.lamps[k]) poof(p.x + p.w / 2, p.base - 40); } }
     wasBand = band;
     paintMeter();
   }
@@ -183,7 +183,7 @@ export function bootTownLife(ctx) {
     const show = (i) => {
       const bw = W_BAND[BANDS[i]] || {};
       exp.className = 'tw-bexp' + (i <= 1 ? ' tw-bexp--sad' : '');
-      exp.textContent = (bw.name ? bw.name + (bw.line ? ' — ' : '') : '') + fill(bw.line || '');
+      exp.textContent = (bw.name || '') + (bw.brings ? ' — ' + fill(bw.brings) : '');   // the state, and what it brings
       cardBody.querySelectorAll('.tw-bglyph').forEach((g, gi) => g.classList.toggle('is-open', gi === i));
     };
     if (card) card.classList.add('tw-card--health');
@@ -623,34 +623,40 @@ export function bootTownLife(ctx) {
   // many lit as the town is well — the one place its state is drawn), and three pinned
   // notes for the tally. The words are the copy file's; the pictures are the town's own.
   function boardCard() {
-    const w = COPY.board || {}, wb = W_BAND[band] || {};
+    const w = COPY.board || {};
     const foundN = OBJECTS.filter((o) => found(o.id)).length;
     const note = (icon, n, label, cls) => '<div class="tw-paper tw-paper--note ' + (cls || '') + '"><i class="tw-pin"></i>' + iconSvg(icon, { size: 26 }) + '<b>' + n + '</b><small>' + esc(label) + '</small></div>';
     // the second notice: what is going on — a night tonight, a night on, the morning after — or,
     // on an ordinary day, that nights exist at all; and always what fixing is for
     const om = omenNow(), after = !curse && !om && L.curseAt && Date.now() - L.curseAt < 8 * 3600000;
     const news = curse && curse !== 'hush' ? w.night : om ? w.omen : after ? w.after : w.curse;
-    const bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null;
+    const bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null, todo = todoList();
     openCard('<div class="tw-board2">'
       + '<div class="tw-board2__head"><span class="tw-plank tw-plank--card">' + esc(w.title || 'Notices') + '</span></div>'
-      // the first notice is for a banana who has just walked in: what this square is and what a fix does (Trym, 15 Sep)
+      // 📋 THE REPORT, for a banana who has just walked in (Trym, 15 Sep: "look at the totality … fixing copy means often
+      // cutting crap"): what this square is; the eight lamps as they are; what wants doing today — the player's own
+      // open list, in plain words; one line on what the next state brings; one on the nights. No state stamp, no band
+      // poetry, no paragraph on why — the intro says what a fix does.
       + (w.intro ? '<div class="tw-paper tw-paper--intro"><i class="tw-pin"></i><p>' + esc(fill(w.intro)) + '</p></div>' : '')
       + '<div class="tw-paper tw-paper--notice"><i class="tw-pin tw-pin--b"></i>'
-      + (wb.name ? (w.health ? '<small class="tw-stamp__label">' + esc(w.health) + '</small>' : '') + '<div class="tw-stamp' + (curse && curse !== 'hush' ? ' tw-stamp--night' : '') + '">' + esc(wb.name) + '</div>' : '')
       + '<canvas class="tw-lamps" width="220" height="66" aria-hidden="true"></canvas>'
+      + '<p class="tw-todo">' + (w.todo ? '<small class="tw-todo__h">' + esc(w.todo) + '</small>' : '') + (todo.length ? todo.map(esc).join(' · ') : esc(fill(w.nothing || ''))) + '</p>'
       + (nb && nb.name ? '<small class="tw-next">' + (w.next ? esc(w.next) + ' ' : '') + '<b>' + esc(nb.name) + '</b>' + (nb.brings ? ' — ' + esc(fill(nb.brings)) : '') + '</small>' : '')
-      + (wb.line ? '<p>' + esc(fill(wb.line)) + '</p>' : '')
       + '</div>'
-      + (w.why || news ? '<div class="tw-paper tw-paper--news' + (om || (curse && curse !== 'hush') ? ' is-omen' : '') + '"><i class="tw-pin' + (om || (curse && curse !== 'hush') ? '' : ' tw-pin--b') + '"></i>'
-        + (news ? '<p class="tw-news__now">' + esc(fill(news)) + '</p>' : '') + (w.why ? '<p>' + esc(fill(w.why)) + '</p>' : '') + '</div>' : '')
+      + (news ? '<div class="tw-paper tw-paper--news' + (om || (curse && curse !== 'hush') ? ' is-omen' : '') + '"><i class="tw-pin' + (om || (curse && curse !== 'hush') ? '' : ' tw-pin--b') + '"></i><p class="tw-news__now">' + esc(fill(news)) + '</p></div>' : '')
       + '<div class="tw-tally">' + note('tools', L.today.fixes | 0, w.fixes || '', 'is-a') + note('users', L.today.people | 0, w.people || '', 'is-b') + note('moon-solid', foundN + '/' + OBJECTS.length, w.found || '', 'is-c') + '</div>'
       + (foundN ? '<div class="tw-paper tw-paper--list"><i class="tw-pin"></i>' + OBJECTS.filter((o) => found(o.id)).map((o) => { const d = DEX[o.decor], wo = W_OBJ[o.id] || {}; return '<div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(wo.name || d.name) + '</b>' + (wo.desc ? '<small>' + esc(wo.desc) + '</small>' : '') + '</div></div>'; }).join('') + '</div>' : '')
       + '</div>');
     if (card) card.classList.add('tw-card--board');
-    // the way to the next state: how far the town is through this band, no number
-    const lo = BAND_LO[band], hi = bi + 1 < BANDS.length ? BAND_LO[BANDS[bi + 1]] : 100;
-    drawLamps(cardBody.querySelector('.tw-lamps'), Math.max(0, Math.min(1, ((L.life + nudge) - lo) / Math.max(1, hi - lo))));
+    drawLamps(cardBody.querySelector('.tw-lamps'));
     return true;
+  }
+  // today's open list in plain words — "2 dark lamps · a full bin · rubbish on the cobbles" — from the player's own
+  // problems and the approved words for each kind (things.<kind> = [one, many])
+  function todoList() {
+    const W_THING = COPY.things || {}, counts = {};
+    for (const p of problems) counts[p.type] = (counts[p.type] || 0) + 1;
+    return Object.entries(counts).map(([t, n]) => { const w = W_THING[t]; return w && w.length ? fill((n === 1 ? w[0] : w[1] || w[0]).replace('{n}', n)) : n + ' ' + t; });
   }
   // the town's own EIGHT lamps as they are — lit, stuttering or dark — drawn from the placed lamp's sprite so the
   // board never needs art of its own, and never says a lamp is out that the square shows lit (Trym, 15 Sep)

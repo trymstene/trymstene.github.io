@@ -363,8 +363,8 @@ export const TOWN_BANDS = ['abandoned', 'struggling', 'recovering', 'lively', 't
 export const CURSED_IDS = ['humlantern', 'coldfire', 'stillbear', 'lostpack', 'coldurn', 'redcap', 'tinwalker', 'emptymirror', 'stoppedclock', 'lastlamp'];   // six swapped 15 Sep: small things that read cursed
 const lifeFields = {
   'bands[].key': { kind: 'key', max: 12, note: 'FIXED: abandoned, struggling, recovering, lively, thriving, in that order.' },
-  'bands[].name': { kind: 'prose', aim: 18, max: 24, note: 'The town’s own word for itself in this state, as the notice board would print it. One or two words. Never the key, a score or a percentage.' },
-  'bands[].line': { kind: 'prose', aim: 90, max: 110, note: 'One line under it in the board’s voice: what is true of the square right now, so a player who looks up sees it. It MUST STAND ALONE for a banana who has just walked in and knows nothing: name the things (the lamps, the two kiosks’ shutters, the bins, the fountain) and what wants doing; never “again”, “still”, or any nod to how it was before. No number, no rate.' },
+  'bands[].name': { kind: 'prose', aim: 10, max: 12, note: 'The PLAIN word for the state, capitalised, exactly these five in order: Abandoned, Struggling, Recovering, Lively, Thriving. (The evocative names were bad copy — a newcomer must read the state at once; Trym, 15 Sep.)' },
+  'bands[].line': { kind: 'prose', aim: 90, max: 110, note: 'RETIRED 15 Sep — no longer written or read (the board lists what wants doing instead); kept so the last approved file passes until the next approve. One line under it in the board’s voice: what is true of the square right now, so a player who looks up sees it. It MUST STAND ALONE for a banana who has just walked in and knows nothing: name the things (the lamps, the two kiosks’ shutters, the bins, the fountain) and what wants doing; never “again”, “still”, or any nod to how it was before. No number, no rate.' },
   'bands[].brings': { kind: 'prose', aim: 50, max: 64, note: 'What this state BRINGS, as the promise on the board for the state above the town’s: the things it opens or lights or fills. A fragment, not a sentence; no number.' },
   'store.greet': { kind: 'prose', aim: 80, max: 100, note: 'The line at the top of Pip’s shelf, in Pip’s voice. One breath.' },
   'store.shut': { kind: 'prose', aim: 90, max: 110, note: 'Shown instead of the shelf when the store is shut and Pip is indoors. Not an apology; it should make a player want to fix things.' },
@@ -372,14 +372,25 @@ const lifeFields = {
   'store.van': { kind: 'prose', aim: 18, max: 26, note: 'A row that arrives by van rather than at once. Three or four words.' },
   'store.sold[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said when somebody buys. MUST contain {item} — the game puts the thing’s name there.' },
   'board.title': { kind: 'prose', aim: 12, max: 18, note: 'The board’s heading. One or two words.' },
-  'board.intro': { kind: 'prose', aim: 130, max: 160, note: 'The FIRST notice, for a banana who has just walked in and knows nothing: this square is shared by every player; things here break; you put one right by walking up to it; every fix lifts the square for everyone. Plain and concrete, two short sentences at most. No number, no rate, no time.' },
+  'board.intro': { kind: 'prose', aim: 100, max: 120, note: 'The FIRST notice, for a banana who has just walked in and knows nothing: this square is shared by every player; things here break; you fix one by walking up to it; every fix lifts the square for everyone. Two short sentences at most. No number, no rate, no time.' },
+  'board.todo': { kind: 'prose', aim: 14, max: 20, note: 'The small heading over the list of what wants doing today. Two or three words.' },
+  'board.nothing': { kind: 'prose', aim: 36, max: 48, note: 'Shown instead of that list when the player has fixed everything on it today. One short line; tomorrow brings more.' },
   'board.fixes': { kind: 'prose', aim: 20, max: 28, note: 'The label under the count of things put right today, by everyone. Two to four words, no number.' },
   'board.people': { kind: 'prose', aim: 20, max: 28, note: 'The label under the count of different bananas who did that today.' },
   'board.found': { kind: 'prose', aim: 20, max: 28, note: 'The label under the cursed objects this player has found, out of all of them.' },
   'board.next': { kind: 'prose', aim: 10, max: 14, note: 'The word before the next state’s name on the bar under the lamps. One or two words, like a signpost.' },
   'board.health': { kind: 'prose', aim: 12, max: 16, note: 'The label over the big number on the health card — what the number IS, the way the park’s card says “park health”. Two words.' },
-  'board.why': { kind: 'prose', aim: 100, max: 120, note: 'The standing notice: what putting things right does for the square — that every fix lifts it, and what a lifted square opens. NAME the things: the lamps, the two kiosks’ shutters, better stock on Pip’s counter — never “shutters rise” or “better shelves” without saying whose. No number, no rate.' },
-  'board.curse': { kind: 'prose', aim: 110, max: 135, note: 'The standing notice on an ordinary day: that some nights the square is cursed, what such a night brings (the lamps dark, the kiosks’ doors shut, ghosts about that undo things, strange things lying about that can be picked up) — and never when.' },
+  'board.why': { kind: 'prose', aim: 100, max: 120, note: 'RETIRED 15 Sep — no longer written or read (the intro says what a fix does, the next line what the next state brings); kept so the last approved file passes until the next approve. The standing notice: what putting things right does for the square — that every fix lifts it, and what a lifted square opens. NAME the things: the lamps, the two kiosks’ shutters, better stock on Pip’s counter — never “shutters rise” or “better shelves” without saying whose. No number, no rate.' },
+  'board.curse': { kind: 'prose', aim: 80, max: 100, note: 'ONE sentence, the standing notice on an ordinary day: some nights the square is cursed — the lamps go dark, the kiosks shut, ghosts wander and undo things. Never when.' },
+  'things.lamp[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'A dark street lamp, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.litter[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'Rubbish on the cobbles, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.bin[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'A street bin overflowing, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.dumpster[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'A dumpster open and full, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.graffiti[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'A tag on a shopfront, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.fountain[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'The fountain run dry, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.shutter[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'A kiosk with its shutter down, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.crows[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'Crows on a bench or a roof, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
+  'things.leaves[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'Leaves the storm left, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
   'board.omen': { kind: 'prose', aim: 90, max: 110, note: 'Pinned when a night is coming: the signs the player can see right now (crows on every perch, a ghost by daylight, the sky wrong at the edges). A warning, not a time.' },
   'board.night': { kind: 'prose', aim: 90, max: 110, note: 'Pinned while a Curse Night is on: what to do — keep to the lit lamps, the night stall trades, what lies about may be taken.' },
   'board.after': { kind: 'prose', aim: 90, max: 110, note: 'Pinned the morning after: what the night cost the square, and that today needs hands.' },
@@ -418,16 +429,16 @@ function lifeShape(data) {
   return bad;
 }
 const lifeSchema = {
-  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects'],
+  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects', 'things'],
   properties: {
-    bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'line', 'brings'],
-      properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), line: str(lifeFields['bands[].line'].note), brings: str(lifeFields['bands[].brings'].note) } } },
+    bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'brings'],
+      properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), brings: str(lifeFields['bands[].brings'].note) } } },
     store: { type: 'object', additionalProperties: false, required: ['greet', 'shut', 'needs', 'van', 'sold'],
       properties: { greet: str(lifeFields['store.greet'].note), shut: str(lifeFields['store.shut'].note), needs: str(lifeFields['store.needs'].note), van: str(lifeFields['store.van'].note),
         sold: { type: 'array', description: lifeFields['store.sold[]'].note, items: { type: 'string' } } } },
-    board: { type: 'object', additionalProperties: false, required: ['title', 'intro', 'fixes', 'people', 'found', 'next', 'health', 'why', 'curse', 'omen', 'night', 'after'],
-      properties: { title: str(lifeFields['board.title'].note), intro: str(lifeFields['board.intro'].note), fixes: str(lifeFields['board.fixes'].note), people: str(lifeFields['board.people'].note), found: str(lifeFields['board.found'].note),
-        next: str(lifeFields['board.next'].note), health: str(lifeFields['board.health'].note), why: str(lifeFields['board.why'].note), curse: str(lifeFields['board.curse'].note), omen: str(lifeFields['board.omen'].note), night: str(lifeFields['board.night'].note), after: str(lifeFields['board.after'].note) } },
+    board: { type: 'object', additionalProperties: false, required: ['title', 'intro', 'todo', 'nothing', 'fixes', 'people', 'found', 'next', 'health', 'curse', 'omen', 'night', 'after'],
+      properties: { title: str(lifeFields['board.title'].note), intro: str(lifeFields['board.intro'].note), todo: str(lifeFields['board.todo'].note), nothing: str(lifeFields['board.nothing'].note), fixes: str(lifeFields['board.fixes'].note), people: str(lifeFields['board.people'].note), found: str(lifeFields['board.found'].note),
+        next: str(lifeFields['board.next'].note), health: str(lifeFields['board.health'].note), curse: str(lifeFields['board.curse'].note), omen: str(lifeFields['board.omen'].note), night: str(lifeFields['board.night'].note), after: str(lifeFields['board.after'].note) } },
     merchant: { type: 'object', additionalProperties: false, required: ['name', 'greet', 'lines'],
       properties: { name: str(lifeFields['merchant.name'].note), greet: str(lifeFields['merchant.greet'].note), lines: { type: 'array', description: lifeFields['merchant.lines[]'].note, items: { type: 'string' } } } },
     vendor: { type: 'object', additionalProperties: false, required: ['name', 'greet', 'bought', 'lines'],
@@ -436,19 +447,22 @@ const lifeSchema = {
     closed: { type: 'array', description: lifeFields['closed[]'].note, items: { type: 'string' } },
     objects: { type: 'array', description: 'The ten cursed objects, ids fixed and in order.', items: { type: 'object', additionalProperties: false, required: ['id', 'name', 'desc'],
       properties: { id: str(lifeFields['objects[].id'].note), name: str(lifeFields['objects[].name'].note), desc: str(lifeFields['objects[].desc'].note) } } },
+    things: { type: 'object', additionalProperties: false, description: 'What wants doing, in plain words: for each kind, [one, many].', required: ['lamp', 'litter', 'bin', 'dumpster', 'graffiti', 'fountain', 'shutter', 'crows', 'leaves'],
+      properties: { lamp: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.lamp[]'].note }, litter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.litter[]'].note }, bin: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.bin[]'].note }, dumpster: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.dumpster[]'].note }, graffiti: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.graffiti[]'].note }, fountain: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.fountain[]'].note }, shutter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.shutter[]'].note }, crows: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.crows[]'].note }, leaves: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.leaves[]'].note } } },
   },
 };
 
 export const JOBS = {
   'town-life': {
     id: 'town-life',
+    redraft: 'the board was cut to what a newcomer needs 15 Sep (plain state words, a first notice, the open list) — the approved words lack `things`',   // drop this the day the new draft is approved
     title: 'Banana Town — the town’s life',
     what: 'The notice board’s word for each band, Pip’s counter, the travelling stall, the night vendor, the ghosts, the closed-today notes and the cursed objects.',
     brief: 'tools/copy-briefs/town-life.md',
     out: 'tools/copy-out/town-life.json',
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
-    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects'],
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects', 'things'],
     // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',
