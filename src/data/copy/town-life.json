@@ -107,19 +107,19 @@
       "desc": "Its flames flicker blue and give the air no warmth at all."
     },
     {
-      "id": "wetchair",
-      "name": "Dewy Seat",
-      "desc": "The camp chair is damp beneath every cushion, as if it has just sighed."
+      "id": "stillbear",
+      "name": "Homeward Teddy",
+      "desc": "The teddy bear is always turned toward the road home, even after being moved."
     },
     {
-      "id": "drycrate",
-      "name": "Featherweight Crate",
-      "desc": "The apple crate is empty and light enough to nudge with one peel."
+      "id": "lostpack",
+      "name": "Unclaimed Rucksack",
+      "desc": "The backpack is packed full, though nobody in the square admits to dropping it."
     },
     {
-      "id": "nightbush",
-      "name": "Moonhumming Bush",
-      "desc": "The round bush hums faintly after dark, mostly to its own leaves."
+      "id": "coldurn",
+      "name": "Everbloom Urn",
+      "desc": "Its white flowers never wilt, and nobody remembers putting them in the vase."
     },
     {
       "id": "redcap",
@@ -127,19 +127,19 @@
       "desc": "The mushroom caps flicker like tiny lamps that cannot settle down."
     },
     {
-      "id": "emptyhouse",
-      "name": "Vacant Birdhouse",
-      "desc": "The little birdhouse has a neat doorway, but nothing will go inside."
+      "id": "tinwalker",
+      "name": "Wandering Tinwalker",
+      "desc": "The wind-up robot stands somewhere else each time you look back at it."
     },
     {
-      "id": "watcher",
-      "name": "Turncoat Scarecrow",
-      "desc": "It faces away whenever you look back, straw hat perfectly level."
+      "id": "emptymirror",
+      "name": "Absent Reflection",
+      "desc": "The standing mirror shows the square perfectly, except for the banana before it."
     },
     {
-      "id": "secondangel",
-      "name": "Second-Facing Angel",
-      "desc": "The angel statue has turned away again, despite its very heavy wings."
+      "id": "stoppedclock",
+      "name": "Lost-Hour Clock",
+      "desc": "The grandfather clock stopped at an hour the town does not have."
     },
     {
       "id": "lastlamp",
