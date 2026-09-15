@@ -29,7 +29,7 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE } from './town-geo.js';
+import { STATE, OB_RECTS, OB_CIRCLES } from './town-geo.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_COUNT, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
@@ -740,6 +740,14 @@ export function bootTownLife(ctx) {
   }
   // ⚠️ a ghost's own x/y must move WITH its sprite: moveSprite() alone left g.x where it began, so every
   // walking ghost took one step from its start each tick and jittered in place (found 15 Sep)
+  // a roamer's way is clear when no sample of the straight line falls inside a BIG solid (a building, the fountain):
+  // a ghost may pass behind a bench, never through the town hall (the eye caught one inside the fountain, 15 Sep)
+  const BIG = OB_RECTS.filter((r) => (r[2] - r[0]) * (r[3] - r[1]) > 14400);
+  function clearWay(x0, y0, x1, y1) {
+    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 30);
+    for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n; if (BIG.some((r) => x > r[0] && x < r[2] && y > r[1] && y < r[3]) || OB_CIRCLES.some((c) => Math.hypot(x - c[0], y - c[1]) < c[2] + 24)) return false; }
+    return true;
+  }
   function moveGhost(g, x, y) { g.x = x; g.y = y; moveSprite(g.s, x, y); }
   function moveSprite(s, x, y) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y)); }
   function stepGhosts(dt) {
@@ -770,7 +778,7 @@ export function bootTownLife(ctx) {
         else { const st = Math.min(dist, d.speed * (g.hurry > 0 ? 2.4 : 1) * dt); moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st); if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0); }
       } else if (d.roam) {   // 👣 roams: waypoint to waypoint over the whole town, a pause at each, facing where it goes
         if (g.wait > 0) { g.wait -= dt; continue; }
-        if (!g.to) { const opts = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700; }); g.to = opts[Math.floor(Math.random() * opts.length)] || ROAM[0]; }
+        if (!g.to) { const opts = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]); }); g.to = opts[Math.floor(Math.random() * opts.length)] || ROAM[Math.floor(Math.random() * ROAM.length)]; }
         const dx = g.to[0] - g.x, dy = g.to[1] - g.y, dist = Math.hypot(dx, dy);
         if (dist < 4) { g.to = null; g.wait = 1.5 + Math.random() * 2.5; continue; }
         const st = Math.min(dist, d.speed * dt);

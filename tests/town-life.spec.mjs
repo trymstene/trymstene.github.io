@@ -360,6 +360,9 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   expect(Math.hypot(r1.x - r0.x, r1.y - r0.y)).toBeGreaterThan(10);
   expect(['right', 'left', 'front', 'back']).toContain(r1.face);
   await overview(page, 'roamer', { x: Math.max(0, r1.x - 120), y: Math.max(0, r1.y - 170), width: 240, height: 230 });
+  await page.waitForTimeout(3000);
+  const r2 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
+  await overview(page, 'roamer2', { x: Math.max(0, r2.x - 120), y: Math.max(0, r2.y - 170), width: 240, height: 230 });
   await seam(page, () => window.__town.life.set(8));   // morning
   await page.waitForTimeout(1400);
   const day = (await room(page, 'ghosts')).map((g) => g.id);
