@@ -66,8 +66,8 @@ for (const [key, fx, fbase, fw, fh, n, period] of ANIM_ALL) {
 const ABOUT = {
   hall: ['TOWN HALL', 96, 'Town Hall. Nib’s desk and the big book, inside the clock tower. Chapter two starts here. Not built yet.'],
   post: ['', 0, 'Post Office. Stamp sends stock postcards; your mailbox is by the door. Not built yet.'],
-  store: ['GENERAL STORE', 104, 'General Store. Pip sells fireworks, lures and duck bread. Not built yet.'],
-  bank: ['BANK', 118, 'The bank. It is an ATM. Not built yet.'],
+  store: ['', 104, 'General Store. Pip sells fireworks, lures and duck bread. Not built yet.'],
+  bank: ['', 118, 'The bank. It is an ATM. Not built yet.'],
   // the print shop's plank is an OVERLAY on the sprite's own STORE sign (measured: the sign band is 64×22 world px
   // centred at 1585,932): grey metal, a bit bigger, its bottom-centre 2 px under the sign (Trym, 15 Sep)
   print: ['STICKERS', 93, 'The print shop. The real sticker packs in the window. Not built yet.', -35],
@@ -94,12 +94,12 @@ const ABOUT = {
   orchard: ['THE ORCHARD', 0, 'The orchard. Three apples fall here a day; a treat your animals at home love. Not built yet.'],
   monument: ['THE MONUMENT', 232, 'The monument. Monday’s names are read out here. Not built yet.'],
   bus: ['BUS STOP', 122, 'The bus stop. The roads still work; this is the shortcut.'],
-  info: ['INFO', 224, 'The info point. A map of the town and what is where. Not built yet.'],
+  info: ['', 224, 'The info point. A map of the town and what is where. Not built yet.'],
   terrace: ['', 132, 'The terrace. Sit with the fortune. Not built yet.'],
   cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
   garden_e: ['CAFÉ GARDEN', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
   garden_w: ['', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
-  stand: ['LEMONADE', 97, 'Lemonade, from a kid at the Bunch. One coin, one small good thing. Not built yet.'],
+  stand: ['LEMONADE', 93, 'Lemonade, from a kid at the Bunch. One coin, one small good thing. Not built yet.'],
 };
 for (const [key, spot] of Object.entries(SPOTS)) {
   const a = ABOUT[key];
