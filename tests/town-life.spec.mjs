@@ -40,11 +40,13 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect(await room(page, 'band')).toBe('recovering');
   expect((await room(page, 'life')).life).toBe(42);
   const p0 = await room(page, 'problems');
-  expect(p0.length).toBe(5);
+  const shut0 = await room(page, 'shut');
+  expect(p0.length).toBe(5 + shut0.length);
   const lamps0 = await room(page, 'lamps');
   expect(Object.values(lamps0).filter((s) => s === 'out').length).toBe(1);
   expect(Object.values(lamps0).filter((s) => s === 'flicker').length).toBe(1);
-  expect(await page.locator('.tw-mark').count()).toBe(5);
+  // one mark per problem — five, plus the shutter on any kiosk today's events shut (always fixable)
+  expect(await page.locator('.tw-mark').count()).toBe(p0.length);
   await page.screenshot({ path: SHOT + 'recovering.png' });
   await overview(page, 'recovering-all');
 
@@ -141,7 +143,9 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   await town(page);
   await seam(page, () => window.__town.life.set(3));   // dawn, so "in" is a change
   await page.waitForTimeout(400);
-  expect((await seam(page, () => window.__town.life.kept())).length).toBe(0);
+  // a low-ish town keeps a seeded few indoors on an ordinary day: remember how many, the night sends ALL in
+  const kept0 = (await seam(page, () => window.__town.life.kept())).length;
+  expect(kept0).toBeLessThanOrEqual(3);
   // the omens first: a night on its way shows in the world before it comes
   await seam(page, () => window.__town.room.curse('omen'));
   await page.waitForTimeout(900);
@@ -184,7 +188,7 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect(await room(page, 'night')).toBe(0);
   expect((await room(page, 'ghosts')).length).toBe(0);
   expect(await room(page, 'vendor')).toBe(false);
-  expect((await seam(page, () => window.__town.life.kept())).length).toBe(0);
+  expect((await seam(page, () => window.__town.life.kept())).length).toBe(kept0);
   expect(await page.evaluate(() => !!document.querySelector('.wx.is-storm'))).toBe(false);
 });
 
