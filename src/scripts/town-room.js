@@ -357,6 +357,11 @@ export function bootTownLife(ctx) {
       if (s.mode === 'pulse') s.fps = 3; else if (s.mode === 'flicker') s.fps = 9;
     }
     lampsLit = dark;
+    // 🌙 nobody stands about at night: the visitors and the travelling stall are gone until morning, like the residents
+    // indoors (Trym, 15 Sep: "aren't the townsbananas supposed to go inside in the night?" — they were; these were not)
+    const nightOut = beat === 5 || (curse && curse !== 'hush');
+    for (const b of cond.visitors) b.el.hidden = nightOut;
+    if (merchant) merchant.el.hidden = nightOut;
   }
   function shutters() {
     for (const k of CLOSABLE) {
@@ -1045,7 +1050,7 @@ export function bootTownLife(ctx) {
     if (kind === 'p') { const p = problems.find((q) => q.id === rest); if (p) walkTo(p.x, (p.foot || p.y) + 26, () => fix(rest)); }
     else if (kind === 'o') { const o = objects.find((q) => q.def.id === rest); if (o) walkTo(o.x, o.y + 22, () => takeObject(o)); }
     else if (kind === 'g') { const g = ghosts.find((q) => q.def.id === rest && !q.done); if (g) walkTo(g.x + (ctx.pos.x < g.x ? -56 : 56), g.y + 6, () => { const line = one(COPY.ghosts, dayNum() + ghosts.length); if (line) say(fill(line)); if (g.s.n > 1) { g.s.fps = 9; setTimeout(() => { g.s.fps = g.def.fps || 5; }, 2500); } track('town_ghost', { id: rest }); }); }
-    else if (kind === 'm' && merchant) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, merchantCard);
+    else if (kind === 'm' && merchant && !merchant.el.hidden) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, merchantCard);
     else if (kind === 'v' && vendor) walkTo(vendor.x + (ctx.pos.x < vendor.x ? -58 : 58), vendor.y + 8, vendorCard);
   }
 
@@ -1088,7 +1093,7 @@ export function bootTownLife(ctx) {
     take: (id) => { const o = objects.find((q) => q.def.id === id); if (o) takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,
     shelf: () => shelfFor(), today: () => today.slice(), odd: () => oddKey,
-    merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, crows: () => cond.crows.filter((s) => !s.gone).length,
+    merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
     full: () => [...cond.full], fountain: () => (cond.fountainDry ? 'dry' : 'on'),
     cards: { store: storeCard, board: boardCard, merchant: merchantCard, vendor: vendorCard, health: healthCard },
     story, copy: () => Object.keys(COPY),

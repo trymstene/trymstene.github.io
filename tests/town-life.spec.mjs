@@ -372,11 +372,14 @@ test('walking onto a thing picks it up; a lamp waits for a tap', async ({ page }
 // 👻 every night has its ghosts (Trym, 15 Sep), and dawn takes them
 test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   await town(page);
+  await setBand(page, 90);   // Thriving: three visitors by day
+  expect(await room(page, 'visitorsOut')).toBe(3);
   await seam(page, () => window.__town.life.set(21));   // the town's night
   await page.waitForTimeout(1400);   // the room looks twice a second
   const ids = (await room(page, 'ghosts')).map((g) => g.id);
   for (const id of ['roam', 'drift', 'sit', 'wisp']) expect(ids, 'the night set').toContain(id);
   expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.5);
+  expect(await room(page, 'visitorsOut')).toBe(0);   // nobody stands about at night
   // the night's things come through it: the next one now (QA), with its wisp and a blooming aura
   await room(page, 'nightSpawn');
   await page.waitForTimeout(700);
@@ -408,6 +411,7 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   await stand(page, 1360, 880);
   await seam(page, () => window.__town.life.set(8));   // morning
   await page.waitForTimeout(1400);
+  expect(await room(page, 'visitorsOut')).toBe(3);   // morning: they are back
   const day = (await room(page, 'ghosts')).map((g) => g.id);
   expect(day).not.toContain('drift');
   expect(day).not.toContain('sit');
