@@ -379,6 +379,7 @@ const lifeFields = {
   'store.van': { kind: 'prose', aim: 18, max: 26, note: 'A row that arrives by van rather than at once. Three or four words.' },
   'store.sold[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said when somebody buys. MUST contain {item} — the game puts the thing’s name there.' },
   'board.title': { kind: 'prose', aim: 12, max: 18, note: 'The board’s heading. One or two words.' },
+  'shutSign': { kind: 'prose', aim: 6, max: 8, note: 'The ONE word on the little red sign in a shut kiosk’s window (Trym, 15 Sep). A word a shop hangs on its door.' },
   'board.intro': { kind: 'prose', aim: 100, max: 120, note: 'The FIRST notice, for a banana who has just walked in and knows nothing: this square is shared by every player; things here break; you fix one by walking up to it; every fix lifts the square for everyone. Two short sentences at most. No number, no rate, no time.' },
   'board.todo': { kind: 'prose', aim: 14, max: 20, note: 'The small heading over the list of what wants doing today. Two or three words.' },
   'board.nothing': { kind: 'prose', aim: 36, max: 48, note: 'Shown instead of that list when the player has fixed everything on it today. One short line; tomorrow brings more.' },
@@ -435,7 +436,7 @@ function lifeShape(data) {
   return bad;
 }
 const lifeSchema = {
-  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects', 'things'],
+  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects', 'things', 'shutSign'],
   properties: {
     bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'brings'],
       properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), brings: str(lifeFields['bands[].brings'].note) } } },
@@ -453,6 +454,7 @@ const lifeSchema = {
     closed: { type: 'array', description: lifeFields['closed[]'].note, items: { type: 'string' } },
     objects: { type: 'array', description: 'The ten cursed objects, ids fixed and in order.', items: { type: 'object', additionalProperties: false, required: ['id', 'name', 'desc'],
       properties: { id: str(lifeFields['objects[].id'].note), name: str(lifeFields['objects[].name'].note), desc: str(lifeFields['objects[].desc'].note) } } },
+    shutSign: str(lifeFields['shutSign'].note),
     things: { type: 'object', additionalProperties: false, description: 'What wants doing, in plain words: for each kind, [one, many].', required: ['lamp', 'litter', 'bin', 'dumpster', 'graffiti', 'fountain', 'shutter', 'crows', 'leaves'],
       properties: { lamp: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.lamp[]'].note }, litter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.litter[]'].note }, bin: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.bin[]'].note }, dumpster: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.dumpster[]'].note }, graffiti: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.graffiti[]'].note }, fountain: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.fountain[]'].note }, shutter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.shutter[]'].note }, crows: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.crows[]'].note }, leaves: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.leaves[]'].note } } },
   },
@@ -461,13 +463,14 @@ const lifeSchema = {
 export const JOBS = {
   'town-life': {
     id: 'town-life',
+    redraft: 'the shut kiosks got a sign 15 Sep — the approved words lack `shutSign`',   // drop this the day the new draft is approved
     title: 'Banana Town — the town’s life',
     what: 'The notice board’s word for each band, Pip’s counter, the travelling stall, the night vendor, the ghosts, the closed-today notes and the cursed objects.',
     brief: 'tools/copy-briefs/town-life.md',
     out: 'tools/copy-out/town-life.json',
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
-    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects', 'things'],
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'objects', 'things', 'shutSign'],
     // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',

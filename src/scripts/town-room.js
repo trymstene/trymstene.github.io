@@ -372,18 +372,42 @@ export function bootTownLife(ctx) {
         const [sw, sh] = STATE[key] || [0, 0];
         shutSprites[k] = sprite(key, p.x + p.w / 2 + (k === 'cafe' ? 1 : 0), p.base - (k === 'cafe' ? 3 : 43), { z: p.base + 1, cls: 'is-shut' });   // measured on the plate: the shutter's badge over the kiosk's own
         p.el.classList.add('is-dark');   // 🌑 a shut kiosk goes dark and grey, like a dead lamp, so open and shut read from across the square (Trym, 15 Sep)
+        barricade(k, p);
         if (shutSprites[k] && problems.some((q) => q.type === 'shutter' && q.key === k)) shutSprites[k].el.classList.add('is-todo');
         void sw; void sh;
-      } else if (!want && shutSprites[k]) { kill(shutSprites[k]); shutSprites[k] = null; const p = propOf(k); if (p) p.el.classList.remove('is-dark'); }
+      } else if (!want && shutSprites[k]) { kill(shutSprites[k]); shutSprites[k] = null; const p = propOf(k); if (p) p.el.classList.remove('is-dark'); unbarricade(k); }
     }
   }
+  // 🚧 a shut kiosk is TAPED OFF: hazard tape across its front from both sides, and a little red sign on the window
+  // with the one approved word (Trym, 15 Sep: "under construction tape across the building from both sides and a tiny
+  // red square sign on the window saying closed"). The tape and the sign are drawn, not pack art: there is no tape in the pack.
+  const tapes = {};
+  function barricade(k, p) {
+    if (tapes[k]) return;
+    const els = [];
+    const hh = p.h || (p.base - (p.y != null ? p.y : p.base - 200)), top = p.base - hh * 0.72, w = p.w, cx = p.x + w / 2, cy = (top + p.base) / 2;
+    const len = Math.hypot(w * 1.06, p.base - top), ang = Math.atan2(p.base - top, w * 1.06) * 180 / Math.PI;
+    for (const sgn of [1, -1]) {
+      const t = document.createElement('i'); t.className = 'tw-tape';
+      t.style.left = pct(cx - len / 2, W); t.style.top = pct(cy - 6, H); t.style.width = pct(len, W); t.style.height = pct(12, H);
+      t.style.transform = 'rotate(' + (sgn * ang).toFixed(1) + 'deg)'; t.style.zIndex = String(100 + p.base + 2);
+      world.appendChild(t); els.push(t);
+    }
+    if (COPY.shutSign) {
+      const sgn = document.createElement('b'); sgn.className = 'tw-shutsign'; sgn.textContent = COPY.shutSign;
+      sgn.style.left = pct(cx, W); sgn.style.top = pct(p.base - hh * 0.34, H); sgn.style.zIndex = String(100 + p.base + 3);
+      world.appendChild(sgn); els.push(sgn);
+    }
+    tapes[k] = els;
+  }
+  function unbarricade(k) { (tapes[k] || []).forEach((e) => e.remove()); tapes[k] = null; }
   // 🎬 a shutter goes UP: the pack's roll played backwards, then the kiosk is open
   function rollUp(k) {
     const still = shutSprites[k]; if (!still) { shutters(); return; }
     const p = propOf(k); const key = k === 'cafe' ? 'rollcafe' : 'rollinfo';
     if (!STATE[key] || !p) { shutters(); return; }
     const s = sprite(key, still.x, still.y, { z: p.base + 1, fps: 22, mode: 'once' });
-    kill(still); shutSprites[k] = null; { const p0 = propOf(k); if (p0) p0.el.classList.remove('is-dark'); }   // open again: lit and coloured
+    kill(still); shutSprites[k] = null; { const p0 = propOf(k); if (p0) p0.el.classList.remove('is-dark'); } unbarricade(k);   // open again: lit and coloured
     if (!s) return;
     s.rev = true; show(s, s.n - 1); s.onDone = () => kill(s);
   }
@@ -815,6 +839,29 @@ export function bootTownLife(ctx) {
     g.mess = (g.mess || 0) + 1;
     return did;
   }
+  // 👋 CAUGHT: walked into, a ghost un-forms — the pack's own forming frames played backwards — in a purple burst;
+  // the tall grey one flies up and scatters on its own last frames. It keeps away a while, then forms again where
+  // it stands (Trym, 15 Sep: "when i catch a ghost it needs an animation")
+  const CURSE_INK = ['#b26cff', '#7a3ff0', '#e0c3ff', '#4b1d99', '#9d5cff'];
+  function catchGhost(g) {
+    const s = g.s, tall = g.def.art === 'drift';
+    const gone = sprite(tall ? 'driftgone' : 'ghostform', g.x, g.y, { fps: 10, mode: 'once', cls: 'is-haunt is-gone', z: g.y });
+    if (gone) {
+      if (!tall) { show(gone, gone.n - 1); gone.rev = true; }
+      if (g.face === 'left' || s.el.classList.contains('is-flip')) gone.el.classList.add('is-flip');
+      gone.onDone = () => kill(gone);
+    }
+    s.el.style.opacity = '0';
+    burstInto(world, 'tw-burst tw-burst--curse', g.x / W * 100, (g.y - 30) / H * 100, 12, CURSE_INK);
+    track('town_ghost', { id: g.def.id, caught: 1 });
+  }
+  function returnGhost(g) {
+    const s = g.s;
+    if (g.def.art === 'drift') { s.el.style.opacity = ''; return; }   // its own loop forms it again
+    const back = sprite('ghostform', g.x, g.y, { fps: 10, mode: 'once', cls: 'is-haunt', z: g.y });
+    if (g.face === 'left' || s.el.classList.contains('is-flip')) back && back.el.classList.add('is-flip');
+    if (back) back.onDone = () => { kill(back); s.el.style.opacity = ''; }; else s.el.style.opacity = '';
+  }
   function moveGhost(g, x, y) { g.x = x; g.y = y; moveSprite(g.s, x, y); }
   function moveSprite(s, x, y, dz = 0) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y + dz)); }
   function stepGhosts(dt, now) {
@@ -826,8 +873,8 @@ export function bootTownLife(ctx) {
       const near = Math.hypot(ctx.pos.x - g.x, ctx.pos.y - g.y);
       if (d.from && d.to) g.hurry = near < 56 ? 3 : Math.max(0, (g.hurry || 0) - dt);
       else if (!d.path) {
-        if (!g.fled && near < 42) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; s.el.style.opacity = '0'; }
-        else if (g.fled) { g.fleeT -= dt; if (g.fleeT <= 0 && near > 70) { g.fled = 0; s.el.style.opacity = ''; } }
+        if (!g.fled && near < 42) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; catchGhost(g); }
+        else if (g.fled) { g.fleeT -= dt; if (g.fleeT <= 0 && near > 70) { g.fled = 0; returnGhost(g); } }
       }
       if ((d.id === 'wisp' || d.loop) && s.mode === 'done') { g.hideT -= dt; if (g.hideT <= 0) { s.el.hidden = false; show(s, 0); s.mode = 'once'; } continue; }
       if (d.path) {   // back and forth, and shy of the player

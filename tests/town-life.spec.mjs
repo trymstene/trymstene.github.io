@@ -88,6 +88,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect((await room(page, 'problems')).length).toBe(9);
   expect((await room(page, 'shut')).sort()).toEqual(['cafe', 'info']);
   expect((await room(page, 'full')).length).toBe(5);   // three street bins and two dumpsters, all full
+  expect(await page.locator('.tw-tape').count()).toBe(4);   // both kiosks taped off, two bands each
   expect(await room(page, 'fountain')).toBe('dry');
   expect(await room(page, 'crows')).toBeGreaterThanOrEqual(3);
   expect(Object.values(await room(page, 'lamps')).filter((s) => s === 'out').length).toBe(5);
@@ -112,6 +113,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   for (const k of shutT) expect(probT.some((q) => q.id === 'shutter:' + k)).toBe(true);
   expect(shutT.length).toBeLessThanOrEqual(1);
   expect((await room(page, 'full')).length).toBe(0);
+  expect(await page.locator('.tw-tape').count()).toBe(2 * shutT.length);   // only a kiosk the day's event shut is taped off in a thriving town
   expect(await room(page, 'fountain')).toBe('on');
   expect(await room(page, 'visitors')).toBe(3);
   expect((await room(page, 'shelf')).length).toBe(7);   // basic 2 + common 2 + good 2 + rare 1
@@ -219,7 +221,10 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   const knock = gh.find((g) => g.id === 'knock');
   expect(knock, 'a deep night has the ghost at the hall door').toBeTruthy();
   await stand(page, knock.x, knock.y);
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(160);
+  expect(await page.locator('.tw-state.is-gone').count(), 'a caught ghost un-forms').toBeGreaterThanOrEqual(1);   // the pack's forming frames, backwards
+  await overview(page, 'catch', { x: Math.max(0, knock.x - 120), y: Math.max(0, knock.y - 170), width: 240, height: 230 });
+  await page.waitForTimeout(500);
   expect((await room(page, 'ghosts')).find((g) => g.id === 'knock').hidden).toBe(true);
   await stand(page, 1360, 880);
   await room(page, 'nightSpawn');   // the night's things come through the night: the next one now (QA)

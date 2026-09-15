@@ -138,7 +138,7 @@ export function poofInto(container, className, x, y, extraStyle) {
 // ✨ THE BURST — what a pickup or a fix throws up: the park's harvest colours flung outward round a flash
 // (the puff above is the rave's missed-drop; a thing you fixed deserves its own moment — Trym, 15 Sep).
 // Caller owns the CSS class (.tw-burst): <b class=…__flash> + n <i> squares carrying --dx/--dy.
-export function burstInto(container, className, x, y, n = 14) {
+export function burstInto(container, className, x, y, n = 14, colors = ['#ffe135', '#8de08d', '#7db9ff', '#ff9d3a', '#b48ae0']) {
   const d = document.createElement('div');
   d.className = className;
   d.style.left = x + '%';
@@ -146,7 +146,7 @@ export function burstInto(container, className, x, y, n = 14) {
   let html = '<b class="' + className + '__flash"></b>';
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + Math.random() * 0.5, r = 22 + Math.random() * 22;
-    html += '<i style="--dx:' + (Math.cos(a) * r).toFixed(0) + 'px;--dy:' + (Math.sin(a) * r * 0.7).toFixed(0) + 'px;background:' + ['#ffe135', '#8de08d', '#7db9ff', '#ff9d3a', '#b48ae0'][i % 5] + ';animation-delay:' + (Math.random() * 0.08).toFixed(2) + 's"></i>';
+    html += '<i style="--dx:' + (Math.cos(a) * r).toFixed(0) + 'px;--dy:' + (Math.sin(a) * r * 0.7).toFixed(0) + 'px;background:' + colors[i % colors.length] + ';animation-delay:' + (Math.random() * 0.08).toFixed(2) + 's"></i>';
   }
   d.innerHTML = html;
   container.appendChild(d);

@@ -90,6 +90,11 @@ with `{n}` ("{n} dark lamps"). Words a newcomer sees at once; nothing clever.
 - `crows` — crows on a bench or a roof
 - `leaves` — leaves the storm left
 
+## The sign on a shut kiosk — `shutSign`
+
+One word, on a little red square hung in a shut kiosk's window: the word a shop hangs on its
+door when it is not open. Nothing else.
+
 ## The travelling stall
 
 A stranger with a stall, in the square on good days only, with pieces Pip never carries at
