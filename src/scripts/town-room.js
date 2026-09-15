@@ -188,6 +188,7 @@ export function bootTownLife(ctx) {
       exp.textContent = (bw.name ? bw.name + (bw.line ? ' — ' : '') : '') + fill(bw.line || '');
       cardBody.querySelectorAll('.tw-bglyph').forEach((g, gi) => g.classList.toggle('is-open', gi === i));
     };
+    if (card) card.classList.add('tw-card--health');
     cardBody.querySelectorAll('.tw-bzone').forEach((bz) => bz.addEventListener('click', () => show(+bz.dataset.p)));
     show(Math.max(0, p));
     track('town_health', { life: Math.round(v) });

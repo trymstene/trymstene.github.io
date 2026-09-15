@@ -287,6 +287,10 @@ const description = 'The town centre of Banana World, under construction.';
     /* the card: the park's health card — ONE continuous bar, the five bands as zones, ticks at the
        band lines, a glyph per band (the live one ringed), invisible tap zones over each for the
        one-line reveal. The fill + number track live while the card is open. */
+    /* the health card centres its label and number on the CARD, not on what is left beside the
+       floated ✕ — the close sits in the corner instead (Trym, 15 Sep: "doesnt look centered") */
+    .tw-card--health { position: relative; }
+    .tw-card--health .tw-cardx { position: absolute; float: none; right: 6px; top: 6px; margin: 0; }
     .tw-bbar { position: relative; margin: 0.55rem 0 0.45rem; --ramp: linear-gradient(90deg, #8a8a96, #b08a4a, #d9c25a, #7cc465, #35d97a); }
     .tw-bglyphs { display: flex; padding-bottom: 5px; }
     .tw-bglyph { text-align: center; font-size: 15px; line-height: 1; filter: grayscale(0.5); opacity: 0.45; transition: opacity 0.3s ease, transform 0.3s ease; }
