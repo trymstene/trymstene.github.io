@@ -493,6 +493,7 @@ export function initLife({ world, W, H, pct }) {
     return null;
   }
   const flyer = (i) => { const f = flyers.find((q) => q.i === i && !q.gone); return f ? { x: f.x, y: f.y } : null; };
+  const pickAt = (x, y, r) => { const f = flyers.find((q) => !q.gone && Math.hypot(q.x - x, q.y - y) < r); if (!f) return null; pick(f.i); return { x: f.x, y: f.y }; };   // 🚶 walk-over pickup (town-room.js autoPick)
   const sweep = (x, y, r) => flyers.filter((f) => !f.gone && Math.hypot(f.x - x, f.y - y) < r).map((f) => pick(f.i)).length;   // 🧹 a container fixed takes the flyers round it (town-room.js)
 
   function start() {
@@ -522,5 +523,5 @@ export function initLife({ world, W, H, pct }) {
     pick,
     mayor: () => !!(mayorEl && !mayorEl.hidden),
   };
-  return { tick, at, talk, standBy, pick, flyer, sweep, start, seam, setKeep, setGlow, setOverride, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
+  return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, setKeep, setGlow, setOverride, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
 }

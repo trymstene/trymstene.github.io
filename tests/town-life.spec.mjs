@@ -302,3 +302,33 @@ test('every ghost stands, walks and ends where it can be seen', () => {
     for (const [x, y] of pts) { const hit = covered(x, y, d.z != null ? d.z : y); expect(hit, d.id + ' at ' + Math.round(x) + ',' + Math.round(y) + ' is under ' + (hit ? (hit[6] || hit[0]) : '')).toBeUndefined(); }
   }
 });
+
+// 🚶 walking onto a thing picks it up; a lamp is a repair and waits for the tap (Trym, 15 Sep)
+test('walking onto a thing picks it up; a lamp waits for a tap', async ({ page }) => {
+  await town(page);
+  await setBand(page, 5);   // abandoned: plenty lying about
+  const stand = (x, y) => page.evaluate(([px, py]) => { const t = window.__town; t.pos.x = t.tgt.x = px; t.pos.y = t.tgt.y = py; }, [x, y]);
+  const lit = await room(page, 'plant', 'litter', [1100, 1000]);
+  await stand(1100, 1004);
+  await page.waitForTimeout(700);
+  expect((await room(page, 'problems')).map((q) => q.id)).not.toContain(lit);
+  // a lamp: stand at its foot and nothing happens
+  const lamp = (await room(page, 'problems')).find((q) => q.type === 'lamp');
+  expect(lamp, 'an abandoned square has a lamp to fix').toBeTruthy();
+  await stand(lamp.x, lamp.y + 26);
+  await page.waitForTimeout(700);
+  expect((await room(page, 'problems')).map((q) => q.id)).toContain(lamp.id);
+  // a flyer under the feet goes too, and pays its point
+  const fl = await page.evaluate(() => window.__town.life.flyers());
+  expect(fl.length).toBeGreaterThan(0);
+  await stand(fl[0].x, fl[0].y);
+  await page.waitForTimeout(700);
+  expect((await page.evaluate(() => window.__town.life.flyers())).find((q) => q.i === fl[0].i)).toBeUndefined();
+  // a full bin: standing in front of it empties it
+  const bin = (await room(page, 'problems')).find((q) => q.type === 'bin' || q.type === 'dumpster') || null;
+  const bid = bin ? bin.id : await room(page, 'plant', 'bin');
+  const b = (await room(page, 'problems')).find((q) => q.id === bid);
+  await stand(b.x, b.y + 26);
+  await page.waitForTimeout(900);
+  expect(await room(page, 'full')).not.toContain(b.key);
+});

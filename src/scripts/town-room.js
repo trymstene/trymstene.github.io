@@ -858,8 +858,24 @@ export function bootTownLife(ctx) {
   // ═══════════════════════════════════ the sky, the tick ═════════════════════════════
   night = document.createElement('i'); night.className = 'tw-night'; view.appendChild(night);
   let lastBeat = -1, secAt = 0;
+  // 🚶 WALK-OVER: everything but a lamp is picked up or fixed by walking onto it (or up to it, for a thing you
+  // cannot stand on) — a lamp is a repair, and a repair is a tap (Trym, 15 Sep: "it became tedious to tap on all
+  // objects. streetlights can be tapped"). The reach is measured from the thing's foot; the tap's own walk
+  // ends 26 px in front of it, so every reach covers that spot too.
+  const REACH = { litter: 30, leaves: 30, bin: 60, dumpster: 64, shutter: 62, fountain: 72, graffiti: 56, crows: 74 };
+  let autoAt = 0;
+  function autoPick(now) {
+    if (now - autoAt < 120 || (ctx.inside && ctx.inside())) return;
+    autoAt = now;
+    const px = ctx.pos.x, py = ctx.pos.y;
+    for (const p of problems) { const r = REACH[p.type]; if (r && Math.hypot(p.x - px, (p.foot != null ? p.foot : p.y) - py) < r) { fix(p.id); return; } }
+    for (const o of objects) if (Math.hypot(o.x - px, o.y - py) < 34) { takeObject(o); return; }
+    const f = life.pickAt ? life.pickAt(px, py, 30) : null;
+    if (f) { float(f.x, f.y - 30, '+1'); if (hud && hud.refresh) hud.refresh(); }
+  }
   function tick(now, dt) {
     stepSprites(dt);
+    autoPick(now);
     stepGhosts(dt);
     stepFlying(dt);
     swayBodies(now);
