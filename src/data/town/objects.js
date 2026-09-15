@@ -21,12 +21,15 @@ export const OBJECTS = [
 ];
 // the spots (feet, world px), by the name a row's `where` uses
 export const WHERE = {
-  alley: [[2070, 1090], [200, 300], [660, 400]],
-  terrace: [[1750, 1230]],
-  square: [[1000, 1030], [1200, 1030]],
-  garden: [[1730, 740], [560, 740]],
-  orchard: [[850, 300]],
-  monument: [[1500, 330]],
+  // ⚠️ every spot MEASURED clear of every prop box (15 Sep): the first set sat under the dumpsters, the square
+  //    benches, the garden boxes, a tree, the info kiosk — a cursed thing nobody could see. tools: the finder in
+  //    the session notes; re-measure when a prop moves
+  alley: [[1820,  1168],  [290,  330],  [785,  410]],
+  terrace: [[1750,  1230]],
+  square: [[1045,  1030],  [1155,  1030]],
+  garden: [[1730,  700],  [560,  690]],
+  orchard: [[795,  320]],
+  monument: [[1505,  260]],
 };
 export const RARITY_W = { common: 6, uncommon: 3, rare: 1 };
 export const BOUNTY = { common: 10, uncommon: 20, rare: 40 };   // what the night vendor pays for one turned in

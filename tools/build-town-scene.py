@@ -648,6 +648,8 @@ for key, args in (
     ('crow', ('Crow_idle_Down_48x48.png', [0, 1, 2], 96, 96, 0, PROP * 0.55)),   # a pair of birds at a bird's size, not a banana's (Trym, 14 Sep: "crows look too big")
     ('candle', ('Graveyard_Candle_Standing_48x48.png', [0, 1, 2, 3], 48, 144, 0, PROP, True)),
     ('lantern', ('Camping_Lantern_48x48_1.png', list(range(6)), 96, 144, 0, PROP, True)),
+    ('flame', ('Flame_1_48x48.png', [0, 1, 2, 3, 4], 48, 48, 0, PROP * 1.8, True)),   # the pack's low flame, tinted purple in CSS: what a cursed object stands in (Trym, 15 Sep)
+    ('spark', ('Flame_2_48x48.png', [0, 1, 2, 3, 4], 48, 48, 0, PROP * 1.4, True)),   # ...and its sparks, in front of it
     ('fountainoff', ('Garden_Fountain_6_Turn_Off_48x48.png', [9], 192, 240)),   # the last frame of the turn-off: dry
     ('rollcafe', ('Kiosk_Coffee_Cup_Shutter_48x48.png', list(range(20)), 192, 96, 0, PROP * 0.8)),   # the cup's shutter coming down; played backwards it rises
     ('rollinfo', ('Kiosk_Information_Shutter_48x48.png', list(range(16)), 144, 96)),

@@ -302,5 +302,12 @@ Adding a shop, a problem, a ghost or an object is a row. Adding a chapter is a c
   count in `condition.js`, and a full one is a `bin`/`dumpster` problem. Fixed = the rubbish
   puffs away, the lid comes down (`dumpclose`, the pack's frames) and it stands closed and
   empty for the day.
+- **15 Sep, the second round:** a container fixed is a CLEAN-UP (the litter problems and flyers within
+  170 px go with it, paid like any fix); a cursed object stands in a dark purple fire (the pack's
+  `Flame_1`/`Flame_2` tinted by CSS hue, an aura on the ground, a small lick in front) and every
+  `WHERE` spot is measured clear of every prop box — the walk gates it (the first spots sat under the
+  dumpsters, the square benches, the garden boxes, a tree and the info kiosk); a story hook plants the
+  object it names (it drew a random one before); the planks follow the world's scale (`--ws`) with a
+  floor, so a phone's stall signs fit their stalls; `board.people` redrafted as "Players who fixed today".
 - **Tuning left as designed:** the numbers in §2 and §7. Change them in one place each (the
   worker's `TOWN_*` block; `CURSE_TIERS` in world.js, then `node tools/build-worker-allowlists.mjs`).

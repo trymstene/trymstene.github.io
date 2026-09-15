@@ -218,7 +218,7 @@ export function bootTownLife(ctx) {
   const sprites = new Set();
   function sprite(key, cx, base, opts = {}) {
     const st = STATE[key]; if (!st) return null;
-    const [w, hh, n] = st;
+    const k = opts.size || 1, w = st[0] * k, hh = st[1] * k, n = st[2];
     const el = document.createElement('div');
     el.className = 'tw-state' + (opts.cls ? ' ' + opts.cls : '');
     el.style.left = pct(opts.left != null ? opts.left : cx - w / 2, W); el.style.top = pct(opts.top != null ? opts.top : base - hh, H);
@@ -404,6 +404,7 @@ export function bootTownLife(ctx) {
   // 🗑 a bin or a dumpster, full or not: the full state is a sprite over the prop (the pack's own
   // open-and-full dumpsters, the small full can); emptied, the prop shows again — closed
   const FULL_ART = { dump0: 'dumpfulls', dump1: 'dumpfull' };
+  const SWEEP_R = 170;   // a container fixed takes the litter this close with it
   const SIDE = { dump0: [['bag1', 50, 2], ['box1', 28, 16], ['bag2', 0, 16]], dump1: [['bag1', -44, 6], ['box1', 42, 4], ['bag2', 14, 16]] };
   function setFull(key, full) {
     const p = propOf(key); if (!p) return;
@@ -519,6 +520,12 @@ export function bootTownLife(ctx) {
     else if (p.type === 'dumpster') emptyDumpster(p.key);
     else if (p.type === 'fountain') setFountain(false);
     else if (p.type === 'shutter') { cond.fixedShut.add(p.key); rollUp(p.key); life.setKeep(keepFn); }
+    // 🧹 a container fixed is a clean-up: the litter lying round it goes too, one piece after another and paid
+    // like any fix, and the flyers on the same cobbles are picked up (Trym, 15 Sep)
+    if (p.type === 'bin' || p.type === 'dumpster') {
+      problems.filter((q) => (q.type === 'litter' || q.type === 'leaves') && Math.hypot(q.x - p.x, q.y - p.y) < SWEEP_R).forEach((q, k) => setTimeout(() => fix(q.id), 160 + k * 160));
+      life.sweep(p.x, p.y, SWEEP_R);
+    }
     // the optimistic notch: the room's word replaces it on the reply (and if the day's share is
     // spent the notch is not drawn at all — the bar never lies and comes back)
     if (L.cap && L.cap.used < L.cap.max) { L.life = Math.min(100, L.life + 1.2); L.cap.used += 1; paintMeter(); }
@@ -752,9 +759,12 @@ export function bootTownLife(ctx) {
     for (const g of ghosts.slice()) { if (keepDay && g.s === cond.dayghost) continue; g.done = true; g.s.el.style.opacity = '0'; const s = g.s; setTimeout(() => kill(s), 1500); ghosts.splice(ghosts.indexOf(g), 1); }
   }
   const found = (id) => { try { return statTotal(passRaw(), 'cur_' + id) > 0; } catch (e) { return false; } };
-  function spawnObject(seed, day, at) {
-    const def = weighted(OBJECTS, (o) => RARITY_W[o.rarity], seed);
-    const spot = at || (WHERE[def.where[Math.floor(h(seed, 3) * def.where.length)]] || [[1100, 1000]])[0];
+  function spawnObject(seed, day, at, forced) {
+    const def = forced || weighted(OBJECTS, (o) => RARITY_W[o.rarity], seed);   // a chapter names its object; a night draws one
+    // its place by seed, then a spot in it nothing else stands on (two on one spot hid each other, 15 Sep)
+    const spots = WHERE[def.where[Math.floor(h(seed, 3) * def.where.length)]] || [[1100, 1000]];
+    let spot = at;
+    if (!spot) { const j = Math.floor(h(seed, 5) * spots.length); for (let q = 0; q < spots.length && !spot; q++) { const c = spots[(j + q) % spots.length]; if (!objects.some((o) => Math.hypot(o.x - c[0], o.y - c[1]) < 60)) spot = c; } spot = spot || spots[j]; }
     const d = DEX[def.decor]; if (!d) return null;
     // an ordinary decor sprite, on the ground, with its small wrongness
     const el = document.createElement('div');
@@ -764,13 +774,24 @@ export function bootTownLife(ctx) {
     const im = document.createElement('img'); im.src = d.img; im.alt = ''; im.className = 'is-on'; if (def.fx === 'turn') im.style.transform = 'scaleX(-1)'; el.appendChild(im);
     world.appendChild(el);
     el.classList.add('is-cursed');
-    const o = { def, el, x: spot[0], y: spot[1], day: !!day, m: mark(spot[0], spot[1] + 2) };
+    // 🔮 the curse shows on it: a dark purple aura on the ground, the pack's low flame (tinted purple in CSS)
+    // licking round its foot behind it, sparks in front (Trym, 15 Sep: "a dark purple flaming glow")
+    const k = Math.max(1.4, w / 26), aw = Math.round(Math.max(90, w * 3)), ah = Math.round(aw * 0.45);
+    const aura = document.createElement('div');
+    aura.className = 'tw-aura';
+    aura.style.left = pct(spot[0] - aw / 2, W); aura.style.top = pct(spot[1] - ah / 2, H); aura.style.width = pct(aw, W); aura.style.aspectRatio = aw + ' / ' + ah; aura.style.zIndex = String(100 + spot[1] - 2);
+    world.appendChild(aura);
+    const flame = sprite('flame', spot[0], spot[1] + 12 * k, { z: spot[1] - 1, fps: 8, cls: 'is-flame', size: k });
+    const lick = sprite('flame', spot[0], spot[1] + 12 * k * 0.45 + 3, { z: spot[1] + 1, fps: 9, cls: 'is-flame is-lick', size: k * 0.45 });   // small, at the foot only: the thing itself stays readable
+    const spark = sprite('spark', spot[0], spot[1] + 13 * k - hh * 0.2, { z: spot[1] + 2, fps: 7, cls: 'is-flame', size: k });
+    const o = { def, el, x: spot[0], y: spot[1], day: !!day, m: mark(spot[0], spot[1] + 2), aura, flame, lick, spark };
     objects.push(o);
     return o;
   }
+  function unhaunt(o) { if (o.aura) o.aura.remove(); kill(o.flame); kill(o.lick); kill(o.spark); }
   function takeObject(o) {
     const i = objects.indexOf(o); if (i < 0) return;
-    objects.splice(i, 1); o.el.remove(); o.m.remove(); poof(o.x, o.y - 6);
+    objects.splice(i, 1); o.el.remove(); o.m.remove(); unhaunt(o); poof(o.x, o.y - 6);
     const first = !found(o.def.id);
     passStat('cur_' + o.def.id, 1);
     const ok = grantToShed(o.def.decor);
@@ -804,7 +825,7 @@ export function bootTownLife(ctx) {
     candles.forEach(kill); candles = [];
     clearGhosts(true);
     killBody(vendor); vendor = null;
-    for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); }
+    for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); unhaunt(o); }
     lampsByHour();
   }
   // 🌒 THE OMENS. A night that will charge the town is foreshadowed for three hours before it:
@@ -888,7 +909,7 @@ export function bootTownLife(ctx) {
     forceCurse: (o = {}) => { forced = o.tier || 'deep'; forcedUntil = Date.now() + (o.mins || 15) * 60000; },
     endCurse: () => { forced = null; forcedUntil = 0; },
     addGhost: (def) => ghostOf(def.id, { fps: 6, ...def }),
-    plantObject: (id, at) => { const def = OBJECTS.find((o) => o.id === id); return def ? spawnObject(dayNum() + id.length, true, at) : null; },
+    plantObject: (id, at) => { const def = OBJECTS.find((o) => o.id === id); return def ? spawnObject(dayNum() + id.length, true, at, def) : null; },
     closeShop: (key) => { if (CLOSABLE.includes(key)) { cond.shut.add(key); cond.fixedShut.delete(key); shutters(); life.setKeep(keepFn); } },
     nudgeLife: (delta) => { nudge += +delta || 0; apply({ ...L }); },
   };
@@ -899,7 +920,16 @@ export function bootTownLife(ctx) {
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
     omen: () => omenOn, nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
-    problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y })),
+    problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, key: p.key })),
+    // QA: one more problem — of a container type at the first full one with none, or a litter piece at a spot
+    plant: (type, at) => {
+      if (!TEST) return null;
+      const t = PROBLEMS.find((r) => r.id === type); if (!t) return null;
+      let p;
+      if (at) { const key = 'qa' + problems.length; p = { id: t.id + ':' + key, type: t.id, x: at[0], y: at[1], key, pays: t.pays, rep: t.rep, el: mark(at[0], at[1], 150, null, false), sprite: sprite('pile', at[0], at[1]), foot: at[1] }; }
+      else { const key = (ANCHORS[t.on] || []).find((k) => cond.full.has(k) && !problems.some((q) => q.key === k)); const p0 = propOf(key); if (!p0) return null; p = { id: t.id + ':' + key, type: t.id, x: p0.x + p0.w / 2, y: p0.base + 4, key, pays: t.pays, rep: t.rep, el: mark(p0.x + p0.w / 2, p0.base + 4, 150, 100 + p0.base + 3, false), sprite: null, foot: p0.base + 4 }; }
+      problems.push(p); glowProblem(p); return p.id;
+    },
     fix, fixed,
     lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),

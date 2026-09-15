@@ -61,11 +61,13 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-plank {
       position: absolute; white-space: nowrap; transform: translate(-50%, -100%); cursor: pointer;
       background: #8a5a2b; border: 1px solid #3a230f; color: #ffe135; box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.45);
-      padding: 2px 8px; font-family: "Archivo Black", sans-serif; font-size: 0.5rem; letter-spacing: 0.06em;
+      padding: 0.25em 1em; font-family: "Archivo Black", sans-serif; font-size: max(0.5rem, calc(5px * var(--ws, 1.6))); letter-spacing: 0.06em;
       background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px); background-size: 100% 5px;
     }
-    .tw-plank--way { pointer-events: none; font-size: 0.45rem; }
-    .tw-plank--big { font-size: 1rem; padding: 4px 14px; letter-spacing: 0.05em; }   /* the two stalls: a sign you can read from the fountain */
+    /* a plank is a WORLD thing: it follows the world's scale (--ws, banana-town.js layout()) with a floor a thumb can
+       read — sized in rem alone, the stalls' signs stood at desktop size over a phone's smaller stalls (Trym, 15 Sep) */
+    .tw-plank--way { pointer-events: none; font-size: max(0.45rem, calc(4.5px * var(--ws, 1.6))); }
+    .tw-plank--big { font-size: max(0.6rem, calc(10px * var(--ws, 1.6))); padding: 0.25em 0.875em; letter-spacing: 0.05em; }   /* the two stalls: a sign you can read from the fountain */
     .tw-toast {
       position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2000; max-width: min(92%, 520px);
       background: #ffe135; color: #141208; border: 3px solid #000; box-shadow: 4px 4px 0 #000;
@@ -187,7 +189,17 @@ const description = 'The town centre of Banana World, under construction.';
        glows the other colour (Trym, 15 Sep: "a slight glow or something, subtle") */
     .tw-state.is-todo { animation: twTodo 1.6s ease-in-out infinite alternate; }
     @keyframes twTodo { from { filter: drop-shadow(0 0 2px rgba(255, 225, 53, 0.55)); } to { filter: drop-shadow(0 0 5px rgba(255, 225, 53, 0.95)); } }
-    .tw-state.is-cursed { filter: drop-shadow(0 0 4px rgba(150, 110, 255, 0.85)); }
+    /* 🔮 a cursed object stands in a dark purple fire: the pack's flame tinted by hue, a pulsing aura on the ground,
+       the object's own violet edge (Trym, 15 Sep: "a dark purple flaming glow or something that looks more cursed") */
+    .tw-state.is-cursed { filter: drop-shadow(0 0 2px rgba(130, 50, 230, 1)) drop-shadow(0 0 7px rgba(90, 20, 190, 0.8)); }
+    .tw-state.is-flame { pointer-events: none; }
+    /* the tint was picked from six rendered side by side (test-results/tint.png, 15 Sep): this one is a deep purple with a violet
+       core; the lighter ones read pink, the sepia ones grey */
+    .tw-state.is-flame img { filter: hue-rotate(250deg) saturate(1.6) brightness(0.6) contrast(1.3); }
+    .tw-state.is-lick { opacity: 0.8; }
+    .tw-aura { position: absolute; pointer-events: none; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(150, 60, 255, 0.85) 0%, rgba(110, 30, 220, 0.6) 45%, rgba(60, 0, 140, 0) 75%); animation: twAura 1.7s ease-in-out infinite; will-change: transform, opacity; }
+    @keyframes twAura { 0%, 100% { transform: scale(1); opacity: 0.75; } 50% { transform: scale(1.14); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .tw-aura { animation: none; } }
     @keyframes twFlicker { 0%, 100% { opacity: 1; } 71% { opacity: 0.35; } 74% { opacity: 1; } 86% { opacity: 0.5; } 89% { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .tw-state.is-hum, .tw-state.is-flicker, .tw-state.is-todo { animation: none; } .tw-state.is-todo { filter: drop-shadow(0 0 4px rgba(255, 225, 53, 0.8)); } }
     /* a problem's mark: the questline's dashed ring, on the ground under the thing that is wrong */
@@ -201,7 +213,7 @@ const description = 'The town centre of Banana World, under construction.';
     @media (prefers-reduced-motion: reduce) { .tw-mark__ic { animation: none; } }
     /* the shopfront's dark window and the fountain's dry basin are the props themselves, dimmed */
     .tw-ov.is-dark { filter: brightness(0.62) saturate(0.7); }
-    .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor) { visibility: hidden; }
+    .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor, .tw-aura) { visibility: hidden; }
     /* the store's shelf and the vendor's: the town's row with the piece's own sprite in front */
     .tw-store { display: grid; gap: 0.45rem; margin: 0.5rem 0; }
     .tw-store__it { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }

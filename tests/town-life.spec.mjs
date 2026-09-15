@@ -6,6 +6,8 @@
 // residents indoors and a vendor, and it ends. Screenshots of every state land in
 // test-results/ for the eye (docs/design-library.md §13).
 import { test, expect } from '@playwright/test';
+import { OBJECTS, WHERE } from '../src/data/town/objects.js';
+import { OVERLAYS } from '../src/scripts/town-geo.js';
 
 const SHOT = 'test-results/town-';
 // 🔭 the whole town at 1:1 for the eye: the camera's transform is switched off and the view
@@ -15,7 +17,9 @@ async function overview(page, name, clip) {
   await page.addStyleTag({ content: '.tw-wrap{max-width:none!important;padding:0!important}.tw-stage{box-shadow:none!important;border:0!important}.tw-view{width:2200px!important;height:1300px!important}#twWorld{width:2200px!important;height:1300px!important;transform:none!important}', id: 'qa-overview' });
   await page.waitForTimeout(250);
   const v = page.locator('#twView');
-  await v.screenshot({ path: SHOT + name + '.png', ...(clip ? { clip } : {}) });
+  // a clip is a window on the view (an element shot ignores clips): the page is shot around it, at twice the size for the eye
+  if (clip) { await page.evaluate(() => document.querySelectorAll('.tw-toast').forEach((t) => t.remove())); const b = await v.boundingBox(); await page.screenshot({ path: SHOT + name + '.png', clip: { x: b.x + clip.x, y: b.y + clip.y, width: clip.width, height: clip.height } }); }
+  else await v.screenshot({ path: SHOT + name + '.png' });
   await page.evaluate(() => { const t = document.getElementById('qa-overview'); if (t) t.remove(); });
   await page.setViewportSize({ width: 393, height: 852 });
   await page.waitForTimeout(250);
@@ -48,6 +52,11 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   // one mark per problem (five, plus the shutter on any kiosk today's events shut) and one per
   // strange object lying about by daylight
   expect(await page.locator('.tw-mark').count()).toBe(p0.length + (await room(page, 'objects')).length);
+  // the stalls' signs are world things: on a phone they must not outgrow their stalls (Trym, 15 Sep: on iOS "way too big")
+  for (const f of await page.evaluate(() => ['exchange', 'wheel'].map((k) => { const s = document.querySelector('.tw-plank[data-key="' + k + '"]').getBoundingClientRect(); const r = window.__town.PROPS[k].el.getBoundingClientRect(); return { k, sign: s.width, stall: r.width }; }))) expect(f.sign, f.k + ' sign vs stall').toBeLessThan(f.stall);
+  await page.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = 930; t.pos.y = t.tgt.y = 860; });
+  await page.waitForTimeout(800);
+  await page.locator('#twView').screenshot({ path: SHOT + 'phone-stalls.png' });
   // the repair icon rides only over lamps; everything smaller glows instead
   expect(await page.locator('.tw-mark__ic').count()).toBe(p0.filter((q) => q.type === 'lamp').length);
   expect(await page.locator('.tw-state.is-todo').count()).toBeGreaterThanOrEqual(p0.filter((q) => q.type !== 'lamp').length);
@@ -145,6 +154,12 @@ test('a fix clears the mark, pays on the pass and counts on the room', async ({ 
 
 test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it ends', async ({ page }) => {
   await town(page);
+  // by day first: a planted cursed thing stands in its purple fire (the eye's crop), then it is taken
+  expect(await page.evaluate((id) => !!window.__town.room.story.plantObject(id, [1100, 1000]), OBJECTS[0].id)).toBe(true);
+  await page.waitForTimeout(500);
+  await overview(page, 'object-day', { x: 950, y: 810, width: 300, height: 260 });
+  expect(await page.evaluate((id) => window.__town.room.take(id), OBJECTS[0].id)).toBe(true);
+  expect(await page.locator('.tw-aura').count()).toBe((await room(page, 'objects')).length);
   await seam(page, () => window.__town.life.set(3));   // dawn, so "in" is a change
   await page.waitForTimeout(400);
   // a low-ish town keeps a seeded few indoors on an ordinary day: remember how many, the night sends ALL in
@@ -173,6 +188,11 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect(await room(page, 'vendor')).toBe(true);
   expect((await room(page, 'shut')).sort()).toEqual(['cafe', 'info']);
   const objs = await room(page, 'objects');
+  expect(new Set(objs.map((o) => o.x + ',' + o.y)).size).toBe(objs.length);   // never two on one spot
+  // each stands in its purple fire: an aura on the ground, a flame behind, sparks in front
+  expect(await page.locator('.tw-aura').count()).toBe(objs.length);
+  expect(await page.locator('.tw-state.is-flame').count()).toBe(objs.length * 3);   // a flame behind, a lick in front, sparks
+  for (const [i, o] of objs.slice(0, 2).entries()) await overview(page, 'object-' + i, { x: Math.max(0, o.x - 120), y: Math.max(0, o.y - 150), width: 240, height: 210 });
   expect(objs.length).toBeGreaterThanOrEqual(1);
   // the rain the night brings is the shared layer's storm
   expect(await page.evaluate(() => !!document.querySelector('.wx.is-storm'))).toBe(true);
@@ -227,4 +247,35 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   await page.waitForTimeout(400);
   await page.locator('.tw-card').screenshot({ path: SHOT + 'board-desktop.png' });
   await page.setViewportSize({ width: 393, height: 852 });
+});
+
+test('a container fixed is a clean-up: the litter round it goes too', async ({ page }) => {
+  await town(page);
+  await setBand(page, 5);   // abandoned: every container full
+  const id = (await room(page, 'plant', 'bin')) || ((await room(page, 'problems')).find((q) => q.type === 'bin') || {}).id;
+  expect(id).toBeTruthy();
+  const c = (await room(page, 'problems')).find((q) => q.id === id);
+  const near1 = await room(page, 'plant', 'litter', [c.x - 60, c.y - 40]);
+  const near2 = await room(page, 'plant', 'litter', [c.x + 70, c.y + 10]);
+  const far = await room(page, 'plant', 'litter', [c.x + 400, c.y]);
+  const flyers = await page.evaluate(() => window.__town.life.flyers());
+  const swept = flyers.filter((f) => Math.hypot(f.x - c.x, f.y - c.y) < 170).length;
+  await seam(page, (x) => window.__town.room.fix(x), id);
+  await page.waitForTimeout(1200);
+  const ids = (await room(page, 'problems')).map((q) => q.id);
+  expect(ids).not.toContain(id);
+  expect(ids).not.toContain(near1);
+  expect(ids).not.toContain(near2);
+  expect(ids).toContain(far);
+  expect(await room(page, 'full')).not.toContain(c.key);
+  expect(await page.evaluate(() => window.__town.life.litter())).toBe(flyers.length - swept);
+});
+
+// 🔮 a cursed thing must be SEEN: every spot it can stand on is measured clear of every prop's box (15 Sep: the
+// first spots sat under the dumpsters, the square benches, the garden boxes, a tree and the info kiosk)
+test('every cursed-object spot stands clear of every prop', () => {
+  for (const [place, spots] of Object.entries(WHERE)) for (const [sx, sy] of spots) {
+    const hit = OVERLAYS.find(([fn, x, y, w, h]) => sx + 22 > x - 8 && sx - 22 < x + w + 8 && sy + 6 > y - 8 && sy - 72 < y + h + 8);
+    expect(hit, place + ' ' + sx + ',' + sy + ' is under ' + (hit ? (hit[6] || hit[0]) : '')).toBeUndefined();
+  }
 });

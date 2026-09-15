@@ -492,6 +492,7 @@ export function initLife({ world, W, H, pct }) {
     return null;
   }
   const flyer = (i) => { const f = flyers.find((q) => q.i === i && !q.gone); return f ? { x: f.x, y: f.y } : null; };
+  const sweep = (x, y, r) => flyers.filter((f) => !f.gone && Math.hypot(f.x - x, f.y - y) < r).map((f) => pick(f.i)).length;   // 🧹 a container fixed takes the flyers round it (town-room.js)
 
   function start() {
     ready = true;
@@ -513,11 +514,12 @@ export function initLife({ world, W, H, pct }) {
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
     residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
+    flyers: () => flyers.filter((f) => !f.gone).map((f) => ({ i: f.i, x: f.x, y: f.y })),
     rung,
     talk,
     facing: () => res.filter((n) => !n.hidden).map((n) => ({ key: n.key, face: n.face, place: n.place })),
     pick,
     mayor: () => !!(mayorEl && !mayorEl.hidden),
   };
-  return { tick, at, talk, standBy, pick, flyer, start, seam, setKeep, setGlow, setOverride, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
+  return { tick, at, talk, standBy, pick, flyer, sweep, start, seam, setKeep, setGlow, setOverride, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
 }

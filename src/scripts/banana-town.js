@@ -156,6 +156,7 @@ function layout() {
   scale = Math.min(1.7, maxIn, Math.max(0.55, fill, want));
   world.style.width = (W * scale) + 'px';
   world.style.height = (H * scale) + 'px';
+  world.style.setProperty('--ws', scale.toFixed(3));   // the world's scale, for what CSS sizes in the world: the planks
 }
 addEventListener('resize', layout);
 layout();
