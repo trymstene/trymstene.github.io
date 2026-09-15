@@ -100,7 +100,6 @@ export function bootTownLife(ctx) {
       return await r.json();
     } catch (e) { lastErr = String(e && e.message || e); return null; }   // no worker, no life — the town stands as it always did
   }
-  let toldArrival = false;
   function apply(j) {
     if (!j || typeof j.life !== 'number') return;
     Object.assign(lampWas, cond.lamps);
@@ -108,13 +107,12 @@ export function bootTownLife(ctx) {
     const b = bandOf(Math.max(0, Math.min(100, j.life + nudge)));
     // today first (it decides what is shut), then the look, then what you can put right
     if (b !== band) { band = b; todayStage(); condition(); reseedProblems(); }
-    // 🪧 on arrival the town says what state it is in — the board's own words for the band — so a
-    // player knows at once what the fixing is about (Trym, 14 Sep: "i dont understand for what and why")
-    const wb = W_BAND[band] || {};
-    if (!toldArrival && wb.name) { toldArrival = true; say(wb.name + ' — ' + fill(wb.line || '')); }
     // 🎉 a band change while you are here is an EVENT: the new name, and what it brings (up) or
-    // what it looks like (down) — and a puff on every lamp whose state changed
-    else if (wasBand && wasBand !== band && wb.name) { say(wb.name + ' — ' + fill((BANDS.indexOf(band) > BANDS.indexOf(wasBand) ? wb.brings : wb.line) || '')); for (const k of ANCHORS.lamps) { const p = propOf(k); if (p && lampWas[k] && lampWas[k] !== cond.lamps[k]) poof(p.x + p.w / 2, p.base - 40); } }
+    // what it looks like (down) — and a puff on every lamp whose state changed. (An arrival toast with the
+    // band's words used to show on every load; the board and the health card say the same — Trym, 15 Sep:
+    // "i dont get why its there … if it doesnt bring any value remove it")
+    const wb = W_BAND[band] || {};
+    if (wasBand && wasBand !== band && wb.name) { say(wb.name + ' — ' + fill((BANDS.indexOf(band) > BANDS.indexOf(wasBand) ? wb.brings : wb.line) || '')); for (const k of ANCHORS.lamps) { const p = propOf(k); if (p && lampWas[k] && lampWas[k] !== cond.lamps[k]) poof(p.x + p.w / 2, p.base - 40); } }
     wasBand = band;
     paintMeter();
   }
