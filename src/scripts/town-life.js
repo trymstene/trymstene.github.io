@@ -230,13 +230,13 @@ export function initLife({ world, W, H, pct }) {
   // null = the town as it always was.
   let keepFn = null, glowFn = null, overrideFn = null, litterLevel = 0;
 
-  // the residents: one .tw-npc each (canvas + name) and their home's window glow
+  // the residents: one .tw-npc each (a canvas; no name over the head — a name is read on the card when you
+  // walk up and talk, Trym 15 Sep) and their home's window glow
   const res = R.map((r, idx) => {
     const el = document.createElement('div');
     el.className = 'tw-npc';
     const cv = document.createElement('canvas'); cv.width = cv.height = 150;
-    const tag = document.createElement('span'); tag.textContent = r.name;
-    el.appendChild(cv); el.appendChild(tag);
+    el.appendChild(cv);
     el.hidden = true;
     world.appendChild(el);
     const outfit = { hat: r.hat || 'none', glasses: r.glasses || 'none', extras: r.tool ? { [r.tool]: true } : {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };

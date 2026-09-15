@@ -255,11 +255,10 @@ export function bootTownLife(ctx) {
     if (icon) { const ic = document.createElement('span'); ic.className = 'tw-mark__ic'; ic.innerHTML = iconSvg('tools', { size: 18 }); ic.style.top = (-(lift || 40)) + 'px'; m.appendChild(ic); } world.appendChild(m); return m; };
   const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof)
   // a banana body that is not a resident: a visitor, the merchant, the vendor
-  function body(x, y, outfit, name) {
+  function body(x, y, outfit) {
     const el = document.createElement('div');
     el.className = 'tw-npc tw-visitor';
     const cv = document.createElement('canvas'); cv.width = cv.height = 150; el.appendChild(cv);
-    if (name) { const tag = document.createElement('span'); tag.textContent = name; el.appendChild(tag); }
     el.style.left = pct(x, W); el.style.top = pct(y, H); el.style.zIndex = String(100 + Math.round(y));
     world.appendChild(el);
     const b = { el, cv, ctx: cv.getContext('2d'), x, y, outfit: { hat: outfit.hat || 'none', glasses: outfit.glasses || 'none', extras: outfit.extras || {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' }, face: x > 1100 ? 4 : 0, sw: 0, swayAt: 0, period: 2200 + Math.random() * 2600 };
@@ -706,7 +705,7 @@ export function bootTownLife(ctx) {
     life.setOverride(oddKey ? (n2, beat) => (n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null) : null);
     // the merchant
     killBody(merchant); merchant = null;
-    if (todayHas('merchant') && MERCHANT.bands.includes(band)) { merchant = body(MERCHANT.at[0], MERCHANT.at[1], { hat: 'cowboy', glasses: 'shades', extras: { backpack: true } }, (COPY.merchant || {}).name || ''); bodies.add(merchant); }
+    if (todayHas('merchant') && MERCHANT.bands.includes(band)) { merchant = body(MERCHANT.at[0], MERCHANT.at[1], { hat: 'cowboy', glasses: 'shades', extras: { backpack: true } }); bodies.add(merchant); }
     // 🧳 and if the stall comes TOMORROW, its cart is parked at the bus stop today — a promise a
     // player can see and come back for (a sign, not a timetable)
     kill(parked); parked = null;
@@ -812,7 +811,7 @@ export function bootTownLife(ctx) {
     (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id));
     const nObj = type === 'deep' ? 2 : type === 'creep' ? 1 : 0;
     for (let i = 0; i < nObj; i++) spawnObject(dayNum() * 5 + i * 3 + 11, false);
-    if (type === 'deep') { vendor = body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' }, (COPY.vendor || {}).name || ''); bodies.add(vendor); }
+    if (type === 'deep') { vendor = body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' }); bodies.add(vendor); }
     lampsByHour();
     if (curseTold !== type + dayNum()) { curseTold = type + dayNum(); track('town_curse', { tier: type }); }
   }
