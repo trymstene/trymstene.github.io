@@ -91,7 +91,7 @@ That single choice is what makes decline generate gameplay instead of obligation
 | heavy rain | −1 per event |
 | storm | −4 per event |
 | Curse Night | creep −10, deep −18 (a hush charges nothing); never below 5 |
-| a player's contribution | +1.2, and **each player can move Town Life by at most +10 per real day** |
+| a player's contribution | +2.0, and **each player can move Town Life by at most +24 per real day** (1.2 / 10 until 15 Sep) |
 
 The per-player daily cap is the multiplayer rule that matters most. One tireless player
 cannot carry the town to Thriving alone and keep it there; ten ordinary players can. Past
