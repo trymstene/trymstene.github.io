@@ -498,8 +498,8 @@ for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
 # the works yard and by the back lane behind the café
 for (tx, ty, tn) in ((980, 760, 13), (1220, 760, 13), (1260, 1148, 13)):   # Tree_13, the tan stone kerb — not the white-framed ones (Trym)
     try_place(['ME_Singles_City_Props_48x48_Tree_%d.png' % tn], tx, ty, shade=False, solid=('rect', -30, -22, 30, 4))
-try_place(['ME_Singles_City_Props_48x48_Dumpster_4.png'], 200, 330, solid=('rect', -36, -20, 36, 4), sh=0.4)
-try_place(['ME_Singles_City_Props_48x48_Dumpster_1.png'], 2070, 1130, solid=('rect', -36, -20, 36, 4), sh=0.4)
+try_place(['ME_Singles_City_Props_48x48_Dumpster_4.png'], 200, 330, solid=('rect', -36, -20, 36, 4), sh=0.4, key='dump0')   # the works yard: open and empty by default
+try_place(['ME_Singles_City_Props_48x48_Dumpster_1.png'], 2070, 1130, solid=('rect', -36, -20, 36, 4), sh=0.4, key='dump1')   # behind the café: closed
 # the info point at the gate, west of the park road: the map of the town (Trym: "theres also info kiosks")
 try_place(['ME_Singles_City_Props_48x48_Kiosk_Infopoint_1.png'], 900, 1226, solid=('rect', -80, -120, 80, 4), sh=0.45, key='info')
 SPOTS['info'] = (900, 1226)
@@ -508,8 +508,8 @@ anim_prop('smallfount', 'Fountain_48x48 - Copia.png', [0, 1, 2, 3, 4, 5, 6, 7], 
 # the benches face the fountain (6 on the left looks right, 5 on the right looks left) with air between (Trym)
 try_place(['ME_Singles_City_Props_48x48_Bench_6.png'], 1670, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3, key='bencht0')
 try_place(['ME_Singles_City_Props_48x48_Bench_5.png'], 1870, 1236, solid=('rect', -12, -50, 12, 4), sh=0.3, key='bencht1')
-for bx in (1610, 1912):   # the small bins at the patch's street corners, outside the benches
-    try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], bx, 1170, shade=False, solid=('circle', 7))
+for bi, bx in enumerate((1610, 1912)):   # the small bins at the patch's street corners, outside the benches
+    try_place(['ME_Singles_City_Props_48x48_Small_Closed_Trash_Can.png'], bx, 1170, shade=False, solid=('circle', 7), key='bin%d' % (bi + 1))
 SPOTS['terrace'] = (1770, 1240)
 
 # ---- the mini-areas (Trym, 11 Sep evening: "see these mini-areas and develop a purpose for them") ----
@@ -652,6 +652,7 @@ for key, args in (
     ('rollcafe', ('Kiosk_Coffee_Cup_Shutter_48x48.png', list(range(20)), 192, 96, 0, PROP * 0.8)),   # the cup's shutter coming down; played backwards it rises
     ('rollinfo', ('Kiosk_Information_Shutter_48x48.png', list(range(16)), 144, 96)),
     ('flap', ('Crow_Flap_Left_48x48.png', list(range(6)), 96, 96, 0, PROP * 0.55)),   # the pair taking off
+    ('dumpclose', ('Dumpster_empty_48x48.png', [6, 7, 8, 9, 10, 11], 96, 144)),   # the lid coming down over an emptied dumpster
 ):
     try:
         export_frames(key, *args)
@@ -685,6 +686,13 @@ for key, name, sc in (
     ('graffiti1', 'ME_Singles_Garage_Sales_48x48_Graffiti_1.png', PROP),
     ('graffiti2', 'ME_Singles_Garage_Sales_48x48_Graffiti_2.png', PROP),
     ('cartp', 'ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png', PROP),   # tomorrow's stall, parked at the bus stop today
+    ('dumpfull', 'ME_Singles_City_Props_48x48_Dumpster_5.png', PROP),    # a dumpster open and full of bags
+    ('dumpfulls', 'ME_Singles_City_Props_48x48_Dumpster_6.png', PROP),   # …the smeared one, for the works yard
+    ('dumpclosed', 'ME_Singles_City_Props_48x48_Dumpster_2.png', PROP),  # closed, smeared: the works-yard dumpster after a fix
+    ('bag1', 'ME_Singles_Subway_and_Train_Station_48x48_Plastic_Bag_1.png', PROP),   # what stands beside a full container (Trym, 15 Sep)
+    ('bag2', 'ME_Singles_Subway_and_Train_Station_48x48_Plastic_Bag_2.png', PROP),
+    ('bag3', 'ME_Singles_Subway_and_Train_Station_48x48_Plastic_Bag_Bottles.png', PROP),
+    ('box1', 'ME_Singles_City_Props_48x48_Box_Trash_1.png', PROP),
 ):
     try:
         export_still(key, name, sc)

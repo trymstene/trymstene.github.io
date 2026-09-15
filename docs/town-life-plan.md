@@ -294,5 +294,13 @@ Adding a shop, a problem, a ghost or an object is a row. Adding a chapter is a c
   `test-results/town-*-all.png`.
 - **Deploy order** (Trym runs wrangler): worker-rave, then worker-pass, then worker-pulse.
   Until worker-rave is live the town reads no life and stands as it always did.
+- **Garbage (15 Sep):** the two dumpsters (`dump0` the works yard, open and empty by nature;
+  `dump1` behind the café, closed) and the three street bins (`bin` at the kerb, `bin1`/`bin2`
+  on the terrace) are keyed props. A full one is the pack's own full sprite over the prop
+  (`dumpfull`/`dumpfulls`/`binfull`) with bags and a box standing beside a dumpster and a
+  pizza box or a bottle bag beside a bin; how many are full is the band's `bins`/`dumps`
+  count in `condition.js`, and a full one is a `bin`/`dumpster` problem. Fixed = the rubbish
+  puffs away, the lid comes down (`dumpclose`, the pack's frames) and it stands closed and
+  empty for the day.
 - **Tuning left as designed:** the numbers in §2 and §7. Change them in one place each (the
   worker's `TOWN_*` block; `CURSE_TIERS` in world.js, then `node tools/build-worker-allowlists.mjs`).

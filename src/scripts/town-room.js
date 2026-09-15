@@ -274,12 +274,13 @@ export function bootTownLife(ctx) {
 
   // ══════════════════════════════════ the condition ═══════════════════════════════════
   // the look of the band, seeded by the day: the same dark lamps for everyone today
-  const cond = { lamps: {}, shut: new Set(), fountainDry: false, binFull: false, crows: [], visitors: [], decor: [], dayghost: null, fixedShut: new Set() };
+  const cond = { lamps: {}, shut: new Set(), fountainDry: false, full: new Set(), crows: [], visitors: [], decor: [], dayghost: null, fixedShut: new Set() };
   const propOf = (key) => PROPS[key] || null;
   // a crow on a perch paints OVER the prop it sits on (the fountain is a keyed animation, not an overlay)
   const perchZ = (key) => (key === 'fountain' ? 900 : propOf(key) ? propOf(key).base : 1000) + 2;
   const lampHalo = {};      // key → sprite (the halo over the lamp, lit at night)
-  let binSprite = null, dryFountain = null;
+  const fullSprites = {}, sideSprites = {};   // key → the full-state sprite over a bin or a dumpster, and what stands beside it
+  let dryFountain = null;
   const shutSprites = {};
   function condition() {
     const look = LOOK[band], d = dayNum();
@@ -299,8 +300,9 @@ export function bootTownLife(ctx) {
     shutters();
     life.setKeep(keepFn);
     life.setLitter(look.litter);
-    // the square's bin and the fountain
-    setBin(look.bin === 'full' && !isFixed('bin:bin'));
+    // which street bins and dumpsters are full today (a fix this device made today holds)
+    const fullNow = new Set([...pickN(ANCHORS.bins, look.bins, d * 17 + 3), ...pickN(ANCHORS.dumps, look.dumps, d * 19 + 7)]);
+    for (const k of [...ANCHORS.bins, ...ANCHORS.dumps]) setFull(k, fullNow.has(k) && !isFixed((ANCHORS.dumps.includes(k) ? 'dumpster' : 'bin') + ':' + k));
     setFountain(look.fountain === 'dry' && !isFixed('fountain:fountain'));
     // crows, visitors, décor, a daylight ghost
     cond.crows.forEach(kill); cond.crows = [];
@@ -399,11 +401,34 @@ export function bootTownLife(ctx) {
       if (fl.t > 1.6) { kill(fl.s); flying.splice(i, 1); }
     }
   }
-  function setBin(full) {
-    const p = propOf('bin'); if (!p) return;
-    cond.binFull = full;
-    if (full && !binSprite) { binSprite = sprite('binfull', p.x + p.w / 2, p.base, { z: p.base }); p.el.hidden = true; }
-    else if (!full && binSprite) { kill(binSprite); binSprite = null; p.el.hidden = false; }
+  // 🗑 a bin or a dumpster, full or not: the full state is a sprite over the prop (the pack's own
+  // open-and-full dumpsters, the small full can); emptied, the prop shows again — closed
+  const FULL_ART = { dump0: 'dumpfulls', dump1: 'dumpfull' };
+  const SIDE = { dump0: [['bag1', 50, 2], ['box1', 28, 16], ['bag2', 0, 16]], dump1: [['bag1', -44, 6], ['box1', 42, 4], ['bag2', 14, 16]] };
+  function setFull(key, full) {
+    const p = propOf(key); if (!p) return;
+    if (full) cond.full.add(key); else cond.full.delete(key);
+    const cx = p.x + p.w / 2;
+    if (full && !fullSprites[key]) {
+      fullSprites[key] = sprite(FULL_ART[key] || 'binfull', cx, p.base, { z: p.base }); p.el.hidden = true;
+      // …and what stands beside it: bags and a box by a dumpster, a pizza box or a bag by a bin (Trym, 15 Sep)
+      // (the works-yard one has the timber stack on its left, so its bags stand right and in front)
+      const side = SIDE[key] || [[h(dayNum(), 31, key.charCodeAt(key.length - 1)) < 0.5 ? 'trash2' : 'bag3', 18, 4]];
+      sideSprites[key] = side.map(([k, dx, dy]) => sprite(k, cx + dx, p.base + dy, { z: p.base + dy })).filter(Boolean);
+    } else if (!full && fullSprites[key]) {
+      kill(fullSprites[key]); fullSprites[key] = null; p.el.hidden = false;
+      (sideSprites[key] || []).forEach((s2) => { poof(s2.x, s2.y - 6); kill(s2); }); sideSprites[key] = [];
+    }
+  }
+  // 🎬 a dumpster emptied: the bags puff away, the pack's lid comes down over it, and the works-yard
+  // one (open by nature) stays closed for the day
+  function emptyDumpster(key) {
+    const p = propOf(key); if (!p) return;
+    setFull(key, false);
+    const cx = p.x + p.w / 2;
+    if (key === 'dump0') { p.el.hidden = true; const c = sprite('dumpclosed', cx, p.base, { z: p.base }); if (c) fullSprites.closed0 = c; }
+    const s = sprite('dumpclose', cx, p.base, { z: p.base + 1, fps: 10, mode: 'once' });
+    if (s) s.onDone = () => kill(s);
   }
   function setFountain(dry) {
     cond.fountainDry = dry;
@@ -437,7 +462,7 @@ export function bootTownLife(ctx) {
       else if (t.on === 'walls') ANCHORS.walls.forEach(([x, y, k]) => cands.push({ t, key: k, x, y }));
       else if (t.on === 'perches') ANCHORS.perches.filter(([x, y]) => !usedPerch.has(x + ',' + y)).forEach(([x, y, k]) => cands.push({ t, key: k, x, y }));
       else if (t.on === 'kiosks') [...cond.shut].forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 6 }); });
-      else if (t.on === 'bin') { if (look.bin === 'full') { const p = propOf('bin'); if (p) cands.push({ t, key: 'bin', x: p.x + p.w / 2, y: p.base + 4 }); } }
+      else if (t.on === 'bins' || t.on === 'dumps') ANCHORS[t.on].filter((k) => cond.full.has(k)).forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 4 }); });
       else if (t.on === 'fountain') { if (look.fountain === 'dry') cands.push({ t, key: 'fountain', x: 1100, y: 920 }); }
     }
     const n = PROBLEM_COUNT[band];
@@ -476,7 +501,7 @@ export function bootTownLife(ctx) {
   }
   // a subtle glow on the thing itself — its own sprite, or the shared state sprite it sits on
   function glowProblem(p) {
-    const g = p.sprite || (p.type === 'bin' ? binSprite : p.type === 'fountain' ? dryFountain : p.type === 'shutter' ? shutSprites[p.key] : null);
+    const g = p.sprite || (p.type === 'bin' || p.type === 'dumpster' ? fullSprites[p.key] : p.type === 'fountain' ? dryFountain : p.type === 'shutter' ? shutSprites[p.key] : null);
     if (g && g.el) g.el.classList.add('is-todo');
   }
   async function fix(id) {
@@ -490,7 +515,8 @@ export function bootTownLife(ctx) {
     // day, the shutter rolls up, the crows flap off, the meter pulses (Trym, 14 Sep: "repairing
     // doesnt really give any satisfaction, i just go pick stuff up that disappear")
     if (p.type === 'lamp') { cond.lamps[p.key] = 'ok'; lampsByHour(); const s = lampHalo[p.key]; if (s) { s.el.hidden = false; s.el.style.opacity = ''; s.mode = 'pulse'; s.fps = 6; setTimeout(() => lampsByHour(), 1400); } }
-    else if (p.type === 'bin') setBin(false);
+    else if (p.type === 'bin') setFull(p.key, false);
+    else if (p.type === 'dumpster') emptyDumpster(p.key);
     else if (p.type === 'fountain') setFountain(false);
     else if (p.type === 'shutter') { cond.fixedShut.add(p.key); rollUp(p.key); life.setKeep(keepFn); }
     // the optimistic notch: the room's word replaces it on the reply (and if the day's share is
@@ -883,7 +909,7 @@ export function bootTownLife(ctx) {
     night: () => +night.style.opacity || 0,
     shelf: () => shelfFor(), today: () => today.slice(), odd: () => oddKey,
     merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, crows: () => cond.crows.filter((s) => !s.gone).length,
-    bin: () => cond.binFull, fountain: () => (cond.fountainDry ? 'dry' : 'on'),
+    full: () => [...cond.full], fountain: () => (cond.fountainDry ? 'dry' : 'on'),
     cards: { store: storeCard, board: boardCard, merchant: merchantCard, vendor: vendorCard, health: healthCard },
     story, copy: () => Object.keys(COPY),
     coins: () => coinsNow(), found,

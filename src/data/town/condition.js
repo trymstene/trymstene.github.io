@@ -16,19 +16,20 @@ export const HYST = 3;
 export const LOOK = {
   //             lamps that are dark at night · that stutter · homes whose window stays dark
   //             kiosks with the shutter down · litter level (town-life.js LITTER_MORE)
-  //             the square's bin · the fountain · share of residents out · crows · visitors · décor
+  //             full street bins (of three) · full dumpsters (of two) · the fountain
+  //             share of residents out · crows · visitors · décor
   // (rubbish piles and graffiti are not a shared look: they come only as a player's own
   //  problems, src/data/town/problems.js, so what you can fix is what you see)
   abandoned:  { lampsOut: 5, lampsFlicker: 2, windowsDark: 0.8, shut: ['cafe', 'info'], litter: 2,
-                bin: 'full', fountain: 'dry', outside: 0.4, crows: 3, visitors: 0, decor: 0, dayghost: 1 },
+                bins: 3, dumps: 2, fountain: 'dry', outside: 0.4, crows: 3, visitors: 0, decor: 0, dayghost: 1 },
   struggling: { lampsOut: 3, lampsFlicker: 2, windowsDark: 0.5, shut: ['cafe'], litter: 1,
-                bin: 'full', fountain: 'on', outside: 0.7, crows: 2, visitors: 0, decor: 0, dayghost: 0 },
+                bins: 2, dumps: 1, fountain: 'on', outside: 0.7, crows: 2, visitors: 0, decor: 0, dayghost: 0 },
   recovering: { lampsOut: 1, lampsFlicker: 1, windowsDark: 0.2, shut: [], litter: 1,
-                bin: 'ok', fountain: 'on', outside: 0.9, crows: 1, visitors: 0, decor: 0, dayghost: 0 },
+                bins: 1, dumps: 1, fountain: 'on', outside: 0.9, crows: 1, visitors: 0, decor: 0, dayghost: 0 },
   lively:     { lampsOut: 0, lampsFlicker: 0, windowsDark: 0, shut: [], litter: 0,
-                bin: 'ok', fountain: 'on', outside: 1, crows: 0, visitors: 1, decor: 1, dayghost: 0 },
+                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 1, decor: 1, dayghost: 0 },
   thriving:   { lampsOut: 0, lampsFlicker: 0, windowsDark: 0, shut: [], litter: 0,
-                bin: 'ok', fountain: 'on', outside: 1, crows: 0, visitors: 3, decor: 2, dayghost: 0 },
+                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 3, decor: 2, dayghost: 0 },
 };
 
 // how many things are wrong for ONE player today, by band. Never zero: a town with

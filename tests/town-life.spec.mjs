@@ -61,7 +61,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect(await room(page, 'band')).toBe('abandoned');
   expect((await room(page, 'problems')).length).toBe(9);
   expect((await room(page, 'shut')).sort()).toEqual(['cafe', 'info']);
-  expect(await room(page, 'bin')).toBe(true);
+  expect((await room(page, 'full')).length).toBe(5);   // three street bins and two dumpsters, all full
   expect(await room(page, 'fountain')).toBe('dry');
   expect(await room(page, 'crows')).toBeGreaterThanOrEqual(3);
   expect(Object.values(await room(page, 'lamps')).filter((s) => s === 'out').length).toBe(5);
@@ -85,7 +85,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect(probT.length).toBe(2 + shutT.length);
   for (const k of shutT) expect(probT.some((q) => q.id === 'shutter:' + k)).toBe(true);
   expect(shutT.length).toBeLessThanOrEqual(1);
-  expect(await room(page, 'bin')).toBe(false);
+  expect((await room(page, 'full')).length).toBe(0);
   expect(await room(page, 'fountain')).toBe('on');
   expect(await room(page, 'visitors')).toBe(3);
   expect((await room(page, 'shelf')).length).toBe(7);   // basic 2 + common 2 + good 2 + rare 1
