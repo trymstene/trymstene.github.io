@@ -136,6 +136,14 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-poof__2 { animation: twPoofStep 0.75s steps(1) 0.25s forwards; }
     .tw-poof__3 { animation: twPoofStep 0.75s steps(1) 0.5s forwards; }
     @keyframes twPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
+    /* ✨ THE BURST (src/lib/world.js burstInto) — a pickup or a fix throws the park's harvest colours outward round a
+       flash; the puff stays for things that merely vanish (Trym, 15 Sep: the puff is the rave's missed-drop) */
+    .tw-burst { position: absolute; width: 0; height: 0; z-index: 1960; pointer-events: none; }
+    .tw-burst i { position: absolute; left: 0; top: 0; width: 7px; height: 7px; transform: translate(-50%, -50%); animation: twBurst 0.85s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+    .tw-burst__flash { position: absolute; left: 0; top: 0; width: 34px; height: 34px; border-radius: 50%; transform: translate(-50%, -50%) scale(0.3); background: radial-gradient(circle, #fffbe0 0 28%, rgba(255, 225, 53, 0.9) 29% 45%, rgba(255, 225, 53, 0) 70%); animation: twFlash 0.45s ease-out forwards; }
+    @keyframes twBurst { 0% { opacity: 1; transform: translate(-50%, -50%) rotate(0); } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 22px)) rotate(300deg) scale(0.5); } }
+    @keyframes twFlash { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.3); } 60% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); } }
+    @media (prefers-reduced-motion: reduce) { .tw-burst i { display: none; } .tw-burst__flash { animation: none; opacity: 0; } }
     /* the flyers on the street: baked by the generator (litter-N.png), sized to their own pixels */
     .tw-litter { position: absolute; transform: translate(-50%, -100%); height: auto; image-rendering: pixelated; pointer-events: none; animation: twTodo 1.6s ease-in-out infinite alternate; }   /* the same soft glow as anything else to pick up */
     /* a home's window at night, the Mayor's in the evening: a warm glow that breathes */
@@ -196,6 +204,10 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-aura { position: absolute; pointer-events: none; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(150, 60, 255, 0.85) 0%, rgba(110, 30, 220, 0.6) 45%, rgba(60, 0, 140, 0) 75%); animation: twAura 1.7s ease-in-out infinite; will-change: transform, opacity; }
     @keyframes twAura { 0%, 100% { transform: scale(1); opacity: 0.75; } 50% { transform: scale(1.14); opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .tw-aura { animation: none; } }
+    /* 👻 a ghost carries the purple too, weaker and see-through: a violet edge and a faint ellipse under it (Trym, 15 Sep) */
+    .tw-state.is-haunt { filter: drop-shadow(0 0 3px rgba(150, 80, 255, 0.6)) drop-shadow(0 0 9px rgba(110, 40, 220, 0.4)); }
+    .tw-state.is-haunt::before { content: ''; position: absolute; left: -30%; right: -30%; bottom: -8%; height: 34%; border-radius: 50%; z-index: -1; background: radial-gradient(ellipse at center, rgba(150, 60, 255, 0.4) 0%, rgba(110, 30, 220, 0.26) 45%, rgba(60, 0, 140, 0) 75%); animation: twAura 2.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .tw-state.is-haunt::before { animation: none; } }
     @keyframes twFlicker { 0%, 100% { opacity: 1; } 71% { opacity: 0.35; } 74% { opacity: 1; } 86% { opacity: 0.5; } 89% { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .tw-state.is-hum, .tw-state.is-flicker, .tw-state.is-todo { animation: none; } .tw-state.is-todo { filter: drop-shadow(0 0 4px rgba(255, 225, 53, 0.8)); } }
     /* a problem's mark: the questline's dashed ring, on the ground under the thing that is wrong */

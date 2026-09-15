@@ -7,6 +7,7 @@
 // test-results/ for the eye (docs/design-library.md §13).
 import { test, expect } from '@playwright/test';
 import { OBJECTS, WHERE } from '../src/data/town/objects.js';
+import { GHOSTS } from '../src/data/town/ghosts.js';
 import { OVERLAYS } from '../src/scripts/town-geo.js';
 
 const SHOT = 'test-results/town-';
@@ -117,10 +118,13 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
 test('a fix clears the mark, pays on the pass and counts on the room', async ({ page }) => {
   await town(page);
   const before = await room(page, 'coins');
-  const [p] = await room(page, 'problems');
+  const p = (await room(page, 'problems')).find((q) => q.type !== 'crows');   // crows flap off: their moment is the flight, not the burst
   expect(p).toBeTruthy();
   // walk up and tap it, the way a player does: the tap lands on the mark's world spot
   await seam(page, (id) => window.__town.room.fix(id), p.id);
+  // the moment: a burst at the thing, not the puff (an overview here would scroll the page out from under the
+  // clicks below — the shot of it is in the clean-up walk)
+  expect(await page.locator('.tw-burst').count()).toBeGreaterThanOrEqual(1);
   await page.waitForTimeout(600);
   const after = await room(page, 'problems');
   expect(after.find((q) => q.id === p.id)).toBeUndefined();
@@ -187,6 +191,10 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect(g.map((x) => x.id).sort()).toEqual(['drift', 'knock', 'lead', 'repeat', 'sit', 'wisp']);
   expect(await room(page, 'vendor')).toBe(true);
   expect((await room(page, 'shut')).sort()).toEqual(['cafe', 'info']);
+  // the ghosts carry the purple too, weaker: every ghost is a haunt, and one is cropped for the eye
+  const gh = await room(page, 'ghosts');
+  expect(await page.locator('.tw-state.is-haunt').count()).toBeGreaterThanOrEqual(gh.length);
+  for (const [i, g] of gh.slice(0, 4).entries()) await overview(page, 'ghost-' + i, { x: Math.max(0, g.x - 120), y: Math.max(0, g.y - 170), width: 240, height: 230 });
   const objs = await room(page, 'objects');
   expect(new Set(objs.map((o) => o.x + ',' + o.y)).size).toBe(objs.length);   // never two on one spot
   // each stands in its purple fire: an aura on the ground, a flame behind, sparks in front
@@ -261,7 +269,8 @@ test('a container fixed is a clean-up: the litter round it goes too', async ({ p
   const flyers = await page.evaluate(() => window.__town.life.flyers());
   const swept = flyers.filter((f) => Math.hypot(f.x - c.x, f.y - c.y) < 170).length;
   await seam(page, (x) => window.__town.room.fix(x), id);
-  await page.waitForTimeout(1200);
+  await overview(page, 'burst', { x: Math.max(0, c.x - 150), y: Math.max(0, c.y - 170), width: 300, height: 240 });   // mid-burst, for the eye
+  await page.waitForTimeout(900);
   const ids = (await room(page, 'problems')).map((q) => q.id);
   expect(ids).not.toContain(id);
   expect(ids).not.toContain(near1);
@@ -277,5 +286,19 @@ test('every cursed-object spot stands clear of every prop', () => {
   for (const [place, spots] of Object.entries(WHERE)) for (const [sx, sy] of spots) {
     const hit = OVERLAYS.find(([fn, x, y, w, h]) => sx + 22 > x - 8 && sx - 22 < x + w + 8 && sy + 6 > y - 8 && sy - 72 < y + h + 8);
     expect(hit, place + ' ' + sx + ',' + sy + ' is under ' + (hit ? (hit[6] || hit[0]) : '')).toBeUndefined();
+  }
+});
+
+// 👻 a ghost must be SEEN too: where it stands, walks or ends, no prop with a deeper foot covers its body
+// (z, when a row has one, is the depth it is drawn at — a sitter drawn in front of its bench)
+test('every ghost stands, walks and ends where it can be seen', () => {
+  const covered = (x, y, z) => OVERLAYS.find(([fn, bx, by, bw, bh, base]) => base > z && x + 20 > bx && x - 20 < bx + bw && y > by && y - 70 < by + bh);
+  for (const d of GHOSTS) {
+    const pts = [];
+    if (d.at) pts.push(d.at);
+    if (d.from) pts.push(d.from);
+    if (d.to) pts.push(d.to);
+    if (d.path) { const [a, b] = d.path; const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 30); for (let i = 0; i <= n; i++) pts.push([a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n]); }
+    for (const [x, y] of pts) { const hit = covered(x, y, d.z != null ? d.z : y); expect(hit, d.id + ' at ' + Math.round(x) + ',' + Math.round(y) + ' is under ' + (hit ? (hit[6] || hit[0]) : '')).toBeUndefined(); }
   }
 });

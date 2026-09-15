@@ -25,7 +25,7 @@
 // banana or ghost — a ghost with a line says it in the town's toast. ⚠️ EVERY WORD is copy:
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
-import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto } from '../lib/world.js';
+import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto } from '../lib/world.js';
 import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
@@ -253,7 +253,8 @@ export function bootTownLife(ctx) {
   // town-problems"). The mark is otherwise an invisible anchor.
   const mark = (x, y, lift, z, icon) => { const m = document.createElement('i'); m.className = 'tw-mark'; m.style.left = pct(x, W); m.style.top = pct(y, H); m.style.zIndex = String(z != null ? z : 100 + Math.round(y) - 1);
     if (icon) { const ic = document.createElement('span'); ic.className = 'tw-mark__ic'; ic.innerHTML = iconSvg('tools', { size: 18 }); ic.style.top = (-(lift || 40)) + 'px'; m.appendChild(ic); } world.appendChild(m); return m; };
-  const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof)
+  const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof): a thing that merely vanishes
+  const burst = (x, y) => burstInto(world, 'tw-burst', x / W * 100, (y - 16) / H * 100);   // ✨ a fix or a find: the moment (town.astro .tw-burst)
   // a banana body that is not a resident: a visitor, the merchant, the vendor
   function body(x, y, outfit) {
     const el = document.createElement('div');
@@ -509,7 +510,7 @@ export function bootTownLife(ctx) {
     const p = problems.splice(i, 1)[0];
     if (p.el) p.el.remove();
     if (p.type === 'crows') flyOff(p.sprite); else kill(p.sprite);
-    if (p.type !== 'crows') poof(p.x, p.y - 8);
+    if (p.type !== 'crows') burst(p.x, p.y - 8);
     remember(id);
     // what the fix changes for THIS player — and the moment it makes: the lamp flashes on even by
     // day, the shutter rolls up, the crows flap off, the meter pulses (Trym, 14 Sep: "repairing
@@ -722,7 +723,7 @@ export function bootTownLife(ctx) {
   function ghostOf(id, def0) {
     const def = def0 || GHOSTS.find((g) => g.id === id); if (!def) return null;
     const at = def.at || def.from || (def.path && def.path[0]) || [1100, 950];
-    const s = sprite(def.art, at[0], at[1], { fps: def.fps || 6, cls: 'is-fade', mode: def.loop || def.id === 'wisp' ? 'once' : 'loop' });
+    const s = sprite(def.art, at[0], at[1], { fps: def.fps || 6, cls: 'is-fade is-haunt', mode: def.loop || def.id === 'wisp' ? 'once' : 'loop', z: def.z });   // is-haunt: the curse's purple, weaker than a cursed object's; z: in front of what it sits on
     if (!s) return null;
     const g = { def, s, x: at[0], y: at[1], dir: 1, hideT: 0, done: false };
     if (def.id === 'wisp' || def.loop) s.onDone = () => { g.hideT = 2 + Math.random() * 3; };
@@ -790,7 +791,7 @@ export function bootTownLife(ctx) {
   function unhaunt(o) { if (o.aura) o.aura.remove(); kill(o.flame); kill(o.lick); kill(o.spark); }
   function takeObject(o) {
     const i = objects.indexOf(o); if (i < 0) return;
-    objects.splice(i, 1); o.el.remove(); o.m.remove(); unhaunt(o); poof(o.x, o.y - 6);
+    objects.splice(i, 1); o.el.remove(); o.m.remove(); unhaunt(o); burst(o.x, o.y - 6);
     const first = !found(o.def.id);
     passStat('cur_' + o.def.id, 1);
     const ok = grantToShed(o.def.decor);

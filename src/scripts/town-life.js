@@ -27,7 +27,7 @@
 // element hides and a warm window glows. The Mayor is never seen; a light in the hall's upper window
 // in the evening is all of him.
 import { drawComposite } from '../lib/banana-engine.js';
-import { poofInto } from '../lib/world.js';
+import { poofInto, burstInto } from '../lib/world.js';
 import { passStat, passRaw, statTotal } from '../lib/banana-pass.js';
 
 // ---- the clock
@@ -355,14 +355,15 @@ export function initLife({ world, W, H, pct }) {
     });
   }
   function poof(x, y) { poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100); }
-  function takeFlyer(f) {
+  function burst(x, y) { burstInto(world, 'tw-burst', x / W * 100, (y - 16) / H * 100); }   // ✨ the player's own pickup (town-room.js has the twin)
+  function takeFlyer(f, mine) {
     if (f.gone) return;
-    f.gone = true; f.el.remove(); poof(f.x, f.y);
+    f.gone = true; f.el.remove(); if (mine) burst(f.x, f.y); else poof(f.x, f.y);
   }
   function pick(i) {   // the player picked one up; Moss, if near, has a line for it
     const f = flyers.find((q) => q.i === i && !q.gone);
     if (!f) return false;
-    takeFlyer(f);
+    takeFlyer(f, true);
     // 🗞 litter is litter: picking it up is the park's walk-over rule, rep only (Trym, 15 Sep: "i can
     // pick them up but nothing more happens, doesnt seem like a part of the fixing-system")
     try { passStat('rep', 1); } catch (e) {}
