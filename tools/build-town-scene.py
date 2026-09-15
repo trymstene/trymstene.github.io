@@ -642,6 +642,7 @@ for key, args in (
     ('lamp', ('Street_Lamp_48x48.png', [0, 1, 2, 3], 240, 240, 0, PROP, True)),            # the SAME lamp, lit: four frames of a pulsing halo (240 wide — the halo is the frame)
     ('ghost', ('Ghost_Friendly_48x48.png', list(range(0, 8)), 96, 96, 1)),   # the friendly ghost, floating, facing right (row 1: eight frames a facing)
     ('ghostf', ('Ghost_Friendly_48x48.png', list(range(24, 32)), 96, 96, 1)),  # …facing front
+    ('ghost4', ('Ghost_Friendly_48x48.png', list(range(0, 32)), 96, 96, 1)),   # all four facings in one stack for a ROAMER: right 0-7, back 8-15, left 16-23, front 24-31
     ('ghostw', ('Ghost_Friendly_48x48.png', list(range(8, 16)), 96, 96, 2)),   # …waving at you (row 2's "interact")
     ('drift', ('Graveyard_Ghosts_2_48x48.png', list(range(1, 16)), 96, 192, 0, PROP, True)),  # the tall grey one that fades in and out
     ('wisp', ('Graveyard_Ghosts_1_48x48.png', list(range(0, 6)), 96, 96, 0, PROP, True)),     # a small one rising and gone

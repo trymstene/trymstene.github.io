@@ -35,7 +35,7 @@ import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_COUNT, NIGHT, DECOR_SPOTS, VISITOR_
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, MERCHANT, CURSE_SHELF } from '../data/town/stock.js';
 import { TODAY, TODAY_N, ODD_SPOTS, CLOSABLE } from '../data/town/today.js';
-import { GHOSTS, NIGHT_GHOSTS, DAY_GHOSTS } from '../data/town/ghosts.js';
+import { GHOSTS, NIGHT_GHOSTS, DAY_GHOSTS, ROAM } from '../data/town/ghosts.js';
 import { OBJECTS, WHERE, RARITY_W, BOUNTY } from '../data/town/objects.js';
 
 // ✍️ the words. A glob, not an import: the file does not exist until Trym approves the
@@ -238,7 +238,7 @@ export function bootTownLife(ctx) {
       s.acc += dt;
       if (s.acc < 1 / s.fps) continue;
       s.acc = 0;
-      if (s.mode === 'loop') show(s, (s.i + 1) % s.n);
+      if (s.mode === 'loop') { const lo = s.lo || 0, hi = s.hi != null ? s.hi : s.n - 1; show(s, s.i + 1 > hi || s.i < lo ? lo : s.i + 1); }   // a window of frames: one facing of a four-facing stack
       else if (s.mode === 'pulse') { let ni = s.i + s.dir; if (ni >= s.n || ni < 0) { s.dir = -s.dir; ni = s.i + s.dir; } show(s, ni); }
       // ⚠️ hidden, never visibility: a child's `visibility: visible` (the is-on frame) beats a
       // hidden PARENT, so the halos of five dark lamps kept shining (14 Sep). [hidden] is display.
@@ -727,10 +727,20 @@ export function bootTownLife(ctx) {
     const s = sprite(def.art, at[0], at[1], { fps: def.fps || 6, cls: 'is-fade is-haunt', mode: def.loop || def.id === 'wisp' ? 'once' : 'loop', z: def.z });   // is-haunt: the curse's purple, weaker than a cursed object's; z: in front of what it sits on
     if (!s) return null;
     const g = { def, s, x: at[0], y: at[1], dir: 1, hideT: 0, done: false, night: !!set };
+    if (s.n === 32) faceGhost(g, s, 0, 1);   // the four-facing stack starts facing front
     if (def.id === 'wisp' || def.loop) s.onDone = () => { g.hideT = 2 + Math.random() * 3; };
     ghosts.push(g);
     return s;
   }
+  // the friendly ghost's four facings (ghosts.js): the stack's frame window follows the way it goes
+  function faceGhost(g, s, dx, dy) {
+    const f = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'front' : 'back');
+    if (f === g.face) return;
+    g.face = f; const lo = { right: 0, back: 8, left: 16, front: 24 }[f]; s.lo = lo; s.hi = lo + 7; show(s, lo);
+  }
+  // ⚠️ a ghost's own x/y must move WITH its sprite: moveSprite() alone left g.x where it began, so every
+  // walking ghost took one step from its start each tick and jittered in place (found 15 Sep)
+  function moveGhost(g, x, y) { g.x = x; g.y = y; moveSprite(g.s, x, y); }
   function moveSprite(s, x, y) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y)); }
   function stepGhosts(dt) {
     for (const g of ghosts) {
@@ -749,7 +759,7 @@ export function bootTownLife(ctx) {
         const [a, b] = d.path, tx = g.dir > 0 ? b[0] : a[0];
         const nx = g.x + Math.sign(tx - g.x) * d.speed * dt;
         if (Math.abs(tx - g.x) < 3) g.dir = -g.dir;
-        moveSprite(s, nx, g.y);
+        moveGhost(g, nx, g.y);
         s.el.classList.toggle('is-flip', g.dir < 0);
         const near = Math.hypot(ctx.pos.x - g.x, ctx.pos.y - g.y) < (d.near || 90);
         if (near && !g.shy) { g.shy = 1; s.el.style.opacity = '0'; g.hideT = 6; }
@@ -757,7 +767,15 @@ export function bootTownLife(ctx) {
       } else if (d.from && d.to) {   // walks to somewhere and is gone; something is left there
         const dx = d.to[0] - g.x, dy = d.to[1] - g.y, dist = Math.hypot(dx, dy);
         if (dist < 4) { g.done = true; s.el.style.opacity = '0'; setTimeout(() => kill(s), 1500); if (d.leaves === 'object') spawnObject(dayNum() * 7 + 2, false, d.to); }
-        else { const st = Math.min(dist, d.speed * (g.hurry > 0 ? 2.4 : 1) * dt); moveSprite(s, g.x + dx / dist * st, g.y + dy / dist * st); s.el.classList.toggle('is-flip', dx < 0); }
+        else { const st = Math.min(dist, d.speed * (g.hurry > 0 ? 2.4 : 1) * dt); moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st); if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0); }
+      } else if (d.roam) {   // 👣 roams: waypoint to waypoint over the whole town, a pause at each, facing where it goes
+        if (g.wait > 0) { g.wait -= dt; continue; }
+        if (!g.to) { const opts = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700; }); g.to = opts[Math.floor(Math.random() * opts.length)] || ROAM[0]; }
+        const dx = g.to[0] - g.x, dy = g.to[1] - g.y, dist = Math.hypot(dx, dy);
+        if (dist < 4) { g.to = null; g.wait = 1.5 + Math.random() * 2.5; continue; }
+        const st = Math.min(dist, d.speed * dt);
+        moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st);
+        if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0);
       } else if (d.bob) {   // leaning at a door
         g.t = (g.t || 0) + dt;
         s.el.style.transform = 'translateY(' + (Math.sin(g.t * 2.2) * 3).toFixed(1) + 'px)';
@@ -961,7 +979,7 @@ export function bootTownLife(ctx) {
     fix, fixed,
     lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),
-    ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0' })),
+    ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null })),
     objects: () => objects.map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objects.find((q) => q.def.id === id); if (o) takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,

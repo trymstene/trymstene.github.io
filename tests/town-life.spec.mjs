@@ -7,7 +7,7 @@
 // test-results/ for the eye (docs/design-library.md §13).
 import { test, expect } from '@playwright/test';
 import { OBJECTS, WHERE } from '../src/data/town/objects.js';
-import { GHOSTS } from '../src/data/town/ghosts.js';
+import { GHOSTS, ROAM } from '../src/data/town/ghosts.js';
 import { OVERLAYS } from '../src/scripts/town-geo.js';
 
 const SHOT = 'test-results/town-';
@@ -192,7 +192,7 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.45);
   expect((await seam(page, () => window.__town.life.kept())).length).toBeGreaterThanOrEqual(8);
   const g = await room(page, 'ghosts');
-  expect(g.map((x) => x.id).sort()).toEqual(['drift', 'knock', 'lead', 'repeat', 'sit', 'wisp']);
+  expect(g.map((x) => x.id).sort()).toEqual(['drift', 'knock', 'lead', 'repeat', 'roam', 'roam2', 'sit', 'wisp']);
   expect(await room(page, 'vendor')).toBe(true);
   expect((await room(page, 'shut')).sort()).toEqual(['cafe', 'info']);
   // the ghosts carry the purple too, weaker: every ghost is a haunt, and one is cropped for the eye
@@ -312,6 +312,7 @@ test('every ghost stands, walks and ends where it can be seen', () => {
     if (d.path) { const [a, b] = d.path; const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 30); for (let i = 0; i <= n; i++) pts.push([a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n]); }
     for (const [x, y] of pts) { const hit = covered(x, y, d.z != null ? d.z : y); expect(hit, d.id + ' at ' + Math.round(x) + ',' + Math.round(y) + ' is under ' + (hit ? (hit[6] || hit[0]) : '')).toBeUndefined(); }
   }
+  for (const [x, y] of ROAM) { const hit = covered(x, y, y); expect(hit, 'roam waypoint ' + x + ',' + y + ' is under ' + (hit ? (hit[6] || hit[0]) : '')).toBeUndefined(); }
 });
 
 // 🚶 walking onto a thing picks it up; a lamp is a repair and waits for the tap (Trym, 15 Sep)
@@ -350,8 +351,15 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   await seam(page, () => window.__town.life.set(21));   // the town's night
   await page.waitForTimeout(1400);   // the room looks twice a second
   const ids = (await room(page, 'ghosts')).map((g) => g.id);
-  for (const id of ['drift', 'sit', 'wisp']) expect(ids, 'the night set').toContain(id);
+  for (const id of ['roam', 'drift', 'sit', 'wisp']) expect(ids, 'the night set').toContain(id);
   expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.5);
+  // the roamer roams, and faces the way it goes
+  const r0 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
+  await page.waitForTimeout(2500);
+  const r1 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
+  expect(Math.hypot(r1.x - r0.x, r1.y - r0.y)).toBeGreaterThan(10);
+  expect(['right', 'left', 'front', 'back']).toContain(r1.face);
+  await overview(page, 'roamer', { x: Math.max(0, r1.x - 120), y: Math.max(0, r1.y - 170), width: 240, height: 230 });
   await seam(page, () => window.__town.life.set(8));   // morning
   await page.waitForTimeout(1400);
   const day = (await room(page, 'ghosts')).map((g) => g.id);
