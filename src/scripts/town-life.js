@@ -46,7 +46,9 @@ const beatOf = (h) => Math.floor(h / 4) % 6;
 // What stays in code is the MECHANICS — the outfit, the home, and which place, act and facing each
 // beat puts them at. The two are merged below, so the runtime shape of R is exactly what it was:
 // day = six beats of [place, act, face, lines], plus name, role, hi, tap, want.
-import COPY from '../data/copy/town-npcs.json';
+// ⚡ the words load AFTER the square stands: 25 KB of dialogue was riding in the town's own script (96% of its
+// budget, 15 Sep). A resident stands and walks without them; a tap waits the moment they take to arrive.
+const COPY_P = import('../data/copy/town-npcs.json').then((m) => m.default || m);
 
 const MECH = [
   { key: 'nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall',
@@ -71,13 +73,20 @@ const MECH = [
 // the words, by key. A resident the copy file has never heard of would be a nameless banana standing
 // in the square with nothing to say, so it is named out loud here — the copy gate makes it impossible
 // to ship (the cast is pinned in tools/copy-jobs.mjs), and this is what it looks like if it ever is.
-const SAID = new Map((COPY.residents || []).map((c) => [c.key, c]));
-const R = MECH.map((m) => {
-  const c = SAID.get(m.key);
-  if (!c) throw new Error('town-life: src/data/copy/town-npcs.json has no lines for ' + m.key);
-  return { ...m, name: c.name, role: c.role, want: c.want, tap: c.tap, hi: c.hi, ask: c.ask, curse: c.curse,
-    day: m.day.map(([place, act, face], beat) => [place, act, face, c.beats[beat].lines]) };
-});
+const R = MECH.map((m) => ({ ...m, name: '', role: '', want: '', tap: '', hi: [], ask: {}, curse: '', day: m.day.map(([place, act, face]) => [place, act, face, []]) }));
+// the words, by key, onto the residents that are already out: a resident the copy file has never heard of would
+// be a nameless banana with nothing to say, so it is named out loud — the copy gate pins the cast in
+// tools/copy-jobs.mjs, so this cannot ship
+function applyCopy(res, COPY) {
+  const SAID = new Map((COPY.residents || []).map((c) => [c.key, c]));
+  for (const n of res) {
+    const c = SAID.get(n.key);
+    if (!c) { console.error('town-life: src/data/copy/town-npcs.json has no lines for ' + n.key); continue; }
+    Object.assign(n, { name: c.name, role: c.role, want: c.want, tap: c.tap, hi: c.hi, ask: c.ask, curse: c.curse });
+    n.day.forEach((d, beat) => { d[3] = (c.beats[beat] || {}).lines || []; });
+    n.lines = (n.day[n.beat] || [])[3] || [];
+  }
+}
 
 // ---- where a place's station is (feet, world px): at a lane's edge next to the place. A second
 // (third) point is for the residents who share the place in one beat — the bible's lunches.
@@ -377,7 +386,7 @@ export function initLife({ world, W, H, pct }) {
   // gives you what they are doing right now instead of the greeting again.
   function talk(key) {
     const n = byKey(key);
-    if (!n) return null;
+    if (!n || !n.name) return null;   // the words are still on their way
     const first = !n.talked;
     n.talked = true;
     const line = first ? n.hi[rung(n.key)] : (n.lines && n.lines.length ? n.lines[Math.floor(hourNow()) % n.lines.length] : n.tap);
@@ -524,5 +533,6 @@ export function initLife({ world, W, H, pct }) {
     pick,
     mayor: () => !!(mayorEl && !mayorEl.hidden),
   };
+  COPY_P.then((COPY) => applyCopy(res, COPY)).catch((e) => console.error('town-life: the words did not load', e));
   return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, setKeep, setGlow, setOverride, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
 }
