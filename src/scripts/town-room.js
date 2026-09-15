@@ -204,7 +204,10 @@ export function bootTownLife(ctx) {
     if (!slot || now < clockAt) return;
     clockAt = now + 1000;
     const h = life.seam.hour();   // 0–24 town hours, 30 real seconds each; night is 20–24 (the hour lives on the QA seam)
-    const isNight = h >= 20, left = Math.max(0, ((isNight ? 24 : 20) - h) * 30);
+    let isNight = h >= 20, left = Math.max(0, ((isNight ? 24 : 20) - h) * 30);
+    // a Curse Night is a NIGHT however long it runs: the moon, and the time the curse has left (Trym, 15 Sep: the sun
+    // on the clock with ghosts about read as "ghosts spawning when daytime arrives")
+    if (curse && curse !== 'hush') { isNight = true; left = Math.max(0, (forced ? forcedUntil - Date.now() : curseAt(Date.now()).left) / 1000); }
     const m = Math.floor(left / 60), sec = Math.floor(left % 60);
     slot.innerHTML = '<span class="tw-clock">' + iconSvg(isNight ? 'sun-solid' : 'moon-solid', { size: 14 }) + '<b>' + m + ':' + (sec < 10 ? '0' : '') + sec + '</b></span>';
   }
@@ -989,8 +992,9 @@ export function bootTownLife(ctx) {
       cond.shut.add('cafe'); cond.shut.add('info'); shutters();
       candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
     }
-    (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true));
-    nightBegins(type === 'deep' ? 4 : type === 'creep' ? 3 : 2);   // more out at once than a plain night's two
+    // a hush is dusk, not a night: it brings no ghosts and no cursed things of its own — the town's own night does
+    // (15 Sep: a real-time hush spawned the night set by the town's day). A creeping or deep night is the night.
+    if (type !== 'hush') { (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true)); nightBegins(type === 'deep' ? 4 : 3); }
     if (type === 'deep') { vendor = body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' }); bodies.add(vendor); }
     lampsByHour();
     if (curseTold !== type + dayNum()) { curseTold = type + dayNum(); track('town_curse', { tier: type }); }
@@ -1073,8 +1077,9 @@ export function bootTownLife(ctx) {
     hbar.hidden = inside();
     if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
     // 👻 every night has its ghosts; dawn takes them (a Curse Night owns its own until it ends)
-    if (beat === 5 && !curse && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); nightBegins(2); }   // 🔮 the night's cursed things come through it
-    else if (beat !== 5 && plainNight) { plainNight = false; if (!curse) { clearGhosts(true); nightEnds(); } }
+    const cursedNight = !!(curse && curse !== 'hush');
+    if (beat === 5 && !cursedNight && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); nightBegins(2); }   // 🔮 the night's cursed things come through it
+    else if (beat !== 5 && plainNight) { plainNight = false; if (!cursedNight) { clearGhosts(true); nightEnds(); } }
     spawnThroughNight(now);
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;

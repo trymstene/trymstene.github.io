@@ -102,7 +102,7 @@ const PATHS = {
 };
 // home: the door they vanish through, and the window that glows while they are in
 const HOME = { hall: [1100, 590], post: [1700, 590], condo: [480, 592], store: [480, 1068], cafe: [1830, 1068], print: [1620, 1068], garden_w: [520, 704] };
-const GLOW = { hall: [[1098, 468]], post: [[1694, 215]], condo: [[435, 400], [525, 400]], store: [[516, 1006]], cafe: [[1837, 1012]], print: [[1656, 1000]], garden_w: [[612, 738]] };
+const GLOW = { hall: [[1098, 468]], post: [[1694, 215]], condo: [[435, 400], [525, 400]], store: [[516, 1006]], cafe: [[1837, 1012]], print: [[1656, 1000]] };   // no glow for garden_w: a garden has no window (Trym, 15 Sep: "a glow under the bench")
 const MAYOR = [1098, 468];
 // the beds a waterer sprinkles, per place
 const BEDS = { garden_w: [[440, 748], [530, 748]], orchard: [[690, 336], [900, 336], [790, 222]] };

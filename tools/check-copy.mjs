@@ -50,6 +50,7 @@ for (const name of readdirSync(join(ROOT, DIR)).filter((f) => f.endsWith('.json'
     try { const d = JSON.parse(readFileSync(draftAt, 'utf8')); if (d && d._meta && !checkFile(job, d, { draft: true }).bad.length) pending = d; } catch (e) { pending = null; }
   }
   if (pending) console.log(`⏳ ${rel}: the approved words lag the code (${job.redraft}) — the rig's draft on Trym's desk passes every rule; nothing changes until he says so`);
+  else if (job.redraft && bad.length && !existsSync(draftAt)) problems.push(`${rel} — redraft is set but the draft is not here (CI has no tools/copy-out): approve in the same commit as the code, never push a pending redraft`);
   else if (bad.length) problems.push(`${rel} — ${bad.length} violation${bad.length === 1 ? '' : 's'}:\n${report(bad)}`);
   else if (job.redraft) problems.push(`${rel} — passes on its own now, so drop the redraft flag from its entry in tools/copy-jobs.mjs`);
   else console.log(`✓ ${rel}: ${[...strings(data)].length} strings, all clean (${job.title})`);
