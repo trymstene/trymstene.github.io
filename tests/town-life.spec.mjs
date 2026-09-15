@@ -185,6 +185,7 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   // …and the curse rides along: see-through, purple fire at the feet
   expect(await room(page, 'cursedMe')).toBe(true);
   expect(await page.locator('.tw-me.is-cursed-me').count()).toBe(1);
+  expect(['purple', 'bluefire', 'mirror', 'giant', 'cold', 'blink', 'tiny', 'unseen', 'twin', 'blaze']).toContain(await room(page, 'meFx'));   // and its own way with you
   expect(await page.locator('.tw-aura').count()).toBe((await room(page, 'objects')).length);
   await seam(page, () => window.__town.life.set(3));   // dawn, so "in" is a change
   await page.waitForTimeout(400);
@@ -287,6 +288,7 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   expect(((await page.locator('.tw-todo').textContent()) || '').split(' · ').length).toBe(Math.max(1, kinds));
   expect(await page.locator('.tw-stamp').count()).toBe(0);
   expect(await page.locator('.tw-paper--news').count()).toBe(0);   // an ordinary noon: no night notice; the nights are Moss's to tell
+  expect(await page.locator('.tw-forsale').count()).toBe(1);   // the Coffee Cup is for sale until it can be bought
   expect((await page.evaluate(() => window.__town.life.talk('moss'))).topics.length).toBe(3);   // his two, and the nights
   expect(await page.locator('.tw-card--board .tw-lamps').count()).toBe(1);
   await page.screenshot({ path: SHOT + 'board.png' });

@@ -214,6 +214,22 @@ const description = 'The town centre of Banana World, under construction.';
     /* 😱 the curse on you, after a pickup: see-through, a violet edge, afloat (the fire at the feet is a sprite) */
     .tw-me.is-cursed-me canvas { opacity: 0.66; filter: drop-shadow(0 0 3px rgba(150, 70, 255, 0.95)) drop-shadow(0 0 9px rgba(110, 30, 220, 0.7)); animation: twMeFloat 1.6s ease-in-out infinite; }
     @keyframes twMeFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    /* one curse each (town-room.js ME_FX): the individual transform properties so the float keeps its own transform */
+    .tw-me.is-me-giant canvas { scale: 1.35; transform-origin: 50% 100%; }
+    .tw-me.is-me-tiny canvas { scale: 0.7; transform-origin: 50% 100%; }
+    .tw-me.is-me-mirror canvas { scale: -1 1; }
+    .tw-me.is-me-unseen canvas { opacity: 0.22; }
+    .tw-me.is-me-blink canvas { animation: twMeFloat 1.6s ease-in-out infinite, twMeBlink 0.9s steps(1) infinite; }
+    @keyframes twMeBlink { 0%, 100% { opacity: 0.66; } 40% { opacity: 0.08; } 55% { opacity: 0.66; } 70% { opacity: 0.15; } 80% { opacity: 0.66; } }
+    .tw-me.is-me-purple canvas { filter: hue-rotate(250deg) saturate(1.5) drop-shadow(0 0 6px rgba(150, 70, 255, 0.95)); }
+    .tw-me.is-me-cold canvas { filter: hue-rotate(185deg) saturate(0.9) brightness(1.15) drop-shadow(0 0 5px rgba(120, 200, 255, 0.9)); animation: twMeFloat 1.6s ease-in-out infinite, twShiver 0.16s steps(2) infinite; }
+    @keyframes twShiver { from { translate: -1.5px 0; } to { translate: 1.5px 0; } }
+    .tw-state.is-bluefire img { filter: hue-rotate(165deg) saturate(1.5) brightness(1.1); }
+    .tw-me-twin { position: absolute; width: 4.5%; transform: translate(-50%, -100%); pointer-events: none; opacity: 0.6; }
+    .tw-me-twin canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; filter: brightness(0) drop-shadow(0 0 4px rgba(120, 40, 220, 0.85)); }
+    /* 🏷 the big red FOR SALE sign on the Coffee Cup */
+    .tw-forsale { position: absolute; transform: translate(-50%, -50%) rotate(-3deg); pointer-events: none; background: #c62828; color: #fff6f6; border: 2px solid #16130a; box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45); padding: 0.25em 0.7em; font-family: "Archivo Black", sans-serif; font-size: max(0.72rem, calc(9px * var(--ws, 1.6))); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+    @media (prefers-reduced-motion: reduce) { .tw-me.is-me-blink canvas, .tw-me.is-me-cold canvas { animation: none; } }
     @media (prefers-reduced-motion: reduce) { .tw-aura.is-born { animation: none; } .tw-me.is-cursed-me canvas { animation: none; } }
     @media (prefers-reduced-motion: reduce) { .tw-aura { animation: none; } }
     /* 👻 a ghost carries the purple too, weaker and see-through: a violet edge and a faint ellipse under it (Trym, 15 Sep) */
@@ -239,7 +255,7 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-shutsign { position: absolute; transform: translate(-50%, -50%) rotate(-2deg); pointer-events: none; background: #c62828; color: #fff6f6; border: 1px solid #16130a; box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45); padding: 0.2em 0.5em; font-family: "Archivo Black", sans-serif; font-size: max(0.42rem, calc(4.2px * var(--ws, 1.6))); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
     .tw-burst--curse .tw-burst__flash { background: radial-gradient(circle, #f0e4ff 0 28%, rgba(150, 70, 255, 0.9) 29% 45%, rgba(110, 30, 220, 0) 70%); }
     .tw-state.is-shut.is-todo img { filter: brightness(0.7) saturate(0.7); }
-    .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor, .tw-aura, .tw-tape, .tw-shutsign) { visibility: hidden; }
+    .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor, .tw-aura, .tw-tape, .tw-shutsign, .tw-forsale, .tw-me-twin) { visibility: hidden; }
     /* the store's shelf and the vendor's: the town's row with the piece's own sprite in front */
     .tw-store { display: grid; gap: 0.45rem; margin: 0.5rem 0; }
     .tw-store__it { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }

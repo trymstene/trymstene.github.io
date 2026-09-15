@@ -95,6 +95,11 @@ with `{n}` ("{n} dark lamps"). Words a newcomer sees at once; nothing clever.
 One word, on a little red square hung in a shut kiosk's window: the word a shop hangs on its
 door when it is not open. Nothing else.
 
+## The sign on the Coffee Cup — `forSale`
+
+The café is for sale until the day it can be bought (docs/town-cafe-plan.md). A big red sign
+hangs on it: two words, the way a shop window says it. Nothing else.
+
 ## The travelling stall
 
 A stranger with a stall, in the square on good days only, with pieces Pip never carries at

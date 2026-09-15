@@ -144,6 +144,7 @@
     }
   ],
   "shutSign": "Closed",
+  "forSale": "For Sale",
   "things": {
     "lamp": [
       "a dark lamp",

@@ -367,6 +367,7 @@ export function bootTownLife(ctx) {
     if (merchant) merchant.el.hidden = nightOut;
   }
   function shutters() {
+    hangForSale();
     for (const k of CLOSABLE) {
       const want = cond.shut.has(k) && !cond.fixedShut.has(k);
       if (want && !shutSprites[k]) {
@@ -385,6 +386,13 @@ export function bootTownLife(ctx) {
   // with the one approved word (Trym, 15 Sep: "under construction tape across the building from both sides and a tiny
   // red square sign on the window saying closed"). The tape and the sign are drawn, not pack art: there is no tape in the pack.
   const tapes = {};
+  // 🏷 FOR SALE on the Coffee Cup: the big red sign hangs until the café can be bought (docs/town-cafe-plan.md)
+  function hangForSale() {
+    const p = propOf('cafe'); if (!p || !COPY.forSale || world.querySelector('.tw-forsale')) return;
+    const s = document.createElement('b'); s.className = 'tw-forsale'; s.textContent = COPY.forSale;
+    s.style.left = pct(p.x + p.w / 2, W); s.style.top = pct(p.base - 140, H); s.style.zIndex = String(100 + p.base + 4);
+    world.appendChild(s);
+  }
   function barricade(k, p) {
     if (tapes[k]) return;
     const els = [];
@@ -959,16 +967,34 @@ export function bootTownLife(ctx) {
   }
   // 😱 THE CURSE ON YOU: a cursed thing picked up rides along for a while — see-through, a violet edge, afloat, purple
   // fire at your feet (Trym, 15 Sep: "a fun scary effect like you get on pickups in the rave"); a rare one longer
-  let meCurseUntil = 0, meFire = null;
+  // …and each cursed thing has its own way with you on top (Trym, 15 Sep: "more fun curse-effects"): a class on the
+  // banana (town.astro .is-me-*) — giant, tiny, mirrored, blinking, unseen, cold and shivering, purple — or blue fire,
+  // a blaze, or the dark TWIN that walks a moment behind you
+  const ME_FX = { humlantern: 'purple', coldfire: 'bluefire', stillbear: 'mirror', lostpack: 'giant', coldurn: 'cold', redcap: 'blink', tinwalker: 'tiny', emptymirror: 'unseen', stoppedclock: 'twin', lastlamp: 'blaze' };
+  let meCurseUntil = 0, meFire = null, meFx = '', twin = null, trail = [];
   function curseMe(def) {
+    endMeCurse();
     meCurseUntil = performance.now() + (def.rarity === 'rare' ? 40000 : 25000);
-    const me = world.querySelector('.tw-me'); if (me) me.classList.add('is-cursed-me');
-    if (!meFire) meFire = sprite('flame', ctx.pos.x, ctx.pos.y + 17, { z: ctx.pos.y - 1, fps: 8, cls: 'is-flame is-mefire', size: 1.4 });
+    meFx = ME_FX[def.id] || '';
+    const me = world.querySelector('.tw-me'); if (me) { me.classList.add('is-cursed-me'); if (meFx) me.classList.add('is-me-' + meFx); }
+    meFire = sprite('flame', ctx.pos.x, ctx.pos.y + 17, { z: ctx.pos.y - 1, fps: 8, cls: 'is-flame is-mefire' + (meFx === 'bluefire' ? ' is-bluefire' : ''), size: meFx === 'blaze' ? 2.1 : 1.4 });
+    if (meFx === 'twin') { twin = document.createElement('div'); twin.className = 'tw-me-twin'; const cv = document.createElement('canvas'); cv.width = cv.height = 150; twin.appendChild(cv); world.appendChild(twin); trail = []; }
+  }
+  function endMeCurse() {
+    meCurseUntil = 0;
+    const me = world.querySelector('.tw-me'); if (me) { me.classList.remove('is-cursed-me'); if (meFx) me.classList.remove('is-me-' + meFx); }
+    kill(meFire); meFire = null; if (twin) twin.remove(); twin = null; meFx = '';
   }
   function stepMeCurse(now) {
     if (!meCurseUntil) return;
-    if (now >= meCurseUntil) { meCurseUntil = 0; const me = world.querySelector('.tw-me'); if (me) me.classList.remove('is-cursed-me'); kill(meFire); meFire = null; return; }
+    if (now >= meCurseUntil) { endMeCurse(); return; }
     if (meFire) moveSprite(meFire, ctx.pos.x, ctx.pos.y + 17, -20);   // at the feet, behind the banana
+    if (twin) {   // the twin: your own picture, dark, where you stood a moment ago
+      trail.push([ctx.pos.x, ctx.pos.y]); if (trail.length > 22) trail.shift();
+      const [tx, ty] = trail[0], me = world.querySelector('.tw-me canvas');
+      twin.style.left = pct(tx, W); twin.style.top = pct(ty, H); twin.style.zIndex = String(100 + Math.round(ty) - 1);
+      if (me) { const g = twin.firstChild.getContext('2d'); g.clearRect(0, 0, 150, 150); g.drawImage(me, 0, 0, 150, 150); }
+    }
   }
   function clearNightObjects() { for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); unhaunt(o); } }
   function unhaunt(o) { if (o.aura) o.aura.remove(); kill(o.flame); kill(o.lick); kill(o.spark); }
@@ -1141,7 +1167,7 @@ export function bootTownLife(ctx) {
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),
     ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null, mess: g.mess || 0 })),
     nightSpawn: () => { if (!TEST) return null; nextSpawnAt = 0; return nightCap; },   // QA: the night's next thing, now
-    cursedMe: () => !!meCurseUntil,
+    cursedMe: () => !!meCurseUntil, meFx: () => meFx,
     mischief: (id) => { if (!TEST) return null; const g = ghosts.find((q) => q.def.roam && !q.done && (!id || q.def.id === id)); return g ? mischief(g, true) : null; },   // QA: a roamer makes its mess now
     objects: () => objects.map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objects.find((q) => q.def.id === id); if (o) takeObject(o); return !!o; },
