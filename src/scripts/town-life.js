@@ -347,7 +347,8 @@ export function initLife({ world, W, H, pct }) {
       const el = document.createElement('img');
       el.className = 'tw-litter'; el.alt = ''; el.draggable = false; el.decoding = 'async';
       el.src = '/assets/town/litter-' + art + '.png';
-      el.onload = () => { el.style.width = pct(el.naturalWidth, W); };
+      // twice its pixels: at 1x a flyer read as a grey pebble in the cobbles (Trym, 15 Sep)
+      el.onload = () => { el.style.width = pct(el.naturalWidth * 2, W); };
       el.style.left = pct(x, W); el.style.top = pct(y, H); el.style.zIndex = String(100 + y);
       world.appendChild(el);
       flyers.push({ i, x, y, el, gone: false });
@@ -362,6 +363,9 @@ export function initLife({ world, W, H, pct }) {
     const f = flyers.find((q) => q.i === i && !q.gone);
     if (!f) return false;
     takeFlyer(f);
+    // 🗞 litter is litter: picking it up is the park's walk-over rule, rep only (Trym, 15 Sep: "i can
+    // pick them up but nothing more happens, doesnt seem like a part of the fixing-system")
+    try { passStat('rep', 1); } catch (e) {}
     // 🤫 and nothing is said about it: she notices, and noticing is silent (Trym, 12 Sep). Her line
     // about the flyer lives in her dialogue card, where every line belongs.
     return true;
@@ -483,7 +487,7 @@ export function initLife({ world, W, H, pct }) {
 
   // ---- hit-testing for the tap handler: a flyer first (small), then a resident
   function at(wx, wy) {
-    for (const f of flyers) if (!f.gone && Math.abs(wx - f.x) < 24 && wy < f.y + 8 && wy > f.y - 30) return ['flyer', f.i];
+    for (const f of flyers) if (!f.gone && Math.abs(wx - f.x) < 26 && wy < f.y + 8 && wy > f.y - 40) return ['flyer', f.i];
     for (const n of res) if (!n.hidden && Math.abs(wx - n.x) < 34 && wy < n.y + 6 && wy > n.y - 90) return ['npc', n.key];
     return null;
   }

@@ -139,7 +139,7 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-poof__3 { animation: twPoofStep 0.75s steps(1) 0.5s forwards; }
     @keyframes twPoofStep { 0% { opacity: 1; } 33%, 100% { opacity: 0; } }
     /* the flyers on the street: baked by the generator (litter-N.png), sized to their own pixels */
-    .tw-litter { position: absolute; transform: translate(-50%, -100%); height: auto; image-rendering: pixelated; pointer-events: none; }
+    .tw-litter { position: absolute; transform: translate(-50%, -100%); height: auto; image-rendering: pixelated; pointer-events: none; animation: twTodo 1.6s ease-in-out infinite alternate; }   /* the same soft glow as anything else to pick up */
     /* a home's window at night, the Mayor's in the evening: a warm glow that breathes */
     .tw-glow {
       position: absolute; width: 3.6%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
