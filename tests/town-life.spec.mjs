@@ -30,9 +30,12 @@ async function town(page) {
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
   // the clock may be running a real night this minute: the walk asks for calm first
   await page.evaluate(() => window.__town.room.curse('none'));
+  await stand(page, 1360, 880);
   await page.waitForTimeout(600);
 }
 const seam = (page, fn, arg) => page.evaluate(fn, arg);
+// put the banana somewhere: walking onto things picks them up, so a walk stands it on a measured empty spot first
+const stand = (page, x, y) => page.evaluate(([px, py]) => { const t = window.__town; t.pos.x = t.tgt.x = px; t.pos.y = t.tgt.y = py; }, [x, y]);
 const setBand = async (page, v) => { await seam(page, (x) => window.__town.room.set(x), v); await page.waitForTimeout(700); };
 // ⚠️ a STRING passed to evaluate is an expression — every call here is a function
 const room = (page, prop, ...args) => page.evaluate(([p, a]) => { const r = window.__town.room; const v = r[p]; return typeof v === 'function' ? v(...a) : v; }, [prop, args]);
@@ -195,6 +198,13 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   const gh = await room(page, 'ghosts');
   expect(await page.locator('.tw-state.is-haunt').count()).toBeGreaterThanOrEqual(gh.length);
   for (const [i, g] of gh.slice(0, 4).entries()) await overview(page, 'ghost-' + i, { x: Math.max(0, g.x - 120), y: Math.max(0, g.y - 170), width: 240, height: 230 });
+  // walked into, a ghost fades: stand on the one at the hall door, then step away
+  const knock = gh.find((g) => g.id === 'knock');
+  expect(knock, 'a deep night has the ghost at the hall door').toBeTruthy();
+  await stand(page, knock.x, knock.y);
+  await page.waitForTimeout(900);
+  expect((await room(page, 'ghosts')).find((g) => g.id === 'knock').hidden).toBe(true);
+  await stand(page, 1360, 880);
   const objs = await room(page, 'objects');
   expect(new Set(objs.map((o) => o.x + ',' + o.y)).size).toBe(objs.length);   // never two on one spot
   // each stands in its purple fire: an aura on the ground, a flame behind, sparks in front
@@ -307,28 +317,27 @@ test('every ghost stands, walks and ends where it can be seen', () => {
 test('walking onto a thing picks it up; a lamp waits for a tap', async ({ page }) => {
   await town(page);
   await setBand(page, 5);   // abandoned: plenty lying about
-  const stand = (x, y) => page.evaluate(([px, py]) => { const t = window.__town; t.pos.x = t.tgt.x = px; t.pos.y = t.tgt.y = py; }, [x, y]);
   const lit = await room(page, 'plant', 'litter', [1100, 1000]);
-  await stand(1100, 1004);
+  await stand(page, 1100, 1004);
   await page.waitForTimeout(700);
   expect((await room(page, 'problems')).map((q) => q.id)).not.toContain(lit);
   // a lamp: stand at its foot and nothing happens
   const lamp = (await room(page, 'problems')).find((q) => q.type === 'lamp');
   expect(lamp, 'an abandoned square has a lamp to fix').toBeTruthy();
-  await stand(lamp.x, lamp.y + 26);
+  await stand(page, lamp.x, lamp.y + 26);
   await page.waitForTimeout(700);
   expect((await room(page, 'problems')).map((q) => q.id)).toContain(lamp.id);
   // a flyer under the feet goes too, and pays its point
   const fl = await page.evaluate(() => window.__town.life.flyers());
   expect(fl.length).toBeGreaterThan(0);
-  await stand(fl[0].x, fl[0].y);
+  await stand(page, fl[0].x, fl[0].y);
   await page.waitForTimeout(700);
   expect((await page.evaluate(() => window.__town.life.flyers())).find((q) => q.i === fl[0].i)).toBeUndefined();
   // a full bin: standing in front of it empties it
   const bin = (await room(page, 'problems')).find((q) => q.type === 'bin' || q.type === 'dumpster') || null;
   const bid = bin ? bin.id : await room(page, 'plant', 'bin');
   const b = (await room(page, 'problems')).find((q) => q.id === bid);
-  await stand(b.x, b.y + 26);
+  await stand(page, b.x, b.y + 26);
   await page.waitForTimeout(900);
   expect(await room(page, 'full')).not.toContain(b.key);
 });

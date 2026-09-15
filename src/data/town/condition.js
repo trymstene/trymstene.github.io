@@ -40,7 +40,7 @@ export const PROBLEM_COUNT = { abandoned: 9, struggling: 7, recovering: 5, livel
 // the windows mean something; a Curse Night is darker than any night
 // ⚠️ a deep night also brings the storm, whose own scrim (weather.css, 0.40) stacks on this one:
 // 0.62 here read as a black screen (14 Sep). Dark enough to change the town, light enough to see it.
-export const NIGHT = { evening: 0.16, night: 0.4, hush: 0.26, curse: 0.45 };   // a hush is cosmetic: dusk, not midnight
+export const NIGHT = { evening: 0.2, night: 0.5, hush: 0.3, curse: 0.5 };   // a hush is cosmetic: dusk, not midnight; each a step darker 15 Sep (Trym)
 
 // where the décor hangs (world px, the base of a lantern): the two stalls first, then
 // the terrace and the gardens as the town climbs

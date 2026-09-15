@@ -735,6 +735,14 @@ export function bootTownLife(ctx) {
     for (const g of ghosts) {
       if (g.done) continue;
       const d = g.def, s = g.s;
+      // 👣 walked into, a ghost fades and keeps away a while (the drift has its own shyness below); the leader
+      // hurries on instead — it is leading you (Trym, 15 Sep: "the ghosts should also flee or fade when i walk into them")
+      const near = Math.hypot(ctx.pos.x - g.x, ctx.pos.y - g.y);
+      if (d.from && d.to) g.hurry = near < 56 ? 3 : Math.max(0, (g.hurry || 0) - dt);
+      else if (!d.path) {
+        if (!g.fled && near < 42) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; s.el.style.opacity = '0'; }
+        else if (g.fled) { g.fleeT -= dt; if (g.fleeT <= 0 && near > 70) { g.fled = 0; s.el.style.opacity = ''; } }
+      }
       if ((d.id === 'wisp' || d.loop) && s.mode === 'done') { g.hideT -= dt; if (g.hideT <= 0) { s.el.hidden = false; show(s, 0); s.mode = 'once'; } continue; }
       if (d.path) {   // back and forth, and shy of the player
         const [a, b] = d.path, tx = g.dir > 0 ? b[0] : a[0];
@@ -748,7 +756,7 @@ export function bootTownLife(ctx) {
       } else if (d.from && d.to) {   // walks to somewhere and is gone; something is left there
         const dx = d.to[0] - g.x, dy = d.to[1] - g.y, dist = Math.hypot(dx, dy);
         if (dist < 4) { g.done = true; s.el.style.opacity = '0'; setTimeout(() => kill(s), 1500); if (d.leaves === 'object') spawnObject(dayNum() * 7 + 2, false, d.to); }
-        else { const st = Math.min(dist, d.speed * dt); moveSprite(s, g.x + dx / dist * st, g.y + dy / dist * st); s.el.classList.toggle('is-flip', dx < 0); }
+        else { const st = Math.min(dist, d.speed * (g.hurry > 0 ? 2.4 : 1) * dt); moveSprite(s, g.x + dx / dist * st, g.y + dy / dist * st); s.el.classList.toggle('is-flip', dx < 0); }
       } else if (d.bob) {   // leaning at a door
         g.t = (g.t || 0) + dt;
         s.el.style.transform = 'translateY(' + (Math.sin(g.t * 2.2) * 3).toFixed(1) + 'px)';
@@ -949,7 +957,7 @@ export function bootTownLife(ctx) {
     fix, fixed,
     lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),
-    ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y) })),
+    ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0' })),
     objects: () => objects.map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objects.find((q) => q.def.id === id); if (o) takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,
