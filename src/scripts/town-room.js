@@ -633,8 +633,10 @@ export function bootTownLife(ctx) {
     const bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null;
     openCard('<div class="tw-board2">'
       + '<div class="tw-board2__head"><span class="tw-plank tw-plank--card">' + esc(w.title || 'Notices') + '</span></div>'
+      // the first notice is for a banana who has just walked in: what this square is and what a fix does (Trym, 15 Sep)
+      + (w.intro ? '<div class="tw-paper tw-paper--intro"><i class="tw-pin"></i><p>' + esc(fill(w.intro)) + '</p></div>' : '')
       + '<div class="tw-paper tw-paper--notice"><i class="tw-pin tw-pin--b"></i>'
-      + (wb.name ? '<div class="tw-stamp' + (curse && curse !== 'hush' ? ' tw-stamp--night' : '') + '">' + esc(wb.name) + '</div>' : '')
+      + (wb.name ? (w.health ? '<small class="tw-stamp__label">' + esc(w.health) + '</small>' : '') + '<div class="tw-stamp' + (curse && curse !== 'hush' ? ' tw-stamp--night' : '') + '">' + esc(wb.name) + '</div>' : '')
       + '<canvas class="tw-lamps" width="220" height="66" aria-hidden="true"></canvas>'
       + (nb && nb.name ? '<small class="tw-next">' + (w.next ? esc(w.next) + ' ' : '') + '<b>' + esc(nb.name) + '</b>' + (nb.brings ? ' — ' + esc(fill(nb.brings)) : '') + '</small>' : '')
       + (wb.line ? '<p>' + esc(fill(wb.line)) + '</p>' : '')

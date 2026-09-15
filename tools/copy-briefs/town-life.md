@@ -19,7 +19,9 @@ The board is the ONE place the town's state is named. Five bands, keys fixed, wo
   not, as a board would print it. Not the key, and never a score or a percentage.
 - `line` — one line under it, the board's voice: plain, a little dry, the kind of notice a
   town hall pins up. What is true of the square right now, so a player who reads it and
-  then looks up sees it. Never a number, never a rate, never an instruction to the player.
+  then looks up sees it. It must STAND ALONE for a first-time reader: name the things (the
+  lamps, the two kiosks' shutters, the bins, the fountain) and what wants doing; never
+  "again", "still", or any nod to how it was before. Never a number, never a rate.
 
 - `brings` — what this state BRINGS, written as the promise the board makes for the state
   above the town's: what it opens, lights or fills (the shutters up, the lamps lit, the
@@ -50,6 +52,10 @@ at home, or goes on the van and arrives later.
 ## The notice board
 
 - `title` — the board's heading, one or two words.
+- `intro` — the FIRST notice, pinned above everything, for a banana who has just walked in and
+  knows nothing (Trym, 15 Sep: "players haven't understood what the town's about yet"): this
+  square is shared by every player; things here break; you put one right by walking up to it;
+  every fix lifts the square for everyone. Plain and concrete, two short sentences at most.
 - `fixes` — the label under the first number: how many things were put right in the town
   today, by everyone. Two to four words, no number in the label.
 - `people` — the label under the second number: how many different bananas did that today.
@@ -60,7 +66,9 @@ at home, or goes on the van and arrives later.
 - `health` — the label over the big number on the health card: what the number is, the
   way the park's card says "park health". Two words; Trym's own word for it is "town health".
 - `why` — the standing notice: what putting things right does for the square. That every
-  fix lifts it, and what a lifted square opens. No number, no rate.
+  fix lifts it, and what a lifted square opens — NAMED: the lamps, the two kiosks' shutters,
+  better stock on Pip's counter. Never "shutters rise" or "better shelves" without whose.
+  No number, no rate.
 - `curse` — the standing notice on an ordinary day: that some nights the square is cursed,
   and what such a night brings — dark lamps, shut doors, ghosts, things left lying about
   that may be taken. Never when.
