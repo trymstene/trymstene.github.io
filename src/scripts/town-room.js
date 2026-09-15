@@ -474,7 +474,7 @@ export function bootTownLife(ctx) {
       if (!c || isFixed(c.t.id + ':' + k)) continue;
       cands.splice(cands.indexOf(c), 1);
       const p = { id: c.t.id + ':' + k, type: c.t.id, x: c.x, y: c.y, key: k, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y), sprite: null };
-      problems.push(p);
+      problems.push(p); glowProblem(p);   // its shutter glows like every other small thing (it never did until 15 Sep)
     }
     for (let i = 0; i < n && cands.length; i++) {
       // rarer types get a smaller share than the street's many spots would give them
@@ -504,6 +504,7 @@ export function bootTownLife(ctx) {
   function glowProblem(p) {
     const g = p.sprite || (p.type === 'bin' || p.type === 'dumpster' ? fullSprites[p.key] : p.type === 'fountain' ? dryFountain : p.type === 'shutter' ? shutSprites[p.key] : null);
     if (g && g.el) g.el.classList.add('is-todo');
+    p.glow = g || null;   // kept so the walk can ask which problem has no glow
   }
   async function fix(id) {
     const i = problems.findIndex((p) => p.id === id); if (i < 0) return false;
@@ -712,7 +713,6 @@ export function bootTownLife(ctx) {
     kill(parked); parked = null;
     if (!merchant && MERCHANT.bands.includes(band) && picksFor(d + 1).includes('merchant')) parked = sprite('cartp', 1990, 296, { z: 296 });
     // a strange object by daylight
-    if (todayHas('object') && !objects.some((o) => o.day)) spawnObject(d * 3 + 1, true);
   }
 
   // ════════════════════════════════ the curse, the ghosts, the objects ═══════════════
@@ -1034,7 +1034,7 @@ export function bootTownLife(ctx) {
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
     omen: () => omenOn, nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
-    problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, key: p.key })),
+    problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, key: p.key, glow: !!(p.glow && p.glow.el && p.glow.el.classList.contains('is-todo') && !p.glow.gone) })),
     // QA: one more problem — of a container type at the first full one with none, or a litter piece at a spot
     plant: (type, at) => {
       if (!TEST) return null;

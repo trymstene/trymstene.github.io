@@ -8,7 +8,7 @@ export const TODAY = [
   { id: 'merchant', w: { lively: 3, thriving: 5 } },                                                  // the travelling stall is in
   { id: 'oddspot',  w: { abandoned: 1, struggling: 2, recovering: 3, lively: 3, thriving: 3 } },       // a resident stands somewhere they never stand
   { id: 'closed',   w: { struggling: 3, recovering: 3, lively: 2, thriving: 1 } },                     // a kiosk is shut today (fixing it reopens it)
-  { id: 'object',   w: { abandoned: 3, struggling: 2, recovering: 1, lively: 1, thriving: 1 } },       // a strange object in an alley, by daylight
+  // (no cursed thing by daylight since 15 Sep — the curse belongs to the dark: every night lays its own out, town-room.js)
   { id: 'crows',    w: { abandoned: 4, struggling: 3, recovering: 1 } },                               // crows on the square
   { id: 'dayghost', w: { abandoned: 3, struggling: 1 } },                                              // a small ghost, in daylight, when the town is low
 ];

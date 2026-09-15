@@ -134,6 +134,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
 test('a fix clears the mark, pays on the pass and counts on the room', async ({ page }) => {
   await town(page);
   const before = await room(page, 'coins');
+  const before0 = (await room(page, 'problems')).length;
   const p = (await room(page, 'problems')).find((q) => q.type !== 'crows');   // crows flap off: their moment is the flight, not the burst
   expect(p).toBeTruthy();
   // walk up and tap it, the way a player does: the tap lands on the mark's world spot
@@ -160,7 +161,7 @@ test('a fix clears the mark, pays on the pass and counts on the room', async ({ 
   await page.setViewportSize({ width: 393, height: 852 });
   await page.evaluate(() => document.getElementById('twCardX').click());
   expect(await room(page, 'clock')).toMatch(/^\d+:\d\d$/);
-  expect(after.length).toBe(4);
+  expect(after.length).toBe(before0 - 1);
   expect(await room(page, 'fixed')).toContain(p.id);
   expect(await room(page, 'coins')).toBeGreaterThan(before);
   const L = await room(page, 'life');
