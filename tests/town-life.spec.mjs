@@ -45,8 +45,9 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   const lamps0 = await room(page, 'lamps');
   expect(Object.values(lamps0).filter((s) => s === 'out').length).toBe(1);
   expect(Object.values(lamps0).filter((s) => s === 'flicker').length).toBe(1);
-  // one mark per problem — five, plus the shutter on any kiosk today's events shut (always fixable)
-  expect(await page.locator('.tw-mark').count()).toBe(p0.length);
+  // one mark per problem (five, plus the shutter on any kiosk today's events shut) and one per
+  // strange object lying about by daylight
+  expect(await page.locator('.tw-mark').count()).toBe(p0.length + (await room(page, 'objects')).length);
   await page.screenshot({ path: SHOT + 'recovering.png' });
   await overview(page, 'recovering-all');
 
