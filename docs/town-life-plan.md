@@ -309,5 +309,13 @@ Adding a shop, a problem, a ghost or an object is a row. Adding a chapter is a c
   dumpsters, the square benches, the garden boxes, a tree and the info kiosk); a story hook plants the
   object it names (it drew a random one before); the planks follow the world's scale (`--ws`) with a
   floor, so a phone's stall signs fit their stalls; `board.people` redrafted as "Players who fixed today".
+- **15 Sep, the night, as decided with Trym:** EVERY night has ghosts (three on a plain night, more on a
+  Curse Night, all eight on a deep one); the friendly ghost roams the town waypoint to waypoint (`ROAM`,
+  measured free) facing where it goes, keeps away from bananas (yours, the residents', other players' once
+  the town draws them — `ctx.others()`), fades if you walk into it, and at rest makes MISCHIEF: it snuffs
+  a lit lamp near it, tips an empty bin or dumpster, or drops litter where it hovers — each a problem of
+  yours, paid like any other, at most four per ghost per night. Ghosts are never a threat to the player
+  (3.8% of players ever dodge the world's one hazard); the threat is to the square. Walk-over picks up
+  everything but a lamp. The night scrims are a step darker.
 - **Tuning left as designed:** the numbers in §2 and §7. Change them in one place each (the
   worker's `TOWN_*` block; `CURSE_TIERS` in world.js, then `node tools/build-worker-allowlists.mjs`).

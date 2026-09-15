@@ -363,6 +363,20 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   await page.waitForTimeout(3000);
   const r2 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
   await overview(page, 'roamer2', { x: Math.max(0, r2.x - 120), y: Math.max(0, r2.y - 170), width: 240, height: 230 });
+  // mischief: at rest a roamer makes work for you — one more problem than before, of a kind you can fix
+  const n0 = (await room(page, 'problems')).length;
+  const did = await room(page, 'mischief');
+  expect(['lamp', 'bin', 'dumpster', 'litter']).toContain(did);
+  expect((await room(page, 'problems')).length).toBe(n0 + 1);
+  expect((await room(page, 'ghosts')).find((g) => g.id === 'roam').mess).toBe(1);
+  await overview(page, 'mischief', { x: Math.max(0, r2.x - 150), y: Math.max(0, r2.y - 170), width: 300, height: 240 });
+  // and it keeps away: stand 90 px from it, and two seconds later it has put ground between you
+  const r3 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
+  await stand(page, r3.x + 90, r3.y);
+  await page.waitForTimeout(2200);
+  const r4 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
+  expect(Math.hypot(r4.x - (r3.x + 90), r4.y - r3.y)).toBeGreaterThan(90);
+  await stand(page, 1360, 880);
   await seam(page, () => window.__town.life.set(8));   // morning
   await page.waitForTimeout(1400);
   const day = (await room(page, 'ghosts')).map((g) => g.id);

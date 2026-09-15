@@ -748,9 +748,64 @@ export function bootTownLife(ctx) {
     for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n; if (BIG.some((r) => x > r[0] && x < r[2] && y > r[1] && y < r[3]) || OB_CIRCLES.some((c) => Math.hypot(x - c[0], y - c[1]) < c[2] + 24)) return false; }
     return true;
   }
+  // 🍌 the bananas a ghost keeps away from: yours (live), the residents out tonight and other players' (cached twice a second)
+  let bananas = [];
+  function nearestBanana(x, y) {
+    let best = { x: ctx.pos.x, y: ctx.pos.y, d: Math.hypot(ctx.pos.x - x, ctx.pos.y - y) };
+    for (const b of bananas) { const d = Math.hypot(b.x - x, b.y - y); if (d < best.d) best = { x: b.x, y: b.y, d }; }
+    return best;
+  }
+  // a roamer's next waypoint: reachable on a clear line, and by preference far from every banana
+  function pickWay(g) {
+    const can = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]); });
+    const far = can.filter((w) => nearestBanana(w[0], w[1]).d > 160);
+    const from = far.length ? far : can.length ? can : ROAM;
+    return from[Math.floor(Math.random() * from.length)];
+  }
+  // …and when a banana comes close: the waypoint that puts the most ground between them
+  function awayFrom(g, b) {
+    const can = ROAM.filter((w) => Math.hypot(w[0] - b.x, w[1] - b.y) > b.d + 60 && Math.hypot(w[0] - g.x, w[1] - g.y) < 700 && clearWay(g.x, g.y, w[0], w[1]));
+    can.sort((p, q) => Math.hypot(q[0] - b.x, q[1] - b.y) - Math.hypot(p[0] - b.x, p[1] - b.y));
+    return can.length ? can[Math.floor(Math.random() * Math.min(3, can.length))] : null;
+  }
+  // 👻 MISCHIEF (Trym, 15 Sep: "the ghosts spread garbage and fixes needed so you have to clean up more after
+  // them"): at a waypoint a roamer may snuff a lit lamp near it, tip an empty bin or dumpster, or drop litter
+  // where it hovers — each a problem of yours, paid like any other. A few per ghost per night, never a flood.
+  const MESS_CAP = 4;
+  let messN = 0;
+  const footOf = (k) => { const p = propOf(k); return p ? [p.x + p.w / 2, p.base] : [-1e9, -1e9]; };
+  const rowOf = (id) => PROBLEMS.find((r) => r.id === id);
+  function addProblem(t, key, x, y, z, icon) {
+    const p = { id: t.id + ':' + key, type: t.id, x, y, key, pays: t.pays, rep: t.rep, el: mark(x, y, 150, z, icon), sprite: null, foot: y };
+    problems.push(p); return p;
+  }
+  function mischief(g, force) {
+    if ((g.mess || 0) >= MESS_CAP || (!force && Math.random() < 0.4)) return null;
+    // the mess lands on the waypoint it rests at (every one measured in the open), never mid-way behind a bench
+    const [gx, gy] = ROAM.reduce((a, w) => (Math.hypot(w[0] - g.x, w[1] - g.y) < Math.hypot(a[0] - g.x, a[1] - g.y) ? w : a), ROAM[0]);
+    const near = (k) => { const [x, y] = footOf(k); return Math.hypot(x - gx, y - gy) < 130; };
+    const free = (k) => !problems.some((q) => q.key === k);
+    let did = null;
+    const lamp = ANCHORS.lamps.find((k) => cond.lamps[k] === 'ok' && free(k) && near(k));
+    const bin = [...ANCHORS.bins, ...ANCHORS.dumps].find((k) => !cond.full.has(k) && free(k) && near(k));
+    if (lamp && Math.random() < 0.5) {
+      cond.lamps[lamp] = 'out'; lampsByHour();
+      const p0 = propOf(lamp); addProblem(rowOf('lamp'), lamp, p0.x + p0.w / 2, p0.base + 4, 100 + p0.base + 3, true); poof(p0.x + p0.w / 2, p0.base - 40); did = 'lamp';
+    } else if (bin && Math.random() < 0.5) {
+      setFull(bin, true);
+      const p0 = propOf(bin), t = rowOf(ANCHORS.dumps.includes(bin) ? 'dumpster' : 'bin');
+      glowProblem(addProblem(t, bin, p0.x + p0.w / 2, p0.base + 4, 100 + p0.base + 3, false)); did = t.id;
+    } else {
+      const x = Math.round(gx + Math.random() * 40 - 20), y = Math.round(gy + 8);
+      const p = addProblem(rowOf('litter'), 'g' + (messN++), x, y, null, false);
+      p.sprite = sprite(['pile', 'trash1', 'trash2', 'trash3'][Math.floor(Math.random() * 4)], x, y); glowProblem(p); poof(x, y - 6); did = 'litter';
+    }
+    g.mess = (g.mess || 0) + 1;
+    return did;
+  }
   function moveGhost(g, x, y) { g.x = x; g.y = y; moveSprite(g.s, x, y); }
   function moveSprite(s, x, y) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y)); }
-  function stepGhosts(dt) {
+  function stepGhosts(dt, now) {
     for (const g of ghosts) {
       if (g.done) continue;
       const d = g.def, s = g.s;
@@ -777,10 +832,13 @@ export function bootTownLife(ctx) {
         if (dist < 4) { g.done = true; s.el.style.opacity = '0'; setTimeout(() => kill(s), 1500); if (d.leaves === 'object') spawnObject(dayNum() * 7 + 2, false, d.to); }
         else { const st = Math.min(dist, d.speed * (g.hurry > 0 ? 2.4 : 1) * dt); moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st); if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0); }
       } else if (d.roam) {   // 👣 roams: waypoint to waypoint over the whole town, a pause at each, facing where it goes
+        // …and keeps away from bananas (Trym, 15 Sep): a banana within reach turns it toward open ground
+        const b = nearestBanana(g.x, g.y);
+        if (b.d < 110 && now - (g.turnAt || 0) > 600) { g.turnAt = now; const w = awayFrom(g, b); if (w) { g.to = w; g.wait = 0; } }
         if (g.wait > 0) { g.wait -= dt; continue; }
-        if (!g.to) { const opts = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]); }); g.to = opts[Math.floor(Math.random() * opts.length)] || ROAM[Math.floor(Math.random() * ROAM.length)]; }
+        if (!g.to) g.to = pickWay(g);
         const dx = g.to[0] - g.x, dy = g.to[1] - g.y, dist = Math.hypot(dx, dy);
-        if (dist < 4) { g.to = null; g.wait = 1.5 + Math.random() * 2.5; continue; }
+        if (dist < 4) { g.to = null; g.wait = 1.5 + Math.random() * 2.5; mischief(g); continue; }
         const st = Math.min(dist, d.speed * dt);
         moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st);
         if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0);
@@ -911,7 +969,7 @@ export function bootTownLife(ctx) {
   function tick(now, dt) {
     stepSprites(dt);
     autoPick(now);
-    stepGhosts(dt);
+    stepGhosts(dt, now);
     stepFlying(dt);
     swayBodies(now);
     paintClock(now);
@@ -923,6 +981,7 @@ export function bootTownLife(ctx) {
     if (om !== omenOn) omens(om);
     const beat = life.beat();
     if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); }
+    bananas = [...life.seam.residents().filter((r) => !r.hidden).map((r) => ({ x: r.x, y: r.y })), ...(ctx.others ? ctx.others() : [])];
     night.hidden = inside();
     hbar.hidden = inside();
     if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
@@ -987,7 +1046,8 @@ export function bootTownLife(ctx) {
     fix, fixed,
     lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),
-    ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null })),
+    ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null, mess: g.mess || 0 })),
+    mischief: (id) => { if (!TEST) return null; const g = ghosts.find((q) => q.def.roam && !q.done && (!id || q.def.id === id)); return g ? mischief(g, true) : null; },   // QA: a roamer makes its mess now
     objects: () => objects.map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objects.find((q) => q.def.id === id); if (o) takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,
