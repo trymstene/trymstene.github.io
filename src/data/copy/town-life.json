@@ -2,32 +2,27 @@
   "bands": [
     {
       "key": "abandoned",
-      "name": "Hushed Square",
-      "line": "The fountain is dry, shutters are down, and crows have claimed the cobbles.",
+      "name": "Abandoned",
       "brings": "Working lamps and open shutters"
     },
     {
       "key": "struggling",
-      "name": "Thin Going",
-      "line": "A few lamps work; rubbish gathers by the dry fountain and most kiosks are shut.",
+      "name": "Struggling",
       "brings": "A running fountain and lifted shutters"
     },
     {
       "key": "recovering",
-      "name": "Mending Along",
-      "line": "The fountain runs again, though several shutters still wait to be lifted.",
+      "name": "Recovering",
       "brings": "Lit lamps, open kiosks and visitors"
     },
     {
       "key": "lively",
-      "name": "Good Footing",
-      "line": "Kiosks are open, lamps are lit, and the square has visitors around the fountain.",
+      "name": "Lively",
       "brings": "Stall lanterns, visitors and fine goods"
     },
     {
       "key": "thriving",
-      "name": "Full Bloom",
-      "line": "Lanterns shine at the stalls, every kiosk is open, and visitors fill the square.",
+      "name": "Thriving",
       "brings": "A travelling stall and a full square"
     }
   ],
@@ -45,13 +40,15 @@
   },
   "board": {
     "title": "Square Report",
+    "intro": "Things break in this shared square. Walk up to fix one; every fix lifts it for everyone.",
+    "todo": "Needs doing",
+    "nothing": "All fixed today. More tomorrow.",
     "fixes": "Things fixed today",
     "people": "Players who fixed today",
     "found": "Cursed things found",
     "next": "Next",
     "health": "town health",
-    "why": "Every fix lifts the square: lamps return, shutters rise, and better shelves open.",
-    "curse": "Some nights curse the square: lamps go dark, doors shut, ghosts wander, and stray things may be taken.",
+    "curse": "Some nights curse the square: lamps go dark, kiosks shut, and ghosts undo things.",
     "omen": "Crows fill every perch, a ghost walks by daylight, and the sky is wrong at the edges.",
     "night": "Keep to the lit lamps. The night stall trades, and anything lying about may be taken.",
     "after": "The curse left dark lamps, shut doors and litter. The square needs hands today."
@@ -146,5 +143,43 @@
       "name": "Lasting Camp Lamp",
       "desc": "The camp lantern hums softly and stays lit, even in a closed crate."
     }
-  ]
+  ],
+  "things": {
+    "lamp": [
+      "a dark lamp",
+      "{n} dark lamps"
+    ],
+    "litter": [
+      "a pile of litter",
+      "{n} piles of litter"
+    ],
+    "bin": [
+      "an overflowing bin",
+      "{n} overflowing bins"
+    ],
+    "dumpster": [
+      "an open dumpster",
+      "{n} open dumpsters"
+    ],
+    "graffiti": [
+      "a shopfront tag",
+      "{n} shopfront tags"
+    ],
+    "fountain": [
+      "a dry fountain",
+      "{n} dry fountains"
+    ],
+    "shutter": [
+      "a shut kiosk",
+      "{n} shut kiosks"
+    ],
+    "crows": [
+      "a crow on a bench",
+      "{n} crows on benches"
+    ],
+    "leaves": [
+      "a pile of leaves",
+      "{n} piles of leaves"
+    ]
+  }
 }

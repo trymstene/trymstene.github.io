@@ -364,7 +364,6 @@ export const CURSED_IDS = ['humlantern', 'coldfire', 'stillbear', 'lostpack', 'c
 const lifeFields = {
   'bands[].key': { kind: 'key', max: 12, note: 'FIXED: abandoned, struggling, recovering, lively, thriving, in that order.' },
   'bands[].name': { kind: 'prose', aim: 10, max: 12, note: 'The PLAIN word for the state, capitalised, exactly these five in order: Abandoned, Struggling, Recovering, Lively, Thriving. (The evocative names were bad copy — a newcomer must read the state at once; Trym, 15 Sep.)' },
-  'bands[].line': { kind: 'prose', aim: 90, max: 110, note: 'RETIRED 15 Sep — no longer written or read (the board lists what wants doing instead); kept so the last approved file passes until the next approve. One line under it in the board’s voice: what is true of the square right now, so a player who looks up sees it. It MUST STAND ALONE for a banana who has just walked in and knows nothing: name the things (the lamps, the two kiosks’ shutters, the bins, the fountain) and what wants doing; never “again”, “still”, or any nod to how it was before. No number, no rate.' },
   'bands[].brings': { kind: 'prose', aim: 50, max: 64, note: 'What this state BRINGS, as the promise on the board for the state above the town’s: the things it opens or lights or fills. A fragment, not a sentence; no number.' },
   'store.greet': { kind: 'prose', aim: 80, max: 100, note: 'The line at the top of Pip’s shelf, in Pip’s voice. One breath.' },
   'store.shut': { kind: 'prose', aim: 90, max: 110, note: 'Shown instead of the shelf when the store is shut and Pip is indoors. Not an apology; it should make a player want to fix things.' },
@@ -380,7 +379,6 @@ const lifeFields = {
   'board.found': { kind: 'prose', aim: 20, max: 28, note: 'The label under the cursed objects this player has found, out of all of them.' },
   'board.next': { kind: 'prose', aim: 10, max: 14, note: 'The word before the next state’s name on the bar under the lamps. One or two words, like a signpost.' },
   'board.health': { kind: 'prose', aim: 12, max: 16, note: 'The label over the big number on the health card — what the number IS, the way the park’s card says “park health”. Two words.' },
-  'board.why': { kind: 'prose', aim: 100, max: 120, note: 'RETIRED 15 Sep — no longer written or read (the intro says what a fix does, the next line what the next state brings); kept so the last approved file passes until the next approve. The standing notice: what putting things right does for the square — that every fix lifts it, and what a lifted square opens. NAME the things: the lamps, the two kiosks’ shutters, better stock on Pip’s counter — never “shutters rise” or “better shelves” without saying whose. No number, no rate.' },
   'board.curse': { kind: 'prose', aim: 80, max: 100, note: 'ONE sentence, the standing notice on an ordinary day: some nights the square is cursed — the lamps go dark, the kiosks shut, ghosts wander and undo things. Never when.' },
   'things.lamp[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'A dark street lamp, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
   'things.litter[]': { kind: 'prose', aim: 14, max: 22, holds: ['{n}'], note: 'Rubbish on the cobbles, as [one, many]: the singular with its article ("a dark lamp"), the plural with {n} ("{n} dark lamps"). Plain words a newcomer sees at once.' },
@@ -455,7 +453,6 @@ const lifeSchema = {
 export const JOBS = {
   'town-life': {
     id: 'town-life',
-    redraft: 'the board was cut to what a newcomer needs 15 Sep (plain state words, a first notice, the open list) — the approved words lack `things`',   // drop this the day the new draft is approved
     title: 'Banana Town — the town’s life',
     what: 'The notice board’s word for each band, Pip’s counter, the travelling stall, the night vendor, the ghosts, the closed-today notes and the cursed objects.',
     brief: 'tools/copy-briefs/town-life.md',
