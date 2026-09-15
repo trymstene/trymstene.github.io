@@ -385,12 +385,14 @@ export function bootTownLife(ctx) {
   function barricade(k, p) {
     if (tapes[k]) return;
     const els = [];
-    const hh = p.h || (p.base - (p.y != null ? p.y : p.base - 200)), top = p.base - hh * 0.72, w = p.w, cx = p.x + w / 2, cy = (top + p.base) / 2;
-    const len = Math.hypot(w * 1.06, p.base - top), ang = Math.atan2(p.base - top, w * 1.06) * 180 / Math.PI;
+    // a BELT round the bottom of the building: two bands strung across the front near the ground, each tilted a
+    // little the other way so they cross slightly (Trym, 15 Sep: "not wide crosses … more like a belt at the bottom")
+    const hh = p.h || (p.base - (p.y != null ? p.y : p.base - 200)), w = p.w, cx = p.x + w / 2, len = w * 1.12;
     for (const sgn of [1, -1]) {
+      const cy = p.base - hh * (sgn > 0 ? 0.25 : 0.18);
       const t = document.createElement('i'); t.className = 'tw-tape';
-      t.style.left = pct(cx - len / 2, W); t.style.top = pct(cy - 6, H); t.style.width = pct(len, W); t.style.height = pct(12, H);
-      t.style.transform = 'rotate(' + (sgn * ang).toFixed(1) + 'deg)'; t.style.zIndex = String(100 + p.base + 2);
+      t.style.left = pct(cx - len / 2, W); t.style.top = pct(cy - 5, H); t.style.width = pct(len, W); t.style.height = pct(10, H);
+      t.style.transform = 'rotate(' + (sgn * 6) + 'deg)'; t.style.zIndex = String(100 + p.base + 2);
       world.appendChild(t); els.push(t);
     }
     if (COPY.shutSign) {
