@@ -207,6 +207,12 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-state.is-lick { opacity: 0.8; }
     .tw-aura { position: absolute; pointer-events: none; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(150, 60, 255, 0.85) 0%, rgba(110, 30, 220, 0.6) 45%, rgba(60, 0, 140, 0) 75%); animation: twAura 1.7s ease-in-out infinite; will-change: transform, opacity; }
     @keyframes twAura { 0%, 100% { transform: scale(1); opacity: 0.75; } 50% { transform: scale(1.14); opacity: 1; } }
+    .tw-aura.is-born { animation: twBorn 0.9s ease-out 1, twAura 1.7s ease-in-out 0.9s infinite; }   /* a thing that APPEARS in the night: the aura blooms in */
+    @keyframes twBorn { 0% { transform: scale(2.4); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+    /* 😱 the curse on you, after a pickup: see-through, a violet edge, afloat (the fire at the feet is a sprite) */
+    .tw-me.is-cursed-me canvas { opacity: 0.66; filter: drop-shadow(0 0 3px rgba(150, 70, 255, 0.95)) drop-shadow(0 0 9px rgba(110, 30, 220, 0.7)); animation: twMeFloat 1.6s ease-in-out infinite; }
+    @keyframes twMeFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    @media (prefers-reduced-motion: reduce) { .tw-aura.is-born { animation: none; } .tw-me.is-cursed-me canvas { animation: none; } }
     @media (prefers-reduced-motion: reduce) { .tw-aura { animation: none; } }
     /* 👻 a ghost carries the purple too, weaker and see-through: a violet edge and a faint ellipse under it (Trym, 15 Sep) */
     .tw-state.is-haunt { filter: drop-shadow(0 0 3px rgba(150, 80, 255, 0.6)) drop-shadow(0 0 9px rgba(110, 40, 220, 0.4)); }

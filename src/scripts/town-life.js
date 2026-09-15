@@ -75,7 +75,7 @@ const SAID = new Map((COPY.residents || []).map((c) => [c.key, c]));
 const R = MECH.map((m) => {
   const c = SAID.get(m.key);
   if (!c) throw new Error('town-life: src/data/copy/town-npcs.json has no lines for ' + m.key);
-  return { ...m, name: c.name, role: c.role, want: c.want, tap: c.tap, hi: c.hi, ask: c.ask,
+  return { ...m, name: c.name, role: c.role, want: c.want, tap: c.tap, hi: c.hi, ask: c.ask, curse: c.curse,
     day: m.day.map(([place, act, face], beat) => [place, act, face, c.beats[beat].lines]) };
 });
 
@@ -392,6 +392,7 @@ export function initLife({ world, W, H, pct }) {
     const topics = [];
     if (ask.doing) topics.push({ q: ask.doing, a: doing });
     if (ask.want && n.want) topics.push({ q: ask.want, a: fill(n.want) });
+    if (ask.curse && n.curse) topics.push({ q: ask.curse, a: fill(n.curse) });   // Moss: the nights, the cursed things, the ghosts (Trym, 15 Sep: told by a resident, not the board)
     return { key: n.key, name: n.name, line: fill(line), outfit: n.outfit, topics, at: { x: n.x, y: n.y } };
   }
   function standBy(key) {   // where the player waits to talk: beside them, never on them

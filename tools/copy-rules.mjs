@@ -44,7 +44,7 @@ export function faults(value, spec = {}) {
   const say = (rule, msg) => out.push({ rule, msg });
   if (typeof value !== 'string') { say('type', 'not a string'); return out; }
   const max = limitOf(spec, 'max');
-  if (spec.kind !== 'key' && !value.trim()) say('empty', 'the field is empty');
+  if (spec.kind !== 'key' && !value.trim()) { if (spec.emptyOk) return out; say('empty', 'the field is empty'); }   // emptyOk: a key the shape demands of everyone that only one resident fills (Moss's nights)
   if (max && value.length > max) say('length', `${value.length} characters, the limit is ${max}`);
   if (/^\s|\s$/.test(value)) say('space', 'leading or trailing whitespace');
   if (/ {2}/.test(value)) say('space', 'a double space');

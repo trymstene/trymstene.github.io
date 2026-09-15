@@ -180,6 +180,9 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   await page.waitForTimeout(500);
   await overview(page, 'object-day', { x: 950, y: 810, width: 300, height: 260 });
   expect(await page.evaluate((id) => window.__town.room.take(id), OBJECTS[0].id)).toBe(true);
+  // …and the curse rides along: see-through, purple fire at the feet
+  expect(await room(page, 'cursedMe')).toBe(true);
+  expect(await page.locator('.tw-me.is-cursed-me').count()).toBe(1);
   expect(await page.locator('.tw-aura').count()).toBe((await room(page, 'objects')).length);
   await seam(page, () => window.__town.life.set(3));   // dawn, so "in" is a change
   await page.waitForTimeout(400);
@@ -223,7 +226,7 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect(new Set(objs.map((o) => o.x + ',' + o.y)).size).toBe(objs.length);   // never two on one spot
   // each stands in its purple fire: an aura on the ground, a flame behind, sparks in front
   expect(await page.locator('.tw-aura').count()).toBe(objs.length);
-  expect(await page.locator('.tw-state.is-flame').count()).toBe(objs.length * 3);   // a flame behind, a lick in front, sparks
+  expect(await page.locator('.tw-state.is-flame:not(.is-mefire)').count()).toBe(objs.length * 3);   // a flame behind, a lick in front, sparks (the fire at your own feet aside)
   for (const [i, o] of objs.slice(0, 2).entries()) await overview(page, 'object-' + i, { x: Math.max(0, o.x - 120), y: Math.max(0, o.y - 150), width: 240, height: 210 });
   expect(objs.length).toBeGreaterThanOrEqual(1);
   // the rain the night brings is the shared layer's storm
@@ -276,6 +279,8 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   const kinds = new Set((await room(page, 'problems')).map((q) => q.type)).size;
   expect(((await page.locator('.tw-todo').textContent()) || '').split(' · ').length).toBe(Math.max(1, kinds));
   expect(await page.locator('.tw-stamp').count()).toBe(0);
+  expect(await page.locator('.tw-paper--news').count()).toBe(0);   // an ordinary noon: no night notice; the nights are Moss's to tell
+  expect((await page.evaluate(() => window.__town.life.talk('moss'))).topics.length).toBeGreaterThanOrEqual(2);   // three once his curse topic is approved
   expect(await page.locator('.tw-card--board .tw-lamps').count()).toBe(1);
   await page.screenshot({ path: SHOT + 'board.png' });
   // and the board at a desktop width, the card alone
@@ -370,7 +375,11 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   const ids = (await room(page, 'ghosts')).map((g) => g.id);
   for (const id of ['roam', 'drift', 'sit', 'wisp']) expect(ids, 'the night set').toContain(id);
   expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.5);
-  expect((await room(page, 'objects')).filter((o) => !o.day).length, 'a plain night lays one cursed thing out').toBe(1);
+  // the night's things come through it: the next one now (QA), with its wisp and a blooming aura
+  await room(page, 'nightSpawn');
+  await page.waitForTimeout(700);
+  expect((await room(page, 'objects')).filter((o) => !o.day).length, 'a plain night brings cursed things').toBeGreaterThanOrEqual(1);
+  expect(await page.locator('.tw-aura.is-born').count()).toBeGreaterThanOrEqual(1);
   // the roamer roams, and faces the way it goes
   const r0 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
   await page.waitForTimeout(2500);

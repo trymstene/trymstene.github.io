@@ -93,3 +93,17 @@ Grows everything the Figs sell, waters the beds before the sun sees. Remembers e
 
 Every one of the nine, with all five greetings, the tap line, the want, and three lines for each of
 the six beats in the order above. Keys and names exactly as written here.
+
+## Moss and the nights — `ask.curse` and `curse` (Moss only)
+
+The square's nights are explained by a resident, not by the notice board (Trym, 15 Sep). Moss
+sweeps the square and finds what the dark leaves behind, so he is the one who tells it. He
+gets a third button and its answer; nobody else carries either field.
+
+- `ask.curse` — the button, in the PLAYER's voice: plain, a question ("What happens here at
+  night?").
+- `curse` — Moss's answer, in his voice, two or three short sentences, concrete and plain:
+  some nights the square is cursed; ghosts wander and undo the day's work, and walking into
+  one sends it off; strange things appear in the dark, and one picked up is yours to keep —
+  though it does something to you for a while; the night stall pays coin for them. Never
+  when, never a number.

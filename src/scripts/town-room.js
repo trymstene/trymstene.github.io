@@ -629,7 +629,7 @@ export function bootTownLife(ctx) {
     // the second notice: what is going on — a night tonight, a night on, the morning after — or,
     // on an ordinary day, that nights exist at all; and always what fixing is for
     const om = omenNow(), after = !curse && !om && L.curseAt && Date.now() - L.curseAt < 8 * 3600000;
-    const news = curse && curse !== 'hush' ? w.night : om ? w.omen : after ? w.after : w.curse;
+    const news = curse && curse !== 'hush' ? w.night : om ? w.omen : after ? w.after : null;   // the nights are Moss's to explain (his card); the board only reports one that is coming, on, or just gone
     const bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null, todo = todoList();
     openCard('<div class="tw-board2">'
       + '<div class="tw-board2__head"><span class="tw-plank tw-plank--card">' + esc(w.title || 'Notices') + '</span></div>'
@@ -810,7 +810,7 @@ export function bootTownLife(ctx) {
     return did;
   }
   function moveGhost(g, x, y) { g.x = x; g.y = y; moveSprite(g.s, x, y); }
-  function moveSprite(s, x, y) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y)); }
+  function moveSprite(s, x, y, dz = 0) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y + dz)); }
   function stepGhosts(dt, now) {
     for (const g of ghosts) {
       if (g.done) continue;
@@ -858,7 +858,7 @@ export function bootTownLife(ctx) {
     for (const g of ghosts.slice()) { if (keepDay && g.s === cond.dayghost) continue; g.done = true; g.s.el.style.opacity = '0'; const s = g.s; setTimeout(() => kill(s), 1500); ghosts.splice(ghosts.indexOf(g), 1); }
   }
   const found = (id) => { try { return statTotal(passRaw(), 'cur_' + id) > 0; } catch (e) { return false; } };
-  function spawnObject(seed, day, at, forced) {
+  function spawnObject(seed, day, at, forced, born) {
     const def = forced || weighted(OBJECTS, (o) => RARITY_W[o.rarity], seed);   // a chapter names its object; a night draws one
     // its place by seed, then a spot in it nothing else stands on (two on one spot hid each other, 15 Sep)
     const spots = WHERE[def.where[Math.floor(h(seed, 3) * def.where.length)]] || [[1100, 1000]];
@@ -883,15 +883,40 @@ export function bootTownLife(ctx) {
     const flame = sprite('flame', spot[0], spot[1] + 12 * k, { z: spot[1] - 1, fps: 8, cls: 'is-flame', size: k });
     const lick = sprite('flame', spot[0], spot[1] + 12 * k * 0.45 + 3, { z: spot[1] + 1, fps: 9, cls: 'is-flame is-lick', size: k * 0.45 });   // small, at the foot only: the thing itself stays readable
     const spark = sprite('spark', spot[0], spot[1] + 13 * k - hh * 0.2, { z: spot[1] + 2, fps: 7, cls: 'is-flame', size: k });
+    if (born) { aura.classList.add('is-born'); const wisp = sprite('wisp', spot[0], spot[1], { fps: 6, mode: 'once', cls: 'is-haunt' }); if (wisp) wisp.onDone = () => kill(wisp); }   // it APPEARS: a wisp rises and the aura blooms
     const o = { def, el, x: spot[0], y: spot[1], day: !!day, m: mark(spot[0], spot[1] + 2), aura, flame, lick, spark };
     objects.push(o);
     return o;
+  }
+  // 🔮 CURSED THINGS COME THROUGH THE NIGHT, not all at once (Trym, 15 Sep: "spawn mysteriously at night"): the first
+  // within moments of dark, then one every so often, up to the night's number out at once; a taken one frees its
+  // place, and a whole night gives a few more than that number — never a flood
+  let nightCap = 0, nightSpawned = 0, nextSpawnAt = 0;
+  function nightBegins(cap) { nightCap = cap; nightSpawned = 0; nextSpawnAt = performance.now() + 3000 + Math.random() * 5000; }
+  function nightEnds() { nightCap = 0; nightSpawned = 0; nextSpawnAt = 0; clearNightObjects(); }
+  function spawnThroughNight(now) {
+    if (!nightCap || now < nextSpawnAt || nightSpawned >= nightCap + 2 || objects.filter((o) => !o.day).length >= nightCap) return;
+    spawnObject(dayNum() * 5 + nightSpawned * 3 + 11, false, null, null, true);
+    nightSpawned++; nextSpawnAt = now + 12000 + Math.random() * 23000;
+  }
+  // 😱 THE CURSE ON YOU: a cursed thing picked up rides along for a while — see-through, a violet edge, afloat, purple
+  // fire at your feet (Trym, 15 Sep: "a fun scary effect like you get on pickups in the rave"); a rare one longer
+  let meCurseUntil = 0, meFire = null;
+  function curseMe(def) {
+    meCurseUntil = performance.now() + (def.rarity === 'rare' ? 40000 : 25000);
+    const me = world.querySelector('.tw-me'); if (me) me.classList.add('is-cursed-me');
+    if (!meFire) meFire = sprite('flame', ctx.pos.x, ctx.pos.y + 17, { z: ctx.pos.y - 1, fps: 8, cls: 'is-flame is-mefire', size: 1.4 });
+  }
+  function stepMeCurse(now) {
+    if (!meCurseUntil) return;
+    if (now >= meCurseUntil) { meCurseUntil = 0; const me = world.querySelector('.tw-me'); if (me) me.classList.remove('is-cursed-me'); kill(meFire); meFire = null; return; }
+    if (meFire) moveSprite(meFire, ctx.pos.x, ctx.pos.y + 17, -20);   // at the feet, behind the banana
   }
   function clearNightObjects() { for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); unhaunt(o); } }
   function unhaunt(o) { if (o.aura) o.aura.remove(); kill(o.flame); kill(o.lick); kill(o.spark); }
   function takeObject(o) {
     const i = objects.indexOf(o); if (i < 0) return;
-    objects.splice(i, 1); o.el.remove(); o.m.remove(); unhaunt(o); burst(o.x, o.y - 6);
+    objects.splice(i, 1); o.el.remove(); o.m.remove(); unhaunt(o); burst(o.x, o.y - 6); curseMe(o.def);
     const first = !found(o.def.id);
     passStat('cur_' + o.def.id, 1);
     const ok = grantToShed(o.def.decor);
@@ -910,8 +935,7 @@ export function bootTownLife(ctx) {
       candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
     }
     (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true));
-    const nObj = type === 'deep' ? 3 : type === 'creep' ? 2 : 1;   // more than a plain night's one (15 Sep: one chair, always there, was quickly boring)
-    for (let i = 0; i < nObj; i++) spawnObject(dayNum() * 5 + i * 3 + 11, false);
+    nightBegins(type === 'deep' ? 4 : type === 'creep' ? 3 : 2);   // more out at once than a plain night's two
     if (type === 'deep') { vendor = body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' }); bodies.add(vendor); }
     lampsByHour();
     if (curseTold !== type + dayNum()) { curseTold = type + dayNum(); track('town_curse', { tier: type }); }
@@ -925,7 +949,7 @@ export function bootTownLife(ctx) {
     candles.forEach(kill); candles = [];
     clearGhosts(true); plainNight = false;   // still night? the plain set comes back on the next look
     killBody(vendor); vendor = null;
-    clearNightObjects();
+    nightEnds();
     lampsByHour();
   }
   // 🌒 THE OMENS. A night that will charge the town is foreshadowed for three hours before it:
@@ -976,6 +1000,7 @@ export function bootTownLife(ctx) {
   function tick(now, dt) {
     stepSprites(dt);
     autoPick(now);
+    stepMeCurse(now);
     stepGhosts(dt, now);
     stepFlying(dt);
     swayBodies(now);
@@ -993,8 +1018,9 @@ export function bootTownLife(ctx) {
     hbar.hidden = inside();
     if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
     // 👻 every night has its ghosts; dawn takes them (a Curse Night owns its own until it ends)
-    if (beat === 5 && !curse && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); if (!objects.some((o) => !o.day)) spawnObject(dayNum() * 5 + 11, false); }   // 🔮 every night lays one cursed thing out
-    else if (beat !== 5 && plainNight) { plainNight = false; if (!curse) { clearGhosts(true); clearNightObjects(); } }
+    if (beat === 5 && !curse && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); nightBegins(2); }   // 🔮 the night's cursed things come through it
+    else if (beat !== 5 && plainNight) { plainNight = false; if (!curse) { clearGhosts(true); nightEnds(); } }
+    spawnThroughNight(now);
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;
     // crows fly when you come close (and settle again on the next condition)
@@ -1054,6 +1080,8 @@ export function bootTownLife(ctx) {
     lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),
     ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null, mess: g.mess || 0 })),
+    nightSpawn: () => { if (!TEST) return null; nextSpawnAt = 0; return nightCap; },   // QA: the night's next thing, now
+    cursedMe: () => !!meCurseUntil,
     mischief: (id) => { if (!TEST) return null; const g = ghosts.find((q) => q.def.roam && !q.done && (!id || q.def.id === id)); return g ? mischief(g, true) : null; },   // QA: a roamer makes its mess now
     objects: () => objects.map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objects.find((q) => q.def.id === id); if (o) takeObject(o); return !!o; },
