@@ -222,6 +222,8 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   await page.waitForTimeout(900);
   expect((await room(page, 'ghosts')).find((g) => g.id === 'knock').hidden).toBe(true);
   await stand(page, 1360, 880);
+  await room(page, 'nightSpawn');   // the night's things come through the night: the next one now (QA)
+  await page.waitForTimeout(700);
   const objs = await room(page, 'objects');
   expect(new Set(objs.map((o) => o.x + ',' + o.y)).size).toBe(objs.length);   // never two on one spot
   // each stands in its purple fire: an aura on the ground, a flame behind, sparks in front
@@ -280,7 +282,7 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   expect(((await page.locator('.tw-todo').textContent()) || '').split(' · ').length).toBe(Math.max(1, kinds));
   expect(await page.locator('.tw-stamp').count()).toBe(0);
   expect(await page.locator('.tw-paper--news').count()).toBe(0);   // an ordinary noon: no night notice; the nights are Moss's to tell
-  expect((await page.evaluate(() => window.__town.life.talk('moss'))).topics.length).toBeGreaterThanOrEqual(2);   // three once his curse topic is approved
+  expect((await page.evaluate(() => window.__town.life.talk('moss'))).topics.length).toBe(3);   // his two, and the nights
   expect(await page.locator('.tw-card--board .tw-lamps').count()).toBe(1);
   await page.screenshot({ path: SHOT + 'board.png' });
   // and the board at a desktop width, the card alone

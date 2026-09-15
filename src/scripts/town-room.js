@@ -365,10 +365,11 @@ export function bootTownLife(ctx) {
         const p = propOf(k); if (!p) continue;
         const key = k === 'cafe' ? 'shutcafe' : 'shutinfo';
         const [sw, sh] = STATE[key] || [0, 0];
-        shutSprites[k] = sprite(key, p.x + p.w / 2 + (k === 'cafe' ? 1 : 0), p.base - (k === 'cafe' ? 3 : 43), { z: p.base + 1 });   // measured on the plate: the shutter's badge over the kiosk's own
+        shutSprites[k] = sprite(key, p.x + p.w / 2 + (k === 'cafe' ? 1 : 0), p.base - (k === 'cafe' ? 3 : 43), { z: p.base + 1, cls: 'is-shut' });   // measured on the plate: the shutter's badge over the kiosk's own
+        p.el.classList.add('is-dark');   // 🌑 a shut kiosk goes dark and grey, like a dead lamp, so open and shut read from across the square (Trym, 15 Sep)
         if (shutSprites[k] && problems.some((q) => q.type === 'shutter' && q.key === k)) shutSprites[k].el.classList.add('is-todo');
         void sw; void sh;
-      } else if (!want && shutSprites[k]) { kill(shutSprites[k]); shutSprites[k] = null; }
+      } else if (!want && shutSprites[k]) { kill(shutSprites[k]); shutSprites[k] = null; const p = propOf(k); if (p) p.el.classList.remove('is-dark'); }
     }
   }
   // 🎬 a shutter goes UP: the pack's roll played backwards, then the kiosk is open
@@ -377,7 +378,7 @@ export function bootTownLife(ctx) {
     const p = propOf(k); const key = k === 'cafe' ? 'rollcafe' : 'rollinfo';
     if (!STATE[key] || !p) { shutters(); return; }
     const s = sprite(key, still.x, still.y, { z: p.base + 1, fps: 22, mode: 'once' });
-    kill(still); shutSprites[k] = null;
+    kill(still); shutSprites[k] = null; { const p0 = propOf(k); if (p0) p0.el.classList.remove('is-dark'); }   // open again: lit and coloured
     if (!s) return;
     s.rev = true; show(s, s.n - 1); s.onDone = () => kill(s);
   }

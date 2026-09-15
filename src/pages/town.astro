@@ -231,6 +231,8 @@ const description = 'The town centre of Banana World, under construction.';
     @media (prefers-reduced-motion: reduce) { .tw-mark__ic { animation: none; } }
     /* the shopfront's dark window and the fountain's dry basin are the props themselves, dimmed */
     .tw-ov.is-dark { filter: brightness(0.62) saturate(0.7); }
+    .tw-state.is-shut img { filter: brightness(0.62) saturate(0.7); }   /* the shutter itself as dark as the kiosk it closes */
+    .tw-state.is-shut.is-todo img { filter: brightness(0.7) saturate(0.7); }
     .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor, .tw-aura) { visibility: hidden; }
     /* the store's shelf and the vendor's: the town's row with the piece's own sprite in front */
     .tw-store { display: grid; gap: 0.45rem; margin: 0.5rem 0; }

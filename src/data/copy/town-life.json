@@ -96,52 +96,52 @@
     {
       "id": "humlantern",
       "name": "Humming Waylight",
-      "desc": "The tall lantern hums one steady note, even with its switch off."
+      "desc": "The lantern hums so loudly that nearby cobbles vibrate, even with its switch off."
     },
     {
       "id": "coldfire",
       "name": "Winter Campfire",
-      "desc": "Its flames flicker blue and give the air no warmth at all."
+      "desc": "Blue flames leap from the fire, but they freeze the air instead of warming it."
     },
     {
       "id": "stillbear",
       "name": "Homeward Teddy",
-      "desc": "The teddy bear is always turned toward the road home, even after being moved."
+      "desc": "The teddy bear spins itself to face the north road whenever anyone turns it away."
     },
     {
       "id": "lostpack",
       "name": "Unclaimed Rucksack",
-      "desc": "The backpack is packed full, though nobody in the square admits to dropping it."
+      "desc": "The rucksack refills itself whenever it is emptied, though no banana owns it."
     },
     {
       "id": "coldurn",
       "name": "Everbloom Urn",
-      "desc": "Its white flowers never wilt, and nobody remembers putting them in the vase."
+      "desc": "White flowers burst back into bloom the instant one wilts, though nobody put them in the urn."
     },
     {
       "id": "redcap",
       "name": "Blinking Redcaps",
-      "desc": "The mushroom caps flicker like tiny lamps that cannot settle down."
+      "desc": "Every mushroom cap flashes on and off like a tiny lamp that has swallowed a storm."
     },
     {
       "id": "tinwalker",
       "name": "Wandering Tinwalker",
-      "desc": "The wind-up robot stands somewhere else each time you look back at it."
+      "desc": "The wind-up robot marches to a different cobble whenever anyone looks away."
     },
     {
       "id": "emptymirror",
       "name": "Absent Reflection",
-      "desc": "The standing mirror shows the square perfectly, except for the banana before it."
+      "desc": "The mirror reflects the whole square but erases the banana standing directly in front of it."
     },
     {
       "id": "stoppedclock",
       "name": "Lost-Hour Clock",
-      "desc": "The grandfather clock stopped at an hour the town does not have."
+      "desc": "Its hands point to twenty-five o’clock and chime the impossible hour for the empty square."
     },
     {
       "id": "lastlamp",
       "name": "Lasting Camp Lamp",
-      "desc": "The camp lantern hums softly and stays lit, even in a closed crate."
+      "desc": "The camp lantern hums and stays blazing inside a closed crate with no air or switch."
     }
   ],
   "things": {

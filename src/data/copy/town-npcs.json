@@ -15,8 +15,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
@@ -83,8 +85,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
@@ -151,8 +155,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": "What happens here at night?"
       },
+      "curse": "Some nights the square is cursed. Ghosts undo the day’s work; walk into one and it goes off. Dark things appear, and picked-up ones are yours, though they affect you for a while; the night stall pays coin.",
       "beats": [
         {
           "beat": "dawn",
@@ -219,8 +225,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
@@ -287,8 +295,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
@@ -355,8 +365,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
@@ -423,8 +435,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
@@ -491,8 +505,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
@@ -559,8 +575,10 @@
       ],
       "ask": {
         "doing": "What are you up to?",
-        "want": "Need anything?"
+        "want": "Need anything?",
+        "curse": ""
       },
+      "curse": "",
       "beats": [
         {
           "beat": "dawn",
