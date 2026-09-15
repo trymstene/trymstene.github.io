@@ -48,7 +48,6 @@
     "found": "Cursed things found",
     "next": "Next",
     "health": "town health",
-    "curse": "Some nights curse the square: lamps go dark, kiosks shut, and ghosts undo things.",
     "omen": "Crows fill every perch, a ghost walks by daylight, and the sky is wrong at the edges.",
     "night": "Keep to the lit lamps. The night stall trades, and anything lying about may be taken.",
     "after": "The curse left dark lamps, shut doors and litter. The square needs hands today."
@@ -144,6 +143,7 @@
       "desc": "The camp lantern hums and stays blazing inside a closed crate with no air or switch."
     }
   ],
+  "shutSign": "Closed",
   "things": {
     "lamp": [
       "a dark lamp",

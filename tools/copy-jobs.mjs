@@ -463,7 +463,6 @@ const lifeSchema = {
 export const JOBS = {
   'town-life': {
     id: 'town-life',
-    redraft: 'the shut kiosks got a sign 15 Sep — the approved words lack `shutSign`',   // drop this the day the new draft is approved
     title: 'Banana Town — the town’s life',
     what: 'The notice board’s word for each band, Pip’s counter, the travelling stall, the night vendor, the ghosts, the closed-today notes and the cursed objects.',
     brief: 'tools/copy-briefs/town-life.md',

@@ -26,7 +26,10 @@ node tools/copy.mjs <job> --approve # Trym has read it: move it into src/data/co
   copy yourself "just this once".
 - Approved copy lives in **`src/data/copy/*.json`** and the code imports it.
   Code holds mechanics, never prose.
-- Trym approves every draft on `/dev/copy/` before it ships.
+- Drafts ship through `--approve`. Since 15 Sep 2026 Claude runs it (Trym: *"why do i have to
+  approve town life all the time - just do it"*) and shows the changed lines in the reply, so
+  Trym reads them there and rejects after if he wants. Nothing is hand-typed on the way: the
+  rig writes, the gate checks, the receipt is proven.
 - 🔒 **Some sections are Trym's own words and the rig will not write them.** They
   carry a `locked` entry in `tools/copy-jobs.mjs` — today that is **Old Peel** in
   `park-npcs`. Locked copy is cut out of the model's schema, spliced back on
