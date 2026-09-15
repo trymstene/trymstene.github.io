@@ -169,7 +169,9 @@ export function bootTownLife(ctx) {
     const v = Math.max(0, Math.min(100, L.life + nudge)), p = BANDS.indexOf(band), w = COPY.board || {}, wb = W_BAND[band] || {};
     const starts = BANDS.map((k) => BAND_LO[k]), ends = starts.slice(1).concat([100]);
     const used = Math.min(10, (L.cap && L.cap.used) | 0);
-    openCard('<div class="whg"><p class="whg__label">' + esc(wb.name || '') + '</p><p class="whg__num" id="twBnum">' + Math.round(v) + '%</p></div>'
+    // the label is what the number IS (the park says "park health"); the band's NAME rides the
+    // explainer line under the bar, with its line (Trym, 15 Sep: "'mending along' … You mean Town Health?")
+    openCard('<div class="whg"><p class="whg__label">' + esc(w.health || '') + '</p><p class="whg__num" id="twBnum">' + Math.round(v) + '%</p></div>'
       + '<div class="tw-bbar">'
       + '<div class="tw-bglyphs">' + FACES.map((f, i) => '<span class="tw-bglyph' + (i === p ? ' is-now' : '') + '" style="flex:' + (ends[i] - starts[i]) + '">' + iconSvg(f, { size: 17 }) + '</span>').join('') + '</div>'
       + '<div class="tw-btrack"><i class="tw-bramp"></i><i class="tw-bfill" id="twBfill" style="clip-path:inset(0 ' + (100 - v) + '% 0 0)"></i>'
@@ -183,7 +185,7 @@ export function bootTownLife(ctx) {
     const show = (i) => {
       const bw = W_BAND[BANDS[i]] || {};
       exp.className = 'tw-bexp' + (i <= 1 ? ' tw-bexp--sad' : '');
-      exp.textContent = fill(bw.line || bw.name || '');
+      exp.textContent = (bw.name ? bw.name + (bw.line ? ' — ' : '') : '') + fill(bw.line || '');
       cardBody.querySelectorAll('.tw-bglyph').forEach((g, gi) => g.classList.toggle('is-open', gi === i));
     };
     cardBody.querySelectorAll('.tw-bzone').forEach((bz) => bz.addEventListener('click', () => show(+bz.dataset.p)));

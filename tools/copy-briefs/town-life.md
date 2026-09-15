@@ -57,6 +57,8 @@ at home, or goes on the van and arrives later.
   of all of them. Two to four words.
 - `next` — the one or two words before the next state's name on the bar under the five
   lamps, like a signpost.
+- `health` — the label over the big number on the health card: what the number is, the
+  way the park's card says "park health". Two words; Trym's own word for it is "town health".
 - `why` — the standing notice: what putting things right does for the square. That every
   fix lifts it, and what a lifted square opens. No number, no rate.
 - `curse` — the standing notice on an ordinary day: that some nights the square is cursed,
