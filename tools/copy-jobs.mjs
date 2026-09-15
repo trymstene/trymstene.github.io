@@ -442,7 +442,6 @@ const lifeSchema = {
 export const JOBS = {
   'town-life': {
     id: 'town-life',
-    redraft: 'the board learned to speak to a newcomer 15 Sep (intro, band lines, why, curse) — the approved words are the old ones',   // drop this the day the new draft is approved
     title: 'Banana Town — the town’s life',
     what: 'The notice board’s word for each band, Pip’s counter, the travelling stall, the night vendor, the ghosts, the closed-today notes and the cursed objects.',
     brief: 'tools/copy-briefs/town-life.md',
