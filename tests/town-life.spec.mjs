@@ -62,6 +62,17 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   await page.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = 930; t.pos.y = t.tgt.y = 860; });
   await page.waitForTimeout(800);
   await page.locator('#twView').screenshot({ path: SHOT + 'phone-stalls.png' });
+  // …and at desktop scale, the print shop's metal sign over the sprite's own, and the lemonade stand's plank
+  await page.setViewportSize({ width: 1470, height: 880 });
+  await stand(page, 1560, 1110);   // shot spots keep clear of every reach: a stand here must not eat a seeded thing
+  await page.waitForTimeout(800);
+  await page.locator('#twView').screenshot({ path: SHOT + 'desk-printshop.png' });
+  await stand(page, 860, 660);
+  await page.waitForTimeout(800);
+  await page.locator('#twView').screenshot({ path: SHOT + 'desk-lemonade.png' });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await stand(page, 1360, 880);   // back on the neutral spot before any count below
+  await page.waitForTimeout(300);
   // the repair icon rides only over lamps; everything smaller glows instead
   expect(await page.locator('.tw-mark__ic').count()).toBe(p0.filter((q) => q.type === 'lamp').length);
   expect(await page.locator('.tw-state.is-todo').count()).toBeGreaterThanOrEqual(p0.filter((q) => q.type !== 'lamp').length);

@@ -68,8 +68,10 @@ const ABOUT = {
   post: ['', 0, 'Post Office. Stamp sends stock postcards; your mailbox is by the door. Not built yet.'],
   store: ['GENERAL STORE', 104, 'General Store. Pip sells fireworks, lures and duck bread. Not built yet.'],
   bank: ['BANK', 118, 'The bank. It is an ATM. Not built yet.'],
-  print: ['STICKERS', 104, 'The print shop. The real sticker packs in the window. Not built yet.'],
-  cafe: ['CAFÉ', 220, 'The Coffee Cup. Bean pours today’s fortune and a rumour about tomorrow’s prices. Not built yet.'],
+  // the print shop's plank is an OVERLAY on the sprite's own STORE sign (measured: the sign band is 64×22 world px
+  // centred at 1585,932): grey metal, a bit bigger, its bottom-centre 2 px under the sign (Trym, 15 Sep)
+  print: ['STICKERS', 93, 'The print shop. The real sticker packs in the window. Not built yet.', -35],
+  cafe: ['', 220, 'The Coffee Cup. Bean pours today’s fortune and a rumour about tomorrow’s prices. Not built yet.'],
   board: ['NOTICES', 112, 'The notice board. Board of Works projects, today’s wants, Monday’s results. Not built yet.'],   // 112: the plank's foot 14px into the board's top rail (Trym: "sits on top of the board")
   exchange: ['THE EXCHANGE', 134, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],   // 134: on the awning, not above it
   wheel: ['WHEEL OF PEEL', 134, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
@@ -93,20 +95,20 @@ const ABOUT = {
   monument: ['THE MONUMENT', 232, 'The monument. Monday’s names are read out here. Not built yet.'],
   bus: ['BUS STOP', 122, 'The bus stop. The roads still work; this is the shortcut.'],
   info: ['INFO', 224, 'The info point. A map of the town and what is where. Not built yet.'],
-  terrace: ['TERRACE', 132, 'The terrace. Sit with the fortune. Not built yet.'],
+  terrace: ['', 132, 'The terrace. Sit with the fortune. Not built yet.'],
   cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
   garden_e: ['CAFÉ GARDEN', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
-  garden_w: ['GRAN FIG’S GARDEN', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
-  stand: ['LEMONADE', 118, 'Lemonade, from a kid at the Bunch. One coin, one small good thing. Not built yet.'],
+  garden_w: ['', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
+  stand: ['LEMONADE', 97, 'Lemonade, from a kid at the Bunch. One coin, one small good thing. Not built yet.'],
 };
 for (const [key, spot] of Object.entries(SPOTS)) {
   const a = ABOUT[key];
   if (!a || !a[0]) continue;
   const p = document.createElement('div');
-  p.className = 'tw-plank' + (key === 'exchange' || key === 'wheel' ? ' tw-plank--big' : '');   // the stalls' signs at double size (Trym, 14 Sep)
+  p.className = 'tw-plank' + (key === 'exchange' || key === 'wheel' ? ' tw-plank--big' : key === 'print' ? ' tw-plank--metal' : '');   // the stalls' signs at double size (Trym, 14 Sep); the print shop's covers the sprite's own
   p.dataset.key = key;   // 🏘️ Town Life renames the board's sign to what the board says (town-room.js)
   p.textContent = a[0];
-  p.style.left = pct(spot.x, W); p.style.top = pct(spot.y - a[1], H);
+  p.style.left = pct(spot.x + (a[3] || 0), W); p.style.top = pct(spot.y - a[1], H);   // a[3]: a sideways nudge, world px
   p.style.zIndex = String(100 + spot.y + 3);
   p.addEventListener('click', (e) => { e.stopPropagation(); if (!openFor(key)) say(a[2]); });
   p.addEventListener('pointerdown', (e) => { if (panel && !panel.hidden) e.stopPropagation(); });   // a prop under an open card is not tappable
