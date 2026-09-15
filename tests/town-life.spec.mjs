@@ -48,6 +48,9 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   // one mark per problem (five, plus the shutter on any kiosk today's events shut) and one per
   // strange object lying about by daylight
   expect(await page.locator('.tw-mark').count()).toBe(p0.length + (await room(page, 'objects')).length);
+  // the repair icon rides only over lamps; everything smaller glows instead
+  expect(await page.locator('.tw-mark__ic').count()).toBe(p0.filter((q) => q.type === 'lamp').length);
+  expect(await page.locator('.tw-state.is-todo').count()).toBeGreaterThanOrEqual(p0.filter((q) => q.type !== 'lamp').length);
   await page.screenshot({ path: SHOT + 'recovering.png' });
   await overview(page, 'recovering-all');
 

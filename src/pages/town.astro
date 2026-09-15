@@ -182,9 +182,14 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-state.is-fade { transition: opacity 1.4s ease; }
     .tw-state.is-hum { animation: twHum 2.2s ease-in-out infinite alternate; }
     .tw-state.is-flicker { animation: twFlicker 1.7s steps(1) infinite; }
-    @keyframes twHum { from { filter: brightness(0.92); } to { filter: brightness(1.18) drop-shadow(0 0 6px rgba(255, 225, 120, 0.7)); } }
+    @keyframes twHum { from { filter: brightness(0.92) drop-shadow(0 0 3px rgba(150, 110, 255, 0.6)); } to { filter: brightness(1.18) drop-shadow(0 0 6px rgba(150, 110, 255, 0.9)); } }
+    /* a thing to fix GLOWS, softly — the only mark on anything smaller than a lamp; a cursed object
+       glows the other colour (Trym, 15 Sep: "a slight glow or something, subtle") */
+    .tw-state.is-todo { animation: twTodo 1.6s ease-in-out infinite alternate; }
+    @keyframes twTodo { from { filter: drop-shadow(0 0 2px rgba(255, 225, 53, 0.55)); } to { filter: drop-shadow(0 0 5px rgba(255, 225, 53, 0.95)); } }
+    .tw-state.is-cursed { filter: drop-shadow(0 0 4px rgba(150, 110, 255, 0.85)); }
     @keyframes twFlicker { 0%, 100% { opacity: 1; } 71% { opacity: 0.35; } 74% { opacity: 1; } 86% { opacity: 0.5; } 89% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .tw-state.is-hum, .tw-state.is-flicker { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .tw-state.is-hum, .tw-state.is-flicker, .tw-state.is-todo { animation: none; } .tw-state.is-todo { filter: drop-shadow(0 0 4px rgba(255, 225, 53, 0.8)); } }
     /* a problem's mark: the questline's dashed ring, on the ground under the thing that is wrong */
     /* a problem's mark: the anchor on the ground is INVISIBLE — only the repair icon above the thing
        shows (Trym, 14 Sep: the rings "are just placed weirdly on top of the object") */
