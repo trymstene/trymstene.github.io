@@ -403,7 +403,7 @@ const lifeFields = {
   'closed[]': { kind: 'prose', aim: 70, max: 90, note: 'Why a kiosk is shut today, the way a note on a door reads. Something a person could put right.' },
   'objects[].id': { kind: 'key', max: 14, note: 'FIXED. The ten ids from the brief, in order.' },
   'objects[].name': { kind: 'prose', aim: 20, max: 28, note: 'Two or three words: the name it has in a collection. More than the ordinary thing’s plain name.' },
-  'objects[].desc': { kind: 'prose', aim: 80, max: 100, note: 'One line: what is wrong with it. Cosmetic, specific, a little unsettling and a little funny; never harmful.' },
+  'objects[].desc': { kind: 'prose', aim: 80, max: 100, note: 'One line a player reads in their collection: what this thing DOES that no ordinary one does, said OUTRIGHT and exaggerated — plainly cursed, clear at first read, no hint, no half-said mood (Trym, 15 Sep: “what does this copy even mean?”). Specific and a little funny; never harmful.' },
 };
 function lifeShape(data) {
   const bad = [];

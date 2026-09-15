@@ -139,6 +139,11 @@ player takes one home, where it is the ordinary object again. Ids FIXED; write f
 
 | id | the ordinary thing | what it does on the ground |
 |---|---|---|
+Each `desc` is read in a player's collection, and it must SHOUT the curse: what the thing
+does that no ordinary one does, said outright and exaggerated, clear at first read — never a
+hint or a half-said mood (Trym, 15 Sep, on “always turned toward the road home, even after
+being moved”: “what does this copy even mean?”). Funny is welcome; harmful never.
+
 | `humlantern` | a tall camping lantern | it hums |
 | `coldfire` | a campfire | it flickers, but gives no warmth |
 | `stillbear` | a teddy bear, left on the cobbles | it is always turned toward the road home |
