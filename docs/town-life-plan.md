@@ -317,5 +317,13 @@ Adding a shop, a problem, a ghost or an object is a row. Adding a chapter is a c
   yours, paid like any other, at most four per ghost per night. Ghosts are never a threat to the player
   (3.8% of players ever dodge the world's one hazard); the threat is to the square. Walk-over picks up
   everything but a lamp. The night scrims are a step darker.
+- **15 Sep, the night that matters (Trym's play):** roamers at 58/50 px/s, ×1.7 when chased, a mess at every
+  rest (cap six a night); EVERY night lays one cursed thing out (a creeping night two, a deep one three),
+  dawn takes the untaken; the ten cursed objects are SMALL things that read cursed (teddy, backpack, urn,
+  toy robot, mirror, clock, plus the lantern, the campfire, the redcaps, the table lantern) — six new names
+  drafted through the rig, awaiting Trym; the board's lamp row is the REAL eight lamps (lit / stuttering /
+  dark), never a band gauge; `TOWN_FIX 2.0`, `TOWN_FIX_CAP 24` (was 1.2 / 10: a day of fixing barely showed).
+  The copy gate learned `redraft: '<why>'` — the approved words may lag the code while the rig's draft on
+  the desk passes every rule; the flag must be dropped the day the draft is approved.
 - **Tuning left as designed:** the numbers in §2 and §7. Change them in one place each (the
   worker's `TOWN_*` block; `CURSE_TIERS` in world.js, then `node tools/build-worker-allowlists.mjs`).

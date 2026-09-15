@@ -17,8 +17,8 @@
 export const ROAM = [[620, 480], [1320, 480], [1520, 480], [820, 580], [1120, 580], [1620, 680], [620, 780], [1020, 780], [1320, 880], [920, 980], [1120, 980], [720, 1080], [1620, 1080], [1020, 1180]];
 export const GHOSTS = [
   // roams the whole square, waypoint to waypoint with a pause at each, facing where it goes (Trym, 15 Sep)
-  { id: 'roam',   art: 'ghost4', fps: 6, roam: 1, speed: 26, at: [1120, 980] },
-  { id: 'roam2',  art: 'ghost4', fps: 6, roam: 1, speed: 22, at: [820, 580] },
+  { id: 'roam',   art: 'ghost4', fps: 6, roam: 1, speed: 58, at: [1120, 980] },   // speeds up 15 Sep (Trym: "they move very slow, i just take them out")
+  { id: 'roam2',  art: 'ghost4', fps: 6, roam: 1, speed: 50, at: [820, 580] },
   // wanders the square's south edge and fades when you come near
   { id: 'drift',  art: 'drift',  fps: 6, path: [[1010, 1160], [1440, 1160]], speed: 20, near: 96 },
   // sits on the east bench of the square; walk up and tap for a line

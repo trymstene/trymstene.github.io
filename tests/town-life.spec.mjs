@@ -8,6 +8,7 @@
 import { test, expect } from '@playwright/test';
 import { OBJECTS, WHERE } from '../src/data/town/objects.js';
 import { GHOSTS, ROAM } from '../src/data/town/ghosts.js';
+import * as decorMod from '../src/data/decor.js';
 import { OVERLAYS } from '../src/scripts/town-geo.js';
 
 const SHOT = 'test-results/town-';
@@ -163,7 +164,7 @@ test('a fix clears the mark, pays on the pass and counts on the room', async ({ 
   expect(await room(page, 'fixed')).toContain(p.id);
   expect(await room(page, 'coins')).toBeGreaterThan(before);
   const L = await room(page, 'life');
-  expect(L.life).toBeCloseTo(43.2, 1);
+  expect(L.life).toBeCloseTo(44, 1);
   expect(L.cap.used).toBe(1);
   // a reload keeps the fix (the day's memory on this device)
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -364,6 +365,7 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   const ids = (await room(page, 'ghosts')).map((g) => g.id);
   for (const id of ['roam', 'drift', 'sit', 'wisp']) expect(ids, 'the night set').toContain(id);
   expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.5);
+  expect((await room(page, 'objects')).filter((o) => !o.day).length, 'a plain night lays one cursed thing out').toBe(1);
   // the roamer roams, and faces the way it goes
   const r0 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
   await page.waitForTimeout(2500);
@@ -393,4 +395,11 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   const day = (await room(page, 'ghosts')).map((g) => g.id);
   expect(day).not.toContain('drift');
   expect(day).not.toContain('sit');
+  expect((await room(page, 'objects')).filter((o) => !o.day).length, 'dawn takes the night\'s untaken thing').toBe(0);
+});
+
+// 🔮 every cursed object is a real piece of the homestead's decor, with a picture
+test('every cursed object is a decor piece with a picture', () => {
+  const rows = Object.values(decorMod).find(Array.isArray) || [];
+  for (const o of OBJECTS) { const d = rows.find((r) => r.id === o.decor); expect(d, o.id + ' → ' + o.decor).toBeTruthy(); expect(typeof d.img).toBe('string'); }
 });

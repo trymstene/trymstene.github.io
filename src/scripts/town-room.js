@@ -72,7 +72,7 @@ export function bootTownLife(ctx) {
   const me = () => worldOwner().slice(0, 8);
 
   // ═══════════════════════════════════════ the room ═══════════════════════════════════
-  let L = { life: 42, band: 'recovering', set: 42, cap: { used: 0, max: 10 }, today: { fixes: 0, people: 0 }, curse: 'none', stormAt: 0, curseAt: 0 };
+  let L = { life: 42, band: 'recovering', set: 42, cap: { used: 0, max: 24 }, today: { fixes: 0, people: 0 }, curse: 'none', stormAt: 0, curseAt: 0 };
   let band = null, nudge = 0, readAt = 0, lastErr = '';
   // 🧪 ?towntest: the room's arithmetic in memory, so the whole town can be walked with no
   // worker and pushed to any band from the QA seam. The shim answers like the room does.
@@ -87,8 +87,8 @@ export function bootTownLife(ctx) {
   async function lifeFetch(path, body) {
     const own = worldOwner(), sid = worldSid(), wt = worldToken();
     if (TEST) {
-      if (path === '/fix') { if (shim.used < 10) { shim.v = Math.min(100, shim.v + 1.2); shim.used++; shim.fixes++; shim.people = 1; } }
-      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 10 }, today: { fixes: shim.fixes, people: shim.people },
+      if (path === '/fix') { if (shim.used < 24) { shim.v = Math.min(100, shim.v + 2); shim.used++; shim.fixes++; shim.people = 1; } }   // mirrors worker-rave TOWN_FIX / TOWN_FIX_CAP
+      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, today: { fixes: shim.fixes, people: shim.people },
         curse: curseAt(Date.now()).type, stormAt: 0, curseAt: 0, ok: 1 };
     }
     if (body) { body.pass = own; body.alt = sid; if (wt) body.wt = wt; }
@@ -648,12 +648,12 @@ export function bootTownLife(ctx) {
     if (card) card.classList.add('tw-card--board');
     // the way to the next state: how far the town is through this band, no number
     const lo = BAND_LO[band], hi = bi + 1 < BANDS.length ? BAND_LO[BANDS[bi + 1]] : 100;
-    drawLamps(cardBody.querySelector('.tw-lamps'), bi + 1, Math.max(0, Math.min(1, ((L.life + nudge) - lo) / Math.max(1, hi - lo))));
+    drawLamps(cardBody.querySelector('.tw-lamps'), Math.max(0, Math.min(1, ((L.life + nudge) - lo) / Math.max(1, hi - lo))));
     return true;
   }
-  // five of the town's own lamps in a row, `lit` of them glowing — drawn from the placed
-  // lamp's sprite so the board never needs art of its own
-  function drawLamps(cv, lit, frac) {
+  // the town's own EIGHT lamps as they are — lit, stuttering or dark — drawn from the placed lamp's sprite so the
+  // board never needs art of its own, and never says a lamp is out that the square shows lit (Trym, 15 Sep)
+  function drawLamps(cv, frac) {
     if (!cv) return;
     const p = propOf('lamp0'); if (!p) return;
     const img = new Image();
@@ -661,14 +661,14 @@ export function bootTownLife(ctx) {
     img.onload = () => {
       const g = cv.getContext('2d'); if (!g) return;
       g.imageSmoothingEnabled = false;
-      const n = 5, slot = cv.width / n, lw = 20, lh = Math.round(lw * img.naturalHeight / img.naturalWidth);
+      const keys = ANCHORS.lamps, n = keys.length, slot = cv.width / n, lw = 16, lh = Math.round(lw * img.naturalHeight / img.naturalWidth);
       // the bar under the lamps: this band's stretch, filled as far as the town has come
       if (frac != null) { g.fillStyle = '#3a2a10'; g.fillRect(10, cv.height - 7, cv.width - 20, 6); g.fillStyle = '#ffe135'; g.fillRect(11, cv.height - 6, Math.round((cv.width - 22) * frac), 4); }
       for (let i = 0; i < n; i++) {
-        const x = Math.round(i * slot + slot / 2), on = i < lit, top = cv.height - lh - 12;
+        const st = cond.lamps[keys[i]], x = Math.round(i * slot + slot / 2), on = st !== 'out', top = cv.height - lh - 12;
         if (on) {
-          const r = g.createRadialGradient(x + 4, top + 8, 2, x + 4, top + 8, 20);
-          r.addColorStop(0, 'rgba(255, 225, 90, 0.75)'); r.addColorStop(1, 'rgba(255, 200, 40, 0)');
+          const r = g.createRadialGradient(x + 3, top + 7, 2, x + 3, top + 7, 18);
+          r.addColorStop(0, 'rgba(255, 225, 90, ' + (st === 'flicker' ? 0.35 : 0.75) + ')'); r.addColorStop(1, 'rgba(255, 200, 40, 0)');
           g.fillStyle = r; g.fillRect(x - 18, top - 14, 44, 44);
         }
         g.drawImage(img, x - lw / 2, top, lw, lh);
@@ -771,7 +771,7 @@ export function bootTownLife(ctx) {
   // 👻 MISCHIEF (Trym, 15 Sep: "the ghosts spread garbage and fixes needed so you have to clean up more after
   // them"): at a waypoint a roamer may snuff a lit lamp near it, tip an empty bin or dumpster, or drop litter
   // where it hovers — each a problem of yours, paid like any other. A few per ghost per night, never a flood.
-  const MESS_CAP = 4;
+  const MESS_CAP = 6;
   let messN = 0;
   const footOf = (k) => { const p = propOf(k); return p ? [p.x + p.w / 2, p.base] : [-1e9, -1e9]; };
   const rowOf = (id) => PROBLEMS.find((r) => r.id === id);
@@ -780,7 +780,7 @@ export function bootTownLife(ctx) {
     problems.push(p); return p;
   }
   function mischief(g, force) {
-    if ((g.mess || 0) >= MESS_CAP || (!force && Math.random() < 0.4)) return null;
+    if ((g.mess || 0) >= MESS_CAP) return null;   // every rest makes something, up to the cap (15 Sep: too slow to matter before)
     // the mess lands on the waypoint it rests at (every one measured in the open), never mid-way behind a bench
     const [gx, gy] = ROAM.reduce((a, w) => (Math.hypot(w[0] - g.x, w[1] - g.y) < Math.hypot(a[0] - g.x, a[1] - g.y) ? w : a), ROAM[0]);
     const near = (k) => { const [x, y] = footOf(k); return Math.hypot(x - gx, y - gy) < 130; };
@@ -838,8 +838,8 @@ export function bootTownLife(ctx) {
         if (g.wait > 0) { g.wait -= dt; continue; }
         if (!g.to) g.to = pickWay(g);
         const dx = g.to[0] - g.x, dy = g.to[1] - g.y, dist = Math.hypot(dx, dy);
-        if (dist < 4) { g.to = null; g.wait = 1.5 + Math.random() * 2.5; mischief(g); continue; }
-        const st = Math.min(dist, d.speed * dt);
+        if (dist < 4) { g.to = null; g.wait = 0.8 + Math.random() * 1.4; mischief(g); continue; }
+        const st = Math.min(dist, d.speed * (b.d < 150 ? 1.7 : 1) * dt);   // chased, it flees — near the banana's own pace, still catchable
         moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st);
         if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0);
       } else if (d.bob) {   // leaning at a door
@@ -881,6 +881,7 @@ export function bootTownLife(ctx) {
     objects.push(o);
     return o;
   }
+  function clearNightObjects() { for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); unhaunt(o); } }
   function unhaunt(o) { if (o.aura) o.aura.remove(); kill(o.flame); kill(o.lick); kill(o.spark); }
   function takeObject(o) {
     const i = objects.indexOf(o); if (i < 0) return;
@@ -903,7 +904,7 @@ export function bootTownLife(ctx) {
       candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
     }
     (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true));
-    const nObj = type === 'deep' ? 2 : type === 'creep' ? 1 : 0;
+    const nObj = type === 'deep' ? 3 : type === 'creep' ? 2 : 1;   // more than a plain night's one (15 Sep: one chair, always there, was quickly boring)
     for (let i = 0; i < nObj; i++) spawnObject(dayNum() * 5 + i * 3 + 11, false);
     if (type === 'deep') { vendor = body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' }); bodies.add(vendor); }
     lampsByHour();
@@ -918,7 +919,7 @@ export function bootTownLife(ctx) {
     candles.forEach(kill); candles = [];
     clearGhosts(true); plainNight = false;   // still night? the plain set comes back on the next look
     killBody(vendor); vendor = null;
-    for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); unhaunt(o); }
+    clearNightObjects();
     lampsByHour();
   }
   // 🌒 THE OMENS. A night that will charge the town is foreshadowed for three hours before it:
@@ -986,8 +987,8 @@ export function bootTownLife(ctx) {
     hbar.hidden = inside();
     if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
     // 👻 every night has its ghosts; dawn takes them (a Curse Night owns its own until it ends)
-    if (beat === 5 && !curse && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); }
-    else if (beat !== 5 && plainNight) { plainNight = false; if (!curse) clearGhosts(true); }
+    if (beat === 5 && !curse && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); if (!objects.some((o) => !o.day)) spawnObject(dayNum() * 5 + 11, false); }   // 🔮 every night lays one cursed thing out
+    else if (beat !== 5 && plainNight) { plainNight = false; if (!curse) { clearGhosts(true); clearNightObjects(); } }
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;
     // crows fly when you come close (and settle again on the next condition)

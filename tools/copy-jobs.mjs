@@ -360,7 +360,7 @@ const parkSchema = {
 // wordless until this is approved (town-room.js reads the file through a glob), so
 // nothing here is a placeholder in code and nothing ships unread.
 export const TOWN_BANDS = ['abandoned', 'struggling', 'recovering', 'lively', 'thriving'];
-export const CURSED_IDS = ['humlantern', 'coldfire', 'wetchair', 'drycrate', 'nightbush', 'redcap', 'emptyhouse', 'watcher', 'secondangel', 'lastlamp'];
+export const CURSED_IDS = ['humlantern', 'coldfire', 'stillbear', 'lostpack', 'coldurn', 'redcap', 'tinwalker', 'emptymirror', 'stoppedclock', 'lastlamp'];   // six swapped 15 Sep: small things that read cursed
 const lifeFields = {
   'bands[].key': { kind: 'key', max: 12, note: 'FIXED: abandoned, struggling, recovering, lively, thriving, in that order.' },
   'bands[].name': { kind: 'prose', aim: 18, max: 24, note: 'The town’s own word for itself in this state, as the notice board would print it. One or two words. Never the key, a score or a percentage.' },
@@ -441,6 +441,7 @@ const lifeSchema = {
 export const JOBS = {
   'town-life': {
     id: 'town-life',
+    redraft: 'six cursed objects swapped 15 Sep — the approved words still name the old ones',   // drop this the day the new draft is approved
     title: 'Banana Town — the town’s life',
     what: 'The notice board’s word for each band, Pip’s counter, the travelling stall, the night vendor, the ghosts, the closed-today notes and the cursed objects.',
     brief: 'tools/copy-briefs/town-life.md',

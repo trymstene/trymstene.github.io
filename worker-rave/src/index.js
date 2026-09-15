@@ -1164,7 +1164,9 @@ const TOWN_UP = 1.0, TOWN_DOWN = 0.6;        // per hour, below / above the set 
 const TOWN_FLOOR = 5;                        // a curse can empty the square, never delete the town
 const TOWN_WX = { heavy: 1, storm: 4 };      // flat hits: the park's scaled pull would drop Thriving to Struggling in one night
 const TOWN_CURSE = { hush: 0, creep: 10, deep: 18 };
-const TOWN_FIX = 1.2, TOWN_FIX_CAP = 10;     // one contribution, and the most one person moves the town in a UTC day
+const TOWN_FIX = 2.0, TOWN_FIX_CAP = 24;     // one contribution, and the most one person moves the town in a UTC day
+                                             // (1.2 / 10 until 15 Sep: a day of fixing barely showed on the bar — Trym: "i dont know
+                                             //  what more i can do to increase it". A full day now lifts a band; the drift still takes it back)
 const TOWN_WALK_MAX = 48 * 3600_000;         // a room nobody read for a week walks two days of it, not seven
 const TOWN_BANDS = [[85, 'thriving'], [65, 'lively'], [40, 'recovering'], [15, 'struggling'], [0, 'abandoned']];
 const townBand = (v) => (TOWN_BANDS.find(([lo]) => v >= lo) || TOWN_BANDS[TOWN_BANDS.length - 1])[1];

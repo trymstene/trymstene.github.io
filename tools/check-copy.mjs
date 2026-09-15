@@ -39,7 +39,19 @@ for (const name of readdirSync(join(ROOT, DIR)).filter((f) => f.endsWith('.json'
   files++;
   lines += [...strings(data)].length;
   if (warn.length) console.log(`⚠️  ${rel}: ${warn.length} over the guide's target, under the limit\n${report(warn)}`);
-  if (bad.length) problems.push(`${rel} — ${bad.length} violation${bad.length === 1 ? '' : 's'}:\n${report(bad)}`);
+  // ⏳ A REDRAFT WAITING ON TRYM is not a broken one either. When the code moves first (an id list
+  // changed) the approved words lag it for a day, and the rig's draft with the new words sits on his
+  // desk. `redraft: '<why>'` on the job says that out loud; the gate then asks the DRAFT to pass every
+  // rule instead, and the flag cannot be left behind: the moment the approved copy passes on its own,
+  // the gate fails until somebody removes it. Nothing ships until he says so — approve() is unchanged.
+  const draftAt = join(ROOT, 'tools/copy-out', name);
+  let pending = null;
+  if (job.redraft && bad.length && existsSync(draftAt)) {
+    try { const d = JSON.parse(readFileSync(draftAt, 'utf8')); if (d && d._meta && !checkFile(job, d, { draft: true }).bad.length) pending = d; } catch (e) { pending = null; }
+  }
+  if (pending) console.log(`⏳ ${rel}: the approved words lag the code (${job.redraft}) — the rig's draft on Trym's desk passes every rule; nothing changes until he says so`);
+  else if (bad.length) problems.push(`${rel} — ${bad.length} violation${bad.length === 1 ? '' : 's'}:\n${report(bad)}`);
+  else if (job.redraft) problems.push(`${rel} — passes on its own now, so drop the redraft flag from its entry in tools/copy-jobs.mjs`);
   else console.log(`✓ ${rel}: ${[...strings(data)].length} strings, all clean (${job.title})`);
 }
 

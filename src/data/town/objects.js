@@ -8,16 +8,19 @@
 // them back at BOUNTY. The NAMES and the descriptions are copy, never here: the rig's
 // town-life job writes them, keyed by these ids (docs/town-life-plan.md §7).
 export const OBJECTS = [
-  { id: 'humlantern',  decor: 'lantern2',  rarity: 'common',   fx: 'hum',     where: ['alley', 'terrace'] },
-  { id: 'coldfire',    decor: 'campfire',  rarity: 'common',   fx: 'flicker', where: ['square', 'terrace'] },
-  { id: 'wetchair',    decor: 'chair',     rarity: 'common',   fx: 'still',   where: ['alley', 'garden'] },
-  { id: 'drycrate',    decor: 'crate',     rarity: 'common',   fx: 'still',   where: ['alley', 'square'] },
-  { id: 'nightbush',   decor: 'bush2',     rarity: 'uncommon', fx: 'hum',     where: ['garden', 'orchard'] },
-  { id: 'redcap',      decor: 'mushrooms', rarity: 'uncommon', fx: 'flicker', where: ['orchard', 'alley'] },
-  { id: 'emptyhouse',  decor: 'birdhouse', rarity: 'uncommon', fx: 'still',   where: ['orchard', 'garden'] },
-  { id: 'watcher',     decor: 'scarecrow', rarity: 'rare',     fx: 'turn',    where: ['orchard'] },
-  { id: 'secondangel', decor: 'statue',    rarity: 'rare',     fx: 'turn',    where: ['square', 'monument'] },
-  { id: 'lastlamp',    decor: 'tlantern',  rarity: 'rare',     fx: 'hum',     where: ['monument', 'terrace'] },
+  // ⚠️ SMALL things, and things that read cursed on their own (Trym, 15 Sep: a garden chair was "very strange") — a
+  // teddy on the cobbles, a backpack nobody dropped, a mirror, a clock; the homestead's decor catalogue still, so a
+  // find is a real thing at home
+  { id: 'humlantern',   decor: 'lantern2',    rarity: 'common',   fx: 'hum',     where: ['alley', 'terrace'] },
+  { id: 'coldfire',     decor: 'campfire',    rarity: 'common',   fx: 'flicker', where: ['square', 'terrace'] },
+  { id: 'stillbear',    decor: 'teddy',       rarity: 'common',   fx: 'still',   where: ['alley', 'garden', 'square'] },
+  { id: 'lostpack',     decor: 'backpack',    rarity: 'common',   fx: 'still',   where: ['alley', 'square', 'orchard'] },
+  { id: 'coldurn',      decor: 'whitevase',   rarity: 'uncommon', fx: 'hum',     where: ['garden', 'monument'] },
+  { id: 'redcap',       decor: 'mushrooms',   rarity: 'uncommon', fx: 'flicker', where: ['orchard', 'alley'] },
+  { id: 'tinwalker',    decor: 'robottoy',    rarity: 'uncommon', fx: 'turn',    where: ['square', 'terrace'] },
+  { id: 'emptymirror',  decor: 'floormirror', rarity: 'rare',     fx: 'turn',    where: ['alley', 'garden'] },
+  { id: 'stoppedclock', decor: 'gclock',      rarity: 'rare',     fx: 'hum',     where: ['monument', 'square'] },
+  { id: 'lastlamp',     decor: 'tlantern',    rarity: 'rare',     fx: 'hum',     where: ['monument', 'terrace'] },
 ];
 // the spots (feet, world px), by the name a row's `where` uses
 export const WHERE = {

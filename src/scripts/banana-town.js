@@ -97,7 +97,7 @@ const ABOUT = {
   info: ['', 224, 'The info point. A map of the town and what is where. Not built yet.'],
   terrace: ['', 132, 'The terrace. Sit with the fortune. Not built yet.'],
   cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
-  garden_e: ['CAFÉ GARDEN', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
+  garden_e: ['', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
   garden_w: ['', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
   stand: ['LEMONADE', 93, 'Lemonade, from a kid at the Bunch. One coin, one small good thing. Not built yet.'],
 };

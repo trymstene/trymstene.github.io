@@ -122,13 +122,13 @@ player takes one home, where it is the ordinary object again. Ids FIXED; write f
 |---|---|---|
 | `humlantern` | a tall camping lantern | it hums |
 | `coldfire` | a campfire | it flickers, but gives no warmth |
-| `wetchair` | a camp chair | it is always damp |
-| `drycrate` | an apple crate | it is empty, and light, and was not |
-| `nightbush` | a round bush | it hums, faintly, at night |
+| `stillbear` | a teddy bear, left on the cobbles | it is always turned toward the road home |
+| `lostpack` | a backpack | it is full, and nobody dropped it |
+| `coldurn` | a white vase | the flowers in it never wilt, and nobody put them there |
 | `redcap` | a patch of mushrooms | they flicker |
-| `emptyhouse` | a little bird house | nothing will go in it |
-| `watcher` | a scarecrow | it faces the other way when you look back |
-| `secondangel` | an angel statue | it faces the other way when you look back |
+| `tinwalker` | a wind-up toy robot | it is somewhere else each time you look |
+| `emptymirror` | a standing mirror | it shows the square, without you in it |
+| `stoppedclock` | a grandfather clock | it stopped at an hour the town does not have |
 | `lastlamp` | a camp lantern | it hums, and stays lit |
 
 ## How this reads
