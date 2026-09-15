@@ -27,8 +27,11 @@ export const GHOSTS = [
   // over the statue, rising and gone, rising and gone
   { id: 'wisp',   art: 'wisp',   fps: 6, at: [1416, 250], z: 335, loop: 1 },
 ];
+// which rows are out: EVERY night has its three (Trym, 15 Sep: "they should show up every night"); a Curse Night
+// brings more, and the deep one all of them
 export const NIGHT_GHOSTS = {
-  hush: ['drift', 'wisp'],
+  night: ['drift', 'sit', 'wisp'],
+  hush: ['drift', 'sit', 'wisp'],
   creep: ['drift', 'sit', 'knock', 'wisp'],
   deep: ['drift', 'sit', 'lead', 'knock', 'repeat', 'wisp'],
 };

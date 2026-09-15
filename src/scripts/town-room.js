@@ -716,16 +716,17 @@ export function bootTownLife(ctx) {
   }
 
   // ════════════════════════════════ the curse, the ghosts, the objects ═══════════════
-  let curse = null, forced = null, forcedUntil = 0, curseTold = '';
+  let curse = null, forced = null, forcedUntil = 0, curseTold = '', plainNight = false;
   const ghosts = [];   // { def, s, ... }
   const objects = [];  // { def, s, x, y, day }
   let candles = [], night = null;
-  function ghostOf(id, def0) {
+  function ghostOf(id, def0, set) {   // set: one of a night's set — one of each, over a plain night's; an omen's or a day's wisp is its own
     const def = def0 || GHOSTS.find((g) => g.id === id); if (!def) return null;
+    const out = set && ghosts.find((g) => g.def.id === id && !g.done && g.night); if (out) return out.s;
     const at = def.at || def.from || (def.path && def.path[0]) || [1100, 950];
     const s = sprite(def.art, at[0], at[1], { fps: def.fps || 6, cls: 'is-fade is-haunt', mode: def.loop || def.id === 'wisp' ? 'once' : 'loop', z: def.z });   // is-haunt: the curse's purple, weaker than a cursed object's; z: in front of what it sits on
     if (!s) return null;
-    const g = { def, s, x: at[0], y: at[1], dir: 1, hideT: 0, done: false };
+    const g = { def, s, x: at[0], y: at[1], dir: 1, hideT: 0, done: false, night: !!set };
     if (def.id === 'wisp' || def.loop) s.onDone = () => { g.hideT = 2 + Math.random() * 3; };
     ghosts.push(g);
     return s;
@@ -817,7 +818,7 @@ export function bootTownLife(ctx) {
       cond.shut.add('cafe'); cond.shut.add('info'); shutters();
       candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
     }
-    (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id));
+    (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true));
     const nObj = type === 'deep' ? 2 : type === 'creep' ? 1 : 0;
     for (let i = 0; i < nObj; i++) spawnObject(dayNum() * 5 + i * 3 + 11, false);
     if (type === 'deep') { vendor = body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' }); bodies.add(vendor); }
@@ -831,7 +832,7 @@ export function bootTownLife(ctx) {
     cond.shut = new Set([...LOOK[band].shut, ...todayShut]); shutters();
     life.setKeep(keepFn);
     candles.forEach(kill); candles = [];
-    clearGhosts(true);
+    clearGhosts(true); plainNight = false;   // still night? the plain set comes back on the next look
     killBody(vendor); vendor = null;
     for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); unhaunt(o); }
     lampsByHour();
@@ -899,6 +900,9 @@ export function bootTownLife(ctx) {
     night.hidden = inside();
     hbar.hidden = inside();
     if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
+    // 👻 every night has its ghosts; dawn takes them (a Curse Night owns its own until it ends)
+    if (beat === 5 && !curse && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); }
+    else if (beat !== 5 && plainNight) { plainNight = false; if (!curse) clearGhosts(true); }
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;
     // crows fly when you come close (and settle again on the next condition)
@@ -951,7 +955,7 @@ export function bootTownLife(ctx) {
       const t = PROBLEMS.find((r) => r.id === type); if (!t) return null;
       let p;
       if (at) { const key = 'qa' + problems.length; p = { id: t.id + ':' + key, type: t.id, x: at[0], y: at[1], key, pays: t.pays, rep: t.rep, el: mark(at[0], at[1], 150, null, false), sprite: sprite('pile', at[0], at[1]), foot: at[1] }; }
-      else { const key = (ANCHORS[t.on] || []).find((k) => cond.full.has(k) && !problems.some((q) => q.key === k)); const p0 = propOf(key); if (!p0) return null; p = { id: t.id + ':' + key, type: t.id, x: p0.x + p0.w / 2, y: p0.base + 4, key, pays: t.pays, rep: t.rep, el: mark(p0.x + p0.w / 2, p0.base + 4, 150, 100 + p0.base + 3, false), sprite: null, foot: p0.base + 4 }; }
+      else { const key = (ANCHORS[t.on] || []).find((k) => (t.on === 'lamps' ? cond.lamps[k] !== 'ok' : cond.full.has(k)) && !problems.some((q) => q.key === k)); const p0 = propOf(key); if (!p0) return null; p = { id: t.id + ':' + key, type: t.id, x: p0.x + p0.w / 2, y: p0.base + 4, key, pays: t.pays, rep: t.rep, el: mark(p0.x + p0.w / 2, p0.base + 4, 150, 100 + p0.base + 3, t.id === 'lamp'), sprite: null, foot: p0.base + 4 }; }
       problems.push(p); glowProblem(p); return p.id;
     },
     fix, fixed,

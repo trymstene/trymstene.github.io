@@ -30,6 +30,7 @@ async function town(page) {
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
   // the clock may be running a real night this minute: the walk asks for calm first
   await page.evaluate(() => window.__town.room.curse('none'));
+  await page.evaluate(() => window.__town.life.set(12));   // and noon: every night has ghosts now, a walk asks for its own night
   await stand(page, 1360, 880);
   await page.waitForTimeout(600);
 }
@@ -322,8 +323,9 @@ test('walking onto a thing picks it up; a lamp waits for a tap', async ({ page }
   await page.waitForTimeout(700);
   expect((await room(page, 'problems')).map((q) => q.id)).not.toContain(lit);
   // a lamp: stand at its foot and nothing happens
-  const lamp = (await room(page, 'problems')).find((q) => q.type === 'lamp');
-  expect(lamp, 'an abandoned square has a lamp to fix').toBeTruthy();
+  const lampId = ((await room(page, 'problems')).find((q) => q.type === 'lamp') || {}).id || await room(page, 'plant', 'lamp');   // the day's seed may not have picked one: plant it
+  const lamp = (await room(page, 'problems')).find((q) => q.id === lampId);
+  expect(lamp, 'a dark lamp to fix').toBeTruthy();
   await stand(page, lamp.x, lamp.y + 26);
   await page.waitForTimeout(700);
   expect((await room(page, 'problems')).map((q) => q.id)).toContain(lamp.id);
@@ -340,4 +342,19 @@ test('walking onto a thing picks it up; a lamp waits for a tap', async ({ page }
   await stand(page, b.x, b.y + 26);
   await page.waitForTimeout(900);
   expect(await room(page, 'full')).not.toContain(b.key);
+});
+
+// 👻 every night has its ghosts (Trym, 15 Sep), and dawn takes them
+test('every night has its ghosts, and dawn takes them', async ({ page }) => {
+  await town(page);
+  await seam(page, () => window.__town.life.set(21));   // the town's night
+  await page.waitForTimeout(1400);   // the room looks twice a second
+  const ids = (await room(page, 'ghosts')).map((g) => g.id);
+  for (const id of ['drift', 'sit', 'wisp']) expect(ids, 'the night set').toContain(id);
+  expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.5);
+  await seam(page, () => window.__town.life.set(8));   // morning
+  await page.waitForTimeout(1400);
+  const day = (await room(page, 'ghosts')).map((g) => g.id);
+  expect(day).not.toContain('drift');
+  expect(day).not.toContain('sit');
 });
