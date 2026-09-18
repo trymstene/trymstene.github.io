@@ -51,8 +51,9 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect((await room(page, 'life')).life).toBe(42);
   const p0 = await room(page, 'problems');
   const shut0 = await room(page, 'shut');
-  expect(p0.length).toBe(5 + shut0.length);
   const lamps0 = await room(page, 'lamps');
+  const dim0 = Object.values(lamps0).filter((s) => s !== 'ok').length;
+  expect(p0.length).toBe(5 + shut0.length + dim0);   // five, the shutter today's event shut, and EVERY dark or stuttering lamp
   expect(Object.values(lamps0).filter((s) => s === 'out').length).toBe(1);
   expect(Object.values(lamps0).filter((s) => s === 'flicker').length).toBe(1);
   // one mark per problem (five, plus the shutter on any kiosk today's events shut) and one per
@@ -85,7 +86,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   await seam(page, () => window.__town.life.set(21));
   await setBand(page, 5);
   expect(await room(page, 'band')).toBe('abandoned');
-  expect((await room(page, 'problems')).length).toBe(9);
+  expect((await room(page, 'problems')).length).toBe(9 + Object.values(await room(page, 'lamps')).filter((s) => s !== 'ok').length);   // nine, and every dark or stuttering lamp on top
   expect((await room(page, 'shut')).sort()).toEqual(['cafe', 'info']);
   expect((await room(page, 'full')).length).toBe(5);   // three street bins and two dumpsters, all full
   expect(await page.locator('.tw-tape').count()).toBe(4);   // both kiosks taped off, two bands each

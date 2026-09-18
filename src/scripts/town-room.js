@@ -517,6 +517,15 @@ export function bootTownLife(ctx) {
       const p = { id: c.t.id + ':' + k, type: c.t.id, x: c.x, y: c.y, key: k, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y), sprite: null };
       problems.push(p); glowProblem(p);   // its shutter glows like every other small thing (it never did until 15 Sep)
     }
+    // 💡 every dark or stuttering lamp is ALWAYS one of your problems, whatever the count: a lamp the square shows
+    // dark with no way to light it is the closed-door rule again (Trym, 18 Sep: "i see a broken streetlight in the
+    // square board, but i dont see any options to fix it … no fix icon on any streetlight")
+    for (const c of cands.filter((q) => q.t.on === 'lamps')) {
+      cands.splice(cands.indexOf(c), 1);
+      const id = c.t.id + ':' + c.key; if (isFixed(id)) continue;
+      const pb = propOf(c.key) ? propOf(c.key).base : null;
+      problems.push({ id, type: c.t.id, x: c.x, y: c.y, key: c.key, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y, 150, pb != null ? 100 + pb + 3 : null, true), sprite: null, foot: c.y });
+    }
     for (let i = 0; i < n && cands.length; i++) {
       // rarer types get a smaller share than the street's many spots would give them
       const pick = weighted(cands, (c) => (c.t.on === 'street' ? 1 : c.t.on === 'lamps' ? 2.5 : 3), seed + i * 17);
