@@ -23,16 +23,19 @@ except the FOR SALE sign. Decisions marked **TRYM** are his.
   **bench prototype of the counter** at 393 px, day and night scrim, in both candidate forms
   (see §4), screenshotted and played. That decides whether the rest gets built.
 - **"A shared workplace"** at a daily core of eight to ten players, spread over a day, means
-  that most shifts have one barista. v1's "shared" is therefore three real things: the same
-  clock for everyone (the rush is the same two minutes for every player), a rota log of who
-  worked today and whose shift was best, and every shift lifting the shared Town Life. Seeing
-  a colleague at the counter needs the town's presence room, which does not exist; that is
-  Stage 2 and nothing in v1 may lean on it.
-- **"Meet up at a certain time"** is dissolved rather than solved: a shift comes every twelve
-  minutes, so no minute is ever more than twelve away from one, and the mystery rule forbids
-  publishing a timetable. If Trym wants a real appointment, one shift a day must be a rarer,
-  real-clock event (**TRYM**). The plan below assumes no appointment and no booking rota
-  (both judges dropped "pins": a booking sheet is a webpage).
+  that at most moments one banana is behind the counter. v1's "shared" is therefore three real
+  things: the same living town for everyone (the same residents drift to the same counter at
+  the same hours), a rota log of who worked today and who served most, and every cup lifting the
+  shared Town Life. Seeing a colleague at the counter needs the town's presence room, which
+  does not exist; that is Stage 2 and nothing in v1 may lean on it.
+- **No shift times.** Trym, 18 Sep, after the first draft: *"maybe to allocate shift-times
+  isn't what works well, maybe a model more organic is that townsbananas line up for coffee and
+  then you have to work and serve them coffee on demand, as long as you've decided to work
+  there."* That is the model: you **clock in** by stepping behind the counter and you work as
+  long as you stay; customers come from the town's own life, not from a timetable. No
+  appointment, no booking rota, nothing to be late for. The morning rush still happens, because
+  the residents' own days send them past the café at dawn and morning; it is emergent, not
+  scheduled, and it is the same for every player because the town's clock is.
 - **The cost** is the largest town feature yet: two workers, the generator, a copy job, a new
   chunk, a quest chapter, Pulse, a walk. Many sessions, in small green commits. And the town
   is hidden (noindex, unlinked), so it ships where nobody is until /town opens (**TRYM**).
@@ -41,10 +44,14 @@ except the FOR SALE sign. Decisions marked **TRYM** are his.
 
 You buy the Coffee Cup and it becomes YOUR kiosk, the way the homestead is yours: ownership
 on the pass (`own_cafe`, granted by the pass worker on the proven spend, never a client claim).
-Everyone can own theirs; the square shows one café and, when you look, your plank. A shift is
-one town beat, two real minutes, on the shared clock: dawn, morning and afternoon for anyone
-who holds the deed; night, and every Curse Night, for owners only (the 15 Sep line "a shift
-never runs at night" is reversed on purpose: the night shift is the one worth having).
+Everyone can own theirs; the square shows one café and, when you look, your plank. There are
+no shifts: you **clock in** by stepping behind the counter and you are working until you step
+away or tap out. Customers come on demand from the town's own life: a resident whose day takes
+them past the café detours to the rope for a cup (their schedule decides who and when, so the
+morning is busy and the afternoon slow), a visitor now and then when the town is Lively or
+Thriving, and at night the few who are out and, on a Curse Night, the cursed ones. Working
+at night is the owner's key (the 15 Sep line "a shift never runs at night" is reversed on
+purpose: the night behind the counter is the one worth having).
 
 **The loop, moment to moment**
 1. The kiosk under the red FOR SALE sign: tap it, Bean's card opens with a buy topic; the sale
@@ -65,31 +72,40 @@ never runs at night" is reversed on purpose: the night shift is the one worth ha
 7. Patience is the shadow under each body: green, amber at half (the fidget doubles), red at
    a fifth: they turn their back, walk off past the rope, and drop a cup on the cobbles that is
    a litter problem of yours, paid like any fix. Failure feeds the fixing loop.
-8. The beat ends: the receipt card (a measured headline, the take; one line; a miniature of the
+8. You tap out, or walk away and stay away: the receipt card (a measured headline, the take; one
+   line; a miniature of the
    terrace as you left it; the barista board under it; two equal buttons). Coins land once
    through the pass, capped; tips are rep.
 
 ## 2. The shared workplace
 
-- Shifts run on the shared wall clock (the town day is `Date.now() % 720000`), so the morning
-  rush is the same two minutes for everyone and needs no gate, no roster, no server.
-- A shift is joinable mid-beat with pre-aged patience; the queue is seeded per player, day and
-  beat, so a reload never rerolls and two players never fight over a customer.
-- The shift is a MODE OF THE TOWN, not of a card: its state lives in the chunk (one declared
-  storage key), survives a close, a reload and a walk outside until the beat ends. This is the
+- **On demand, from the living town.** Arrivals are not a spawn timer: a resident's own day
+  table gains a "coffee" errand on the beats that take them near the café (Nib at dawn on the
+  way to the hall, Moss after the morning sweep, Stamp on the post round, Spinner late), and a
+  resident only queues while you are clocked in; otherwise they walk past. Visitors join the
+  line by the band (none below Lively, a few at Thriving). So the queue's length is the town's
+  own state: a Thriving morning is a rush, a Struggling afternoon is one regular and a long
+  lull. A lull is the signal to go fix something; the queue never fills behind your back.
+- **Clocked in is a MODE OF THE TOWN, not of a card:** the state lives in the chunk (one declared
+  storage key), survives a close, a reload and a walk outside; stepping off the counter mark
+  pauses the making, never the queue's patience. Walk too far, or tap out, and you are off duty:
+  the receipt card, and the rope empties as the last customers finish or give up. This is the
   decision the Curse Night collision depends on.
-- Shared state in v1: one `POST /life/shift` on the TownRoom at the shift's end (the `/fix`
-  gate, +2 Town Life under the +24 per-person cap, a name in today's rota) and `cafe { cups,
-  people, best }` on the room's read. The A-board at the rope's mouth opens the rota card: who
-  worked today, the best shift and its name. A log, never a booking.
+- Two players clocked in at once never share a customer: arrivals are seeded per player (who,
+  which real minute, the town's clock), so a reload never rerolls and nobody serves your regular.
+- Shared state in v1: one `POST /life/shift` on the TownRoom when you tap out (the `/fix` gate,
+  +2 Town Life per cup-day under the +24 per-person cap, a name and a cup count in today's rota)
+  and `cafe { cups, people, best }` on the room's read. The A-board at the rope's mouth opens
+  the rota card: who worked today, who served most. A log, never a booking.
 - Stage 2, when the town has its presence room: a second banana at the other station, Bean at
   the milk station taking every second ticket, colleagues walking in. Not v1.
 - Griefing surfaces: none. No shared till, no claims, no slots, no other player's customers.
 
-## 3. The night shift — the collision
+## 3. The night behind the counter — the collision
 
-Every plain night (the last two minutes of every twelve-minute day) is a night shift, so the
-scene is rehearsed daily; the Curse tiers are its difficulty ladder.
+Every plain night (the last two minutes of every twelve-minute day) has ghosts, so an owner
+clocked in at night gets the scene daily; the Curse tiers are its difficulty ladder. Fewer
+customers come at night, and the ones who do are worth more: the late ones, the cursed ones.
 
 - The ghosts' existing mischief (a snuffed lamp, a tipped bin, dropped litter) lands on the
   terrace and the lane through a small set of café waypoints for the roamers.
@@ -177,7 +193,9 @@ chapter completions, flip to employee-first with the deed as the upgrade: no reb
 4. build-town-scene.py: the rope posts, the A-board, the terrace sets, the steam (a contact
    sheet for Trym's eye first), geo regen.
 5. The copy job `town-cafe`: Bean's four beats, the sale, the drinks, the receipt, the leaver
-   line, the rota labels, the night line without a time; `residents[].order` in town-npcs.
+   line, the rota labels, the night line without a time; `residents[].order` in town-npcs. And
+   the data: each resident's coffee errand (which beats, from where) in town-life.js's day
+   table, the one place a resident's day already lives.
 6. `src/scripts/town-cafe.js`, its own lazy chunk (its own 50 KB budget row): the sale card,
    the shift state, the queue bodies, the counter.
 7. The minigame on the chosen form, the mountBoard lift from town-games.js.
@@ -195,9 +213,12 @@ chapter completions, flip to employee-first with the deed as the upgrade: no reb
 - Buying gates the job, or employee-first with the deed as the upgrade.
 - The price in coins, and whether owning earns anything passively.
 - Complaining: keep the Quiet Rule, or an emote exception for queue bodies.
-- Owners open at night and on Curse Nights (reversing the 15 Sep line).
-- Paid shifts a day (two or three) and the pay shape (by grade, tips as rep).
-- The appointment: every-twelve-minutes rush only, or one rarer real-clock shift a day.
+- Owners open at night and on Curse Nights (reversing the 15 Sep line); and whether a
+  non-owner may clock in by day at all (the deed gates it, as written).
+- The pay shape (by grade, tips as rep) and the day cap: the faucet is the only thing that
+  ends a working day, since nothing else does.
+- Which residents get a coffee errand, and on which beats (the copy job writes each one's
+  order; the schedule is data).
 - Art: the beanie palette-swap prize, the mug tints, the eye-picked cup sprites, or ship
   without them.
 - Build now into a hidden town, or after /town opens.
