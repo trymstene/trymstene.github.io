@@ -11,6 +11,7 @@
     python tools/shopify-product.py create spec.json  # DRY RUN — prints the mutation
     python tools/shopify-product.py create spec.json --yes
     python tools/shopify-product.py publish <handle> --channel Headless --yes
+    python tools/shopify-product.py media <handle> <url> [<url>...] [--alt "text"] [--yes]   # attach product photos by public URL (skips ones already there)
 
 ⚠️ CREATE IS DRY-RUN BY DEFAULT and always makes the product a DRAFT. This is a
 live store that takes real money; a script should never put a listing in front
@@ -206,6 +207,40 @@ def cmd_publish(handle, channel, go):
     print('  (status is still %s — flip it to ACTIVE in Shopify when it is ready to sell)' % p['status'])
 
 
+MEDIA_Q = """query($h:String!){ productByHandle(handle:$h){ id title media(first: 50) { edges { node { alt mediaContentType ... on MediaImage { image { url } } } } } } }"""
+MEDIA_M = """mutation($id:ID!, $media:[CreateMediaInput!]!){ productCreateMedia(productId:$id, media:$media){ media { alt status } mediaUserErrors { field message } } }"""
+
+
+def cmd_media(handle, urls, alt, go):
+    """📷 Attach product photos by PUBLIC URL (Shopify fetches them) — the way round the Media drop zone that
+    has no file input (memory: sticker-packs). A photo already on the product (same file name in its image
+    url, or the same alt) is skipped, so the command is safe to re-run."""
+    tok = token()
+    d = gql(MEDIA_Q, {'h': handle}, tok)
+    p = d.get('productByHandle')
+    if not p:
+        sys.exit('✗ no product with handle ' + handle)
+    have = [e['node'] for e in p['media']['edges']]
+    names = set()
+    for m in have:
+        img = (m.get('image') or {}).get('url') or ''
+        names.add(img.split('/')[-1].split('?')[0].split('.')[0].lower())
+    todo = [u for u in urls if u.split('/')[-1].split('.')[0].lower() not in names]
+    print('%s — %d media on it, %d to add' % (p['title'], len(have), len(todo)))
+    for u in todo:
+        print('  +', u)
+    if not todo:
+        return
+    if not go:
+        print('DRY RUN — re-run with --yes to attach them.')
+        return
+    r = ok(gql(MEDIA_M, {'id': p['id'], 'media': [{'originalSource': u, 'alt': alt or '', 'mediaContentType': 'IMAGE'} for u in todo]}, tok), 'productCreateMedia')
+    errs = r.get('mediaUserErrors') or []
+    if errs:
+        sys.exit('✗ ' + '; '.join(e['message'] for e in errs))
+    print('+ attached %d (Shopify processes them in the background: %s)' % (len(todo), ', '.join(m['status'] for m in r['media'])))
+
+
 # ⚠️ ACTIVE is what makes a thing buyable. It must be flipped together with
 # `live` in shared/products.js — a product live on the site but DRAFT in Shopify
 # offers a button that fails at checkout; the reverse sells something with no
@@ -367,6 +402,10 @@ def main():
         cmd_tm(go)
     elif cmd == 'create':
         cmd_create(a[1], go)
+    elif cmd == 'media':
+        alt = a[a.index('--alt') + 1] if '--alt' in a else ''
+        urls = [x for x in a[2:] if x.startswith('http')]
+        cmd_media(a[1], urls, alt, go)
     elif cmd == 'publish':
         ch = a[a.index('--channel') + 1] if '--channel' in a else 'Headless'
         cmd_publish(a[1], ch, go)
