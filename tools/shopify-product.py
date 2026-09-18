@@ -25,6 +25,7 @@ Credentials: tools/shopify.local.json (gitignored) — client_id + client_secret
 exchanged for a token per run. Needs `write_products` for create/publish; `list`
 and `show` work on read-only scopes.
 """
+import re
 import json
 import sys
 import urllib.error
@@ -224,7 +225,8 @@ def cmd_media(handle, urls, alt, go):
     names = set()
     for m in have:
         img = (m.get('image') or {}).get('url') or ''
-        names.add(img.split('/')[-1].split('?')[0].split('.')[0].lower())
+        stem = img.split('/')[-1].split('?')[0].split('.')[0].lower()
+        names.add(re.sub(r'_[0-9a-f]{8}-[0-9a-f-]{27}$', '', stem))   # Shopify renames a fetched file to <name>_<uuid>.jpg
     todo = [u for u in urls if u.split('/')[-1].split('.')[0].lower() not in names]
     print('%s — %d media on it, %d to add' % (p['title'], len(have), len(todo)))
     for u in todo:
