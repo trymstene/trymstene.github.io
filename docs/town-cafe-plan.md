@@ -59,16 +59,16 @@ purpose: the night behind the counter is the one worth having).
 2. Buy: a burst on the kiosk, the sign flips to SOLD (tilted the other way, a striped ribbon)
    until the next town dawn; then a wooden plank with your pass name hangs over the door, the
    shutter rolls up, the cup on the roof steams while you are open, the window glows on shift.
-3. Tap your kiosk in a working beat: your banana walks to the counter mark; the HUD's own
-   clock (sun or moon, m:ss) is the shift clock; a queue forms at the rope on the lane.
+3. Tap your kiosk: your banana walks to the counter mark and you are clocked in; the window
+   glows; the first customers of the hour drift to the rope on the lane.
 4. A customer steps to the counter holding the mug they want; the ticket shows the order as
    pictures (bean, milk, foam, cup), no words.
 5. You make it with three one-thumb gestures: **stop the needle** on the grinder (beans),
    **hold and release the pour** into the band (water), **tap three times on the pulse**
    (milk). Grade = the worst station: PERFECT, FINE or WRONG. A wrong cup costs nothing but
-   the sale. The zones tighten as the shift goes on.
+   the sale. The zones tighten the longer you stay on.
 6. Serve: the customer's mug fills, a coin float, and they walk to a terrace chair and sit
-   sipping until the beat ends. **The terrace is the score you read from the square.**
+   sipping a while. **The terrace is the score you read from the square.**
 7. Patience is the shadow under each body: green, amber at half (the fidget doubles), red at
    a fifth: they turn their back, walk off past the rope, and drop a cup on the cobbles that is
    a litter problem of yours, paid like any fix. Failure feeds the fixing loop.
