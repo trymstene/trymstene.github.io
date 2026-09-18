@@ -279,3 +279,15 @@
     });
   }
 })();
+
+// 📷 a sticker pack's pictures: the spread and the real product photos (18 Sep 2026); a tap swaps the big picture
+(function () {
+  var thumbs = document.querySelectorAll('.pdp-thumb[data-src]'), main = document.querySelector('.pdp__main');
+  if (!thumbs.length || !main) return;
+  thumbs.forEach(function (b) {
+    b.addEventListener('click', function () {
+      main.src = b.getAttribute('data-src');
+      thumbs.forEach(function (x) { if (x === b) x.setAttribute('aria-current', 'true'); else x.removeAttribute('aria-current'); });
+    });
+  });
+})();

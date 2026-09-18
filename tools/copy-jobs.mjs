@@ -511,6 +511,28 @@ export const JOBS = {
     shape: townShape,
     schema: townSchema,
   },
+  // 📷 the sticker packs' PRODUCT PHOTOS (18 Sep 2026): Trym's photos of the printed Party pack, shown on every
+  // pack's page so a buyer sees the real thing — each carries a stamp saying so (tools/build-pack-photos.py bakes it)
+  'pack-photos': {
+    id: 'pack-photos',
+    title: 'The sticker packs — the product photos’ stamp',
+    what: 'The stamp baked onto the real product photos, the coin’s line, and the photos’ alt text.',
+    brief: 'tools/copy-briefs/pack-photos.md',
+    out: 'tools/copy-out/pack-photos.json',
+    approved: 'src/data/copy/pack-photos.json',
+    reads: 'tools/build-pack-photos.py + src/pages/shop/[handle].astro',
+    top: ['stamp', 'coin', 'alt'],
+    fields: {
+      'stamp': { kind: 'prose', aim: 56, max: 70, note: 'The sticker baked onto every product photo: this is a real photo of a printed pack (the Party pack), shown for the finish and the size, and may not be the pack on this page. Plain, short, one line; no marketing.' },
+      'coin': { kind: 'prose', aim: 20, max: 32, note: 'A second small sticker on the photo with the coin: the coin is there for size. A few words.' },
+      'alt': { kind: 'prose', aim: 80, max: 110, note: 'The alt text of the product photos: what is in the picture (a printed A5 sticker sheet of pixel bananas on a wooden table), plainly.' },
+    },
+    shape: () => [],
+    schema: { type: 'object', additionalProperties: false, required: ['stamp', 'coin', 'alt'], properties: {
+      stamp: { type: 'string', description: 'The sticker baked onto every product photo: a real photo of a printed pack (the Party pack), for finish and size; may not be the pack on this page. One short plain line.' },
+      coin: { type: 'string', description: 'The small second sticker on the coin photo: the coin is for size. A few words.' },
+      alt: { type: 'string', description: 'Alt text: what the photo shows, plainly.' } } },
+  },
   'park-npcs': {
     id: 'park-npcs',
     title: 'The Park — old peel, inka, the stand',

@@ -48,6 +48,8 @@ export const packCard = (n) => `/assets/packs/pack-${n}-card.webp`;         // 6
 export const packThumb = (n) => `/assets/packs/pack-${n}-thumb.webp`;       // 240², the deal band's fan
 export const packBanner = (n) => `/assets/packs/pack-${n}-banner.webp`;     // 1200×480, the GIF page's carousel tile
 export const packSheet = (n) => `/assets/packs/pack-${n}-sheet.webp`;       // the A5 as it prints
+// 📷 the real product photos (Trym's, of the printed Party pack; tools/build-pack-photos.py), on EVERY pack's page
+export const packPhotos = () => [1, 2, 3].map((i) => `/assets/packs/photos/packs-photo-${i}.jpg`);
 
 // Which pack a Shopify product is. Shopify builds the handle from the title
 // Trym types in Printful ("Dancing Banana Sticker Pack 3" →
