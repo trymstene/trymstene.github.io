@@ -81,7 +81,7 @@ const productSchema = {
   '@context': 'https://schema.org/',
   '@type': 'Product',
   name: m.title,
-  image: pack ? [SITE + packSpread(pack.n), ...packPhotos().map((p) => SITE + p), SITE + packSheet(pack.n), ...m.images].slice(0, 10) : m.images.slice(0, 10),
+  image: pack ? [SITE + packSpread(pack.n), ...packPhotos(pack.n).map((p) => SITE + p), SITE + packSheet(pack.n), ...m.images].slice(0, 10) : m.images.slice(0, 10),
   description: pack ? descMeta : firstSentence(m.descHtml, 300),
   brand: { '@type': 'Brand', name: 'Dancing Banana Official' },
   sku: m.handle,
@@ -145,7 +145,7 @@ const breadcrumbSchema = {
       <img class="pdp__main" src={mainImg} alt={pack ? `${pack.name}: ${pack.names.join(', ')} and the Original` : m.title} width="800" height="800" />
       {pack ? (
         <div class="pdp__thumbs pdp__thumbs--pack">
-          {[packSpread(pack.n), ...packPhotos()].map((src, i) => (
+          {[packSpread(pack.n), ...packPhotos(pack.n)].map((src, i) => (
             <button class="pdp-thumb" type="button" data-src={src} aria-current={i === 0 ? 'true' : undefined} aria-label={i === 0 ? pack.name : photoWords.alt}>
               <img src={src} alt={i === 0 ? '' : photoWords.alt} loading="lazy" />
             </button>

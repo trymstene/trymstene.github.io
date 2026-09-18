@@ -521,15 +521,17 @@ export const JOBS = {
     out: 'tools/copy-out/pack-photos.json',
     approved: 'src/data/copy/pack-photos.json',
     reads: 'tools/build-pack-photos.py + src/pages/shop/[handle].astro',
-    top: ['stamp', 'coin', 'alt'],
+    top: ['stamp', 'stampOwn', 'coin', 'alt'],
     fields: {
       'stamp': { kind: 'prose', aim: 56, max: 70, note: 'The sticker baked onto every product photo: this is a real photo of a printed pack (the Party pack), shown for the finish and the size, and may not be the pack on this page. Plain, short, one line; no marketing.' },
+      'stampOwn': { kind: 'prose', aim: 44, max: 60, note: 'The sticker on the same photos where they are shown on the Party pack’s OWN page: this is a real photo of this printed pack, for the finish and the size. Plain, short, one line.' },
       'coin': { kind: 'prose', aim: 20, max: 32, note: 'A second small sticker on the photo with the coin: the coin is there for size. A few words.' },
       'alt': { kind: 'prose', aim: 80, max: 110, note: 'The alt text of the product photos: what is in the picture (a printed A5 sticker sheet of pixel bananas on a wooden table), plainly.' },
     },
     shape: () => [],
-    schema: { type: 'object', additionalProperties: false, required: ['stamp', 'coin', 'alt'], properties: {
+    schema: { type: 'object', additionalProperties: false, required: ['stamp', 'stampOwn', 'coin', 'alt'], properties: {
       stamp: { type: 'string', description: 'The sticker baked onto every product photo: a real photo of a printed pack (the Party pack), for finish and size; may not be the pack on this page. One short plain line.' },
+      stampOwn: { type: 'string', description: 'The sticker on the photos where they are shown on the Party pack’s own page: a real photo of this printed pack, for finish and size. One short plain line.' },
       coin: { type: 'string', description: 'The small second sticker on the coin photo: the coin is for size. A few words.' },
       alt: { type: 'string', description: 'Alt text: what the photo shows, plainly.' } } },
   },

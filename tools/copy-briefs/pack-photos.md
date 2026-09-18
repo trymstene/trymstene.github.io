@@ -6,11 +6,13 @@ for size. These photos are shown on EVERY pack's page in the shop, because they 
 thing: the vinyl, the kiss-cut, the size. A buyer looking at pack #2 sees the Party pack in
 the photos, so every photo carries a small stamp that says so.
 
-Three fields:
+Four fields:
 
 - `stamp` — the one line baked onto every photo as a yellow sticker. It must say, plainly and
   shortly: this is a real photo of a printed pack (the Party pack), shown for the finish and
   the size, and it may not be the pack on this page. No marketing, no exclamation.
+- `stampOwn` — the same sticker on the Party pack's OWN page, where the photos are of the very
+  pack on the page: a real photo of this printed pack, for the finish and the size. Short, plain.
 - `coin` — a second, smaller sticker on the photo with the coin: the coin is there for size. A
   few words.
 - `alt` — the alt text of the photos: what is in the picture (a printed A5 sticker sheet of
