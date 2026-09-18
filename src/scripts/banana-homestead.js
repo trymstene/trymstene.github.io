@@ -1,4 +1,5 @@
 // ✏️ one bundled pixel icon (the full pack is gitignored — never a pack URL)
+import NOTES from '../data/copy/homestead-notes.json';   // the sign's line before the story gives you the place (the rig's)
 import pxEdit from '../icons/pixelart/edit.svg?raw';
 import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
@@ -840,7 +841,7 @@ function init(visitDoc, visitMiss) {
   function refreshSign() {
     signName.textContent = state.name || '';
     signName.hidden = !state.name;
-    signHint.style.display = (!state.name && !visiting) ? '' : 'none';
+    signHint.style.display = (!state.name && !visiting && readyToClaim()) ? '' : 'none';   // the name-it hint waits for the story's move-in
   }
   refreshSign();
 
@@ -2989,11 +2990,18 @@ function init(visitDoc, visitMiss) {
     syncLock();
     setTimeout(() => { try { inp.focus(); inp.select(); } catch (e) {} }, 40);
   }
+  // 🪧 THE CLAIM WAITS FOR THE STORY. Trym, 18 Sep 2026: "as a new user … the Claim my homestead popup — you
+  // can't escape it … maybe I want to check out the place more first … save the Homestead creation to after
+  // you've done Chapter 1 … and add an X". Chapter 1's step 14 is the move-in (the tent); the name is asked
+  // there, never before — the sign's name-it hint stays hidden and a tap on the sign says why. And the card
+  // closes: skipping it leaves the yard unclaimed, and the sign reopens it any time after.
+  function readyToClaim() { try { const q = JSON.parse(localStorage.getItem('bwq-c1') || 'null'); return !!(q && (q.done || (+q.s || 0) >= 14)); } catch (e) { return false; } }   // hoisted: refreshSign() runs before this line
   function offerClaim() {
-    if (claimShown || state.claimedAt) return;
+    if (claimShown || state.claimedAt || !readyToClaim()) return;
     claimShown = true;
     showNamePopup(myName ? myName + "'s Homestead" : 'My Homestead');
   }
+  document.getElementById('hsClaimX').addEventListener('click', () => { claimEl.hidden = true; claimShown = false; renaming = false; });   // not now: the sign asks again when you are ready
   document.getElementById('hsClaimGo').addEventListener('click', async () => {
     const inp = document.getElementById('hsClaimName');
     const v = inp.value.trim().slice(0, 28);
@@ -4436,7 +4444,7 @@ function init(visitDoc, visitMiss) {
     // 🪧 the sign: near = the guestbook, far = walk to it
     if (Math.hypot(wx - state.signAt.x, wy - (state.signAt.y - 30)) < 56) {
       if (Math.hypot(pos.x - state.signAt.x, pos.y - state.signAt.y) < 130) {
-        if (!state.claimedAt && !visiting) { claimShown = false; offerClaim(); return; }
+        if (!state.claimedAt && !visiting) { if (!readyToClaim()) { toast(NOTES.signEarly || ''); return; } claimShown = false; offerClaim(); return; }
         openGuest(); return;
       }
       tgt.x = state.signAt.x - 44; tgt.y = state.signAt.y + 6;
@@ -4847,6 +4855,7 @@ function init(visitDoc, visitMiss) {
   if (HS_TEST) {
     window.__hs = {
       pos, tgt, peers, birds: birdsLive,
+      signGeo: () => ({ W, H, signAt: state.signAt, claimed: !!state.claimedAt }),   // the walk taps the sign where it really stands
       // 🌦 force a tier — the clock rains a few % of the time, so waiting for real
       // weather is not a test plan. null hands the sky back to the clock.
       wx: (k) => hsWx.setKind(k),

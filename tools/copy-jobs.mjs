@@ -533,6 +533,23 @@ export const JOBS = {
       coin: { type: 'string', description: 'The small second sticker on the coin photo: the coin is for size. A few words.' },
       alt: { type: 'string', description: 'Alt text: what the photo shows, plainly.' } } },
   },
+  // 🪧 the homestead's notes (18 Sep 2026): the one line the sign says before the story has given you the place
+  'homestead-notes': {
+    id: 'homestead-notes',
+    title: 'The Homestead — the sign before the story',
+    what: 'What the sign says when a new banana taps it before Chapter 1 has given them the plot.',
+    brief: 'tools/copy-briefs/homestead-notes.md',
+    out: 'tools/copy-out/homestead-notes.json',
+    approved: 'src/data/copy/homestead-notes.json',
+    reads: 'src/scripts/banana-homestead.js',
+    top: ['signEarly'],
+    fields: {
+      'signEarly': { kind: 'prose', aim: 70, max: 90, note: 'A toast when a new banana taps the homestead sign before the story has handed them the plot: the sign is not theirs to write yet, and the letter in the mailbox (Nib, the clerk) is where it starts. Warm, plain, one sentence; the voice bar (a 13-year-old and a 50-year-old read it without a stumble).' },
+    },
+    shape: () => [],
+    schema: { type: 'object', additionalProperties: false, required: ['signEarly'], properties: {
+      signEarly: { type: 'string', description: 'The toast when a new banana taps the sign before the story has handed them the plot: not theirs to write yet; the letter in the mailbox is where it starts. One warm plain sentence.' } } },
+  },
   'park-npcs': {
     id: 'park-npcs',
     title: 'The Park — old peel, inka, the stand',
