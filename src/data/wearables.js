@@ -7,13 +7,15 @@
 // Before this file the same catalog lived in three places that had to be kept
 // in sync by hand (engine PACKS + daily PACK_POOLS + worker EXTRA_IDS). Now
 // there is ONE list. To add a wearable: add an entry here, then (client only)
-// paste its pixel SVG into the SVG dict in banana-engine.js under the `art` key.
+// paste its pixel SVG into tools/wearart-source.js under the `art` key, then run
+// `python tools/build-wearart.py` (the art ships packed since 19 Sep 2026; the tool refuses
+// anything that does not decode back byte for byte).
 //
 // FIELD REFERENCE
 //   id            stable key, stored in outfits + URLs + bb-last (never rename)
 //   label         builder chip text
 //   phrase        sentence form for the daily banana ("a party hat")
-//   art           key into banana-engine.js's SVG dict (the pixel art)
+//   art           key into the wearable art (tools/wearart-source.js, shipped packed as src/data/wearart.js)
 //   front / side  art keys for face-anchored pieces that differ by facing
 //   seat          hat-only: vertical seating tweak (outlined hats sit -1)
 //   anchor        extra-only: 'face' | 'chest' | 'hand'

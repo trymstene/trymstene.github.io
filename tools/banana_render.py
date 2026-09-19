@@ -45,10 +45,15 @@ FEET_CX, FEET_BOTTOM = 234, 501
 
 # ---- read the engine ------------------------------------------------------
 
-SVGS = dict(re.findall(r"(\w+): '(<svg[^']+</svg>)'", ENGINE))
+# 🎨 the wearable art moved OUT of the engine on 19 Sep 2026: 195 804 B of inline <rect> SVG
+# now ships packed (src/data/wearart.js, about 17 KB) and the readable source lives here, outside
+# src/ so it is never bundled. This rig reads the SOURCE, so the Python compositor needs no
+# decoder of its own and the two halves of the render cannot drift apart.
+ART_SRC = open(os.path.join(SITE, 'tools', 'wearart-source.js'), encoding='utf-8').read()
+SVGS = dict(re.findall(r"(\w+): '(<svg[^']+</svg>)'", ART_SRC))
 # a couple of accessories are PNG art, not vectors (the plush is the ORIGINAL
 # hands-up banana). Same `art:` namespace, different rasteriser.
-PNGS = dict(re.findall(r"(\w+): '(/assets/[^']+\.png)'", ENGINE))
+PNGS = dict(re.findall(r"(\w+): '(/assets/[^']+\.png)'", ART_SRC))
 assert 'fishbowl' in SVGS and 'plushbanana' in PNGS, 'art parse drifted'
 
 FRAMES = []

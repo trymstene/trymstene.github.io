@@ -26,7 +26,12 @@ FW, FH, PX = 469, 498, 13
 HAT_OVERLAP, SH_DY = 7.3, -0.5
 
 # ---- parse the engine ----
-SVGS = dict(re.findall(r"(\w+): '(<svg[^']+</svg>)'", ENGINE))
+# 🎨 the wearable art moved OUT of the engine on 19 Sep 2026: 195 804 B of inline <rect> SVG
+# now ships packed (src/data/wearart.js, about 17 KB) and the readable source lives here, outside
+# src/ so it is never bundled. This rig reads the SOURCE, so the Python compositor needs no
+# decoder of its own and the two halves of the render cannot drift apart.
+ART_SRC = open(os.path.join(SITE, 'tools', 'wearart-source.js'), encoding='utf-8').read()
+SVGS = dict(re.findall(r"(\w+): '(<svg[^']+</svg>)'", ART_SRC))
 FRAMES = []
 for m in re.finditer(r'\{ eyeCx: (\d+), eyeCy: (\d+), hatCx: (\d+), btCx: (\d+), '
                      r"tipY: (\d+),\s+face: '(\w+)'", ENGINE):
