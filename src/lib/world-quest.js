@@ -652,9 +652,14 @@ body.bh-inside .bwq-hint,
 /* 📜 the letter is PAPER: torn edges, ruled lines, handwriting, a tilt */
 .bwq-dlg .bwq-paper {
   background:#f6ecd0 repeating-linear-gradient(180deg, transparent 0 24px, rgba(122,88,40,0.22) 24px 25px);
-  color:#43301a; padding:1rem 1rem 0.9rem; transform:rotate(-1.4deg);
-  font-family:"Segoe Script","Bradley Hand","Comic Sans MS",cursive;
-  font-weight:700; font-size:1.02rem; line-height:1.55;
+  color:#43301a; padding:1.3rem 1rem 0.6rem; transform:rotate(-1.4deg);
+  /* ✍️ Caveat, self-hosted (public/css/fonts.css, already on every page through BaseLayout) — the system
+     cursive stack made the same letter read as Segoe Script on Windows, Bradley Hand on iOS and Comic
+     Sans on Android. A letter is a THING players will keep and show, so it looks the same everywhere
+     (Trym, 19 Sep 2026). The fallbacks stay for a browser that refuses the file. */
+  font-family:"Caveat","Segoe Script","Bradley Hand","Comic Sans MS",cursive;
+  /* the line-height IS the rule spacing (24px + a 1px line), so the handwriting sits ON the lines */
+  font-weight:600; font-size:1.34rem; line-height:25px;
   box-shadow:3px 4px 0 rgba(0,0,0,0.4);
   clip-path:polygon(0 3%, 4% 0, 9% 2%, 15% 0, 22% 3%, 30% 1%, 38% 3%, 47% 0, 55% 2%,
     63% 0, 71% 3%, 79% 1%, 87% 3%, 94% 0, 100% 2%, 100% 97%, 95% 100%, 88% 98%,
