@@ -578,3 +578,59 @@ test('a streetlight: the whole lamp answers a tap, the repair takes time, and th
   expect(lum.flicker, 'a stuttering lamp still shows a halo, so it is not a dead one').toBeGreaterThan(lum.out);
   expect(errors).toEqual([]);
 });
+
+// 🚪 THE ARCADE, EXACTLY AS IT IS. Written before the rooms refactor and landed green on the old
+// code on purpose: the arcade is the only interior the town has shipped, and the whole point of
+// turning `inside` into a room key is that this walk does not notice. ⚠️ it sets `tgt` and lets the
+// banana WALK — the spec's stand() helper writes pos directly and would teleport straight through
+// the colliders this is here to prove.
+test('the arcade: you step in, the walls hold you, and the door puts you back on the square', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  const box = await seam(page, () => window.__town.arcade.box());
+  const spawn = await seam(page, () => window.__town.arcade.door() && window.__town.arcade.box());
+  expect(box).toEqual([300, 120, 576, 432]);
+
+  await seam(page, () => window.__town.arcade.enter());
+  await page.waitForTimeout(800);
+  const inState = await page.evaluate(() => ({
+    inside: window.__town.arcade.inside(),
+    marked: document.getElementById('twWorld').classList.contains('is-inside'),
+    plate: !!document.querySelector('.tw-room:not([hidden])'),
+    shade: !!document.querySelector('.tw-inshade:not([hidden])'),
+    pos: { x: window.__town.pos.x, y: window.__town.pos.y },
+    spots: window.__town.arcade.spots().length,
+  }));
+  expect(inState.inside).toBe(true);
+  expect(inState.marked, 'the town wears .is-inside so its own props hide').toBe(true);
+  expect(inState.plate && inState.shade, 'the plate floats over a shade').toBe(true);
+  expect(inState.spots).toBe(11);
+  // ⚠️ NOT equal to spawn: entering nudges the target a step into the room, so it is already walking
+  expect(inState.pos.x).toBeGreaterThanOrEqual(box[0]);
+  expect(inState.pos.x).toBeLessThanOrEqual(box[0] + box[2]);
+  expect(inState.pos.y).toBeGreaterThanOrEqual(box[1]);
+  expect(inState.pos.y).toBeLessThanOrEqual(box[1] + box[3]);
+
+  // the room's own walls are the only colliders: aim at the back wall and stop short of it
+  await seam(page, (b) => { window.__town.tgt.x = b[0] + b[2] / 2; window.__town.tgt.y = b[1] + 10; }, box);
+  await page.waitForTimeout(1400);
+  const atWall = await seam(page, () => ({ x: window.__town.pos.x, y: window.__town.pos.y }));
+  expect(atWall.y, 'the wall band stops the banana').toBeGreaterThan(box[1] + 100);
+  expect(atWall.y).toBeLessThan(box[1] + box[3]);
+
+  // the doorway puts you back out on the square, at the arcade's own door
+  const exit = await seam(page, () => window.__town.arcade.door());
+  await seam(page, (e) => { window.__town.tgt.x = (e[0] + e[2]) / 2; window.__town.tgt.y = (e[1] + e[3]) / 2; }, exit);
+  await page.waitForTimeout(2200);
+  const outState = await page.evaluate(() => ({
+    inside: window.__town.arcade.inside(),
+    marked: document.getElementById('twWorld').classList.contains('is-inside'),
+    pos: { x: window.__town.pos.x, y: window.__town.pos.y },
+    door: { x: window.__town.SPOTS.condo.x, y: window.__town.SPOTS.condo.y },
+  }));
+  expect(outState.inside).toBe(false);
+  expect(outState.marked).toBe(false);
+  expect(Math.hypot(outState.pos.x - outState.door.x, outState.pos.y - (outState.door.y + 30)), 'back on the arcade’s own doorstep').toBeLessThan(60);
+  expect(errors).toEqual([]);
+});
