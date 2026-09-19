@@ -10,6 +10,13 @@ ghosts, and bananas in line are complaining … based on how you do in the coffe
 the more rewards you get … fun is the main focus, and also that it looks visually and feels
 like a game, not a webpage."*
 
+> ⚠️ **SUPERSEDED IN PART, 19 Sep 2026.** Trym: *"we buy the coffee shop is the wrong wording
+> here - we unlock it after completing chapter 2 quest"*. The café is no longer BOUGHT: it is the
+> fourth signature of chapter 2, and the FOR SALE sign is the last thing the chapter takes down.
+> Read **docs/town-jobs-plan.md** first — it owns the unlock, the closed-building system, the other
+> three workplaces and the post. Everything below about the COUNTER (the clock-in, the queue, the
+> three gestures, patience, the terrace, the night collision, the bench prototype) still stands.
+
 How this plan was made: four designs through four lenses (the game loop, the shared
 workplace, the Curse Night collision, the visuals), two judges, one critic, all against the
 packs and the code as they are. What follows is the merged design. **Nothing here is built**
