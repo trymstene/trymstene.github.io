@@ -171,6 +171,35 @@ console.log('\n7. the café pays tips, not a cheque');
   ok('and its weekly cheque is zero on purpose — tips come a cup at a time', g.job.pay === 0, g.job);
 }
 
+console.log('\n8. the cheque has to reach the WALLET, not only the ledger slot');
+{
+  // ⚠️ THE BUG THIS EXISTS FOR (found 19 Sep, a day after the cheque shipped): a coin written to
+  // `led.coins_earned.job` is NOT spendable. The server wallet freezes on a device's first push and
+  // from then on only `wallet.earned` counts — walletBal is base + earned + refunded - spent — and
+  // the client's coinsNow() reads that wallet. adminGrant already says so out loud: "a slot alone
+  // never moves it". So a cheque that only writes the slot pays coins nobody can see or spend.
+  const DEV = 'dev00002';
+  const blob = () => ({ pass: { created: 1, patches: {}, base: {}, led: { coins_earned: { [DEV]: 0 }, coins_spent: { [DEV]: 0 } }, days: [] }, ev: [], evDrop: 0, evDev: DEV });
+  const spender = await kept('spender@example.com');
+  const first = await (await post('/push', { credId: spender.credId, token: spender.token, blob: blob() })).json();
+  ok('a push freezes the server wallet, the way a real device does', !!first.wallet, first);
+  const before = first.wallet.bal;
+
+  await post('/job/take', { credId: spender.credId, token: spender.token, at: 'store' });
+  await post('/job/chore', { credId: spender.credId, token: spender.token });
+  CLOCK += 7 * DAY;
+  const g = await (await post('/job/pay', { credId: spender.credId, token: spender.token })).json();
+  ok('the cheque pays for the day worked (1 of 7 of 90 = 13)', g.total === 13, g);
+
+  const after = await (await post('/push', { credId: spender.credId, token: spender.token, blob: blob() })).json();
+  ok('⭐ and the coins are SPENDABLE — the wallet moved by the cheque', after.wallet.bal === before + g.total, { before, after: after.wallet.bal, cheque: g.total });
+  ok('the wallet’s seq moved too, so an older ack cannot undo it', (after.wallet.seq | 0) > (first.wallet.seq | 0), { first: first.wallet.seq, after: after.wallet.seq });
+
+  const again = await (await post('/job/pay', { credId: spender.credId, token: spender.token })).json();
+  const third = await (await post('/push', { credId: spender.credId, token: spender.token, blob: blob() })).json();
+  ok('and paying twice does not pay twice', again.total === 0 && third.wallet.bal === before + g.total, { again: again.total, bal: third.wallet.bal });
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

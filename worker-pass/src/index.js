@@ -1338,6 +1338,21 @@ async function jobPay(request, env) {
       const led = p.led || (p.led = {});
       led.coins_earned = led.coins_earned || {};
       led.coins_earned.job = (+led.coins_earned.job || 0) + total;
+      // 💰 …AND THE SERVER WALLET MOVES WITH IT. ⚠️ THE SLOT ALONE IS NOT MONEY: once a device has
+      // pushed once the wallet is frozen, and from then on coinsNow() reads walletBal — base +
+      // earned + refunded − spent — which a ledger slot is no part of. A cheque that only wrote the
+      // slot paid coins the player could never see or spend (found 19 Sep, the day after it shipped;
+      // the test is jobs.test.mjs §8). adminGrant has said "a slot alone never moves it" all along.
+      // Paying twice is already impossible: j.paid[wk] is marked above, even at zero.
+      if (R.home.wallet) {
+        R.home.wallet.earned += total;
+        R.home.wallet.seq = (R.home.wallet.seq || 0) + 1;
+        R.home.wallet.at = now;
+        const log = R.home.log || (R.home.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
+        log.ev.push({ id: bufToHex(crypto.getRandomValues(new Uint8Array(4))), t: now, k: 'coins_earned', d: total, a: 'town', s: 'job', at: now });
+        log.n = (log.n || 0) + 1;
+        if (log.ev.length > LOG_CAP) log.ev.splice(0, log.ev.length - LOG_CAP);
+      }
     }
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);

@@ -157,8 +157,12 @@ counter can see it.
   built, tested, controls timing on one canvas, the panel already owns the pointer. Risk: the
   most webpage-like element the town has, and the chaos happens behind it (a shake and a glyph
   say "look outside").
-- **Recommendation:** prototype both on the bench page at 393 px, day and night scrim, and let
-  Trym's thumb pick (**TRYM**). Whichever loses is the named fallback.
+- ✅ **DECIDED 19 Sep 2026 — THE TRAY** (**TRYM**, asked and answered). The cabinet card is the
+  named fallback, and the machinery is written so the form is the last thing it touches: the queue,
+  patience, the three gestures, the grading and the till are all form-blind, so a swap is contained.
+  The reason the tray wins is §3: **the night collision only exists if the square is visible while you
+  pour.** A card covers the square, so "serve the next cup, or run out and relight the lamp" becomes
+  a choice you cannot see — and the whole café hangs on that choice being in view.
 
 **Tickets are pictures**, never text; **patience is the body**, never a bubble; **PixelIcons
 and pack sprites only**. The pack has no apron, barista or coffee icon: the prize wearable is a
@@ -216,7 +220,7 @@ chapter completions, flip to employee-first with the deed as the upgrade: no reb
 
 ## 8. Decisions only Trym can make
 
-- The counter: tray or card, after the bench prototype.
+- ✅ ~~The counter: tray or card~~ — **THE TRAY**, 19 Sep. The card is the fallback (§4).
 - Buying gates the job, or employee-first with the deed as the upgrade.
 - The price in coins, and whether owning earns anything passively.
 - Complaining: keep the Quiet Rule, or an emote exception for queue bodies.
