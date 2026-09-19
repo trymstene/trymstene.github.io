@@ -1240,45 +1240,18 @@ if os.path.isdir(MI):
 RB = os.path.expanduser(r'~\OneDrive\banana-art-pack\moderninteriors-win\1_Interiors\48x48\Room_Builder_subfiles_48x48')
 INTERIORS_OUT = {}
 if os.path.isdir(RB):
-    _fl = Image.open(os.path.join(RB, 'Room_Builder_Floors_48x48.png')).convert('RGBA')
-    _wa = Image.open(os.path.join(RB, 'Room_Builder_Walls_48x48.png')).convert('RGBA')
+    import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # run me from anywhere
+    import room_builder as RBM   # the shell and the contract, shared with the arcade and the store
+    _fl, _wa = RBM.sheets(RB)
+
     def room_tiles(fx, fy, wx2, wy2):
-        return (_fl.crop((fx, fy, fx + 48, fy + 48)),
-                _wa.crop((wx2, wy2, wx2 + 48, wy2 + 96)))
+        return RBM.tiles(_fl, _wa, fx, fy, wx2, wy2)
 
     def build_wood_room(tier, tw, th, at, FTILE, WSEG, fscale=1):
-        Wp, Hp = tw * 48, th * 48
-        room = Image.new('RGBA', (Wp, Hp), (0, 0, 0, 0))
-        step = 48 * fscale
-        ft = FTILE if fscale == 1 else FTILE.resize((step, step), Image.NEAREST)
-        for j in range(0, Hp, step):
-            for i in range(0, Wp, step):
-                room.alpha_composite(ft, (i, j))
-        for i in range(tw):
-            room.alpha_composite(WSEG, (i * 48, 0))
-        dr2 = ImageDraw.Draw(room)
-        FR = (46, 34, 22, 255)
-        FRAME = 14
-        cx = Wp // 2
-        dr2.rectangle([0, 0, FRAME - 1, Hp - 1], fill=FR)
-        dr2.rectangle([Wp - FRAME, 0, Wp - 1, Hp - 1], fill=FR)
-        dr2.rectangle([0, Hp - FRAME, cx - 61, Hp - 1], fill=FR)
-        dr2.rectangle([cx + 60, Hp - FRAME, Wp - 1, Hp - 1], fill=FR)
+        room, Wp, Hp, cx = RBM.shell(tw, th, FTILE, WSEG, (46, 34, 22, 255), fscale)
         img = 'in-wood%d.png' % tier
         room.save(os.path.join(OUT, img), optimize=True)
-        ox, oy = at
-        INTERIORS_OUT[tier] = {
-            'img': img, 'box': [ox, oy, Wp, Hp],
-            'spawn': [ox + cx, oy + Hp - 56],
-            'exit': [ox + cx - 46, oy + Hp - 18, ox + cx + 46, oy + Hp],
-            'cols': [
-                [ox, oy, ox + Wp, oy + 100],
-                [ox, oy, ox + FRAME, oy + Hp],
-                [ox + Wp - FRAME, oy, ox + Wp, oy + Hp],
-                [ox, oy + Hp - FRAME, ox + cx - 60, oy + Hp],
-                [ox + cx + 60, oy + Hp - FRAME, ox + Wp, oy + Hp],
-            ],
-        }
+        INTERIORS_OUT[tier] = RBM.contract(img, at, Wp, Hp, cx)
         print('  %s %dx%d (wood room)' % (img, Wp, Hp))
 
     # 🎼 level 2 = the music-room look: pale diagonal planks + grey wall (Trym img 2)

@@ -522,7 +522,11 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    six, and nothing you fixed is ever handed back.
 
 **The rooms**
-7. `tools/room_builder.py` lifted out of both scene builders; `in-arcade.png` byte-identical.
+7. ✅ **Done 19 Sep.** `tools/room_builder.py` holds the four moves every room is made of — the
+   floor laid edge to edge, one wall band, the frame with its doorway, and the contract the client
+   walks. Proven the only way it can be: both scene builders re-run and `in-arcade.png`,
+   `in-wood2.png`, `in-wood3.png` and both geo files came back **byte-identical**. The store's
+   room is now a table of furniture and two tile coordinates, not a third copy of the shell.
 8. Bake `in-store.png` at its emptiest; look at it before a line of client code.
 9. `inRoom` refactor in `banana-town.js`; walk the arcade first and prove nothing changed.
 10. The CSS `:not(.is-in)` fix and a design-library section "A ROOM IS ONE SCREEN".
