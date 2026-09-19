@@ -54,7 +54,7 @@ const walk = (dir, out = []) => {
 // VISITOR page never may, area pages included: the park shipped footerless and
 // Trym had to ask for it ("make sure the footer is available on all our 400+
 // pages, even banana world area pages").
-const NO_FOOTER_OK = ['src/pages/inbox.astro', 'src/pages/dev-wearables.astro', 'src/pages/dev/design.astro', 'src/pages/dev/copy.astro'];
+const NO_FOOTER_OK = ['src/pages/inbox.astro', 'src/pages/dev-wearables.astro', 'src/pages/dev/design.astro', 'src/pages/dev/copy.astro', 'src/pages/dev/cafe.astro'];
 
 // 🗣 §18 — the world has ONE NPC dialogue card (src/lib/world-dialogue.js +
 // /css/dialogue.css). These two still run the hand-written copies it was lifted

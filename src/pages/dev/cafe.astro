@@ -1,0 +1,194 @@
+---
+// ☕ THE COUNTER BENCH — build-list item 1 of docs/town-cafe-plan.md §7.
+//
+// The one genuinely unmeasured thing in the whole café plan is whether two minutes at the counter
+// are fun on a thumb, and §0 says so: "the first build is not a worker or a copy job: it is a
+// one-evening bench prototype of the counter at 393 px, day and night scrim, screenshotted and
+// played." This is that bench — and it drives the REAL src/scripts/town-cafe.js and the REAL
+// /css/town-cafe.css, not a mock, so what is thumbed here is what ships.
+//
+// The backdrop is the town's own square panned to the Coffee Cup, with the café's own overlay over
+// it, because the whole argument for the tray is that the square stays visible behind it. If that
+// is not true here it is not true in the town.
+//
+// ⚠️ The button labels below are the STATION IDS, not copy. Every word a player reads ships from
+// the rig (src/data/copy/town-cafe.json); a bench is not a licence to hand-write one.
+// Noindexed, in no sitemap, linked from nowhere.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const title = 'The counter bench — Banana Town';
+const description = 'Internal bench for the Coffee Cup counter. Not a public page.';
+---
+
+<BaseLayout title={title} description={description} robots="noindex,nofollow" showFooter={false}>
+  <link rel="stylesheet" href="/css/town-cafe.css" />
+  {/* ⚠️ is:inline, exactly as town.astro does it. Astro SCOPES a plain <style> with a data-attribute
+      it only puts on template elements — so every banana this page builds at runtime matched none of
+      these rules, fell out of position:absolute and stacked in the corner, drawn and invisible. */}
+  <style is:inline>
+    .cb-wrap { max-width: 900px; margin: 0 auto; padding: 1rem 1rem 3rem; color: #fffdf5; }
+    .cb-h { font-family: "Archivo Black", sans-serif; color: #ffb347; margin: 0 0 0.2rem; font-size: 1.3rem; }
+    .cb-sub { opacity: 0.72; font-size: 0.86rem; margin: 0 0 1rem; }
+    .cb-row { display: flex; gap: 1.4rem; flex-wrap: wrap; align-items: flex-start; }
+    .cb-stage { border: 4px solid #000; box-shadow: 8px 8px 0 #000; width: 393px; max-width: 100%; }
+    /* the town's own view box, at a phone's width — .tw-view's own rules, kept here so the bench
+       cannot drift from the real frame */
+    .cb-view { position: relative; width: 100%; height: 580px; overflow: hidden; background: #1c2a14; isolation: isolate; touch-action: manipulation; }
+    .cb-world { position: absolute; left: 0; top: 0; width: 2200px; height: 1300px; background: url('/assets/town/town.png') 0 0 / 100% 100% no-repeat; image-rendering: pixelated; transform-origin: 0 0; }
+    .cb-ov { position: absolute; image-rendering: pixelated; pointer-events: none; }
+    .cb-night { position: absolute; inset: 0; z-index: 7; background: #0a1024; opacity: 0; pointer-events: none; transition: opacity 600ms ease; }
+    .cb-night.is-on { opacity: 0.62; }
+    /* a queue banana: the town's own .tw-npc rules, with the patience shadow the café adds */
+    .cb-body { position: absolute; width: 4.5%; transform: translate(-50%, -100%); pointer-events: none; z-index: 6; }
+    .cb-body::after { content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1; transform: translateX(-50%); background: var(--tw-pat, rgba(20, 30, 18, 0.34)); border-radius: 50%; z-index: -1; }
+    .cb-body canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    .cb-side { flex: 1 1 260px; min-width: 240px; font-size: 0.86rem; }
+    .cb-btn { appearance: none; font: inherit; cursor: pointer; border: 3px solid #000; box-shadow: 3px 3px 0 #000; background: linear-gradient(#ffe14d, #f2c012); color: #241c00; padding: 0.4rem 0.7rem; font-weight: 800; margin: 0 0.4rem 0.4rem 0; }
+    .cb-log { background: #14100a; border: 3px solid #000; padding: 0.6rem; min-height: 9rem; font-family: ui-monospace, monospace; font-size: 0.76rem; line-height: 1.5; white-space: pre-wrap; }
+    .cb-note { opacity: 0.7; font-size: 0.8rem; }
+  </style>
+
+  <main class="cb-wrap">
+    <h1 class="cb-h">The counter bench</h1>
+    <p class="cb-sub">
+      The real tray, the real gestures, the real stylesheet — over the town's own square at the Coffee Cup,
+      at a phone's width. Button labels are station ids, not copy.
+    </p>
+
+    <div class="cb-row">
+      <div class="cb-stage">
+        <div class="cb-view" id="cbView">
+          <div class="cb-world" id="cbWorld"></div>
+          <img class="cb-ov" id="cbCafe" src="/assets/town/ov-7.png" alt="" />
+          <div class="cb-night" id="cbNight"></div>
+        </div>
+      </div>
+      <div class="cb-side">
+        <button class="cb-btn" id="cbDay" type="button">day / night</button>
+        <button class="cb-btn" id="cbNext" type="button">next customer</button>
+        <button class="cb-btn" id="cbFold" type="button">step off the mark</button>
+        <button class="cb-btn" id="cbPerfect" type="button">a perfect cup</button>
+        <div class="cb-log" id="cbLog"></div>
+        <p class="cb-note">
+          The queue's shadows are patience: green, amber at half, red at a fifth. No bubbles — the
+          Quiet Rule holds, and a leaver is named in the town's own toast.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import { mountCounter, newCup, DRINK_IDS, tipFor, GRADES } from '../../scripts/town-cafe.js';
+    import { drawComposite, assetsReady } from '../../lib/banana-engine.js';
+
+    const view = document.getElementById('cbView');
+    const world = document.getElementById('cbWorld');
+    const cafe = document.getElementById('cbCafe');
+    const night = document.getElementById('cbNight');
+    const log = document.getElementById('cbLog');
+    const say = (s) => { log.textContent = (s + '\n' + log.textContent).split('\n').slice(0, 12).join('\n'); };
+
+    // ⚠️ the same numbers town-geo.js holds: the café's overlay is ov-7 at (1751, 791), 158×249,
+    // and the square is 2200×1300. The bench pans to the café rather than inventing a backdrop.
+    const W = 2200, H = 1300, SCALE = 1.2;
+    // the camera sits where a banana standing at the counter would: the front at (1751..1909,
+    // base 1040), the lane below it, and the terrace spot (1770, 1240) still on screen
+    const CAM_X = 1660, CAM_Y = 820;
+    world.style.transform = `scale(${SCALE}) translate(${-CAM_X}px, ${-CAM_Y}px)`;
+    const place = (el, x, y, w, h) => {
+      el.style.left = ((x - CAM_X) * SCALE) + 'px';
+      el.style.top = ((y - CAM_Y) * SCALE) + 'px';
+      if (w) el.style.width = (w * SCALE) + 'px';
+      if (h) el.style.height = (h * SCALE) + 'px';
+    };
+    place(cafe, 1751, 791, 158, 249);
+
+    // three bananas at the rope, the town's own body: one canvas, no bubble, ever
+    // the rope runs south-west off the serving window, along the café's lane edge.
+    // ⚠️ MEASURED ON THIS BENCH, and it is a rule for the bake: the LINE MUST FIT ABOVE THE TRAY.
+    // At 393×852 the view is 580 tall and the tray owns the bottom 150, so a customer whose feet
+    // land past about y 1150 stands behind the counter UI — and a queue you cannot see is the one
+    // thing the tray was chosen to prevent. The rope belongs between the café's base (1040) and 1150.
+    // ⚠️ and the same measurement on the other axis: a body is drawn 99 world px wide and CENTRED on
+    // its mark, so a mark inside half a body of the view's edge is clipped. The rope runs in from the
+    // serving window, not out past the frame.
+    const QUEUE = [[1830, 1072], [1786, 1108], [1742, 1144]];
+    const bodies = [];
+    assetsReady().then(() => {
+      QUEUE.forEach(([x, y], i) => {
+        const el = document.createElement('div');
+        el.className = 'cb-body tw-wait';
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = 150;
+        // ⚠️ THE WHOLE OUTFIT OR NOTHING: drawComposite reads o.extras.<id>, so a partial outfit throws
+        // on the first extra it looks for and every banana after it never draws. town-life.js:251 is the
+        // shape. ⭐ and `mug` is a real piece of held art — Bean already carries one — so a served
+        // customer can walk off holding their cup without a single new sprite.
+        const fit = [{ hat: 'backwardscap', glasses: '', extras: {} }, { hat: 'buckethat', glasses: 'shades', extras: {} }, { hat: 'woolbeanie', glasses: '', extras: { mug: true } }][i];
+        drawComposite(cv.getContext('2d'), 150, i % 2 ? 0 : 2, { hat: fit.hat || 'none', glasses: fit.glasses || 'none', extras: fit.extras, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+        el.appendChild(cv);
+        el.style.left = ((x - CAM_X) * SCALE) + 'px';
+        el.style.top = ((y - CAM_Y) * SCALE) + 'px';
+        el.style.width = (0.045 * W * SCALE) + 'px';
+        view.appendChild(el);
+        bodies.push({ el, born: performance.now() + i * 4000 });
+      });
+    });
+
+    // patience is the BODY: the shadow under it, in three steps. Never a bubble.
+    const PATIENCE = 26000;
+    function patience(now) {
+      for (const b of bodies) {
+        const left = 1 - Math.min(1, Math.max(0, (now - b.born) / PATIENCE));
+        b.el.classList.toggle('is-half', left <= 0.5 && left > 0.2);
+        b.el.classList.toggle('is-last', left <= 0.2);
+      }
+      requestAnimationFrame(patience);
+    }
+    requestAnimationFrame(patience);
+
+    let n = 0;
+    const counter = mountCounter(view, {
+      onStep: (r) => { if (r.more) say(`  ${r.key}: ${GRADES[r.g]}`); },
+      onCup: (cup) => {
+        say(`CUP ${cup.n + 1} — ${GRADES[cup.grade].toUpperCase()} (${cup.marks.map((m) => GRADES[m][0]).join('')}) tip ${tipFor(cup.grade, true)}`);
+        counter.idle('next');
+        if (bodies[0]) { bodies[0].born = performance.now() + 99999; }
+      },
+    });
+    counter.show();
+    const serve = () => {
+      const cup = newCup(DRINK_IDS[n % DRINK_IDS.length], n, 17 + n * 13);
+      counter.serve(cup, cupLabel());
+      say(`— ${cup.drink}, cup ${n + 1}`);
+      n++;
+    };
+    // the label is the STATION ID: mechanics, not copy
+    function cupLabel() { return 'grind / pour / milk'; }
+    document.getElementById('cbNext').addEventListener('click', serve);
+    // ⭐ the seam a walk uses: v is a pure function of the clock, so the perfect instant is SOLVED,
+    // not hunted — which is how a throttled phone gets the cup its thumb deserved
+    document.getElementById('cbPerfect').addEventListener('click', () => {
+      const sm = counter.seam;
+      const go = () => {
+        if (!counter.cup()) return;
+        const key = sm.station();
+        const t = sm.best(performance.now());
+        const wait = Math.max(0, t - performance.now());
+        setTimeout(() => {
+          if (key === 'pour') { sm.press(performance.now()); setTimeout(() => { sm.release(sm.best(performance.now())); go(); }, 40); }
+          else { sm.press(t); go(); }
+        }, wait);
+      };
+      if (!counter.cup()) serve();
+      go();
+    });
+    document.getElementById('cbDay').addEventListener('click', () => night.classList.toggle('is-on'));
+    document.getElementById('cbFold').addEventListener('click', () => {
+      if (counter.open()) { counter.fold(); say('stepped off the mark — the tray folds, the cup waits'); }
+      else { counter.show(); say('back on the mark'); }
+    });
+    serve();
+    window.__cafe = { counter, serve, bodies };
+  </script>
+</BaseLayout>

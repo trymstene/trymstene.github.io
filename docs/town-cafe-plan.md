@@ -197,7 +197,31 @@ chapter completions, flip to employee-first with the deed as the upgrade: no reb
 
 ## 7. The build list, in order (twelve small green commits)
 
-1. The bench prototype of the counter, both forms, 393 px, day and night. **Trym picks.**
+1. ✅ **The bench prototype — built 19 Sep, /dev/cafe/** (noindex, linked from nowhere). Only the
+   tray was built: Trym picked it before the bench, so building the losing form to throw away would
+   have been ceremony. It drives the REAL `src/scripts/town-cafe.js` and the REAL
+   `/css/town-cafe.css` over the town's own square panned to the Coffee Cup, so what is thumbed is
+   what ships. Four things it settled, each now an assertion in `tests/town-cafe.spec.mjs`:
+   - **A PERFECT cup is reachable at 8× CPU throttle** — §9's named risk, answered with a number.
+     The thumb is judged on its own timestamp, never the last painted frame; judging on the frame
+     quietly made the milk station all-or-nothing at 4×, because the swell was only ever SAMPLED
+     near its top.
+   - **The pour survives a real press-and-hold**, including a thumb that slides off the button, with
+     zero `pointercancel`. That is the measured killer the card form could not have survived.
+   - **The tray takes 26% of the view** and the whole queue stands above it. ⭐ which is a RULE FOR
+     THE BAKE: at 393×852 the view is 580 tall and the tray owns the bottom 150, so the rope must
+     run between the café's base (y 1040) and about y 1150 — and inside half a body's width of the
+     frame, because a body is drawn 99 px wide and centred on its mark. A queue you cannot see is
+     the one thing the tray was chosen to prevent.
+   - **Not one bubble over a customer.** The Quiet Rule finally has a check: the design library has
+     credited the town walk with a `silence` assertion since 12 Sep and no such string existed.
+   ⚠️ Two traps it cost: `drawComposite` reads `o.extras.<id>`, so a PARTIAL outfit throws and every
+   banana after it silently never draws (town-life.js:251 is the shape); and Astro SCOPES a plain
+   `<style>` to template elements, so every banana the page built at runtime matched none of its own
+   rules and stacked in the corner, drawn and invisible — town.astro uses `is:inline` for exactly
+   this reason.
+   ⭐ And one find the art survey missed: **`mug` is already a piece of held art** (Bean carries one),
+   so a served customer can walk off holding their cup without a single new sprite.
 2. worker-pass: `RULES.town.shift`, `CAFE_GAMES`, `OWN_PRICES.cafe`.
 3. worker-rave: `POST /life/shift` on the TownRoom (the `/fix` gate, +2 under the cap, the
    rota), `cafe` on the read.

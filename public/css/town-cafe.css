@@ -1,0 +1,98 @@
+/* ☕ THE COFFEE CUP'S COUNTER — the tray (Trym, 19 Sep: the tray, not a card).
+ *
+ * ⭐ WHY A TRAY AND NOT A CARD, in one line of CSS terms: an open card owns every tap and every key
+ * (banana-town.js: `if (!panel.hidden) return;` in the view's pointerdown, `const kb = panel.hidden`
+ * in the walk), so behind a card the banana cannot be walked at all — and the one choice the whole
+ * café is built on, "serve the next cup, or step out and relight the lamp", could not physically be
+ * made. The tray leaves the square alive behind it.
+ *
+ * ⚠️ IT IS NOT `.tw-tray`. The pocket owns that class, that id and z 901. This is `.tw-cup`.
+ * ⚠️ It is a child of #twView, the only positioned, isolated, overflow-clipped box in the town —
+ *    .tw-stage and .tw-wrap are position:static, so anything else anchors to the page instead.
+ * ⚠️ It is OUTSIDE both `.is-inside` hide lists, so walking into a room does not hide it: the chunk
+ *    closes it by hand on enterRoom.
+ * ⚠️ Motion is transform and opacity ONLY (design library §21.4) — a @keyframes naming bottom,
+ *    height, filter, box-shadow or text-shadow is an instant red build (check-design.mjs).
+ *
+ * Shared by /town/ and the bench at /dev/cafe/, so the counter is thumbed and shipped from one file.
+ */
+
+/* the tray sits on the bottom edge, under the HUD strip and over the world; ≤150px so three
+   quarters of the square stays in view and the queue, the lamp and the ghost are all still there */
+.tw-cup {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1200;
+  box-sizing: border-box; max-height: 150px;
+  background: #1a120c; color: #fffdf5;
+  border-top: 4px solid #000; box-shadow: 0 -4px 0 rgba(0, 0, 0, 0.45);
+  padding: 0.45rem 0.6rem 0.55rem;
+  display: grid; gap: 0.4rem;
+  transform: translateY(0); transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* ⚠️ the pour is a HOLD, and a vertical drag on a canvas that can scroll gets pointercancel after
+     two moves — measured. Nothing in here scrolls, and the canvas takes the pointer outright. */
+  touch-action: none; overscroll-behavior: contain;
+}
+.tw-cup[hidden] { display: none; }
+/* folded: you stepped off the counter mark. The customer keeps its ticket; the tray just goes down. */
+.tw-cup.is-folded { transform: translateY(100%); }
+
+/* ---- the ticket: the order, as PICTURES. Never words (docs/town-cafe-plan.md §4) -------------- */
+.tw-cup__top { display: flex; align-items: center; gap: 0.5rem; min-height: 26px; }
+.tw-cup__tick { display: flex; align-items: center; gap: 4px; }
+.tw-cup__pip {
+  width: 16px; height: 16px; border: 2px solid #000; background: #6b4a2b;
+  box-shadow: 1px 1px 0 #000;
+}
+.tw-cup__pip--milk { background: #f3e6cf; }
+.tw-cup__pip--foam { background: #fff; border-radius: 999px; }
+.tw-cup__pip--dark { background: #2a1330; }
+/* the station you are on, and the two you are not */
+.tw-cup__steps { display: flex; gap: 5px; margin-left: auto; }
+.tw-cup__step { width: 9px; height: 9px; border: 2px solid #000; background: #3a2a1c; }
+.tw-cup__step.is-now { background: #ffe135; }
+.tw-cup__step.is-done { background: #7bc35e; }
+
+/* ---- the gauge: one bar, three meanings (a needle, a level, a swell) -------------------------- */
+.tw-cup__bar {
+  position: relative; height: 34px; border: 3px solid #000; background: #2a1a10;
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+/* the band to land in. ⚠️ a STATIC filter under an opacity pulse — never an animated filter */
+.tw-cup__zone {
+  position: absolute; top: 0; bottom: 0; background: rgba(123, 195, 94, 0.32);
+  border-left: 2px solid #7bc35e; border-right: 2px solid #7bc35e;
+  filter: drop-shadow(0 0 4px rgba(123, 195, 94, 0.7));
+  animation: twCupZone 1.5s ease-in-out infinite alternate;
+}
+@keyframes twCupZone { from { opacity: 0.72; } to { opacity: 1; } }
+/* the pour fills the bar from the left; the grinder and the milk ride a needle across it */
+.tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: #b5763a; transform-origin: 0 50%; transform: scaleX(0); }
+.tw-cup__needle { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: #ffe135; border: 2px solid #000; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+
+/* ---- the button the thumb lives on ------------------------------------------------------------ */
+.tw-cup__go {
+  appearance: none; font: inherit; cursor: pointer; width: 100%;
+  border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+  background: linear-gradient(#ffe14d, #f2c012); color: #241c00;
+  font-family: "Archivo Black", sans-serif; font-size: 0.95rem; letter-spacing: 0.03em;
+  padding: 0.5rem 0.6rem; white-space: nowrap;
+  touch-action: none;
+}
+.tw-cup__go:active, .tw-cup__go.is-held { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+.tw-cup__go[disabled] { opacity: 0.55; cursor: default; }
+
+/* the shift's own line: no numbers a clock could read, just where you are */
+.tw-cup__note { margin: 0; font-size: 0.74rem; opacity: 0.8; font-weight: 700; min-height: 1em; }
+
+/* ---- patience is the BODY, never a bubble (the Quiet Rule) ------------------------------------- */
+/* the shadow a banana already stands on, tinted by how long they have waited. ⚠️ .tw-npc::after is
+   one hard-coded rgba in town.astro with no variable, so the café sets the variable and town.astro's
+   rule reads it — and the colour has to survive the night scrim at 0.5 over the view. */
+.tw-wait { --tw-pat: rgba(123, 195, 94, 0.5); }
+.tw-wait.is-half { --tw-pat: rgba(240, 180, 40, 0.62); }
+.tw-wait.is-last { --tw-pat: rgba(214, 64, 48, 0.72); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-cup { transition: none; }
+  .tw-cup__zone { animation: none; opacity: 1; }
+}
