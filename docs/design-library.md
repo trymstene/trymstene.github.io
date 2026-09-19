@@ -601,6 +601,60 @@ shining until this was found. `[hidden]` is `display`, and every world page alre
 The sky is the area's own: a scrim on the VIEW like the rain (§19), under the rain sheet,
 with the beat's opacity; the shared weather layer is not asked to know about nights.
 
+## 22. A ROOM IS ONE SCREEN, and the town hides behind it
+
+An interior in this world is not a card and not a page. It is a **plate**: the square goes dark
+under a shade, the room's own picture floats exactly where its building stands, and the banana
+walks around on top of both. There is no close button anywhere on a room — **you leave by walking
+back onto the doorway you came in by**, the gap in the frame at the bottom middle.
+
+Three rooms are built this way today: the arcade and the general store in Banana Town
+(`ROOMS` in `src/scripts/banana-town.js`), and the homestead's wooden houses. All of them are
+baked by `tools/room_builder.py`, which is the only place that knows the shape of a room.
+
+**The key is the door is the spot.** `ROOMS.store` ↔ `SPOTS.store` ↔ `ABOUT.store`. Keep that one
+string true and entering, leaving and naming a room all fall out of it: you come back out of the
+door you went in by without a line of code that knows which door it was.
+
+**One plate, re-dressed.** There is a single `.tw-room` element and it is re-keyed on entry. The
+first version set its box and its picture once, inside the branch that created it, so the second
+room would have worn the first one's image at the first one's size, for ever, with nothing on
+screen to say why.
+
+### ⚠️ The invisible-sprite trap
+
+While a room is up, `#twWorld` wears `.is-inside` and two hide lists blank the town: its props,
+its residents, its state sprites, its fix marks, its tape. **Those lists name the very classes a
+room's own fittings are drawn with.** A stocked shelf drawn over the store's plate as a
+`.tw-state` renders `visibility: hidden` — no error, no warning, nothing on screen at all, and
+several hours of looking for a z-index bug that is not there.
+
+So: **every hide list must exempt the room's own things, and the gate fails a list that exempts
+nothing.** Two grammars are in the world and both are honest:
+
+- the town ends the whole list in **`:not(.is-in)`**, and anything belonging to a room wears
+  `.is-in`. This is the one to copy for a new area: one class, one exemption, read in a second.
+- the homestead exempts **per class inside the `:is(...)`** — `.hs-ov:not(.hs-ov--room)` — because
+  its plate and its items already had names of their own.
+
+What fails the gate is a list with no exemption at all.
+
+Two more things a room sprite must get right, both measured on the real page:
+
+- **z**: the shade is 2000 and the plate is 2010, while a world sprite is `100 + y`. A sprite on a
+  shelf at y 800 lands at 900, under both. Inside a room a sprite takes the same `+2000` the
+  banana already takes, so it is `2100 + y` — above the plate, and still depth-sorted against the
+  banana, who is `2100 + pos.y`.
+- **the early return**: indoors, a tap resolves against the room's own spots and nothing else.
+  The store's plate sits directly over the store's shopfront, so a fall-through would find the
+  front behind it and re-enter the room you are already standing in.
+
+### What a room is not
+
+A room is not a toll. If a card already answered at the door, it keeps answering at the door, and
+the room is something you may do instead (docs/town-jobs-plan.md §4). Pip's shelf opens on one tap
+of the shopfront exactly as it always did; **"Step inside" is one more row on that same card.**
+
 ## The enforcement ledger — which of these rules can actually fail a build
 
 Trym, 12 Sep 2026: *"how can it be guaranteed without me having to think that i
@@ -617,6 +671,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
 | 20 | Every walkable area is the same frame | `check-design.mjs` (an area that sets its own frame width or view height, or skips `/css/world-frame.css`, fails) |
 | 21 | An area's state is drawn onto named props; light stays soft; frame stacks hide with `[hidden]` | the town walk (`tests/town-life.spec.mjs`: dark lamps counted by `display`, the band's look asserted per band) |
+| 22 | A room is one screen; every `.is-inside` hide list ends in `:not(.is-in)` | `check-design.mjs` (a hide list without it fails) + the town walk (the arcade and the store, entered, walked and left) |
 | — | Every device key is declared | `check-storage.mjs` |
 | — | Per-surface JS budgets | `check-budgets.mjs` (needs a build) |
 | — | A new event is READ by Pulse | `check-pulse-areas.mjs` + `tools/pulse-stub-walk.mjs` |

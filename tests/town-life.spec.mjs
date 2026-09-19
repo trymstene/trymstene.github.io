@@ -634,3 +634,73 @@ test('the arcade: you step in, the walls hold you, and the door puts you back on
   expect(Math.hypot(outState.pos.x - outState.door.x, outState.pos.y - (outState.door.y + 30)), 'back on the arcade’s own doorstep').toBeLessThan(60);
   expect(errors).toEqual([]);
 });
+
+// 🏪 PIP'S SHOP IS A PLACE YOU CAN STAND IN (19 Sep 2026). The second interior the town has ever
+// had, and the one that proves `inside` becoming a room KEY was worth doing. ⭐ The plan's rule is
+// the load-bearing one (docs/town-jobs-plan.md §4): "Pip's existing shelf card stays tappable at the
+// door — the room is a gain, never a toll". So the front still opens the shelf in one tap with no
+// walk, and the way inside is one more row on that same card.
+test('the general store: the shelf stays at the door, the room is a gain, and the counter inside is the same shelf', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 70);   // lively: the store is open and the shelf has rows
+  expect(await room(page, 'shut')).not.toContain('store');
+
+  // ── the door: the shelf, at once, and the way in under it
+  await seam(page, () => window.__town.room.open('store'));
+  await page.waitForTimeout(400);
+  expect(await page.locator('.tw-store').count(), 'the shelf is on the card at the door').toBe(1);
+  expect(await page.locator('.tw-btn--in').count()).toBe(1);
+  expect(await seam(page, () => window.__town.rooms.now()), 'tapping the front does NOT charge you a walk').toBe('');
+
+  // ── stepping inside
+  await page.locator('.tw-btn--in').click();
+  await page.waitForTimeout(900);
+  const st = await page.evaluate(() => ({
+    now: window.__town.rooms.now(),
+    marked: document.getElementById('twWorld').classList.contains('is-inside'),
+    img: document.querySelector('.tw-room').style.backgroundImage,
+    box: window.__town.rooms.of('store').box,
+    pos: { x: window.__town.pos.x, y: window.__town.pos.y },
+  }));
+  expect(st.now).toBe('store');
+  expect(st.marked).toBe(true);
+  expect(st.img, '⚠️ the plate is re-dressed per room; it used to bake the first room in for ever').toContain('in-store.png');
+  expect(st.pos.x).toBeGreaterThan(st.box[0]);
+  expect(st.pos.x).toBeLessThan(st.box[0] + st.box[2]);
+  expect(st.pos.y).toBeGreaterThan(st.box[1]);
+  expect(st.pos.y).toBeLessThan(st.box[1] + st.box[3]);
+
+  // ── the counter inside is the SAME shelf, not a second one
+  await seam(page, () => window.__town.room.open('till'));
+  await page.waitForTimeout(400);
+  expect(await page.locator('.tw-store').count()).toBe(1);
+  await seam(page, () => document.getElementById('twCardX').click());
+
+  // ── the doorway puts you back on the shop's own doorstep
+  const exit = await seam(page, () => window.__town.rooms.of('store').exit);
+  await seam(page, (e) => { window.__town.tgt.x = (e[0] + e[2]) / 2; window.__town.tgt.y = (e[1] + e[3]) / 2; }, exit);
+  await page.waitForTimeout(2400);
+  const out = await page.evaluate(() => ({ now: window.__town.rooms.now(), pos: { x: window.__town.pos.x, y: window.__town.pos.y }, door: window.__town.SPOTS.store }));
+  expect(out.now).toBe('');
+  expect(Math.hypot(out.pos.x - out.door.x, out.pos.y - (out.door.y + 30)), 'back on the shop’s doorstep').toBeLessThan(60);
+
+  // ── ⚠️ ONE PLATE, RE-KEYED: the arcade must still be the arcade after the store has worn it
+  await seam(page, () => window.__town.arcade.enter());
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => document.querySelector('.tw-room').style.backgroundImage)).toContain('in-arcade.png');
+  expect(await seam(page, () => window.__town.rooms.now())).toBe('condo');
+  await seam(page, () => window.__town.rooms.exit());
+  await page.waitForTimeout(600);
+
+  // ── a shut front never offers the way in: it says why, and you stay on the street
+  await setBand(page, 5);
+  await page.waitForTimeout(600);
+  expect(await room(page, 'shut')).toContain('store');
+  await seam(page, () => window.__town.room.open('store'));
+  await page.waitForTimeout(400);
+  expect(await page.locator('.tw-btn--in').count(), 'a taped-off shop has no way in').toBe(0);
+  expect(await seam(page, () => window.__town.rooms.now())).toBe('');
+  expect(errors).toEqual([]);
+});

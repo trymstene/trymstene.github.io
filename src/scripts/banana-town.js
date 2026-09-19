@@ -10,7 +10,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE } from './town-geo.js';
+import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE } from './town-geo.js';
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
@@ -191,13 +191,25 @@ addEventListener('keydown', (e) => {
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) { keys[k] = true; e.preventDefault(); }
 });
 addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-// 🕹 inside the arcade the room's own walls and machines are the only colliders
-let inside = false, inShade = null, inPlate = null;
+// 🚪 THE TOWN'S ROOMS (19 Sep 2026). `inRoom` is the KEY of the room you are standing in and ''
+// out on the square, so a second interior costs a table row rather than a second branch everywhere.
+// Inside a room, its own walls and fittings are the only colliders and the only things a tap finds.
+// ⭐ THE KEY IS THE DOOR IS THE SPOT: ROOMS.condo ↔ SPOTS.condo ↔ ABOUT.condo. Keep that true and
+// entering, leaving and naming a room all fall out of one string.
+// ⚠️ ONE PLATE, RE-KEYED. The old code built the plate once inside `if (!inPlate)` with the arcade's
+// box and image baked in, so a second room would have shown the first one's picture for ever. The
+// plate is now re-dressed on every entry and remembers which room it wears (the homestead does the
+// same across its three tiers). ⚠️ keep this table ABOVE blocked()/thingAt()/tick(): a module-scope
+// const read before its line is the partial-init trap, and it takes the whole town with it.
+const ROOMS = { condo: ARCADE, store: STORE };
+let inRoom = '', inShade = null, inPlate = null, inPlateKey = '';
+const roomNow = () => (inRoom && ROOMS[inRoom]) || null;
 function blocked(x, y) {
-  if (inside && ARCADE) {
-    const [bx, by, bw, bh] = ARCADE.box;
+  const rm = roomNow();
+  if (rm) {
+    const [bx, by, bw, bh] = rm.box;
     if (x < bx || x > bx + bw || y < by || y > by + bh) return true;
-    for (const [x0, y0, x1, y1] of ARCADE.cols) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
+    for (const [x0, y0, x1, y1] of rm.cols) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return true;
     return false;
   }
   if (x < BOUND || x > W - BOUND || y < BOUND || y > H - 6) return true;
@@ -206,9 +218,10 @@ function blocked(x, y) {
   return false;
 }
 function thingAt(wx, wy) {
-  if (inside && ARCADE) {
-    for (const [key, x0, y0, x1, y1] of ARCADE.spots) if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) return ['spot', key];
-    return null;
+  const rm = roomNow();
+  if (rm) {   // 🚪 indoors ONLY the room's own fittings exist — the early return is what stops a tap
+    for (const [key, x0, y0, x1, y1] of rm.spots) if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) return ['spot', key];
+    return null;   // falling through here would find the shopfront under the store's own plate
   }
   const rk = room && room.at(wx, wy);   // 🏘️ a problem to fix, a ghost, an object on the ground, a stall
   if (rk) return rk;
@@ -229,8 +242,8 @@ view.addEventListener('pointerdown', (e) => {
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
   const hit = thingAt(wx, wy);
   if (hit) {
-    if (inside && ARCADE && CABINET[hit[1]]) {   // walk to the machine's front; the card opens when you get there
-      const r2 = ARCADE.spots.find((q) => q[0] === hit[1]);
+    if (inRoom === 'condo' && CABINET[hit[1]]) {   // walk to the machine's front; the card opens when you get there
+      const r2 = ROOMS.condo.spots.find((q) => q[0] === hit[1]);
       if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; }
       const key = hit[1]; arriveThen = () => gameCard(key);
       return;
@@ -242,11 +255,13 @@ view.addEventListener('pointerdown', (e) => {
       return;
     }
     if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { if (life.pick(hit[1])) { float(f.x, f.y - 30, '+1'); hud.refresh(); } }; } return; }   // walk to it, then it is picked up: a point of rep, the park's litter rule
-    const spot = SPOTS[hit[1]], wasInside = inside;
-    if (!openFor(hit[1])) say(ABOUT[hit[1]] ? ABOUT[hit[1]][2] : hit[1]);
-    if (inside !== wasInside) return;   // 🚪 a door was used: the room placed the banana; a walk target here would march it straight back out
+    const spot = SPOTS[hit[1]], wasIn = inRoom;
+    // ⚠️ a thing with nothing to say says NOTHING. This used to fall back to the raw key, which was
+    // harmless while every tappable thing had an entry — a room full of shelves would have toasted "sh1".
+    if (!openFor(hit[1]) && ABOUT[hit[1]]) say(ABOUT[hit[1]][2]);
+    if (inRoom !== wasIn) return;   // 🚪 a door was used: the room placed the banana; a walk target here would march it straight back out
     if (spot) { tgt.x = spot.x; tgt.y = spot.y + 30; }
-    else if (inside && ARCADE) { const r2 = ARCADE.spots.find((q) => q[0] === hit[1]); if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; } }   // a machine: stand at its front
+    else { const rm = roomNow(); const r2 = rm && rm.spots.find((q) => q[0] === hit[1]); if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; } }   // a fitting: stand at its front
     return;
   }
   tgt.x = Math.max(BOUND, Math.min(W - BOUND, wx)); tgt.y = Math.max(BOUND, Math.min(H - 8, wy));
@@ -294,14 +309,14 @@ function tick(now) {
     else { tgt.x = pos.x; tgt.y = pos.y; }
   }
   if (arriveThen && Math.hypot(tgt.x - pos.x, tgt.y - pos.y) <= 2) { const f = arriveThen; arriveThen = null; f(); }   // arrived, or stuck: the cabinet opens
-  me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inside ? 2100 : 100) + Math.round(pos.y));
+  me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inRoom ? 2100 : 100) + Math.round(pos.y));
   cam(false);
   drawMe();
   life.tick(now, dt);
   weather.tick(now);
   if (room) room.tick(now, dt);
-  if (inside && ARCADE) { const [x0, y0, x1, y1] = ARCADE.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitArcade(); }
-  if (!inside && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
+  { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
+  if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
     say('Back down the road to the park…');
     setTimeout(() => { location.href = '/park/'; }, 600);
@@ -343,42 +358,52 @@ function openFor(key) {
   if (room && room.openFor(key)) return true;   // 🏘️ the store's shelf, the notice board, a shut kiosk, a stall
   if (key === 'wheel') { wheelCard(); return true; }
   if (key === 'exchange') { exchangeCard(); return true; }
-  if (key === 'store') { storeCard(); return true; }
+  // 🚪 a door with a room behind it. ⚠️ town-room.js gets FIRST refusal above, and it still owns
+  // 'store' — a shut front says why, and an open one gives Pip's shelf at the door, which is the
+  // plan's rule (docs/town-jobs-plan.md §4: "the room is a gain, never a toll"). The store's room is
+  // entered from that card, so this branch is reached by the arcade and by any later door of its kind.
+  if (ROOMS[key] && !inRoom) { enterRoom(key); return true; }
+  if (key === 'store') { storeCard(); return true; }   // the fallback while town-room.js is still loading
   if (key === 'bus') { travel.open(); return true; }   // the shelter is the travel door's place in the world
-  if (key === 'condo') { enterArcade(); return true; }
-  if (CABINET[key]) return gameCard(key);
+  if (inRoom === 'condo' && CABINET[key]) return gameCard(key);   // a cabinet is the arcade's alone: the key space is shared by every room
   return false;
 }
-// 🕹 step inside: the shade covers the town, the room floats over it, the banana rides above both
-function enterArcade() {
-  if (!ARCADE || inside) return;
-  inside = true;
+// 🚪 step inside: the shade covers the town, the room floats over it, the banana rides above both
+function enterRoom(key) {
+  const rm = ROOMS[key]; if (!rm || inRoom) return;
+  inRoom = key;
   world.classList.add('is-inside');
   if (!inShade) { inShade = document.createElement('div'); inShade.className = 'tw-inshade'; world.appendChild(inShade); }
-  if (!inPlate) {
-    inPlate = document.createElement('div'); inPlate.className = 'tw-room';
-    const [bx, by, bw, bh] = ARCADE.box;
+  if (!inPlate) { inPlate = document.createElement('div'); inPlate.className = 'tw-room'; world.appendChild(inPlate); }
+  // ⚠️ RE-DRESS THE PLATE. The box and the picture used to be set once, inside the `if (!inPlate)`
+  // that built it — so the second room would have worn the first one's image for ever, at the first
+  // one's size, with nothing on screen to say why.
+  if (inPlateKey !== key) {
+    const [bx, by, bw, bh] = rm.box;
     inPlate.style.left = pct(bx, W); inPlate.style.top = pct(by, H); inPlate.style.width = pct(bw, W); inPlate.style.height = pct(bh, H);
-    inPlate.style.backgroundImage = 'url(/assets/town/' + ARCADE.img + ')';
-    world.appendChild(inPlate);
+    inPlate.style.backgroundImage = 'url(/assets/town/' + rm.img + ')';
+    inPlateKey = key;
   }
   inShade.hidden = false; inPlate.hidden = false;
   // 🏠 the room is appended to #twWorld, which carries will-change: transform and is
   // therefore its own stacking context — its z-2010 cannot out-stack a z-8 sheet on the
   // view. Without this it rains inside the arcade.
   weather.indoors(true);
-  pos.x = ARCADE.spawn[0]; pos.y = ARCADE.spawn[1];
+  pos.x = rm.spawn[0]; pos.y = rm.spawn[1];
   tgt.x = pos.x; tgt.y = pos.y - 34;   // a step into the room, never back out through the door
   cam(true);
-  say('The Arcade. The door takes you back out.');
+  const rw = room && room.seam && room.seam.copyOf ? room.seam.copyOf('rooms') : null;   // the words are the rig's
+  if (rw && rw[key]) say(rw[key]);
 }
-function exitArcade() {
-  inside = false;
+function exitRoom() {
+  const key = inRoom; if (!key) return;
+  inRoom = '';
   world.classList.remove('is-inside');
   if (inShade) inShade.hidden = true;
   if (inPlate) inPlate.hidden = true;
   weather.indoors(false);
-  pos.x = SPOTS.condo.x; pos.y = SPOTS.condo.y + 30;
+  const d = SPOTS[key] || SPAWN;   // ⭐ the key IS the door: you come out of the one you went in by
+  pos.x = d.x; pos.y = d.y + 30;
   tgt.x = pos.x; tgt.y = pos.y + 30;
   cam(true);
 }
@@ -599,9 +624,10 @@ assetsReady().then(() => {
   // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
   import('./town-room.js').then((m) => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos,
-      hud, esc, track, inside: () => inside, others: () => [],   // other players' bananas, the day the town gets its room (ghosts keep away from them)
+      hud, esc, track, inside: () => !!inRoom, enterRoom, others: () => [],   // other players' bananas, the day the town gets its room (ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
     if (window.__town) window.__town.room = room.seam;
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, wx: (k) => weather.setKind(k), arcade: { enter: enterArcade, exit: exitArcade, inside: () => inside, spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
+  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+    arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

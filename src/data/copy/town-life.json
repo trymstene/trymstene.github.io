@@ -96,6 +96,11 @@
     "Hands in the square lift the town. When it rises, this shopfront comes back.",
     "The square needs hands, not blame. Put things right outside and the doors return."
   ],
+  "rooms": {
+    "condo": "The Arcade is buzzing. Walk back onto the doorway to leave.",
+    "store": "Pip’s General Store. Walk back onto the doorway to leave.",
+    "in": "Step inside"
+  },
   "objects": [
     {
       "id": "humlantern",

@@ -183,6 +183,21 @@ Three or four lines. Each one has to do a job the game has nowhere else to do it
 Write them as the door speaks, or as a passer-by would say it. Not a system message, and not
 an apology either — this town has been through worse.
 
+## `rooms` — stepping through a door
+
+The town has interiors now: the Arcade, and Pip's general store. A room is ONE SCREEN — the
+square goes dark behind it and the room's own plate floats where the building stands. There is
+no close button anywhere on it. **You leave by walking back onto the doorway you came in by**,
+the bottom middle of the room, so each line has to carry that quietly: name the place, and say
+how you get out. One sentence each, or two short ones.
+
+`rooms.in` is different: it is a BUTTON on Pip's shelf card, out on the street, and it is what
+takes a shopper inside. A verb first, two or three words, no full stop. Buttons in this world
+never wrap on a phone, so it has to be short.
+
+The shelf stays on the card at the door either way — the room is something you may do, never
+something you must do to shop.
+
 ## How this reads
 
 Everything in the voice guide holds. The board is the town's voice; Pip, the stall, the
@@ -192,4 +207,4 @@ spoken line; never an emoji; a curly apostrophe. Nothing here asks the player a 
 ## Return
 
 `bands` (five, in the order above), `store`, `board`, `merchant`, `vendor`, `ghosts`,
-`closed`, `lowShut`, `objects` (ten, ids as above, in that order).
+`closed`, `lowShut`, `rooms`, `objects` (ten, ids as above, in that order).

@@ -657,6 +657,16 @@ export function bootTownLife(ctx) {
       + (ids ? (w.greet ? '<p class="tw-card__sub">' + esc(fill(w.greet)) + '</p>' : '') + '<div class="tw-store">' + rows(ids, 1, 'store') + '</div>'
         : (w.shut ? '<p class="tw-card__sub">' + esc(fill(w.shut)) + '</p>' : '<p class="tw-card__sub"></p>')));
     if (ids) wireBuys(w.sold);
+    // 🚪 THE ROOM IS A GAIN, NEVER A TOLL (docs/town-jobs-plan.md §4). The shelf stays exactly where
+    // it has always been — one tap on the front, no walk — and the way inside is one more row on the
+    // same card. A shut front never gets here: openFor answers that first.
+    const wr = COPY.rooms || {};
+    if (wr.in && ctx.enterRoom) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tw-btn--in'; b.textContent = fill(wr.in);
+      b.addEventListener('click', () => { closeCard(); ctx.enterRoom('store'); });
+      cardBody.appendChild(b);
+    }
     return true;
   }
   // the merchant and the vendor: a body by a stall, a shelf when you walk up
@@ -774,7 +784,7 @@ export function bootTownLife(ctx) {
       if (line) say(fill(line));
       return !!line;
     }
-    if (key === 'store') return storeCard();
+    if (key === 'store' || key === 'till') return storeCard();   // 🏪 the front AND the counter inside: the shelf is the same shelf
     if (key === 'board') return boardCard();
     return false;
   }

@@ -152,6 +152,18 @@ for (const f of files) {
     problems.push([rel, 'opts out of the footer (showFooter={false}) — only the desk and the dev pages may, see design library §17']);
   }
 
+  // 🚪 A ROOM IS ONE SCREEN — design library §22. While a room is up, the area's world wears
+  // .is-inside and these lists blank it. They name the very classes a room's own fittings are drawn
+  // with, so a list with NO exemption renders every sprite inside that room invisible: no error, no
+  // warning, nothing on screen, and hours spent hunting a z-index bug that is not there.
+  // Two grammars are in the world and both are fine: the town exempts with a trailing :not(.is-in),
+  // the homestead exempts per class inside the :is(...). What fails is exempting nothing.
+  for (const m of code.matchAll(/\.is-inside\s+:is\(([^)]*(?:\([^)]*\)[^)]*)*)\)([^{]*)\{/g)) {
+    if (!/:not\(/.test(m[1] + m[2])) {
+      problems.push([rel, 'an .is-inside hide list exempts nothing — every sprite drawn inside a room would render invisible with nothing on screen to say why. End it in :not(.is-in), or exempt per class the way the homestead does (design library §22)']);
+    }
+  }
+
   // 🗣 an NPC dialogue uses the world's card, never a new one — design library §18
   if (/npcpop|npcsay\b|-npcq\b|__talk|tw-talk/.test(code) && !/mountDialogue|world-dialogue/.test(code) && !OWN_DIALOGUE_OK.includes(rel)) {
     problems.push([rel, 'builds its own NPC dialogue instead of the shared card (mountDialogue, /css/dialogue.css) — see design library §18']);

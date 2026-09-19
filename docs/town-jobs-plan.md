@@ -533,8 +533,13 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    `till`, `cr1`, `cr2`, `tbl1`, `tbl2`) are what the stock hangs on. **Three colourways were
    baked and looked at; Trym picks.** Shipped: red-and-cream checker floor under tan brick.
    Alternates, one line each: deep red and gold (wall 1440,96), all wood (floor 0,576 + wall 912,0).
-9. `inRoom` refactor in `banana-town.js`; walk the arcade first and prove nothing changed.
-10. The CSS `:not(.is-in)` fix and a design-library section "A ROOM IS ONE SCREEN".
+9. ✅ **Done 19 Sep.** `inside` is a room KEY and `ROOMS = { condo, store }` is the table; one plate is
+   re-dressed per room (it used to bake the first room's box and picture in for ever). The arcade walk
+   was written and landed green BEFORE the refactor, and did not notice it.
+10. ✅ **Done 19 Sep.** Both hide lists exempt the room's own things, design-library §22 is written
+   with the z-band and the early-return measured on the real page, and the gate fails any `.is-inside`
+   list that exempts nothing (proven to bite). ⚠️ **`town-room.js` is now at 96%, ~2.2 KB free** — the
+   next slice that touches it moves the look into a new chunk rather than shaving.
 
 **The jobs**
 11. worker-pass: the rules, `JOB_PAY`, the routes; curl all three and paste the answers.
