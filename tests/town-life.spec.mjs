@@ -190,6 +190,11 @@ test('a fix clears the mark, pays on the pass and counts on the room', async ({ 
 
 test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it ends', async ({ page }) => {
   await town(page);
+  // ⚠️ THE NIGHT IS A LAZY CHUNK (src/scripts/town-night.js, split out 20 Sep). It loads on the
+  // evening beat, a Curse Night, an omen or a day ghost — and this test plants a cursed object at
+  // NOON, which is none of those. Ask for it first, the way the shop's card does (shopReady): a walk
+  // cannot assert a ghost into being while its chunk is still on the wire.
+  expect(await page.evaluate(() => window.__town.room.nightReady()), 'the night is in hand').toBe(true);
   // by day first: a planted cursed thing stands in its purple fire (the eye's crop), then it is taken
   expect(await page.evaluate((id) => !!window.__town.room.story.plantObject(id, [1100, 1000]), OBJECTS[0].id)).toBe(true);
   await page.waitForTimeout(500);
@@ -264,7 +269,14 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect((hs.shed || []).length).toBeGreaterThanOrEqual(1);
   // the night ends: sky back, ghosts gone, vendor gone, residents out again
   await seam(page, () => window.__town.room.curse('none'));   // 'none' overrides a real night the clock may be running
-  await page.waitForTimeout(1500);
+  // ⚠️ POLLED, NEVER SLEPT. Ending a night is a chain — the next half-second tick sees the curse is
+  // over, calls leaveCurse(), which clears the sky, the ghosts, the vendor AND the storm — and a fixed
+  // 1500 ms was enough alone and not enough with a second worker on the machine. Same bug as the
+  // lock walk, same fix: wait for the thing itself.
+  await page.waitForFunction(() => window.__town.room.night() === 0
+    && window.__town.room.ghosts().length === 0
+    && !window.__town.room.vendor()
+    && !document.querySelector('.wx.is-storm'), null, { timeout: 15000 });
   expect(await room(page, 'night')).toBe(0);
   expect((await room(page, 'ghosts')).length).toBe(0);
   expect(await room(page, 'vendor')).toBe(false);

@@ -237,7 +237,10 @@ export function bootTownLife(ctx) {
     return s;
   }
   function show(s, i) { if (s.i === i) return; s.el.children[s.i].classList.remove('is-on'); s.el.children[i].classList.add('is-on'); s.i = i; }
-  function kill(s) { if (!s || s.gone) return; s.gone = true; s.el.remove(); sprites.delete(s); for (let i = ghosts.length - 1; i >= 0; i--) if (ghosts[i].s === s) ghosts.splice(i, 1); }
+  // ⚠️ the ghost list moved to town-night.js, and this is the generic sprite killer — about twenty
+  // call sites. It hands the dead sprite over instead; miss this and a killed ghost stays in the
+  // list for ever, haunting the step loop with an element that is not on the page.
+  function kill(s) { if (!s || s.gone) return; s.gone = true; s.el.remove(); sprites.delete(s); if (dusk) dusk.unghost(s); }
   function stepSprites(dt) {
     for (const s of sprites) {
       if (s.n < 2 || s.mode === 'still' || s.mode === 'off') continue;
@@ -327,7 +330,9 @@ export function bootTownLife(ctx) {
     cond.decor.forEach(kill); cond.decor = [];
     DECOR_SPOTS.slice(0, look.decor).flat().forEach(([x, y]) => { const s = sprite('lantern', x, y, { fps: 4, mode: 'pulse' }); if (s) { s.el.hidden = true; cond.decor.push(s); } });
     kill(cond.dayghost); cond.dayghost = null;
-    if (look.dayghost || todayHas('dayghost')) cond.dayghost = ghostOf('wisp');
+    // ⚠️ A WISP BY DAYLIGHT. This is the one call that makes the night's chunk a DAY dependency, and
+    // it is why loadDusk() is not gated on the clock: a low band draws one at noon.
+    if (look.dayghost || todayHas('dayghost')) loadDusk().then((d) => { if (d && (look.dayghost || todayHas('dayghost'))) cond.dayghost = d.ghostOf('wisp'); });
   }
   const keepFn = (n, beat) => {
     if (beat === 5) return false;
@@ -849,297 +854,49 @@ export function bootTownLife(ctx) {
 
   // ════════════════════════════════ the curse, the ghosts, the objects ═══════════════
   let curse = null, forced = null, forcedUntil = 0, curseTold = '', plainNight = false;
-  const ghosts = [];   // { def, s, ... }
-  const objects = [];  // { def, s, x, y, day }
-  let candles = [], night = null;
-  function ghostOf(id, def0, set) {   // set: one of a night's set — one of each, over a plain night's; an omen's or a day's wisp is its own
-    const def = def0 || GHOSTS.find((g) => g.id === id); if (!def) return null;
-    const out = set && ghosts.find((g) => g.def.id === id && !g.done && g.night); if (out) return out.s;
-    const at = def.at || def.from || (def.path && def.path[0]) || [1100, 950];
-    const s = sprite(def.art, at[0], at[1], { fps: def.fps || 6, cls: 'is-fade is-haunt', mode: def.loop || def.id === 'wisp' ? 'once' : 'loop', z: def.z });   // is-haunt: the curse's purple, weaker than a cursed object's; z: in front of what it sits on
-    if (!s) return null;
-    const g = { def, s, x: at[0], y: at[1], dir: 1, hideT: 0, done: false, night: !!set };
-    if (s.n === 32) faceGhost(g, s, 0, 1);   // the four-facing stack starts facing front
-    if (def.id === 'wisp' || def.loop) s.onDone = () => { g.hideT = 2 + Math.random() * 3; };
-    ghosts.push(g);
-    return s;
-  }
-  // the friendly ghost's four facings (ghosts.js): the stack's frame window follows the way it goes
-  function faceGhost(g, s, dx, dy) {
-    const f = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'front' : 'back');
-    if (f === g.face) return;
-    g.face = f; const lo = { right: 0, back: 8, left: 16, front: 24 }[f]; s.lo = lo; s.hi = lo + 7; show(s, lo);
-  }
-  // ⚠️ a ghost's own x/y must move WITH its sprite: moveSprite() alone left g.x where it began, so every
-  // walking ghost took one step from its start each tick and jittered in place (found 15 Sep)
-  // a roamer's way is clear when no sample of the straight line falls inside a BIG solid (a building, the fountain):
-  // a ghost may pass behind a bench, never through the town hall (the eye caught one inside the fountain, 15 Sep)
-  const BIG = OB_RECTS.filter((r) => (r[2] - r[0]) * (r[3] - r[1]) > 14400);
-  function clearWay(x0, y0, x1, y1) {
-    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 30);
-    for (let i = 1; i < n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n; if (BIG.some((r) => x > r[0] && x < r[2] && y > r[1] && y < r[3]) || OB_CIRCLES.some((c) => Math.hypot(x - c[0], y - c[1]) < c[2] + 24)) return false; }
-    return true;
-  }
-  // 🍌 the bananas a ghost keeps away from: yours (live), the residents out tonight and other players' (cached twice a second)
-  let bananas = [];
-  function nearestBanana(x, y) {
-    let best = { x: ctx.pos.x, y: ctx.pos.y, d: Math.hypot(ctx.pos.x - x, ctx.pos.y - y) };
-    for (const b of bananas) { const d = Math.hypot(b.x - x, b.y - y); if (d < best.d) best = { x: b.x, y: b.y, d }; }
-    return best;
-  }
-  // a roamer's next waypoint: reachable on a clear line, and by preference far from every banana
-  function pickWay(g) {
-    const can = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]); });
-    const far = can.filter((w) => nearestBanana(w[0], w[1]).d > 160);
-    const from = far.length ? far : can.length ? can : ROAM;
-    return from[Math.floor(Math.random() * from.length)];
-  }
-  // …and when a banana comes close: the waypoint that puts the most ground between them
-  function awayFrom(g, b) {
-    const can = ROAM.filter((w) => Math.hypot(w[0] - b.x, w[1] - b.y) > b.d + 60 && Math.hypot(w[0] - g.x, w[1] - g.y) < 700 && clearWay(g.x, g.y, w[0], w[1]));
-    can.sort((p, q) => Math.hypot(q[0] - b.x, q[1] - b.y) - Math.hypot(p[0] - b.x, p[1] - b.y));
-    return can.length ? can[Math.floor(Math.random() * Math.min(3, can.length))] : null;
-  }
-  // 👻 MISCHIEF (Trym, 15 Sep: "the ghosts spread garbage and fixes needed so you have to clean up more after
-  // them"): at a waypoint a roamer may snuff a lit lamp near it, tip an empty bin or dumpster, or drop litter
-  // where it hovers — each a problem of yours, paid like any other. A few per ghost per night, never a flood.
-  const MESS_CAP = 6;
-  let messN = 0;
-  const footOf = (k) => { const p = propOf(k); return p ? [p.x + p.w / 2, p.base] : [-1e9, -1e9]; };
-  const rowOf = (id) => PROBLEMS.find((r) => r.id === id);
-  function addProblem(t, key, x, y, z, icon) {
-    const p = { id: t.id + ':' + key, type: t.id, x, y, key, pays: t.pays, rep: t.rep, el: mark(x, y, 150, z, icon), sprite: null, foot: y };
-    problems.push(p); return p;
-  }
-  function mischief(g, force) {
-    if ((g.mess || 0) >= MESS_CAP) return null;   // every rest makes something, up to the cap (15 Sep: too slow to matter before)
-    // the mess lands on the waypoint it rests at (every one measured in the open), never mid-way behind a bench
-    const [gx, gy] = ROAM.reduce((a, w) => (Math.hypot(w[0] - g.x, w[1] - g.y) < Math.hypot(a[0] - g.x, a[1] - g.y) ? w : a), ROAM[0]);
-    const near = (k) => { const [x, y] = footOf(k); return Math.hypot(x - gx, y - gy) < 130; };
-    const free = (k) => !problems.some((q) => q.key === k);
-    let did = null;
-    const lamp = ANCHORS.lamps.find((k) => cond.lamps[k] === 'ok' && free(k) && near(k));
-    const bin = [...ANCHORS.bins, ...ANCHORS.dumps].find((k) => !cond.full.has(k) && free(k) && near(k));
-    if (lamp && Math.random() < 0.5) {
-      cond.lamps[lamp] = 'out'; lampsByHour();
-      const p0 = propOf(lamp); addProblem(rowOf('lamp'), lamp, p0.x + p0.w / 2, p0.base + 4, 100 + p0.base + 3, true); poof(p0.x + p0.w / 2, p0.base - 40); did = 'lamp';
-    } else if (bin && Math.random() < 0.5) {
-      setFull(bin, true);
-      const p0 = propOf(bin), t = rowOf(ANCHORS.dumps.includes(bin) ? 'dumpster' : 'bin');
-      glowProblem(addProblem(t, bin, p0.x + p0.w / 2, p0.base + 4, 100 + p0.base + 3, false)); did = t.id;
-    } else {
-      const x = Math.round(gx + Math.random() * 40 - 20), y = Math.round(gy + 8);
-      const p = addProblem(rowOf('litter'), 'g' + (messN++), x, y, null, false);
-      p.sprite = sprite(['pile', 'trash1', 'trash2', 'trash3'][Math.floor(Math.random() * 4)], x, y); glowProblem(p); poof(x, y - 6); did = 'litter';
-    }
-    g.mess = (g.mess || 0) + 1;
-    return did;
-  }
-  // 👋 CAUGHT: walked into, a ghost un-forms — the pack's own forming frames played backwards — in a purple burst;
-  // the tall grey one flies up and scatters on its own last frames. It keeps away a while, then forms again where
-  // it stands (Trym, 15 Sep: "when i catch a ghost it needs an animation")
-  const CURSE_INK = ['#b26cff', '#7a3ff0', '#e0c3ff', '#4b1d99', '#9d5cff'];
-  function catchGhost(g) {
-    const s = g.s, tall = g.def.art === 'drift';
-    const gone = sprite(tall ? 'driftgone' : 'ghostform', g.x, g.y, { fps: 10, mode: 'once', cls: 'is-haunt is-gone', z: g.y });
-    if (gone) {
-      if (!tall) { show(gone, gone.n - 1); gone.rev = true; }
-      if (g.face === 'left' || s.el.classList.contains('is-flip')) gone.el.classList.add('is-flip');
-      gone.onDone = () => kill(gone);
-    }
-    s.el.style.opacity = '0';
-    burstInto(world, 'tw-burst tw-burst--curse', g.x / W * 100, (g.y - 30) / H * 100, 12, CURSE_INK);
-    track('town_ghost', { id: g.def.id, caught: 1 });
-  }
-  function returnGhost(g) {
-    const s = g.s;
-    if (g.def.art === 'drift') { s.el.style.opacity = ''; return; }   // its own loop forms it again
-    const back = sprite('ghostform', g.x, g.y, { fps: 10, mode: 'once', cls: 'is-haunt', z: g.y });
-    if (g.face === 'left' || s.el.classList.contains('is-flip')) back && back.el.classList.add('is-flip');
-    if (back) back.onDone = () => { kill(back); s.el.style.opacity = ''; }; else s.el.style.opacity = '';
-  }
-  function moveGhost(g, x, y) { g.x = x; g.y = y; moveSprite(g.s, x, y); }
+  let night = null;   // the sky; the candles went with the night's own chunk
   function moveSprite(s, x, y, dz = 0) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y + dz)); }
-  function stepGhosts(dt, now) {
-    for (const g of ghosts) {
-      if (g.done) continue;
-      const d = g.def, s = g.s;
-      // 👣 walked into, a ghost fades and keeps away a while (the drift has its own shyness below); the leader
-      // hurries on instead — it is leading you (Trym, 15 Sep: "the ghosts should also flee or fade when i walk into them")
-      const near = Math.hypot(ctx.pos.x - g.x, ctx.pos.y - g.y);
-      if (d.from && d.to) g.hurry = near < 56 ? 3 : Math.max(0, (g.hurry || 0) - dt);
-      else if (!d.path) {
-        if (!g.fled && near < 42) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; catchGhost(g); }
-        else if (g.fled) { g.fleeT -= dt; if (g.fleeT <= 0 && near > 70) { g.fled = 0; returnGhost(g); } }
-      }
-      if ((d.id === 'wisp' || d.loop) && s.mode === 'done') { g.hideT -= dt; if (g.hideT <= 0) { s.el.hidden = false; show(s, 0); s.mode = 'once'; } continue; }
-      if (d.path) {   // back and forth, and shy of the player
-        const [a, b] = d.path, tx = g.dir > 0 ? b[0] : a[0];
-        const nx = g.x + Math.sign(tx - g.x) * d.speed * dt;
-        if (Math.abs(tx - g.x) < 3) g.dir = -g.dir;
-        moveGhost(g, nx, g.y);
-        s.el.classList.toggle('is-flip', g.dir < 0);
-        const near = Math.hypot(ctx.pos.x - g.x, ctx.pos.y - g.y) < (d.near || 90);
-        if (near && !g.shy) { g.shy = 1; s.el.style.opacity = '0'; g.hideT = 6; }
-        else if (g.shy) { g.hideT -= dt; if (g.hideT <= 0 && !near) { g.shy = 0; s.el.style.opacity = ''; } }
-      } else if (d.from && d.to) {   // walks to somewhere and is gone; something is left there
-        const dx = d.to[0] - g.x, dy = d.to[1] - g.y, dist = Math.hypot(dx, dy);
-        if (dist < 4) { g.done = true; s.el.style.opacity = '0'; setTimeout(() => kill(s), 1500); if (d.leaves === 'object') spawnObject(dayNum() * 7 + 2, false, d.to); }
-        else { const st = Math.min(dist, d.speed * (g.hurry > 0 ? 2.4 : 1) * dt); moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st); if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0); }
-      } else if (d.roam) {   // 👣 roams: waypoint to waypoint over the whole town, a pause at each, facing where it goes
-        // …and keeps away from bananas (Trym, 15 Sep): a banana within reach turns it toward open ground
-        const b = nearestBanana(g.x, g.y);
-        if (b.d < 110 && now - (g.turnAt || 0) > 600) { g.turnAt = now; const w = awayFrom(g, b); if (w) { g.to = w; g.wait = 0; } }
-        if (g.wait > 0) { g.wait -= dt; continue; }
-        if (!g.to) g.to = pickWay(g);
-        const dx = g.to[0] - g.x, dy = g.to[1] - g.y, dist = Math.hypot(dx, dy);
-        if (dist < 4) { g.to = null; g.wait = 0.8 + Math.random() * 1.4; mischief(g); continue; }
-        const st = Math.min(dist, d.speed * (b.d < 150 ? 1.7 : 1) * dt);   // chased, it flees — near the banana's own pace, still catchable
-        moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st);
-        if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0);
-      } else if (d.bob) {   // leaning at a door
-        g.t = (g.t || 0) + dt;
-        s.el.style.transform = 'translateY(' + (Math.sin(g.t * 2.2) * 3).toFixed(1) + 'px)';
-      }
-    }
-  }
-  function clearGhosts(keepDay) {
-    for (const g of ghosts.slice()) { if (keepDay && g.s === cond.dayghost) continue; g.done = true; g.s.el.style.opacity = '0'; const s = g.s; setTimeout(() => kill(s), 1500); ghosts.splice(ghosts.indexOf(g), 1); }
-  }
   const found = (id) => { try { return statTotal(passRaw(), 'cur_' + id) > 0; } catch (e) { return false; } };
-  function spawnObject(seed, day, at, forced, born) {
-    const def = forced || weighted(OBJECTS, (o) => RARITY_W[o.rarity], seed);   // a chapter names its object; a night draws one
-    // its place by seed, then a spot in it nothing else stands on (two on one spot hid each other, 15 Sep)
-    const spots = WHERE[def.where[Math.floor(h(seed, 3) * def.where.length)]] || [[1100, 1000]];
-    let spot = at;
-    if (!spot) { const j = Math.floor(h(seed, 5) * spots.length); for (let q = 0; q < spots.length && !spot; q++) { const c = spots[(j + q) % spots.length]; if (!objects.some((o) => Math.hypot(o.x - c[0], o.y - c[1]) < 60)) spot = c; } spot = spot || spots[j]; }
-    const d = DEX[def.decor]; if (!d) return null;
-    // an ordinary decor sprite, on the ground, with its small wrongness
-    const el = document.createElement('div');
-    el.className = 'tw-state' + (def.fx === 'hum' ? ' is-hum' : def.fx === 'flicker' ? ' is-flicker' : '');
-    const w = Math.round(d.w * 0.9), hh = Math.round(d.h * 0.9);
-    el.style.left = pct(spot[0] - w / 2, W); el.style.top = pct(spot[1] - hh, H); el.style.width = pct(w, W); el.style.aspectRatio = w + ' / ' + hh; el.style.zIndex = String(100 + spot[1]);
-    const im = document.createElement('img'); im.src = d.img; im.alt = ''; im.className = 'is-on'; if (def.fx === 'turn') im.style.transform = 'scaleX(-1)'; el.appendChild(im);
-    world.appendChild(el);
-    el.classList.add('is-cursed');
-    // 🔮 the curse shows on it: a dark purple aura on the ground, the pack's low flame (tinted purple in CSS)
-    // licking round its foot behind it, sparks in front (Trym, 15 Sep: "a dark purple flaming glow")
-    const k = Math.max(1.4, w / 26), aw = Math.round(Math.max(90, w * 3)), ah = Math.round(aw * 0.45);
-    const aura = document.createElement('div');
-    aura.className = 'tw-aura';
-    aura.style.left = pct(spot[0] - aw / 2, W); aura.style.top = pct(spot[1] - ah / 2, H); aura.style.width = pct(aw, W); aura.style.aspectRatio = aw + ' / ' + ah; aura.style.zIndex = String(100 + spot[1] - 2);
-    world.appendChild(aura);
-    const flame = sprite('flame', spot[0], spot[1] + 12 * k, { z: spot[1] - 1, fps: 8, cls: 'is-flame', size: k });
-    const lick = sprite('flame', spot[0], spot[1] + 12 * k * 0.45 + 3, { z: spot[1] + 1, fps: 9, cls: 'is-flame is-lick', size: k * 0.45 });   // small, at the foot only: the thing itself stays readable
-    const spark = sprite('spark', spot[0], spot[1] + 13 * k - hh * 0.2, { z: spot[1] + 2, fps: 7, cls: 'is-flame', size: k });
-    if (born) { aura.classList.add('is-born'); const wisp = sprite('wisp', spot[0], spot[1], { fps: 6, mode: 'once', cls: 'is-haunt' }); if (wisp) wisp.onDone = () => kill(wisp); }   // it APPEARS: a wisp rises and the aura blooms
-    const o = { def, el, x: spot[0], y: spot[1], day: !!day, m: mark(spot[0], spot[1] + 2), aura, flame, lick, spark };
-    objects.push(o);
-    return o;
+  // 🌚 THE NIGHT LIVES IN ITS OWN CHUNK (src/scripts/town-night.js): ghosts, cursed objects and
+  // the Curse Nights, 21 KB of this file until 20 Sep, when it had 1 188 bytes of its cap left.
+  //
+  // ⚠️ THE GATE IS NOT SIMPLY "IS IT DARK". condition() asks for a wisp in DAYLIGHT when the band is
+  // low enough to draw one, so the chunk is pulled the moment the evening beat arrives, a Curse Night
+  // is on, an omen is up, or the day wants its ghost — and every call site below tolerates the beat
+  // or two before it lands, because a town that throws while the import is in flight is a dead town.
+  let dusk = null, duskP = null;
+  function duskCtx() {
+    // ⚠️ `pos` is the PLAYER'S OWN position object, handed over by reference because banana-town
+    // mutates it in place every frame — the ghosts keep their distance from whoever is standing
+    // there, and six lines of the moved code still say ctx.pos.
+    return { pos: ctx.pos, todayShut, DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track,
+      poof, burst, mark, sprite, show, kill, moveSprite, body, bodies, killBody, propOf, perchZ,
+      glowProblem, setFull, lampsByHour, shutters, dayNum, found, weighted, h, one, fill, keepFn,
+      // ⚠️ GETTERS, because this file reassigns every one of them
+      band: () => band, problems: () => problems, curse: () => curse, vendor: () => vendor,
+      night: () => night, plainNight: () => plainNight, curseTold: () => curseTold,
+      // …and setters, because a getter cannot stand on the left of an assignment
+      setCurse: (v) => { curse = v; }, setVendor: (v) => { vendor = v; },
+      setPlainNight: (v) => { plainNight = v; }, setCurseTold: (v) => { curseTold = v; } };
   }
-  // 🔮 CURSED THINGS COME THROUGH THE NIGHT, not all at once (Trym, 15 Sep: "spawn mysteriously at night"): the first
-  // within moments of dark, then one every so often, up to the night's number out at once; a taken one frees its
-  // place, and a whole night gives a few more than that number — never a flood
-  let nightCap = 0, nightSpawned = 0, nextSpawnAt = 0;
-  function nightBegins(cap) { nightCap = cap; nightSpawned = 0; nextSpawnAt = performance.now() + 3000 + Math.random() * 5000; }
-  function nightEnds() { nightCap = 0; nightSpawned = 0; nextSpawnAt = 0; clearNightObjects(); }
-  function spawnThroughNight(now) {
-    if (!nightCap || now < nextSpawnAt || nightSpawned >= nightCap + 2 || objects.filter((o) => !o.day).length >= nightCap) return;
-    spawnObject(dayNum() * 5 + nightSpawned * 3 + 11, false, null, null, true);
-    nightSpawned++; nextSpawnAt = now + 12000 + Math.random() * 23000;
-  }
-  // 😱 THE CURSE ON YOU: a cursed thing picked up rides along for a while — see-through, a violet edge, afloat, purple
-  // fire at your feet (Trym, 15 Sep: "a fun scary effect like you get on pickups in the rave"); a rare one longer
-  // …and each cursed thing has its own way with you on top (Trym, 15 Sep: "more fun curse-effects"): a class on the
-  // banana (town.astro .is-me-*) — giant, tiny, mirrored, blinking, unseen, cold and shivering, purple — or blue fire,
-  // a blaze, or the dark TWIN that walks a moment behind you
-  const ME_FX = { humlantern: 'purple', coldfire: 'bluefire', stillbear: 'mirror', lostpack: 'giant', coldurn: 'cold', redcap: 'blink', tinwalker: 'tiny', emptymirror: 'unseen', stoppedclock: 'twin', lastlamp: 'blaze' };
-  let meCurseUntil = 0, meFire = null, meFx = '', twin = null, trail = [];
-  function curseMe(def) {
-    endMeCurse();
-    meCurseUntil = performance.now() + (def.rarity === 'rare' ? 40000 : 25000);
-    meFx = ME_FX[def.id] || '';
-    const me = world.querySelector('.tw-me'); if (me) { me.classList.add('is-cursed-me'); if (meFx) me.classList.add('is-me-' + meFx); }
-    meFire = sprite('flame', ctx.pos.x, ctx.pos.y + 17, { z: ctx.pos.y - 1, fps: 8, cls: 'is-flame is-mefire' + (meFx === 'bluefire' ? ' is-bluefire' : ''), size: meFx === 'blaze' ? 2.1 : 1.4 });
-    if (meFx === 'twin') { twin = document.createElement('div'); twin.className = 'tw-me-twin'; const cv = document.createElement('canvas'); cv.width = cv.height = 150; twin.appendChild(cv); world.appendChild(twin); trail = []; }
-  }
-  function endMeCurse() {
-    meCurseUntil = 0;
-    const me = world.querySelector('.tw-me'); if (me) { me.classList.remove('is-cursed-me'); if (meFx) me.classList.remove('is-me-' + meFx); }
-    kill(meFire); meFire = null; if (twin) twin.remove(); twin = null; meFx = '';
-  }
-  function stepMeCurse(now) {
-    if (!meCurseUntil) return;
-    if (now >= meCurseUntil) { endMeCurse(); return; }
-    if (meFire) moveSprite(meFire, ctx.pos.x, ctx.pos.y + 17, -20);   // at the feet, behind the banana
-    if (twin) {   // the twin: your own picture, dark, where you stood a moment ago
-      trail.push([ctx.pos.x, ctx.pos.y]); if (trail.length > 22) trail.shift();
-      const [tx, ty] = trail[0], me = world.querySelector('.tw-me canvas');
-      twin.style.left = pct(tx, W); twin.style.top = pct(ty, H); twin.style.zIndex = String(100 + Math.round(ty) - 1);
-      if (me) { const g = twin.firstChild.getContext('2d'); g.clearRect(0, 0, 150, 150); g.drawImage(me, 0, 0, 150, 150); }
+  function loadDusk() {
+    if (!duskP) {
+      duskP = import('./town-night.js')
+        .then((m) => { dusk = m.bootTownNight(duskCtx()); return dusk; })
+        .catch((e) => { duskP = null; console.warn('[town] the night did not fall', e); return null; });
     }
+    return duskP;
   }
-  function clearNightObjects() { for (const o of objects.slice()) if (!o.day) { objects.splice(objects.indexOf(o), 1); o.el.remove(); o.m.remove(); unhaunt(o); } }
-  function unhaunt(o) { if (o.aura) o.aura.remove(); kill(o.flame); kill(o.lick); kill(o.spark); }
-  function takeObject(o) {
-    const i = objects.indexOf(o); if (i < 0) return;
-    objects.splice(i, 1); o.el.remove(); o.m.remove(); unhaunt(o); burst(o.x, o.y - 6); curseMe(o.def);
-    const first = !found(o.def.id);
-    passStat('cur_' + o.def.id, 1);
-    const ok = grantToShed(o.def.decor);
-    const wo = W_OBJ[o.def.id] || {};
-    if (wo.name) say(wo.name + (wo.desc ? '. ' + wo.desc : ''));
-    track('town_object', { id: o.def.id, first: first ? 1 : 0, kept: ok ? 1 : 0 });
-    if (first) passStat('rep', 5);
-  }
-  function enterCurse(type) {
-    curse = type;
-    if (night) night.style.opacity = String(type === 'hush' ? NIGHT.hush : NIGHT.curse);
-    weather.setKind(type === 'deep' ? 'storm' : type === 'creep' ? 'heavy' : null);
-    if (type !== 'hush') {
-      life.setKeep(keepFn); life.setGlow(() => false);
-      cond.shut.add('cafe'); cond.shut.add('info'); shutters();
-      candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
-    }
-    // a hush is dusk, not a night: it brings no ghosts and no cursed things of its own — the town's own night does
-    // (15 Sep: a real-time hush spawned the night set by the town's day). A creeping or deep night is the night.
-    if (type !== 'hush') { (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true)); nightBegins(type === 'deep' ? 4 : 3); }
-    if (type === 'deep') { vendor = body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' }); bodies.add(vendor); }
-    lampsByHour();
-    if (curseTold !== type + dayNum()) { curseTold = type + dayNum(); track('town_curse', { tier: type }); }
-  }
-  function leaveCurse() {
-    curse = null;
-    weather.setKind(null);
-    life.setGlow((n) => h(dayNum(), 2, n.idx) >= LOOK[band].windowsDark);
-    cond.shut = new Set([...LOOK[band].shut, ...todayShut]); shutters();
-    life.setKeep(keepFn);
-    candles.forEach(kill); candles = [];
-    clearGhosts(true); plainNight = false;   // still night? the plain set comes back on the next look
-    killBody(vendor); vendor = null;
-    nightEnds();
-    lampsByHour();
-  }
-  // 🌒 THE OMENS. A night that will charge the town is foreshadowed for three hours before it:
-  // crows gather on every perch, a wisp shows by daylight, the sky goes wrong at the edges, and
-  // the board pins a red notice. A sign, never a time — the clock is still nobody's to read.
+  const NO_NIGHT = [];
+  const objectsNow = () => (dusk ? dusk.objects() : NO_NIGHT);
+  const ghostsNow = () => (dusk ? dusk.ghosts() : NO_NIGHT);
+
   const OMEN_MS = 3 * 3600000;
-  let omenOn = false, omenCrows = [], omenWisp = null;
   function omenNow() {
     if (forced) return forced === 'omen' ? { type: 'deep' } : null;   // a chapter, or the QA seam, can call the omen up
     const d = Math.floor(Date.now() / CURSE_DAY_MS), t = Date.now();
     for (const e of curseDay(d)) { if (e.type === 'hush') continue; const at = d * CURSE_DAY_MS + e.at; if (t >= at - OMEN_MS && t < at) return { at, type: e.type }; }
     return null;
-  }
-  function omens(on) {
-    omenOn = on;
-    omenCrows.forEach(kill); omenCrows = [];
-    if (on) {
-      const taken = new Set([...cond.crows.filter((s) => !s.gone).map((s) => s.perch.join(',')), ...problems.filter((p) => p.type === 'crows').map((p) => p.x + ',' + p.y)]);
-      for (const [x, y, k] of ANCHORS.perches) if (!taken.has(x + ',' + y)) { const s = sprite('crow', x, y, { fps: 2, z: perchZ(k) }); if (s) omenCrows.push(s); }
-      if (!omenWisp) omenWisp = ghostOf('wisp');
-      night.style.background = '#2a1040';
-    } else { kill(omenWisp); omenWisp = null; night.style.background = ''; }
   }
   function curseNow() {
     if (forced && Date.now() < forcedUntil) return forced === 'omen' ? 'none' : forced;   // a chapter's own night — or 'none', a chapter's own calm
@@ -1161,7 +918,7 @@ export function bootTownLife(ctx) {
     autoAt = now;
     const px = ctx.pos.x, py = ctx.pos.y;
     for (const p of problems) { const r = REACH[p.type]; if (r && Math.hypot(p.x - px, (p.foot != null ? p.foot : p.y) - py) < r) { fix(p.id); return; } }
-    for (const o of objects) if (Math.hypot(o.x - px, o.y - py) < 34) { takeObject(o); return; }
+    for (const o of objectsNow()) if (Math.hypot(o.x - px, o.y - py) < 34) { dusk.takeObject(o); return; }
     const f = life.pickAt ? life.pickAt(px, py, 30) : null;
     if (f) { float(f.x, f.y - 30, '+1'); if (hud && hud.refresh) hud.refresh(); }
   }
@@ -1171,28 +928,31 @@ export function bootTownLife(ctx) {
     if (folk) folk.tick(now, dt);
     workTick(now);
     autoPick(now);
-    stepMeCurse(now);
-    stepGhosts(dt, now);
+    if (dusk) { dusk.stepMeCurse(now); dusk.stepGhosts(dt, now); }
     stepFlying(dt);
     swayBodies(now);
     paintClock(now);
     if (now < secAt) return;
     secAt = now + 500;
     const c = curseNow(), cType = c === 'none' ? null : c;
-    if (cType !== curse) { if (curse) leaveCurse(); if (cType) enterCurse(cType); }
-    const om = !curse && !!omenNow();
-    if (om !== omenOn) omens(om);
+    const om0 = !curse && !!omenNow();
     const beat = life.beat();
+    // ⭐ THE GATE. Evening, a Curse Night, an omen — or a day ghost, which condition() asks for itself.
+    if (!dusk && (beat >= 4 || cType || om0)) loadDusk();
+    if (dusk) {
+      if (cType !== curse) { if (curse) dusk.leaveCurse(); if (cType) dusk.enterCurse(cType); }
+      if (om0 !== dusk.omenOn()) dusk.omens(om0);
+    }
     if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); }
-    bananas = [...life.seam.residents().filter((r) => !r.hidden).map((r) => ({ x: r.x, y: r.y })), ...(ctx.others ? ctx.others() : [])];
+    if (dusk) dusk.setBananas([...life.seam.residents().filter((r) => !r.hidden).map((r) => ({ x: r.x, y: r.y })), ...(ctx.others ? ctx.others() : [])]);
     night.hidden = inside();
     hbar.hidden = inside();
-    if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : omenOn ? 0.12 : 0);
+    if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : (dusk && dusk.omenOn()) ? 0.12 : 0);
     // 👻 every night has its ghosts; dawn takes them (a Curse Night owns its own until it ends)
     const cursedNight = !!(curse && curse !== 'hush');
-    if (beat === 5 && !cursedNight && !plainNight) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => ghostOf(id, null, true)); nightBegins(2); }   // 🔮 the night's cursed things come through it
-    else if (beat !== 5 && plainNight) { plainNight = false; if (!cursedNight) { clearGhosts(true); nightEnds(); } }
-    spawnThroughNight(now);
+    if (beat === 5 && !cursedNight && !plainNight && dusk) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => dusk.ghostOf(id, null, true)); dusk.nightBegins(2); }   // 🔮 the night's cursed things come through it
+    else if (beat !== 5 && plainNight) { plainNight = false; if (!cursedNight && dusk) { dusk.clearGhosts(true); dusk.nightEnds(); } }
+    if (dusk) dusk.spawnThroughNight(now);
     const dark = beat === 4 || beat === 5 || !!curse;
     for (const s of cond.decor) s.el.hidden = !dark;
     // crows fly when you come close (and settle again on the next condition)
@@ -1240,9 +1000,9 @@ export function bootTownLife(ctx) {
     // (Trym, 19 Sep: "it was hard to actually figure out where to tap"). A problem may now say how far it
     // reaches; a lamp claims its whole post and its icon.
     for (const p of problems) if (Math.abs(wx - p.x) < (p.grab || 40) && wy < (p.foot || p.y) + 16 && wy > p.y - (p.tall || 64)) return ['room', 'p:' + p.id];
-    for (const o of objects) if (Math.abs(wx - o.x) < 34 && wy < o.y + 10 && wy > o.y - 60) return ['room', 'o:' + o.def.id];
+    for (const o of objectsNow()) if (Math.abs(wx - o.x) < 34 && wy < o.y + 10 && wy > o.y - 60) return ['room', 'o:' + o.def.id];
     for (const k in hoards) { const h = hoards[k]; if (h && Math.abs(wx - h.x) < 34 && wy < h.y + 10 && wy > h.y - 120) return ['room', 'h:' + k]; }
-    for (const g of ghosts) if (!g.done && g.def.tap && Math.abs(wx - g.x) < 34 && wy < g.y + 6 && wy > g.y - 80) return ['room', 'g:' + g.def.id];
+    for (const g of ghostsNow()) if (!g.done && g.def.tap && Math.abs(wx - g.x) < 34 && wy < g.y + 6 && wy > g.y - 80) return ['room', 'g:' + g.def.id];
     if (merchant && Math.abs(wx - merchant.x) < 34 && wy < merchant.y + 6 && wy > merchant.y - 90) return ['room', 'm'];
     if (vendor && Math.abs(wx - vendor.x) < 34 && wy < vendor.y + 6 && wy > vendor.y - 90) return ['room', 'v'];
     return null;
@@ -1251,8 +1011,8 @@ export function bootTownLife(ctx) {
     const [kind, rest] = [id.slice(0, 1), id.slice(2)];
     if (kind === 'p') { const p = problems.find((q) => q.id === rest); if (p) walkTo(p.x, (p.foot || p.y) + 26, () => { const q = problems.find((z) => z.id === rest); if (!q) return; if (WORK[q.type]) workStart(q); else fix(rest); }); }
     else if (kind === 'h') { const h = hoards[rest]; if (h) walkTo(h.x, h.y + 26, () => lockCard(rest)); }
-    else if (kind === 'o') { const o = objects.find((q) => q.def.id === rest); if (o) walkTo(o.x, o.y + 22, () => takeObject(o)); }
-    else if (kind === 'g') { const g = ghosts.find((q) => q.def.id === rest && !q.done); if (g) walkTo(g.x + (ctx.pos.x < g.x ? -56 : 56), g.y + 6, () => { const line = one(COPY.ghosts, dayNum() + ghosts.length); if (line) say(fill(line)); if (g.s.n > 1) { g.s.fps = 9; setTimeout(() => { g.s.fps = g.def.fps || 5; }, 2500); } track('town_ghost', { id: rest }); }); }
+    else if (kind === 'o') { const o = objectsNow().find((q) => q.def.id === rest); if (o) walkTo(o.x, o.y + 22, () => dusk.takeObject(o)); }
+    else if (kind === 'g') { const g = ghostsNow().find((q) => q.def.id === rest && !q.done); if (g) walkTo(g.x + (ctx.pos.x < g.x ? -56 : 56), g.y + 6, () => { const line = one(COPY.ghosts, dayNum() + ghostsNow().length); if (line) say(fill(line)); if (g.s.n > 1) { g.s.fps = 9; setTimeout(() => { g.s.fps = g.def.fps || 5; }, 2500); } track('town_ghost', { id: rest }); }); }
     else if (kind === 'm' && merchant && !merchant.el.hidden) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, () => shopCard('merchant'));
     else if (kind === 'v' && vendor) walkTo(vendor.x + (ctx.pos.x < vendor.x ? -58 : 58), vendor.y + 8, () => shopCard('vendor'));
   }
@@ -1263,8 +1023,8 @@ export function bootTownLife(ctx) {
   const story = {
     forceCurse: (o = {}) => { forced = o.tier || 'deep'; forcedUntil = Date.now() + (o.mins || 15) * 60000; },
     endCurse: () => { forced = null; forcedUntil = 0; },
-    addGhost: (def) => ghostOf(def.id, { fps: 6, ...def }),
-    plantObject: (id, at) => { const def = OBJECTS.find((o) => o.id === id); return def ? spawnObject(dayNum() + id.length, true, at, def) : null; },
+    addGhost: (def) => (dusk ? dusk.ghostOf(def.id, { fps: 6, ...def }) : null),
+    plantObject: (id, at) => { const def = OBJECTS.find((o) => o.id === id); return def && dusk ? dusk.spawnObject(dayNum() + id.length, true, at, def) : null; },
     closeShop: (key) => { if (CLOSABLE.includes(key)) { cond.shut.add(key); cond.fixedShut.delete(key); shutters(); life.setKeep(keepFn); } },
     nudgeLife: (delta) => { nudge += +delta || 0; apply({ ...L }); },
   };
@@ -1297,7 +1057,7 @@ export function bootTownLife(ctx) {
     nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
-    omen: () => omenOn, nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
+    omen: () => !!(dusk && dusk.omenOn()), nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
     problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, key: p.key, glow: !!(p.glow && p.glow.el && p.glow.el.classList.contains('is-todo') && !p.glow.gone) })),
     // QA: one more problem — of a container type at the first full one with none, or a litter piece at a spot
     plant: (type, at) => {
@@ -1311,12 +1071,15 @@ export function bootTownLife(ctx) {
     fix, fixed,
     lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),
-    ghosts: () => ghosts.filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null, mess: g.mess || 0 })),
-    nightSpawn: () => { if (!TEST) return null; nextSpawnAt = 0; return nightCap; },   // QA: the night's next thing, now
-    cursedMe: () => !!meCurseUntil, meFx: () => meFx,
-    mischief: (id) => { if (!TEST) return null; const g = ghosts.find((q) => q.def.roam && !q.done && (!id || q.def.id === id)); return g ? mischief(g, true) : null; },   // QA: a roamer makes its mess now
-    objects: () => objects.map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
-    take: (id) => { const o = objects.find((q) => q.def.id === id); if (o) takeObject(o); return !!o; },
+    ghosts: () => ghostsNow().filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null, mess: g.mess || 0 })),
+    nightSpawn: () => { if (!TEST || !dusk) return null; return dusk.resetSpawn(); },   // QA: the night's next thing, now
+    cursedMe: () => !!(dusk && dusk.cursedMe()), meFx: () => (dusk ? dusk.meFx() : ''),
+    mischief: (id) => { if (!TEST || !dusk) return null; const g = dusk.ghosts().find((q) => q.def.roam && !q.done && (!id || q.def.id === id)); return g ? dusk.mischief(g, true) : null; },   // QA: a roamer makes its mess now
+    // ⚠️ the walk cannot assert a ghost into being while its chunk is still on the wire (the
+    // shopReady precedent): await this first and the night is in hand.
+    nightReady: () => loadDusk().then((d) => !!d),
+    objects: () => objectsNow().map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
+    take: (id) => { const o = objectsNow().find((q) => q.def.id === id); if (o) dusk.takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,
     shelf: () => shelfFor(), today: () => today.slice(), odd: () => oddKey,
     merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
