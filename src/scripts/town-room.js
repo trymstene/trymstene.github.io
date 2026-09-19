@@ -31,7 +31,7 @@ import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
 import { STATE, OB_RECTS, OB_CIRCLES } from './town-geo.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
-import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_COUNT, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
+import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, MERCHANT, CURSE_SHELF } from '../data/town/stock.js';
 import { TODAY, TODAY_N, ODD_SPOTS, CLOSABLE } from '../data/town/today.js';
@@ -49,6 +49,10 @@ const LIFE_API = 'https://banana-rave.trymstene.workers.dev/town-life';
 const TEST = /[?&]towntest/.test(location.search);
 const DEX = {}; DECOR.forEach((d) => { DEX[d.id] = d; });
 const dayNum = () => Math.floor(Date.now() / 86400000);
+// 🔁 the day is cut into WAVES: a fresh set of your own things about every six hours, so the town is
+// worth opening twice in a day (condition.js explains the arithmetic). waveOfs is the walk's door.
+let waveOfs = 0;
+function waveNum() { return Math.floor((Date.now() % 86400000) / (86400000 / WAVES)) + waveOfs; }
 // a stable 0..1 from a few small numbers, the same for everyone looking (no Math.random in
 // anything two players should agree on)
 const h = (...n) => seedRand(0x70a1 + n.reduce((a, v, i) => a + Math.round(v) * [7919, 313, 131, 53, 17, 3][i % 6], 0));
@@ -500,7 +504,7 @@ export function bootTownLife(ctx) {
     problems.forEach((p) => { if (p.el) p.el.remove(); kill(p.sprite); });
     problems = [];
     const look = LOOK[band], d = dayNum(), who = parseInt(me().slice(0, 6), 16) || 7;
-    const seed = who % 100000 + d * 31 + BANDS.indexOf(band);
+    const seed = who % 100000 + d * 31 + BANDS.indexOf(band) + waveNum() * 7919;   // the wave moves the draw on
     const stormRecent = L.stormAt && Date.now() - L.stormAt < 6 * 3600000;
     const types = PROBLEMS.filter((t) => t.bands.includes(band) && (!t.wx || (t.wx === 'storm' && stormRecent)));
     // every candidate instance, then a weighted seeded draw without repeating an anchor
@@ -515,7 +519,7 @@ export function bootTownLife(ctx) {
       else if (t.on === 'bins' || t.on === 'dumps') ANCHORS[t.on].filter((k) => cond.full.has(k)).forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 4 }); });
       else if (t.on === 'fountain') { if (look.fountain === 'dry') cands.push({ t, key: 'fountain', x: 1100, y: 920 }); }
     }
-    const n = PROBLEM_COUNT[band];
+    const n = PROBLEM_OPEN;
     // ⚠️ a kiosk shut by TODAY is always one of your problems, whatever the count: a closed
     // door with no way to open it is the one thing the design forbids
     // …and it is every SHUT front, not only the one today's event shut: a band that closes the store
@@ -537,7 +541,10 @@ export function bootTownLife(ctx) {
       const pb = propOf(c.key) ? propOf(c.key).base : null;
       problems.push({ id, type: c.t.id, x: c.x, y: c.y, key: c.key, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y, 150, pb != null ? 100 + pb + 3 : null, true), sprite: null, foot: c.y });
     }
-    for (let i = 0; i < n && cands.length; i++) {
+    // ⚠️ COUNT WHAT IS PLACED, NOT WHAT IS DRAWN (19 Sep). A draw that lands on something you already
+    // fixed today is skipped — and it used to spend one of the six anyway, so the more you did the
+    // less the next wave handed you. The loop now keeps drawing until six are actually standing.
+    for (let i = 0, placed = 0; placed < n && cands.length; i++) {
       // rarer types get a smaller share than the street's many spots would give them
       const pick = weighted(cands, (c) => (c.t.on === 'street' ? 1 : c.t.on === 'lamps' ? 2.5 : 3), seed + i * 17);
       const id = pick.t.id + ':' + pick.key;
@@ -557,7 +564,7 @@ export function bootTownLife(ctx) {
       else if (p.type === 'graffiti') p.sprite = sprite(h(seed, i, 2) < 0.5 ? 'graffiti1' : 'graffiti2', p.x, p.y, { z: (propOf(p.key) || { base: p.y }).base + 1 });
       else if (p.type === 'crows') p.sprite = sprite('crow', p.x, p.y, { fps: 2, z: perchZ(p.key) });
       else if (p.type === 'leaves') { const s = sprite('trash1', p.x, p.y); if (s) { s.el.firstChild.src = '/assets/park/l-leaf' + (1 + (i % 2)) + '.png'; p.sprite = s; } }
-      problems.push(p);
+      problems.push(p); placed++;
       glowProblem(p);
     }
   }
@@ -1134,8 +1141,10 @@ export function bootTownLife(ctx) {
     for (const s of cond.crows) if (!s.gone && Math.hypot(ctx.pos.x - s.x, ctx.pos.y - s.y) < 70) flyOff(s);
     // a day changes under a long visit: the seeds move on
     if (dayNum() !== dayAt) { dayAt = dayNum(); todayStage(); condition(); reseedProblems(); }
+    // …and a wave turns over inside a day: the look does not move, only what there is to do
+    else if (waveNum() !== waveAt) { waveAt = waveNum(); reseedProblems(); }
   }
-  let dayAt = dayNum();
+  let dayAt = dayNum(), waveAt = waveNum();
 
   // ═══════════════════════════════ taps: what is under the finger ════════════════════
   function at(wx, wy) {
@@ -1170,6 +1179,8 @@ export function bootTownLife(ctx) {
   // ═══════════════════════════════════ the QA seam ═══════════════════════════════════
   const seam = {
     life: () => L, band: () => band, test: TEST, err: () => lastErr,
+    wave: () => waveNum(),
+    nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
     omen: () => omenOn, nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },

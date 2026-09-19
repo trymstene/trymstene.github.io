@@ -496,12 +496,24 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
 1. Measure chapter-1 completion in Pulse. It decides whether this plan is for everyone or for nobody.
 2. Fix and deploy the three worker-rave defects (§9). Ships whether or not anything else does.
 
-**The closed town**
-3. Data only: `src/data/town/restore.js`, `CLOSABLE` widened, the band ladder, `PROBLEM_COUNT`.
-4. Five surgical edits in `town-room.js` — ⚠️ it has **4 068 bytes left**; if it tips red, move
-   the look into the new chunk, never shave.
-5. Three greps in `check-design.mjs` before the features exist.
-6. Five band screenshots at 393 px. **Trym's thumb.**
+**The closed town** — ✅ **built 19 Sep 2026** (the town's half; the player's own lock is still to come)
+3. ✅ `CLOSABLE` widened to every shopfront and the store joined the band ladder, so a shut front
+   now matches the empty shelf the data always had. Abandoned 3, Struggling 1, none above.
+4. ✅ Four edits in `town-room.js`; it came out at 52 205 B of 56 000 (93%). `SHUT_STILL` means a
+   front with no shutter art is still closable — the dark front, the tape and the red sign do it.
+5. ✅ Three greps in `check-design.mjs`, each proven to fail when its rule is broken: the arcade and
+   the post office never shut; a band may only shut a `CLOSABLE` key; every closable front keeps
+   its keeper indoors.
+6. ✅ Shot at 393 px. **The one still owed to Trym's thumb is his own look at them.**
+
+**The day's work** — ✅ **built 19 Sep 2026**, and it answers Q7–Q9 below
+3b. ✅ `PROBLEM_COUNT` (9→2 by band) became `PROBLEM_OPEN = 6` and `WAVES = 4`: six of your own
+   things at a time, a fresh set about every six hours, the same at every band. What changes with
+   the band is the KIND of work, not the amount.
+3c. ✅ The draw loop counts what it PLACES, not what it draws — a pick that landed on something you
+   had already fixed used to spend one of the six anyway, so the more you did the less you got.
+3d. ✅ The walk turns a wave by hand (`room.nextWave()`) and proves fresh work arrives, six stay
+   six, and nothing you fixed is ever handed back.
 
 **The rooms**
 7. `tools/room_builder.py` lifted out of both scene builders; `in-arcade.png` byte-identical.
@@ -562,12 +574,12 @@ silent yes is a workable plan.
 ### The town's two locks and its work
 | # | Question | Recommendation |
 |---|---|---|
-| 4 | **How bleak is Abandoned** — three shut fronts or five? | Decide from five screenshots at phone width, not from an argument. |
+| 4 | **How bleak is Abandoned** — three shut fronts or five? | ✅ **Three, built.** The screenshots say three dark taped fronts plus five dead lamps and a dry fountain is already bleak; five would leave a stranger nowhere to go. |
 | 5 | **Is the sticker shop ever taped?** | Never. It is the one front that leads to real money. |
 | 6 | **Does the locked signpost show progress** ("the second of four signatures")? | Yes. A sign that only says no is a dead end. |
-| 7 | **The solo climb**: ten tap-sized things a day, or twelve? | Ten (eight days alone to the top, much faster with company). |
-| 8 | **Does the work change from repair to upkeep** as the town improves? | Yes — a Thriving town with twelve broken lamps is a lie, and it fixes the square being most boring at its best. |
-| 9 | **The refill rhythm**: how many waves a day, how many things open at once? | About six open, refilling every few hours, seeded per player, day and wave. |
+| 7 | **The solo climb**: ten tap-sized things a day, or twelve? | ✅ **Twelve, built.** Six open × four waves puts 24 within reach, and the pass counts 12 of them (TOWN_FIX_CAP 24 ÷ TOWN_FIX 2.0). That is +24 a day against −14.4 of decay: the set point to Thriving in four or five days alone. |
+| 8 | **Does the work change from repair to upkeep** as the town improves? | ✅ **Yes, built** — and it needed no new data. Litter and crows were already a player's OWN problems and never the shared look, so a Thriving square still reads pristine to everyone walking through while each player finds six small things. The walk asserts nothing at Thriving is a lamp, a tag or a dry fountain. |
+| 9 | **The refill rhythm**: how many waves a day, how many things open at once? | ✅ **Six open, four waves, built.** Seeded by (player, day, band, wave). Nothing accumulates while you are away: you always walk in to six, never to a backlog. |
 
 ### The jobs
 | # | Question | Recommendation |

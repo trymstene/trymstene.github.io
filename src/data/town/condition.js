@@ -32,9 +32,31 @@ export const LOOK = {
                 bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 3, decor: 2, dayghost: 0 },
 };
 
-// how many things are wrong for ONE player today, by band. Never zero: a town with
-// nothing to do is a picture (docs/town-life-plan.md §3)
-export const PROBLEM_COUNT = { abandoned: 9, struggling: 7, recovering: 5, lively: 3, thriving: 2 };
+// 🔁 HOW MUCH THERE IS TO DO — and it is the same at every band (19 Sep 2026).
+//
+// This used to fall away as the town got better (9 at Abandoned down to 2 at Thriving), which
+// had two consequences nobody wanted. The square was at its most boring at its best, and the
+// arithmetic made a solo climb impossible: above the set point the town loses 0.6 an hour, so
+// 14.4 a day, while two fixes returned four. One player could never hold a good town up.
+//
+// So the number is flat, and the DAY'S WORK ARRIVES IN WAVES. About six of your own things are
+// open at a time, and a fresh set is drawn roughly every six hours — which is what makes the
+// town worth opening twice in a day (Trym, 19 Sep: "high repeatability play throughout a normal
+// 24h human day"). Nothing accumulates while you are away: you always walk in to about six, never
+// to a backlog.
+//
+//   six open × four waves  = 24 things a day within reach
+//   the pass counts 12     = TOWN_FIX_CAP 24 ÷ TOWN_FIX 2.0 (worker-rave)
+//   one player, one day    = +24 against −14.4 of decay, so about +9.6
+//   42 (the set point) → 85 (Thriving) ≈ four or five days alone, far less with company
+//
+// The BAND still decides how the town LOOKS, and the look is where bleakness lives: Abandoned
+// hands over every dark lamp and all three shut fronts on top of these six, so it is nearer
+// sixteen. A Thriving town simply stops being broken — its six are upkeep, not repair, and
+// because litter and crows are a player's OWN problems and never the shared look (see LOOK
+// above), the square still reads pristine to everyone walking through it.
+export const PROBLEM_OPEN = 6;
+export const WAVES = 4;
 
 // ⚠️ `shut` is THE TOWN'S LOCK and it is capped: three shopfronts at Abandoned, one at Struggling,
 // none from the band above that (the day's `closed` event may still shut one more, and that one is

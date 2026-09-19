@@ -46,17 +46,17 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await town(page);
-  // the shim opens at the set point: Recovering, five problems, one dark lamp and one that stutters
+  // the shim opens at the set point: Recovering, six problems, one dark lamp and one that stutters
   expect(await room(page, 'band')).toBe('recovering');
   expect((await room(page, 'life')).life).toBe(42);
   const p0 = await room(page, 'problems');
   const shut0 = await room(page, 'shut');
   const lamps0 = await room(page, 'lamps');
   const dim0 = Object.values(lamps0).filter((s) => s !== 'ok').length;
-  expect(p0.length).toBe(5 + shut0.length + dim0);   // five, the shutter today's event shut, and EVERY dark or stuttering lamp
+  expect(p0.length).toBe(6 + shut0.length + dim0);   // six, a shutter on every shut front, and EVERY dark or stuttering lamp
   expect(Object.values(lamps0).filter((s) => s === 'out').length).toBe(1);
   expect(Object.values(lamps0).filter((s) => s === 'flicker').length).toBe(1);
-  // one mark per problem (five, plus the shutter on any kiosk today's events shut) and one per
+  // one mark per problem (six, plus a shutter on every shut front) and one per
   // strange object lying about by daylight
   expect(await page.locator('.tw-mark').count()).toBe(p0.length + (await room(page, 'objects')).length);
   // the stalls' signs are world things: on a phone they must not outgrow their stalls (Trym, 15 Sep: on iOS "way too big")
@@ -88,12 +88,12 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect(await room(page, 'band')).toBe('abandoned');
   const shutA = (await room(page, 'shut')).sort();
   expect(shutA).toEqual(['cafe', 'info', 'store']);   // the store joined the lock 19 Sep: its shut front now matches the empty shelf it already had
-  // the band's nine, ONE SHUTTER PER SHUT FRONT, and every dark or stuttering lamp on top. The
+  // the day's six, ONE SHUTTER PER SHUT FRONT, and every dark or stuttering lamp on top. The
   // shutters are counted from `shut` rather than written as a number because that is the rule:
   // a front the town shut is always a front you can raise (19 Sep — before that only the front the
   // day's event shut was guaranteed a fix, so a band-shut kiosk could sit there with nothing to tap)
   const probA = await room(page, 'problems');
-  expect(probA.length).toBe(9 + shutA.length + Object.values(await room(page, 'lamps')).filter((s) => s !== 'ok').length);
+  expect(probA.length).toBe(6 + shutA.length + Object.values(await room(page, 'lamps')).filter((s) => s !== 'ok').length);
   for (const k of shutA) expect(probA.some((q) => q.id === 'shutter:' + k)).toBe(true);
   expect((await room(page, 'full')).length).toBe(5);   // three street bins and two dumpsters, all full
   expect(await page.locator('.tw-tape').count()).toBe(6);   // all three fronts taped off, two bands each
@@ -110,14 +110,19 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   await page.screenshot({ path: SHOT + 'abandoned.png' });
   await overview(page, 'abandoned-all');
 
-  // and to the top: Thriving — two problems, everything open and lit, visitors, the full shelf
+  // and to the top: Thriving — six things to do, everything open and lit, visitors, the full shelf
   await setBand(page, 95);
   expect(await room(page, 'band')).toBe('thriving');
-  // two problems — plus, if today's event shut a kiosk, the shutter you can raise on it (a closed
-  // door is always fixable); nothing else is shut in a thriving town
+  // ⭐ SIX, THE SAME AS EVERY OTHER BAND (19 Sep). A thriving town used to offer two things and was
+  // the most boring place in the game at its best; worse, two fixes a day could never out-pay the
+  // 14.4 a day it loses above the set point, so a solo player could not hold a good town up. What
+  // changes with the band is the KIND of work, not the amount — and litter and crows are a player's
+  // own, never the shared look, so the square still reads pristine to everyone walking through.
+  // Plus, if today's event shut a front, the shutter you can raise on it (a closed door is always fixable).
   const shutT = await room(page, 'shut');
   const probT = await room(page, 'problems');
-  expect(probT.length).toBe(2 + shutT.length);
+  expect(probT.length).toBe(6 + shutT.length);
+  expect(probT.every((q) => q.type !== 'lamp' && q.type !== 'graffiti' && q.type !== 'fountain')).toBe(true);   // upkeep, not repair: nothing in a thriving town is BROKEN
   for (const k of shutT) expect(probT.some((q) => q.id === 'shutter:' + k)).toBe(true);
   expect(shutT.length).toBeLessThanOrEqual(1);
   expect((await room(page, 'full')).length).toBe(0);
@@ -437,4 +442,40 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
 test('every cursed object is a decor piece with a picture', () => {
   const rows = Object.values(decorMod).find(Array.isArray) || [];
   for (const o of OBJECTS) { const d = rows.find((r) => r.id === o.decor); expect(d, o.id + ' → ' + o.decor).toBeTruthy(); expect(typeof d.img).toBe('string'); }
+});
+
+// 🔁 THE DAY COMES IN WAVES (19 Sep 2026). A town you could empty and then had to leave until
+// tomorrow was the whole repeatability problem (Trym: "high repeatability play throughout a normal
+// 24h human day"). Six of your own things are open at a time and a fresh set is drawn about every
+// six hours — but a thing you have already fixed must never be handed back, or the town is a
+// treadmill rather than a place. The walk cannot wait six hours, so `nextWave` turns it by hand.
+test('a new wave brings fresh work, and never hands back what you fixed', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 95);   // thriving: no dark lamps, so the set is the drawn six alone
+  // ⚠️ stand clear FIRST and read the two lists in ONE pass: walking onto a thing fixes it, so a
+  // banana left near a front raises its shutter between the `shut` read and the `problems` read
+  await stand(page, 1560, 1110);
+  await page.waitForTimeout(400);
+  const snap = () => page.evaluate(() => ({ shut: window.__town.room.shut(), ids: window.__town.room.problems().map((p) => p.id) }));
+  const a = await snap();
+  const first = a.ids;
+  expect(first.length).toBe(6 + a.shut.length);
+
+  // fix two of them, then turn the wave
+  const done = first.filter((id) => !id.startsWith('shutter:')).slice(0, 2);
+  for (const id of done) await seam(page, (x) => window.__town.room.fix(x), id);
+  await page.waitForTimeout(400);
+  const w0 = await room(page, 'wave');
+  const w1 = await seam(page, () => window.__town.room.nextWave());
+  expect(w1).toBe(w0 + 1);
+  await page.waitForTimeout(600);
+
+  const b = await snap();
+  const second = b.ids;
+  expect(second.length).toBe(6 + b.shut.length);   // six again, not a backlog of ten
+  for (const id of done) expect(second).not.toContain(id);             // ⭐ what you fixed stays fixed
+  expect(second.filter((id) => !first.includes(id)).length).toBeGreaterThan(0);   // and there is genuinely new work
+  expect(errors).toEqual([]);
 });
