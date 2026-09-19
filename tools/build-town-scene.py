@@ -817,10 +817,31 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
         im_.save(os.path.join(OUT, 's-%s-0.png' % fk), optimize=True)
         STATE[fk] = [im_.width, im_.height, 1]
         sfull.append([skey, fk, x + im_.width // 2, base])   # the client adds the plate's own origin
+    # ✨ THE INVITATION. A baked plate cannot glow, so every piece the restock chore touches is
+    # exported a SECOND time as a state sprite that lands exactly over its own painted self — same
+    # single, same pixel, nothing moved — and the room glows THAT. The trick the shutters and the full
+    # bins have always used; here it lets the chore explain itself with no words at all: the crate
+    # stacks glow while your hands are empty, and the bare face glows while you are carrying one.
+    SOVER = ['cr1', 'cr2', 'sh1', 'sh2', 'sh3', 'sh4', 'sh5', 'tbl1', 'tbl2']
+    sover = {}
+    for n, x, base, col, key in SFURN:
+        if key not in SOVER:
+            continue
+        im_ = RB.strip_floor(RB.single(GROC, n))
+        ok_ = 'over' + key
+        im_.save(os.path.join(OUT, 's-%s-0.png' % ok_), optimize=True)
+        STATE[ok_] = [im_.width, im_.height, 1]
+        sover[key] = [ok_, x + im_.width // 2, base]
+    # 📦 the crate a restocking banana carries: the pack's own wooden crate of goods, exported as a
+    # state sprite so the room can hang it on the player while they walk it to a bare shelf.
+    _cr = RB.strip_floor(RB.single(GROC, 357))
+    _cr.save(os.path.join(OUT, 's-crate-0.png'), optimize=True)
+    STATE['crate'] = [_cr.width, _cr.height, 1]
     sroom.save(os.path.join(OUT, 'in-store.png'), optimize=True)
     SX, SY = 300, 620   # the plate floats over the town's west, clear of the arcade's
     STORE = RB.contract('in-store.png', (SX, SY), SW, SH_, scx, scols, sspots)
     STORE['full'] = [[k, fk, SX + cx, SY + b] for k, fk, cx, b in sfull]   # spot key, sprite key, centre x, foot y
+    STORE['over'] = {k: [ok_, SX + cx, SY + b] for k, (ok_, cx, b) in sover.items()}   # spot key → a glowable copy of the plate's own piece
     print('  in-store.png %dx%d, %d cols, %d spots' % (SW, SH_, len(STORE['cols']), len(STORE['spots'])))
 else:
     print('  ! interiors pack not found — no store room')

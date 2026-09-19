@@ -242,6 +242,21 @@ one tap is not a person. The line must be an INVITATION — here is a thing you 
 never a punishment, never a rule quoted at somebody, and never in jargon: this world has no
 “accounts” and nobody is “anonymous”, they just have not kept their pass yet.
 
+### The restock chore
+
+Working at the general store is mostly quiet, with one thing to do: a stack of crates by the wall,
+a run of shelves with nothing on them, and a slow walk between the two. **The reward is the shelf.**
+The face fills, and the row is on the till ten steps away before you leave. No coins change hands
+for it — the cheque is a separate thing that arrives later — so `stocked` must never mention money
+or a number.
+
+`crate` is the lift. The banana walks slower while carrying, and that weight is the whole feel of
+the chore, so let the line be about picking something heavy up. Do NOT instruct: no “now carry it
+to the shelf” and no arrows. A shelf with nothing on it says that by itself.
+
+`full` is for a shop already stocked to the last face. It is contented, not a refusal — being told
+the work is done is a nice thing.
+
 `day` is said at most once a day, when turning up at your own workplace is noticed. It should feel
 like being seen, not like a notification.
 

@@ -924,3 +924,159 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   expect(await seam(page, () => window.__town.work.near()), 'the shop door is').toBe(true);
   expect(errors).toEqual([]);
 });
+
+// 📦 THE RESTOCK CHORE (docs/town-jobs-plan.md §3 and §4). "The chore pays in the room, not in
+// coins": carry a crate, the banana slows, the bare face fills, and the till ten steps away has
+// that row on it before you leave. Every clause of that sentence is a line below.
+//
+// ⚠️ THE FOUR WAYS THIS COULD BE WRONG, and each one is asserted:
+//   · a stranger could lift a shop's crate (it must be scenery to anybody who does not work there)
+//   · the crate could be carried BEHIND the shop floor — the +2000 z trap of design library §22
+//   · the deed could happen on the tap instead of on arrival, so a crate appears over your head
+//     from across the room and the slow walk that IS the chore never happens
+//   · the row could be in the room and not on the till, or gone on the next visit the same day
+test('the restock chore: only for staff, carried slowly, and the till has the row before you leave', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 25);   // struggling: a few faces stocked and the rest of the shop bare
+  // the room asks who you work for when you walk in, so a change of employer is a walk back in
+  const inside = async () => {
+    await seam(page, () => window.__town.rooms.exit());
+    await seam(page, () => window.__town.rooms.enter('store'));
+    await page.waitForTimeout(500);
+  };
+  const bareOf = () => seam(page, () => window.__town.rooms.of('store').full[window.__town.room.bare()][0]);
+
+  // ── a shop's crate is scenery to anybody who does not work there
+  await seam(page, () => window.__town.work.set({ at: '' }));
+  await inside();
+  expect(await room(page, 'hints'), 'nothing is lit for somebody who does not work here').toEqual([]);
+  expect(await room(page, 'open', 'cr1'), 'and the crate does not answer a tap').toBe(false);
+  expect(await room(page, 'carrying')).toBe(false);
+  await seam(page, () => window.__town.work.set({ at: 'condo' }));
+  await inside();
+  expect(await room(page, 'open', 'cr1'), 'nor to somebody who works at the arcade').toBe(false);
+  expect(await room(page, 'hints'), 'and the arcade’s employee is invited to nothing here').toEqual([]);
+
+  // ── you work here: the two stacks light up, and nothing else does
+  await seam(page, () => window.__town.work.set({ at: 'store' }));
+  await inside();
+  const shelf0 = (await room(page, 'shelf')).length;
+  expect(await room(page, 'bare'), 'there is a bare face to fill').toBe(shelf0);
+  expect(await room(page, 'hints'), 'both crate stacks are the invitation').toEqual(['overcr1', 'overcr2']);
+  // ⚠️ design library §22: a thing inside a room needs .is-in AND a z above the plate, or it is
+  // invisible with no error at all. And a glow is a static filter, never an animated one (§21.4).
+  const lit = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('.tw-state.is-todo.is-in')];
+    return {
+      n: els.length,
+      seen: els.filter((e) => getComputedStyle(e).visibility === 'visible').length,
+      lowZ: Math.min(...els.map((e) => +e.style.zIndex)),
+      plateZ: +getComputedStyle(document.querySelector('.tw-room')).zIndex,
+      glow: els.every((e) => /drop-shadow/.test(getComputedStyle(e).filter)),
+      animates: els.some((e) => /filter/.test(getComputedStyle(e).transitionProperty)),
+    };
+  });
+  expect(lit.n, 'two glowing things in the room').toBe(2);
+  expect(lit.seen, '⚠️ the invitation is actually VISIBLE').toBe(lit.n);
+  expect(lit.lowZ, '⚠️ and above the room’s own plate').toBeGreaterThan(lit.plateZ);
+  expect(lit.glow, 'it glows').toBe(true);
+  expect(lit.animates, 'and the glow is not an animated filter (design library §21.4)').toBe(false);
+
+  // ── a REAL tap on a lit crate, from across the aisle: the banana WALKS there, THEN lifts it.
+  // ⚠️ the camera follows the banana, so where a thing is ON SCREEN depends on where the banana is
+  // standing: it is stood in the aisle FIRST and the crate's rect read after, never the other way.
+  await stand(page, 470, 972);   // the aisle, clear of the market table's collider and the doorway wall
+  await page.waitForTimeout(250);
+  const box = await page.evaluate(() => {
+    const v = document.getElementById('twView').getBoundingClientRect();
+    for (const e of document.querySelectorAll('.tw-state.is-todo.is-in')) {
+      const r = e.getBoundingClientRect();
+      if (r.left > v.left && r.right < v.right && r.top > v.top && r.bottom < v.bottom) return { x: r.left + r.width / 2, y: r.top + r.height - 10 };
+    }
+    return null;
+  });
+  expect(box, 'a lit crate is on screen to be tapped').not.toBeNull();
+  await page.mouse.click(box.x, box.y);
+  expect(await room(page, 'carrying'), 'the crate is NOT in your hands on the tap — you have to walk to it').toBe(false);
+  await page.waitForFunction(() => window.__town.room.carrying(), null, { timeout: 8000 });
+  const heldSlow = await seam(page, () => window.__town.slow());
+  expect(heldSlow, 'and carrying it, the banana walks slower').toBeLessThan(1);
+  await page.screenshot({ path: SHOT + 'chore-carry.png' });
+
+  // the crate rides ON the banana, in front of the shop floor
+  const held = await page.evaluate(() => {
+    const e = [...document.querySelectorAll('.tw-state.is-in')].find((q) => q.firstChild && /s-crate-/.test(q.firstChild.src));
+    if (!e) return null;
+    const r = e.getBoundingClientRect(), v = document.getElementById('twView').getBoundingClientRect();
+    return {
+      seen: getComputedStyle(e).visibility === 'visible', z: +e.style.zIndex,
+      plateZ: +getComputedStyle(document.querySelector('.tw-room')).zIndex,
+      inView: r.left > v.left && r.right < v.right && r.top > v.top && r.bottom < v.bottom,
+    };
+  });
+  expect(held, 'the carried crate is a real sprite in the room').not.toBeNull();
+  expect(held.seen, '⚠️ and visible').toBe(true);
+  expect(held.z, '⚠️ IN FRONT of the shop floor, not behind it (design library §22)').toBeGreaterThan(held.plateZ);
+  expect(held.inView, 'and on screen, where the banana is').toBe(true);
+
+  // ── now the bare face is the only lit thing, because that is the whole instruction
+  const pointed = await room(page, 'hints');
+  expect(pointed.length, 'one thing lit: the face about to fill').toBe(1);
+  expect(pointed[0], 'and it is the BARE face, not a stocked one').toBe('over' + (await bareOf()));
+  expect(await room(page, 'open', 'sh1'), 'a shelf that already has goods on it refuses the crate').toBe(false);
+
+  // ── the drop, tapped for real on the lit face: the slow walk across the shop, then it lands
+  const face = await page.evaluate(() => {
+    const r = document.querySelector('.tw-state.is-todo.is-in').getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height - 6 };
+  });
+  await page.mouse.click(face.x, face.y);
+  expect(await room(page, 'carrying'), 'the face does not fill from across the room either').toBe(true);
+  await page.waitForFunction(() => !window.__town.room.carrying(), null, { timeout: 5000 });
+  await page.waitForTimeout(300);
+  expect(await room(page, 'carrying'), 'your hands are empty again').toBe(false);
+  expect(await seam(page, () => window.__town.slow()), 'and you walk at your own speed').toBe(1);
+  expect(await room(page, 'restocked'), 'one face filled today').toBe(1);
+  const shelf1 = await room(page, 'shelf');
+  expect(shelf1.length, 'the shelf the TILL reads grew by exactly one').toBe(shelf0 + 1);
+  const faces = await page.evaluate(() => [...document.querySelectorAll('.tw-state.is-in')].filter((e) => e.firstChild && /s-full/.test(e.firstChild.src)).length);
+  expect(faces, 'and the room shows one more full face').toBe(shelf1.length);
+  await page.screenshot({ path: SHOT + 'chore-stocked.png' });
+
+  // the till's own card carries the row you just put out: the room and the card cannot disagree
+  await room(page, 'open', 'till');
+  await page.waitForFunction(() => !document.getElementById('twPanel').hidden && (document.getElementById('twCardBody').textContent || '').length > 20, null, { timeout: 9000 });
+  const card = await page.evaluate(() => document.getElementById('twCardBody').textContent || '');
+  await seam(page, () => document.getElementById('twCardX').click());
+  const rows = await page.evaluate(() => (window.__town.room.shelf() || []).length);
+  expect(rows, 'the card read the same shelf').toBe(shelf0 + 1);
+  expect(card.length, 'and it is a card with the shop’s rows on it').toBeGreaterThan(20);
+
+  // ── and the row is still there on the next visit the same day
+  await seam(page, () => window.__town.rooms.exit());
+  await page.waitForTimeout(300);
+  expect(await page.locator('.tw-state.is-in').count(), 'nothing of the room is left outside it').toBe(0);
+  await inside();
+  expect(await room(page, 'restocked'), 'the day remembers').toBe(1);
+  expect((await room(page, 'shelf')).length, 'and the row is still on the shelf').toBe(shelf0 + 1);
+
+  // ── a shop stocked to its last face has nothing left to do, and says so rather than refusing
+  await setBand(page, 95);
+  await inside();
+  while ((await room(page, 'bare')) >= 0) {
+    await seam(page, () => window.__town.room.chore('cr1'));
+    await page.waitForTimeout(120);
+    await seam(page, (k) => window.__town.room.chore(k), await bareOf());
+    await page.waitForTimeout(120);
+  }
+  expect(await room(page, 'hints'), 'a shop stocked to the last face invites nothing').toEqual([]);
+  await seam(page, () => window.__town.room.chore('cr1'));
+  await page.waitForTimeout(250);
+  expect(await room(page, 'carrying'), 'and hands you no crate').toBe(false);
+  expect((await page.locator('.tw-toast').first().textContent()).length, 'it tells you the work is done').toBeGreaterThan(0);
+  await page.screenshot({ path: SHOT + 'chore-full.png' });
+  await seam(page, () => window.__town.rooms.exit());
+  expect(errors).toEqual([]);
+});

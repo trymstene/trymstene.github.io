@@ -97,6 +97,9 @@
     "The square needs hands, not blame. Put things right outside and the doors return."
   ],
   "work": {
+    "crate": "That crate is heavier than it looks, which is saying something.",
+    "stocked": "There it is: a full shelf, and the till knows what it is.",
+    "full": "Every shelf is full. Leave them looking pleased.",
     "at": {
       "store": "Pip’s General Store",
       "condo": "the Arcade",

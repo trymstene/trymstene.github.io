@@ -42,6 +42,8 @@ const LENS_EVENTS = [
   'arcade_board', 'arcade_run', 'arcade_score', 'arcade_prize',
   // 🏘️ Town Life, 14 Sep — the door, a fix, a buy, a Curse Night, a ghost, a cursed object, the stall
   'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_ghost', 'town_object', 'town_merchant',
+  // 💼 the jobs, 19 Sep — a boss asked for work, and a shift's own chore
+  'town_job', 'town_chore',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -575,6 +577,7 @@ const ANALYST_EVENTS = [
   'quest_step', 'stand_counter',
   'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
   'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
+  'town_job', 'town_chore',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
   // 🏡 without this the analyst structurally cannot mention the farm — the
   // busiest thing built this year was invisible to its own judgement
   'homestead_open',

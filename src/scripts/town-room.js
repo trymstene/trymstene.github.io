@@ -623,10 +623,26 @@ export function bootTownLife(ctx) {
 
   // ═══════════════════════════════════ the shop ══════════════════════════════════════
   const SALT_SHELF = 0x5e1f;
+  // 📦 THE RESTOCK CHORE pays in the ROOM, never in coins (docs/town-jobs-plan.md §3): a face you
+  // filled is on the shelf in front of you and on the till ten steps away, and that is the whole
+  // wage. One device-local number per day, so tomorrow the shop is the town's again.
+  const RESTOCK = 'tw-restock-v1';
+  function restocked() {
+    try { const r = JSON.parse(localStorage.getItem(RESTOCK) || 'null'); return r && r.d === dayNum() ? (r.n | 0) : 0; } catch (e) { return 0; }
+  }
+  function restockAdd() {
+    const n = restocked() + 1;
+    try { localStorage.setItem(RESTOCK, JSON.stringify({ d: dayNum(), n })); } catch (e) {}
+    return n;
+  }
   function shelfFor() {
     const s = SHELF[band]; if (!s) return null;
     const d = dayNum(), out = [];
     for (const [tier, n] of Object.entries(s)) pickN(POOLS[tier].filter((id) => DEX[id]), n, SALT_SHELF + d * 13 + tier.length).forEach((id) => out.push(id));
+    // ⭐ and the rows YOU put out today, drawn from the same pools with a different salt so they are
+    // never the band's own picks twice. This is why the till has the row on it before you leave.
+    const mine = restocked();
+    if (mine) pickN(POOLS.basic.filter((id) => DEX[id] && !out.includes(id)), mine, SALT_SHELF + d * 7 + 3).forEach((id) => out.push(id));
     return out;
   }
   // 📦 THE CARDS ARE A CHUNK (19 Sep 2026, Trym: "optimize and chunk things if needed for performance").
@@ -639,6 +655,15 @@ export function bootTownLife(ctx) {
   // REASSIGNED here — a whole new `L` arrives from the room on every poll — so a value passed once would
   // freeze the notice board at whatever the town was when the chunk loaded. `cond` is the opposite case:
   // a const object mutated in place, so the reference holds.
+  // which spots in the baked plate are crates to lift and which are faces to fill
+  const CRATES = ['cr1', 'cr2'];
+  const SHELVES = ['sh1', 'sh2', 'sh3', 'sh4', 'sh5', 'tbl1', 'tbl2'];
+  // the first face with nothing on it, or -1 when the shop is as full as the plate allows
+  const bareShelf = () => { const n = (shelfFor() || []).length; return n < (STORE && STORE.full ? STORE.full.length : 0) ? n : -1; };
+  // ⭐ and WHICH face that is, because a crate lands on the next bare one or nowhere: putting it down
+  // on a shelf that already has goods on it would fill a different shelf across the room.
+  const bareKey = () => { const i = bareShelf(); return i < 0 ? '' : STORE.full[i][0]; };
+
   let shop = null, shopP = null;
   function shopCtx() {
     return { COPY, W_BAND, W_OBJ, DEX, BANDS, ANCHORS, MERCHANT, CURSE_SHELF, OBJECTS, BOUNTY, SALT_SHELF,
@@ -725,6 +750,19 @@ export function bootTownLife(ctx) {
     }
     // 🚧 a hoarded front answers with YOUR lock, before anything else can answer with the town's
     if (hoardNow(key)) return lockCard(key);
+    // 📦 THE RESTOCK, and it only exists for somebody who works here. ⚠️ it answers BEFORE the till
+    // so that a tap on a shelf while you are holding a crate puts the crate down rather than opening a
+    // card over your own hands. ⭐ and it only ANSWERS here — the deed waits until the banana has walked
+    // to the thing (ctx.then), because a crate that appears over your head from across the room reads
+    // as a bug, and the slow walk between the stack and the shelf IS the chore.
+    if (roomAt === 'store' && (CRATES.includes(key) || SHELVES.includes(key))) {
+      const mine = ctx.job && ctx.job();
+      if (!mine || mine.at !== 'store') return false;   // not your shop: the spot is scenery
+      if (!carry && !CRATES.includes(key)) return false;   // a shelf with empty hands is just a shelf
+      if (carry && key !== bareKey()) return false;         // and with full hands, only the bare face answers
+      ctx.then(() => chore(key));
+      return true;
+    }
     if (key === 'store' || key === 'till') return shopCard('store');   // 🏪 the front AND the counter inside: the shelf is the same shelf
     if (key === 'board') return shopCard('board');
     return false;
@@ -1081,6 +1119,7 @@ export function bootTownLife(ctx) {
   }
   function tick(now, dt) {
     stepSprites(dt);
+    carryTick();
     workTick(now);
     autoPick(now);
     stepMeCurse(now);
@@ -1186,6 +1225,11 @@ export function bootTownLife(ctx) {
     life: () => L, band: () => band, test: TEST, err: () => lastErr,
     wave: () => waveNum(),
     hoarded: () => HOARDABLE.filter(hoardNow),
+    carrying: () => !!carry,
+    restocked: () => restocked(),
+    bare: () => bareShelf(),
+    hints: () => hints.map((s2) => s2.key),   // ⚠️ not `lit`: the lamps already own that word on this seam
+    chore: (k) => chore(k),
     // ⚠️ the walk cannot play chapter 2, and HOARD_ON is false in the shipped data on purpose — so the
     // only way to see this lock at all is through here, and it is gated on ?towntest like set()
     locks: (on, opened) => { if (!TEST) return false; qaHoard = on == null ? null : !!on; qaOpen = opened ? new Set(opened) : null; hoardings(); shutters(); reseedProblems(); return HOARDABLE.filter(hoardNow); },
@@ -1242,15 +1286,72 @@ export function bootTownLife(ctx) {
   // is-inside hide list blanks it; and +2000 on the z, or the room's own plate (2010) covers it. The
   // banana is 2100 + its y, so 2100 + base keeps the depth sorting honest against it.
   let stocked = [], roomAt = '';
+  // 📦 the crate rides with you and the walk slows: the weight IS the chore. One sprite, moved on
+  // the room's own beat, killed the moment it is put down or the room is left.
+  let carry = null;
+  function carryOn(on) {
+    if (!on && carry) { kill(carry); carry = null; ctx.setSlow(1); hintShow(); return; }
+    if (on && !carry) {
+      // ⚠️ MEASURED, not guessed: the banana is drawn from pos.y-79 (the top of its head) to pos.y-14
+      // (its feet). A crate with its foot at -18 and 36 px of height sits across the body and leaves the
+      // head clear — at -30 it covered the face, which reads as a banana wearing a box.
+      carry = sprite('crate', ctx.pos.x, ctx.pos.y - 18, { z: 2040 + ctx.pos.y, cls: 'is-in', size: 0.45 });
+      ctx.setSlow(0.62);
+      hintShow();   // ⭐ taken up: the invitation goes out, so the only lit thing left is the shelf
+    }
+  }
+  // ⚠️ 2040, not 0: moveSprite's z is 100 + y + dz and the room's own plate is 2010, so a crate
+  // without the lift is carried BEHIND the shop floor (design library §22).
+  function carryTick() { if (carry) moveSprite(carry, ctx.pos.x, ctx.pos.y - 18, 2040); }
+  // the deed itself, once you are standing at it
+  function chore(key) {
+    if (roomAt !== 'store') return false;
+    const w = COPY.work || {};
+    if (bareShelf() < 0) { if (w.full) say(fill(w.full)); return true; }   // stocked to the last face: nothing to do
+    if (CRATES.includes(key)) {
+      if (carry) return false;
+      carryOn(true);
+      if (w.crate) say(fill(w.crate));
+      track('town_chore', { at: 'store', step: 'lift' });
+      return true;
+    }
+    if (!carry || key !== bareKey()) return false;
+    carryOn(false);
+    restockAdd();
+    roomShow('store');            // the face fills, from the very shelf the till's card reads
+    burst(ctx.pos.x, ctx.pos.y - 30);
+    if (w.stocked) say(fill(w.stocked));
+    track('town_chore', { at: 'store', step: 'stock' });
+    return true;
+  }
+  // ✨ THE INVITATION, AND IT IS THE WHOLE INSTRUCTION. Empty hands: the two crate stacks glow.
+  // Carrying one: the bare face glows instead. That is the chore taught with no words and no arrows —
+  // and it only ever shines for somebody who can answer it, so it is never a tease.
+  // Each glowing thing is the SAME single the plate already painted, laid exactly over itself, so
+  // nothing moves and nothing is added to the room: it just picks up the town's own `is-todo` halo.
+  let hints = [];
+  function hintShow() {
+    hints.forEach(kill); hints = [];
+    if (roomAt !== 'store' || !STORE || !STORE.over) return;
+    const mine = ctx.job && ctx.job();
+    if (!mine || mine.at !== 'store' || bareShelf() < 0) return;
+    for (const k of (carry ? [bareKey()] : CRATES)) {
+      const o = STORE.over[k]; if (!o) continue;
+      const sp = sprite(o[0], o[1], o[2], { z: 2000 + o[2], cls: 'is-in is-todo' });
+      if (sp) hints.push(sp);
+    }
+  }
   function roomShow(key) {
     roomAt = key || '';
+    if (roomAt !== 'store') carryOn(false);   // a crate belongs to the shop it came from
     stocked.forEach(kill); stocked = [];
-    if (roomAt !== 'store' || !STORE || !STORE.full) return;
+    if (roomAt !== 'store' || !STORE || !STORE.full) { hintShow(); return; }
     const n = (shelfFor() || []).length;
     for (const [, sk, cx, base] of STORE.full.slice(0, n)) {
       const sp = sprite(sk, cx, base, { z: 2000 + base, cls: 'is-in' });
       if (sp) stocked.push(sp);
     }
+    hintShow();
   }
 
   return { tick, at, tap, openFor, seam, story, roomShow };

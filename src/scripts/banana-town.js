@@ -183,6 +183,9 @@ function cam(snap) {
 
 // ---- walking: tap or keys, foot colliders, the world's edge
 const SPEED = 168;
+// 📦 a banana carrying something walks slower — the restock chore's whole feel is the weight of
+// the crate, so the room sets this and the loop reads it (docs/town-jobs-plan.md §4)
+let slow = 1;
 const keys = {};
 addEventListener('keydown', (e) => {
   const t = e.target;
@@ -302,7 +305,7 @@ function tick(now) {
   if (dx || dy) { tgt.x = pos.x; tgt.y = pos.y; const n = Math.hypot(dx, dy); dx /= n; dy /= n; }
   else { const ex = tgt.x - pos.x, ey = tgt.y - pos.y, d = Math.hypot(ex, ey); if (d > 2) { dx = ex / d; dy = ey / d; } }
   if (dx || dy) {
-    const step = SPEED * dt;
+    const step = SPEED * dt * slow;
     const nx = pos.x + dx * step, ny = pos.y + dy * step;
     if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
     else if (!blocked(nx, pos.y)) pos.x = nx;
@@ -630,7 +633,14 @@ assetsReady().then(() => {
   // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
   import('./town-room.js').then((m) => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos,
-      hud, esc, track, inside: () => !!inRoom, enterRoom, others: () => [],   // other players' bananas, the day the town gets its room (ghosts keep away from them)
+      hud, esc, track, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
+      setSlow: (v) => { slow = +v > 0 ? +v : 1; },
+      // ⭐ WALK TO IT, THEN IT HAPPENS — the grammar every other reachable thing in this world already
+      // uses (a cabinet, a flyer, a resident, a town problem). The tap has already set the target to
+      // the thing's own front by the time this runs, so all the room has to hand over is the deed.
+      then: (fn) => { arriveThen = fn || null; },
+      job: () => (work ? work.seam.job() : null),   // 💼 what the room may ask of you depends on who you work for
+      others: () => [],   // other players' bananas, the day the town gets its room (ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
     if (window.__town) window.__town.room = room.seam;
     // 💼 the jobs, once the room can answer for the words. ⚠️ AFTER the room, never before: the
@@ -643,6 +653,6 @@ assetsReady().then(() => {
       if (window.__town) window.__town.work = work.seam;
     }).catch((e) => { console.warn('[town] work did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

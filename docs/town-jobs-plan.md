@@ -289,8 +289,20 @@ key with a `ROOMS` table.
 very same shelf and table units WITH GOODS ON THEM (403/404/405 are 406/407/408 filled, 423 is 421,
 428 is 426), so a full shop is the same shop rather than a different one. One face per thing on
 Pip's shelf today, read from the same `shelfFor()` the card reads — nothing at Abandoned, three at
-Struggling, five, six, seven. No new state, no number on screen. The restock chore still has
-nowhere to land yet; that waits for the jobs.
+Struggling, five, six, seven. No new state, no number on screen.
+
+✅ **The restock chore, 19 Sep.** It is the whole sentence below, built: tap a crate stack and the
+banana WALKS there before it lifts anything (`ctx.then`, the town's own walk-then-act grammar — a
+crate appearing over your head from across the room reads as a bug); carrying it the banana walks
+at 0.62 speed; the next bare face fills and `shelfFor()` grows by one, so the till ten steps away
+has that row on it before you leave. `tw-restock-v1` is a per-day count on the device: tomorrow the
+shop is the town's again. **It pays nothing in coins** — the reward is the shelf.
+
+⭐ **The invitation is the whole instruction.** Empty hands: the two crate stacks glow. Carrying a
+crate: the bare face glows instead. Not an arrow, not a tutorial, not a word — and it only shines
+for somebody who can answer it (you work here, and there is a face left), so it is never a tease.
+The glow is the town's own `is-todo`, and the glowing thing is the SAME single the plate already
+painted laid exactly over itself (`STORE.over`), because a baked plate cannot glow.
 
 **⭐ Bake the plate at its EMPTIEST.** The shelves in the baked room are bare, and the stocked
 faces are sprites drawn over it by band. So **how full the shop looks IS the town's health**,

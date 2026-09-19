@@ -414,6 +414,9 @@ const lifeFields = {
   'work.at.store': { kind: 'prose', aim: 20, max: 30, note: 'The general store’s name AS IT FITS INSIDE A SENTENCE — it is dropped into {where} in `hired` and `moved`, so it must read naturally mid-line and carry its own article if it needs one. Not the sign plank, which shouts.' },
   'work.at.condo': { kind: 'prose', aim: 20, max: 30, note: 'The arcade’s name, the same way.' },
   'work.at.cafe': { kind: 'prose', aim: 20, max: 30, note: 'The Coffee Cup’s name, the same way.' },
+  'work.crate': { kind: 'prose', aim: 60, max: 80, note: 'Said as you lift a crate off the stack in the shop you work in. The weight is the point — the banana walks slower while carrying — so let the line feel like picking something heavy up. No instruction, no arrow, no “now take it to…”: the shelf with nothing on it is the instruction.' },
+  'work.stocked': { kind: 'prose', aim: 60, max: 80, note: 'Said as the crate goes onto a bare shelf and the face fills. ⭐ the reward IS the shelf and the row now on the till, so this line notices that rather than praising anybody. Never a number, never coins — the chore does not pay in money.' },
+  'work.full': { kind: 'prose', aim: 60, max: 80, note: 'Said when every face the shop has is already filled, so there is nothing left to stock today. Contented, not a refusal — the work is DONE, which is a nice thing to be told.' },
   'work.ask': { kind: 'prose', aim: 26, max: 40, note: 'The question the PLAYER asks a boss to be hired, on their dialogue card beside the two they already answer. The player’s voice, not the boss’s. A question, with a question mark.' },
   'work.hired': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'The boss saying yes. MUST contain {where} (the building). Warm and a little dry — a job in this town is a favour done gladly, never a contract.' },
   'work.moved': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'Said when a player who already works somewhere takes a job here instead. MUST contain {where}. One job at a time is the rule; this line makes leaving the old one feel like a decision, never a telling-off.' },
@@ -472,7 +475,10 @@ const lifeSchema = {
     ghosts: { type: 'array', description: lifeFields['ghosts[]'].note, items: { type: 'string' } },
     closed: { type: 'array', description: lifeFields['closed[]'].note, items: { type: 'string' } },
     lowShut: { type: 'array', description: lifeFields['lowShut[]'].note, items: { type: 'string' } },
-    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'keep', 'day'], properties: {
+    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'keep', 'day', 'crate', 'stocked', 'full'], properties: {
+      crate: { type: 'string', description: lifeFields['work.crate'].note },
+      stocked: { type: 'string', description: lifeFields['work.stocked'].note },
+      full: { type: 'string', description: lifeFields['work.full'].note },
       at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'cafe'], properties: {
         store: { type: 'string', description: lifeFields['work.at.store'].note },
         condo: { type: 'string', description: lifeFields['work.at.condo'].note },
