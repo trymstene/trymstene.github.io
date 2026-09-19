@@ -116,3 +116,67 @@ def contract(img, at, wp, hp, cx, extra_cols=(), spots=None):
     if spots is not None:
         out['spots'] = [[k, ox + a, oy + b, ox + c, oy + d] for k, a, b, c, d in spots]
     return out
+
+
+# ⚠️ STANDING RULE (Trym): Theme_Sorter singles BAKE THEIR THEME FLOOR inside the furniture
+# silhouette — under and between the legs, as a plinth. Export one unstripped and it carries a
+# grey-mauve patch of somebody else's floor onto ours. Measured, not guessed; the grocery theme
+# (16_Grocery_Store_Singles) turned out to use the same #a79796 as the living-room themes, so one
+# palette serves every room.
+FLOOR_PALETTE = [
+    ((0xa7, 0x97, 0x96), 14),   # mauve floor (living/bedroom/music/grocery)
+    ((0xb3, 0x9a, 0x98), 14),   # mauve, lit row
+    ((0xb4, 0x9c, 0x99), 14),   # mauve, lit row 2
+    ((0x6b, 0x50, 0x52), 10),   # mauve floor shadow
+    ((0x9c, 0x78, 0x6b), 8),    # warm floor under beds
+    ((0xf1, 0xce, 0x8e), 10),   # bathroom cream tile
+    ((0xe0, 0xb8, 0x70), 8),    # bathroom tile shading
+    ((0xda, 0xa4, 0x63), 8),    # bathroom tile shadow
+]
+
+
+def strip_floor(img, palette=None):
+    """cut the baked floor patch out of a Theme_Sorter single, in place.
+
+    ⚠️ NOT a colour match. Trym, round two: matching raw colour cut holes in furniture that shares
+    the floor's tones — a piano lid, a clock face. The patch always TOUCHES the sprite's bottom or
+    its outer edge, so this FLOODS from the bottom two rows and from any lower-half pixel that
+    already touches transparency. A look-alike pixel walled in higher up is never reached.
+    """
+    pal = palette or FLOOR_PALETTE
+    px = img.load()
+    w, h = img.width, img.height
+
+    def is_floor(x, y):
+        r, g, b, a = px[x, y]
+        if not a:
+            return False
+        for (cr, cg, cb), tol in pal:
+            if abs(r - cr) <= tol and abs(g - cg) <= tol and abs(b - cb) <= tol:
+                return True
+        return False
+
+    seen, stack = set(), []
+    for x in range(w):
+        for y in (h - 1, h - 2):
+            if y >= 0 and is_floor(x, y):
+                stack.append((x, y))
+    for y in range(h // 2, h):
+        for x in range(w):
+            if not is_floor(x, y):
+                continue
+            for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] == 0:
+                    stack.append((x, y))
+                    break
+    while stack:
+        x, y = stack.pop()
+        if (x, y) in seen or not is_floor(x, y):
+            continue
+        seen.add((x, y))
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in seen:
+                stack.append((nx, ny))
+    for x, y in seen:
+        px[x, y] = (0, 0, 0, 0)
+    return img

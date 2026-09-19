@@ -527,7 +527,12 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    walks. Proven the only way it can be: both scene builders re-run and `in-arcade.png`,
    `in-wood2.png`, `in-wood3.png` and both geo files came back **byte-identical**. The store's
    room is now a table of furniture and two tile coordinates, not a third copy of the shell.
-8. Bake `in-store.png` at its emptiest; look at it before a line of client code.
+8. ✅ **Done 19 Sep.** `in-store.png` is baked at 11×8 tiles (528×384): a flush run of five bare
+   shelves on the back wall, the counter beside them, and a crate stack and bare market table at
+   each side wall with a clear aisle from the door to the till. Ten named spots (`sh1`–`sh5`,
+   `till`, `cr1`, `cr2`, `tbl1`, `tbl2`) are what the stock hangs on. **Three colourways were
+   baked and looked at; Trym picks.** Shipped: red-and-cream checker floor under tan brick.
+   Alternates, one line each: deep red and gold (wall 1440,96), all wood (floor 0,576 + wall 912,0).
 9. `inRoom` refactor in `banana-town.js`; walk the arcade first and prove nothing changed.
 10. The CSS `:not(.is-in)` fix and a design-library section "A ROOM IS ONE SCREEN".
 

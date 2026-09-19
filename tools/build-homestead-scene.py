@@ -705,19 +705,10 @@ BATH = ('3_Bathroom_Singles_48x48', 'Bathroom_Singles_48x48')
 BASE = ('14_Basement_Singles_48x48', 'Basement_Singles_48x48')
 CAMP = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Exteriors_48x48/ME_Theme_Sorter_48x48/11_Camping_Singles_48x48')
 
-# ⚠️ STANDING RULE (Trym): Theme_Sorter singles bake their theme FLOOR inside
-# the furniture silhouette (under/between legs). Strip the measured floor
-# palette before export or pieces carry a wrong-colour plinth onto our floors.
-FLOOR_PALETTE = [
-    ((0xa7, 0x97, 0x96), 14),   # mauve floor (living/bedroom/music)
-    ((0xb3, 0x9a, 0x98), 14),   # mauve, lit row
-    ((0xb4, 0x9c, 0x99), 14),   # mauve, lit row 2
-    ((0x6b, 0x50, 0x52), 10),   # mauve floor shadow
-    ((0x9c, 0x78, 0x6b), 8),    # warm floor under beds
-    ((0xf1, 0xce, 0x8e), 10),   # bathroom cream tile
-    ((0xe0, 0xb8, 0x70), 8),    # bathroom tile shading
-    ((0xda, 0xa4, 0x63), 8),    # bathroom tile shadow
-]
+# ⚠️ The baked-floor rule and the flood that strips it now live in tools/room_builder.py, so the
+# store's pieces get the same treatment as the homestead's (they turned out to share one palette).
+import sys as _sys; _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # run me from anywhere
+import room_builder as RBM
 
 
 def indoor_sprite(path, scale, strip=True, overlap=0):
@@ -749,40 +740,7 @@ def indoor_sprite(path, scale, strip=True, overlap=0):
     # edges in the lower half) through matching pixels; embedded look-alike
     # pixels higher up stay.
     if strip:
-        px = img.load()
-        W2, H2 = img.width, img.height
-        def is_floor(x, y):
-            r, g, b, a = px[x, y]
-            if not a:
-                return False
-            for (cr, cg, cb), tol in FLOOR_PALETTE:
-                if abs(r - cr) <= tol and abs(g - cg) <= tol and abs(b - cb) <= tol:
-                    return True
-            return False
-        seen = set()
-        stack = []
-        for x in range(W2):
-            for y in (H2 - 1, H2 - 2):
-                if y >= 0 and is_floor(x, y):
-                    stack.append((x, y))
-        for y in range(H2 // 2, H2):
-            for x in range(W2):
-                if not is_floor(x, y):
-                    continue
-                for nx, ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
-                    if 0 <= nx < W2 and 0 <= ny < H2 and px[nx, ny][3] == 0:
-                        stack.append((x, y))
-                        break
-        while stack:
-            x, y = stack.pop()
-            if (x, y) in seen or not is_floor(x, y):
-                continue
-            seen.add((x, y))
-            for nx, ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1)):
-                if 0 <= nx < W2 and 0 <= ny < H2 and (nx, ny) not in seen:
-                    stack.append((nx, ny))
-        for x, y in seen:
-            px[x, y] = (0, 0, 0, 0)
+        RBM.strip_floor(img)
     if scale != 1.0:
         img = img.resize((max(1, int(img.width * scale)), max(1, int(img.height * scale))), Image.NEAREST)
     return img
