@@ -696,6 +696,20 @@ export function bootTownLife(ctx) {
   }
   setTimeout(loadShop, 1200);   // the square is walking by now; nothing is waiting on this
 
+  // 🚶 THE TOWN'S VISITORS — bananas from the rest of Banana Town, wandering into the square from
+  // the roads that leave the map. Its own chunk, loaded a beat after the square settles the way the
+  // shop's is: nobody waits on it, and a visitor who arrives a second late is a visitor.
+  let folk = null, folkP = null;
+  function loadFolk() {
+    if (!folkP) {
+      folkP = import('./town-folk.js')
+        .then((m) => { folk = m.bootTownFolk({ world, W, H, pct, PROPS, drawMe, inside }); return folk; })
+        .catch((e) => { folkP = null; console.warn('[town] the visitors did not come', e); return null; });
+    }
+    return folkP;
+  }
+  setTimeout(loadFolk, 1600);
+
   // ☕ THE COFFEE CUP'S COUNTER — its own chunk, loaded the first time somebody who works there taps
   // the kiosk. ⚠️ NOT town-work.js: that one is imported for every visitor to the square, so the
   // counter's weight would be downloaded by a banana who only ever restocks Pip's shelves.
@@ -1154,6 +1168,7 @@ export function bootTownLife(ctx) {
   function tick(now, dt) {
     stepSprites(dt);
     carryTick();
+    if (folk) folk.tick(now, dt);
     workTick(now);
     autoPick(now);
     stepMeCurse(now);
@@ -1265,6 +1280,8 @@ export function bootTownLife(ctx) {
     hints: () => hints.map((s2) => s2.key),
     // ☕ the counter, once its chunk is in: the walk cannot wait on an import it did not ask for
     cafe: () => (cafe ? cafe.seam : null),
+    folk: () => (folk ? folk.seam : null),
+    folkReady: () => loadFolk().then((f) => !!f),
     cafeReady: () => loadCafe().then((c) => !!c),   // ⚠️ not `lit`: the lamps already own that word on this seam
     chore: (k) => chore(k),
     // ⚠️ the walk cannot play chapter 2, and HOARD_ON is false in the shipped data on purpose — so the

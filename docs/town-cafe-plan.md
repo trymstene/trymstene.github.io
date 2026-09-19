@@ -84,6 +84,38 @@ purpose: the night behind the counter is the one worth having).
    terrace as you left it; the barista board under it; two equal buttons). Coins land once
    through the pass, capped; tips are rep.
 
+## 2b. ✅ WHO THE CUSTOMERS ARE — decided 20 Sep (TRYM)
+
+*"I feel this can be a mix of temporary new NPC bananas living in banana town showing up, not just
+the existing NPCs … the NPC townsfolk does have stuff of their own to attend to — like their shops
+and stores … we can supplement with bananas roaming into the city randomly from outside the map."*
+
+And the frame that makes it work: *"when we think of the Banana Town area — that's not really the
+whole town, it's just a part of it, the centre of it — so it makes sense that the map really is
+bigger but in the background."*
+
+So there are TWO populations and they are deliberately opposite:
+
+| | the nine residents | the visitors |
+|---|---|---|
+| what they are | the town's FIXTURES | its TRAFFIC |
+| where | mostly at their own shop | in from the roads that leave the map |
+| how many | nine, always | at most six at once |
+| named | yes, with a card | never — no name, no card, no tap |
+| in the queue | sometimes, not often | most of the time |
+
+✅ **Built 20 Sep: `src/scripts/town-folk.js`.** Visitors arrive at the south road, the north road or
+the bus stop, walk the town's own streets, and sit on a bench / go into a shop / stand about / pass
+through, then leave. Sitting is LOCKED on the beach's own side-facing pair (frames 0 and 4 — the
+engine's `face` labels are inverted, and Banana Bay has sat bananas on chairs with these since July).
+They are randomised with free hats, glasses and held things, so some carry balloons and some carry
+nothing.
+
+⚠️ **Still to do, and Trym's ask:** *"maybe it's best if the townsfolk NPCs don't do too much other
+than walk about sometimes greeting each other … mainly standing by their shops, to keep some
+consistency and not make it too messy."* The residents' day tables in town-life.js have not been
+dialled down yet. That is its own slice, in the EAGER town chunk.
+
 ## 2. The shared workplace
 
 - **On demand, from the living town.** Arrivals are not a spawn timer: a resident's own day
