@@ -522,7 +522,13 @@ export function bootTownLife(ctx) {
       else if (t.on === 'street') ANCHORS.street.forEach(([x, y], i) => cands.push({ t, key: 's' + i, x, y }));
       else if (t.on === 'walls') ANCHORS.walls.forEach(([x, y, k]) => cands.push({ t, key: k, x, y }));
       else if (t.on === 'perches') ANCHORS.perches.filter(([x, y]) => !usedPerch.has(x + ',' + y)).forEach(([x, y, k]) => cands.push({ t, key: k, x, y }));
-      else if (t.on === 'shops') [...cond.shut].forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 6 }); });
+      // ⚠️ shutNow, NEVER cond.shut RAW. cond.shut is the town's lock; shutNow is what a player can
+      // actually see and act on, and it is the one that also asks whether YOUR lock has boarded the
+      // front. Reading the raw set here handed out a shutter to raise on a building behind a worksite
+      // fence — a job you cannot do, because tapping the front opens the signpost instead. The forced
+      // pass below has always guarded this; the weighted draw did not, so the bug only appeared on the
+      // days the draw happened to pick that shutter, and it showed up as a flaky walk rather than a bug.
+      else if (t.on === 'shops') [...cond.shut].filter(shutNow).forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 6 }); });
       else if (t.on === 'bins' || t.on === 'dumps') ANCHORS[t.on].filter((k) => cond.full.has(k)).forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 4 }); });
       else if (t.on === 'fountain') { if (look.fountain === 'dry') cands.push({ t, key: 'fountain', x: 1100, y: 920 }); }
     }

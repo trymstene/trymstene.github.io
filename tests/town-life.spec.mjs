@@ -819,20 +819,32 @@ test('your lock: shipped off, and when it is on it wins the display and hands ba
   expect(tapedNormally, 'the town lock is doing its usual job').toBeGreaterThan(0);
 
   // ── switch it on with nothing opened: the three fronts board up, the arcade never
+  // ⚠️ POLLED, NEVER SLEPT. Boarding a front reseeds the problems and redraws the tape, and a fixed
+  // 700 ms was enough alone and not enough with a second worker on the machine — one run in three went
+  // red and passed on retry. The ghost walk had exactly this bug and this is exactly its fix.
   const on = await seam(page, () => window.__town.room.locks(true, []));
-  await page.waitForTimeout(700);
+  await page.waitForFunction(() => window.__town.room.hoarded().length === 3, null, { timeout: 10000 });
   expect(on.sort()).toEqual(['cafe', 'post', 'store']);
   expect(on, '⭐ the arcade is never boarded: five shipped games answer on a stranger’s worst day').not.toContain('condo');
 
   // ── precedence: your lock wins the display, so a boarded front wears no tape…
   expect(await page.locator('.tw-tape').count(), 'the tape gives way to the fence').toBeLessThan(tapedNormally);
-  // …and hands out no shutter to fix, because you could not act on it either way
-  const probs = await room(page, 'problems');
-  for (const k of on) expect(probs.some((q) => q.id === 'shutter:' + k), k + ' owes you no problem while it is yours to unlock').toBe(false);
+  // …and hands out no shutter to fix, because you could not act on it either way.
+  // ⚠️ EVERY WAVE, NOT JUST THIS ONE. The draw is weighted and seeded, so a boarded front that is
+  // still a candidate only actually appears on the waves it happens to win — which is how this shipped
+  // as a ONE-RUN-IN-THREE FLAKY WALK for a day instead of as the bug it was (fixed 20 Sep: the shutter
+  // draw read cond.shut raw instead of shutNow, so the town's lock handed out a repair job on a
+  // building behind your own worksite fence). Eight draws is enough that a surviving candidate cannot
+  // hide behind the dice.
+  for (let w = 0; w < 8; w++) {
+    const probs = await room(page, 'problems');
+    for (const k of on) expect(probs.some((q) => q.id === 'shutter:' + k), `${k} owes you no problem while it is yours to unlock (wave ${w})`).toBe(false);
+    await seam(page, () => window.__town.room.nextWave());
+  }
 
   // ── the signpost says three things, and the third is what makes it a hook
   await seam(page, () => window.__town.room.open('store'));
-  await page.waitForTimeout(400);
+  await page.waitForFunction(() => !document.getElementById('twPanel').hidden && (document.getElementById('twCardBody').textContent || '').length > 40, null, { timeout: 10000 });
   const card = await page.evaluate(() => document.getElementById('twCardBody').textContent);
   expect(await page.locator('.tw-lock').count()).toBe(1);
   expect(card.length).toBeGreaterThan(40);
@@ -841,14 +853,14 @@ test('your lock: shipped off, and when it is on it wins the display and hands ba
 
   // ── and once the story opens it, the front rejoins the shared weather like every other shop
   const left = await seam(page, () => window.__town.room.locks(true, ['store']));
-  await page.waitForTimeout(700);
+  await page.waitForFunction(() => window.__town.room.hoarded().length === 2 && window.__town.room.problems().some((q) => q.id === 'shutter:store'), null, { timeout: 10000 });
   expect(left.sort()).toEqual(['cafe', 'post']);
   const probs2 = await room(page, 'problems');
   expect(probs2.some((q) => q.id === 'shutter:store'), 'the town’s lock takes over and it is fixable again').toBe(true);
 
   // ── and the switch really does put everything back
   await seam(page, () => window.__town.room.locks(null, null));
-  await page.waitForTimeout(700);
+  await page.waitForFunction(() => window.__town.room.hoarded().length === 0, null, { timeout: 10000 });
   expect(await room(page, 'hoarded')).toEqual([]);
   expect(errors).toEqual([]);
 });
