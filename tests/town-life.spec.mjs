@@ -852,3 +852,75 @@ test('your lock: shipped off, and when it is on it wins the display and hands ba
   expect(await room(page, 'hoarded')).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+// 💼 ASKING A BOSS FOR A JOB (19 Sep 2026, docs/town-jobs-plan.md §3). Three residents can hire
+// you, and the question sits on their own dialogue card beside the two they already answer — no new
+// card and no new button, because the world already had a way to ask somebody something.
+//
+// ⚠️ THE CARD TYPES A STRING, NEVER A PROMISE (world-dialogue.js). So the answer is chosen from a
+// device-side MIRROR of the job while the request goes out behind it. The mirror picks the sentence
+// and nothing else; worker-pass is the authority on the job and on every coin.
+test('a boss can be asked for a job, and answers the right one of four lines', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await page.waitForFunction(() => window.__town && window.__town.work, null, { timeout: 20000 });
+  const bosses = await seam(page, () => window.__town.work.bosses());
+  expect(bosses).toEqual({ pip: 'store', spinner: 'condo', bean: 'cafe' });
+
+  // ⭐ the invitation, not a refusal: a browser with no kept pass cannot be paid, and the line must
+  // read as something you could keep rather than something you did wrong
+  const noPass = await seam(page, () => window.__town.work.ask('pip'));
+  expect(noPass.q).toMatch(/\?$/);
+  expect(noPass.a.length).toBeGreaterThan(20);
+  expect(noPass.a.toLowerCase()).not.toMatch(/account|anonymous|error|cannot/);
+  expect(await seam(page, () => window.__town.work.ask('nib')), 'a resident who runs nothing is not a boss').toBeNull();
+
+  // with a pass on the device the other three lines are reachable
+  await seam(page, () => localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })));
+  await seam(page, () => window.__town.work.set({ at: '' }));
+  const hired = await seam(page, () => window.__town.work.ask('pip'));
+  expect(hired.a, 'the building is named as the rig writes it, not as the sign plank shouts it').toContain('General Store');
+  expect(hired.a).not.toContain('{where}');
+  expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'store' });
+
+  expect((await seam(page, () => window.__town.work.ask('pip'))).a, 'asking again is not a second job').toBe((await seam(page, () => window.__town.work.ask('pip'))).a);
+  const moved = await seam(page, () => window.__town.work.ask('spinner'));
+  expect(moved.a, 'one job at a time: taking another names the one you chose').toContain('Arcade');
+  expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'condo' });
+
+  // ── and the question is really ON THE CARD, reached by walking up and tapping like a player
+  await seam(page, () => window.__town.work.set({ at: '' }));
+  const at = await seam(page, () => { const n = window.__town.life.residents().find((r) => r.key === 'pip'); return { x: n.x, y: n.y }; });
+  await stand(page, at.x + 40, at.y + 20);
+  await page.waitForTimeout(500);
+  const hit = await page.evaluate((p) => {
+    // the resident's own element, found by where it stands
+    let best = null, d = 1e9;
+    for (const el of document.querySelectorAll('.tw-npc')) {
+      const r = el.getBoundingClientRect();
+      if (!r.width) continue;
+      const w = window.__town, s = document.getElementById('twView').getBoundingClientRect();
+      const k = Math.hypot(r.left + r.width / 2 - (s.left + s.width / 2), r.top + r.height - (s.top + s.height / 2));
+      if (k < d) { d = k; best = { x: r.left + r.width / 2, y: r.top + r.height - 12 }; }
+    }
+    return best;
+  }, at);
+  if (hit) { await page.mouse.click(hit.x, hit.y); await page.waitForTimeout(1800); }
+  const said = await page.evaluate(() => document.getElementById('twCardBody').textContent || '');
+  const q = await seam(page, () => (window.__town.work.ask('pip') || {}).q);
+  expect(q, 'the question exists for a boss').toBeTruthy();
+  expect(said, '…and a real tap on the boss puts it on their card').toContain(q);
+  await seam(page, () => document.getElementById('twCardX').click());
+
+  // ── turning up: standing at your own workplace is what marks the day
+  await seam(page, () => window.__town.work.set({ at: 'store' }));
+  await stand(page, 1100, 1250);
+  await page.waitForTimeout(200);
+  expect(await seam(page, () => window.__town.work.near()), 'the square is not your workplace').toBe(false);
+  const sp = await seam(page, () => { const p = window.__town.PROPS.store; return { x: p.x + p.w / 2, y: p.base }; });
+  await stand(page, sp.x, sp.y + 40);
+  await page.waitForTimeout(200);
+  expect(await seam(page, () => window.__town.work.near()), 'the shop door is').toBe(true);
+  expect(errors).toEqual([]);
+});

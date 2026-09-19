@@ -411,6 +411,15 @@ const lifeFields = {
   'vendor.lines[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said on a sale at the night vendor.' },
   'ghosts[]': { kind: 'prose', aim: 80, max: 100, note: 'What a ghost on the bench says when tapped. Small, odd, a little sad or funny; never a threat, never a riddle, never a question.' },
   'closed[]': { kind: 'prose', aim: 70, max: 90, note: 'Why a kiosk is shut today, the way a note on a door reads. Something a person could put right.' },
+  'work.at.store': { kind: 'prose', aim: 20, max: 30, note: 'The general store’s name AS IT FITS INSIDE A SENTENCE — it is dropped into {where} in `hired` and `moved`, so it must read naturally mid-line and carry its own article if it needs one. Not the sign plank, which shouts.' },
+  'work.at.condo': { kind: 'prose', aim: 20, max: 30, note: 'The arcade’s name, the same way.' },
+  'work.at.cafe': { kind: 'prose', aim: 20, max: 30, note: 'The Coffee Cup’s name, the same way.' },
+  'work.ask': { kind: 'prose', aim: 26, max: 40, note: 'The question the PLAYER asks a boss to be hired, on their dialogue card beside the two they already answer. The player’s voice, not the boss’s. A question, with a question mark.' },
+  'work.hired': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'The boss saying yes. MUST contain {where} (the building). Warm and a little dry — a job in this town is a favour done gladly, never a contract.' },
+  'work.moved': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'Said when a player who already works somewhere takes a job here instead. MUST contain {where}. One job at a time is the rule; this line makes leaving the old one feel like a decision, never a telling-off.' },
+  'work.already': { kind: 'prose', aim: 70, max: 90, note: 'Said when you ask for a job you already hold. Fond, brief, no admin.' },
+  'work.keep': { kind: 'prose', aim: 90, max: 110, note: 'Said when the player has no kept pass, so wages cannot be theirs yet. ⭐ AN INVITATION, NEVER A PUNISHMENT and never a rule quoted at them: work is something they can keep, and keeping the pass is how. No jargon — not “account”, not “anonymous”.' },
+  'work.day': { kind: 'prose', aim: 50, max: 70, note: 'The quiet line when turning up at your own workplace marks the day. Said once a day at most. It should feel noticed, not announced.' },
   'locks.store': { kind: 'prose', aim: 70, max: 90, note: 'What the general store WILL be, said at a boarded front. Not what it is — it is a worksite. A shop worth waiting for, in one line.' },
   'locks.post': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the post office.' },
   'locks.cafe': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the Coffee Cup.' },
@@ -446,7 +455,7 @@ function lifeShape(data) {
   return bad;
 }
 const lifeSchema = {
-  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'objects', 'things', 'shutSign', 'forSale'],
+  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'forSale'],
   properties: {
     bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'brings'],
       properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), brings: str(lifeFields['bands[].brings'].note) } } },
@@ -463,6 +472,19 @@ const lifeSchema = {
     ghosts: { type: 'array', description: lifeFields['ghosts[]'].note, items: { type: 'string' } },
     closed: { type: 'array', description: lifeFields['closed[]'].note, items: { type: 'string' } },
     lowShut: { type: 'array', description: lifeFields['lowShut[]'].note, items: { type: 'string' } },
+    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'keep', 'day'], properties: {
+      at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'cafe'], properties: {
+        store: { type: 'string', description: lifeFields['work.at.store'].note },
+        condo: { type: 'string', description: lifeFields['work.at.condo'].note },
+        cafe: { type: 'string', description: lifeFields['work.at.cafe'].note },
+      } },
+      ask: { type: 'string', description: lifeFields['work.ask'].note },
+      hired: { type: 'string', description: lifeFields['work.hired'].note },
+      moved: { type: 'string', description: lifeFields['work.moved'].note },
+      already: { type: 'string', description: lifeFields['work.already'].note },
+      keep: { type: 'string', description: lifeFields['work.keep'].note },
+      day: { type: 'string', description: lifeFields['work.day'].note },
+    } },
     locks: { type: 'object', additionalProperties: false, required: ['store', 'post', 'cafe', 'story', 'step'], properties: {
       store: { type: 'string', description: lifeFields['locks.store'].note },
       post: { type: 'string', description: lifeFields['locks.post'].note },
@@ -493,7 +515,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-life.json',
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
-    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'objects', 'things', 'shutSign', 'forSale'],
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'forSale'],
     // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',

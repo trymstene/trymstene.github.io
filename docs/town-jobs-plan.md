@@ -582,8 +582,18 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    `JOB_PAY × (PAY_BACK + 1)` per person ever — 270 coins at the store — all of it in a named
    ledger slot the desk can see. Also closed a gap found on the way: the town's `fix` and `object`
    faucets had never been tested at all.
-12. `src/scripts/town-work.js` — **one** new lazy chunk at 40 000 (it fits the 41 392 bytes the
-    budgets have free; three chunks do not).
+12. ✅ **Slice one done 19 Sep: you can be hired, and turning up is noticed.**
+    `src/scripts/town-work.js` is the chunk (1 630 B of its 40 000, loaded after the square stands).
+    ⭐ **Asking is a QUESTION ON THE BOSS'S OWN CARD**, beside the two every resident already
+    answers — no new card, no new button. Pip, Spinner and Bean can each be asked; a resident who
+    runs nothing cannot. One job at a time, and taking another names the one you chose.
+    ⚠️ **world-dialogue types a STRING, never a promise**, so the answer is picked from a device-side
+    MIRROR (`tw-job-v1`) while the request goes out behind it. The mirror only decides which of four
+    approved lines is said; worker-pass decides the job and every coin. The one answer a device
+    cannot know — a link that is still an unkept pass — is corrected by the server and said after.
+    Turning up at your own workplace calls `/job/chore`; the day is the server's to count.
+    **Still to come in this group:** the cheque as a letter in the homestead mailbox (`/job/pay` is
+    deployed and unused), the store's restock chore, and the café counter.
 13. The copy jobs (`town-restore`, `town-work`) through the rig, the gate, the approve.
 
 **Chapter 2**

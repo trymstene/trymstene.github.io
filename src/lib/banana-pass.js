@@ -340,6 +340,26 @@ function schedulePush() {
 
 // nudge a sync push without touching the pass — for writes that live OUTSIDE
 // pass-v1 but ride the blob (the gear toggle writes bb-last)
+// 💼 A POST THAT ACTS AS THIS PLAYER (19 Sep 2026) — the jobs' three routes on worker-pass
+// (/job/take, /job/chore, /job/pay), and anything else that must speak AS the pass rather than push
+// a blob. The credentials live in one place and this is the only door out of it.
+// ⚠️ IT NEVER MINTS. ensureAnon() exists for the ordinary faucets, but the job routes require a
+// KEPT pass on purpose — wages on a pass that is one POST from being minted again is a farming hole
+// with no floor — so a device with no link at all gets the same answer the server would give it.
+export async function passPost(path, body = {}) {
+  let link = null;
+  try { link = JSON.parse(localStorage.getItem('pass-link') || 'null'); } catch (e) {}
+  if (!link || !link.credId || !link.token) return { error: 'keep' };
+  try {
+    const r = await fetch(PASS_API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, credId: link.credId, token: link.token }),
+    });
+    return await r.json();
+  } catch (e) { return { error: 'offline' }; }
+}
+
 export function passPush() { schedulePush(); }
 export function passFlush() { pushNow(); }   // 🎩 a purchase settles now, not in ten seconds
 

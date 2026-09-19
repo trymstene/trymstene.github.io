@@ -28,6 +28,7 @@ export const KEYS = {
   'bb-member': { travels: 'pass', why: 'the supporter grant; only a signed webhook can create one' },
   'bb-mtok': { travels: 'pass', why: 'the signed token that makes a supporter hat visible to others' },
   'bwq-c1': { travels: 'pass', why: 'the questline chapter — step level, forward only' },
+  'tw-job-v1': { travels: 'no', why: 'a MIRROR of the job you hold, so a boss’s card can answer in the same beat as the tap — world-dialogue types a string, never a promise. It decides which approved line is said and nothing else; worker-pass is the authority on the job and on every coin' },
   'bwq-c2': { travels: 'pass', why: 'chapter two — which town fronts the story has opened for you (docs/town-jobs-plan.md §2); read today by the town’s own lock, written when chapter two ships' },
 
   // ---- the homestead, which lives in its own server doc ----

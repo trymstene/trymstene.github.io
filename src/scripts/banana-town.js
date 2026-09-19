@@ -234,6 +234,7 @@ function thingAt(wx, wy) {
   return null;
 }
 let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
+let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
   if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray')) return;
@@ -315,6 +316,7 @@ function tick(now) {
   life.tick(now, dt);
   weather.tick(now);
   if (room) room.tick(now, dt);
+  if (work) work.tick(now);
   { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
   if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -348,8 +350,10 @@ function npcCard(key) {
   if (!d) return;
   openCard('');
   card.classList.add('tw-card--npc');   // the portrait leans out past the corner: let it
+  // 💼 a boss can be asked for a job, and the question sits with the two they already answer
+  const jobQ = work && work.topicFor ? work.topicFor(key) : null;
   dialog = mountDialogue(cardBody, {
-    name: d.name, line: d.line, topics: d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
+    name: d.name, line: d.line, topics: jobQ ? [...d.topics, jobQ] : d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
     portrait: (ctx, size) => drawComposite(ctx, size, 0, d.outfit),
     onClose: closeCard,
   });
@@ -629,6 +633,15 @@ assetsReady().then(() => {
       hud, esc, track, inside: () => !!inRoom, enterRoom, others: () => [],   // other players' bananas, the day the town gets its room (ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
     if (window.__town) window.__town.room = room.seam;
+    // 💼 the jobs, once the room can answer for the words. ⚠️ AFTER the room, never before: the
+    // question on a boss's card is copy, and a half-built question is worse than none.
+    import('./town-work.js').then((w) => {
+      work = w.bootTownWork({
+        pos, PROPS, say, track,
+        copy: () => (room && room.seam.copyOf ? room.seam.copyOf('work') : null),
+      });
+      if (window.__town) window.__town.work = work.seam;
+    }).catch((e) => { console.warn('[town] work did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
   window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk

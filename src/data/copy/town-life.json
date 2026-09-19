@@ -96,6 +96,19 @@
     "Hands in the square lift the town. When it rises, this shopfront comes back.",
     "The square needs hands, not blame. Put things right outside and the doors return."
   ],
+  "work": {
+    "at": {
+      "store": "Pip’s General Store",
+      "condo": "the Arcade",
+      "cafe": "the Coffee Cup"
+    },
+    "ask": "May I work here?",
+    "hired": "Gladly. {where} could use your hands.",
+    "moved": "You have chosen {where}. Leave your old place tidy.",
+    "already": "You already have a spot here.",
+    "keep": "Keep this pass, and the work you do stays yours.",
+    "day": "Good to see you at your post."
+  },
   "locks": {
     "store": "Pip’s General Store will have the last one of everything.",
     "post": "The post office will send letters and postcards beyond the square.",

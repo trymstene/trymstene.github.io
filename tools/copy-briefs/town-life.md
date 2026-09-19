@@ -223,6 +223,31 @@ Five lines:
   number, as in 2 and 4). A locked door that only refuses is a dead end; this line is the half
   that makes it a hook.
 
+## `work` — asking a boss for a job
+
+Three residents can hire you: Pip at the general store, Spinner at the arcade, Bean at the Coffee
+Cup. You ask the way you ask them anything else — you walk up, you tap, and the question is on
+their card beside the two they already answer. `work.ask` is that question, and it is in the
+PLAYER'S voice.
+
+`work.at` is the three buildings' names as they fit INSIDE a sentence — they are dropped into
+`{where}` in `hired` and `moved`, so “Gladly, {where} could use your hands” has to read as one
+line. Not the sign planks, which shout, and not a key.
+
+**One job at a time.** Taking a second is leaving the first, which is why `moved` exists and why
+it must read as a decision the player made rather than a rule they broke.
+
+**`keep` is the delicate one.** Wages need a kept pass, because a pass that can be minted again in
+one tap is not a person. The line must be an INVITATION — here is a thing you could keep — and
+never a punishment, never a rule quoted at somebody, and never in jargon: this world has no
+“accounts” and nobody is “anonymous”, they just have not kept their pass yet.
+
+`day` is said at most once a day, when turning up at your own workplace is noticed. It should feel
+like being seen, not like a notification.
+
+Nothing here mentions money, a rate, a day of the week or a number. What the week pays is the
+cheque's business, and the cheque is a letter that arrives later.
+
 ## How this reads
 
 Everything in the voice guide holds. The board is the town's voice; Pip, the stall, the
@@ -232,4 +257,4 @@ spoken line; never an emoji; a curly apostrophe. Nothing here asks the player a 
 ## Return
 
 `bands` (five, in the order above), `store`, `board`, `merchant`, `vendor`, `ghosts`,
-`closed`, `lowShut`, `rooms`, `locks`, `objects` (ten, ids as above, in that order).
+`closed`, `lowShut`, `rooms`, `locks`, `work`, `objects` (ten, ids as above, in that order).
