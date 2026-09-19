@@ -285,6 +285,13 @@ through `openFor('condo')`). The store gets the second one, cribbed from the hom
 `INTERIORS` shape which already ships exactly this: the `inside` boolean becomes an `inRoom`
 key with a `ROOMS` table.
 
+✅ **Built 19 Sep.** The plate is baked empty and the stocked faces are sprites over it: the pack's
+very same shelf and table units WITH GOODS ON THEM (403/404/405 are 406/407/408 filled, 423 is 421,
+428 is 426), so a full shop is the same shop rather than a different one. One face per thing on
+Pip's shelf today, read from the same `shelfFor()` the card reads — nothing at Abandoned, three at
+Struggling, five, six, seven. No new state, no number on screen. The restock chore still has
+nowhere to land yet; that waits for the jobs.
+
 **⭐ Bake the plate at its EMPTIEST.** The shelves in the baked room are bare, and the stocked
 faces are sprites drawn over it by band. So **how full the shop looks IS the town's health**,
 with no new state and no number on screen. The restock chore is: carry a crate, the banana slows,

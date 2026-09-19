@@ -757,3 +757,45 @@ test('a card whose chunk never arrives closes its own frame instead of sitting t
   expect(await seam(page, () => document.getElementById('twPanel').hidden), 'the empty frame closed itself').toBe(true);
   expect(errors, 'a failed chunk is caught, never thrown at the page').toEqual([]);
 });
+
+// 🧺 HOW FULL THE SHOP LOOKS IS THE TOWN'S HEALTH (docs/town-jobs-plan.md §4). The store's plate was
+// baked at its emptiest on purpose; the stocked faces are the pack's very same units with goods on
+// them, laid over it. ONE FACE PER THING ON PIP'S SHELF TODAY, read from the same shelfFor() the card
+// reads — so the room and the card cannot disagree, and there is no new state and no number anywhere.
+// ⚠️ It also guards the invisible-sprite trap (design library §22): a sprite inside a room needs BOTH
+// the .is-in class and the +2000 z, and getting either wrong shows nothing at all with no error.
+test('the shop fills as the town heals, and its stock is the shelf', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  for (const band of [25, 50, 70, 95]) {
+    await setBand(page, band);
+    await seam(page, () => window.__town.rooms.enter('store'));
+    await page.waitForTimeout(700);
+    const st = await page.evaluate(() => {
+      const els = [...document.querySelectorAll('.tw-state.is-in')];
+      return {
+        shelf: (window.__town.room.shelf() || []).length,
+        faces: els.length,
+        seen: els.filter((e) => getComputedStyle(e).visibility === 'visible').length,
+        lowZ: Math.min(...els.map((e) => +e.style.zIndex)),
+        plateZ: +getComputedStyle(document.querySelector('.tw-room')).zIndex,
+      };
+    });
+    expect(st.faces, `band ${band}: one face per thing on the shelf`).toBe(st.shelf);
+    expect(st.seen, `band ${band}: ⚠️ every face is actually VISIBLE — .is-in or the hide list blanks it`).toBe(st.faces);
+    expect(st.lowZ, `band ${band}: ⚠️ above the room's own plate, or it is behind the picture`).toBeGreaterThan(st.plateZ);
+    await seam(page, () => window.__town.rooms.exit());
+    await page.waitForTimeout(300);
+    expect(await page.locator('.tw-state.is-in').count(), 'the faces leave with the room').toBe(0);
+  }
+  // …and a town on its knees keeps its shop shut, so there is nothing to stock at all.
+  // ⚠️ stand clear of the front first: leaving a room puts you on its doorstep, and a shutter is a
+  // WALK-OVER fix, so a banana idling at the door raises the very shutter this is about to assert.
+  await stand(page, 1100, 1250);
+  await setBand(page, 5);
+  await page.waitForTimeout(600);
+  expect(await room(page, 'shut')).toContain('store');
+  expect(await room(page, 'shelf')).toBeNull();
+  expect(errors).toEqual([]);
+});

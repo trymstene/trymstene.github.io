@@ -801,9 +801,26 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
             scols.append([x + col[0], base + col[1], x + col[2], base + col[3]])
         if key:
             sspots.append([key, x, base - im_.height, x + im_.width, base])
+    # 🧺 THE STOCKED FACES. The pack carries the very same units WITH GOODS ON THEM — 403/404/405 are
+    # 406/407/408 filled, 423 is 421 filled, 428 is 426 filled — so a full shop is the same shop, not a
+    # different one. They export as ordinary town state sprites and the client lays them over the bare
+    # plate, one per thing on Pip's shelf today. That is docs/town-jobs-plan.md §4 exactly: HOW FULL THE
+    # SHOP LOOKS IS THE TOWN'S HEALTH, with no new state and no number anywhere on screen.
+    # ⚠️ 1:1, never PROP-scaled: the room's plate is baked at the pack's own 48 px and so is everything on it.
+    SFULL = [('sh1', 403, 28, 176), ('sh2', 404, 76, 176), ('sh3', 405, 124, 176),
+             ('sh4', 403, 172, 176), ('sh5', 404, 220, 176),
+             ('tbl1', 423, 104, 336), ('tbl2', 428, 330, 344)]
+    sfull = []
+    for skey, n, x, base in SFULL:
+        im_ = RB.strip_floor(RB.single(GROC, n))
+        fk = 'full' + skey
+        im_.save(os.path.join(OUT, 's-%s-0.png' % fk), optimize=True)
+        STATE[fk] = [im_.width, im_.height, 1]
+        sfull.append([skey, fk, x + im_.width // 2, base])   # the client adds the plate's own origin
     sroom.save(os.path.join(OUT, 'in-store.png'), optimize=True)
     SX, SY = 300, 620   # the plate floats over the town's west, clear of the arcade's
     STORE = RB.contract('in-store.png', (SX, SY), SW, SH_, scx, scols, sspots)
+    STORE['full'] = [[k, fk, SX + cx, SY + b] for k, fk, cx, b in sfull]   # spot key, sprite key, centre x, foot y
     print('  in-store.png %dx%d, %d cols, %d spots' % (SW, SH_, len(STORE['cols']), len(STORE['spots'])))
 else:
     print('  ! interiors pack not found — no store room')

@@ -392,12 +392,14 @@ function enterRoom(key) {
   pos.x = rm.spawn[0]; pos.y = rm.spawn[1];
   tgt.x = pos.x; tgt.y = pos.y - 34;   // a step into the room, never back out through the door
   cam(true);
+  if (room && room.roomShow) room.roomShow(key);   // 🧺 what the room shows of itself: the store's shelves fill with the town's health
   const rw = room && room.seam && room.seam.copyOf ? room.seam.copyOf('rooms') : null;   // the words are the rig's
   if (rw && rw[key]) say(rw[key]);
 }
 function exitRoom() {
   const key = inRoom; if (!key) return;
   inRoom = '';
+  if (room && room.roomShow) room.roomShow('');
   world.classList.remove('is-inside');
   if (inShade) inShade.hidden = true;
   if (inPlate) inPlate.hidden = true;

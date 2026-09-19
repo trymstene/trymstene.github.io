@@ -29,7 +29,7 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE, OB_RECTS, OB_CIRCLES } from './town-geo.js';
+import { STATE, OB_RECTS, OB_CIRCLES, STORE } from './town-geo.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
@@ -110,7 +110,7 @@ export function bootTownLife(ctx) {
     L = j;
     const b = bandOf(Math.max(0, Math.min(100, j.life + nudge)));
     // today first (it decides what is shut), then the look, then what you can put right
-    if (b !== band) { band = b; todayStage(); condition(); reseedProblems(); }
+    if (b !== band) { band = b; todayStage(); condition(); reseedProblems(); if (roomAt) roomShow(roomAt); }
     // 🎉 a band change while you are here is an EVENT: the new name, and what it brings (up) or
     // what it looks like (down) — and a puff on every lamp whose state changed. (An arrival toast with the
     // band's words used to show on every load; the board and the health card say the same — Trym, 15 Sep:
@@ -1177,5 +1177,25 @@ export function bootTownLife(ctx) {
     // 🧪 a QA purse (the pass worker refuses the 'qa' faucet; the coins stay on the local ledger)
     rich: () => (TEST ? passStat('coins_earned', 500, 'qa') : 0),
   };
-  return { tick, at, tap, openFor, seam, story };
+  // 🧺 HOW FULL THE SHOP LOOKS IS THE TOWN'S HEALTH (docs/town-jobs-plan.md §4). The store's plate is
+  // baked at its emptiest on purpose, and the stocked faces are sprites laid over it — the pack's very
+  // same units with goods on them, so a full shop is the same shop rather than a different one. One face
+  // per thing on Pip's shelf TODAY, read from the same shelfFor() the card reads, so the room and the
+  // card cannot disagree: nothing at Abandoned, three at Struggling, seven at Thriving.
+  // ⚠️ TWO THINGS OR IT IS INVISIBLE (design library §22, measured on the page): `.is-in`, or the
+  // is-inside hide list blanks it; and +2000 on the z, or the room's own plate (2010) covers it. The
+  // banana is 2100 + its y, so 2100 + base keeps the depth sorting honest against it.
+  let stocked = [], roomAt = '';
+  function roomShow(key) {
+    roomAt = key || '';
+    stocked.forEach(kill); stocked = [];
+    if (roomAt !== 'store' || !STORE || !STORE.full) return;
+    const n = (shelfFor() || []).length;
+    for (const [, sk, cx, base] of STORE.full.slice(0, n)) {
+      const sp = sprite(sk, cx, base, { z: 2000 + base, cls: 'is-in' });
+      if (sp) stocked.push(sp);
+    }
+  }
+
+  return { tick, at, tap, openFor, seam, story, roomShow };
 }
