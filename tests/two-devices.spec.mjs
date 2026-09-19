@@ -50,6 +50,9 @@ async function phone(browser) {
   const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, hasTouch: true, isMobile: true });
   // no consent banner over the world — the proof is not about analytics
   await ctx.addInitScript(() => { try { localStorage.setItem('cookie-consent-v1', 'n'); } catch (e) {} });
+  // 🪧 …and chapter one is behind this phone: since 18 Sep the homestead's sign only asks for a name at
+  // the story's move-in, and this proof is about IDENTITY ACROSS DEVICES, not about the questline
+  await ctx.addInitScript(() => { try { localStorage.setItem('bwq-c1', JSON.stringify({ s: 16, k: {}, res: 0, done: 1, resSet: 1 })); } catch (e) {} });
   const page = await ctx.newPage();
   const errs = [];
   page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });

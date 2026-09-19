@@ -2,13 +2,27 @@
 // the sign's hint is hidden and a tap on the sign says why; at the story's move-in the sign asks, and the card closes.
 import { test, expect } from '@playwright/test';
 
-// a real tap on the sign: stand next to it, then click where it stands on screen
+// a real tap on the sign: stand beside it, then click the sign sprite itself (the proof's locator), a
+// few times if need be — a far tap only walks the banana there
+async function signBox(page) {
+  return page.evaluate(() => {
+    const el = [...document.querySelectorAll('#hsWorld .hs-ov')].find((e) => /m-psign/.test(e.style.backgroundImage || ''));
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height * 0.55 };
+  });
+}
 async function tapSign(page) {
-  const g = await page.evaluate(() => { const t = window.__hs; const g = t.signGeo(); t.pos.x = t.tgt.x = g.signAt.x; t.pos.y = t.tgt.y = g.signAt.y + 60; return g; });
+  await page.evaluate(() => { const t = window.__hs, g = t.signGeo(); t.pos.x = t.tgt.x = g.signAt.x; t.pos.y = t.tgt.y = g.signAt.y + 60; });
   await page.waitForTimeout(400);
-  const r = await page.locator('#hsWorld').boundingBox();
-  await page.mouse.click(r.x + g.signAt.x / g.W * r.width, r.y + (g.signAt.y - 30) / g.H * r.height);
-  await page.waitForTimeout(700);
+  for (let i = 0; i < 6; i++) {
+    const b = await signBox(page);
+    if (!b) throw new Error('no sign on screen');
+    await page.mouse.click(b.x, b.y);
+    await page.waitForTimeout(500);
+    if (await page.locator('#hsClaim').isVisible()) return true;
+  }
+  return false;
 }
 
 test('a new banana is not asked to name the homestead until the story moves them in', async ({ page }) => {
@@ -24,7 +38,7 @@ test('a new banana is not asked to name the homestead until the story moves them
   expect(await page.locator('#hsClaim').isHidden()).toBe(true);
   await expect(page.getByText('start with Nib')).toBeVisible();
   // the story's move-in: the hint shows, the sign asks, and the card can be closed
-  await page.evaluate(() => localStorage.setItem('bwq-c1', JSON.stringify({ s: 14, k: {}, res: 0, done: 0, resSet: 1 })));
+  await page.evaluate(() => localStorage.setItem('bwq-c1', JSON.stringify({ s: 15, k: {}, res: 0, done: 0, resSet: 1 })));
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__hs && window.__hs.signGeo, null, { timeout: 30000 });
   await page.waitForTimeout(1500);

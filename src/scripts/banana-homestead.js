@@ -2995,7 +2995,9 @@ function init(visitDoc, visitMiss) {
   // you've done Chapter 1 … and add an X". Chapter 1's step 14 is the move-in (the tent); the name is asked
   // there, never before — the sign's name-it hint stays hidden and a tap on the sign says why. And the card
   // closes: skipping it leaves the yard unclaimed, and the sign reopens it any time after.
-  function readyToClaim() { try { const q = JSON.parse(localStorage.getItem('bwq-c1') || 'null'); return !!(q && (q.done || (+q.s || 0) >= 14)); } catch (e) { return false; } }   // hoisted: refreshSign() runs before this line
+  function readyToClaim() { try { const q = JSON.parse(localStorage.getItem('bwq-c1') || 'null'); return !!(q && (q.done || (+q.s || 0) >= 15)); } catch (e) { return false; } }   // 15 = c1_move_in in
+  // world-quest.js STEPS (the tent). ⚠️ INLINE, never a const above: this function is hoisted and runs before a
+  // const on the line above it would exist, and the catch turns that ReferenceError into a silent false.   // hoisted: refreshSign() runs before this line
   function offerClaim() {
     if (claimShown || state.claimedAt || !readyToClaim()) return;
     claimShown = true;
