@@ -35,10 +35,11 @@ else in that plan survives.
    > Two different looks, two different actions: *go fix the town* against *go play the story*.
    The chapter never writes a byte of shared state (the questline's ONE RULE holds), and the
    band keeps full authority over the tape forever.
-3. **The honest tension.** Trym's warning — *not too generic and 'mini-gamey'* — is the thing
-   this plan is most at risk of failing. It adds a cup minigame, a restock chore, a floor chore
-   and a delivery round, and it defers the one part that is not a minigame: players writing to
-   players. See §6 and the decision in §8 about bringing the postcard forward.
+3. **The tension, and how it was resolved.** Trym's warning — *not too generic and 'mini-gamey'*
+   — was the thing this plan was most at risk of failing: a cup minigame, a restock chore and a
+   floor chore, with the one part that is not a minigame pushed to the end. **19 Sep settled it:
+   players write real letters to each other** (§6), and the world's own post ships first, before
+   a single job. The chores are the town's texture; the post is the point.
 
 ---
 
@@ -309,11 +310,10 @@ Stamp's counter goes on the front, like the Exchange and the Wheel.
 ## 5. The money
 
 - New faucets on worker-pass, **deployed before any client names them** (an unknown `src` is
-  refused): `RULES.town.tips` (the café), `RULES.town.round` (the post round),
-  `RULES.homestead.wage` (the cheque — the mailbox is at the homestead and `areaOf()` reads the
+  refused): `RULES.town.tips` (the café) and `RULES.homestead.wage` (the cheque — the mailbox is at the homestead and `areaOf()` reads the
   path). Plus `JOB_PAY`, `PAY_BACK = 2`, and `POST /job/take`, `/job/chore`, `/job/pay`.
 - Rough weekly shape: the store's cheque around 90, the arcade's around 60, the café's tips
-  2–6 a cup, the round about 12. **Every number is Trym's thumb; the mechanism is not.** (**TRYM**)
+  2–6 a cup. Post pays nothing, which is why it cannot inflate anything. **Every number is Trym's thumb; the mechanism is not.** (**TRYM**)
 - ⚠️ **Four faucets in, one designed sink out.** Removing the café's purchase deletes the town's
   only designed coin sink on the same day this adds four faucets. Either the café still costs
   something (a signing fee you sign for, which fits the fiction better than a purchase), or name
@@ -356,8 +356,8 @@ But a **keepsake with no market value** is safe and is the whole point: a presse
 snapshot of your yard, a picture of the square the night you fixed it. Priceless instead of
 valuable, so there is nothing to farm and everything to keep.
 
-**And the job makes it visible:** the post office round means a *player's hands* carried it. That
-is the difference between a notification and a neighbour.
+**And it is a person, not a system:** a letter is in somebody's handwriting-shaped paper with
+their house name on it. That is the difference between a notification and a neighbour.
 
 ### ⚠️ Delivery is INSTANT. A player never carries another player's post.
 Trym, 19 Sep: *"if players have to deliver things manually, that is too much of a drag that its
@@ -375,52 +375,117 @@ value is the social layer itself rather than a wage — three jobs and a post of
 This is the answer to *"in a world with instant messaging"*. Discord is better than us at
 messages and always will be. It cannot do this:
 
-- A card that arrives is **a thing you keep**. You pin it on the wall of your home, or stand it
-  on a shelf — the homestead's own décor system already places objects and a visitor already
-  sees your yard.
+- A card that arrives is **a thing you keep**. The intent is to pin it on the wall of your home
+  through the décor system that already places objects in a yard a visitor walks through.
+  ⚠️ **Not in v1** — yard items ride the wholesale save replace and all three mirrors, which is
+  the likeliest session-eater in this whole plan. v1 keeps letters in the mailbox.
 - So a wall of cards is **who thought of you**, on display, permanently. A loved yard looks
   loved, which no notification can do.
 - And sending is **giving someone décor with your name on it**, which is worth more than a
   message that scrolls away.
 - Keep, or let it expire. Nothing is owed, nothing is archived, no inbox exists.
 
-### A — The postcard, delivered instantly (the social layer itself)
-Four indices and a stamp: a picture, a line you **pick** from ~48 rig-written lines across six
-moods, and your house name. **There is no text field, so there is nothing to moderate** — the
-copy rule (GPT writes the words) becomes the safety mechanism itself. Addressed to houses, not
-people. Written at the post office counter, or at your own homestead mailbox once you have been
-shown the counter. A card from a house you have never accepted arrives as a **knock** (a name
-and a stamp, nothing else) and you accept the house once. Block sits on the closed view before
-anything is opened; report auto-blocks. A pair cap of about three a week. A single POST behind a
-launch key turns the whole channel off **from Trym's phone, without a deploy**.
+### ⭐ THE LETTER (Trym's decision, 19 Sep — this replaces the earlier "no free text")
+> *"you can write a postcard or letter, the font is the same font we used for quest-letters …
+> you can only send letters through the Homestead … there should be a character-cap, so letters
+> are short and sweet. Just like … twitters old 140 character cap … needless to say we need some
+> monitoring on letters written and sent so we can avoid or filter out profanity if it occurs."*
 
-**The residents post too**, on the same rails and for the same reason as before: at eight
-players a channel that only carries player cards is empty most days. A thank-you after a good
-week, a note the morning after a Curse Night, the pay-cheque envelope. **Load-bearing, never
-cut.**
+**What it is.** A hundred and forty characters, handwritten on the world's own paper, written and
+posted **at your homestead mailbox** — the fixture already exists, is already a collider, already
+movable, and already has an open action with nothing behind it. One tap, no writing desk to
+unlock, no new furniture. Delivery is instant.
 
-**Before one card is sent, these must exist:**
-1. ~~The three live worker-rave defects~~ — **fixed and deployed 19 Sep.**
-2. A **report queue** — there is none anywhere in the repo, while `/community/` promises "anything
-   reported is read by me, Trym".
-3. The kill switch.
-4. `/privacy/` corrected — it currently says the pass never leaves your device, which becomes
-   untrue the first time anything is delivered.
+**Why it can only be written at home:** a homestead now comes from finishing chapter 1, so the
+whole social layer inherits that gate for free, without one extra rule.
 
-### B — What the world sends on its own (ships first, and is not a lesser version)
-The mailbox rail — the flag, the card, the keepsake on your wall — carries the residents' notes
-and the weekly pay-cheque **before any player-to-player card exists**. It is the same build,
-minus the recipients, so it earns every rail and proves whether anyone likes finding post at all.
+**The paper.** `.bwq-paper` from the quest — cream, ruled every 25 px, torn top and bottom edges
+by clip-path, tilted, and it unfolds when it opens. It wears **Caveat 600** and its line-height
+is the rule spacing, so the handwriting sits on the lines (**done 19 Sep**, commit `6e6775fa`).
+⚠️ It is scoped `.bwq-dlg .bwq-paper` today: lift it into `public/css/paper.css` as the world's
+paper layer, the way dialogue was lifted, with its own design-library section and grep.
 
-### C — Free-typed letters: a different product, not a later phase
-The adversarial review's verdict, and I agree with it: at 30–80 letters a week, pre-reading is
-10–15 minutes **every day forever**, and **the week Trym is away it dies** — 200–500 letters
-queue, delivery stops, and the backlog gets bulk-approved, which is worse than no queue at all.
-The unavailability, not the abuse, is what kills it. If it ever ships it is mutual-consent
-pen-pal between two players who have each accepted three of the other's cards, after B has run
-eight weeks with fewer than three upheld reports, with an age statement and real legal advice.
+⚠️ **Never put the tilt and the torn clip-path on the element holding the caret.** iOS draws a
+caret a pixel or two out inside a rotated, clipped box, and the clip eats the last line as the
+box grows. **Tilt and tear the wrapper; the textarea sits upright inside it**, at 16 px or larger
+or iOS zooms the page. Reuse the fixed-veil card shape so the keyboard shrinks around it rather
+than shoving the world, and reuse the `visualViewport` handling that already exists in the
+homestead, the rave and world-travel rather than inventing it.
 
----
+**The cap buys craft, not safety.** Say so plainly: 140 characters fits a Discord invite, a phone
+number, an address, or something cruel. Twitter's 140 hosted every abuse shape there is. The cap
+is there because short is sweet, the rows stay tiny, and a human can skim a screen of them. **One
+cap number in one file**, read by the input, the server and the copy job's limit, with a grep —
+the guestbook's 80-on-the-client-90-on-the-server is the precedent for getting this wrong.
+
+### ⭐ The rail that actually holds: you receive from houses you have ACCEPTED
+A block keyed to a person is defeated in about a minute: a fresh anonymous pass mints a fresh
+slug with one request. **So the real control is on the receiving side.** A letter from a house
+you have never accepted arrives as a **knock** — the house's name and a stamp, no text — and you
+accept the house once. A blocked person's new pass lands as another knock, which is litter, not
+harm. Everything else (a block list, caps) is convenience on top of that.
+
+⚠️ **Key the mailbox by SLUG, not by pass id.** A pass id changes the moment a player logs in,
+and a box keyed to it loses their post; homesteads are addressed by slug and aliases already
+resolve to an owner.
+
+### The monitoring, sized for one person with a phone
+| At | What happens |
+|---|---|
+| **Typing** | the shared family filter runs on the client, and the send is refused before it leaves |
+| **The server** | the same filter again (the client is never the gate), plus a **contact-shape refusal**: a URL, a bare domain, an email, an @handle or a long run of digits is refused outright |
+| **Platform words** | "discord", "roblox" and friends **flag**, never refuse — the site links its own Discord from `/community/`, and refusing the word refuses innocent letters |
+| **Refusals** | kept in a quarantine row, because the refusal table is the only place anyone ever learns what players tried |
+| **Reports** | the report button removes the letter for the recipient **in the same tap** and posts a row into the contact inbox Trym already opens on his phone. No new desk in v1. |
+| **The switch** | `POST_OFF` on the worker, **deployed shut and proven to refuse before the client is built**, so the channel can be turned off from a phone without a deploy |
+| **Caps** | per sender per day, and per pair per week |
+
+**Post-moderation, not a queue**, and the reason is the one that has always been true: a
+pre-read queue dies the week Trym is away, 200 letters back up, and the backlog gets
+bulk-approved, which is worse than no queue. The honest trade is that a bad letter can be seen
+once before it is removed. A holding switch for first contact is **built and left off**, so it is
+a toggle if the refusal table ever turns ugly.
+
+### THE POSTCARD — at the post office, with your own banana in the picture
+A picture, a **picked** line, a stamp. The picture is your own banana composited live over a
+baked template (the park share card already does exactly this), stored as a **recipe, not an
+image** — which is what keeps it inside the $0 model.
+
+- ⚠️ **Three templates in v1, not six.** Each is a tuning loop plus a copy field, and looking at
+  six until they are funny is a session by itself. Park, your own doorstep drawn from your
+  homestead's stage, and the rave card that cannot be photographed.
+- ⚠️ **PNG-8, cropped native and scaled ×2 with nearest**, not JPEG at 1200×800: the area plates
+  are 2200–2760 px wide, so a postcard crop is about 600×400 native and the JPEG estimate was an
+  upscale that rings on hard pixel edges. 20–60 KB each, sharper and smaller.
+- The line is **picked from the rig's deck**, never typed, so the postcard survives a letters
+  shutdown and has no moderation surface of its own.
+
+### What ships in which order
+1. **The world's own post first**: the mailbox flag, the letter card, the residents' notes and
+   the weekly pay-cheque. Same rail, no recipients, and it answers whether anyone enjoys finding
+   post at all.
+2. **Letters v1** — about **seven sessions**: the paper layer, the mailbox room keyed by slug,
+   the filters and the contact-shape refusal, accept-a-house, the caps, the kill switch shut
+   first, the report into the existing inbox, one lazy chunk, the copy job, the two page
+   corrections, Pulse, and a walk at 360 / 375 / 390 / 393 with raw taps — **plus Trym typing one
+   letter on his own phone**, because no test can raise a real keyboard.
+3. **Postcards v2** — about **four and a half sessions**.
+
+⚠️ **Cut from v1 on purpose:** pinning a letter on your wall (it means yard items through the
+wholesale save replace and all three mirrors, the likeliest session-eater), the HQ post desk,
+per-recipient settings beyond one off switch, and sender-side delete.
+
+### Before the first letter is sent
+1. `POST_OFF` deployed and proven to refuse.
+2. The report path lands somewhere Trym opens, and removes the letter in the same tap.
+3. Accept-a-house: an unaccepted sender cannot put text in anyone's box.
+4. Server-side filter, contact-shape refusal, output stripping, caps, quarantine.
+5. One cap number, one file, one grep.
+6. `/privacy/` amended — it says the pass never leaves your device, which is false the first time
+   a letter is delivered — and `/community/` gains the two powers the report actually has.
+7. Both storage keys declared, and the chunk's budget agreed against the town-work slot (⚠️ the
+   build order already spends the free total there; one chunk, one number, decided first).
+8. Pulse reads `post_send`, `post_refused` (by reason), `post_read`, `post_report`.
 
 ## 7. The build order
 
@@ -462,54 +527,85 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
     of the counter, let Trym's thumb pick, then the gestures.
 19. Pulse readers, the stub walk, the town walk at 393 px.
 
-**Then, as its own plan**
-20. The postcard, gated on its four prerequisites.
+**The post** (§6 has the full checklist; each line is roughly a session)
+20. The world's own post first: the mailbox flag, the letter card, the residents' notes, the
+    pay-cheque. No recipients, so no risk, and it answers whether anyone likes finding post.
+21. `POST_OFF` deployed **shut** and proven to refuse, before a line of client code.
+22. The paper layer (`public/css/paper.css`) with its design-library section and grep.
+23. The mailbox room keyed by slug: the filters, the contact-shape refusal, accept-a-house, the
+    caps, the quarantine, the report into the existing contact inbox.
+24. One lazy chunk: write, send, read, report. ⚠️ **One chunk, one budget number, agreed against
+    item 12's slot before the first line** — the free total is already spent there.
+25. The `post` copy job; `/community/` and `/privacy/` corrected in the commit that opens it.
+26. Pulse + the walk at 360/375/390/393 with raw taps, **plus Trym typing one letter on his own
+    phone** — no test can raise a real keyboard.
+27. Postcards: the post office counter, three templates looked at until they are funny, the
+    picker, the copy. About four and a half sessions.
 
-**Honest total: 20–28 sessions. This is a quarter, not a feature.**
-
----
-
-## 8. Decisions only Trym can make
-
-- **Measure chapter 1's completion first?** (Strong recommendation: yes.)
-- **One job at a time, or several at once with smaller sums?** (His words say several; both
-  judges say one.)
-- **"Monthly pay-check" or "each week"?** He wrote both. Monthly means a first cheque up to 30
-  days after taking the job.
-- **Do the machines actually break**, or is the arcade job the cheque plus the floor?
-- **Does a job-holder walk through the tape** (a staff gap), or does a shut workplace mean no
-  work that day? A staff gap quietly reverses "the worse the meter, the more workplaces closed".
-- **Does the café still cost something**, and if not, what replaces the sink?
-- **How bleak is Abandoned** — three shut fronts or five? Decide from the five screenshots.
-- **The solo climb**: how many tap-sized things a day at every band (ten = eight days alone,
-  twelve = four), and does the work change from repair to upkeep as the town improves?
-- **The refill rhythm**: how many waves a day and how many things open at once (the plan assumes
-  about six at once, refilling every few hours).
-- **Is the sticker shop (`print`) ever taped?** It is the one front that leads to real money.
-- **Does the locked signpost show progress** ("two of four signatures"), or only the next step?
-- **May a job-holder walk through their own workplace's tape?** (Same question as the staff gap,
-  now that the two locks are separate.)
-- **The numbers**: the two cheques, the tips, the round, the chore caps.
-- **Chores pay in the room, or a small coin?**
-- **Nib**: payroll desk only, or a job. **The Mayor**: unemployable, or the last boss.
-- **Is the post office a workplace at all**, now that nothing needs carrying? Three jobs and a
-  post office may be the honest answer.
-- **Does the postcard come forward?** If the social layer is what he actually wants, items 3–19
-  are a 15-session detour in front of it.
+**Honest total: about 30 sessions with the post. This is a quarter and a bit, not a feature.**
 
 ---
 
-## 9. ⚠️ Three live holes, independent of this plan
+## 8. Every open question, with a recommendation
 
-Found while researching the safety of player mail. All three are live in `worker-rave` today:
+Consolidated 19 Sep after the letter decision. **Blocking** means a build cannot start without
+it; the rest can be answered as each piece is reached. My recommendation is on every line, so a
+silent yes is a workable plan.
 
-1. **A claimed homestead name skips the family filter.** `/claim` never runs the name through
-   `sanitizeName()`, and that name is the most public player-chosen string in the world.
-2. **Guestbook text never sees `dirty()`** — the filter is compiled into the same file.
-3. **The world-token gate is defeated by a fresh random id** (`pass === alt` skips the check),
-   which defeats every per-day cap in that worker.
+### Blocking — answer before any of this is built
+| # | Question | Recommendation |
+|---|---|---|
+| 1 | **How many players finish chapter 1?** The whole town now sits behind it, and the number is in Pulse today. | Measure it first. If it is small, gate less behind the chapter. |
+| 2 | **What ships first — the town's jobs, or the post?** | **The world's own post**: the mailbox flag, the letter card, the residents' notes. One or two sessions, no recipients, no risk, and it answers whether anyone enjoys finding post before thirty sessions are spent. |
+| 3 | **The budget.** The build order already spends the free total on one 40 KB town chunk; the post wants its own. | Decide the `totalBudget` raise up front, in `_raises`, not in the pull request. |
 
-These want fixing whether or not one letter ever moves, and the fix is one session plus a deploy.
+### The town's two locks and its work
+| # | Question | Recommendation |
+|---|---|---|
+| 4 | **How bleak is Abandoned** — three shut fronts or five? | Decide from five screenshots at phone width, not from an argument. |
+| 5 | **Is the sticker shop ever taped?** | Never. It is the one front that leads to real money. |
+| 6 | **Does the locked signpost show progress** ("the second of four signatures")? | Yes. A sign that only says no is a dead end. |
+| 7 | **The solo climb**: ten tap-sized things a day, or twelve? | Ten (eight days alone to the top, much faster with company). |
+| 8 | **Does the work change from repair to upkeep** as the town improves? | Yes — a Thriving town with twelve broken lamps is a lie, and it fixes the square being most boring at its best. |
+| 9 | **The refill rhythm**: how many waves a day, how many things open at once? | About six open, refilling every few hours, seeded per player, day and wave. |
+
+### The jobs
+| # | Question | Recommendation |
+|---|---|---|
+| 10 | **One job at a time, or several at once?** (His words said several; both judges said one.) | One. It keeps the weekly total honest and makes changing jobs a real decision. |
+| 11 | **"Monthly pay-check" or weekly?** He wrote both. | Weekly. Monthly means a first cheque up to thirty days after taking the job. |
+| 12 | **Do the arcade's machines actually break?** | Yes, but a faulted cabinet must never refuse to play — one annoyed player is a tenth of the population. |
+| 13 | **May a job-holder walk through their own workplace's tape?** | No. A staff gap quietly reverses "the worse the meter, the more workplaces closed". |
+| 14 | **Do chores pay coins, or pay in the room?** | In the room: a restocked face is on tomorrow's shelf. Coins come on the cheque. |
+| 15 | **Does the café still cost something**, now that it is signed for rather than bought? | A signing fee, which fits the fiction and keeps the town's only designed coin sink. Otherwise name the replacement sink. |
+| 16 | **Is the post office a workplace at all**, now that nothing needs carrying? | No. Three jobs and a post office is the honest answer. |
+| 17 | **Nib and the Mayor as employers?** | Nib is the payroll desk (a rail, not a job). The Mayor stays unseen — he is chapter 3. |
+| 18 | **The numbers**: the two cheques, the tips, the chore caps. | The plan's guesses are about 90 and 60 a week and 2–6 a cup; the mechanism is right whatever the numbers. |
+
+### The post
+| # | Question | Recommendation |
+|---|---|---|
+| 19 | **Pre-read every letter, or not?** | No queue — it dies the week you are away and the backlog gets bulk-approved. Build the hold-first-contact switch and leave it **off**. |
+| 20 | **Does accept-a-house gate letters as well as postcards?** | Yes. It is the only control a fresh anonymous pass cannot walk around. |
+| 21 | **Does `/community/` state 13+ for sending?** | Yes, one line, no birthdate collected. |
+| 22 | **Postcards: a picked line, or free text on the back?** | Picked. The picture then survives a letters shutdown and carries no moderation surface. |
+| 23 | **Does deleting your pass wipe letters already sitting in other people's boxes?** | Not in v1. Say plainly on `/privacy/` that sent letters sit in other boxes until newer ones push them out. |
+| 24 | **Does a stamp cost a coin?** | Free in v1. A price on a gesture nobody has tried yet is a reason not to try it. |
+| 25 | **Pinning a letter on your wall — v1 or later?** | Later. Yard items ride the wholesale save replace and all three mirrors; it is the likeliest session-eater here. |
+| 26 | **The cap: 140 characters?** | Yes — and write down that it buys craft, not safety. 140 characters fits a phone number or something cruel. |
+
+## 9. ✅ Three live holes — fixed and deployed 19 Sep 2026
+
+Found while researching the safety of player mail, and closed the same day (commit `5803fe41`,
+deployed by Trym):
+
+1. **A claimed homestead name skipped the family filter.** It now runs through `sanitizeName()`
+   server-side, as do all five visitor-name writes (guestbook, visit, water, hug, feed).
+2. **Guestbook text never met `dirty()`.** It does now, and a refused note says why.
+3. **A wrong world token slipped through** by setting the person id equal to the device id. A bad
+   proof is now a 401 on any POST. ⚠️ Still true by design: an **anonymous id cannot be proven**,
+   so it is mintable — which is exactly why §6's accept-a-house rail, not a block list, is what
+   holds.
 
 ---
 
