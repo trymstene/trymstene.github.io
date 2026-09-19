@@ -598,6 +598,17 @@ glow and a fading ghost outright; that is right for props and wrong for light.
 shining until this was found. `[hidden]` is `display`, and every world page already has
 `[hidden] { display: none !important }` (§4).
 
+**4. MOTION IS `transform` AND `opacity`. Nothing else.** A keyframe that animates `filter`,
+`box-shadow`, `width`, `top` or a colour cannot be handed to the compositor: the browser
+re-rasterises every element wearing it, on every frame, for as long as the loop runs. A glow
+is a STATIC `filter` with an `opacity` animation over it — same look, one raster.
+
+This has now cost the town twice. The first time it was every `is-todo` mark and paint became
+the largest cost at night (15 Sep). The second time the very same file still had `twHum`
+animating a filter on the cursed objects, and on a phone-class CPU the night scene dropped 57%
+of its frames (19 Sep). Twice is a gate: `check-design.mjs` now reads every `@keyframes` in the
+repo and fails any that animates a property the compositor cannot take.
+
 The sky is the area's own: a scrim on the VIEW like the rain (§19), under the rain sheet,
 with the beat's opacity; the shared weather layer is not asked to know about nights.
 
@@ -671,6 +682,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
 | 20 | Every walkable area is the same frame | `check-design.mjs` (an area that sets its own frame width or view height, or skips `/css/world-frame.css`, fails) |
 | 21 | An area's state is drawn onto named props; light stays soft; frame stacks hide with `[hidden]` | the town walk (`tests/town-life.spec.mjs`: dark lamps counted by `display`, the band's look asserted per band) |
+| 21 | Motion is `transform` and `opacity`; a glow is a static filter under an opacity pulse | `check-design.mjs` (any `@keyframes` animating a non-composited property fails) |
 | 22 | A room is one screen; every `.is-inside` hide list ends in `:not(.is-in)` | `check-design.mjs` (a hide list without it fails) + the town walk (the arcade and the store, entered, walked and left) |
 | — | Every device key is declared | `check-storage.mjs` |
 | — | Per-surface JS budgets | `check-budgets.mjs` (needs a build) |

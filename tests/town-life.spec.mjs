@@ -422,12 +422,20 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   expect((await room(page, 'problems')).length).toBe(n0 + 1);
   expect((await room(page, 'ghosts')).find((g) => g.id === 'roam').mess).toBe(mess0 + 1);
   await overview(page, 'mischief', { x: Math.max(0, r2.x - 150), y: Math.max(0, r2.y - 170), width: 300, height: 240 });
-  // and it keeps away: stand 90 px from it, and two seconds later it has put ground between you
+  // and it keeps away: stand 90 px from it, and it puts ground between you.
+  // ⚠️ POLL, DO NOT SLEEP. A roamer finishes the waypoint it is already walking to before it turns
+  // away, so there is no fixed second by which it must have moved. A flat 2.2 s wait made this the one
+  // flaky walk in the suite, and a flaky walk emails Trym a red build for nothing. The claim is that it
+  // ends up farther away, not that it gets there inside any particular window.
   const r3 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
   await stand(page, r3.x + 90, r3.y);
-  await page.waitForTimeout(2200);
-  const r4 = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
-  expect(Math.hypot(r4.x - (r3.x + 90), r4.y - r3.y)).toBeGreaterThan(90);
+  let away = 0;
+  for (let i = 0; i < 12 && away <= 90; i++) {
+    await page.waitForTimeout(600);
+    const r = (await room(page, 'ghosts')).find((g) => g.id === 'roam');
+    if (r) away = Math.hypot(r.x - (r3.x + 90), r.y - r3.y);
+  }
+  expect(away, 'a roamer keeps away from a banana').toBeGreaterThan(90);
   await stand(page, 1360, 880);
   await seam(page, () => window.__town.life.set(8));   // morning
   await page.waitForTimeout(1400);

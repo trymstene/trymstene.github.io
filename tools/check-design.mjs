@@ -33,6 +33,13 @@ const SRC = join(ROOT, 'src');
 // the one file allowed to name a payment host, plus the docs that explain why
 const OWNER = ['src/data/pay-rail.js'];
 const HOSTS = ['buymeacoffee.com', 'ko-fi.com', 'polar.sh/checkout'];
+// ⚡ properties a compositor cannot animate: a shadow or a filter re-rasterises, a box metric re-lays-out
+const KF_COSTLY = new Set(['filter', 'box-shadow', 'text-shadow', 'left', 'top', 'right', 'bottom',
+  'width', 'height', 'margin', 'margin-top', 'margin-left', 'margin-right', 'margin-bottom', 'padding']);
+// the ones that already shipped, each on a few elements rather than a world loop — THIS LIST MAY ONLY SHRINK
+const KF_LEGACY = ['bhClaw', 'bhHookDrop', 'bhShellGlint', 'bwqBundleUp', 'bwtFill', 'bwtGlow',
+  'hs-kglow', 'hs-signbob', 'pkStandFlicker', 'ps-sweep', 'rvFramePulse', 'rvHelloBob', 'rvNeonPulse',
+  'rvPanelWash', 'rvScreenDrop', 'rvScreenGlitch', 'rvStagePopPulse', 'rvStrobe', 'rvTextBlink', 'swtGlow'];
 
 const walk = (dir, out = []) => {
   for (const e of readdirSync(dir)) {
@@ -150,6 +157,24 @@ for (const f of files) {
   // 🦶 the footer is on every page a visitor can reach — design library §17
   if (rel.startsWith('src/pages/') && rel.endsWith('.astro') && /showFooter\s*=\s*\{\s*false\s*\}/.test(code) && !NO_FOOTER_OK.includes(rel)) {
     problems.push([rel, 'opts out of the footer (showFooter={false}) — only the desk and the dev pages may, see design library §17']);
+  }
+
+  // ⚡ MOTION IS transform AND opacity — design library §21.4. A keyframe that animates a property the
+  // compositor cannot take makes the browser re-rasterise (filter, a shadow) or re-lay-out (left, width,
+  // margin) every element wearing it, on every frame, for as long as the loop runs. A glow is a STATIC
+  // filter with an opacity animation over it: same look, one raster.
+  //   This has cost the TOWN twice. Every is-todo mark, and paint became the largest cost at night
+  //   (15 Sep). Then the very same file still had twHum animating a filter on the cursed objects, and on
+  //   a phone-class CPU the night scene dropped 57% of its frames (19 Sep). Twice is a gate.
+  // ⚠️ KF_LEGACY is the twenty that already shipped elsewhere, each on a handful of elements rather than
+  // a world loop. IT MAY ONLY SHRINK. Nothing new joins it: a new one is a red build.
+  for (const m of code.matchAll(/@keyframes\s+([\w-]+)\s*\{/g)) {
+    if (KF_LEGACY.includes(m[1])) continue;
+    let i = m.index + m[0].length, depth = 1;
+    while (depth && i < code.length) { const c = code[i++]; if (c === '{') depth++; else if (c === '}') depth--; }
+    const body = code.slice(m.index + m[0].length, i - 1);
+    const bad = [...new Set([...body.matchAll(/(?:^|[;{]\s*)([a-z-]+)\s*:/g)].map((x) => x[1]))].filter((prop) => KF_COSTLY.has(prop));
+    if (bad.length) problems.push([rel, `@keyframes ${m[1]} animates ${bad.join(', ')} — the compositor cannot take that, so every element wearing it is re-rasterised or re-laid-out on every frame. Make the ${bad[0]} static and animate opacity instead (design library §21.4)`]);
   }
 
   // 🚪 A ROOM IS ONE SCREEN — design library §22. While a room is up, the area's world wears

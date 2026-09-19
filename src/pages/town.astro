@@ -194,9 +194,13 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-state img.is-on { visibility: visible; }
     .tw-state.is-flip { transform: scaleX(-1); }
     .tw-state.is-fade { transition: opacity 1.4s ease; }
-    .tw-state.is-hum { animation: twHum 2.2s ease-in-out infinite alternate; }
+    /* ⚡ THE SAME LESSON AS is-todo BELOW, and this one was still carrying the bug (19 Sep). A hum that
+       ANIMATES THE FILTER re-rasterises the thing on every frame of a 2.2 s loop — on a phone-class CPU
+       the night scene was dropping 57% of its frames. The glow is static now and the pulse is opacity.
+       Motion in this world is transform and opacity; everything else is a repaint (design library §21). */
+    .tw-state.is-hum { filter: brightness(1.05) drop-shadow(0 0 5px rgba(150, 110, 255, 0.8)); animation: twHum 2.2s ease-in-out infinite alternate; }
     .tw-state.is-flicker { animation: twFlicker 1.7s steps(1) infinite; }
-    @keyframes twHum { from { filter: brightness(0.92) drop-shadow(0 0 3px rgba(150, 110, 255, 0.6)); } to { filter: brightness(1.18) drop-shadow(0 0 6px rgba(150, 110, 255, 0.9)); } }
+    @keyframes twHum { from { opacity: 0.82; } to { opacity: 1; } }
     /* a thing to fix GLOWS, softly — the only mark on anything smaller than a lamp; a cursed object
        glows the other colour (Trym, 15 Sep: "a slight glow or something, subtle") */
     /* ⚡ the glow is a STATIC drop-shadow and the animation is opacity: animating the filter re-rasterised every
