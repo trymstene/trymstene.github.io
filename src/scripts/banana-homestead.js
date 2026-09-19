@@ -11,7 +11,7 @@ import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inv
 // the YardRoom DO + slugs arrive with visiting (M1) — the shape below is
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
-import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone, pullIfStale } from '../lib/banana-pass.js';
+import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone, pullIfStale, passPost } from '../lib/banana-pass.js';
 import { loggedIn } from '../lib/pass-sync.js';
 import { catCustom, loadCatalog, fullOutfit, noteCatch } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -2890,10 +2890,13 @@ function init(visitDoc, visitMiss) {
     if (mailDot) mailDot.hidden = !postUnread();
   }
   function letterEl(m) {
-    const w = ((POSTCOPY.letters || {})[m.id] || {});
+    // 💼 a cheque is keyed by the WEEK it paid for, so its words cannot live under a fixed id the
+    // way the five occasion letters do — they come from POSTCOPY.wage and carry the amount.
+    const wage = String(m.id || '').indexOf('wage:') === 0;
+    const w = wage ? (POSTCOPY.wage || {}) : ((POSTCOPY.letters || {})[m.id] || {});
     const p = document.createElement('div');
-    p.className = 'bw-paper';
-    p.textContent = pFill(w.line);
+    p.className = 'bw-paper' + (wage ? ' bw-paper--wage' : '');
+    p.textContent = pFill(w.line).replace('{n}', String(m.n | 0));
     const from = document.createElement('i');
     from.className = 'bw-paper__from';
     from.textContent = w.from || '';
@@ -2926,6 +2929,7 @@ function init(visitDoc, visitMiss) {
   }
   function openPost() {
     postDeliver();
+    wageCheck();   // …and a look now, so a week that turned over while you stood here is not held back
     document.getElementById('hsPostTitle').textContent = '📬 ' + pFill(POSTCOPY.title);
     renderPost();
     postEl.hidden = false;
@@ -2934,9 +2938,40 @@ function init(visitDoc, visitMiss) {
   document.getElementById('hsPostClose').addEventListener('click', () => {
     postEl.hidden = true; syncLock(); refreshMail();
   });
+  // 💼 THE CHEQUE (docs/town-jobs-plan.md §3) — and the first thing in this world that ever
+  // ARRIVES WHILE YOU WERE NOT LOOKING. /job/pay works out what the finished weeks owe, pays them
+  // into the pass, and answers with what it paid; that answer becomes a letter, and the letter is
+  // how you find out. The coins are already yours by then: the letter is the telling, not the asking.
+  //
+  // ⚠️ ONE REQUEST, ONLY FOR SOMEBODY WHO HAS HELD A JOB. `tw-job-v1` is the town's own mirror and
+  // the cheapest honest way to ask "has this device ever worked anywhere" without a round trip. A
+  // player who has never asked a boss for anything never makes this call at all.
+  // ⚠️ The week is in the id, so a cheque cannot be delivered twice even if the answer is seen twice
+  // — and the server marks a week paid regardless, so a lost letter never costs anybody coins.
+  async function wageCheck() {
+    if (visiting || !state.claimedAt) return;
+    let held = null;
+    try { held = JSON.parse(localStorage.getItem('tw-job-v1') || 'null'); } catch (e) {}
+    if (!held || !held.at) return;
+    let res = null;
+    try { res = await passPost('/job/pay', {}); } catch (e) { return; }
+    if (!res || res.error || !res.total) return;
+    let n = 0;
+    for (const row of (res.paid || [])) {
+      const id = 'wage:' + row.week + ':' + row.at;
+      if ((state.mail || []).some((m) => m.id === id)) continue;
+      (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, n: row.coins | 0 });
+      n++;
+    }
+    if (!n) return;
+    state.mail = state.mail.slice(0, 40);
+    save();
+    refreshMail();
+  }
+
   // the world writes while you are here: a look shortly after boot and once a minute, the way the
   // van's arrivals are checked. Cheap — five predicates over the yard's own state.
-  function postTick() { if (postDeliver()) refreshMail(); }
+  function postTick() { if (postDeliver()) refreshMail(); wageCheck(); }
   setTimeout(postTick, 1600);
   setInterval(postTick, 60000);
 
@@ -4950,7 +4985,9 @@ function init(visitDoc, visitMiss) {
       pos, tgt, peers, birds: birdsLive,
       signGeo: () => ({ W, H, signAt: state.signAt, claimed: !!state.claimedAt }),   // the walk taps the sign where it really stands
       post: () => openPost(),
-      mailGeo: () => ({ W, H, at: state.mailAt, mail: (state.mail || []).length, unread: postUnread() }),   // 📬 the walk taps the mailbox where it really stands
+      mailGeo: () => ({ W, H, at: state.mailAt, mail: (state.mail || []).length, unread: postUnread() }),
+      wage: () => wageCheck(),   // 💼 the walk cannot hold a job for a week
+      mailOf: () => (state.mail || []).map((m) => ({ id: m.id, read: m.read | 0, n: m.n | 0 })),   // 📬 the walk taps the mailbox where it really stands
       // 🌦 force a tier — the clock rains a few % of the time, so waiting for real
       // weather is not a test plan. null hands the sky back to the clock.
       wx: (k) => hsWx.setKind(k),

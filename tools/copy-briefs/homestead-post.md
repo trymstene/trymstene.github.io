@@ -27,3 +27,19 @@ The voice bar from the questline holds: a 13-year-old and a 50-year-old read it 
 stumble. Plain words, storyteller warmth, no bureaucrat jargon. The letter may use `{name}` for
 the player and `{home}` for their homestead's name. Never a rate, never a time of day, never a
 request for anything back — nobody owes the world a reply.
+
+
+## `wage` — the cheque
+
+The town now has jobs. You ask a boss, you turn up, and at the end of a week that has FINISHED a
+letter arrives saying what the work came to. **This is the first thing in the whole world that
+ever arrives while the player was not looking**, so it should feel like that: a thing that
+happened without them, found afterwards.
+
+It is signed by Nib, who keeps the big book and is the town's payroll desk. Write him filing
+something that is already done — warm, dry, finished. Not a congratulation and not a receipt.
+
+It MUST contain `{n}`, the coins.
+
+⚠️ Never a rate, never a day of the week, never “per” anything, and never a promise about next
+week. The town has never published a timetable and this letter is not where it starts.

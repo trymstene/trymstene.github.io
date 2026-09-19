@@ -1,6 +1,10 @@
 {
   "title": "Mailbox Notes",
   "empty": "The mailbox is empty today. It is sitting up straight.",
+  "wage": {
+    "from": "Nib",
+    "line": "I have filed {n} coins for the work you finished. They waited in the folder, as folders do."
+  },
   "letters": {
     "welcome": {
       "from": "Nib",

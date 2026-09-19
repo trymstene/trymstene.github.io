@@ -592,8 +592,15 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
     approved lines is said; worker-pass decides the job and every coin. The one answer a device
     cannot know — a link that is still an unkept pass — is corrected by the server and said after.
     Turning up at your own workplace calls `/job/chore`; the day is the server's to count.
-    **Still to come in this group:** the cheque as a letter in the homestead mailbox (`/job/pay` is
-    deployed and unused), the store's restock chore, and the café counter.
+12b. ✅ **The cheque, 19 Sep.** `/job/pay` is called from the homestead and its answer becomes a
+    letter on the world's own paper, signed by Nib, carrying the coins — **the first thing in this
+    world that ever arrives while the player was not looking.** The coins are already theirs by the
+    time it lands: the letter is the telling, not the asking.
+    ⚠️ **A player who has never held a job never makes the request**, guarded by the town's own
+    `tw-job-v1` mirror, and the walk asserts that with a kept pass on the device so the guard being
+    tested is the right one. The week is in the letter's id, so the same answer seen twice is still
+    one letter, and the server marks a week paid regardless — a lost letter never costs coins.
+    **Still to come in this group:** the store's restock chore and the café counter.
 13. The copy jobs (`town-restore`, `town-work`) through the rig, the gate, the approve.
 
 **Chapter 2**

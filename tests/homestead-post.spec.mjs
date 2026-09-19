@@ -61,3 +61,57 @@ test('the mailbox holds the world’s post, shows a dot, and nothing else', asyn
   expect(JSON.stringify(kept.mail)).not.toContain('big book');   // a row keeps its key, never the prose
   expect(errors, 'page errors: ' + errors.join(' | ')).toEqual([]);
 });
+
+// 💼 THE CHEQUE ARRIVES (19 Sep 2026, docs/town-jobs-plan.md §3). You ask a boss for a job in the
+// town, you turn up, and at the end of a week that has FINISHED a letter is waiting here saying
+// what the work came to. It is the first thing in this world that ever arrives while the player was
+// not looking, so the test that matters most is the quiet one: a player who has never held a job
+// must never cause the request at all.
+test('the cheque: a letter that arrived while you were not looking', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  let asked = 0;
+  let answer = { ok: true, paid: [], total: 0 };
+  await page.route('**/job/pay', async (route) => {
+    asked++;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) });
+  });
+  // ⚠️ a KEPT pass on the device, or the guard that fires first is the wrong one: passPost refuses
+  // before the wire when there is no link, and then this would pass for a reason it is not testing
+  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); } catch (e) {} });
+  await page.goto('/homestead/?hstest=claimed', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.mailGeo, null, { timeout: 30000 });
+  await page.waitForTimeout(2200);
+
+  // ⭐ a kept pass, and still nobody who has never worked ever asks
+  expect(asked, 'a player with a pass but no job never calls the pay route').toBe(0);
+
+  // …now this device has held a job, and a finished week owes something
+  await page.evaluate(() => localStorage.setItem('tw-job-v1', JSON.stringify({ at: 'store', week: '2026-W38', days: 3 })));
+  answer = { ok: true, total: 39, paid: [{ week: '2026-W38', at: 'store', days: 3, coins: 39 }] };
+  await page.evaluate(() => window.__hs.wage());
+  await page.waitForTimeout(600);
+  const mail = await page.evaluate(() => window.__hs.mailOf());
+  const cheque = mail.find((m) => m.id.startsWith('wage:'));
+  expect(cheque, 'the cheque is in the box').toBeTruthy();
+  expect(cheque.id, 'and it is keyed by the week it paid for').toBe('wage:2026-W38:store');
+  expect(cheque.n).toBe(39);
+  expect(cheque.read, 'unread, so the dot is up').toBe(0);
+  expect(await page.locator('.hs-maildot').isVisible()).toBe(true);
+
+  // ⚠️ the same answer twice must not become two letters
+  const before = (await page.evaluate(() => window.__hs.mailOf())).length;
+  await page.evaluate(() => window.__hs.wage());
+  await page.waitForTimeout(400);
+  expect((await page.evaluate(() => window.__hs.mailOf())).length, 'a week is delivered once').toBe(before);
+
+  // …and it reads as a letter, on the world's own paper, with the amount in it
+  expect(await mailbox(page), 'the mailbox opens').toBe(true);
+  const gold = page.locator('.bw-paper--wage');
+  expect(await gold.count(), 'the cheque is on the same paper, with its own seam').toBe(1);
+  const text = await gold.first().textContent();
+  expect(text).toContain('39');
+  expect(text, 'no placeholder survives to the page').not.toContain('{n}');
+  expect(text.length).toBeGreaterThan(30);
+  expect(errors).toEqual([]);
+});
