@@ -913,6 +913,20 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-signrow .hs-btn { flex: 0 0 auto; }
     .hs-signrow[hidden] { display: none; }
 
+    /* 📬 the post: the unread dot on the mailbox, and the letters in the card */
+    /* ⚠️ banana yellow, not red: the mailbox sprite IS red, and a red dot on it disappears into the
+       flag. Yellow is the world's own attention colour (the HUD, the floats, the planks). */
+    .hs-maildot {
+      position: absolute; width: 11px; height: 11px; margin: -6px 0 0 -6px; border-radius: 999px;
+      background: #ffe135; border: 2px solid #1a1206; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+      pointer-events: none; animation: hs-dotbob 1.5s ease-in-out infinite;
+    }
+    @keyframes hs-dotbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @media (prefers-reduced-motion: reduce) { .hs-maildot { animation: none; } }
+    .hs-post { display: grid; gap: 0.7rem; }
+    .hs-post__it { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+    .hs-post__it.is-new .bw-paper { box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.4), 0 0 0 3px #e2342a; }
+    .hs-post__none { margin: 0.2rem 0 0; font-size: 0.82rem; opacity: 0.75; }
     /* 🚚 orders on the way */
     .hs-orders { display: grid; gap: 0.4rem; }
     .hs-order {
@@ -1145,6 +1159,14 @@ const description = 'A clearing west of the park with your name on the sign: cla
         <div id="hsPetBody"></div>
       </div>
     </div>
+    <div class="hs-veil" id="hsPost" hidden>
+      <div class="hs-card">
+        <button class="hs-shopx" id="hsPostClose" aria-label="Close">✕</button>
+        <h2 id="hsPostTitle">📬 The mailbox</h2>
+        <div id="hsPostList"></div>
+      </div>
+    </div>
+
     <div class="hs-veil" id="hsGuest" hidden>
       <div class="hs-card">
         <button class="hs-shopx" id="hsGuestClose" aria-label="Close">✕</button>

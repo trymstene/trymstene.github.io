@@ -1,5 +1,6 @@
 // ✏️ one bundled pixel icon (the full pack is gitignored — never a pack URL)
 import NOTES from '../data/copy/homestead-notes.json';   // the sign's line before the story gives you the place (the rig's)
+import POSTCOPY from '../data/copy/homestead-post.json';   // what the world writes to you (the rig's)
 import pxEdit from '../icons/pixelart/edit.svg?raw';
 import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
@@ -161,6 +162,10 @@ function withHome(s) {   // older saves have no home — defaults = old spots
   delete s.bed; delete s.bedAt;
   if (!Array.isArray(s.fence)) s.fence = [];   // 🪵 player-built, cell by cell
   if (!s.mailAt) s.mailAt = { x: MAILBOX.x, y: MAILBOX.y };
+  // 📬 the post. ⚠️ DEVICE-LOCAL on purpose: it is not in yardBody's allow-list, so a letter never
+  // rides the public /yard read (a visitor must not read your post). Cross-device post arrives with
+  // the PostRoom, keyed by slug (docs/town-jobs-plan.md §6).
+  if (!Array.isArray(s.mail)) s.mail = [];
   if (!s.signAt) s.signAt = { x: SIGN.x, y: SIGN.y };
   if (!s.style) s.style = {};
   if (!s.pantry) s.pantry = {};
@@ -801,6 +806,12 @@ function init(visitDoc, visitMiss) {
   mailEl.style.height = pct(MAILBOX.h, H);
   mailEl.style.backgroundImage = "url('/assets/homestead/m-mail.png')";
   world.appendChild(mailEl);
+  // 🔴 the unread dot: the pack's mailbox has no flag-up frame, and a flag would not read anyway —
+  // a small dot on top of it is what a player already understands (Trym, 19 Sep)
+  const mailDot = document.createElement('i');
+  mailDot.className = 'hs-maildot';
+  mailDot.hidden = true;
+  world.appendChild(mailDot);
   const signEl = document.createElement('div');
   signEl.className = 'hs-ov';
   signEl.style.width = pct(SIGN.w, W);
@@ -821,6 +832,10 @@ function init(visitDoc, visitMiss) {
     mailEl.style.left = pct(state.mailAt.x - MAILBOX.w / 2, W);
     mailEl.style.top = pct(state.mailAt.y - MAILBOX.h, H);
     depth(mailEl, state.mailAt.y);
+    mailDot.style.left = pct(state.mailAt.x + MAILBOX.w * 0.30, W);
+    mailDot.style.top = pct(state.mailAt.y - MAILBOX.h + 3, H);
+    depth(mailDot, state.mailAt.y + 1);
+    refreshMail();
     const sd2 = signDims();
     signEl.style.width = pct(sd2.w, W);
     signEl.style.height = pct(sd2.h, H);
@@ -2787,7 +2802,7 @@ function init(visitDoc, visitMiss) {
   const confirmEl = document.getElementById('hsConfirm');
   const seedEl = document.getElementById('hsSeed');
   const petEl = document.getElementById('hsPet');
-  const panelOpen = () => !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden || !tailorEl.hidden
+  const panelOpen = () => !document.getElementById('hsPost').hidden || !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden || !tailorEl.hidden
     || !seedEl.hidden || !petEl.hidden;
   // while any popup is open the PAGE must not scroll under it (Trym)
   const syncLock = () => document.body.classList.toggle('hs-lock', panelOpen());
@@ -2836,6 +2851,95 @@ function init(visitDoc, visitMiss) {
       list.appendChild(row);
     });
   }
+  // ═══════════════════════════════ 📬 THE POST ════════════════════════════════════════
+  // The world writes to you: Nib registers the plot, Moss notices the yard, Gran Fig sends a
+  // word about the flowers. One letter per occasion, ever, on the world's own paper
+  // (/css/paper.css). The words are the rig's (src/data/copy/homestead-post.json) and a row
+  // keeps only its KEY, never prose — so an approved rewrite reaches letters already delivered.
+  // Player-to-player post comes later and brings its own room (docs/town-jobs-plan.md §6).
+  const postEl = document.getElementById('hsPost');
+  const pFill = (t) => String(t || '').replace(/\{name\}/g, myName || 'friend').replace(/\{home\}/g, state.name || 'the homestead');
+  const POST_WHEN = [
+    { id: 'welcome', when: (s2) => !!s2.claimedAt },
+    { id: 'movedin', when: (s2) => (s2.stage || 0) >= 1 },
+    { id: 'firstbeast', when: () => farmAnimals().length > 0 },
+    { id: 'shed', when: (s2) => (s2.shed || []).length >= 8 },
+    { id: 'week', when: (s2) => s2.claimedAt && Date.now() - s2.claimedAt > 7 * 86400000 },
+  ];
+  function postDeliver() {
+    if (visiting || !state.claimedAt) return 0;
+    let n = 0;
+    for (const row of POST_WHEN) {
+      if ((state.mail || []).some((m) => m.id === row.id)) continue;
+      let ok = false;
+      try { ok = !!row.when(state); } catch (e) { ok = false; }
+      if (!ok) continue;
+      (state.mail || (state.mail = [])).unshift({ id: row.id, t: Date.now(), read: 0 });
+      n++;
+    }
+    if (n) { state.mail = state.mail.slice(0, 40); save(); }
+    return n;
+  }
+  // ⚠️ a FUNCTION DECLARATION, not a const: refreshFixtures() calls refreshMail() during boot, long
+  // before this line runs, and a const here is a TDZ ReferenceError that kills the homestead.
+  function postUnread() { return (state.mail || []).filter((m) => !m.read).length; }
+  // ⚠️ reads NOTHING but state: refreshFixtures() calls this during boot, before `visiting` is
+  // initialised, and a TDZ ReferenceError there kills the whole homestead. A visited yard carries no
+  // mail anyway (it is not in yardBody's allow-list), so there is nothing to hide.
+  function refreshMail() {
+    if (mailDot) mailDot.hidden = !postUnread();
+  }
+  function letterEl(m) {
+    const w = ((POSTCOPY.letters || {})[m.id] || {});
+    const p = document.createElement('div');
+    p.className = 'bw-paper';
+    p.textContent = pFill(w.line);
+    const from = document.createElement('i');
+    from.className = 'bw-paper__from';
+    from.textContent = w.from || '';
+    p.appendChild(from);
+    return p;
+  }
+  function renderPost() {
+    const list = document.getElementById('hsPostList');
+    list.textContent = '';
+    if (!(state.mail || []).length) {
+      const p = document.createElement('p');
+      p.className = 'hs-post__none';
+      p.textContent = pFill(POSTCOPY.empty);
+      list.appendChild(p);
+      return;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'hs-post';
+    for (const m of (state.mail || [])) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'hs-post__it' + (m.read ? '' : ' is-new');
+      b.appendChild(letterEl(m));
+      b.addEventListener('click', () => {
+        if (!m.read) { m.read = 1; save(); refreshMail(); b.classList.remove('is-new'); }
+      });
+      wrap.appendChild(b);
+    }
+    list.appendChild(wrap);
+  }
+  function openPost() {
+    postDeliver();
+    document.getElementById('hsPostTitle').textContent = '📬 ' + pFill(POSTCOPY.title);
+    renderPost();
+    postEl.hidden = false;
+    syncLock();
+  }
+  document.getElementById('hsPostClose').addEventListener('click', () => {
+    postEl.hidden = true; syncLock(); refreshMail();
+  });
+  // the world writes while you are here: a look shortly after boot and once a minute, the way the
+  // van's arrivals are checked. Cheap — five predicates over the yard's own state.
+  function postTick() { if (postDeliver()) refreshMail(); }
+  setTimeout(postTick, 1600);
+  setInterval(postTick, 60000);
+
   async function openGuest() {
     document.getElementById('hsGuestTitle').textContent = '🪧 ' + (state.name || 'The sign');
     document.getElementById('hsSignRow').hidden = !visiting;
@@ -4421,23 +4525,10 @@ function init(visitDoc, visitMiss) {
     if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
       if (Math.hypot(pos.x - state.mailAt.x, pos.y - state.mailAt.y) < 110) {
         if (visiting) { toast('📬 answers only to ' + state.name); return; }
-        checkOrders();
-        const nxt = state.orders.slice().sort((a, b) => a.at - b.at)[0];
-        toast(nxt
-          ? '🚚 ' + state.orders.length + ' on the way — next in ' + fmtShip(nxt.at - Date.now())
-          : 'nothing on the way — order on the <img class="hs-toastico" src="/assets/homestead/phone.png" alt="phone">');
+        // 📬 A MAILBOX IS A MAILBOX (Trym, 19 Sep): orders on the way live on the banana phone, where
+        // they are already listed, and moving a fixture is build mode's job — both used to be here.
         clearChip();
-        itChip = document.createElement('div');
-        itChip.className = 'hs-chip';
-        const mv2 = document.createElement('button');
-        mv2.className = 'hs-btn';
-        mv2.textContent = '✥ move it';
-        mv2.addEventListener('click', () => { clearChip(); startPlacingHome('mail', {}); });
-        itChip.append(mv2);
-        itChip.style.left = pct(state.mailAt.x, W);
-        itChip.style.top = pct(state.mailAt.y - MAILBOX.h - 12, H);
-        itChip.style.zIndex = '3000';
-        world.appendChild(itChip);
+        openPost();
         return;
       }
       tgt.x = state.mailAt.x - 40; tgt.y = state.mailAt.y + 16;
@@ -4858,6 +4949,8 @@ function init(visitDoc, visitMiss) {
     window.__hs = {
       pos, tgt, peers, birds: birdsLive,
       signGeo: () => ({ W, H, signAt: state.signAt, claimed: !!state.claimedAt }),   // the walk taps the sign where it really stands
+      post: () => openPost(),
+      mailGeo: () => ({ W, H, at: state.mailAt, mail: (state.mail || []).length, unread: postUnread() }),   // 📬 the walk taps the mailbox where it really stands
       // 🌦 force a tier — the clock rains a few % of the time, so waiting for real
       // weather is not a test plan. null hands the sky back to the clock.
       wx: (k) => hsWx.setKind(k),

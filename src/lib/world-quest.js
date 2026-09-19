@@ -649,25 +649,8 @@ body.bh-inside .bwq-hint,
 .bwq-ans button:hover { background:#234023; }
 .bwq-sp b { display:block; color:#ffe135; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:0.35rem; }
 .bwq-sp small { display:block; margin-top:0.55rem; font-size:0.62rem; opacity:0.55; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; }
-/* 📜 the letter is PAPER: torn edges, ruled lines, handwriting, a tilt */
-.bwq-dlg .bwq-paper {
-  background:#f6ecd0 repeating-linear-gradient(180deg, transparent 0 24px, rgba(122,88,40,0.22) 24px 25px);
-  color:#43301a; padding:1.3rem 1rem 0.6rem; transform:rotate(-1.4deg);
-  /* ✍️ Caveat, self-hosted (public/css/fonts.css, already on every page through BaseLayout) — the system
-     cursive stack made the same letter read as Segoe Script on Windows, Bradley Hand on iOS and Comic
-     Sans on Android. A letter is a THING players will keep and show, so it looks the same everywhere
-     (Trym, 19 Sep 2026). The fallbacks stay for a browser that refuses the file. */
-  font-family:"Caveat","Segoe Script","Bradley Hand","Comic Sans MS",cursive;
-  /* the line-height IS the rule spacing (24px + a 1px line), so the handwriting sits ON the lines */
-  font-weight:600; font-size:1.34rem; line-height:25px;
-  box-shadow:3px 4px 0 rgba(0,0,0,0.4);
-  clip-path:polygon(0 3%, 4% 0, 9% 2%, 15% 0, 22% 3%, 30% 1%, 38% 3%, 47% 0, 55% 2%,
-    63% 0, 71% 3%, 79% 1%, 87% 3%, 94% 0, 100% 2%, 100% 97%, 95% 100%, 88% 98%,
-    80% 100%, 71% 97%, 62% 100%, 53% 98%, 44% 100%, 35% 97%, 26% 100%, 17% 98%,
-    9% 100%, 3% 97%, 0 100%);
-  animation:bwqUnfold 0.4s ease-out;
-}
-@keyframes bwqUnfold { 0% { transform:rotate(-1.4deg) scaleY(0.12); opacity:0; } 100% { transform:rotate(-1.4deg) scaleY(1); opacity:1; } }
+/* 📜 the letter is PAPER — the surface itself is /css/paper.css .bw-paper (lifted 19 Sep so a
+   player's letter is the same sheet); this only places it inside the dialogue card */
 .bwq-sp canvas { display:block; margin:0.2rem auto 0.3rem; image-rendering:pixelated;
   border:3px solid #000; background:#fffdf5; box-shadow:3px 3px 0 rgba(0,0,0,0.4); }
 /* the torn map, the flipbook and the photograph are OBJECTS — no card
@@ -1376,7 +1359,7 @@ export function bootQuest() {
       if (!w) {   // paper / map / fb — the prop takes the stage alone
         pop.hidden = true; h2.hidden = true; box.hidden = true; sp.hidden = false;
         if (who === 'paper') {
-          sp.innerHTML = '<div class="bwq-paper"></div><small>tap to continue</small>';
+          sp.innerHTML = '<div class="bw-paper bwq-paper"></div><small>tap to continue</small>';
           sp.querySelector('.bwq-paper').textContent = text;
         } else if (who === 'map') {
           sp.innerHTML = '<b>sabreface’s map</b><small>tap to continue</small>';

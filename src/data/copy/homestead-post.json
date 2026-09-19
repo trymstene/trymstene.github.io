@@ -1,0 +1,26 @@
+{
+  "title": "Mailbox Notes",
+  "empty": "The mailbox is empty today. It is sitting up straight.",
+  "letters": {
+    "welcome": {
+      "from": "Nib",
+      "line": "I have entered {home} in the big book. The plot is yours at last. I am glad to close that folder."
+    },
+    "movedin": {
+      "from": "Moss",
+      "line": "I swept past {home} and saw the tent up. It looks lived in now, which is the point of a tent."
+    },
+    "firstbeast": {
+      "from": "Gran Fig",
+      "line": "I heard there is an animal at {home}. Good. A plot with an animal has started making sense."
+    },
+    "shed": {
+      "from": "Pip",
+      "line": "I hear your shed is filling up. Good. A thing on a shelf is a thing with plans."
+    },
+    "week": {
+      "from": "Nib",
+      "line": "The big book says {home} has been yours for one week. I thought you should know; it rarely volunteers."
+    }
+  }
+}
