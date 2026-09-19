@@ -108,6 +108,64 @@ workplace's tape.
 **How bleak Abandoned is, is Trym's thumb, not an argument.** Before any of this is argued,
 bake five screenshots at 393 px, one per band, and let him overrule the table. (**TRYM**)
 
+### ⚠️ Can one player raise the town alone? Not with today's numbers.
+Trym, 19 Sep: *"as long as one solo user can choose to clean up the whole town by themselves,
+and then increase the town health, and then unlock the buildings — it doesn't feel gated to me"*.
+Agreed, and it is the right contract. **Today it is arithmetically impossible**, and the reason
+is a design decision nobody has revisited: **the healthier the town gets, the less there is to
+do.** `PROBLEM_COUNT` is 9 / 7 / 5 / 3 / 2 by band, while the drift above the set point is a
+flat 0.6 an hour = **14.4 a day**.
+
+| Band | Your problems | What you can give a day | Net, alone |
+|---|---|---|---|
+| Struggling | 7 | 14.0 | −0.4 |
+| Recovering | 5 | 10.0 | **−4.4** |
+| Lively | 3 | 6.0 | −8.4 |
+| Thriving | 2 | 4.0 | −10.4 |
+
+So one player fixing everything they can find, every day, still watches the town sink back to
+the set point. It is a multiplayer machine: eight people each doing five things hold it up
+easily. One person cannot, however hard they try, and "however hard they try" is exactly the
+player Trym is describing.
+
+**The fix is not the cap** (24 a day is already 12 fixes and nobody reaches it) — **it is the
+supply.** Give a player about **ten to twelve tap-sized things a day at every band**, and the
+climb works:
+
+| Things a day | Net, alone | Recovering → Thriving |
+|---|---|---|
+| 8 | +1.6 | 27 days (too slow) |
+| **10** | **+5.6** | **8 days** |
+| **12** | **+9.6** | **4 days** |
+| holding Thriving | — | 8 things a day, about ten minutes |
+
+⭐ **And the supply should change in NATURE, not just in number.** A Thriving town with twelve
+broken lamps is a lie. At low bands the work is **repair** (dark lamps, litter, tags, a dry
+fountain, tipped bins); at high bands it becomes **upkeep** — water the planters, sweep the
+terrace, polish the fountain, clear the tables, change the notices. Same tap-sized loop, same
+walk-over, same burst, different fiction. This also fixes a flaw the town has today that has
+nothing to do with jobs: **at its best state the square is the most boring**, with two things
+to do.
+
+**The resulting contract, which is what the game should actually promise:** about a week of
+daily care brings the town to its best; about ten minutes a day holds it; leave it alone for a
+few days and it slides back toward the middle. Nobody is required, nobody is punished, and one
+person who cares can do it all. (**TRYM**: the numbers. My recommendation is a floor of ten,
+which is eight days solo and much faster with company.)
+
+### The bar must be the roadmap
+Trym: *"even in the town health progress bar that the progress bar shows the different steps —
+it must be well explained"*. The health card already draws five zones with the band's name and
+its promise. What it must add:
+- **What each step OPENS**, named as services, not atmosphere: the basics on Pip's counter, then
+  the common goods, then the travelling stall and the lanterns, then the rare row. A player
+  should read the bar and know what they are working toward.
+- **Where you are, and what the next step opens** — already there, keep it.
+- ⚠️ **One line separating the two locks**, or the bar will be blamed for something it does not
+  control: a business you have not unlocked yet is not the town's mood, and its own signpost
+  says so. Without that line, a player at Thriving stares at a boarded front and thinks the bar
+  lied to them.
+
 ---
 
 ## 2. Chapter 2 — the four signatures
@@ -323,6 +381,8 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
   work that day? A staff gap quietly reverses "the worse the meter, the more workplaces closed".
 - **Does the café still cost something**, and if not, what replaces the sink?
 - **How bleak is Abandoned** — three shut fronts or five? Decide from the five screenshots.
+- **The solo climb**: how many tap-sized things a day at every band (ten = eight days alone,
+  twelve = four), and does the work change from repair to upkeep as the town improves?
 - **Is the sticker shop (`print`) ever taped?** It is the one front that leads to real money.
 - **Does the locked signpost show progress** ("two of four signatures"), or only the next step?
 - **May a job-holder walk through their own workplace's tape?** (Same question as the staff gap,
@@ -359,6 +419,8 @@ These want fixing whether or not one letter ever moves, and the fix is one sessi
 - `town-room.js` is at 92.7% of its budget and the player total at 97%: one 40 KB chunk fits,
   two do not.
 - The weekly cheque rides client-written attendance, bounded to two envelopes.
+- The town is a multiplayer machine today: alone, the health bar cannot be raised past the set
+  point at all. Fixing that is a prerequisite for this plan's unlock story, not a polish item.
 - Jobs currently never touch the town's best content (ghosts, Curse Nights, cursed objects), and
   working does not feed Citizens of the Week — the cheapest emotional payoff available and
   nobody proposed it. Worth adding.
