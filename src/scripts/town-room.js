@@ -501,6 +501,7 @@ export function bootTownLife(ctx) {
   function remember(id) { try { localStorage.setItem(FIXED_KEY, JSON.stringify({ d: dayNum(), ids: [...fixed(), id] })); } catch (e) {} }
   let problems = [];   // { id, type, x, y, key, pays, rep, el: mark, sprite }
   function reseedProblems() {
+    workStop();   // a job in hand cannot outlive the list it belongs to
     problems.forEach((p) => { if (p.el) p.el.remove(); kill(p.sprite); });
     problems = [];
     const look = LOOK[band], d = dayNum(), who = parseInt(me().slice(0, 6), 16) || 7;
@@ -539,7 +540,10 @@ export function bootTownLife(ctx) {
       cands.splice(cands.indexOf(c), 1);
       const id = c.t.id + ':' + c.key; if (isFixed(id)) continue;
       const pb = propOf(c.key) ? propOf(c.key).base : null;
-      problems.push({ id, type: c.t.id, x: c.x, y: c.y, key: c.key, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y, 150, pb != null ? 100 + pb + 3 : null, true), sprite: null, foot: c.y });
+      problems.push({ id, type: c.t.id, x: c.x, y: c.y, key: c.key, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y, 118, pb != null ? 100 + pb + 3 : null, true), sprite: null, foot: c.y,
+        grab: 54, tall: 190 });   // ⬆ the icon used to ride at -150, clear of the lamp's own top, so it read as
+        // belonging to whatever stood behind it (a phone box, in Trym's square). At -118 it sits ON the
+        // lantern, and the box reaches from the icon down to the foot: the whole lamp answers a tap.
     }
     // ⚠️ COUNT WHAT IS PLACED, NOT WHAT IS DRAWN (19 Sep). A draw that lands on something you already
     // fixed today is skipped — and it used to spend one of the six anyway, so the more you did the
@@ -742,14 +746,19 @@ export function bootTownLife(ctx) {
       // the bar under the lamps: this band's stretch, filled as far as the town has come
       if (frac != null) { g.fillStyle = '#3a2a10'; g.fillRect(10, cv.height - 7, cv.width - 20, 6); g.fillStyle = '#ffe135'; g.fillRect(11, cv.height - 6, Math.round((cv.width - 22) * frac), 4); }
       for (let i = 0; i < n; i++) {
-        const st = cond.lamps[keys[i]], x = Math.round(i * slot + slot / 2), on = st !== 'out', top = cv.height - lh - 12;
-        if (on) {
+        // ⚠️ A FLICKERING LAMP IS A BROKEN LAMP and the report has to say so. It used to draw LIT with
+        // a fainter halo and no shading at all — at sixteen pixels that is indistinguishable from working,
+        // so a player with one dead lamp and one stuttering one fixed the dead one and the row read as
+        // done (Trym, 19 Sep: "both broken streetlight got fixed status-wise"). Three readable steps now:
+        // lit is a bright halo and no shade, stuttering is a weak halo AND a shade, dead is shade alone.
+        const st = cond.lamps[keys[i]], x = Math.round(i * slot + slot / 2), ok = st === 'ok', top = cv.height - lh - 12;
+        if (st !== 'out') {
           const r = g.createRadialGradient(x + 3, top + 7, 2, x + 3, top + 7, 18);
-          r.addColorStop(0, 'rgba(255, 225, 90, ' + (st === 'flicker' ? 0.35 : 0.75) + ')'); r.addColorStop(1, 'rgba(255, 200, 40, 0)');
+          r.addColorStop(0, 'rgba(255, 225, 90, ' + (ok ? 0.75 : 0.26) + ')'); r.addColorStop(1, 'rgba(255, 200, 40, 0)');
           g.fillStyle = r; g.fillRect(x - 18, top - 14, 44, 44);
         }
         g.drawImage(img, x - lw / 2, top, lw, lh);
-        if (!on) { g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(20, 16, 30, 0.55)'; g.fillRect(x - lw / 2, top, lw, lh); g.globalCompositeOperation = 'source-over'; }
+        if (!ok) { g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(20, 16, 30, ' + (st === 'out' ? 0.55 : 0.36) + ')'; g.fillRect(x - lw / 2, top, lw, lh); g.globalCompositeOperation = 'source-over'; }
       }
     };
   }
@@ -1121,6 +1130,7 @@ export function bootTownLife(ctx) {
   }
   function tick(now, dt) {
     stepSprites(dt);
+    workTick(now);
     autoPick(now);
     stepMeCurse(now);
     stepGhosts(dt, now);
@@ -1155,9 +1165,42 @@ export function bootTownLife(ctx) {
   }
   let dayAt = dayNum(), waveAt = waveNum();
 
+  // ═════════════════════════════ 🔧 a repair is WORK, not a pickup ═══════════════════════
+  // Rubbish is gone the moment you reach it and that is right — but a streetlight is a job, and an
+  // instant lamp felt like one more thing that merely vanished (Trym, 19 Sep: "a 4-5 second mini
+  // progress bar … so its not instant like the garbage pickups"). WORK names the types that take
+  // time; anything not named here still lands at once. Walk off and the job simply stops: nothing is
+  // spent, nothing is lost, and the lamp is still there to come back to.
+  const WORK = { lamp: 4500 };
+  let work = null;
+  function workStop() { if (work) { work.el.remove(); work = null; } }
+  function workStart(p) {
+    workStop();
+    const el = document.createElement('i');
+    el.className = 'tw-work';
+    el.style.left = pct(p.x, W); el.style.top = pct((p.foot || p.y) - 100, H);   // under the icon, clear of the banana's own head
+    el.style.zIndex = String(100 + Math.round(p.foot || p.y) + 4);
+    el.innerHTML = '<b></b>';
+    world.appendChild(el);
+    work = { id: p.id, x: p.x, y: p.foot || p.y, el, bar: el.firstChild, t0: 0, ms: WORK[p.type] || 0 };
+  }
+  function workTick(now) {
+    if (!work) return;
+    if (!work.t0) work.t0 = now;
+    if (Math.hypot(ctx.pos.x - work.x, ctx.pos.y - work.y) > 96) { workStop(); return; }   // walked away
+    const f = Math.min(1, (now - work.t0) / work.ms);
+    work.bar.style.width = (f * 100).toFixed(1) + '%';
+    if (f >= 1) { const id = work.id; workStop(); fix(id); }
+  }
+
   // ═══════════════════════════════ taps: what is under the finger ════════════════════
   function at(wx, wy) {
-    for (const p of problems) if (Math.abs(wx - p.x) < 40 && wy < (p.foot || p.y) + 16 && wy > p.y - 64) return ['room', 'p:' + p.id];
+    // ⚠️ THE BOX HAS TO COVER WHAT YOU CAN SEE. A thing's default box is 80 wide and reaches 64 px
+    // above its foot, which is right for a bin on the cobbles — but a streetlight's tools icon bobs 150 px
+    // up at the lamp head, a clear 86 px ABOVE the box, so tapping the one visible affordance did nothing
+    // (Trym, 19 Sep: "it was hard to actually figure out where to tap"). A problem may now say how far it
+    // reaches; a lamp claims its whole post and its icon.
+    for (const p of problems) if (Math.abs(wx - p.x) < (p.grab || 40) && wy < (p.foot || p.y) + 16 && wy > p.y - (p.tall || 64)) return ['room', 'p:' + p.id];
     for (const o of objects) if (Math.abs(wx - o.x) < 34 && wy < o.y + 10 && wy > o.y - 60) return ['room', 'o:' + o.def.id];
     for (const g of ghosts) if (!g.done && g.def.tap && Math.abs(wx - g.x) < 34 && wy < g.y + 6 && wy > g.y - 80) return ['room', 'g:' + g.def.id];
     if (merchant && Math.abs(wx - merchant.x) < 34 && wy < merchant.y + 6 && wy > merchant.y - 90) return ['room', 'm'];
@@ -1166,7 +1209,7 @@ export function bootTownLife(ctx) {
   }
   function tap(id, walkTo) {
     const [kind, rest] = [id.slice(0, 1), id.slice(2)];
-    if (kind === 'p') { const p = problems.find((q) => q.id === rest); if (p) walkTo(p.x, (p.foot || p.y) + 26, () => fix(rest)); }
+    if (kind === 'p') { const p = problems.find((q) => q.id === rest); if (p) walkTo(p.x, (p.foot || p.y) + 26, () => { const q = problems.find((z) => z.id === rest); if (!q) return; if (WORK[q.type]) workStart(q); else fix(rest); }); }
     else if (kind === 'o') { const o = objects.find((q) => q.def.id === rest); if (o) walkTo(o.x, o.y + 22, () => takeObject(o)); }
     else if (kind === 'g') { const g = ghosts.find((q) => q.def.id === rest && !q.done); if (g) walkTo(g.x + (ctx.pos.x < g.x ? -56 : 56), g.y + 6, () => { const line = one(COPY.ghosts, dayNum() + ghosts.length); if (line) say(fill(line)); if (g.s.n > 1) { g.s.fps = 9; setTimeout(() => { g.s.fps = g.def.fps || 5; }, 2500); } track('town_ghost', { id: rest }); }); }
     else if (kind === 'm' && merchant && !merchant.el.hidden) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, merchantCard);
@@ -1189,6 +1232,9 @@ export function bootTownLife(ctx) {
   const seam = {
     life: () => L, band: () => band, test: TEST, err: () => lastErr,
     wave: () => waveNum(),
+    hit: (x, y) => at(x, y),                                   // what a finger at (x,y) would find
+    work: () => (work ? { id: work.id, w: work.bar.style.width } : null),
+    tapAt: (id) => tap(id, (x, y, then) => { ctx.pos.x = x; ctx.pos.y = y; then(); }),   // tap, walk, arrive
     shutWhy: (k) => (todayShut.has(k) ? 'today' : 'band'),
     copyOf: (k) => COPY[k],
     open: (k) => openFor(k),

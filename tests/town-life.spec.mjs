@@ -508,3 +508,73 @@ test('a shut door explains itself, and the reason picks the line', async ({ page
   }
   expect(errors).toEqual([]);
 });
+
+// 🔧 A STREETLIGHT IS A JOB, AND THE REPORT MUST NOT LIE ABOUT ONE (19 Sep 2026). Three things Trym
+// hit in live play, in one walk because they are one experience: he could not find where to tap, the
+// repair was instant like a crisp packet, and fixing one of his two broken lamps made BOTH read as
+// done on the Square Report ("both broken streetlight got fixed status-wise").
+test('a streetlight: the whole lamp answers a tap, the repair takes time, and the report tells three states apart', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await seam(page, () => window.__town.life.set(21));   // night: the lamps mean something
+  await stand(page, 1100, 1250);
+  await setBand(page, 5);
+  const lamp = (await room(page, 'problems')).find((q) => q.type === 'lamp');
+  expect(lamp, 'an abandoned town has dark lamps').toBeTruthy();
+
+  // ── the box has to cover what you can SEE. The tools icon bobs high on the post; before this the
+  //    box stopped 64 px above the foot and the one visible affordance was not tappable at all.
+  expect(await room(page, 'hit', lamp.x, lamp.y - 118)).toEqual(['room', 'p:' + lamp.id]);   // the icon
+  expect(await room(page, 'hit', lamp.x, lamp.y)).toEqual(['room', 'p:' + lamp.id]);         // the foot
+  expect(await room(page, 'hit', lamp.x + 50, lamp.y - 100)).toEqual(['room', 'p:' + lamp.id]);   // across the post
+  expect(await room(page, 'hit', lamp.x, lamp.y - 260)).toBeNull();   // …and not the whole sky
+
+  // ── the repair is WORK: a bar fills, and the lamp is still broken while it does
+  await room(page, 'tapAt', 'p:' + lamp.id);
+  await seam(page, () => { window.__town.tgt.x = window.__town.pos.x; window.__town.tgt.y = window.__town.pos.y; });   // arrive, as a real walk does
+  await page.waitForTimeout(500);
+  expect(await page.locator('.tw-work').count()).toBe(1);
+  expect((await room(page, 'problems')).some((q) => q.id === lamp.id), 'not fixed while the bar fills').toBe(true);
+  const half = await room(page, 'work');
+  expect(parseFloat(half.w)).toBeGreaterThan(0);
+  expect(parseFloat(half.w)).toBeLessThan(60);
+  await page.waitForTimeout(4400);
+  expect((await room(page, 'problems')).some((q) => q.id === lamp.id), 'fixed once the bar is full').toBe(false);
+  expect(await page.locator('.tw-work').count()).toBe(0);
+
+  // ── walk away and the job stops where it stands: nothing spent, the lamp still there
+  const next = (await room(page, 'problems')).find((q) => q.type === 'lamp');
+  await room(page, 'tapAt', 'p:' + next.id);
+  await seam(page, () => { window.__town.tgt.x = window.__town.pos.x; window.__town.tgt.y = window.__town.pos.y; });
+  await page.waitForTimeout(300);
+  expect(await page.locator('.tw-work').count()).toBe(1);
+  await stand(page, 1100, 1250);
+  await page.waitForTimeout(500);
+  expect(await page.locator('.tw-work').count()).toBe(0);
+  expect((await room(page, 'problems')).some((q) => q.id === next.id), 'the lamp is still there to come back to').toBe(true);
+
+  // ── ⭐ THE REPORT TELLS THREE STATES APART. A stuttering lamp used to draw LIT with a fainter halo
+  //    and no shading, which at sixteen pixels is indistinguishable from working.
+  const lamps = await room(page, 'lamps');
+  expect(Object.values(lamps).filter((s) => s === 'flicker').length, 'the walk needs a stuttering lamp').toBeGreaterThan(0);
+  await seam(page, () => window.__town.room.cards.board());
+  await page.waitForTimeout(1200);
+  const lum = await page.evaluate(() => {
+    const cv = document.querySelector('.tw-lamps'), g = cv.getContext('2d');
+    const st = window.__town.room.lamps(), keys = Object.keys(st), slot = cv.width / keys.length;
+    const out = {};
+    keys.forEach((k, i) => {
+      const x = Math.round(i * slot + slot / 2);
+      const d = g.getImageData(x - 16, 8, 32, cv.height - 16).data;
+      let sum = 0, n = 0;
+      for (let j = 0; j < d.length; j += 4) if (d[j + 3] > 8) { sum += 0.3 * d[j] + 0.59 * d[j + 1] + 0.11 * d[j + 2]; n++; }
+      (out[st[k]] = out[st[k]] || []).push(n ? sum / n : 0);
+    });
+    const avg = (a) => (a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+    return { ok: avg(out.ok), flicker: avg(out.flicker), out: avg(out.out) };
+  });
+  expect(lum.ok, 'a working lamp is the brightest cell').toBeGreaterThan(lum.flicker);
+  expect(lum.flicker, 'a stuttering lamp still shows a halo, so it is not a dead one').toBeGreaterThan(lum.out);
+  expect(errors).toEqual([]);
+});

@@ -245,6 +245,10 @@ const description = 'The town centre of Banana World, under construction.';
     /* the tools icon over the thing to fix: yellow on black, bobbing, the world's "this wants you" */
     .tw-mark__ic { position: absolute; left: 50%; width: 30px; height: 30px; margin-left: -15px; display: flex; align-items: center; justify-content: center; background: #ffe135; color: #241c00; border: 2px solid #000; box-shadow: 2px 2px 0 #000; animation: twBob 1.1s ease-in-out infinite alternate; }
     .tw-mark__ic .pai { display: block; }
+    /* 🔧 the repair bar: a streetlight is WORK, so it fills while you stand there and stops if you walk off */
+    .tw-work { position: absolute; width: 56px; height: 10px; margin-left: -28px; box-sizing: border-box;
+      border: 2px solid #000; background: #0c140c; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5); pointer-events: none; }
+    .tw-work b { display: block; height: 100%; width: 0; background: #ffe135; }
     @keyframes twBob { from { transform: translateY(0); } to { transform: translateY(-7px); } }
     @media (prefers-reduced-motion: reduce) { .tw-mark__ic { animation: none; } }
     /* the shopfront's dark window and the fountain's dry basin are the props themselves, dimmed */
@@ -255,7 +259,7 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-shutsign { position: absolute; transform: translate(-50%, -50%) rotate(-2deg); pointer-events: none; background: #c62828; color: #fff6f6; border: 1px solid #16130a; box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45); padding: 0.2em 0.5em; font-family: "Archivo Black", sans-serif; font-size: max(0.42rem, calc(4.2px * var(--ws, 1.6))); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
     .tw-burst--curse .tw-burst__flash { background: radial-gradient(circle, #f0e4ff 0 28%, rgba(150, 70, 255, 0.9) 29% 45%, rgba(110, 30, 220, 0) 70%); }
     .tw-state.is-shut.is-todo img { filter: brightness(0.7) saturate(0.7); }
-    .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor, .tw-aura, .tw-tape, .tw-shutsign, .tw-forsale, .tw-me-twin) { visibility: hidden; }
+    .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor, .tw-aura, .tw-tape, .tw-shutsign, .tw-forsale, .tw-me-twin, .tw-work) { visibility: hidden; }
     /* the store's shelf and the vendor's: the town's row with the piece's own sprite in front */
     .tw-store { display: grid; gap: 0.45rem; margin: 0.5rem 0; }
     .tw-store__it { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
