@@ -512,6 +512,71 @@ const lifeSchema = {
   },
 };
 
+// ☕ THE COFFEE CUP'S COUNTER (19 Sep 2026, docs/town-cafe-plan.md).
+//
+// ⚠️ ITS OWN JOB AND ITS OWN FILE, not a `cafe` block on town-life. town-life.json is eager-globbed
+// into town-room.js, which is at 96% of its 56 000 B cap with 2 447 B left — two kilobytes of café
+// words there is what would blow it, not the code. This file is globbed inside the café's own lazy
+// chunk instead, so the town's hot path never carries a word of it.
+//
+// The hiring is NOT here: `work.ask/hired/moved/already/keep/day` on town-life already ask Bean for
+// a job, and `work.at.cafe` already names the building. This is the counter itself.
+const cafeFields = {
+  on: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as the banana steps behind the counter and the tray rises: the apron going on. Not an instruction, not a greeting to anybody — a shift has started, and that is the whole feeling. Never a time, never a rate.' },
+  off: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as they step away, a beat before the receipt card opens. The work is over for now. Contented; never a summary and never a number — the receipt carries the number.' },
+  'receipt.title': { kind: 'prose', aim: 16, max: 24, note: 'The receipt card’s heading. Two or three words, a NAME for the thing rather than a sentence.' },
+  'receipt.take': { kind: 'prose', aim: 54, max: 72, holds: ['{n}'], note: 'The one measured line naming what the tips came to. MUST contain {n} — the game puts the coins there. ⚠️ a TOTAL is fine and a RATE is forbidden: no “per cup”, no “each”, no “an hour”.' },
+  'receipt.line': { kind: 'prose', aim: 66, max: 88, note: 'The single line under the take: the terrace as you left it, the cups still warm, the quiet after a rush. It notices the ROOM, never the player’s performance, and never a number.' },
+  'receipt.none': { kind: 'prose', aim: 62, max: 84, note: 'Shown INSTEAD of the take when the shift served nothing at all. Contented, never a telling-off — standing behind a counter on a slow afternoon is a perfectly good thing to have done.' },
+  'receipt.back': { kind: 'label', aim: 12, max: 18, note: 'The button that closes the receipt. A VERB first, and short enough that it can never wrap onto two lines.' },
+  'cup.perfect[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 town toasts for a cup that came out right, one picked per cup. Notice the CUP, or the customer taking it — never praise the player, never say “perfect”. Warm, brief, a little pleased with itself.' },
+  'cup.fine[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a cup that is good enough, and out it goes. One notch down from the perfect deck: approving, never a correction, and never a hint about what would have been better.' },
+  'cup.wrong[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a cup that is not a good cup. It costs the sale and nothing else, so: no blame, no advice, no number, no “try again”. This world is fond of the people in it.' },
+  left: { kind: 'prose', aim: 58, max: 78, holds: ['{who}'], note: 'The town’s toast when somebody has waited too long, turns their back and walks off. MUST contain {who} — the game puts that banana’s name there. A small sadness, not a failure notice; never how long they waited and never what it cost.' },
+  ask: { kind: 'prose', aim: 30, max: 38, note: 'The question the PLAYER presses on Bean’s dialogue card to ask about working the counter. The player’s voice, not Bean’s; ends in a question mark; the same length and pitch as the questions already on that card.' },
+  bean: { kind: 'prose', aim: 96, max: 130, note: 'Bean’s answer: what the counter is, and that you stand behind it to work it. Bean reads fortunes in coffee grounds and is not entirely joking about it. Never explains the gestures, never gives a number, never instructs.' },
+  'drinks.short': { kind: 'label', aim: 10, max: 16, note: 'The smallest drink’s NAME, one or two words, for the receipt only — the ticket on the tray is pictures. It should sound like this town, not like a chain: nobody here says “grande”.' },
+  'drinks.tall': { kind: 'label', aim: 10, max: 16, note: 'The middle drink’s name, same rules.' },
+  'drinks.double': { kind: 'label', aim: 10, max: 16, note: 'The strongest drink’s name, same rules.' },
+};
+// 🤫 THE QUIET RULE HAS NO OTHER GUARD. Nothing in the client can stop a line that reads as a
+// banana speaking, so the mechanical half is here: nobody may be asked a question, and the decks
+// must be decks (one line repeated twice over a long shift is what a deck exists to prevent).
+function cafeShape(data) {
+  const bad = [];
+  const say = (f, m) => bad.push([f, m]);
+  for (const k of ['perfect', 'fine', 'wrong']) {
+    const deck = ((data.cup || {})[k]) || [];
+    if (deck.length < 3) say(`cup.${k}`, `a deck of at least 3 — one line twice in a shift is what a deck exists to prevent (got ${deck.length})`);
+    deck.forEach((l, i) => { if (/\?\s*$/.test(String(l || ''))) say(`cup.${k}[${i}]`, 'ends in a question — nobody may ask the player one'); });
+  }
+  for (const f of ['on', 'off', 'left']) {
+    if (/\?\s*$/.test(String(data[f] || ''))) say(f, 'ends in a question — nobody may ask the player one');
+  }
+  if (!/\?\s*$/.test(String(data.ask || ''))) say('ask', 'is the PLAYER’s question and must end in a question mark');
+  return bad;
+}
+const cafeSchema = {
+  type: 'object', additionalProperties: false, required: ['on', 'off', 'receipt', 'cup', 'left', 'ask', 'bean', 'drinks'],
+  properties: {
+    on: str(cafeFields.on.note),
+    off: str(cafeFields.off.note),
+    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'back'],
+      properties: { title: str(cafeFields['receipt.title'].note), take: str(cafeFields['receipt.take'].note), line: str(cafeFields['receipt.line'].note), none: str(cafeFields['receipt.none'].note), back: str(cafeFields['receipt.back'].note) } },
+    cup: { type: 'object', additionalProperties: false, required: ['perfect', 'fine', 'wrong'],
+      properties: {
+        perfect: { type: 'array', description: cafeFields['cup.perfect[]'].note, items: { type: 'string' } },
+        fine: { type: 'array', description: cafeFields['cup.fine[]'].note, items: { type: 'string' } },
+        wrong: { type: 'array', description: cafeFields['cup.wrong[]'].note, items: { type: 'string' } },
+      } },
+    left: str(cafeFields.left.note),
+    ask: str(cafeFields.ask.note),
+    bean: str(cafeFields.bean.note),
+    drinks: { type: 'object', additionalProperties: false, required: ['short', 'tall', 'double'],
+      properties: { short: str(cafeFields['drinks.short'].note), tall: str(cafeFields['drinks.tall'].note), double: str(cafeFields['drinks.double'].note) } },
+  },
+};
+
 export const JOBS = {
   'town-life': {
     id: 'town-life',
@@ -528,6 +593,21 @@ export const JOBS = {
     fields: lifeFields,
     shape: lifeShape,
     schema: lifeSchema,
+  },
+  'town-cafe': {
+    id: 'town-cafe',
+    title: 'Banana Town — the Coffee Cup’s counter',
+    what: 'Stepping behind the counter and stepping away, the receipt, the three decks for a cup well or badly made, the one who gives up, Bean’s own answer, and the three drinks’ names.',
+    brief: 'tools/copy-briefs/town-cafe.md',
+    out: 'tools/copy-out/town-cafe.json',
+    approved: 'src/data/copy/town-cafe.json',
+    reads: 'src/scripts/town-cafe.js (through a glob inside the café’s own lazy chunk, so town-room never carries these bytes)',
+    top: ['on', 'off', 'receipt', 'cup', 'left', 'ask', 'bean', 'drinks'],
+    // 🧍 Bean speaks here, so the writer gets the bible
+    personas: 'town-personas',
+    fields: cafeFields,
+    shape: cafeShape,
+    schema: cafeSchema,
   },
   'town-personas': {
     id: 'town-personas',

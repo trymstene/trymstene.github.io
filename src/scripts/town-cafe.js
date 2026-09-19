@@ -20,6 +20,15 @@
 // cup may not exceed 6 either: the stew buff DOUBLES a faucet and 6 × 2 = 12 = RULES.town.tips.max,
 // and a refusal is whole, never partial.
 
+// ⭐ THE WORDS ARE GLOBBED HERE, inside the café's own lazy chunk — NOT onto town-life.json, which is
+// eager-globbed into town-room.js and would have spent two kilobytes of the 2 447 B that chunk has
+// left. The counter runs wordless until the rig approves them, the way every surface in this world
+// does, and no player who never works a shift downloads a byte of them.
+const COPY_MODS = import.meta.glob('../data/copy/town-cafe.json', { eager: true, import: 'default' });
+export const COPY = Object.values(COPY_MODS)[0] || {};
+// a deck line, picked by a number the caller already has, so the same cup never says two things
+export const deckLine = (deck, n) => { const d = (COPY.cup || {})[deck] || []; return d.length ? d[Math.abs(n | 0) % d.length] : ''; };
+
 // ---- the three gestures, and nothing about a screen -------------------------------------------
 export const GRADES = ['wrong', 'fine', 'perfect'];
 export const ORDER = ['grind', 'pour', 'milk'];

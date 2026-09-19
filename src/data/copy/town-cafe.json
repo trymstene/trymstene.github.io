@@ -1,0 +1,39 @@
+{
+  "on": "Apron on, tray up; the counter has its banana.",
+  "off": "The counter goes quiet, with warm cups still on the shelf.",
+  "receipt": {
+    "title": "Counter Take",
+    "take": "Tips gathered: {n} coins.",
+    "line": "The propeller turns above the square, and one cup is still warm.",
+    "none": "The counter kept its company; the cups stayed stacked and dry.",
+    "back": "Return"
+  },
+  "cup": {
+    "perfect": [
+      "A neat cup crosses the rope without a wobble.",
+      "The foam sits high, pleased with its little roof.",
+      "That cup leaves warm hands around it.",
+      "The grounds settle into a tidy little weather map."
+    ],
+    "fine": [
+      "A warm cup heads down the lane.",
+      "The milk finds its place and stays there.",
+      "The cup goes out with a sensible amount of steam.",
+      "One ordinary good cup joins the square."
+    ],
+    "wrong": [
+      "That cup cools beside the grinder.",
+      "The order stays at the rope a moment longer.",
+      "The foam slumps quietly into the cup.",
+      "A cup and its order part ways by the lane."
+    ]
+  },
+  "left": "{who} turns from the rope, leaving the lane a little emptier.",
+  "ask": "Can I work the counter?",
+  "bean": "The counter is work when you stand behind it. The grounds say the square needs a steady hand today.",
+  "drinks": {
+    "short": "Little Wake",
+    "tall": "Square Cup",
+    "double": "Propeller Dark"
+  }
+}

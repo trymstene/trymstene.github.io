@@ -78,7 +78,7 @@ const description = 'Internal bench for the Coffee Cup counter. Not a public pag
   </main>
 
   <script>
-    import { mountCounter, newCup, DRINK_IDS, tipFor, GRADES } from '../../scripts/town-cafe.js';
+    import { mountCounter, newCup, DRINK_IDS, tipFor, GRADES, COPY, deckLine } from '../../scripts/town-cafe.js';
     import { drawComposite, assetsReady } from '../../lib/banana-engine.js';
 
     const view = document.getElementById('cbView');
@@ -148,22 +148,29 @@ const description = 'Internal bench for the Coffee Cup counter. Not a public pag
     requestAnimationFrame(patience);
 
     let n = 0;
+    window.__cafe = { last: null };   // declared before the counter, because onCup writes into it
     const counter = mountCounter(view, {
       onStep: (r) => { if (r.more) say(`  ${r.key}: ${GRADES[r.g]}`); },
       onCup: (cup) => {
-        say(`CUP ${cup.n + 1} — ${GRADES[cup.grade].toUpperCase()} (${cup.marks.map((m) => GRADES[m][0]).join('')}) tip ${tipFor(cup.grade, true)}`);
-        counter.idle('next');
+        // ⚠️ the walk reads THIS, not the log: a log line is prose and prose is the rig's to change
+        window.__cafe.last = { grade: GRADES[cup.grade], marks: cup.marks.slice(), tip: tipFor(cup.grade, true) };
+        // ⭐ the approved words, from the rig — the deck a cup lands in is the whole feedback
+        say(deckLine(GRADES[cup.grade], cup.n) || GRADES[cup.grade]);
+        say(`   [${GRADES[cup.grade]} · ${cup.marks.map((m) => GRADES[m][0]).join('')} · tip ${tipFor(cup.grade, true)}]`);
+        counter.idle(COPY.receipt ? COPY.receipt.back : 'next');
         if (bodies[0]) { bodies[0].born = performance.now() + 99999; }
       },
     });
     counter.show();
+    counter.say(COPY.on || '');
     const serve = () => {
       const cup = newCup(DRINK_IDS[n % DRINK_IDS.length], n, 17 + n * 13);
       counter.serve(cup, cupLabel());
-      say(`— ${cup.drink}, cup ${n + 1}`);
+      say(`— ${(COPY.drinks || {})[cup.drink] || cup.drink}, cup ${n + 1}`);
       n++;
     };
-    // the label is the STATION ID: mechanics, not copy
+    // ⚠️ still a station id and still not copy: the tray's button is a GESTURE, and the brief's
+    // "never instruct" rule means the shipped tray will carry a picture here, not a sentence.
     function cupLabel() { return 'grind / pour / milk'; }
     document.getElementById('cbNext').addEventListener('click', serve);
     // ⭐ the seam a walk uses: v is a pure function of the clock, so the perfect instant is SOLVED,
@@ -189,6 +196,6 @@ const description = 'Internal bench for the Coffee Cup counter. Not a public pag
       else { counter.show(); say('back on the mark'); }
     });
     serve();
-    window.__cafe = { counter, serve, bodies };
+    Object.assign(window.__cafe, { counter, serve, bodies });
   </script>
 </BaseLayout>

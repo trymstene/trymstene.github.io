@@ -99,11 +99,15 @@ test('a PERFECT cup is reachable on an 8× throttled phone', async ({ page, brow
       else sm.press(sm.best(performance.now()));
       await wait(20);
     }
-    return (document.getElementById('cbLog').textContent || '').split('\n')[0];
+    return window.__cafe.last;
   });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-  expect(got, 'grind, pour and milk all perfect at 8× CPU').toContain('PERFECT');
-  expect(got, 'and it pays the top tip').toContain('tip 5');
+  // ⚠️ the CUP, not the log line: a log line is prose, and prose belongs to the rig — asserting on
+  // it makes the next approved draft break a test that is about timing
+  expect(got, 'a cup was actually finished').toBeTruthy();
+  expect(got.marks, 'grind, pour and milk all perfect at 8× CPU').toEqual([2, 2, 2]);
+  expect(got.grade).toBe('perfect');
+  expect(got.tip, 'and it pays the top tip').toBe(5);
   expect(errors).toEqual([]);
 });
 
