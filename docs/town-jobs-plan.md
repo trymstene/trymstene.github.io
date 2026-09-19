@@ -24,13 +24,15 @@ else in that plan survives.
    paper**: a works order signed in 1999 by the same hand that wrote a name into Nib's big book
    and scratched it out (chapter 1's ending). Chapter 2 is not a shopping trip, it is **four
    signatures** — you get one building certified at a time, and the boards come down.
-2. **The rule that stops the shared town and the private story fighting:**
+2. **The rule that stops the shared town and the private story fighting** (Trym, 19 Sep:
+   *"the town meter is more like 'the healthier the town, the more services becomes available'
+   … while for the solo player state, they need to unlock the different businesses"*):
    > ### ⭐ THE SHUTTER IS THE TOWN'S. THE KEY IS YOURS.
-   > **Hazard tape, a dark front and the red sign** mean the town's health closed this door
-   > **today** — shared, the same for everyone, reversible, and always paired with a problem you
-   > can fix. **Worksite hoarding and no name plank** mean your chapter has not reached it
-   > **yet** — personal, one-way, written only on your own pass. Two different looks so no
-   > player ever confuses "the town is having a bad day" with "I have not done this yet".
+   > **Hazard tape, a dark front and the red sign** mean the town's health has not opened this
+   > service **yet today** — shared, the same for everyone, reversible, always paired with a
+   > problem you can fix. **A locked front with no name plank** means **you** have not unlocked
+   > this business — personal, one-way, written only on your own pass, opened by the questline.
+   > Two different looks, two different actions: *go fix the town* against *go play the story*.
    The chapter never writes a byte of shared state (the questline's ONE RULE holds), and the
    band keeps full authority over the tape forever.
 3. **The honest tension.** Trym's warning — *not too generic and 'mini-gamey'* — is the thing
@@ -40,20 +42,44 @@ else in that plan survives.
 
 ---
 
-## 1. The closed town — what a player sees
+## 1. The two locks — what a player sees
 
-Two vocabularies, both cheap:
+### The town's lock: the healthier the town, the more services open
+This is not a new system — **it is how the town already works**, and Trym's framing is the
+honest description of it. Pip's shelf grows with the band (`stock.js`: nothing at Abandoned,
+the basics at Struggling, then common, then good, then the rare row at Thriving); the
+travelling stall only comes from Lively up; lanterns and visitors arrive at Lively and
+Thriving. **This plan extends the same ladder to the shopfronts themselves.** Keep the town
+clean, lit and repaired, fend off the curses, and the services open; let it slide and they
+close. Like the park.
 
-- **Hoarded (your chapter has not reached it):** worksite fence panels composed into one baked
-  still per shopfront at its exact drawn width (the works yard already uses
+- **The look:** the belt of hazard tape, the dark front and the little red CLOSED sign already
+  built for the two kiosks on 15–18 Sep. `barricade()` sizes the belt off the prop's own width,
+  so it already scales to a 183 px shopfront: **zero new art**.
+- **The action it teaches:** tapping it opens a card that says the town is having a bad day, what
+  is wrong right now, and that fixing things reopens it — with the health bar one tap away. Never
+  a date, never a rate.
+
+### Your lock: a business you have not unlocked yet
+- **The look:** worksite hoarding composed from the pack's fence panels into one baked still per
+  shopfront at its exact drawn width (the works yard already uses
   `ME_Singles_Worksite_48x48_Fence_*`), a signpost as the tap target, one dressing prop, and
-  **no name plank over the door**. Tapping the signpost opens the chapter card: where to go, never
-  a date. Zero new art beyond the bake.
-- **Band-shut (the town's health closed it today):** the belt of hazard tape, the dark prop and
-  the little red CLOSED sign already built for the two kiosks on 15–18 Sep. `barricade()` sizes
-  the belt off the prop's own width, so it already scales to a 183 px shopfront: **zero new art**.
+  **no name plank over the door**. Deliberately nothing like the tape.
+- **The action it teaches:** tapping the signpost opens the chapter card, which must say three
+  things — *what this building will be*, *that the story opens it*, and **how far along you
+  are** ("the second of four signatures"). Trym, 19 Sep: *"the buildings must show clear visual
+  indications on what you are missing"*. A sign that only says no is a dead end; this one is a
+  quest hook.
 
-**What closes at which band** is one table in `src/data/town/condition.js` (`LOOK[band].shut`):
+### ⭐ The precedence rule: one building, one state, always the one you can act on
+A front can be both locked and health-shut at once. **Your lock always wins the display.** If
+you have not unlocked the store, the town's mood there is irrelevant to you: you could not use
+it either way, and the useful thing to tell you is *how to unlock it*. Once you unlock it, the
+town's lock takes over and the front joins the shared weather like every other shop. So every
+building shows exactly one state, and it is always the one whose action is available to you now.
+
+**What the town's lock closes at which band** is one table in `src/data/town/condition.js`
+(`LOOK[band].shut`):
 
 | Band | Shut fronts |
 |---|---|
@@ -67,10 +93,17 @@ games must answer on a stranger's worst day, and the mail must never stop. This 
 `tools/check-design.mjs` as a grep, not a paragraph: `condo` must never appear in `CLOSABLE` or
 `HOARDABLE`.
 
-⚠️ **The forbidden case stays forbidden:** a closed door with no way to open it. Every band-shut
-building is guaranteed one of your fixable problems (the force loop's source changes from
-`todayShut` to `cond.shut`), and `PROBLEM_COUNT.abandoned` goes 9 → 11 so shutters do not crowd
-the lamps off the list.
+⚠️ **The forbidden case stays forbidden:** a closed door with no way to open it, and it now
+covers both locks — the taped one always carries a problem you can fix, the locked one always
+carries a signpost that says which step of the story opens it. Every band-shut building is
+guaranteed one of your fixable problems (the force loop's source changes from `todayShut` to
+`cond.shut`), and `PROBLEM_COUNT.abandoned` goes 9 → 11 so shutters do not crowd the lamps off
+the list.
+
+⚠️ **The one feel-risk:** unlocking the store and then finding it taped the next morning reads as
+a takeaway. The mitigations are that a health-shut front is always short, always explained and
+always fixable in minutes, and that (**TRYM**) a job-holder may be allowed through their own
+workplace's tape.
 
 **How bleak Abandoned is, is Trym's thumb, not an argument.** Before any of this is argued,
 bake five screenshots at 393 px, one per band, and let him overrule the table. (**TRYM**)
@@ -291,6 +324,9 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
 - **Does the café still cost something**, and if not, what replaces the sink?
 - **How bleak is Abandoned** — three shut fronts or five? Decide from the five screenshots.
 - **Is the sticker shop (`print`) ever taped?** It is the one front that leads to real money.
+- **Does the locked signpost show progress** ("two of four signatures"), or only the next step?
+- **May a job-holder walk through their own workplace's tape?** (Same question as the staff gap,
+  now that the two locks are separate.)
 - **The numbers**: the two cheques, the tips, the round, the chore caps.
 - **Chores pay in the room, or a small coin?**
 - **Nib**: payroll desk only, or a job. **The Mayor**: unemployable, or the last boss.
