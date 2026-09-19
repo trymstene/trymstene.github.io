@@ -568,7 +568,20 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    boilerplate, about 1.7 KB. That ceiling is the next one to argue about, not town-room's.
 
 **The jobs**
-11. worker-pass: the rules, `JOB_PAY`, the routes; curl all three and paste the answers.
+11. ✅ **Written 19 Sep, awaiting Trym's deploy.** `POST /job/take`, `/job/chore`, `/job/pay` plus
+   `JOB_PAY = { store: 90, condo: 60, cafe: 0 }` and `PAY_BACK = 2`, and `RULES.town.tips` for the
+   café. Proven by `worker-pass/test/jobs.test.mjs` (22 assertions, a faked clock so a week passes
+   in a millisecond) rather than by curl: one job at a time, a kept pass required, a day is a day,
+   whole finished weeks only, at most two weeks back, paid once.
+   ⚠️ **Two deviations from §5, both deliberate.** There is NO `RULES.homestead.wage` faucet: the
+   cheque is paid SERVER-SIDE into the ledger slot `job`, so there is nothing for a client to name
+   or forge — adding a wage faucet nothing legitimately uses would be free coins for anyone who
+   posts the event. And a week's days pay at the job they were WORKED at, not the one you hold on
+   payday, because that is the only honest answer when somebody changes employer mid-week.
+   The bound, said out loud: attendance is client-written, so a device that lies can reach at most
+   `JOB_PAY × (PAY_BACK + 1)` per person ever — 270 coins at the store — all of it in a named
+   ledger slot the desk can see. Also closed a gap found on the way: the town's `fix` and `object`
+   faucets had never been tested at all.
 12. `src/scripts/town-work.js` — **one** new lazy chunk at 40 000 (it fits the 41 392 bytes the
     budgets have free; three chunks do not).
 13. The copy jobs (`town-restore`, `town-work`) through the rig, the gate, the approve.

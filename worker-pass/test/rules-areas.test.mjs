@@ -74,5 +74,19 @@ ok('a forced floor quest under ?questtest is denied', r.wallet.bal === 81, r.wal
 const R = JSON.parse(env.PASSES._m.get([...env.PASSES._m.keys()].find((k) => k.startsWith('pass/') && env.PASSES._m.get(k).includes('"rave:spot"'))));
 ok('the caps used ride the record per area', R.rules['rave:spot'].used === 35 && R.rules['rave:window'].used === 20, R.rules);
 
+console.log('\n5. the town');
+// ⚠️ the town has paid `fix` and `object` since 14 Sep and NEITHER was ever covered here; `tips`
+// is new on 19 Sep with the jobs. The weekly cheque is deliberately ABSENT from the table: it is
+// paid server-side by /job/pay into the ledger slot `job`, so there is no faucet to name or forge.
+a = await player();
+r = await pushEv(a, [ev('coins_earned', 12, 'town', 'fix'), ev('coins_earned', 80, 'town', 'object'), ev('coins_earned', 12, 'town', 'tips')]);
+ok('fix, object and the new tips are all paid within their rules', r.wallet.bal === 104, r.wallet);
+r = await pushEv(a, [ev('coins_earned', 13, 'town', 'tips')]);
+ok('a tip over the per-cup max is refused (13 > 12)', r.wallet.bal === 104, r.wallet);
+r = await pushEv(a, [ev('coins_earned', 12, 'town', 'wage')]);
+ok('there is NO wage faucet to forge — the cheque is paid server-side', r.wallet.bal === 104, r.wallet);
+r = await pushEv(a, [ev('coins_earned', 5, 'town', 'qa')]);
+ok('the QA top-up is denied in the town', r.wallet.bal === 104, r.wallet);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

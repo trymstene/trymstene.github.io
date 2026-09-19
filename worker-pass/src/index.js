@@ -66,6 +66,9 @@ export default {
       if (url.pathname === '/admin/rollup') return adminRollup(request, env, url);
       if (url.pathname === '/admin/rollup/tick') return adminTick(request, env, url);
       if (url.pathname === '/admin/people') return adminPeople(request, env, url);
+      if (url.pathname === '/job/take') return jobTake(request, env);
+      if (url.pathname === '/job/chore') return jobChore(request, env);
+      if (url.pathname === '/job/pay') return jobPay(request, env);
       if (url.pathname === '/citizen') return citizen(request, env);
       if (url.pathname === '/arcade/board') return arcadeBoard(request, env, url);
       if (url.pathname === '/arcade/score') return arcadeScore(request, env);
@@ -1192,6 +1195,156 @@ async function adminArcade(request, env, url) {
   return json({ boards: out, wk: isoWeek(Date.now()) }, 200, cors(env, request));
 }
 
+// ---------- 💼 THE JOBS (19 Sep 2026, docs/town-jobs-plan.md §3 and §5) ----------
+// You take a job by walking up to a boss and asking. ONE AT A TIME — changing is a walk to another
+// boss, which makes it a decision rather than an income stream.
+//
+// ⭐ THE CHEQUE IS DERIVED, NEVER ACCRUED. There is no cron and no bank. Nothing accumulates while
+// you are away: /job/pay looks back at most PAY_BACK WHOLE weeks, pays only for days your
+// attendance actually covers, and marks them paid. Three weeks away owes you nothing and loses you
+// nothing, which is the absence doctrine held exactly.
+//
+// ⚠️ ATTENDANCE IS CLIENT-WRITTEN, so say the bound out loud rather than calling this proof: a
+// device that lies to /job/chore can mark at most seven days in a week, and a week pays at most
+// JOB_PAY[job]. So the ceiling a forged client can reach is JOB_PAY × (PAY_BACK + 1) per person,
+// ever — 270 coins for the store — and every coin of it lands in a named ledger slot the desk can
+// see. That is the whole exposure, and it is bounded by design rather than by hoping.
+//
+// ⚠️ A KEPT PASS IS REQUIRED (the Citizens precedent). An anonymous pass is one POST from being
+// minted again, so wages on one are a farming hole with no floor. The refusal is `keep`, and the
+// client must read it as an invitation to keep the pass, never as a punishment.
+//
+// ⚠️ THE CHEQUE IS PAID SERVER-SIDE, into the ledger slot `job` — it is never a coins_earned event
+// the client claims, so there is no faucet to forge and RULES needs no `wage` entry. The café's
+// TIPS are different: they are earned a cup at a time while you stand there, so they come through
+// the ordinary tape as town/tips, and that faucet IS in RULES above.
+const JOB_PAY = { store: 90, condo: 60, cafe: 0 };   // the café pays tips per cup instead of a cheque
+const PAY_BACK = 2;                                  // whole weeks a cheque may walk back
+const JOB_AT = Object.keys(JOB_PAY);
+
+const jobWeek = (ms) => weekOf(ms).id;
+const jobDay = (ms) => String((new Date(ms).getUTCDay() + 6) % 7);   // Monday = 0, the same as weekOf()
+// ⭐ A WEEK IS A MAP OF DAY → THE JOB YOU WORKED IT AT, at most seven entries. Two earlier shapes
+// were wrong in ways worth remembering: a per-week COUNT let one Tuesday be marked nine times, and
+// a per-week single job made a mid-week move pay Monday's work at Friday's employer. A day can
+// hold only one job, so switching twice in an afternoon cannot buy two days' wages for one day.
+const jobDays = (w, at) => Object.keys(w || {}).filter((k) => !at || w[k] === at).length;
+
+function jobRec(rec, make) {
+  const blob = rec.blob || (make ? (rec.blob = {}) : null);
+  if (!blob) return null;
+  const p = blob.pass || (make ? (blob.pass = { created: Date.now(), patches: {}, stats: {}, days: [] }) : null);
+  if (!p) return null;
+  if (!p.job && make) p.job = { at: '', since: 0, wk: {}, paid: {} };
+  return p.job || null;
+}
+// only the weeks a cheque could still reach are worth keeping on the record
+function jobPrune(j, now) {
+  const live = new Set();
+  for (let i = 0; i <= PAY_BACK; i++) live.add(jobWeek(now - i * 7 * DAY));
+  for (const k in j.wk) if (!live.has(k)) delete j.wk[k];
+  for (const k in j.paid) if (!live.has(k)) delete j.paid[k];
+}
+function jobView(j, now) {
+  const wk = jobWeek(now);
+  return { at: j.at || '', since: j.since || 0, week: wk, days: jobDays(j.wk && j.wk[wk]), pay: JOB_PAY[j.at] || 0 };
+}
+
+// ---------- POST /job/take — ask a boss for the job, or hand it back ----------
+async function jobTake(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const at = String((b && b.at) || '');
+  if (at && !JOB_AT.includes(at)) return json({ error: 'no such job' }, 400, cors(env, request));
+  return retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+    if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+    const now = Date.now();
+    const j = jobRec(R.home, true);
+    // ⭐ ONE AT A TIME. Taking a second job is leaving the first, and the weeks already worked stay
+    // on the record with the job that earned them, so a change never eats a cheque you are owed.
+    if (j.at !== at) { j.at = at; j.since = at ? now : 0; }
+    jobPrune(j, now);
+    await saveKey(env, R.homeKey, R.home);
+    return json({ ok: true, job: jobView(j, now) }, 200, cors(env, request));
+  });
+}
+
+// ---------- POST /job/chore — a day you turned up ----------
+async function jobChore(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  return retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+    if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+    const j = jobRec(R.home, true);
+    if (!j.at) return json({ error: 'no job' }, 409, cors(env, request));
+    const now = Date.now(), wk = jobWeek(now);
+    // ⚠️ A DAY, NOT A COUNT, AND ONE JOB PER DAY. Turning up ten times on a Tuesday is one Tuesday
+    // however many times the client says so, and switching jobs twice in an afternoon overwrites the
+    // day rather than buying a second one.
+    const w = j.wk[wk] || (j.wk[wk] = {});
+    w[jobDay(now)] = j.at;
+    jobPrune(j, now);
+    await saveKey(env, R.homeKey, R.home);
+    return json({ ok: true, job: jobView(j, now) }, 200, cors(env, request));
+  });
+}
+
+// ---------- POST /job/pay — what the finished weeks owe, worked out now ----------
+async function jobPay(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  return retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+    if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+    const j = jobRec(R.home, true);
+    const now = Date.now();
+    const paid = [];
+    let total = 0;
+    // ⚠️ WHOLE WEEKS ONLY, and never this one: a cheque is for a week that has finished, so the
+    // current week is skipped and becomes payable next Monday. i starts at 1 for that reason.
+    for (let i = 1; i <= PAY_BACK; i++) {
+      const wk = jobWeek(now - i * 7 * DAY), w = j.wk && j.wk[wk];
+      if (!w || j.paid[wk] != null) continue;
+      // ⭐ EACH DAY PAYS AT THE JOB IT WAS WORKED AT. A week split between two bosses is two part
+      // cheques, which is the only honest answer: you did those days there.
+      let coins = 0;
+      const byJob = {};
+      for (const d in w) byJob[w[d]] = (byJob[w[d]] || 0) + 1;
+      for (const at in byJob) {
+        const n = Math.round((JOB_PAY[at] || 0) * Math.min(7, byJob[at]) / 7);
+        if (n > 0) { paid.push({ week: wk, at, days: byJob[at], coins: n }); coins += n; }
+      }
+      j.paid[wk] = coins;                       // marked even at zero, so a quiet week is never re-walked
+      total += coins;
+    }
+    if (total > 0) {
+      // ⚠️ THE LEDGER SLOT, NEVER THE SHARED SCALAR — the same rule the admin grant follows: a
+      // device pushes its own slots and max-merges the scalar, so a wage written to the scalar
+      // could be flattened by an older client's copy. `job` is the server's own slot and the
+      // client never writes it, which is also why a max-merge of it is safe.
+      const p = R.home.blob.pass;
+      if (!p.base) p.base = { ...(p.stats || {}) };
+      const led = p.led || (p.led = {});
+      led.coins_earned = led.coins_earned || {};
+      led.coins_earned.job = (+led.coins_earned.job || 0) + total;
+    }
+    jobPrune(j, now);
+    await saveKey(env, R.homeKey, R.home);
+    return json({ ok: true, paid, total, job: jobView(j, now) }, 200, cors(env, request));
+  });
+}
+
 async function citizen(request, env) {
   let live = null, last = null;
   try { const o = await env.PASSES.get(CIT_LIVE); live = o ? await o.json() : null; } catch (e) {}
@@ -1862,6 +2015,10 @@ const RULES = {
   town: {
     fix:    { max: 12,  day: 120 },
     object: { max: 80,  day: 240 },
+    // ☕ the Coffee Cup's tips (19 Sep 2026): 2–6 a cup, doubled by the homestead buff, and a busy
+    // shift is about twenty cups. ⚠️ the weekly CHEQUE is NOT here — it is paid server-side by
+    // /job/pay into the ledger slot `job`, so there is no faucet for a client to forge.
+    tips:   { max: 12,  day: 120 },
     qa:     { deny: 1 },              // ?towntest shim coins
   },
   // 🎫 the pass page — the questline's finale pays there (bootQuest area 'pass')
