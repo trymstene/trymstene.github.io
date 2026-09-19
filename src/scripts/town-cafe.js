@@ -259,12 +259,13 @@ export function mountCounter(host, opts = {}) {
 // own feet sorts behind the building it is standing inside, and the shift is invisible with nothing
 // on screen to explain it. It is the painter's-algorithm trap the beach wrote down, in a new place.
 const POSE = 2;          // frame 2: front-facing, both hands up — the pack's barista pose
-// ⭐ SIZED TO THE WINDOW, the way the pack sizes its own barista, because the window is a window: you
-// are looking into a kiosk from the square and the banana inside is further away. 46 px was tried first
-// — a heroic banana at nearly the player's own height — and it does not fit: its arms reach past the
-// arch on both sides and the ellipse below takes its face off. The pack's barista is 26 px (CAFE_WIN[2]);
-// a banana stands a little taller than that and no taller.
-const DRAWN = 28;
+// ⭐ SIZED TO THE WINDOW, because the window is a window: you are looking into a kiosk from the square
+// and the banana inside is further away. 35 px is the CEILING, and it is arithmetic rather than taste:
+// the hands sit 0.729 of the banana's height above its feet, and the arch's ellipse has narrowed to
+// about 15 px of half-width by the time it gets up there — so at 38 the arms are clipped off at the
+// shoulder and at 46 the face goes with them. Both were on screen before this number was chosen.
+// (Trym, 19 Sep, looking at 28: "a bit too small, can be a bit bigger".)
+const DRAWN = 35;
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js — the drawn frame inside its square canvas
 
 export function bootTownCafe(ctx) {
@@ -279,8 +280,6 @@ export function bootTownCafe(ctx) {
     const el = document.createElement('div');
     el.className = 'tw-atwork';
     const cv = document.createElement('canvas');
-    cv.width = cv.height = 150;
-    try { drawMe(cv.getContext('2d'), 150, POSE, outfit()); } catch (e) {}
     el.appendChild(cv);
     el.style.width = pct(w, W);
     el.style.left = pct(cx, W);
@@ -306,11 +305,13 @@ export function bootTownCafe(ctx) {
     }
     world.appendChild(el);
     atWork = el;
+    paint();   // ⚠️ only once it is IN the world, because the size it is drawn at is the size it lands at
     const me = world.querySelector('.tw-me');
     if (me) me.classList.add('is-serving');   // ⚠️ a CLASS, never [hidden]: authored display beats it
   }
   function stepOut() {
     if (atWork) { atWork.remove(); atWork = null; }
+    clearTimeout(rz);
     const me = world.querySelector('.tw-me');
     if (me) me.classList.remove('is-serving');
   }
@@ -335,8 +336,26 @@ export function bootTownCafe(ctx) {
     track('town_shift', { at: 'cafe', step: 'out' });
     return true;
   }
-  // the player's own picture changes (a new hat, a curse): redraw the one in the window
-  function redraw() { if (atWork) { const g = atWork.firstChild.getContext('2d'); g.clearRect(0, 0, 150, 150); try { drawMe(g, 150, POSE, outfit()); } catch (e) {} } }
+  // ⚠️ DRAWN AT THE SIZE IT IS SHOWN, never at 150 and scaled down. The town's own bananas live in a
+  // 150 px canvas inside a 4.5% element — about a 3× downscale — but this one is a third of that width,
+  // and nearest-neighbour throwing away seven pixels in eight is what "a bit low res" looks like
+  // (Trym, 19 Sep). So the canvas is sized to the element's real pixels, device ratio and all, and
+  // redrawn when the world's scale changes. A banana in a window is the smallest one on screen and it
+  // has the least room to be sloppy.
+  function paint() {
+    if (!atWork) return;
+    const cv = atWork.firstChild;
+    const px = Math.max(24, Math.round(atWork.getBoundingClientRect().width * (window.devicePixelRatio || 1)));
+    if (cv.width !== px) { cv.width = cv.height = px; }
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, px, px);
+    try { drawMe(g, px, POSE, outfit()); } catch (e) {}
+  }
+  // the player's own picture changes (a new hat, a curse), or the world is resized: draw it again
+  function redraw() { paint(); }
+  let rz = 0;
+  const onResize = () => { clearTimeout(rz); rz = setTimeout(paint, 120); };
+  window.addEventListener('resize', onResize);
 
   return {
     clockIn, clockOut, redraw,
