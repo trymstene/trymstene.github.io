@@ -3047,7 +3047,11 @@ export class YardRoom {
     if (request.method === 'POST') { try { body = await request.json(); } catch (e) { return json({ err: 'bad json' }, 400); } }
     const pass = yStrip(body.pass, 64), alt = yStrip(body.alt, 64);
     const who = (pass || alt).slice(0, 8);
-    const name = yStrip(body.name, 28);
+    // 🧼 THE SIGN'S NAME IS THE MOST PUBLIC PLAYER-CHOSEN STRING IN THE WORLD — it shows on the
+    // yard, in the doors feed and in every guestbook row — so it goes through the family filter
+    // HERE, never on the client's word alone (19 Sep 2026). A refused name is simply not taken:
+    // the claim still succeeds and the sign keeps its default, exactly as an empty name does.
+    const name = sanitizeName(yStrip(body.name, 28), []);
     // 🪪 the world token: verified BEFORE the first storage op (WebCrypto is
     // not a storage await — the input-gate doctrine). A person-id claim
     // (pass ≠ alt) with a wrong token is refused; with none, only under
@@ -3056,10 +3060,17 @@ export class YardRoom {
     const tok = request.method === 'POST' ? await worldTokenOf(this.env, wtRaw) : null;
     const proven = !!tok && tok.gid === pass;
     const aliases = proven ? tok.aliases : [];
-    if (request.method === 'POST' && path !== '/rename' && pass && alt && pass !== alt) {
+    // ⚠️ A WRONG TOKEN IS REFUSED WHATEVER pass AND alt SAY (19 Sep 2026). The person-id claim
+    // (pass ≠ alt) still decides whether a token is REQUIRED — a signed-out phone sends one id and
+    // no proof, and must keep working — but a caller who supplies a bad proof used to slip through
+    // by setting pass === alt. A bad proof is now always a 401.
+    if (request.method === 'POST' && path !== '/rename') {
+      const claims = !!(pass && alt && pass !== alt);
       if (wtRaw && !proven) { this.wtMiss = (this.wtMiss || 0) + 1; return json({ err: 'token' }, 401); }
-      if (!wtRaw) { this.wtNone = (this.wtNone || 0) + 1; if (wtEnforce(this.env)) return json({ err: 'token' }, 401); }
-      else this.wtOk = (this.wtOk || 0) + 1;
+      if (claims) {
+        if (!wtRaw) { this.wtNone = (this.wtNone || 0) + 1; if (wtEnforce(this.env)) return json({ err: 'token' }, 401); }
+        else this.wtOk = (this.wtOk || 0) + 1;
+      }
     }
 
     // 🪧 claim: mint the address once, keep it forever (renames keep the slug —
@@ -3332,7 +3343,7 @@ export class YardRoom {
       const day = yDay();
       const vis = (await this.state.storage.get('vis:' + slug)) || [];
       if (!vis.some((v) => v.o === who && v.day === day)) {
-        vis.unshift({ n: yStrip(body.name, 24), o: who, day, t: Date.now() });
+        vis.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, day, t: Date.now() });
         await this.state.storage.put('vis:' + slug, vis.slice(0, VIS_CAP));
       }
       return json({ ok: 1 });
@@ -3345,10 +3356,13 @@ export class YardRoom {
       if (!doc) return json({ err: 'no such yard' }, 404);
       const text = yStrip(body.text, 90);
       if (!text) return json({ err: 'empty' }, 400);
+      // ✍️ a note lands in somebody else's yard, so the family filter runs on the SERVER too —
+      // the client checks first (captionsClean), and the client is not the gate (19 Sep 2026)
+      if (dirty(text)) return json({ err: 'rude' }, 400);
       const day = yDay();
       let g = (await this.state.storage.get('g:' + slug)) || [];
       g = g.filter((e) => !(e.o === who && e.day === day));
-      g.unshift({ n: yStrip(body.name, 24), o: who, x: text, day, t: Date.now() });
+      g.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, x: text, day, t: Date.now() });
       g = g.slice(0, GUEST_CAP);
       await this.state.storage.put('g:' + slug, g);
       return json({ ok: 1, guest: g.slice(0, 12).map((e) => ({ n: e.n, x: e.x, t: e.t })) });
@@ -3363,7 +3377,7 @@ export class YardRoom {
       const day = yDay();
       const wat = (await this.state.storage.get('wat:' + slug)) || [];
       if (wat.some((w) => w.d === day)) return json({ ok: 1, already: 1 });
-      wat.unshift({ n: yStrip(body.name, 24), o: who, d: day, t: Date.now() });
+      wat.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, d: day, t: Date.now() });
       await this.state.storage.put('wat:' + slug, wat.slice(0, WAT_CAP));
       return json({ ok: 1 });
     }
@@ -3382,7 +3396,7 @@ export class YardRoom {
       const day = yDay();
       const hugs = (await this.state.storage.get('hug:' + slug)) || [];
       if (hugs.some((h) => h.d === day && h.i === id)) return json({ ok: 1, already: 1 });
-      hugs.unshift({ i: id, n: yStrip(body.name, 24), o: who, d: day, t: Date.now() });
+      hugs.unshift({ i: id, n: sanitizeName(yStrip(body.name, 24), []), o: who, d: day, t: Date.now() });
       await this.state.storage.put('hug:' + slug, hugs.slice(0, HUG_CAP));
       return json({ ok: 1 });
     }
@@ -3398,7 +3412,7 @@ export class YardRoom {
       const day = yDay();
       const fed = (await this.state.storage.get('fed:' + slug)) || [];
       if (fed.some((f) => f.d === day)) return json({ ok: 1, already: 1 });
-      fed.unshift({ n: yStrip(body.name, 24), o: who, d: day, t: Date.now() });
+      fed.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, d: day, t: Date.now() });
       await this.state.storage.put('fed:' + slug, fed.slice(0, FEED_CAP));
       if (doc.state) {
         doc.state.feedAt = Date.now();

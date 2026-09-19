@@ -2876,7 +2876,7 @@ function init(visitDoc, visitMiss) {
       renderGuest(guestCache);
       toast('✍️ signed — ' + state.name + ' will find it');
       track('homestead_sign');
-    } catch (e) { toast('the pen is out of ink — try again in a bit'); }
+    } catch (e) { toast(e && e.body && e.body.err === 'rude' ? 'let’s keep the book family friendly' : 'the pen is out of ink — try again in a bit'); }   // yFetch hangs the worker's reply on e.body
     btn.disabled = false;
   });
 
