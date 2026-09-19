@@ -20,4 +20,7 @@ export const ODD_SPOTS = {
   nib: ['terrace', 2], stamp: ['orchard', 2], moss: ['monument', 4], pip: ['bus', 0], bean: ['garden_w', 4],
   figjr: ['board', 3], spinner: ['terrace', 1], dot: ['orchard', 3], granfig: ['cafe', 2],
 };
-export const CLOSABLE = ['cafe', 'info'];
+// ⚠️ THE ARCADE (`condo`) IS NEVER HERE and never in a band's `shut` list: five shipped games must
+// answer on a stranger's worst day (docs/town-jobs-plan.md §1, enforced by tools/check-design.mjs).
+// The post office is out too — the mail never stops.
+export const CLOSABLE = ['cafe', 'info', 'store'];

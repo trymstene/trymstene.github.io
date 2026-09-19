@@ -20,7 +20,7 @@ export const LOOK = {
   //             share of residents out · crows · visitors · décor
   // (rubbish piles and graffiti are not a shared look: they come only as a player's own
   //  problems, src/data/town/problems.js, so what you can fix is what you see)
-  abandoned:  { lampsOut: 5, lampsFlicker: 2, windowsDark: 0.8, shut: ['cafe', 'info'], litter: 2,
+  abandoned:  { lampsOut: 5, lampsFlicker: 2, windowsDark: 0.8, shut: ['cafe', 'info', 'store'], litter: 2,
                 bins: 3, dumps: 2, fountain: 'dry', outside: 0.4, crows: 3, visitors: 0, decor: 0, dayghost: 1 },
   struggling: { lampsOut: 3, lampsFlicker: 2, windowsDark: 0.5, shut: ['cafe'], litter: 1,
                 bins: 2, dumps: 1, fountain: 'on', outside: 0.7, crows: 2, visitors: 0, decor: 0, dayghost: 0 },
@@ -36,6 +36,12 @@ export const LOOK = {
 // nothing to do is a picture (docs/town-life-plan.md §3)
 export const PROBLEM_COUNT = { abandoned: 9, struggling: 7, recovering: 5, lively: 3, thriving: 2 };
 
+// ⚠️ `shut` is THE TOWN'S LOCK and it is capped: three shopfronts at Abandoned, one at Struggling,
+// none from the band above that (the day's `closed` event may still shut one more, and that one is
+// always fixable) — a stranger must always find open doors. The store's shutter matches the
+// shelf it already has (stock.js: nothing at Abandoned, the basics from Struggling up), so the front
+// finally SHOWS what the data has always said. A player's own locks are a different look entirely
+// (docs/town-jobs-plan.md §1: the shutter is the town's, the key is yours).
 // the sky: the town's own twelve-minute day dims at evening and night so the lamps and
 // the windows mean something; a Curse Night is darker than any night
 // ⚠️ a deep night also brings the storm, whose own scrim (weather.css, 0.40) stacks on this one:

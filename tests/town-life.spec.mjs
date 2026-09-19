@@ -81,15 +81,22 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   await page.screenshot({ path: SHOT + 'recovering.png' });
   await overview(page, 'recovering-all');
 
-  // pushed to the floor, at night so the lamps mean something: Abandoned — nine problems,
-  // both kiosks shut, the bin full, the fountain dry, crows, five dark lamps, no visitors
+  // pushed to the floor, at night so the lamps mean something: Abandoned — ten problems, all three
+  // shopfronts shut, the bin full, the fountain dry, crows, five dark lamps, no visitors
   await seam(page, () => window.__town.life.set(21));
   await setBand(page, 5);
   expect(await room(page, 'band')).toBe('abandoned');
-  expect((await room(page, 'problems')).length).toBe(9 + Object.values(await room(page, 'lamps')).filter((s) => s !== 'ok').length);   // nine, and every dark or stuttering lamp on top
-  expect((await room(page, 'shut')).sort()).toEqual(['cafe', 'info']);
+  const shutA = (await room(page, 'shut')).sort();
+  expect(shutA).toEqual(['cafe', 'info', 'store']);   // the store joined the lock 19 Sep: its shut front now matches the empty shelf it already had
+  // the band's nine, ONE SHUTTER PER SHUT FRONT, and every dark or stuttering lamp on top. The
+  // shutters are counted from `shut` rather than written as a number because that is the rule:
+  // a front the town shut is always a front you can raise (19 Sep — before that only the front the
+  // day's event shut was guaranteed a fix, so a band-shut kiosk could sit there with nothing to tap)
+  const probA = await room(page, 'problems');
+  expect(probA.length).toBe(9 + shutA.length + Object.values(await room(page, 'lamps')).filter((s) => s !== 'ok').length);
+  for (const k of shutA) expect(probA.some((q) => q.id === 'shutter:' + k)).toBe(true);
   expect((await room(page, 'full')).length).toBe(5);   // three street bins and two dumpsters, all full
-  expect(await page.locator('.tw-tape').count()).toBe(4);   // both kiosks taped off, two bands each
+  expect(await page.locator('.tw-tape').count()).toBe(6);   // all three fronts taped off, two bands each
   expect(await room(page, 'fountain')).toBe('dry');
   expect(await room(page, 'crows')).toBeGreaterThanOrEqual(3);
   expect(Object.values(await room(page, 'lamps')).filter((s) => s === 'out').length).toBe(5);

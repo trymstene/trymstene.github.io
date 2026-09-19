@@ -322,7 +322,7 @@ export function bootTownLife(ctx) {
   const keepFn = (n, beat) => {
     if (beat === 5) return false;
     if (curse && curse !== 'hush') return true;
-    if (n.key === 'pip' && !SHELF[band]) return true;
+    if (n.key === 'pip' && (!SHELF[band] || (cond.shut.has('store') && !cond.fixedShut.has('store')))) return true;
     if (n.key === 'bean' && cond.shut.has('cafe') && !cond.fixedShut.has('cafe')) return true;
     if (n.key === 'dot' && cond.shut.has('info') && !cond.fixedShut.has('info')) return true;
     return h(dayNum(), 4, n.idx) >= LOOK[band].outside;
@@ -366,26 +366,34 @@ export function bootTownLife(ctx) {
     for (const b of cond.visitors) b.el.hidden = nightOut;
     if (merchant) merchant.el.hidden = nightOut;
   }
+  const SHUT_STILL = { cafe: ['shutcafe', 1, 3], info: ['shutinfo', 0, 43] };   // key → [still, dx, lift]; a front with no entry wears only the tape
   function shutters() {
     hangForSale();
     for (const k of CLOSABLE) {
       const want = cond.shut.has(k) && !cond.fixedShut.has(k);
-      if (want && !shutSprites[k]) {
+      const on = !!shutSprites[k] || shutNoStill.has(k);
+      if (want && !on) {
         const p = propOf(k); if (!p) continue;
-        const key = k === 'cafe' ? 'shutcafe' : 'shutinfo';
-        const [sw, sh] = STATE[key] || [0, 0];
-        shutSprites[k] = sprite(key, p.x + p.w / 2 + (k === 'cafe' ? 1 : 0), p.base - (k === 'cafe' ? 3 : 43), { z: p.base + 1, cls: 'is-shut' });   // measured on the plate: the shutter's badge over the kiosk's own
-        p.el.classList.add('is-dark');   // 🌑 a shut kiosk goes dark and grey, like a dead lamp, so open and shut read from across the square (Trym, 15 Sep)
+        // the two kiosks have a shutter still in the pack; a shopfront that has none is closed by the
+        // dark front, the tape and the red sign alone — which is why SHUT_STILL may have no entry
+        const st = SHUT_STILL[k];
+        if (st) shutSprites[k] = sprite(st[0], p.x + p.w / 2 + st[1], p.base - st[2], { z: p.base + 1, cls: 'is-shut' });   // measured on the plate
+        else shutNoStill.add(k);
+        p.el.classList.add('is-dark');   // 🌑 a shut front goes dark and grey, like a dead lamp, so open and shut read from across the square (Trym, 15 Sep)
         barricade(k, p);
         if (shutSprites[k] && problems.some((q) => q.type === 'shutter' && q.key === k)) shutSprites[k].el.classList.add('is-todo');
-        void sw; void sh;
-      } else if (!want && shutSprites[k]) { kill(shutSprites[k]); shutSprites[k] = null; const p = propOf(k); if (p) p.el.classList.remove('is-dark'); unbarricade(k); }
+      } else if (!want && on) {
+        kill(shutSprites[k]); shutSprites[k] = null; shutNoStill.delete(k);
+        const p = propOf(k); if (p) p.el.classList.remove('is-dark');
+        unbarricade(k);
+      }
     }
   }
   // 🚧 a shut kiosk is TAPED OFF: hazard tape across its front from both sides, and a little red sign on the window
   // with the one approved word (Trym, 15 Sep: "under construction tape across the building from both sides and a tiny
   // red square sign on the window saying closed"). The tape and the sign are drawn, not pack art: there is no tape in the pack.
   const tapes = {};
+  const shutNoStill = new Set();   // fronts wearing the tape with no shutter sprite of their own
   // 🏷 FOR SALE on the Coffee Cup: the big red sign hangs until the café can be bought (docs/town-cafe-plan.md)
   function hangForSale() {
     const p = propOf('cafe'); if (!p || !COPY.forSale || world.querySelector('.tw-forsale')) return;
@@ -503,15 +511,18 @@ export function bootTownLife(ctx) {
       else if (t.on === 'street') ANCHORS.street.forEach(([x, y], i) => cands.push({ t, key: 's' + i, x, y }));
       else if (t.on === 'walls') ANCHORS.walls.forEach(([x, y, k]) => cands.push({ t, key: k, x, y }));
       else if (t.on === 'perches') ANCHORS.perches.filter(([x, y]) => !usedPerch.has(x + ',' + y)).forEach(([x, y, k]) => cands.push({ t, key: k, x, y }));
-      else if (t.on === 'kiosks') [...cond.shut].forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 6 }); });
+      else if (t.on === 'shops') [...cond.shut].forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 6 }); });
       else if (t.on === 'bins' || t.on === 'dumps') ANCHORS[t.on].filter((k) => cond.full.has(k)).forEach((k) => { const p = propOf(k); if (p) cands.push({ t, key: k, x: p.x + p.w / 2, y: p.base + 4 }); });
       else if (t.on === 'fountain') { if (look.fountain === 'dry') cands.push({ t, key: 'fountain', x: 1100, y: 920 }); }
     }
     const n = PROBLEM_COUNT[band];
     // ⚠️ a kiosk shut by TODAY is always one of your problems, whatever the count: a closed
     // door with no way to open it is the one thing the design forbids
-    for (const k of todayShut) {
-      const c = cands.find((q) => q.t.on === 'kiosks' && q.key === k);
+    // …and it is every SHUT front, not only the one today's event shut: a band that closes the store
+    // must hand you the shutter to raise (19 Sep)
+    for (const k of [...cond.shut]) {
+      if (cond.fixedShut.has(k)) continue;
+      const c = cands.find((q) => q.t.on === 'shops' && q.key === k);
       if (!c || isFixed(c.t.id + ':' + k)) continue;
       cands.splice(cands.indexOf(c), 1);
       const p = { id: c.t.id + ':' + k, type: c.t.id, x: c.x, y: c.y, key: k, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y), sprite: null };
@@ -735,10 +746,11 @@ export function bootTownLife(ctx) {
       }
     };
   }
+  const shutNow = (key) => CLOSABLE.includes(key) && cond.shut.has(key) && !cond.fixedShut.has(key);
   function openFor(key) {
+    if (shutNow(key)) { const line = one(COPY.closed, dayNum() + key.length); if (line) say(fill(line)); return !!line; }
     if (key === 'store') return storeCard();
     if (key === 'board') return boardCard();
-    if ((key === 'cafe' || key === 'info') && cond.shut.has(key) && !cond.fixedShut.has(key)) { const line = one(COPY.closed, dayNum() + key.length); if (line) say(fill(line)); return !!line; }
     return false;
   }
 

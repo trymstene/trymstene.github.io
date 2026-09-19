@@ -158,10 +158,45 @@ for (const f of files) {
   }
 }
 
+// 🏘️ THE TOWN'S LOCK — a shut shopfront is the town's meter speaking, and it has three hard rules
+// (docs/town-jobs-plan.md §1). Each has been argued more than once, so each is a grep now.
+{
+  const slurp = (rel) => { try { return readFileSync(join(ROOT, rel), 'utf8'); } catch { return ''; } };
+  const today = slurp('src/data/town/today.js');
+  const cond = slurp('src/data/town/condition.js');
+  const room = slurp('src/scripts/town-room.js');
+  const mC = today.match(/export const CLOSABLE\s*=\s*\[([^\]]*)\]/);
+  const closable = mC ? [...mC[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+  if (!closable.length) problems.push(['src/data/town/today.js', 'no CLOSABLE list found — the town-lock gate cannot read what is allowed to shut']);
+
+  // 1. THE ARCADE AND THE POST NEVER SHUT. Five shipped games must answer on a stranger's worst day,
+  //    and the mail never stops. Neither key may appear in CLOSABLE or in any band's `shut`.
+  for (const never of ['condo', 'post']) {
+    if (closable.includes(never)) problems.push(['src/data/town/today.js', `CLOSABLE names '${never}' — the arcade and the post office never shut, whatever the meter says (town-jobs-plan §1)`]);
+    for (const m of cond.matchAll(/shut:\s*\[([^\]]*)\]/g)) {
+      if (m[1].includes(`'${never}'`)) problems.push(['src/data/town/condition.js', `a band shuts '${never}' — the arcade and the post office never shut, whatever the meter says (town-jobs-plan §1)`]);
+    }
+  }
+
+  // 2. A BAND MAY ONLY SHUT WHAT CAN BE SHUT. A key in a band's `shut` that is not in CLOSABLE gets
+  //    no shutter, no tape and no fix — it is shut in the data and open on the screen.
+  for (const m of cond.matchAll(/shut:\s*\[([^\]]*)\]/g)) {
+    for (const k of [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])) {
+      if (closable.length && !closable.includes(k)) problems.push(['src/data/town/condition.js', `a band shuts '${k}', which is not in today.js CLOSABLE — it would be shut in the data and open on the screen`]);
+    }
+  }
+
+  // 3. EVERY SHUT FRONT KEEPS ITS KEEPER IN. A cheerful resident standing outside their own taped-off
+  //    door is the tell that the lock is skin-deep, so keepFn must ask about every closable key.
+  for (const k of closable) {
+    if (room && !room.includes(`cond.shut.has('${k}')`)) problems.push(['src/scripts/town-room.js', `keepFn never asks about '${k}' — its keeper would stand outside their own shut door (town-jobs-plan §1)`]);
+  }
+}
+
 if (problems.length) {
   console.error('\n❌ design gate\n');
   for (const [f, why] of problems) console.error(`   ${f}\n     ${why}\n`);
   console.error(`${problems.length} problem(s). See docs/design-library.md.\n`);
   process.exit(1);
 }
-console.log(`✅ design gate — ${files.length} files, no [hidden] traps, no stray payment hosts, every HUD strip has its bar, every visitor page its footer, one dialogue card`);
+console.log(`✅ design gate — ${files.length} files, no [hidden] traps, no stray payment hosts, every HUD strip has its bar, every visitor page its footer, one dialogue card, the town lock sound`);

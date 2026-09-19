@@ -18,7 +18,7 @@ export const PROBLEMS = [
   { id: 'dumpster', on: 'dumps',    pays: [5, 7], rep: 3, bands: ALL },   // a dumpster open and full of bags — emptied and closed
   { id: 'graffiti', on: 'walls',    pays: [4, 6], rep: 2, bands: LOW },   // a tag on a shopfront
   { id: 'fountain', on: 'fountain', pays: [5, 6], rep: 3, bands: ['abandoned', 'struggling'] },   // the fountain has run dry
-  { id: 'shutter',  on: 'kiosks',   pays: [4, 6], rep: 3, bands: ALL },   // a kiosk with its shutter down (a low band's, or today's closure — always fixable)
+  { id: 'shutter',  on: 'shops',    pays: [4, 6], rep: 3, bands: ALL },   // a kiosk with its shutter down (a low band's, or today's closure — always fixable)
   { id: 'crows',    on: 'perches',  pays: [2, 4], rep: 1, bands: ALL },   // crows where they should not be
   { id: 'leaves',   on: 'street',   pays: [2, 4], rep: 1, bands: ALL, wx: 'storm' },   // what the storm left behind
 ];
@@ -37,7 +37,7 @@ export const ANCHORS = {
   // can outrank the prop. Benches first: that is where crows sit (Trym, 14 Sep).
   perches: [[960, 1000, 'benchsq0'], [1240, 1000, 'benchsq1'], [960, 588, 'benchh0'], [1240, 588, 'benchh1'], [1500, 423, 'benchm'], [1600, 711, 'benchc0'], [1860, 711, 'benchc1'], [610, 711, 'benchg'], [1670, 1133, 'bencht0'], [1870, 1133, 'bencht1'], [1472, 891, 'cart'], [2060, 224, 'bus'], [800, 866, 'board'], [1100, 768, 'fountain']],
   lamps: ['lamp0', 'lamp1', 'lamp2', 'lamp3', 'lamp4', 'lamp5', 'lamp6', 'lamp7'],
-  kiosks: ['cafe', 'info'],
+  shops: ['cafe', 'info', 'store'],   // every front that can be shut (today.js CLOSABLE) — renamed from `kiosks` when the store joined
   bins: ['bin', 'bin1', 'bin2'],
   dumps: ['dump0', 'dump1'],
   fountain: ['fountain'],
