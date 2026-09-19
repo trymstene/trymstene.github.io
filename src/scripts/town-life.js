@@ -50,25 +50,40 @@ const beatOf = (h) => Math.floor(h / 4) % 6;
 // budget, 15 Sep). A resident stands and walks without them; a tap waits the moment they take to arrive.
 const COPY_P = import('../data/copy/town-npcs.json').then((m) => m.default || m);
 
+// ⭐ THE RESIDENTS STAND BY THEIR OWN SHOPS (Trym, 20 Sep, once the visitors landed): *"maybe it's
+// best if the townsfolk NPCs don't do too much other than walk about sometimes greeting each other
+// or doing small stuff but mainly standing by their shops, to keep some consistency and not make it
+// too messy with tons of bananas always on the move everywhere, it can get chaotic."*
+//
+// So a day is now POST, POST, a break, POST, POST, home — about three walks each instead of five,
+// and everyone is where you would look for them for two thirds of the day. The town's motion comes
+// from the VISITORS now (town-folk.js): they are the traffic, these are the fixtures. The small life
+// is still here and does not need a schedule — they potter between the marks of their own station,
+// they turn to face each other when they share one, and ODD_SPOTS still puts one of them somewhere
+// they never stand, once in a while.
+//
+// ⚠️ MOSS IS THE EXCEPTION AND HAS TO BE. He is the sweeper: his beats 0, 1 and 3 are written into
+// LITTER's fourth column, which is the beat each flyer is swept on. Pin Moss and the flyers stop
+// being collected. One banana crossing the square with a broom is character, not chaos.
 const MECH = [
   { key: 'nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall',
-    day: [['monument', 'stand', 'front'], ['hall', 'counter', 'front'], ['bench_e', 'bench', 'front'], ['hall', 'counter', 'front'], ['board', 'read', 'front'], ['home', 'home', 'front']] },
+    day: [['hall', 'counter', 'front'], ['hall', 'counter', 'front'], ['bench_e', 'bench', 'front'], ['hall', 'counter', 'front'], ['hall', 'counter', 'front'], ['home', 'home', 'front']] },
   { key: 'stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post',
-    day: [['bus', 'stand', 'right'], ['post', 'counter', 'front'], ['terrace', 'bench', 'front'], ['post', 'counter', 'front'], ['hall', 'stroll', 'right'], ['home', 'home', 'front']] },
+    day: [['bus', 'stand', 'right'], ['post', 'counter', 'front'], ['post', 'counter', 'front'], ['post', 'counter', 'front'], ['terrace', 'bench', 'front'], ['home', 'home', 'front']] },
   { key: 'moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'condo',
     day: [['square', 'sweep', 'left'], ['hall', 'sweep', 'right'], ['bench_w', 'bench', 'front'], ['cafe', 'sweep', 'left'], ['square', 'stand', 'front'], ['home', 'home', 'front']] },
   { key: 'pip', hat: 'backwardscap', glasses: '', tool: 'rubberchicken', home: 'store',
-    day: [['store', 'stand', 'front'], ['store', 'counter', 'front'], ['bank', 'stand', 'front'], ['store', 'counter', 'front'], ['condo', 'stand', 'front'], ['home', 'home', 'front']] },
+    day: [['store', 'stand', 'front'], ['store', 'counter', 'front'], ['bank', 'stand', 'front'], ['store', 'counter', 'front'], ['store', 'counter', 'front'], ['home', 'home', 'front']] },
   { key: 'bean', hat: 'beanieprop', glasses: '', tool: 'mug', home: 'cafe',
-    day: [['cafe', 'counter', 'front'], ['cafe', 'counter', 'front'], ['terrace', 'bench', 'front'], ['cafe', 'counter', 'front'], ['garden_e', 'stroll', 'left'], ['home', 'home', 'front']] },
+    day: [['cafe', 'counter', 'front'], ['cafe', 'counter', 'front'], ['terrace', 'bench', 'front'], ['cafe', 'counter', 'front'], ['cafe', 'counter', 'front'], ['home', 'home', 'front']] },
   { key: 'figjr', hat: 'cowboy', glasses: 'shades', tool: 'lemonjug', home: 'garden_w',
-    day: [['orchard', 'water', 'right'], ['stand', 'counter', 'front'], ['cart', 'stand', 'front'], ['stand', 'counter', 'front'], ['garden_w', 'stand', 'front'], ['home', 'home', 'front']] },
+    day: [['stand', 'counter', 'front'], ['stand', 'counter', 'front'], ['orchard', 'water', 'right'], ['stand', 'counter', 'front'], ['stand', 'counter', 'front'], ['home', 'home', 'front']] },
   { key: 'spinner', hat: 'jester', glasses: '', tool: 'balloons', home: 'condo',
-    day: [['square', 'stand', 'front'], ['wheel', 'counter', 'front'], ['cart', 'stand', 'front'], ['wheel', 'counter', 'front'], ['condo', 'stand', 'front'], ['home', 'home', 'front']] },
+    day: [['wheel', 'counter', 'front'], ['wheel', 'counter', 'front'], ['cart', 'stand', 'front'], ['wheel', 'counter', 'front'], ['condo', 'stand', 'front'], ['home', 'home', 'front']] },
   { key: 'dot', hat: '', glasses: '', tool: '', home: 'print',
-    day: [['square', 'stand', 'front'], ['board', 'read', 'front'], ['bench_e', 'bench', 'front'], ['info', 'counter', 'front'], ['monument', 'bench', 'front'], ['home', 'home', 'front']] },
+    day: [['print', 'stand', 'front'], ['print', 'stand', 'front'], ['bench_e', 'bench', 'front'], ['print', 'stand', 'front'], ['print', 'stand', 'front'], ['home', 'home', 'front']] },
   { key: 'granfig', hat: 'snailhat', glasses: 'nerd', tool: 'wateringcan', home: 'garden_w',
-    day: [['garden_w', 'water', 'left'], ['orchard', 'water', 'right'], ['bench_w', 'bench', 'front'], ['store', 'stand', 'front'], ['garden_w', 'bench', 'front'], ['home', 'home', 'front']] },
+    day: [['garden_w', 'water', 'left'], ['garden_w', 'water', 'left'], ['bench_w', 'bench', 'front'], ['orchard', 'water', 'right'], ['garden_w', 'bench', 'front'], ['home', 'home', 'front']] },
 ];
 // the words, by key. A resident the copy file has never heard of would be a nameless banana standing
 // in the square with nothing to say, so it is named out loud here — the copy gate makes it impossible

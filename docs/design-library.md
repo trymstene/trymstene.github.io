@@ -697,3 +697,37 @@ drifted. A rule with only a paragraph has drifted at least once.
 Stop hook, so a turn cannot end red. When a rule in the bottom row keeps drifting,
 the answer is to move it up a row, not to make the paragraph longer.
 
+
+---
+
+## 23. RESIDENTS ARE FIXTURES; VISITORS ARE TRAFFIC
+
+Trym, 18 and 20 Sep 2026: *"maybe it's best if the townsfolk NPCs don't do too much other than walk
+about sometimes greeting each other or doing small stuff but mainly standing by their shops, to keep
+some consistency and not make it too messy with tons of bananas always on the move everywhere, it
+can get chaotic."*
+
+A town has two populations and they must be **opposite**:
+
+| | the residents | the visitors |
+|---|---|---|
+| what they are | the town's **fixtures** | its **traffic** |
+| how many | nine, always | at most six at a time |
+| where | at their own shop, most of the day | in from the roads that leave the map |
+| named | yes, with a card you can tap | never — no name, no card, no tap |
+| what they give | somewhere to find somebody | the feeling that the place is used |
+
+**A resident's day is POST, POST, a break, POST, POST, home** — about three walks, so they are where
+you would look for them for two thirds of the day. `tools/check-design.mjs` fails a resident who
+walks more than four times a day. The small life that makes them alive needs no schedule: they
+potter between the marks of their own station, they turn to face each other when they share one, and
+`ODD_SPOTS` still puts one of them somewhere they never stand, once in a while.
+
+⚠️ **The sweeper is exempt, and the exemption is load-bearing.** Moss's beats are written into
+`LITTER`'s fourth column — the beat each flyer is swept on — so pinning him stops the flyers being
+collected. One banana crossing the square with a broom is character, not chaos.
+
+⭐ **The square is only the CENTRE of the town.** *"that's not really the whole town, it's just a part
+of it, the centre of it — so it makes sense that the map really is bigger but in the background."*
+That is what makes the visitors honest rather than decoration: they come in from the south road, the
+north road and the bus stop, do something ordinary, and leave. See `src/scripts/town-folk.js`.
