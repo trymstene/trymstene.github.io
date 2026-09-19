@@ -249,7 +249,7 @@ is the alternative.)
 | **The Coffee Cup** | Bean | Manual: clock in by stepping behind the counter, serve cups (the three-gesture minigame from the café plan) | Tips per cup, graded, at clock-out |
 | **The General Store** | Pip | Mostly passive + the restock chore | The bigger weekly cheque |
 | **The Arcade** | Spinner | Mostly passive + the floor and the dead cabinets | The smaller weekly cheque |
-| **The Post Office** | Stamp | The round: carry the world's mail to real players' yards | Per round, and **never coins** (see §6) |
+| **The Post Office** | Stamp | ⚠️ under review — post is delivered instantly, so there is no round to pay for (see §6) | — |
 
 **The weekly cheque is DERIVED, never accrued.** No cron, no bank: the pass worker's existing
 weekly lap pays only for a week your attendance actually covers, walking back at most
@@ -359,29 +359,58 @@ valuable, so there is nothing to farm and everything to keep.
 **And the job makes it visible:** the post office round means a *player's hands* carried it. That
 is the difference between a notification and a neighbour.
 
-### A — In chapter 2: the round (zero player-authored text)
-You take Stamp's bag and walk a round to **three real players' real yards**, read off the doors
-feed. Tomorrow, three strangers find something in their homestead mailbox that somebody's hands
-put there. The letters are the **world's own** rig-written mail with a `{name}` slot. **The
-residents always write back the next morning** — this is load-bearing, not a bonus: at eight
-players online it is what stops the post office being a ghost.
+### ⚠️ Delivery is INSTANT. A player never carries another player's post.
+Trym, 19 Sep: *"if players have to deliver things manually, that is too much of a drag that its
+ever going to be used, in a world with instant messaging"*. He is right and it kills the round
+as a delivery mechanic: a card that waits for some other player to walk a shift arrives days
+late or never, and at ten players that is most cards. **A card lands in the recipient's mailbox
+the moment it is sent.** Nothing waits on a carrier, a shift, a cron or a queue.
 
-### B — Its own project, after: the postcard
+The post office is therefore **a place, not a depot**: the counter where you write one, Stamp
+behind it, the pigeonholes, the town's postmarks on the wall. If it carries a paid job at all,
+that job must never gate a single card. (**TRYM**: it may honestly be the one building whose
+value is the social layer itself rather than a wage — three jobs and a post office.)
+
+### ⭐ The differentiator: a card is an OBJECT, not a message
+This is the answer to *"in a world with instant messaging"*. Discord is better than us at
+messages and always will be. It cannot do this:
+
+- A card that arrives is **a thing you keep**. You pin it on the wall of your home, or stand it
+  on a shelf — the homestead's own décor system already places objects and a visitor already
+  sees your yard.
+- So a wall of cards is **who thought of you**, on display, permanently. A loved yard looks
+  loved, which no notification can do.
+- And sending is **giving someone décor with your name on it**, which is worth more than a
+  message that scrolls away.
+- Keep, or let it expire. Nothing is owed, nothing is archived, no inbox exists.
+
+### A — The postcard, delivered instantly (the social layer itself)
 Four indices and a stamp: a picture, a line you **pick** from ~48 rig-written lines across six
 moods, and your house name. **There is no text field, so there is nothing to moderate** — the
 copy rule (GPT writes the words) becomes the safety mechanism itself. Addressed to houses, not
-people. A card from a house you have never accepted arrives as a **knock** (a name and a stamp,
-nothing else) and you accept the house once. Block sits on the closed view before anything is
-opened; report auto-blocks. A pair cap of about three a week. A single POST behind a launch key
-turns the whole channel off **from Trym's phone, without a deploy**.
+people. Written at the post office counter, or at your own homestead mailbox once you have been
+shown the counter. A card from a house you have never accepted arrives as a **knock** (a name
+and a stamp, nothing else) and you accept the house once. Block sits on the closed view before
+anything is opened; report auto-blocks. A pair cap of about three a week. A single POST behind a
+launch key turns the whole channel off **from Trym's phone, without a deploy**.
 
-**Before one card is sent, all four of these must exist** (none do today):
-1. The three live worker-rave defects fixed (see §9).
+**The residents post too**, on the same rails and for the same reason as before: at eight
+players a channel that only carries player cards is empty most days. A thank-you after a good
+week, a note the morning after a Curse Night, the pay-cheque envelope. **Load-bearing, never
+cut.**
+
+**Before one card is sent, these must exist:**
+1. ~~The three live worker-rave defects~~ — **fixed and deployed 19 Sep.**
 2. A **report queue** — there is none anywhere in the repo, while `/community/` promises "anything
    reported is read by me, Trym".
 3. The kill switch.
 4. `/privacy/` corrected — it currently says the pass never leaves your device, which becomes
    untrue the first time anything is delivered.
+
+### B — What the world sends on its own (ships first, and is not a lesser version)
+The mailbox rail — the flag, the card, the keepsake on your wall — carries the residents' notes
+and the weekly pay-cheque **before any player-to-player card exists**. It is the same build,
+minus the recipients, so it earns every rail and proves whether anyone likes finding post at all.
 
 ### C — Free-typed letters: a different product, not a later phase
 The adversarial review's verdict, and I agree with it: at 30–80 letters a week, pre-reading is
@@ -428,7 +457,7 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
 16. Arcade steps. Then **STOP AND LOOK**: if Pulse says nobody took a job, the post office and
     the café are both wrong and the next session is about why. This gate is the most valuable
     step in the plan and the easiest to skip.
-17. Post office steps and the round.
+17. Post office steps: the counter, the card, instant delivery.
 18. Café: rewrite `docs/town-cafe-plan.md` §1/§6 to the certificate, ship the **bench prototype**
     of the counter, let Trym's thumb pick, then the gestures.
 19. Pulse readers, the stub walk, the town walk at 393 px.
@@ -463,6 +492,8 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
 - **The numbers**: the two cheques, the tips, the round, the chore caps.
 - **Chores pay in the room, or a small coin?**
 - **Nib**: payroll desk only, or a job. **The Mayor**: unemployable, or the last boss.
+- **Is the post office a workplace at all**, now that nothing needs carrying? Three jobs and a
+  post office may be the honest answer.
 - **Does the postcard come forward?** If the social layer is what he actually wants, items 3–19
   are a 15-session detour in front of it.
 
