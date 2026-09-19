@@ -253,6 +253,12 @@ const description = 'The town centre of Banana World, under construction.';
     /* the tools icon over the thing to fix: yellow on black, bobbing, the world's "this wants you" */
     .tw-mark__ic { position: absolute; left: 50%; width: 30px; height: 30px; margin-left: -15px; display: flex; align-items: center; justify-content: center; background: #ffe135; color: #241c00; border: 2px solid #000; box-shadow: 2px 2px 0 #000; animation: twBob 1.1s ease-in-out infinite alternate; }
     .tw-mark__ic .pai { display: block; }
+    /* 🚧 your lock: the boarded front dims a touch behind its fence — NOT the tape's dark, which
+       means something else entirely, just enough that the building reads as not-yet-yours */
+    .tw-ov.is-hoard { filter: brightness(0.86) saturate(0.88); }
+    .tw-lock { display: grid; gap: 0.5rem; }
+    .tw-lock__is { margin: 0; font-weight: 800; }
+    .tw-lock__step { margin: 0; font-size: 0.78rem; opacity: 0.8; font-family: "Archivo Black", sans-serif; letter-spacing: 0.04em; }
     /* 🔧 the repair bar: a streetlight is WORK, so it fills while you stand there and stops if you walk off */
     .tw-work { position: absolute; width: 56px; height: 10px; margin-left: -28px; box-sizing: border-box;
       border: 2px solid #000; background: #0c140c; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5); pointer-events: none; }

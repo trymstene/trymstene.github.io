@@ -206,6 +206,21 @@ for (const f of files) {
   const closable = mC ? [...mC[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
   if (!closable.length) problems.push(['src/data/town/today.js', 'no CLOSABLE list found — the town-lock gate cannot read what is allowed to shut']);
 
+  // 0. THE OTHER LOCK. A front the STORY has not opened wears a worksite fence, not the tape, and the
+  //    arcade may never wear either: five shipped games must answer on a stranger's worst day. The
+  //    plan asks for this as a grep rather than a paragraph (docs/town-jobs-plan.md §1).
+  const locks = slurp('src/data/town/locks.js');
+  const mH = locks.match(/export const HOARDABLE\s*=\s*\[([^\]]*)\]/);
+  const hoardable = mH ? [...mH[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+  if (locks && !mH) problems.push(['src/data/town/locks.js', 'no HOARDABLE list found — the town-lock gate cannot read what the story may board up']);
+  if (hoardable.includes('condo')) problems.push(['src/data/town/locks.js', "HOARDABLE names 'condo' — the arcade is never boarded, whatever the story says: five shipped games must answer on a stranger's worst day (town-jobs-plan §1)"]);
+  const geo = slurp('src/scripts/town-geo.js');
+  if (/export const HOARD = \{/.test(geo)) {
+    for (const k of hoardable) {
+      if (!geo.includes('"' + k + '": {')) problems.push(['src/data/town/locks.js', `HOARDABLE names '${k}' but tools/build-town-scene.py baked no hoarding for it — the front would lock with nothing on screen to say so`]);
+    }
+  }
+
   // 1. THE ARCADE AND THE POST NEVER SHUT. Five shipped games must answer on a stranger's worst day,
   //    and the mail never stops. Neither key may appear in CLOSABLE or in any band's `shut`.
   for (const never of ['condo', 'post']) {

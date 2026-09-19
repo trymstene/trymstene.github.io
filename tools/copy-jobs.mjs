@@ -411,6 +411,11 @@ const lifeFields = {
   'vendor.lines[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said on a sale at the night vendor.' },
   'ghosts[]': { kind: 'prose', aim: 80, max: 100, note: 'What a ghost on the bench says when tapped. Small, odd, a little sad or funny; never a threat, never a riddle, never a question.' },
   'closed[]': { kind: 'prose', aim: 70, max: 90, note: 'Why a kiosk is shut today, the way a note on a door reads. Something a person could put right.' },
+  'locks.store': { kind: 'prose', aim: 70, max: 90, note: 'What the general store WILL be, said at a boarded front. Not what it is — it is a worksite. A shop worth waiting for, in one line.' },
+  'locks.post': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the post office.' },
+  'locks.cafe': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the Coffee Cup.' },
+  'locks.story': { kind: 'prose', aim: 70, max: 90, note: 'The one line that says the STORY opens this door, not the town’s health and not money. It must read as a hook — something is coming — never as a refusal. Never a date, never a rate.' },
+  'locks.step': { kind: 'prose', aim: 40, max: 60, holds: ['{n}', '{of}'], note: 'How far along the player is, MUST contain {n} and {of} (as in 2 and 4). A sign that only says no is a dead end; this is the half that makes it a quest hook.' },
   'rooms.condo': { kind: 'prose', aim: 60, max: 80, note: 'Said once, as a player steps into the Arcade. Name the place and say how to leave — there is no close button: you walk back onto the doorway you came in by.' },
   'rooms.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for stepping into the general store. Pip’s counter is inside; the shelves are bare or full depending on the town. Name the place and say how to leave.' },
   'rooms.in': { kind: 'prose', aim: 12, max: 16, note: 'The control on Pip’s shelf card that takes you into the shop. A BUTTON: a verb first, two or three words, no full stop. It must never wrap on a phone.' },
@@ -441,7 +446,7 @@ function lifeShape(data) {
   return bad;
 }
 const lifeSchema = {
-  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'objects', 'things', 'shutSign', 'forSale'],
+  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'objects', 'things', 'shutSign', 'forSale'],
   properties: {
     bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'brings'],
       properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), brings: str(lifeFields['bands[].brings'].note) } } },
@@ -458,6 +463,13 @@ const lifeSchema = {
     ghosts: { type: 'array', description: lifeFields['ghosts[]'].note, items: { type: 'string' } },
     closed: { type: 'array', description: lifeFields['closed[]'].note, items: { type: 'string' } },
     lowShut: { type: 'array', description: lifeFields['lowShut[]'].note, items: { type: 'string' } },
+    locks: { type: 'object', additionalProperties: false, required: ['store', 'post', 'cafe', 'story', 'step'], properties: {
+      store: { type: 'string', description: lifeFields['locks.store'].note },
+      post: { type: 'string', description: lifeFields['locks.post'].note },
+      cafe: { type: 'string', description: lifeFields['locks.cafe'].note },
+      story: { type: 'string', description: lifeFields['locks.story'].note },
+      step: { type: 'string', description: lifeFields['locks.step'].note },
+    } },
     rooms: { type: 'object', additionalProperties: false, required: ['condo', 'store', 'in'], properties: {
       condo: { type: 'string', description: lifeFields['rooms.condo'].note },
       store: { type: 'string', description: lifeFields['rooms.store'].note },
@@ -481,7 +493,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-life.json',
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
-    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'objects', 'things', 'shutSign', 'forSale'],
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'objects', 'things', 'shutSign', 'forSale'],
     // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',

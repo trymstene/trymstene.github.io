@@ -29,7 +29,8 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE, OB_RECTS, OB_CIRCLES, STORE } from './town-geo.js';
+import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD } from './town-geo.js';
+import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
@@ -306,6 +307,7 @@ export function bootTownLife(ctx) {
     // who stays in: the shut kiosks' keepers, Pip when the store is shut, and a seeded few
     cond.shut = new Set(look.shut);
     todayShut.forEach((k) => cond.shut.add(k));
+    hoardings();   // ⚠️ BEFORE shutters(): the tape asks hoardNow() whether it may paint at all
     shutters();
     life.setKeep(keepFn);
     life.setLitter(look.litter);
@@ -378,7 +380,7 @@ export function bootTownLife(ctx) {
   function shutters() {
     hangForSale();
     for (const k of CLOSABLE) {
-      const want = cond.shut.has(k) && !cond.fixedShut.has(k);
+      const want = cond.shut.has(k) && !cond.fixedShut.has(k) && !hoardNow(k);   // your lock wins the display
       const on = !!shutSprites[k] || shutNoStill.has(k);
       if (want && !on) {
         const p = propOf(k); if (!p) continue;
@@ -530,7 +532,7 @@ export function bootTownLife(ctx) {
     // …and it is every SHUT front, not only the one today's event shut: a band that closes the store
     // must hand you the shutter to raise (19 Sep)
     for (const k of [...cond.shut]) {
-      if (cond.fixedShut.has(k)) continue;
+      if (cond.fixedShut.has(k) || hoardNow(k)) continue;   // a front you cannot act on owes you no problem
       const c = cands.find((q) => q.t.on === 'shops' && q.key === k);
       if (!c || isFixed(c.t.id + ':' + k)) continue;
       cands.splice(cands.indexOf(c), 1);
@@ -664,7 +666,52 @@ export function bootTownLife(ctx) {
   setTimeout(loadShop, 1200);   // the square is walking by now; nothing is waiting on this
 
 
-  const shutNow = (key) => CLOSABLE.includes(key) && cond.shut.has(key) && !cond.fixedShut.has(key);
+  // ═══════════════════════ 🚧 YOUR LOCK: a building the story has not opened ═══════════════
+  // The town's lock is the tape; this is the other one (src/data/town/locks.js has the whole rule).
+  // ⚠️ SHIPPED OFF: HOARD_ON is false until chapter 2 exists to open these fronts AND somebody has
+  // read how many players finish chapter 1. Flipping it before then boards up the store, the post
+  // office and the café for everyone who never finished — the one outcome the plan forbids.
+  let qaOpen = null, qaHoard = null;   // the walk's door: which fronts count as opened, and whether the lock is on at all
+  function openedSet() {
+    if (qaOpen) return qaOpen;
+    try { const q = JSON.parse(localStorage.getItem('bwq-c2') || 'null'); return new Set((q && q.open) || []); } catch (e) { return new Set(); }
+  }
+  const hoardNow = (key) => (qaHoard == null ? HOARD_ON : qaHoard) && HOARDABLE.includes(key) && !!HOARD[key] && !openedSet().has(key);
+  const hoards = {};
+  function hoardings() {
+    for (const k of HOARDABLE) {
+      const want = hoardNow(k), h = HOARD[k];
+      if (want && !hoards[k] && h) {
+        const f = sprite(h.art, h.cx, h.base, { z: h.base + 2 });
+        const at = SIGN_AT[k] || [0, 0];
+        const g = sprite('hoardsign', h.cx + at[0], h.base + at[1], { z: h.base + 3 });
+        hoards[k] = { f, g, x: h.cx + at[0], y: h.base + at[1] };
+        const p = propOf(k); if (p) p.el.classList.add('is-hoard');
+      } else if (!want && hoards[k]) {
+        kill(hoards[k].f); kill(hoards[k].g); hoards[k] = null;
+        const p = propOf(k); if (p) p.el.classList.remove('is-hoard');
+      }
+    }
+  }
+  // ⭐ PRECEDENCE: YOUR LOCK WINS THE DISPLAY. A front can be hoarded and health-shut at once, and
+  // the town's mood there is irrelevant to a player who could not use it either way — so a hoarded
+  // front never wears the tape and never hands out a shutter to fix. One building, one state, and
+  // always the one whose action is available to you now.
+  const shutNow = (key) => !hoardNow(key) && CLOSABLE.includes(key) && cond.shut.has(key) && !cond.fixedShut.has(key);
+  // 🚧 what a signpost says: what this will be, that the STORY opens it, and HOW FAR ALONG YOU
+  // ARE. Trym, 19 Sep: "the buildings must show clear visual indications on what you are missing".
+  // A sign that only says no is a dead end; the third line is what makes it a hook.
+  function lockCard(key) {
+    const w = COPY.locks || {};
+    const done = SIGNATURES.filter((k) => openedSet().has(k)).length;
+    openCard('<div class="tw-lock">'
+      + (w[key] ? '<p class="tw-lock__is">' + esc(fill(w[key])) + '</p>' : '')
+      + (w.story ? '<p class="tw-card__sub">' + esc(fill(w.story)) + '</p>' : '')
+      + (w.step ? '<p class="tw-lock__step">' + esc(fill(w.step).replace('{n}', done).replace('{of}', SIGNATURES.length)) + '</p>' : '')
+      + '</div>');
+    track('town_locked', { key });
+    return true;
+  }
   function openFor(key) {
     // 🚪 A SHUT DOOR SAYS WHY, and there are two whys (19 Sep). Today's event is a one-day fault with
     // a name — a bolt, a split hose — and somebody will see to it. The BAND is the other thing: the
@@ -676,6 +723,8 @@ export function bootTownLife(ctx) {
       if (line) say(fill(line));
       return !!line;
     }
+    // 🚧 a hoarded front answers with YOUR lock, before anything else can answer with the town's
+    if (hoardNow(key)) return lockCard(key);
     if (key === 'store' || key === 'till') return shopCard('store');   // 🏪 the front AND the counter inside: the shelf is the same shelf
     if (key === 'board') return shopCard('board');
     return false;
@@ -1104,6 +1153,7 @@ export function bootTownLife(ctx) {
     // reaches; a lamp claims its whole post and its icon.
     for (const p of problems) if (Math.abs(wx - p.x) < (p.grab || 40) && wy < (p.foot || p.y) + 16 && wy > p.y - (p.tall || 64)) return ['room', 'p:' + p.id];
     for (const o of objects) if (Math.abs(wx - o.x) < 34 && wy < o.y + 10 && wy > o.y - 60) return ['room', 'o:' + o.def.id];
+    for (const k in hoards) { const h = hoards[k]; if (h && Math.abs(wx - h.x) < 34 && wy < h.y + 10 && wy > h.y - 120) return ['room', 'h:' + k]; }
     for (const g of ghosts) if (!g.done && g.def.tap && Math.abs(wx - g.x) < 34 && wy < g.y + 6 && wy > g.y - 80) return ['room', 'g:' + g.def.id];
     if (merchant && Math.abs(wx - merchant.x) < 34 && wy < merchant.y + 6 && wy > merchant.y - 90) return ['room', 'm'];
     if (vendor && Math.abs(wx - vendor.x) < 34 && wy < vendor.y + 6 && wy > vendor.y - 90) return ['room', 'v'];
@@ -1112,6 +1162,7 @@ export function bootTownLife(ctx) {
   function tap(id, walkTo) {
     const [kind, rest] = [id.slice(0, 1), id.slice(2)];
     if (kind === 'p') { const p = problems.find((q) => q.id === rest); if (p) walkTo(p.x, (p.foot || p.y) + 26, () => { const q = problems.find((z) => z.id === rest); if (!q) return; if (WORK[q.type]) workStart(q); else fix(rest); }); }
+    else if (kind === 'h') { const h = hoards[rest]; if (h) walkTo(h.x, h.y + 26, () => lockCard(rest)); }
     else if (kind === 'o') { const o = objects.find((q) => q.def.id === rest); if (o) walkTo(o.x, o.y + 22, () => takeObject(o)); }
     else if (kind === 'g') { const g = ghosts.find((q) => q.def.id === rest && !q.done); if (g) walkTo(g.x + (ctx.pos.x < g.x ? -56 : 56), g.y + 6, () => { const line = one(COPY.ghosts, dayNum() + ghosts.length); if (line) say(fill(line)); if (g.s.n > 1) { g.s.fps = 9; setTimeout(() => { g.s.fps = g.def.fps || 5; }, 2500); } track('town_ghost', { id: rest }); }); }
     else if (kind === 'm' && merchant && !merchant.el.hidden) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, () => shopCard('merchant'));
@@ -1134,6 +1185,11 @@ export function bootTownLife(ctx) {
   const seam = {
     life: () => L, band: () => band, test: TEST, err: () => lastErr,
     wave: () => waveNum(),
+    hoarded: () => HOARDABLE.filter(hoardNow),
+    // ⚠️ the walk cannot play chapter 2, and HOARD_ON is false in the shipped data on purpose — so the
+    // only way to see this lock at all is through here, and it is gated on ?towntest like set()
+    locks: (on, opened) => { if (!TEST) return false; qaHoard = on == null ? null : !!on; qaOpen = opened ? new Set(opened) : null; hoardings(); shutters(); reseedProblems(); return HOARDABLE.filter(hoardNow); },
+
     hit: (x, y) => at(x, y),                                   // what a finger at (x,y) would find
     work: () => (work ? { id: work.id, w: work.bar.style.width } : null),
     tapAt: (id) => tap(id, (x, y, then) => { ctx.pos.x = x; ctx.pos.y = y; then(); }),   // tap, walk, arrive

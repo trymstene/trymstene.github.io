@@ -101,6 +101,9 @@ const WORLD_KEYS = [
   'cat-own-v1', 'cat-subs-v1', 'gal-subs-v1',            // items owned, items and bananas submitted
   'ps-notices-v1', 'bm-mailed-v1', 'bm-reply-legacy-v1', // their timeline and their replies from HQ
   'bwq-c1', 'pass-best-v1',                              // 🕯 the chapter and 🏆 the personal bests — they belong to the pass now, never to the next person on this browser
+  'bwq-c2',                                             // 🕯 chapter two, same reason. ⚠️ NOTHING WRITES IT YET — the town's own lock only READS it, and the
+                                                        // forward-only merge branch is still owed in BOTH worker-pass and banana-pass.js before chapter two writes
+                                                        // a step (docs/town-jobs-plan.md build order 14; the comment there says change both or neither).
   'bh-rally-best',                                       // …and the old device-only best it grew out of
   'bb-member', 'bb-mtok',                                // the supporter grant + its signed room token
   'pass-ev-v1', 'pass-wallet-v1', 'pass-rules-v1',       // 📜 the unsent ledger tape + 💰 the server wallet + 📏 caps used — never the next person's

@@ -503,7 +503,7 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
 1. Measure chapter-1 completion in Pulse. It decides whether this plan is for everyone or for nobody.
 2. Fix and deploy the three worker-rave defects (§9). Ships whether or not anything else does.
 
-**The closed town** — ✅ **built 19 Sep 2026** (the town's half; the player's own lock is still to come)
+**The closed town** — ✅ **built 19 Sep 2026**, both halves
 3. ✅ `CLOSABLE` widened to every shopfront and the store joined the band ladder, so a shut front
    now matches the empty shelf the data always had. Abandoned 3, Struggling 1, none above.
 4. ✅ Four edits in `town-room.js`; it came out at 52 205 B of 56 000 (93%). `SHUT_STILL` means a
@@ -512,6 +512,18 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    the post office never shut; a band may only shut a `CLOSABLE` key; every closable front keeps
    its keeper indoors.
 6. ✅ Shot at 393 px. **The one still owed to Trym's thumb is his own look at them.**
+6c. ✅ **YOUR LOCK, 19 Sep — and it ships OFF.** A worksite fence baked per front at its exact drawn
+   width (store 183, café 158, post 293) from the pack's own `Worksite_Fence` triples, a signpost
+   as the tap target, and no name plank. The card says the three things §1 asks for: what the
+   building will be, that the STORY opens it, and how far along you are. Precedence is real and
+   walked: a hoarded front wears no tape and hands out no shutter, and the moment the story opens
+   it the town's lock takes over. `condo` in `HOARDABLE` is a red build.
+   ⚠️ **`HOARD_ON = false` and must stay false** until chapter 2 exists to open these fronts AND
+   somebody has read question 1 below. Flipping it early boards up the store, the post office and
+   the café for every player who never finished chapter 1 — which this plan forbids in §2. The
+   system is built, gated and walked; the switch is one line in `src/data/town/locks.js`, and it
+   is Trym's.
+
 6b. ✅ **A shut door says WHY, and the two whys are different copy.** `closed` is a one-day fault
    with a name and somebody will see to it; the new `lowShut` is a town too low to keep its fronts
    open, and every line of it says the square is the reason and hands are what bring it back —

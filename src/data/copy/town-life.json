@@ -96,6 +96,13 @@
     "Hands in the square lift the town. When it rises, this shopfront comes back.",
     "The square needs hands, not blame. Put things right outside and the doors return."
   ],
+  "locks": {
+    "store": "Pip’s General Store will have the last one of everything.",
+    "post": "The post office will send letters and postcards beyond the square.",
+    "cafe": "The Coffee Cup will be a café where you can work a shift.",
+    "story": "Your town story opens this fence. There is more to do first.",
+    "step": "Story steps: {n} of {of}"
+  },
   "rooms": {
     "condo": "The Arcade is buzzing. Walk back onto the doorway to leave.",
     "store": "Pip’s General Store. Walk back onto the doorway to leave.",

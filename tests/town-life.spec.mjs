@@ -799,3 +799,56 @@ test('the shop fills as the town heals, and its stock is the shelf', async ({ pa
   expect(await room(page, 'shelf')).toBeNull();
   expect(errors).toEqual([]);
 });
+
+// 🚧 YOUR LOCK, THE OTHER ONE (19 Sep 2026). The town has two kinds of closed door and a player
+// must tell them apart without reading anything. The TOWN'S lock is the hazard belt and the red
+// CLOSED sign: a bad day, and hands fix it. YOURS is a worksite fence and a signpost: the building
+// is not built for you yet, and the STORY opens it (docs/town-jobs-plan.md §1).
+//
+// ⭐ THE FIRST ASSERTION IS THE IMPORTANT ONE. This ships OFF (`HOARD_ON = false` in
+// src/data/town/locks.js) and must stay off until chapter 2 exists to open these fronts AND
+// somebody has read how many players finish chapter 1. Flipping it early boards up the store, the
+// post office and the café for everyone who never finished — the one outcome the plan forbids.
+test('your lock: shipped off, and when it is on it wins the display and hands back cleanly', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 5);   // abandoned, so the town's own lock is up too and precedence is real
+  expect(await room(page, 'hoarded'), '⭐ nothing is boarded in the shipped data').toEqual([]);
+  const tapedNormally = await page.locator('.tw-tape').count();
+  expect(tapedNormally, 'the town lock is doing its usual job').toBeGreaterThan(0);
+
+  // ── switch it on with nothing opened: the three fronts board up, the arcade never
+  const on = await seam(page, () => window.__town.room.locks(true, []));
+  await page.waitForTimeout(700);
+  expect(on.sort()).toEqual(['cafe', 'post', 'store']);
+  expect(on, '⭐ the arcade is never boarded: five shipped games answer on a stranger’s worst day').not.toContain('condo');
+
+  // ── precedence: your lock wins the display, so a boarded front wears no tape…
+  expect(await page.locator('.tw-tape').count(), 'the tape gives way to the fence').toBeLessThan(tapedNormally);
+  // …and hands out no shutter to fix, because you could not act on it either way
+  const probs = await room(page, 'problems');
+  for (const k of on) expect(probs.some((q) => q.id === 'shutter:' + k), k + ' owes you no problem while it is yours to unlock').toBe(false);
+
+  // ── the signpost says three things, and the third is what makes it a hook
+  await seam(page, () => window.__town.room.open('store'));
+  await page.waitForTimeout(400);
+  const card = await page.evaluate(() => document.getElementById('twCardBody').textContent);
+  expect(await page.locator('.tw-lock').count()).toBe(1);
+  expect(card.length).toBeGreaterThan(40);
+  expect(card, 'how far along you are, not just a refusal').toMatch(/0\D+4/);
+  await seam(page, () => document.getElementById('twCardX').click());
+
+  // ── and once the story opens it, the front rejoins the shared weather like every other shop
+  const left = await seam(page, () => window.__town.room.locks(true, ['store']));
+  await page.waitForTimeout(700);
+  expect(left.sort()).toEqual(['cafe', 'post']);
+  const probs2 = await room(page, 'problems');
+  expect(probs2.some((q) => q.id === 'shutter:store'), 'the town’s lock takes over and it is fixable again').toBe(true);
+
+  // ── and the switch really does put everything back
+  await seam(page, () => window.__town.room.locks(null, null));
+  await page.waitForTimeout(700);
+  expect(await room(page, 'hoarded')).toEqual([]);
+  expect(errors).toEqual([]);
+});

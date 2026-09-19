@@ -198,6 +198,31 @@ never wrap on a phone, so it has to be short.
 The shelf stays on the card at the door either way — the room is something you may do, never
 something you must do to shop.
 
+## `locks` — a building the story has not opened yet
+
+The town has TWO kinds of closed door and a player must be able to tell them apart at a glance,
+without reading anything.
+
+`closed` and `lowShut` are the TOWN'S lock: a shut shopfront behind hazard tape, because the
+square is having a bad day. Hands fix it.
+
+`locks` is YOUR lock, and it is a different thing entirely: a red worksite fence across the
+front and a signpost to tap. **The building is not built for you yet, and the story opens it.**
+It is not broken, nobody is at fault, and no amount of tidying the square will change it.
+
+Five lines:
+
+- `store`, `post`, `cafe` — **what that building will be**, one line each, said at a boarded
+  front. Not what it is now; it is a worksite. Make it worth waiting for. The general store is
+  Pip's; the post office is where letters and postcards go; the Coffee Cup is a café you can
+  work in one day.
+- `story` — the one line that says the STORY opens this, not the town's health and not money.
+  This is the difference between a sign that says no and a sign that says *soon*, so write the
+  second one.
+- `step` — how far along the player is, and it MUST hold `{n}` and `{of}` (a number and a
+  number, as in 2 and 4). A locked door that only refuses is a dead end; this line is the half
+  that makes it a hook.
+
 ## How this reads
 
 Everything in the voice guide holds. The board is the town's voice; Pip, the stall, the
@@ -207,4 +232,4 @@ spoken line; never an emoji; a curly apostrophe. Nothing here asks the player a 
 ## Return
 
 `bands` (five, in the order above), `store`, `board`, `merchant`, `vendor`, `ghosts`,
-`closed`, `lowShut`, `rooms`, `objects` (ten, ids as above, in that order).
+`closed`, `lowShut`, `rooms`, `locks`, `objects` (ten, ids as above, in that order).

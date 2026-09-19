@@ -28,6 +28,7 @@ export const KEYS = {
   'bb-member': { travels: 'pass', why: 'the supporter grant; only a signed webhook can create one' },
   'bb-mtok': { travels: 'pass', why: 'the signed token that makes a supporter hat visible to others' },
   'bwq-c1': { travels: 'pass', why: 'the questline chapter — step level, forward only' },
+  'bwq-c2': { travels: 'pass', why: 'chapter two — which town fronts the story has opened for you (docs/town-jobs-plan.md §2); read today by the town’s own lock, written when chapter two ships' },
 
   // ---- the homestead, which lives in its own server doc ----
   'hs-v1': { travels: 'yard', why: 'the homestead: the yard, pen, family tree, pantry, produce and shed all publish; what stays is sync bookkeeping (pubUpdated, pubMarks, dirty)' },
