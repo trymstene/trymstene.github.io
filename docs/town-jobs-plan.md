@@ -329,6 +329,36 @@ Stamp's counter goes on the front, like the Exchange and the Wheel.
 Trym is right that Banana World is missing a social layer and that the risk may be worth taking.
 The plan splits it into three, and only the first is inside chapter 2.
 
+### ⭐ What makes it fun, and what would make it a drag
+Trym, 19 Sep: *"how shall we solve the social layer — so its fun, and not a drag"*. Four things
+make a small game's social feature a drag, and the design is built to dodge each one:
+
+| The drag | The dodge |
+|---|---|
+| **Obligation** — unread counts, "they are waiting", streaks | Nothing is ever owed. No unread badge, no reply prompt, no streak. A card arrives, it is nice, it expires quietly in 30 days. |
+| **Emptiness** — you write into a void at eight players | **The residents write too.** Nib, Moss, Bean and Stamp post to you: a thank-you after a good week, a note after a Curse Night. The mailbox is never dead, even on a Tuesday when nobody else is on. This is the load-bearing beam, not a flourish. |
+| **Friction** — typing a message on a phone inside a pixel game is work | **Sending is a gesture, not a composition.** Four taps at the counter: a picture, a line you pick, your stamp, a house. Ten seconds. |
+| **Dread (Trym's own)** — a queue he must read forever | Picked lines mean **nothing to read**. The ongoing cost is reports only, and a kill switch reachable from his phone. |
+
+**And three things make it actually good:**
+1. **It arrives in the world, not in a UI.** The flag on your homestead mailbox is up. You walk
+   over. The card opens as a card. There is no inbox screen anywhere — an inbox is a webpage.
+2. **It is recognition, not small talk.** The deck's lines are keyed to things the world already
+   knows and can verify: you fixed the square, your yard looks good, you worked the counter, the
+   curse took your lamps last night. A card that names what you *did* is worth ten that say
+   hello — and it needs no typing, because the fact comes from the server.
+3. **Giving is the good half.** Sending costs you nothing and expects nothing back. The best
+   version of this at ten players is not a conversation, it is a world where small kindnesses
+   land unannounced.
+
+**What may ride along: nothing with a price.** No coins, no shop items — that is alt-farming.
+But a **keepsake with no market value** is safe and is the whole point: a pressed flower, a
+snapshot of your yard, a picture of the square the night you fixed it. Priceless instead of
+valuable, so there is nothing to farm and everything to keep.
+
+**And the job makes it visible:** the post office round means a *player's hands* carried it. That
+is the difference between a notification and a neighbour.
+
 ### A — In chapter 2: the round (zero player-authored text)
 You take Stamp's bag and walk a round to **three real players' real yards**, read off the doors
 feed. Tomorrow, three strangers find something in their homestead mailbox that somebody's hands
