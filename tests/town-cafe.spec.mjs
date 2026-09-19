@@ -226,7 +226,11 @@ test('a shift is standing in the Coffee Cup’s own window, and only for its own
       elZ: +el.style.zIndex, kioskZ: +getComputedStyle(ov).zIndex,
       meGone: getComputedStyle(me).display === 'none',
       clipped: /ellipse/.test(el.style.clipPath || ''),
-      inside: r.left >= k.left - 1 && r.right <= k.right + 1 && r.bottom <= k.bottom + 1,
+      // ⚠️ what is SEEN is the clip, not the element. The banana is deliberately bigger than the
+      // window — only its upper body is in it — and getBoundingClientRect knows nothing about clip-path.
+      inside: (() => { const w = window.__town.room.cafe().window(), p = window.__town.PROPS.cafe;
+        return !!w && w.x0 >= p.x && w.x1 <= p.x + p.w && w.y0 >= p.y && w.y1 <= p.base; })(),
+      bigger: r.height > (k.height * 0.25),
       tray: !!document.querySelector('.tw-cup'),
       on: window.__town.room.cafe().on(),
     };
@@ -235,7 +239,8 @@ test('a shift is standing in the Coffee Cup’s own window, and only for its own
   expect(st.elZ, '⚠️ IN FRONT of the kiosk, not behind it — the hatch floor is above the building’s foot').toBeGreaterThan(st.kioskZ);
   expect(st.meGone, 'and your banana on the cobbles is gone, because it is the one in the window').toBe(true);
   expect(st.clipped, 'the arch clips it, so the kiosk overflows the banana').toBe(true);
-  expect(st.inside, 'the whole of it is within the kiosk’s own box').toBe(true);
+  expect(st.inside, 'the window it shows through is inside the kiosk’s own box').toBe(true);
+  expect(st.bigger, 'and the banana is a proper size — the window crops it, the scale does not').toBe(true);
   expect(st.tray, 'and the tray is up').toBe(true);
   // the shot is for the eye: Bean stands at this door and the FOR SALE sign hangs over it, and
   // neither is what is being looked at
@@ -264,8 +269,11 @@ test('the tallest hat in the game stays inside the window', async ({ page }) => 
     const el = document.querySelector('.tw-atwork');
     const ov = [...document.querySelectorAll('.tw-ov')].find((o) => o.dataset.key === 'cafe');
     const r = el.getBoundingClientRect(), k = ov.getBoundingClientRect();
-    // the sign band is the top third of the kiosk: nothing the player wears may reach it
-    return { overSign: r.top < k.top + k.height * 0.55, clip: el.style.clipPath };
+    // the sign band is the top half of the kiosk: nothing the player wears may reach it. ⚠️ measured
+    // on the WINDOW, because the element now extends past the opening on purpose and is clipped to it.
+    const w = window.__town.room.cafe().window(), p = window.__town.PROPS.cafe;
+    void r;
+    return { overSign: (w.y0 - p.y) / (p.base - p.y) < 0.55, clip: el.style.clipPath, top: w.y0, kioskTop: p.y };
   });
   expect(fit.clip, 'the arch is clipping').toContain('ellipse');
   expect(fit.overSign, '⚠️ a horn reached the COFFEE AND TEA sign').toBe(false);

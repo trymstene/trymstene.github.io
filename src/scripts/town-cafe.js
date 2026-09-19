@@ -259,13 +259,18 @@ export function mountCounter(host, opts = {}) {
 // own feet sorts behind the building it is standing inside, and the shift is invisible with nothing
 // on screen to explain it. It is the painter's-algorithm trap the beach wrote down, in a new place.
 const POSE = 2;          // frame 2: front-facing, both hands up — the pack's barista pose
-// ⭐ SIZED TO THE WINDOW, because the window is a window: you are looking into a kiosk from the square
-// and the banana inside is further away. 35 px is the CEILING, and it is arithmetic rather than taste:
-// the hands sit 0.729 of the banana's height above its feet, and the arch's ellipse has narrowed to
-// about 15 px of half-width by the time it gets up there — so at 38 the arms are clipped off at the
-// shoulder and at 46 the face goes with them. Both were on screen before this number was chosen.
-// (Trym, 19 Sep, looking at 28: "a bit too small, can be a bit bigger".)
-const DRAWN = 35;
+// ⭐ A WHOLE BANANA, SEEN FROM THE CHEST UP (Trym, 19 Sep: "bigger than that, but only upper body").
+// That is the pack's own composition — its barista is a head and shoulders behind a counter — and it is
+// what lets the banana be nearly full size at last. It does not stand ON the hatch floor: it stands
+// BEHIND the counter, feet below the opening and out of sight, with its crown tucked just inside the
+// arch. So the window frames the half of a banana that has a face in it, and the kiosk keeps the rest.
+//
+// ⚠️ 58 is a ceiling, and arithmetic rather than taste: the hands sit 0.729 of the height above the
+// feet, which at 58 puts them level with the widest part of the arch — any taller and the ellipse takes
+// the fingertips, any shorter and the legs come back into the window. 28 was too small and 35 was still
+// small, both on screen.
+const DRAWN = 58;
+const LEAN = 3;          // how far inside the arch the crown sits, so the head is framed and not cropped
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js — the drawn frame inside its square canvas
 
 export function bootTownCafe(ctx) {
@@ -274,8 +279,10 @@ export function bootTownCafe(ctx) {
 
   function standIn() {
     if (atWork || !CAFE_WIN) return;
-    const [cx, floor, baristaH] = CAFE_WIN;
+    const [cx, , baristaH, , winTop] = CAFE_WIN;
     void baristaH;
+    // the crown sits just inside the arch, and the feet fall wherever they fall — behind the counter
+    const floor = (winTop || 0) + LEAN + DRAWN;
     const w = DRAWN / FRAME_H_FRAC;   // the ELEMENT is bigger than the banana: hats live in the headroom
     const el = document.createElement('div');
     el.className = 'tw-atwork';
@@ -361,6 +368,12 @@ export function bootTownCafe(ctx) {
     clockIn, clockOut, redraw,
     on: () => on,
     tray: () => tray,
-    seam: { on: () => on, at: () => (atWork ? { z: +atWork.style.zIndex, w: atWork.style.width, top: atWork.style.top } : null), clockIn, clockOut },
+    seam: {
+      on: () => on, clockIn, clockOut,
+      at: () => (atWork ? { z: +atWork.style.zIndex, w: atWork.style.width, top: atWork.style.top, clip: atWork.style.clipPath } : null),
+      // ⚠️ the walk must measure what is SEEN, not the element: the banana is deliberately bigger
+      // than the window now, and getBoundingClientRect knows nothing about a clip-path
+      window: () => (CAFE_WIN.length > 6 ? { x0: CAFE_WIN[3], y0: CAFE_WIN[4], x1: CAFE_WIN[5], y1: CAFE_WIN[6] } : null),
+    },
   };
 }
