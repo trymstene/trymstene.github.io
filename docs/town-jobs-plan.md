@@ -153,6 +153,47 @@ few days and it slides back toward the middle. Nobody is required, nobody is pun
 person who cares can do it all. (**TRYM**: the numbers. My recommendation is a floor of ten,
 which is eight days solo and much faster with company.)
 
+### ⭐ Repeatability: something to do at any hour of a real day
+Trym, 19 Sep: *"i want this to have high repeatability play throughout a normal 24h human day,
+which means theres always something to do in the town"*. That is a requirement, and one thing in
+the town works against it today: **your problems are one batch, seeded once per UTC day.** Clear
+them at eight in the morning and the square is done until midnight. The night already solves this
+for itself (a roaming ghost makes up to six new messes an evening, and every night lays out
+cursed things) — **the day needs the same treatment.**
+
+**The refill model: waves, not a batch.** The day's allowance is the same ten or twelve things,
+but it is released in waves through the real day, with a ceiling of about six open at once. Seed
+by `(player, day, wave)` where a wave turns over every few hours, so it stays deterministic — a
+reload never rerolls, and two players never share a problem, exactly as today. Then:
+
+- someone who plays once finds a full square of work;
+- someone who drops in three times finds something each time;
+- nobody can clear the town at breakfast and find it dead at bedtime.
+
+**What fills each part of a real day** (most of it already exists):
+
+| When | What is there |
+|---|---|
+| Morning | the night's mess: what the ghosts tipped, snuffed and dropped, plus the day's first wave |
+| Through the day | the waves refilling; a job you can clock into whenever you are there |
+| Evening | the nightfall clock, the omens when a Curse Night is charging |
+| Night | ghosts every night, their mischief, cursed things appearing through the dark, the night shift |
+| A Curse Night | more ghosts, the queue-jumper, cursed customers, the night vendor |
+
+**⚠️ The caps bound the METER and the COINS, never the availability of work.** Past the daily cap
+the square still gives you things to do and still says thank you; what stops is the town moving
+and the coins landing. The copy never names a rate or a ceiling (the mystery rule), and the world
+must never read as switched off.
+
+**⚠️ Available, never demanded.** High repeatability is one step from a chore treadmill, and the
+town's founding rule is that nobody is punished for absence. The town decays slowly and
+forgivingly, the bar is a shared thing and never a personal streak, and there is no daily-login
+anything. If a session ever opens with a list of duties, that is the failure.
+
+**What Pulse must answer** (a tile, not a hunch): are fixes spread across the hours of the day or
+bunched at one, does anybody reach the daily cap, and does a returning player find work on their
+second visit of the same day.
+
 ### The bar must be the roadmap
 Trym: *"even in the town health progress bar that the progress bar shows the different steps —
 it must be well explained"*. The health card already draws five zones with the band's name and
@@ -383,6 +424,8 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
 - **How bleak is Abandoned** — three shut fronts or five? Decide from the five screenshots.
 - **The solo climb**: how many tap-sized things a day at every band (ten = eight days alone,
   twelve = four), and does the work change from repair to upkeep as the town improves?
+- **The refill rhythm**: how many waves a day and how many things open at once (the plan assumes
+  about six at once, refilling every few hours).
 - **Is the sticker shop (`print`) ever taped?** It is the one front that leads to real money.
 - **Does the locked signpost show progress** ("two of four signatures"), or only the next step?
 - **May a job-holder walk through their own workplace's tape?** (Same question as the staff gap,
