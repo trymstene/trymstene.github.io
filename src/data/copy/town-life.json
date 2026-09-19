@@ -91,6 +91,11 @@
     "Closed today: garden hose has a split.",
     "Closed today: the wheel needs its handle tightened."
   ],
+  "lowShut": [
+    "Nothing failed here. Fix what is broken in the square, and this door opens again.",
+    "Hands in the square lift the town. When it rises, this shopfront comes back.",
+    "The square needs hands, not blame. Put things right outside and the doors return."
+  ],
   "objects": [
     {
       "id": "humlantern",

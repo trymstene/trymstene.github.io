@@ -505,6 +505,12 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    the post office never shut; a band may only shut a `CLOSABLE` key; every closable front keeps
    its keeper indoors.
 6. ✅ Shot at 393 px. **The one still owed to Trym's thumb is his own look at them.**
+6b. ✅ **A shut door says WHY, and the two whys are different copy.** `closed` is a one-day fault
+   with a name and somebody will see to it; the new `lowShut` is a town too low to keep its fronts
+   open, and every line of it says the square is the reason and hands are what bring it back —
+   never a number, never a rate, which the walk asserts. This is Trym's "it must be well
+   explained", and without it a player tapping a band-dark shopfront was told a bolt needed
+   tightening.
 
 **The day's work** — ✅ **built 19 Sep 2026**, and it answers Q7–Q9 below
 3b. ✅ `PROBLEM_COUNT` (9→2 by band) became `PROBLEM_OPEN = 6` and `WAVES = 4`: six of your own

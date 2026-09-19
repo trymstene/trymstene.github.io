@@ -165,6 +165,24 @@ being moved”: “what does this copy even mean?”). Funny is welcome; harmful
 | `stoppedclock` | a grandfather clock | it stopped at an hour the town does not have |
 | `lastlamp` | a camp lantern | it hums, and stays lit |
 
+## `lowShut` — a door the TOWN closed
+
+`closed` is a one-day fault with a name: a bolt, a split hose, a stuck scale. Somebody will
+see to it. **`lowShut` is the other thing entirely**, and since 19 Sep it is what a player
+meets most: when Town Health is on the floor the square cannot keep its shopfronts open at
+all, and the café, the info point and the general store stand dark behind tape.
+
+Three or four lines. Each one has to do a job the game has nowhere else to do it:
+
+- say the reason is the SQUARE, not this one shop — nothing here is anybody's fault
+- say it comes back, and that hands are what bring it back. A player who fixes things in
+  the square lifts the town for everybody, and the doors open again
+- never a number, never a rate, never how long, never a question. The town does not publish
+  a timetable and never has
+
+Write them as the door speaks, or as a passer-by would say it. Not a system message, and not
+an apology either — this town has been through worse.
+
 ## How this reads
 
 Everything in the voice guide holds. The board is the town's voice; Pip, the stall, the
@@ -174,4 +192,4 @@ spoken line; never an emoji; a curly apostrophe. Nothing here asks the player a 
 ## Return
 
 `bands` (five, in the order above), `store`, `board`, `merchant`, `vendor`, `ghosts`,
-`closed`, `objects` (ten, ids as above, in that order).
+`closed`, `lowShut`, `objects` (ten, ids as above, in that order).

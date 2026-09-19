@@ -479,3 +479,32 @@ test('a new wave brings fresh work, and never hands back what you fixed', async 
   expect(second.filter((id) => !first.includes(id)).length).toBeGreaterThan(0);   // and there is genuinely new work
   expect(errors).toEqual([]);
 });
+
+// 🚪 A SHUT DOOR SAYS WHY, and the two whys are not the same (19 Sep 2026). Today's event is a
+// one-day fault with a name and somebody will see to it; the BAND is a town too low to keep its
+// fronts open at all. Trym, on the whole gated town: "it must be well explained". A player who
+// taps a dark shopfront and is told a bolt needs tightening has been told the wrong thing.
+test('a shut door explains itself, and the reason picks the line', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await stand(page, 1560, 1110);   // clear of every reach: walking up to a front raises its shutter
+  await setBand(page, 5);
+  const copy = await page.evaluate(() => ({ low: window.__town.room.copyOf('lowShut'), day: window.__town.room.copyOf('closed') }));
+  expect(copy.low.length).toBeGreaterThanOrEqual(3);
+  // none of the town's own lines may name a number, a rate or an interval — the mystery rule
+  for (const line of copy.low) expect(line).not.toMatch(/\d|hour|day|minute|week/i);
+
+  const shut = await room(page, 'shut');
+  expect(shut.length).toBeGreaterThanOrEqual(2);
+  for (const k of shut) {
+    const why = await room(page, 'shutWhy', k);
+    await page.evaluate(() => { const t = document.getElementById('twToast'); t.textContent = ''; t.hidden = true; });
+    await seam(page, (x) => window.__town.room.open(x), k);
+    await page.waitForTimeout(250);
+    const said = await page.evaluate(() => { const t = document.getElementById('twToast'); return t.hidden ? '' : t.textContent; });
+    const pool = why === 'today' ? copy.day : copy.low;
+    expect(pool.some((l) => said.includes(l)), `${k} (${why}) said: ${said}`).toBe(true);
+  }
+  expect(errors).toEqual([]);
+});

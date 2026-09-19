@@ -755,7 +755,16 @@ export function bootTownLife(ctx) {
   }
   const shutNow = (key) => CLOSABLE.includes(key) && cond.shut.has(key) && !cond.fixedShut.has(key);
   function openFor(key) {
-    if (shutNow(key)) { const line = one(COPY.closed, dayNum() + key.length); if (line) say(fill(line)); return !!line; }
+    // 🚪 A SHUT DOOR SAYS WHY, and there are two whys (19 Sep). Today's event is a one-day fault with
+    // a name — a bolt, a split hose — and somebody will see to it. The BAND is the other thing: the
+    // town is too low to keep its fronts open at all, and the only line that helps says the square is
+    // the reason and hands are what bring it back (Trym: "it must be well explained").
+    if (shutNow(key)) {
+      const day = todayShut.has(key);
+      const line = one(day ? COPY.closed : COPY.lowShut, dayNum() + key.length);
+      if (line) say(fill(line));
+      return !!line;
+    }
     if (key === 'store') return storeCard();
     if (key === 'board') return boardCard();
     return false;
@@ -1180,6 +1189,9 @@ export function bootTownLife(ctx) {
   const seam = {
     life: () => L, band: () => band, test: TEST, err: () => lastErr,
     wave: () => waveNum(),
+    shutWhy: (k) => (todayShut.has(k) ? 'today' : 'band'),
+    copyOf: (k) => COPY[k],
+    open: (k) => openFor(k),
     nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
