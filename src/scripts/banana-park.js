@@ -9,8 +9,7 @@
 // All imports are static → still one page bundle.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { passStat, passGet } from '../lib/banana-pass.js';
-import { levelFor } from '../lib/pass-defs.js';
+import { passStat } from '../lib/banana-pass.js';
 import { presenceRoom, poofInto } from '../lib/world.js';
 // ⚠️ coinBalance rides along: the park hands `coinBal` to the garden, fountain
 // and shops through ctx. Extracting the HUD took the old inline definition with
