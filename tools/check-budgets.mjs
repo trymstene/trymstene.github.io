@@ -1,7 +1,7 @@
 // Rig gate: per-surface JS budgets, measured on the BUILT output.
 // Fails (exit 1) when any budgeted chunk outgrows its line, or the whole
 // _astro JS payload passes the total. Run after `npm run build`.
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const { budgets, totalBudget, adminBudget, adminPrefixes } = JSON.parse(readFileSync('tools/budgets.json', 'utf8'));
@@ -35,12 +35,22 @@ for (const f of files) {
 for (const prefix of Object.keys(budgets)) {
   if (!seen.has(prefix)) console.log(`ℹ️  no chunk matched "${prefix}" (renamed? update budgets.json)`);
 }
+// ⚠️ THE GATE USED TO STOP AT dist/_astro, and BaseLayout.astro puts /js/main.js on EVERY page — the
+// consent banner, the analytics loader, the mobile nav, the download door. public/js/shop.js rides the
+// shop pages the same way. Neither was bundled, so neither was ever counted, and 32 787 B of what a
+// player actually downloads sat outside every cap and outside the total. Counting them was worth more
+// than the number it added (19 Sep 2026; the total went 1 206 156 → 1 238 943 of 1 420 000, 85% → 87%,
+// and no cap had to move to absorb the truth).
+for (const f of (existsSync('dist/js') ? readdirSync('dist/js').filter((x) => x.endsWith('.js')) : [])) {
+  total += statSync(join('dist/js', f)).size;
+}
+
 const line = (label, got, cap) => {
   const pct = Math.round((got / cap) * 100);
   const txt = `${label}  ${got.toLocaleString()} B / ${cap.toLocaleString()} B  (${pct}%)`;
   if (got > cap) { console.error('❌ OVER  ' + txt); fail = true; }
   else console.log(`${pct >= 90 ? '⚠️ ' : '✅'} ${txt}`);
 };
-line('player _astro JS', total, totalBudget);
+line('player JS (_astro + /js)', total, totalBudget);
 line('admin-only (HQ) ', admin, adminBudget);
 process.exit(fail ? 1 : 0);

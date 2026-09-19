@@ -16,7 +16,12 @@
 // (the bay's tickets) comes in through `values`.
 import { passGet, coinsNow } from './banana-pass.js';
 import { levelFor, gardenerLvlFor, GLVL_AT, GLVL_STARS } from './pass-defs.js';
-import { iconSvg } from './pixel-icons.js';
+// ⭐ THE ONE STAR, INLINE (19 Sep 2026). This was the ONLY icon the shared HUD drew, and importing
+// iconSvg for it dragged pixel-icons.js — an eager glob of the whole icon directory, 25 278 B built —
+// onto the BEACH and the HOMESTEAD, neither of which carries it for any other reason. world-travel.js
+// already made exactly this call for exactly this reason (see its note: "~70 SVGs to draw one glyph").
+// The string below is character-for-character what iconSvg('star', { size: 13 }) returned.
+const STAR13 = '<svg class="pai " width="13" height="13" shape-rendering="crispEdges" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M5 20h3v2H3v-6h2v4Zm16 2h-5v-2h3v-4h2v6Zm-11-2H8v-2h2v2Zm6 0h-2v-2h2v2Zm-2-2h-4v-2h4v2Zm-7-2H5v-3h2v3Zm12 0h-2v-3h2v3ZM5 13H3v-2h2v2Zm16 0h-2v-2h2v2ZM9 9H3v2H1V7h8v2Zm14 2h-2V9h-6V7h8v4ZM11 7H9V3h2v4Zm4 0h-2V3h2v4Zm-2-4h-2V1h2v2Z"/></svg>';
 
 const CSS = `
 .wh {
@@ -282,6 +287,6 @@ export function gardenerCardHtml(g) {
       : '<div class="whg__bar"><i style="width:' + pct + '%"></i></div>'
         + '<p class="whg__count">' + g.n + ' / ' + g.nextAt + ' harvests</p>'
         + '<p class="whg__next">next: ' + (nextIsExotic ? 'the exotic tier'
-          : 'seeds up to ' + iconSvg('star', { size: 13 }).repeat(GLVL_STARS[g.lvl])) + '</p>')
+          : 'seeds up to ' + STAR13.repeat(GLVL_STARS[g.lvl])) + '</p>')
     + '</div>';
 }
