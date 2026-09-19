@@ -712,3 +712,48 @@ test('the general store: the shelf stays at the door, the room is a gain, and th
   expect(await seam(page, () => window.__town.rooms.now())).toBe('');
   expect(errors).toEqual([]);
 });
+
+// 📦 THE CARDS ARE A LAZY CHUNK (19 Sep 2026, Trym: "optimize and chunk things if needed for
+// performance"). town-room had 2.2 KB left of its 56 000, so Pip's shelf, the stall, the vendor and
+// the notice board moved into town-shop.js. It warms a beat after the square settles, so in normal
+// play the tap takes the synchronous path — this walk holds the chunk back on the wire to prove the
+// OTHER path, the one a player only meets on a bad connection: ⭐ a card must never silently do
+// nothing, and a chunk that never arrives must not leave a blank card sitting there either.
+test('a card opens even when its chunk is still on the wire, and a chunk that never comes closes its own frame', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  let held = 0;
+  await page.route('**/town-shop*.js', async (route) => { held++; await new Promise((r) => setTimeout(r, 1500)); await route.continue(); });
+  await town(page);
+  await setBand(page, 70);
+  await seam(page, () => window.__town.room.open('store'));
+  await page.waitForTimeout(120);
+  // the frame is up on the same beat as the tap, and the shelf is not in it yet
+  expect(await page.locator('#twPanel, .tw-panel').first().isVisible().catch(() => true)).toBeTruthy();
+  expect(await page.locator('.tw-store').count(), 'the shelf has not arrived yet').toBe(0);
+  // …and it fills itself the moment the chunk lands
+  await page.waitForFunction(() => document.querySelectorAll('.tw-store').length === 1, null, { timeout: 8000 });
+  expect(await page.locator('.tw-store').count()).toBe(1);
+  expect(held, 'the chunk really was fetched over the wire').toBeGreaterThan(0);
+  await seam(page, () => document.getElementById('twCardX').click());
+
+  // once it is here, every later card is synchronous again
+  await seam(page, () => window.__town.room.open('board'));
+  await page.waitForTimeout(60);
+  expect(await page.locator('.tw-board2').count(), 'the second card needs no wait at all').toBe(1);
+  expect(errors).toEqual([]);
+});
+
+// …and the other half of that promise: a chunk that never arrives at all
+test('a card whose chunk never arrives closes its own frame instead of sitting there blank', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.route('**/town-shop*.js', (route) => route.abort());
+  await town(page);
+  await setBand(page, 70);
+  await seam(page, () => window.__town.room.open('store'));
+  await page.waitForTimeout(1500);
+  expect(await page.locator('.tw-store').count()).toBe(0);
+  expect(await seam(page, () => document.getElementById('twPanel').hidden), 'the empty frame closed itself').toBe(true);
+  expect(errors, 'a failed chunk is caught, never thrown at the page').toEqual([]);
+});

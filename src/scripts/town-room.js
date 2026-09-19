@@ -272,6 +272,10 @@ export function bootTownLife(ctx) {
     return b;
   }
   const bodies = new Set();
+  // the merchant and the vendor: a body by a stall, a shelf when you walk up. ⚠️ these were declared in
+  // the middle of the cards block until 19 Sep; they are written by seven sites here, one of them inside
+  // lampsByHour(), so they never belonged to the chunk that moved out.
+  let merchant = null, vendor = null;
   function swayBodies(now) {
     for (const b of bodies) if (now - b.swayAt > b.period) { b.swayAt = now; b.sw = b.sw ? 0 : 1; drawMe(b.ctx, 150, b.face + b.sw, b.outfit); }
   }
@@ -623,155 +627,43 @@ export function bootTownLife(ctx) {
     for (const [tier, n] of Object.entries(s)) pickN(POOLS[tier].filter((id) => DEX[id]), n, SALT_SHELF + d * 13 + tier.length).forEach((id) => out.push(id));
     return out;
   }
-  function rows(ids, markup, where) {
-    const stage = homeStage(), coins = coinsNow(), room = canHold(), ws = COPY.store || {};
-    return ids.map((id) => {
-      const d = DEX[id]; if (!d) return '';
-      const price = Math.max(1, Math.round(d.price * (markup || 1)));
-      const can = d.stage <= stage && coins >= price && room;
-      // the two notes are copy (store.needs / store.van): nothing until the words are approved
-      return '<div class="tw-row"><div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(d.name) + '</b><small>' + price + ' coins' + (d.stage > stage && ws.needs ? ' · ' + esc(ws.needs) : '') + (shipMin(d) && ws.van ? ' · ' + esc(ws.van) : '') + '</small></div></div>'
-        + '<button type="button" data-town-buy="' + esc(id) + '" data-price="' + price + '" data-where="' + esc(where) + '"' + (can ? '' : ' disabled') + '>buy</button></div>';
-    }).join('');
+  // 📦 THE CARDS ARE A CHUNK (19 Sep 2026, Trym: "optimize and chunk things if needed for performance").
+  // Pip's shelf, the travelling stall, the night vendor and the notice board are six kilobytes of
+  // markup-building that nothing on the walk-around path ever touches — and this file had 2.2 KB left of
+  // its 56 000. They live in ./town-shop.js now. It arrives on the first card, or a beat after the square
+  // settles, whichever comes first, so a tap is almost never the thing waiting.
+  //
+  // ⚠️ FOUR OF THESE ARE GETTERS AND THAT IS NOT DECORATION. `L`, `band`, `problems` and `curse` are all
+  // REASSIGNED here — a whole new `L` arrives from the room on every poll — so a value passed once would
+  // freeze the notice board at whatever the town was when the chunk loaded. `cond` is the opposite case:
+  // a const object mutated in place, so the reference holds.
+  let shop = null, shopP = null;
+  function shopCtx() {
+    return { COPY, W_BAND, W_OBJ, DEX, BANDS, ANCHORS, MERCHANT, CURSE_SHELF, OBJECTS, BOUNTY, SALT_SHELF,
+      cond, propOf, pickN, one, fill, found, omenNow, shelfFor,
+      band: () => band, life: () => L, problems: () => problems, curse: () => curse,
+      openCard, closeCard, cardBody, card, esc, say, hud, track, enterRoom: ctx.enterRoom };
   }
-  function wireBuys(soldLines) {
-    cardBody.querySelectorAll('[data-town-buy]').forEach((b) => b.addEventListener('click', () => {
-      const id = b.dataset.townBuy, price = +b.dataset.price, d = DEX[id]; if (!d) return;
-      if (!canHold()) return;
-      if (!passSpend(price, 'townstore', id)) return;
-      const mins = shipMin(d);
-      if (mins) orderFor(id, mins); else grantToShed(id);
-      if (hud && hud.refresh) hud.refresh();
-      b.disabled = true;
-      const line = fill(one(soldLines, price + id.length), d.name.toLowerCase());
-      if (line) say(line);
-      track('town_buy', { id, price, where: b.dataset.where });
-      // 🛍 the rest of the shelf re-prices against what is left in the purse
-      cardBody.querySelectorAll('[data-town-buy]').forEach((o) => { if (!o.disabled && +o.dataset.price > coinsNow()) o.disabled = true; });
-    }));
-  }
-  function storeCard() {
-    const ids = shelfFor();
-    const w = COPY.store || {};
-    openCard('<h2>The General Store</h2>'
-      + (ids ? (w.greet ? '<p class="tw-card__sub">' + esc(fill(w.greet)) + '</p>' : '') + '<div class="tw-store">' + rows(ids, 1, 'store') + '</div>'
-        : (w.shut ? '<p class="tw-card__sub">' + esc(fill(w.shut)) + '</p>' : '<p class="tw-card__sub"></p>')));
-    if (ids) wireBuys(w.sold);
-    // 🚪 THE ROOM IS A GAIN, NEVER A TOLL (docs/town-jobs-plan.md §4). The shelf stays exactly where
-    // it has always been — one tap on the front, no walk — and the way inside is one more row on the
-    // same card. A shut front never gets here: openFor answers that first.
-    const wr = COPY.rooms || {};
-    if (wr.in && ctx.enterRoom) {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'tw-btn--in'; b.textContent = fill(wr.in);
-      b.addEventListener('click', () => { closeCard(); ctx.enterRoom('store'); });
-      cardBody.appendChild(b);
+  function loadShop() {
+    if (!shopP) {
+      shopP = import('./town-shop.js')
+        .then((m) => { shop = m.bootTownShop(shopCtx()); return shop; })
+        .catch((e) => { shopP = null; console.warn('[town] the shop did not load', e); return null; });
     }
+    return shopP;
+  }
+  // ⚠️ A CARD MUST NEVER SILENTLY DO NOTHING. On the rare tap that beats the chunk, the frame opens on
+  // the same beat as the tap and fills the moment it lands — and only if it is still the card on screen.
+  const shopSeam = (name) => (shop ? Promise.resolve(shop[name]()) : loadShop().then((s) => !!(s && s[name]())));
+  function shopCard(name) {
+    if (shop) return shop[name]();
+    openCard('');
+    loadShop().then((s) => { if (panel.hidden) return; if (s) s[name](); else closeCard(); });   // a chunk that never came closes its own frame rather than leaving a blank card
     return true;
   }
-  // the merchant and the vendor: a body by a stall, a shelf when you walk up
-  let merchant = null, vendor = null;
-  function merchantCard() {
-    const w = COPY.merchant || {};
-    const ids = pickN(MERCHANT.pool.filter((id) => DEX[id]), MERCHANT.n, SALT_SHELF + dayNum() * 29);
-    openCard('<h2>' + esc(w.name || 'The travelling stall') + '</h2>' + (w.greet ? '<p class="tw-card__sub">' + esc(fill(w.greet)) + '</p>' : '')
-      + '<div class="tw-store">' + rows(ids, MERCHANT.markup, 'merchant') + '</div>');
-    wireBuys(w.lines);
-    track('town_merchant', { n: ids.length });
-    return true;
-  }
-  function vendorCard() {
-    const w = COPY.vendor || {};
-    const ids = pickN(CURSE_SHELF.pool.filter((id) => DEX[id]), CURSE_SHELF.n, SALT_SHELF + dayNum() * 37);
-    // what the player holds that the vendor wants: cursed finds sitting in the shed
-    const held = OBJECTS.filter((o) => hasInShed(o.decor) > 0 && found(o.id));
-    openCard('<h2>' + esc(w.name || 'The night stall') + '</h2>' + (w.greet ? '<p class="tw-card__sub">' + esc(fill(w.greet)) + '</p>' : '')
-      + '<div class="tw-store">' + rows(ids, CURSE_SHELF.markup, 'vendor') + '</div>'
-      + (held.length ? '<div class="tw-store">' + held.map((o) => { const d = DEX[o.decor]; const wo = W_OBJ[o.id] || {}; return '<div class="tw-row"><div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(wo.name || d.name) + '</b><small>' + BOUNTY[o.rarity] + ' coins</small></div></div><button type="button" data-town-sell="' + o.id + '">sell</button></div>'; }).join('') + '</div>' : ''));
-    wireBuys(w.lines);
-    cardBody.querySelectorAll('[data-town-sell]').forEach((b) => b.addEventListener('click', () => {
-      const o = OBJECTS.find((x) => x.id === b.dataset.townSell); if (!o) return;
-      if (!takeFromShed(o.decor)) return;
-      passStat('coins_earned', BOUNTY[o.rarity], 'object');
-      if (hud && hud.refresh) hud.refresh();
-      b.disabled = true;
-      const line = fill(w.bought, (W_OBJ[o.id] || {}).name || DEX[o.decor].name);
-      if (line) say(line);
-      track('town_object', { id: o.id, sold: 1 });
-    }));
-    return true;
-  }
-  // 📌 THE NOTICE BOARD — the card IS the board (Trym, 14 Sep: "make this more visual and look
-  // like a game-popup, not a website popup"): a wooden frame, the title on a plank, the
-  // town's word for itself stamped on a pinned notice with five street lamps under it (as
-  // many lit as the town is well — the one place its state is drawn), and three pinned
-  // notes for the tally. The words are the copy file's; the pictures are the town's own.
-  function boardCard() {
-    const w = COPY.board || {};
-    const foundN = OBJECTS.filter((o) => found(o.id)).length;
-    const note = (icon, n, label, cls) => '<div class="tw-paper tw-paper--note ' + (cls || '') + '"><i class="tw-pin"></i>' + iconSvg(icon, { size: 26 }) + '<b>' + n + '</b><small>' + esc(label) + '</small></div>';
-    // the second notice: what is going on — a night tonight, a night on, the morning after — or,
-    // on an ordinary day, that nights exist at all; and always what fixing is for
-    const om = omenNow(), after = !curse && !om && L.curseAt && Date.now() - L.curseAt < 8 * 3600000;
-    const news = curse && curse !== 'hush' ? w.night : om ? w.omen : after ? w.after : null;   // the nights are Moss's to explain (his card); the board only reports one that is coming, on, or just gone
-    const bi = BANDS.indexOf(band), nb = W_BAND[BANDS[bi + 1]] || null, todo = todoList();
-    openCard('<div class="tw-board2">'
-      + '<div class="tw-board2__head"><span class="tw-plank tw-plank--card">' + esc(w.title || 'Notices') + '</span></div>'
-      // 📋 THE REPORT, for a banana who has just walked in (Trym, 15 Sep: "look at the totality … fixing copy means often
-      // cutting crap"): what this square is; the eight lamps as they are; what wants doing today — the player's own
-      // open list, in plain words; one line on what the next state brings; one on the nights. No state stamp, no band
-      // poetry, no paragraph on why — the intro says what a fix does.
-      + (w.intro ? '<div class="tw-paper tw-paper--intro"><i class="tw-pin"></i><p>' + esc(fill(w.intro)) + '</p></div>' : '')
-      + '<div class="tw-paper tw-paper--notice"><i class="tw-pin tw-pin--b"></i>'
-      + '<canvas class="tw-lamps" width="220" height="66" aria-hidden="true"></canvas>'
-      + '<p class="tw-todo">' + (w.todo ? '<small class="tw-todo__h">' + esc(w.todo) + '</small>' : '') + (todo.length ? todo.map(esc).join(' · ') : esc(fill(w.nothing || ''))) + '</p>'
-      + (nb && nb.name ? '<small class="tw-next">' + (w.next ? esc(w.next) + ' ' : '') + '<b>' + esc(nb.name) + '</b>' + (nb.brings ? ' — ' + esc(fill(nb.brings)) : '') + '</small>' : '')
-      + '</div>'
-      + (news ? '<div class="tw-paper tw-paper--news' + (om || (curse && curse !== 'hush') ? ' is-omen' : '') + '"><i class="tw-pin' + (om || (curse && curse !== 'hush') ? '' : ' tw-pin--b') + '"></i><p class="tw-news__now">' + esc(fill(news)) + '</p></div>' : '')
-      + '<div class="tw-tally">' + note('tools', L.today.fixes | 0, w.fixes || '', 'is-a') + note('users', L.today.people | 0, w.people || '', 'is-b') + note('moon-solid', foundN + '/' + OBJECTS.length, w.found || '', 'is-c') + '</div>'
-      + (foundN ? '<div class="tw-paper tw-paper--list"><i class="tw-pin"></i>' + OBJECTS.filter((o) => found(o.id)).map((o) => { const d = DEX[o.decor], wo = W_OBJ[o.id] || {}; return '<div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(wo.name || d.name) + '</b>' + (wo.desc ? '<small>' + esc(wo.desc) + '</small>' : '') + '</div></div>'; }).join('') + '</div>' : '')
-      + '</div>');
-    if (card) card.classList.add('tw-card--board');
-    drawLamps(cardBody.querySelector('.tw-lamps'));
-    return true;
-  }
-  // today's open list in plain words — "2 dark lamps · a full bin · rubbish on the cobbles" — from the player's own
-  // problems and the approved words for each kind (things.<kind> = [one, many])
-  function todoList() {
-    const W_THING = COPY.things || {}, counts = {};
-    for (const p of problems) counts[p.type] = (counts[p.type] || 0) + 1;
-    return Object.entries(counts).map(([t, n]) => { const w = W_THING[t]; return w && w.length ? fill((n === 1 ? w[0] : w[1] || w[0]).replace('{n}', n)) : n + ' ' + t; });
-  }
-  // the town's own EIGHT lamps as they are — lit, stuttering or dark — drawn from the placed lamp's sprite so the
-  // board never needs art of its own, and never says a lamp is out that the square shows lit (Trym, 15 Sep)
-  function drawLamps(cv, frac) {
-    if (!cv) return;
-    const p = propOf('lamp0'); if (!p) return;
-    const img = new Image();
-    img.src = p.el.src;
-    img.onload = () => {
-      const g = cv.getContext('2d'); if (!g) return;
-      g.imageSmoothingEnabled = false;
-      const keys = ANCHORS.lamps, n = keys.length, slot = cv.width / n, lw = 16, lh = Math.round(lw * img.naturalHeight / img.naturalWidth);
-      // the bar under the lamps: this band's stretch, filled as far as the town has come
-      if (frac != null) { g.fillStyle = '#3a2a10'; g.fillRect(10, cv.height - 7, cv.width - 20, 6); g.fillStyle = '#ffe135'; g.fillRect(11, cv.height - 6, Math.round((cv.width - 22) * frac), 4); }
-      for (let i = 0; i < n; i++) {
-        // ⚠️ A FLICKERING LAMP IS A BROKEN LAMP and the report has to say so. It used to draw LIT with
-        // a fainter halo and no shading at all — at sixteen pixels that is indistinguishable from working,
-        // so a player with one dead lamp and one stuttering one fixed the dead one and the row read as
-        // done (Trym, 19 Sep: "both broken streetlight got fixed status-wise"). Three readable steps now:
-        // lit is a bright halo and no shade, stuttering is a weak halo AND a shade, dead is shade alone.
-        const st = cond.lamps[keys[i]], x = Math.round(i * slot + slot / 2), ok = st === 'ok', top = cv.height - lh - 12;
-        if (st !== 'out') {
-          const r = g.createRadialGradient(x + 3, top + 7, 2, x + 3, top + 7, 18);
-          r.addColorStop(0, 'rgba(255, 225, 90, ' + (ok ? 0.75 : 0.26) + ')'); r.addColorStop(1, 'rgba(255, 200, 40, 0)');
-          g.fillStyle = r; g.fillRect(x - 18, top - 14, 44, 44);
-        }
-        g.drawImage(img, x - lw / 2, top, lw, lh);
-        if (!ok) { g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(20, 16, 30, ' + (st === 'out' ? 0.55 : 0.36) + ')'; g.fillRect(x - lw / 2, top, lw, lh); g.globalCompositeOperation = 'source-over'; }
-      }
-    };
-  }
+  setTimeout(loadShop, 1200);   // the square is walking by now; nothing is waiting on this
+
+
   const shutNow = (key) => CLOSABLE.includes(key) && cond.shut.has(key) && !cond.fixedShut.has(key);
   function openFor(key) {
     // 🚪 A SHUT DOOR SAYS WHY, and there are two whys (19 Sep). Today's event is a one-day fault with
@@ -784,8 +676,8 @@ export function bootTownLife(ctx) {
       if (line) say(fill(line));
       return !!line;
     }
-    if (key === 'store' || key === 'till') return storeCard();   // 🏪 the front AND the counter inside: the shelf is the same shelf
-    if (key === 'board') return boardCard();
+    if (key === 'store' || key === 'till') return shopCard('store');   // 🏪 the front AND the counter inside: the shelf is the same shelf
+    if (key === 'board') return shopCard('board');
     return false;
   }
 
@@ -1222,8 +1114,8 @@ export function bootTownLife(ctx) {
     if (kind === 'p') { const p = problems.find((q) => q.id === rest); if (p) walkTo(p.x, (p.foot || p.y) + 26, () => { const q = problems.find((z) => z.id === rest); if (!q) return; if (WORK[q.type]) workStart(q); else fix(rest); }); }
     else if (kind === 'o') { const o = objects.find((q) => q.def.id === rest); if (o) walkTo(o.x, o.y + 22, () => takeObject(o)); }
     else if (kind === 'g') { const g = ghosts.find((q) => q.def.id === rest && !q.done); if (g) walkTo(g.x + (ctx.pos.x < g.x ? -56 : 56), g.y + 6, () => { const line = one(COPY.ghosts, dayNum() + ghosts.length); if (line) say(fill(line)); if (g.s.n > 1) { g.s.fps = 9; setTimeout(() => { g.s.fps = g.def.fps || 5; }, 2500); } track('town_ghost', { id: rest }); }); }
-    else if (kind === 'm' && merchant && !merchant.el.hidden) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, merchantCard);
-    else if (kind === 'v' && vendor) walkTo(vendor.x + (ctx.pos.x < vendor.x ? -58 : 58), vendor.y + 8, vendorCard);
+    else if (kind === 'm' && merchant && !merchant.el.hidden) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, () => shopCard('merchant'));
+    else if (kind === 'v' && vendor) walkTo(vendor.x + (ctx.pos.x < vendor.x ? -58 : 58), vendor.y + 8, () => shopCard('vendor'));
   }
 
   // ═══════════════════════════════════ the story's hooks ═════════════════════════════
@@ -1275,7 +1167,9 @@ export function bootTownLife(ctx) {
     shelf: () => shelfFor(), today: () => today.slice(), odd: () => oddKey,
     merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
     full: () => [...cond.full], fountain: () => (cond.fountainDry ? 'dry' : 'on'),
-    cards: { store: storeCard, board: boardCard, merchant: merchantCard, vendor: vendorCard, health: healthCard },
+    // the four that moved out answer with a PROMISE so a walk can await the render either way
+    cards: { store: () => shopSeam('store'), board: () => shopSeam('board'), merchant: () => shopSeam('merchant'), vendor: () => shopSeam('vendor'), health: healthCard },
+    shopReady: () => loadShop().then(() => true),
     story, copy: () => Object.keys(COPY),
     coins: () => coinsNow(), found,
     hbar: () => ({ pct: hPct.textContent, fill: hFill.style.width, phase: hbarPhase, used: Math.min(10, (L.cap && L.cap.used) | 0) }),

@@ -540,6 +540,13 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
    with the z-band and the early-return measured on the real page, and the gate fails any `.is-inside`
    list that exempts nothing (proven to bite). ⚠️ **`town-room.js` is now at 96%, ~2.2 KB free** — the
    next slice that touches it moves the look into a new chunk rather than shaving.
+10b. ✅ **Done 19 Sep, and that is what happened.** The four cards — Pip's shelf, the travelling stall,
+   the night vendor and the notice board — are `src/scripts/town-shop.js`, a lazy chunk. **town-room
+   came back to 49 238 B, 88%**, and the new chunk is 6 218 B of its 9 000. ⚠️ Four ctx members are
+   GETTERS because town-room reassigns `L`, `band`, `problems` and `curse`; a value passed once
+   freezes the notice board. `shelfFor` and the `merchant`/`vendor` bodies stayed behind on purpose.
+   ⚠️ **The player total is now 1 384 798 B of 1 420 000 (98%)** — a split costs a second module's
+   boilerplate, about 1.7 KB. That ceiling is the next one to argue about, not town-room's.
 
 **The jobs**
 11. worker-pass: the rules, `JOB_PAY`, the routes; curl all three and paste the answers.
