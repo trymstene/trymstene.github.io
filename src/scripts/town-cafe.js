@@ -247,3 +247,101 @@ export function mountCounter(host, opts = {}) {
     destroy() { sleep(); go.removeEventListener('pointerdown', down); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('pointermove', move); box.remove(); },
   };
 }
+
+// ---- the banana in the window ------------------------------------------------------------------
+// ⭐ TRYM, 19 Sep: "the banana can be inside of that window … just have to make the banana sit
+// inside, and let the coffee cup sprite overflow the banana — the locked banana frame can be the
+// hands up pose". So a shift needs NO new prop and NO counter mark drawn on the cobbles: the kiosk
+// already in the square has a serving hatch, and working it means standing in it.
+//
+// ⚠️ THE Z COMES FROM THE KIOSK'S BASE, NOT THE WINDOW'S FLOOR. Everything outdoors is ordered by
+// its foot (100 + y), and the window's floor is 24 px ABOVE the kiosk's — so a banana placed by its
+// own feet sorts behind the building it is standing inside, and the shift is invisible with nothing
+// on screen to explain it. It is the painter's-algorithm trap the beach wrote down, in a new place.
+const POSE = 2;          // frame 2: front-facing, both hands up — the pack's barista pose
+// ⭐ SIZED TO THE WINDOW, the way the pack sizes its own barista, because the window is a window: you
+// are looking into a kiosk from the square and the banana inside is further away. 46 px was tried first
+// — a heroic banana at nearly the player's own height — and it does not fit: its arms reach past the
+// arch on both sides and the ellipse below takes its face off. The pack's barista is 26 px (CAFE_WIN[2]);
+// a banana stands a little taller than that and no taller.
+const DRAWN = 28;
+const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js — the drawn frame inside its square canvas
+
+export function bootTownCafe(ctx) {
+  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track } = ctx;
+  let atWork = null, tray = null, on = false;
+
+  function standIn() {
+    if (atWork || !CAFE_WIN) return;
+    const [cx, floor, baristaH] = CAFE_WIN;
+    void baristaH;
+    const w = DRAWN / FRAME_H_FRAC;   // the ELEMENT is bigger than the banana: hats live in the headroom
+    const el = document.createElement('div');
+    el.className = 'tw-atwork';
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 150;
+    try { drawMe(cv.getContext('2d'), 150, POSE, outfit()); } catch (e) {}
+    el.appendChild(cv);
+    el.style.width = pct(w, W);
+    el.style.left = pct(cx, W);
+    // translate(-50%, -100%) puts the element's BOTTOM on `top`, and its feet sit a little above that
+    el.style.top = pct(floor + (1 - FRAME_TOP_FRAC - FRAME_H_FRAC) * w, H);
+    const p = PROPS && PROPS.cafe;
+    el.style.zIndex = String(100 + Math.round(p ? p.base : floor) + 1);
+    // ✂️ AND THE KIOSK OVERFLOWS THE BANANA, which is the whole of Trym's note. Clipped to the hatch's
+    // own opening (baked, flood-filled from its middle), a banana too big for the window simply stops at
+    // the arch — so it reads as leaning into a serving hatch instead of wearing the building. ⚠️ it is
+    // not decoration: WITHOUT IT a viking helmet's horns run straight up the COFFEE AND TEA sign, which
+    // is what the screenshot showed before this line existed.
+    // ⚠️ AN ELLIPSE, NOT A RECTANGLE. The hatch is an arch, so a box clip cuts the crown flat and square
+    // across the middle of the opening — the banana looks decapitated rather than framed. The ellipse
+    // follows the arch, and a banana too tall for the window loses its hat to the curve, which is what
+    // standing in a serving hatch looks like.
+    const win = CAFE_WIN.length > 6 ? CAFE_WIN.slice(3) : null;
+    if (win) {
+      const l = cx - w / 2, t = floor - (FRAME_TOP_FRAC + FRAME_H_FRAC) * w;   // the element's own box, in world px
+      const pc = (v) => (v / w * 100).toFixed(2) + '%';
+      el.style.clipPath = 'ellipse(' + pc((win[2] - win[0]) / 2) + ' ' + pc((win[3] - win[1]) / 2)
+        + ' at ' + pc((win[0] + win[2]) / 2 - l) + ' ' + pc((win[1] + win[3]) / 2 - t) + ')';
+    }
+    world.appendChild(el);
+    atWork = el;
+    const me = world.querySelector('.tw-me');
+    if (me) me.classList.add('is-serving');   // ⚠️ a CLASS, never [hidden]: authored display beats it
+  }
+  function stepOut() {
+    if (atWork) { atWork.remove(); atWork = null; }
+    const me = world.querySelector('.tw-me');
+    if (me) me.classList.remove('is-serving');
+  }
+
+  function clockIn(host) {
+    if (on) return false;
+    on = true;
+    standIn();
+    if (!tray) tray = mountCounter(host || world.parentElement, {});
+    tray.show();
+    tray.say(COPY.on || '');
+    if (COPY.on) say(COPY.on);
+    track('town_shift', { at: 'cafe', step: 'in' });
+    return true;
+  }
+  function clockOut() {
+    if (!on) return false;
+    on = false;
+    stepOut();
+    if (tray) { tray.idle(''); tray.hide(); }
+    if (COPY.off) say(COPY.off);
+    track('town_shift', { at: 'cafe', step: 'out' });
+    return true;
+  }
+  // the player's own picture changes (a new hat, a curse): redraw the one in the window
+  function redraw() { if (atWork) { const g = atWork.firstChild.getContext('2d'); g.clearRect(0, 0, 150, 150); try { drawMe(g, 150, POSE, outfit()); } catch (e) {} } }
+
+  return {
+    clockIn, clockOut, redraw,
+    on: () => on,
+    tray: () => tray,
+    seam: { on: () => on, at: () => (atWork ? { z: +atWork.style.zIndex, w: atWork.style.width, top: atWork.style.top } : null), clockIn, clockOut },
+  };
+}

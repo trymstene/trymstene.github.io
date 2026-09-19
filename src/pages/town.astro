@@ -233,6 +233,15 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-me.is-me-cold canvas { filter: hue-rotate(185deg) saturate(0.9) brightness(1.15) drop-shadow(0 0 5px rgba(120, 200, 255, 0.9)); animation: twMeFloat 1.6s ease-in-out infinite, twShiver 0.16s steps(2) infinite; }
     @keyframes twShiver { from { translate: -1.5px 0; } to { translate: 1.5px 0; } }
     .tw-state.is-bluefire img { filter: hue-rotate(165deg) saturate(1.5) brightness(1.1); }
+    /* ☕ A BANANA AT WORK stands IN the Coffee Cup's serving hatch (Trym, 19 Sep) — no new prop, no
+       mark on the cobbles: the kiosk already has a window and working it means standing in it. Its
+       size and place are baked (town-geo.js CAFE_WIN, measured as the difference between the pack's
+       empty kiosk and the pack's kiosk-with-a-barista), and the chunk sets the z off the KIOSK's own
+       base, because a banana sorted by its own feet would stand behind the building it is inside. */
+    .tw-atwork { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
+    .tw-atwork canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+    /* ⚠️ a CLASS, never the hidden attribute: authored display beats [hidden] (the hidden-attribute trap) */
+    .tw-me.is-serving { display: none; }
     .tw-me-twin { position: absolute; width: 4.5%; transform: translate(-50%, -100%); pointer-events: none; opacity: 0.6; }
     .tw-me-twin canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; filter: brightness(0) drop-shadow(0 0 4px rgba(120, 40, 220, 0.85)); }
     /* 🏷 the big red FOR SALE sign on the Coffee Cup */

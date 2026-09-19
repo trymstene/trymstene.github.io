@@ -147,6 +147,20 @@ walk so the progression can never regress silently. At night: the town's own dar
 either side of the counter, the queue lit by the nearest lamp's halo, the mischief where the
 counter can see it.
 
+✅ **WHERE YOU STAND, decided 19 Sep (TRYM).** *"We use the coffee cup building as we do today — and
+as you see in the pack's own arrangement, that version is with a transparent window-part where there
+can be something in the window. The banana can be inside of that when at work, just have to make the
+banana sit inside, and let the coffee cup sprite overflow the banana — the locked banana frame can be
+the hands up pose."* So there is **no counter prop and no mark painted on the cobbles**: the kiosk
+already in the square has a serving hatch, and working it means standing in it, in frame 2 (front,
+both hands up). The pack ships the same kiosk twice — once empty and once with its own barista in the
+window — so the place is measured from the difference rather than guessed (`CAFE_WIN` in town-geo.js),
+and the banana is clipped to the arch so the kiosk overflows it. Three things this cost, all seen on
+screen before they were fixed: the hatch floor is 30 px **above** the kiosk's own foot, so a banana
+sorted by its feet stands behind the building it is inside; a viking helmet's horns ran up the COFFEE
+AND TEA sign until the arch clipped them; and a heroic-sized banana does not fit a window — it is
+sized to the hatch, as the pack sizes its own barista.
+
 **The counter itself** is the one open design question, and the bench prototype decides it:
 - **The tray** (the visuals lens): rises from the action bar's edge while your banana stands on
   the counter mark, full width, the ticket strip on its plank header and the gauge under it;

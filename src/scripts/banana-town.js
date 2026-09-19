@@ -640,6 +640,7 @@ assetsReady().then(() => {
       // the thing's own front by the time this runs, so all the room has to hand over is the deed.
       then: (fn) => { arriveThen = fn || null; },
       job: () => (work ? work.seam.job() : null),   // 💼 what the room may ask of you depends on who you work for
+      outfit: () => ME_DRAW,   // ☕ the café draws YOUR banana in its window, in one locked pose
       others: () => [],   // other players' bananas, the day the town gets its room (ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
     if (window.__town) window.__town.room = room.seam;

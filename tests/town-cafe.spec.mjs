@@ -176,3 +176,93 @@ test('patience is the body: not one bubble over a customer, day or night', async
   await page.screenshot({ path: SHOT + 'night.png' });
   expect(errors).toEqual([]);
 });
+
+// ☕ CLOCKING IN, in the town itself (Trym, 19 Sep: "the banana can be inside of that window … let
+// the coffee cup sprite overflow the banana — the locked banana frame can be the hands up pose").
+// No new prop and no mark painted on the cobbles: the kiosk already has a serving hatch, and
+// working it means standing in it.
+//
+// ⚠️ THE TWO WAYS THIS GOES WRONG, both seen on screen before these lines existed:
+//   · THE Z. Everything outdoors sorts by its foot, and the hatch's floor is 30 px ABOVE the
+//     kiosk's — so a banana placed by its own feet stands BEHIND the building it is inside, and the
+//     shift is invisible with nothing to explain it. The beach's painter's-algorithm trap, in a new place.
+//   · THE HAT. A viking helmet's horns ran straight up the COFFEE AND TEA sign. The banana is sized
+//     to the window and clipped to the arch, so the kiosk overflows the banana rather than the reverse.
+async function square(page, hat) {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  if (hat) await page.addInitScript((h) => { try { localStorage.setItem('bb-last', JSON.stringify({ hat: h, glasses: 'nerd', extras: {} })); } catch (e) {} }, hat);
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.life.set(12); window.__town.room.set(85); });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.waitForTimeout(300);
+  return errors;
+}
+
+test('a shift is standing in the Coffee Cup’s own window, and only for its own staff', async ({ page }) => {
+  const errors = await square(page);
+
+  // ── the kiosk is a building to everyone else
+  await page.evaluate(() => window.__town.work.set({ at: '' }));
+  expect(await page.evaluate(() => window.__town.room.open('cafe')), 'a stranger does not clock in').toBe(false);
+  await page.evaluate(() => window.__town.work.set({ at: 'store' }));
+  expect(await page.evaluate(() => window.__town.room.open('cafe')), 'nor does Pip’s restocker').toBe(false);
+  expect(await page.locator('.tw-atwork').count()).toBe(0);
+
+  // ── you work here: the tap answers, the walk happens, and the banana is in the window
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  expect(await page.evaluate(() => window.__town.room.cafeReady()), 'the counter’s chunk arrives').toBe(true);
+  expect(await page.evaluate(() => window.__town.room.open('cafe')), 'and the kiosk answers its own staff').toBe(true);
+  await page.waitForFunction(() => document.querySelector('.tw-atwork'), null, { timeout: 5000 });
+
+  const st = await page.evaluate(() => {
+    const el = document.querySelector('.tw-atwork');
+    const me = document.querySelector('.tw-me');
+    const ov = [...document.querySelectorAll('.tw-ov')].find((o) => o.dataset.key === 'cafe');
+    const r = el.getBoundingClientRect(), k = ov.getBoundingClientRect();
+    return {
+      elZ: +el.style.zIndex, kioskZ: +getComputedStyle(ov).zIndex,
+      meGone: getComputedStyle(me).display === 'none',
+      clipped: /ellipse/.test(el.style.clipPath || ''),
+      inside: r.left >= k.left - 1 && r.right <= k.right + 1 && r.bottom <= k.bottom + 1,
+      tray: !!document.querySelector('.tw-cup'),
+      on: window.__town.room.cafe().on(),
+    };
+  });
+  expect(st.on, 'the shift is on').toBe(true);
+  expect(st.elZ, '⚠️ IN FRONT of the kiosk, not behind it — the hatch floor is above the building’s foot').toBeGreaterThan(st.kioskZ);
+  expect(st.meGone, 'and your banana on the cobbles is gone, because it is the one in the window').toBe(true);
+  expect(st.clipped, 'the arch clips it, so the kiosk overflows the banana').toBe(true);
+  expect(st.inside, 'the whole of it is within the kiosk’s own box').toBe(true);
+  expect(st.tray, 'and the tray is up').toBe(true);
+  await page.screenshot({ path: SHOT + 'shift.png' });
+
+  // ── tapping again steps out
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  await page.waitForTimeout(300);
+  expect(await page.locator('.tw-atwork').count(), 'the window empties').toBe(0);
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.tw-me')).display !== 'none'), 'and you are back on the cobbles').toBe(true);
+  expect(errors).toEqual([]);
+});
+
+// ⚠️ THE WORST HAT IN THE GAME, on purpose. Before the arch clipped it, the viking helmet's horns
+// ran up over the COFFEE AND TEA sign — a thing no gate could have caught and only a screenshot did.
+test('the tallest hat in the game stays inside the window', async ({ page }) => {
+  const errors = await square(page, 'viking');
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => document.querySelector('.tw-atwork'), null, { timeout: 5000 });
+  const fit = await page.evaluate(() => {
+    const el = document.querySelector('.tw-atwork');
+    const ov = [...document.querySelectorAll('.tw-ov')].find((o) => o.dataset.key === 'cafe');
+    const r = el.getBoundingClientRect(), k = ov.getBoundingClientRect();
+    // the sign band is the top third of the kiosk: nothing the player wears may reach it
+    return { overSign: r.top < k.top + k.height * 0.55, clip: el.style.clipPath };
+  });
+  expect(fit.clip, 'the arch is clipping').toContain('ellipse');
+  expect(fit.overSign, '⚠️ a horn reached the COFFEE AND TEA sign').toBe(false);
+  expect(errors).toEqual([]);
+});

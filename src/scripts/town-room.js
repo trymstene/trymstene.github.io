@@ -29,7 +29,7 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD } from './town-geo.js';
+import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN } from './town-geo.js';
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
@@ -690,6 +690,25 @@ export function bootTownLife(ctx) {
   }
   setTimeout(loadShop, 1200);   // the square is walking by now; nothing is waiting on this
 
+  // ☕ THE COFFEE CUP'S COUNTER — its own chunk, loaded the first time somebody who works there taps
+  // the kiosk. ⚠️ NOT town-work.js: that one is imported for every visitor to the square, so the
+  // counter's weight would be downloaded by a banana who only ever restocks Pip's shelves.
+  let cafe = null, cafeP = null;
+  function cafeCtx() {
+    return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track,
+      outfit: ctx.outfit || (() => ({})),
+      // ⚠️ GETTERS, not values: this file reassigns every one of them
+      band: () => band, life: () => L, problems: () => problems, curse: () => curse };
+  }
+  function loadCafe() {
+    if (!cafeP) {
+      cafeP = import('./town-cafe.js')
+        .then((m) => { cafe = m.bootTownCafe(cafeCtx()); return cafe; })
+        .catch((e) => { cafeP = null; console.warn('[town] the counter did not load', e); return null; });
+    }
+    return cafeP;
+  }
+
 
   // ═══════════════════════ 🚧 YOUR LOCK: a building the story has not opened ═══════════════
   // The town's lock is the tape; this is the other one (src/data/town/locks.js has the whole rule).
@@ -750,6 +769,15 @@ export function bootTownLife(ctx) {
     }
     // 🚧 a hoarded front answers with YOUR lock, before anything else can answer with the town's
     if (hoardNow(key)) return lockCard(key);
+    // ☕ THE COUNTER. Bean hires you on their own card; this is turning up. ⭐ the deed waits for the
+    // walk (ctx.then) like every reachable thing in this town, and it returns TRUTHY either way — a
+    // falsy answer here lets banana-town toast ABOUT.cafe ("Not built yet.") straight over the shift.
+    if (key === 'cafe') {
+      const mine = ctx.job && ctx.job();
+      if (!mine || mine.at !== 'cafe') return false;   // not your counter: the kiosk is a building
+      ctx.then(() => { loadCafe().then((c) => { if (c) (c.on() ? c.clockOut() : c.clockIn(view)); }); });
+      return true;
+    }
     // 📦 THE RESTOCK, and it only exists for somebody who works here. ⚠️ it answers BEFORE the till
     // so that a tap on a shelf while you are holding a crate puts the crate down rather than opening a
     // card over your own hands. ⭐ and it only ANSWERS here — the deed waits until the banana has walked
@@ -1228,7 +1256,10 @@ export function bootTownLife(ctx) {
     carrying: () => !!carry,
     restocked: () => restocked(),
     bare: () => bareShelf(),
-    hints: () => hints.map((s2) => s2.key),   // ⚠️ not `lit`: the lamps already own that word on this seam
+    hints: () => hints.map((s2) => s2.key),
+    // ☕ the counter, once its chunk is in: the walk cannot wait on an import it did not ask for
+    cafe: () => (cafe ? cafe.seam : null),
+    cafeReady: () => loadCafe().then((c) => !!c),   // ⚠️ not `lit`: the lamps already own that word on this seam
     chore: (k) => chore(k),
     // ⚠️ the walk cannot play chapter 2, and HOARD_ON is false in the shipped data on purpose — so the
     // only way to see this lock at all is through here, and it is gated on ?towntest like set()
