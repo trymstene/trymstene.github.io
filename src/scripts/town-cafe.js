@@ -216,13 +216,17 @@ export function mountCounter(host, opts = {}) {
     serve(c, label) {
       cup = c;
       shown = stationOf(c);
+      note.textContent = '';
       tickEl.textContent = '';
       for (const k of (DRINKS[c.drink] || [])) el('i', 'tw-cup__pip' + (k === 'bean' ? '' : ' tw-cup__pip--' + k), tickEl);
       go.textContent = label || '';
       go.disabled = false;
       wake();
     },
-    idle(label) { cup = null; sleep(); tickEl.textContent = ''; go.textContent = label || ''; go.disabled = true; needle.hidden = true; fillEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
+    // ⚠️ AN EMPTY TRAY HAS TO SAY WHY. Clocked in with nobody at the rope, the player saw no ticket,
+    // a still gauge and a dead button, with nothing to tell them the counter was working and merely
+    // quiet rather than broken. (Seen on the QA sweep at 360 wide, 20 Sep.)
+    idle(label) { cup = null; sleep(); tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; needle.hidden = true; fillEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
     say(text) { note.textContent = text || ''; },
     // ⚠️ the town's toast docks at bottom 14 and outranks this by 800 of z-index, so it lands square
     // on the gauge unless it is moved. It steps up for as long as the tray is up, and back down after.
@@ -414,7 +418,7 @@ export function bootTownCafe(ctx) {
     on = true;
     served = 0; tips = 0; best = 0; shiftAt = performance.now(); nextAt = 0; line = [];
     standIn();
-    if (!tray) tray = mountCounter(host || world.parentElement, { onCup, label: (k) => (COPY.go || {})[k] || '' });
+    if (!tray) tray = mountCounter(host || world.parentElement, { onCup, label: (k) => (COPY.go || {})[k] || '', idle: () => COPY.idle || '' });
     tray.show();
     tray.idle('');
     if (COPY.on) say(COPY.on);

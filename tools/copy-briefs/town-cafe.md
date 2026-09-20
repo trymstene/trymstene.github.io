@@ -55,6 +55,14 @@ the shift served nothing at all: contented, never a telling-off, because standin
 on a slow afternoon is a perfectly good thing to have done. `receipt.back` is the button that closes
 the card: a verb first, and short enough that it can never wrap onto two lines.
 
+### A quiet counter
+
+`idle` is the small line on the tray when you are behind the counter and there is nobody at the rope
+yet. ⚠️ it is the ONLY thing on an otherwise empty tray — no ticket, no gauge moving, a button that
+does nothing — so it has a real job: it tells the player the counter is working and simply quiet,
+rather than broken. Never a wait time, never “soon”, and never an instruction: not “wait for a
+customer”. Somebody will come, and the rope is where they will stand.
+
 ### The button on the tray
 
 The tray has exactly one button and the thumb lives on it. What it says changes with the station:
