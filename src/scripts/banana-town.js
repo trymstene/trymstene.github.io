@@ -315,8 +315,23 @@ const weather = mountWeather(view);
 let last = performance.now(), leaving = false;
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  // ⭐ NOTHING MOVES BEHIND AN OPEN CARD (Trym, 20 Sep 2026: "when a user opens a popup in bananaworld,
+  // all movement in the background should be locked. it keeps happening that when i click on content in
+  // a popup my banana moves in the background").
+  //
+  // ⚠️ AND THE TAP WAS NEVER THE LEAK. Every guard in this world stops a tap INSIDE a popup from
+  // starting a walk, and all four areas were clean when probed that way. What actually happened is that
+  // opening the card and starting the walk were the SAME tap: tapping a building answers with its card
+  // AND sets a walk target at its door, so the banana set off across the square underneath the thing you
+  // had just opened. Measured on the Exchange: 25 px of travel with the card up.
+  //
+  // So the lock is on the STEP, not on the tap. However a target got set, nothing crosses the square
+  // while a card is up — and the target is pinned to where you stand, so closing the card leaves you
+  // where you were rather than releasing a walk you never asked for.
+  const frozen = !panel.hidden;
+  if (frozen) { tgt.x = pos.x; tgt.y = pos.y; }
   let dx = 0, dy = 0;
-  const kb = panel.hidden;   // 🃏 an open card owns the keyboard (Snake's arrows must not walk the town banana)
+  const kb = !frozen;   // 🃏 an open card owns the keyboard too (Snake's arrows must not walk the town banana)
   if (kb && (keys.arrowleft || keys.a)) dx -= 1;
   if (kb && (keys.arrowright || keys.d)) dx += 1;
   if (kb && (keys.arrowup || keys.w)) dy -= 1;
@@ -331,7 +346,9 @@ function tick(now) {
     else if (!blocked(pos.x, ny)) pos.y = ny;
     else { tgt.x = pos.x; tgt.y = pos.y; }
   }
-  if (arriveThen && Math.hypot(tgt.x - pos.x, tgt.y - pos.y) <= 2) { const f = arriveThen; arriveThen = null; f(); }   // arrived, or stuck: the cabinet opens
+  // ⚠️ and a pending arrival does NOT fire while a card is up: freezing the target would otherwise read
+  // as "arrived" on the very next frame and open a second card over the first.
+  if (!frozen && arriveThen && Math.hypot(tgt.x - pos.x, tgt.y - pos.y) <= 2) { const f = arriveThen; arriveThen = null; f(); }   // arrived, or stuck: the cabinet opens
   me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inRoom ? 2100 : 100) + Math.round(pos.y));
   cam(false);
   drawMe();

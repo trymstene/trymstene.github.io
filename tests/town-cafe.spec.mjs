@@ -496,6 +496,11 @@ test('a shift ends when you walk away, and cannot be started twice or behind a s
   await page.waitForTimeout(400);
 
   // ── clocking in twice is once
+  // ⚠️ THE RECEIPT IS STILL UP from the clock-out above, and since 20 Sep a card owns the world while it
+  // is open — nothing walks behind one, so the walk-then-clock-in this tap arms would sit waiting. A
+  // player cannot reach the kiosk through an open card either; they close it first, so the walk does too.
+  await page.evaluate(() => { const x = document.getElementById('twCardX'); if (x && !document.getElementById('twPanel').hidden) x.click(); });
+  await page.waitForTimeout(300);
   await stand();
   await page.evaluate(() => window.__town.room.open('cafe'));
   await page.waitForFunction(() => window.__town.room.cafe().on(), null, { timeout: 5000 });

@@ -972,6 +972,17 @@ function init() {
       tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30;
       hint(false);
     }
+    // ⭐ NOTHING MOVES BEHIND AN OPEN POPUP (Trym, 20 Sep 2026: "when a user opens a popup in
+    // bananaworld, all movement in the background should be locked. it keeps happening that when i click
+    // on content in a popup my banana moves in the background").
+    //
+    // ⚠️ THE TAP WAS NEVER THE LEAK. Every area already refuses to START a walk from a tap inside its
+    // own chrome, and all four were clean when probed that way. What actually happens is that a walk
+    // ALREADY RUNNING keeps running when a popup opens over it — and in the town, opening a building's
+    // card and setting a walk to its door were the same tap. So the lock belongs on the STEP, not on the
+    // tap: however a target was set, nothing crosses the ground while a popup is up, and the target is
+    // pinned to where you stand so closing it leaves you there rather than releasing a walk.
+    if (document.querySelector('.pk-panel:not([hidden]), .pk-shop:not([hidden])')) { tgt.x = pos.x; tgt.y = pos.y; }
     const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
     const d = Math.hypot(dx, dy);
     if (d > 1.5) {
