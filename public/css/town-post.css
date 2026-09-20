@@ -9,27 +9,76 @@
  * box AROUND a plain <textarea>, so the native caret, selection and keyboard all behave.
  */
 
-/* the stack: letters, newest first, each one a piece of paper you can tap */
 .tw-post { display: grid; gap: 0.5rem; }
 .tw-post h2 { margin: 0; }
+.tw-post__who { font-family: "Archivo Black", sans-serif; font-size: 0.72rem; letter-spacing: 0.02em; }
+/* ⚠️ the peek is ONE line and it is clipped, never wrapped: three letters each three lines deep push
+   the stack past the card and turn a mailbox into a scroller */
+.tw-post__peek { display: block; font-size: 0.78rem; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
+
+/* ---- the new post: SEALED ENVELOPES, and the seal is the art rather than a badge ---------------- */
+/* the pack ships two envelopes, one with a red wax seal and one without, so "new" is a thing you can
+   see from across a room instead of a dot you have to read. 52px each, side by side, wrapping. */
+.tw-post__new { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tw-post__env {
+  appearance: none; font: inherit; cursor: pointer;
+  display: grid; justify-items: center; gap: 2px; padding: 0.4rem 0.45rem 0.35rem;
+  background: #2a2119; color: #fffdf5; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+  min-width: 78px; max-width: 118px;
+}
+.tw-post__env:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+.tw-post__env .tw-post__who { font-size: 0.64rem; text-align: center; overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+.tw-post__stamp {
+  width: 52px; height: 52px; image-rendering: pixelated;
+  background: center/contain no-repeat url('/assets/town/s-letterseal-0.png');
+}
+.tw-post__stamp.is-open { width: 30px; height: 30px; background-image: url('/assets/town/s-letteropen-0.png'); }
+
+/* ---- the kept post: ONE ROW PER PERSON, never one per letter ------------------------------------ */
+.tw-post__of { display: block; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.72; font-weight: 800; margin-top: 0.15rem; }
 .tw-post__stack { display: grid; gap: 0.4rem; }
-.tw-post__let {
+.tw-post__thread {
   appearance: none; text-align: left; cursor: pointer; width: 100%;
-  display: grid; gap: 2px; padding: 0.5rem 0.6rem;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.45rem;
+  padding: 0.4rem 0.55rem; min-height: 44px;
   background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
   font: inherit;
 }
-.tw-post__let:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
-/* an unread letter leans out of the stack a little — the one flourish, and it is a transform */
-.tw-post__let.is-new { transform: rotate(-0.6deg); }
-.tw-post__let.is-new:active { transform: rotate(-0.6deg) translate(1px, 1px); }
-.tw-post__who { font-family: "Archivo Black", sans-serif; font-size: 0.72rem; letter-spacing: 0.02em; }
-/* ⚠️ the peek is ONE line and it is clipped, never wrapped: three unread letters each three lines deep
-   push the stack past the card and turn a mailbox into a scroller */
-.tw-post__peek { font-size: 0.78rem; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
+.tw-post__thread:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+.tw-post__thread.is-new { background: #fff8e2; }
+.tw-post__row { display: grid; gap: 1px; min-width: 0; }
 
-/* an open letter: the whole sheet, and the two things you can do with it */
-.tw-post__open { display: grid; gap: 0.45rem; background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000; padding: 0.6rem; }
+/* ---- an open letter, and the envelope it came out of ------------------------------------------- */
+/* ⭐ THE ENVELOPE COMES OPEN AND THE LETTER COMES OUT (Trym, 20 Sep). Two one-shot animations on
+   TRANSFORM AND OPACITY ONLY (design library §21.4): the envelope lifts off the top of the card and
+   fades, and the sheet rises out from behind where it was. Both run once and then the card is still —
+   nothing animates while you are reading, which is the whole point of a letter. */
+.tw-post__open { position: relative; display: grid; gap: 0.45rem; background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000; padding: 0.6rem; }
+.tw-post__flap {
+  position: absolute; left: 50%; top: 6px; width: 52px; height: 52px; margin-left: -26px; z-index: 2;
+  image-rendering: pixelated; pointer-events: none;
+  background: center/contain no-repeat url('/assets/town/s-letterseal-0.png');
+  animation: twPostFlap 520ms cubic-bezier(0.3, 0, 0.2, 1) forwards;
+}
+@keyframes twPostFlap {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  45% { opacity: 1; transform: scale(1.18) translateY(-6px); }
+  100% { opacity: 0; transform: scale(1.5) translateY(-30px); }
+}
+.tw-post__open.is-opening .tw-post__sheetin { animation: twPostOut 520ms cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+@keyframes twPostOut {
+  0% { opacity: 0; transform: translateY(26px) scaleY(0.82); }
+  40% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+.tw-post__sheetin { display: grid; gap: 0.3rem; transform-origin: 50% 100%; }
+.tw-post__feet { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.5rem; }
+.tw-post__back {
+  appearance: none; font: inherit; cursor: pointer;
+  background: #2a2119; color: #fffdf5; border: 3px solid #000; box-shadow: 2px 2px 0 #000;
+  padding: 0.3rem 0.6rem; font-size: 0.72rem; white-space: nowrap;
+}
+.tw-post__back:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
 /* ⚠️ break-word, not just wrap: a letter is player-typed and one 400-character word is a letter a
    player CAN send — it would otherwise run straight off the side of the card */
 .tw-post__body { margin: 0; font-size: 0.84rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -58,5 +107,9 @@
 .tw-post__none { margin: 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.85; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tw-post__let:active, .tw-post__let.is-new, .tw-post__let.is-new:active { transform: none; }
+  /* ⚠️ the envelope still GOES — it just does not fly. A player who asked for stillness must still end
+     up looking at the letter rather than at an envelope parked on top of it. */
+  .tw-post__flap { animation: none; opacity: 0; }
+  .tw-post__open.is-opening .tw-post__sheetin { animation: none; }
+  .tw-post__env:active, .tw-post__thread:active, .tw-post__back:active { transform: none; }
 }

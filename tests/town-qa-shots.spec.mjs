@@ -366,14 +366,18 @@ test('the post office mailbox', async ({ page }) => {
 
   await page.evaluate(() => window.__town.post().set({ letters: [
     { id: 'a1', from: 'pip-yard', at: Date.now(), read: false, text: 'Your sunflowers are enormous this year. Mine came to nothing again, as usual.' },
+    { id: 'a4', from: 'dot-yard', at: Date.now() - 1e4, read: false, text: 'The info point lost its map again. Nobody knows where anything is.' },
     { id: 'a2', from: 'moss-yard', at: Date.now() - 9e5, read: true, text: 'Thanks for the eggs. The hens send nothing back, but they never do.' },
-  ], unread: 1 }));
+    { id: 'a3', from: 'stamp-yard', at: Date.now() - 2e6, read: true, text: 'The scale is stuck at four again. It has opinions.' },
+  ], unread: 2 }));
   await page.waitForTimeout(300);
   await page.screenshot({ path: SHOT + '34-mailbox-stack.png' });
 
-  await page.evaluate(() => window.__town.post().tap('.tw-post__let'));
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: SHOT + '35-letter-open.png' });
+  await page.evaluate(() => window.__town.post().tap('.tw-post__env'));
+  await page.waitForTimeout(140);
+  await page.screenshot({ path: SHOT + '35-letter-opening.png' });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: SHOT + '35b-letter-open.png' });
 
   await page.evaluate(() => window.__town.post().tap('#twPostReply'));
   await page.waitForTimeout(300);

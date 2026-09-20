@@ -49,13 +49,13 @@ test('a letter opens, and reporting it takes it out of the box on the tap', asyn
   const errs = await box(page);
   await put(page, LETTERS);
   await page.waitForTimeout(200);
-  expect(await page.locator('.tw-post__let').count(), 'two letters in the stack').toBe(2);
-  expect(await page.locator('.tw-post__let.is-new').count(), 'one of them unread').toBe(1);
+  expect(await page.locator('.tw-post__env').count(), 'the unread one is a sealed envelope').toBe(1);
+  expect(await page.locator('.tw-post__thread').count(), 'and the read one is filed under who wrote it').toBe(1);
   // ⚠️ the peek is one clipped line: three unread letters three lines deep turn a mailbox into a scroller
   const wraps = await page.evaluate(() => [...document.querySelectorAll('.tw-post__peek')].map((e) => e.getBoundingClientRect().height));
-  for (const h of wraps) expect(h, 'a letter’s peek is one line').toBeLessThan(26);
+  for (const h of wraps) expect(h, 'a row’s peek is one line').toBeLessThan(26);
 
-  await page.evaluate(() => window.__town.post().tap('.tw-post__let'));
+  await page.evaluate(() => window.__town.post().tap('.tw-post__env'));
   await page.waitForTimeout(200);
   expect(await page.locator('.tw-post__body').count(), 'it opens').toBe(1);
 
@@ -73,7 +73,7 @@ test('a letter opens, and reporting it takes it out of the box on the tap', asyn
 test('a refusal never says which rule it hit', async ({ page }) => {
   const errs = await box(page);
   await put(page, LETTERS);
-  await page.evaluate(() => window.__town.post().tap('.tw-post__let'));
+  await page.evaluate(() => window.__town.post().tap('.tw-post__env'));
   await page.waitForTimeout(150);
   await page.evaluate(() => window.__town.post().tap('#twPostReply'));
   await page.waitForTimeout(200);
@@ -112,7 +112,7 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
 
     // ⚠️ AN UNBROKEN 400-CHARACTER WORD IS A LETTER A PLAYER CAN SEND. Without break-anywhere it runs
     // straight off the side of the card and turns it into a horizontal scroller.
-    await page.evaluate(() => { const els = [...document.querySelectorAll('.tw-post__let')]; els[els.length - 1].click(); });
+    await page.evaluate(() => { const els = [...document.querySelectorAll('.tw-post__env')]; els[els.length - 1].click(); });
     await page.waitForTimeout(200);
     const opened = await page.evaluate(() => {
       const b = document.getElementById('twCardBody');
@@ -123,3 +123,77 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     expect(errs).toEqual([]);
   });
 }
+
+// ⭐ A MAILBOX THAT DOES NOT BECOME A SCROLL (Trym, 20 Sep: "letters need to be sorted well if a user
+// receives and sends alot of letters, so you dont have to scroll forever through old stuff").
+//
+// Sixty letters from eight people is EIGHT rows, not sixty — letters are correspondence, so the
+// correspondent is the unit, and every row is a conversation you can open. The new post stays separate
+// and stays envelopes: that is the part you came to see.
+test('sixty letters from eight people is eight rows, and the new post stays on top', async ({ page }) => {
+  const errs = await box(page);
+  const people = ['pip', 'moss', 'dot', 'nib', 'bean', 'stamp', 'spinner', 'figjr'];
+  const many = [];
+  for (let i = 0; i < 60; i++) {
+    many.push({ id: 'L' + i, from: people[i % people.length] + '-yard', at: Date.now() - i * 60000, read: true, text: 'letter number ' + i + ', about the weather and the fountain' });
+  }
+  many.push({ id: 'new1', from: 'ada-far', at: Date.now(), read: false, text: 'a letter that has not been opened' });
+  await put(page, many);
+  await page.waitForTimeout(300);
+
+  const m = await page.evaluate(() => ({
+    envelopes: document.querySelectorAll('.tw-post__env').length,
+    rows: document.querySelectorAll('.tw-post__thread').length,
+    cardScroll: (() => { const c = document.querySelector('.tw-card'); return c.scrollHeight - c.clientHeight; })(),
+    threads: window.__town.post().state().threads,
+  }));
+  expect(m.envelopes, 'the unopened letter is an envelope on top').toBe(1);
+  expect(m.rows, '⭐ sixty letters become eight rows, one per person').toBe(8);
+  expect(m.threads.reduce((a, t) => a + t.n, 0), 'and every letter is still in there').toBe(60);
+  // ⚠️ 8 rows + 1 envelope in a 440px card still scrolls a little, and that is fine — what must never
+  // happen is the sixty-row version, which is roughly seven screens deep
+  expect(m.cardScroll, 'the whole mailbox is about one screen, not seven').toBeLessThan(440);
+
+  // ── a row opens that person's letters, newest first, and back goes back one step
+  await page.evaluate(() => window.__town.post().tap('.tw-post__thread'));
+  await page.waitForTimeout(250);
+  const inThread = await page.evaluate(() => window.__town.post().state());
+  expect(inThread.thread, 'the row opened a conversation').toBeTruthy();
+  const order = await page.evaluate(() => [...document.querySelectorAll('.tw-post__thread .tw-post__peek')].map((e) => e.textContent));
+  expect(order.length, 'their letters are all in there').toBeGreaterThan(1);
+  expect(order[0], 'newest first').toContain('letter number');
+
+  await page.evaluate(() => window.__town.post().tap('#twPostBack'));
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.__town.post().state().thread), 'and back goes back to the mailbox').toBeFalsy();
+  expect(errs).toEqual([]);
+});
+
+// ✉️ the envelope comes open and the letter comes out — once, and then the card is still
+test('the envelope opens, and does not open again while you are reading', async ({ page }) => {
+  const errs = await box(page);
+  await put(page, LETTERS);
+  await page.evaluate(() => window.__town.post().tap('.tw-post__env'));
+  await page.waitForTimeout(80);
+  const during = await page.evaluate(() => ({
+    opening: window.__town.post().state().opening,
+    flap: document.querySelectorAll('.tw-post__flap').length,
+    anim: (() => { const e = document.querySelector('.tw-post__flap'); return e ? getComputedStyle(e).animationName : ''; })(),
+  }));
+  expect(during.opening, 'the envelope is coming open').toBe(true);
+  expect(during.flap, 'and it is on screen while it does').toBe(1);
+  expect(during.anim, '⚠️ transform and opacity only — the design gate reads this stylesheet now').toBe('twPostFlap');
+
+  await page.waitForTimeout(700);
+  // ⚠️ a re-render while you are reading — a reply, a report — must not play the envelope again over a
+  // letter that is already open
+  await page.evaluate(() => window.__town.post().tap('#twPostReply'));
+  await page.waitForTimeout(150);
+  await page.evaluate(() => window.__town.post().tap('#twPostBack'));
+  await page.waitForTimeout(200);
+  const after = await page.evaluate(() => ({ opening: window.__town.post().state().opening, flap: document.querySelectorAll('.tw-post__flap').length, body: document.querySelectorAll('.tw-post__body').length }));
+  expect(after.opening, 'the envelope is done').toBe(false);
+  expect(after.flap, 'and gone').toBe(0);
+  expect(after.body, 'the letter is still open and readable').toBe(1);
+  expect(errs).toEqual([]);
+});

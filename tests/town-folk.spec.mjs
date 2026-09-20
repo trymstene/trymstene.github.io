@@ -153,3 +153,57 @@ test('the square empties at nightfall, and a poor town is a quiet one', async ({
   expect(await page.evaluate(() => window.__town.room.folk().cap()), 'and a Thriving one is busy again').toBeGreaterThan(3);
   expect(errors).toEqual([]);
 });
+
+// 🪑 A BANANA SITTING ON A BENCH OVERFLOWS IT.
+//
+// Trym, 20 Sep: "when a banana sits on a bench he must overflow the bench, they now sit behind the
+// bench visually." Everything outdoors sorts by `100 + y` and a SEAT is above the bench's own foot,
+// so a sitter at base - 2 sorted two BEHIND the bench it was sitting on and the backrest was painted
+// over its whole body. The fix decouples a sitter's z from its y; this is what holds it there.
+test('a sitter is drawn over the bench, and on it', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(52); });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.waitForTimeout(500);
+
+  const seats = await page.evaluate(() => {
+    const f = window.__town.room.folk();
+    f.fill(8, performance.now());
+    return f.benches().map((b, i) => f.seat(i, b.key)).filter(Boolean);
+  });
+  expect(seats.length, 'somebody is sitting on at least three benches').toBeGreaterThan(2);
+  await page.waitForTimeout(300);
+
+  const pairs = await page.evaluate((keys) => {
+    const out = [];
+    // ⚠️ MATCHED BY NAME, NOT BY Z. Two benches on the same line share a base and therefore a z, so
+    // "the overlay two below this sitter" picked whichever of them came first and measured a banana
+    // against a bench 121 px away. The seat's own key is the only honest pairing.
+    const ovs = window.__town.OVERLAYS;
+    for (const key of keys) {
+      const row = ovs.find((o) => o[6] === key);
+      const img = row && [...document.querySelectorAll('img.tw-ov')].find((e) => e.src.endsWith('/' + row[0]));
+      const v = [...document.querySelectorAll('.tw-visitor')].find((e) => Math.abs(+e.style.zIndex - (100 + row[5] + 2)) < 1
+        && Math.abs(e.getBoundingClientRect().left + e.getBoundingClientRect().width / 2 - (img.getBoundingClientRect().left + img.getBoundingClientRect().width / 2)) < 90);
+      if (!img || !v) continue;
+      const r = v.getBoundingClientRect(), q = img.getBoundingClientRect();
+      out.push({ key, z: +v.style.zIndex, bz: +img.style.zIndex, v: [r.left, r.top, r.right, r.bottom], b: [q.left, q.top, q.right, q.bottom] });
+    }
+    return out;
+  }, seats.map((s) => s.key));
+  expect(pairs.length, 'each sitter was matched to the bench it is sitting on').toBeGreaterThan(2);
+  for (const p of pairs) {
+    expect(p.z, '⚠️ a sitter draws IN FRONT of its bench, never behind it').toBeGreaterThan(p.bz);
+    // …and it is ON it: the body overlaps the seat rather than floating above the backrest
+    const over = Math.min(p.v[3], p.b[3]) - Math.max(p.v[1], p.b[1]);
+    expect(over, 'the banana overlaps the bench vertically').toBeGreaterThan(12);
+    const across = Math.min(p.v[2], p.b[2]) - Math.max(p.v[0], p.b[0]);
+    expect(across, '…and horizontally').toBeGreaterThan(12);
+    // the feet reach past the seat's top edge — a banana perched above the backrest is not sitting
+    expect(p.v[3], 'the feet are below the top of the bench').toBeGreaterThan(p.b[1]);
+  }
+  expect(errors).toEqual([]);
+});

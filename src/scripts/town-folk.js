@@ -23,7 +23,7 @@
 // VISUALLY looks LEFT, and frame 4 (`face:'left'`) VISUALLY looks RIGHT. Verified on the beach by
 // cropping banana-dance.png, and that is where the sitting pair comes from — Banana Bay has sat
 // bananas on chairs since July with exactly these two frames.
-import { STREETS, SPOTS, SEATS } from './town-geo.js';
+import { STREETS, SPOTS, SEATS, OB_RECTS, OB_CIRCLES } from './town-geo.js';
 
 const F_LEFT = 0, F_RIGHT = 4;      // the side-facing crouch the beach sits its bananas on
 const WALK = 96;                    // px a second — a stroll, slower than the player's 168
@@ -54,6 +54,78 @@ const GATES = [
 // streets that overlap are an intersection — so the graph IS the data, and re-baking the town cannot
 // leave a visitor walking through a building because somebody forgot to move a waypoint.
 const mid = (r) => ({ x: (r[0] + r[2]) / 2, y: (r[1] + r[3]) / 2 });
+
+// ⛔ …AND THE STREETS HAVE THE PROPS CUT OUT OF THEM. Trym, 20 Sep: "the visiting roaming bananas
+// overflows some objects in the town, the fountain they just walk right through." They did, and it was
+// never one bad waypoint: STREETS is the walkable GROUND and the plaza is one rectangle 880×380 with
+// the fountain, both market stalls, the notice board, the cart, two planters and two benches standing
+// inside it. route() drew a straight line across that rectangle and the visitor walked through
+// whatever stood on the way — the player never did, because the player is stopped by the same
+// colliders these lanes ignored.
+//
+// So the lanes are the streets MINUS the colliders, carved here from the very same OB_RECTS and
+// OB_CIRCLES the player is stopped by. A vertical-slab cut per street, runs with the same gap merged
+// back into wide rectangles, and the result is a graph that cannot contain a prop — today, or after
+// somebody moves one, because it is derived and not drawn. tools/check-town-lanes.mjs holds both
+// halves of the promise: no lane carries an obstacle, and the lanes are still ONE connected place.
+const PAD = 6;   // a banana has width; skimming a collider's corner still reads as walking through it
+const BOXES = [
+  ...OB_RECTS.map((r) => [r[0] - PAD, r[1] - PAD, r[2] + PAD, r[3] + PAD]),
+  ...OB_CIRCLES.map((c) => [c[0] - c[2] - PAD, c[1] - c[2] - PAD, c[0] + c[2] + PAD, c[1] + c[2] + PAD]),
+];
+const MIN_LANE = 26;   // a slice thinner than a banana is not a lane, it is a seam between two props
+
+function carve(st) {
+  const hit = BOXES.filter((b) => b[0] < st[2] && b[2] > st[0] && b[1] < st[3] && b[3] > st[1]);
+  if (!hit.length) return [st];
+  // the x where anything starts or stops blocking, clipped to the street
+  const xs = [...new Set([st[0], st[2], ...hit.flatMap((b) => [b[0], b[2]])])]
+    .filter((x) => x >= st[0] && x <= st[2]).sort((p, q) => p - q);
+  const out = [];
+  for (let i = 0; i < xs.length - 1; i++) {
+    const x0 = xs[i], x1 = xs[i + 1];
+    if (x1 - x0 < 1) continue;
+    // what blocks this slab, as y spans, merged
+    const spans = hit.filter((b) => b[0] < x1 && b[2] > x0)
+      .map((b) => [Math.max(b[1], st[1]), Math.min(b[3], st[3])])
+      .sort((p, q) => p[0] - q[0]);
+    let y = st[1];
+    const free = [];
+    for (const [a0, a1] of spans) {
+      if (a0 - y >= MIN_LANE) free.push([y, a0]);
+      y = Math.max(y, a1);
+    }
+    if (st[3] - y >= MIN_LANE) free.push([y, st[3]]);
+    for (const [y0, y1] of free) {
+      // ⬅ merge straight back onto the slab to its left when the gap is the same one: without this a
+      // street becomes forty thin columns and a visitor zig-zags across it, one waypoint per seam.
+      const last = out[out.length - 1];
+      if (last && last[2] === x0 && last[1] === y0 && last[3] === y1) last[2] = x1;
+      else out.push([x0, y0, x1, y1]);
+    }
+  }
+  return out;
+}
+
+const LANES = STREETS.flatMap(carve);
+
+// ⭐ AND NOBODY IS SENT SOMEWHERE THEY CANNOT STAND. The lanes being clean fixes the WALK; this fixes
+// the DESTINATION. Two of the "stand about" spots sit behind a prop — the info kiosk's own anchor is
+// under the kiosk, the terrace's is under the terrace table — so the last straight line to them went
+// through it, however clean the lanes were. A spot on no lane is pulled to the nearest edge of the
+// nearest one: the visitor stands beside the kiosk instead of inside it. A SEAT is never snapped, for
+// the opposite reason — a sitter is meant to be inside the bench (that is what sitting looks like).
+function nearLane(x, y) {
+  if (LANES.some((L) => inRect(L, x, y))) return { x, y };
+  let best = { x, y }, d = Infinity;
+  for (const L of LANES) {
+    const cx = Math.max(L[0] + 8, Math.min(x, L[2] - 8));
+    const cy = Math.max(L[1] + 8, Math.min(y, L[3] - 8));
+    const k = Math.hypot(cx - x, cy - y);
+    if (k < d) { d = k; best = { x: cx, y: cy }; }
+  }
+  return best;
+}
 // ⚠️ TOUCHING IS CONNECTED. The scene builder lays streets edge to edge — the plaza's top edge IS
 // the north street's bottom edge, at y 660 exactly — so a strict overlap test finds no intersection
 // and the whole middle of the square becomes an ISLAND. route() then falls back to a straight line
@@ -69,18 +141,18 @@ const overlap = (a, b) => {
     y: Math.max(Math.max(a[1], b[1]), Math.min((y0 + y1) / 2, Math.min(a[3], b[3]))) };
 };
 const inRect = (r, x, y) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
-const LINKS = STREETS.map(() => []);
-for (let i = 0; i < STREETS.length; i++) {
-  for (let j = i + 1; j < STREETS.length; j++) {
-    const o = overlap(STREETS[i], STREETS[j]);
+const LINKS = LANES.map(() => []);
+for (let i = 0; i < LANES.length; i++) {
+  for (let j = i + 1; j < LANES.length; j++) {
+    const o = overlap(LANES[i], LANES[j]);
     if (o) { LINKS[i].push({ to: j, at: o }); LINKS[j].push({ to: i, at: o }); }
   }
 }
 // the street a point is on, or the nearest one to it
 function streetAt(x, y) {
-  for (let i = 0; i < STREETS.length; i++) if (inRect(STREETS[i], x, y)) return i;
+  for (let i = 0; i < LANES.length; i++) if (inRect(LANES[i], x, y)) return i;
   let best = 0, d = Infinity;
-  STREETS.forEach((r, i) => { const m = mid(r), k = Math.hypot(m.x - x, m.y - y); if (k < d) { d = k; best = i; } });
+  LANES.forEach((r, i) => { const m = mid(r), k = Math.hypot(m.x - x, m.y - y); if (k < d) { d = k; best = i; } });
   return best;
 }
 // a walk from here to there, as the crossings between the streets that get you from one to the other
@@ -142,7 +214,13 @@ export function bootTownFolk(ctx) {
   // at base + 6 paints IN FRONT of the bench and reads as standing beside it with its feet dangling.
   // Two pixels the other side and the bench's front slats draw over its legs — which is what sitting
   // on a bench looks like, and the same trick the café's window uses on a bigger scale.
-  const BENCHES = (SEATS || []).map(([key, x, base, face]) => ({ key, x, y: base - 2, face, taken: false }));
+  // ⚠️ A SITTER OVERFLOWS THE BENCH, and that needs its Z to be decoupled from its Y. Everything
+  // outdoors sorts by `100 + y`, and a seat is ABOVE the bench's own foot — so a banana sitting at
+  // base - 2 sorted two behind the bench it was sitting on and was drawn with the backrest over its
+  // whole body. Trym, 20 Sep: "when a banana sits on a bench he must overflow the bench, they now sit
+  // behind the bench visually." It keeps its seat position and takes the bench's z plus two, so the
+  // bench peeks out either side and below it, which is what somebody sitting on one looks like.
+  const BENCHES = (SEATS || []).map(([key, x, base, face]) => ({ key, x, y: base - 2, z: 100 + base + 2, face, taken: false }));
   // the shopfronts a banana might disappear into for a while
   const DOORS = ['store', 'condo', 'post', 'hall', 'print', 'cafe'].filter((k) => PROPS[k]).map((k) => {
     const p = PROPS[k];
@@ -197,7 +275,7 @@ export function bootTownFolk(ctx) {
     } else if (roll < 0.72) {
       v.job = 'stand'; v.until = 0;
       const s = SPOTS[pick(v.r, ['exchange', 'wheel', 'board', 'cart', 'info', 'monument', 'terrace'])] || SPOTS.board;
-      go(v, { x: s.x + (v.r() - 0.5) * 90, y: s.y + 30 }, head);
+      go(v, nearLane(s.x + (v.r() - 0.5) * 90, s.y + 30), head);
     } else {
       v.job = 'leave';
       goGate(v, head);
@@ -297,7 +375,7 @@ export function bootTownFolk(ctx) {
     }
     v.el.style.left = pct(v.x, W);
     v.el.style.top = pct(v.y, H);
-    v.el.style.zIndex = String(100 + Math.round(v.y));
+    v.el.style.zIndex = String(v.sitting && v.seat ? v.seat.z : 100 + Math.round(v.y));
   }
 
   function tick(now, dt) {
@@ -357,7 +435,21 @@ export function bootTownFolk(ctx) {
       count: () => folk.length,
       folk: () => folk.map((v) => ({ x: Math.round(v.x), y: Math.round(v.y), job: v.job, sitting: !!v.sitting, frame: v.drawn, hat: v.outfit.hat, hidden: !!v.el.hidden, pat: v.pat == null ? null : v.pat, held: Object.keys(v.outfit.extras || {}).filter((k) => v.outfit.extras[k]) })),
       gates: () => GATES.map((g) => ({ at: { ...g.at }, on: { ...g.on } })),
-      benches: () => BENCHES.map((b) => ({ key: b.key, x: b.x, y: b.y, taken: b.taken })),
+      benches: () => BENCHES.map((b) => ({ key: b.key, x: b.x, y: b.y, z: b.z, taken: b.taken })),
+      // 🪑 SIT SOMEBODY DOWN NOW. A bench is a one-in-three roll on an errand that takes half a
+      // minute to walk, so proving a sitter draws OVER its bench meant standing in the square hoping.
+      // This puts a visitor on a named bench in one call — same seat, same frames, same z the ordinary
+      // path uses, so what the walk photographs is the real thing and not a staged copy.
+      seat(i, key) {
+        const v = folk[i | 0], b = BENCHES.find((x) => x.key === key) || BENCHES[0];
+        if (!v || !b) return null;
+        if (v.seat) v.seat.taken = false;
+        b.taken = true; v.seat = b; v.job = 'sit'; v.path = [];
+        v.x = b.x; v.y = b.y;
+        arrive(v, performance.now());
+        paint(v);
+        return { key: b.key, x: b.x, y: b.y, z: +v.el.style.zIndex };
+      },
       // the walk cannot stand in the square for twenty minutes waiting for a crowd
       fill: (n, now) => { for (let i = 0; i < (n || MAX); i++) spawn(now || performance.now()); return folk.length; },
       routeTo: (x, y) => route({ x: 1100, y: 1230 }, { x, y }).length,
@@ -368,6 +460,8 @@ export function bootTownFolk(ctx) {
       cap: () => capNow(),
       dump: () => folk.map((v) => ({ job: v.job, path: v.path.length, until: Math.round(v.until || 0), x: Math.round(v.x), y: Math.round(v.y), hid: !!(v.el && v.el.hidden) })),
       links: () => LINKS.map((l, i) => ({ i, to: l.map((k) => k.to) })),
+      lanes: () => LANES.map((r) => r.slice()),
+      nearLane,
     },
   };
 }

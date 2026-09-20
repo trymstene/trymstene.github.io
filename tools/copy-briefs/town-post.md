@@ -62,6 +62,15 @@ the counter is closed, come back — and it is not an error and not an apology. 
 `from` is the small label over who a letter came from. One or two words, and it MUST contain
 `{who}` — the game puts the sender's name there.
 
+`threads` is the small heading over the older post, under the new envelopes. Under it sits one row
+per person you have letters from — not one row per letter — so a mailbox with sixty letters from
+eight people is eight rows rather than sixty. One or two words, the way you would label a drawer of
+kept correspondence. It is set in capitals by the stylesheet.
+
+`back` is the button that goes back up a level — from an open letter to the list, or from one
+person's letters to the mailbox. A verb first, one or two words, one line, and it has to make sense
+in BOTH of those places.
+
 ### An open letter
 
 `report` is the button under an open letter that reports it. A verb first, two or three words, and

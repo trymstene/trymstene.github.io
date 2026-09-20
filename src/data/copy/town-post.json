@@ -4,6 +4,8 @@
   "empty": "No letters in your mailbox. Its corners are very orderly.",
   "shut": "The post counter is closed. The scale is having a quiet moment.",
   "from": "From {who}",
+  "threads": "Kept Letters",
+  "back": "Go back",
   "report": "Report this letter",
   "reported": "The letter has left your mailbox. It will be read.",
   "reply": "Write back",

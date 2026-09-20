@@ -659,6 +659,8 @@ const postFields = {
   empty: { kind: 'prose', aim: 78, max: 105, note: 'The whole of the card when there is no post at all. ⭐ THIS IS THE MOST-READ STRING IN THE JOB — an empty box is what most players will find for a long time, so it has to be a pleasant place to land rather than a failure. One or two short lines. It may not promise post is coming and may not tell anybody to go and write one.' },
   shut: { kind: 'prose', aim: 66, max: 90, note: 'Replaces the letters when the post is not running at all. An ordinary, temporary thing — the counter is closed. Not an error and not an apology. Never “server”, never “down”, never “error”, never a time.' },
   from: { kind: 'label', aim: 10, max: 18, holds: ['{who}'], note: 'The small label over who a letter came from. One or two words, MUST contain {who} — the game puts the sender’s name there.' },
+  threads: { kind: 'label', aim: 10, max: 16, note: 'The small heading over the older post, under the new envelopes. Under it is one row per PERSON you have letters from, not one row per letter — sixty letters from eight people is eight rows. One or two words, the way you would label a drawer of kept correspondence. Set in capitals by the stylesheet.' },
+  back: { kind: 'label', aim: 8, max: 14, note: 'The button that goes back up a level — from an open letter to the list, and from one person’s letters to the mailbox. A verb first, one or two words, one line, and it must make sense in BOTH of those places.' },
   report: { kind: 'label', aim: 14, max: 20, note: 'The button under an open letter that reports it. A verb first, two or three words, plain — this is a normal thing a person might do, not an accusation. One line, always.' },
   reported: { kind: 'prose', aim: 66, max: 88, note: 'The one line after they tap it: the letter is gone from their box and somebody will read it. Matter-of-fact and brief. It must not thank them, must not praise them, and must not say what happens to the sender, because nobody knows yet.' },
   reply: { kind: 'label', aim: 12, max: 18, note: 'The button that opens the sheet to write back. A verb first, two or three words, one line.' },
@@ -688,7 +690,7 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'shut', 'from', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
+  required: ['front', 'title', 'empty', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
   properties: Object.fromEntries(Object.entries(postFields).map(([k, v]) => [k, str(v.note)])),
 };
 
@@ -717,7 +719,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'shut', 'from', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
+    top: ['front', 'title', 'empty', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,

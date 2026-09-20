@@ -21,15 +21,15 @@ export const LOOK = {
   // (rubbish piles and graffiti are not a shared look: they come only as a player's own
   //  problems, src/data/town/problems.js, so what you can fix is what you see)
   abandoned:  { lampsOut: 5, lampsFlicker: 2, windowsDark: 0.8, shut: ['cafe', 'info', 'store'], litter: 2,
-                bins: 3, dumps: 2, fountain: 'dry', outside: 0.4, crows: 3, visitors: 0, decor: 0, dayghost: 1 },
+                bins: 3, dumps: 2, fountain: 'dry', outside: 0.4, crows: 3, visitors: 0, dayghost: 1 },
   struggling: { lampsOut: 3, lampsFlicker: 2, windowsDark: 0.5, shut: ['cafe'], litter: 1,
-                bins: 2, dumps: 1, fountain: 'on', outside: 0.7, crows: 2, visitors: 0, decor: 0, dayghost: 0 },
+                bins: 2, dumps: 1, fountain: 'on', outside: 0.7, crows: 2, visitors: 0, dayghost: 0 },
   recovering: { lampsOut: 1, lampsFlicker: 1, windowsDark: 0.2, shut: [], litter: 1,
-                bins: 1, dumps: 1, fountain: 'on', outside: 0.9, crows: 1, visitors: 0, decor: 0, dayghost: 0 },
+                bins: 1, dumps: 1, fountain: 'on', outside: 0.9, crows: 1, visitors: 0, dayghost: 0 },
   lively:     { lampsOut: 0, lampsFlicker: 0, windowsDark: 0, shut: [], litter: 0,
-                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 1, decor: 1, dayghost: 0 },
+                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 1, dayghost: 0 },
   thriving:   { lampsOut: 0, lampsFlicker: 0, windowsDark: 0, shut: [], litter: 0,
-                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 3, decor: 2, dayghost: 0 },
+                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 3, dayghost: 0 },
 };
 
 // 🔁 HOW MUCH THERE IS TO DO — and it is the same at every band (19 Sep 2026).
@@ -70,11 +70,5 @@ export const WAVES = 4;
 // 0.62 here read as a black screen (14 Sep). Dark enough to change the town, light enough to see it.
 export const NIGHT = { evening: 0.2, night: 0.5, hush: 0.3, curse: 0.5 };   // a hush is cosmetic: dusk, not midnight; each a step darker 15 Sep (Trym)
 
-// where the décor hangs (world px, the base of a lantern): the two stalls first, then
-// the terrace and the gardens as the town climbs
-export const DECOR_SPOTS = [
-  [[742, 700], [858, 700], [1342, 700], [1458, 700]],                       // lively: the stalls
-  [[1670, 1170], [1870, 1170], [1730, 700], [500, 700]],                    // thriving: the terrace and the gardens
-];
 // where visitors stand about (feet, world px), facing into the square
 export const VISITOR_SPOTS = [[1010, 905], [1190, 905], [900, 1000], [1310, 1000], [1600, 1200]];

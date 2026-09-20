@@ -32,7 +32,7 @@ import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shi
 import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, OVERLAYS } from './town-geo.js';
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
-import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
+import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, MERCHANT, CURSE_SHELF } from '../data/town/stock.js';
 import { TODAY, TODAY_N, ODD_SPOTS, CLOSABLE } from '../data/town/today.js';
@@ -269,6 +269,10 @@ export function bootTownLife(ctx) {
   // be tapped where its icon was. Two places, two behaviours: now it is one exported constant, and
   // tools/check-design.mjs §24 fails the build if a second copy of the numbers appears.
   const LAMP_HIT = { lift: 118, grab: 54, tall: 190 };
+  // 🗑️ the eight kinds of dropped rubbish, and `pile` is the heap the bag rule keeps apart from
+  // its own kind (LITTER_GAP below). Every one of them is a thing you can name — see the note in
+  // tools/build-town-scene.py for why none of them is grey any more.
+  const LITTER_ART = ['pile', 'trash1', 'trash2', 'trash3', 'trash4', 'trash5', 'trash6', 'trash7'];
   const mark = (x, y, lift, z, icon) => { const m = document.createElement('i'); m.className = 'tw-mark'; m.style.left = pct(x, W); m.style.top = pct(y, H); m.style.zIndex = String(z != null ? z : 100 + Math.round(y) - 1);
     if (icon) { const ic = document.createElement('span'); ic.className = 'tw-mark__ic'; ic.innerHTML = iconSvg('tools', { size: 18 }); ic.style.top = (-(lift || 40)) + 'px'; m.appendChild(ic); } world.appendChild(m); return m; };
   const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof): a thing that merely vanishes
@@ -296,7 +300,7 @@ export function bootTownLife(ctx) {
 
   // ══════════════════════════════════ the condition ═══════════════════════════════════
   // the look of the band, seeded by the day: the same dark lamps for everyone today
-  const cond = { lamps: {}, shut: new Set(), fountainDry: false, full: new Set(), crows: [], visitors: [], decor: [], dayghost: null, fixedShut: new Set() };
+  const cond = { lamps: {}, shut: new Set(), fountainDry: false, full: new Set(), crows: [], visitors: [], dayghost: null, fixedShut: new Set() };
   const propOf = (key) => PROPS[key] || null;
   // a crow on a perch paints OVER the prop it sits on (the fountain is a keyed animation, not an overlay)
   const perchZ = (key) => (key === 'fountain' ? 900 : propOf(key) ? propOf(key).base : 1000) + 2;
@@ -348,8 +352,15 @@ export function bootTownLife(ctx) {
       const b = body(x, y, { hat: hats[Math.floor(h(d, 11, i) * hats.length)], glasses: gl[Math.floor(h(d, 12, i) * gl.length)] });
       bodies.add(b); cond.visitors.push(b);
     });
-    cond.decor.forEach(kill); cond.decor = [];
-    DECOR_SPOTS.slice(0, look.decor).flat().forEach(([x, y]) => { const s = sprite('lantern', x, y, { fps: 4, mode: 'pulse' }); if (s) { s.el.hidden = true; cond.decor.push(s); } });
+    // ❌ THE DÉCOR LANTERNS ARE GONE, and the reason is a rule rather than a taste. A thriving town
+    // hung four and then eight pulsing lanterns about the square at nightfall — scenery, nothing else.
+    // Trym asked about them twice: first "the lantern that shows up as a pickup / cleaning-thing — not
+    // sure why its there", then, once its sprite was fixed, "why is there lanterns showing up in the
+    // middle of the way in nighttime, dont need those if they dont add any mechanics or gameplay." A
+    // glowing, pulsing thing standing in the walkway is the town's own vocabulary for SOMETHING TO DO
+    // (the chore halo, the restock invitation, the full bin), so pure decoration wearing that costume
+    // lies to the player every night. The band still shows itself through the lamps, the shut fronts,
+    // the fountain, the crows and who is standing about — all of which mean something.
     kill(cond.dayghost); cond.dayghost = null;
     // ⚠️ A WISP BY DAYLIGHT. This is the one call that makes the night's chunk a DAY dependency, and
     // it is why loadDusk() is not gated on the clock: a low band draws one at noon.
@@ -602,10 +613,10 @@ export function bootTownLife(ctx) {
       const onProp = p.type === 'crows' || p.type === 'graffiti';
       const my = onProp && pb != null ? pb + 4 : p.y;
       p.el = mark(p.x, my, 150, pb != null ? 100 + pb + 3 : null, p.type === 'lamp');
-      if (p.type === 'litter') p.sprite = sprite(['pile', 'trash1', 'trash2', 'trash3'][Math.floor(h(seed, i, 4) * 4)], p.x, p.y);
+      if (p.type === 'litter') p.sprite = sprite(LITTER_ART[Math.floor(h(seed, i, 8) * LITTER_ART.length)], p.x, p.y);
       else if (p.type === 'graffiti') p.sprite = sprite(h(seed, i, 2) < 0.5 ? 'graffiti1' : 'graffiti2', p.x, p.y, { z: (propOf(p.key) || { base: p.y }).base + 1 });
       else if (p.type === 'crows') p.sprite = sprite('crow', p.x, p.y, { fps: 2, z: perchZ(p.key) });
-      else if (p.type === 'leaves') { const s = sprite('trash1', p.x, p.y); if (s) { s.el.firstChild.src = '/assets/park/l-leaf' + (1 + (i % 2)) + '.png'; p.sprite = s; } }
+      else if (p.type === 'leaves') { const s = sprite('leaf', p.x, p.y); if (s) { s.el.firstChild.src = '/assets/park/l-leaf' + (1 + (i % 2)) + '.png'; p.sprite = s; } }
       problems.push(p); placed++;
       glowProblem(p);
     }
@@ -985,6 +996,7 @@ export function bootTownLife(ctx) {
   // as a mess — they keep a whole body's length apart. A crisp packet is small and a few of them lying
   // together IS what litter looks like, so they only have to be distinguishable from each other.
   const LITTER_GAP = { pile: 118, small: 26 };
+
   const isBag = (k) => k === 'pile';
   // true = this spot is clear enough to drop `kind` on. Reads the live problem list, so it holds across
   // the seeded street litter and whatever a ghost throws down in the night.
@@ -1051,8 +1063,6 @@ export function bootTownLife(ctx) {
     if (beat === 5 && !cursedNight && !plainNight && dusk) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => dusk.ghostOf(id, null, true)); dusk.nightBegins(2); }   // 🔮 the night's cursed things come through it
     else if (beat !== 5 && plainNight) { plainNight = false; if (!cursedNight && dusk) { dusk.clearGhosts(true); dusk.nightEnds(); } }
     if (dusk) dusk.spawnThroughNight(now);
-    const dark = beat === 4 || beat === 5 || !!curse;
-    for (const s of cond.decor) s.el.hidden = !dark;
     // crows fly when you come close (and settle again on the next condition)
     for (const s of cond.crows) if (!s.gone && Math.hypot(ctx.pos.x - s.x, ctx.pos.y - s.y) < 70) flyOff(s);
     // a day changes under a long visit: the seeds move on

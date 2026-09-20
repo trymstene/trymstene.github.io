@@ -737,12 +737,6 @@ for key, args in (
     ('wisp', ('Graveyard_Ghosts_1_48x48.png', list(range(0, 6)), 96, 96, 0, PROP, True)),     # a small one rising and gone
     ('crow', ('Crow_idle_Down_48x48.png', [0, 1, 2], 96, 96, 0, PROP * 0.55)),   # a pair of birds at a bird's size, not a banana's (Trym, 14 Sep: "crows look too big")
     ('candle', ('Graveyard_Candle_Standing_48x48.png', [0, 1, 2, 3], 48, 144, 0, PROP, True)),
-    # ⚠️ 144 WIDE, FOUR FRAMES — not 96 and six. The sheet is 576×144 and 576 ÷ 96 = 6, which is what made
-    # the wrong number look right. Measured: sliced at 144 the lantern's opaque box is stable across all
-    # four frames (18,21,126,132 → 21,18,126,132); sliced at 96 two of the six frames are EMPTY and the
-    # rest sit ~48 px apart, so on screen it jumped left and right and vanished every other frame with a
-    # hard seam through its glow. Trym, 20 Sep: "has a sprite that's glitchy."
-    ('lantern', ('Camping_Lantern_48x48_1.png', [0, 1, 2, 3], 144, 144, 0, PROP, True)),
     ('flame', ('Flame_1_48x48.png', [0, 1, 2, 3, 4], 48, 48, 0, PROP * 1.8, True)),   # the pack's low flame, tinted purple in CSS: what a cursed object stands in (Trym, 15 Sep)
     ('spark', ('Flame_2_48x48.png', [0, 1, 2, 3, 4], 48, 48, 0, PROP * 1.4, True)),   # ...and its sparks, in front of it
     ('fountainoff', ('Garden_Fountain_6_Turn_Off_48x48.png', [9], 192, 240)),   # the last frame of the turn-off: dry
@@ -772,14 +766,39 @@ try:
     print('  lamp halo offsets dx %d dy %d dxf %d (body %dx%d in frame, %dx%d placed)' % (_dx, _dy, _dxf, _bw, _fb[3] - _fb[1], _sb[2] - _sb[0], _sb[3] - _sb[1]))
 except Exception as e:
     print('  ! lamp offsets', e)
+# 🍂 THE PARK'S LEAF, GIVEN ITS OWN BOX HERE. The autumn-leaves problem borrowed `trash1`'s
+# dimensions and swapped the image over it — a 42×22 leaf stretched into a 19×17 square, which is
+# why the leaves have always looked like crumpled foil. It is the park's own art (no second copy of
+# the drawing: the file is what the park ships), declared so the town can size it correctly.
+try:
+    _leaf = Image.open(os.path.join(SITE, 'public', 'assets', 'park', 'l-leaf1.png')).convert('RGBA')
+    _leaf.save(os.path.join(OUT, 's-leaf-0.png'), optimize=True)
+    STATE['leaf'] = [_leaf.width, _leaf.height, 1]
+    print('  s-leaf-0.png %dx%d (the park own leaf)' % _leaf.size)
+except Exception as e:
+    print('  ! leaf', e)
+
 for key, name, sc in (
     ('shutcafe', 'ME_Singles_City_Props_48x48_Kiosk_Coffee_Cup_Shutter_Closed.png', PROP * 0.8),   # the cup kiosk stands at 0.8, so does its shutter
     ('shutinfo', 'ME_Singles_City_Props_48x48_Kiosk_Infopoint_Shutter_Closed.png', PROP),
     ('binfull', 'ME_Singles_City_Props_48x48_Small_Full_Trash_Can.png', PROP),
-    ('pile', 'ME_Singles_City_Props_48x48_Small_Trash_Pile_1.png', PROP),
-    ('trash1', 'ME_Singles_City_Props_48x48_Paper_Trash.png', PROP),
+    # 🗑️ LITTER HAS TO LOOK LIKE LITTER, and grey on grey cobbles does not. Trym, 20 Sep: "i cant
+    # quite seem to understand what these sprites are — they are supposed to be litter, but they dont
+    # look like litter, small grey things — maybe we can reuse or find more garbage sprites." He is
+    # right and it was two sprites doing it: Small_Trash_Pile_1 is a mound of plain grey-purple lumps
+    # that reads as a pile of ROCKS, and Paper_Trash is a 19×17 white-grey ball that on a grey square
+    # is nothing at all. The pack has better and there is no reason to have used these — so the heap
+    # is now the one with a red can and a blue carton showing in it, and the small pieces are things
+    # you can NAME at a glance: a juice carton, a pizza box, a red can, a blue can, a milk carton, a
+    # flattened box, a scatter of cans and wrappers. Eight kinds instead of four, none of them grey.
+    ('pile', 'ME_Singles_City_Props_48x48_Small_Trash_Pile_2.png', PROP),
+    ('trash1', 'ME_Singles_City_Props_48x48_Orange_Juice_Trash.png', PROP),
     ('trash2', 'ME_Singles_City_Props_48x48_Pizza_Trash.png', PROP),
     ('trash3', 'ME_Singles_City_Props_48x48_Blue_Can_Trash.png', PROP),
+    ('trash4', 'ME_Singles_City_Props_48x48_Red_Can_Trash.png', PROP),
+    ('trash5', 'ME_Singles_City_Props_48x48_Milk_Trash_1.png', PROP),
+    ('trash6', 'ME_Singles_City_Props_48x48_Cardboard_Trash_4.png', PROP),
+    ('trash7', 'ME_Singles_City_Props_48x48_Trash_4.png', PROP),
     ('graffiti1', 'ME_Singles_Garage_Sales_48x48_Graffiti_1.png', PROP),
     ('graffiti2', 'ME_Singles_Garage_Sales_48x48_Graffiti_2.png', PROP),
     ('cartp', 'ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png', PROP),   # tomorrow's stall, parked at the bus stop today
@@ -790,6 +809,13 @@ for key, name, sc in (
     ('bag2', 'ME_Singles_Subway_and_Train_Station_48x48_Plastic_Bag_2.png', PROP),
     ('bag3', 'ME_Singles_Subway_and_Train_Station_48x48_Plastic_Bag_Bottles.png', PROP),
     ('box1', 'ME_Singles_City_Props_48x48_Box_Trash_1.png', PROP),
+    # ✉️ THE POST'S TWO ENVELOPES, and they are UI art rather than world art — the mailbox card draws
+    # them, nothing in the square does. Exported at 2× (a 24 px envelope becomes 48) because a card row
+    # is read at arm's length on a phone, not across a square, and PROP's 0.76 would give 18 px.
+    # ⚠️ Letter_2 is the one with the RED WAX SEAL and it means UNREAD; Letter_1 is the plain one and
+    # means opened. That is the whole of the state, and it is in the art rather than in a badge.
+    ('letterseal', '22_Post_Office_48x48_Letter_2.png', 2.0),
+    ('letteropen', '22_Post_Office_48x48_Letter_1.png', 2.0),
 ):
     try:
         export_still(key, name, sc)
@@ -868,6 +894,23 @@ else:
 GROC = os.path.join(MI48, 'Theme_Sorter_Singles_48x48', '16_Grocery_Store_Singles_48x48')
 STORE = None
 if os.path.isdir(RBD) and os.path.isdir(GROC):
+    # 📦 one spot, one sprite. A stack drawn as two SFURN rows would glow only half of itself when
+    # the restock chore lights it, because the invitation lays one copy of one single over one spot.
+    # So the two crates are composited into a single piece here, sat on each other with a two-pixel
+    # overlap so the lower one's rim reads as carrying the upper.
+    def spiece(n):
+        if not isinstance(n, tuple):
+            return RB.strip_floor(RB.single(GROC, n))
+        bot, top = (RB.strip_floor(RB.single(GROC, k)) for k in n)
+        bb, tb = bot.getbbox(), top.getbbox()
+        dy = bb[1] - tb[3] + 2
+        out = Image.new('RGBA', (bot.width, bot.height + max(0, -dy)), (0, 0, 0, 0))
+        out.alpha_composite(bot, (0, out.height - bot.height))
+        out.alpha_composite(top, (0, out.height - bot.height + dy))
+        return out
+
+    STACK = (356, 359)   # the pack's bare wooden crate, with its shallow cousin on top
+
     # (single, x, base y, collider rel. to (x, base) or None, the spot key stock hangs on)
     SFURN = [
         # the back wall: one flush run of bare shelving, pushed up into the wall band like the
@@ -879,15 +922,24 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
         (378, 330, 190, (0, -58, 96, 0), 'till'), (379, 426, 190, (0, -58, 48, 0), None),
         # the floor: a crate stack at each side wall with a bare market table beside it, leaving a
         # clear aisle from the door straight up to the counter (the doorway is the bottom middle)
-        (201, 22, 336, (0, -34, 64, 0), 'cr1'), (421, 104, 336, (0, -46, 96, 0), 'tbl1'),
-        (426, 330, 344, (0, -56, 96, 0), 'tbl2'), (205, 440, 336, (0, -34, 64, 0), 'cr2'),
+        #
+        # ⚠️ A CRATE IS A CRATE AND A SHELF IS A SHELF — singles 201 and 205 stood here first, chosen
+        # off their numbers as "crate stacks", and they are nothing of the sort: they are the pack's
+        # tall BAKERY RACKS, two bare beige boards in a dark frame. Trym, 20 Sep: "theres two sprites
+        # in the store of something thats supposed to be shelves, but the sprites are cut in half —
+        # not sure the sprites are shelves either, looks like cut half couches." He is right twice
+        # over: the thing reads as furniture sliced through the middle, and a second run of shelving
+        # on the floor made the shop's one real shelf run mean nothing. A crate stack has to be
+        # crates, so it is now the pack's own wooden crate with a shallow one set on top of it.
+        (STACK, 18, 336, (8, -34, 88, 0), 'cr1'), (421, 120, 336, (0, -46, 96, 0), 'tbl1'),
+        (426, 312, 344, (0, -56, 96, 0), 'tbl2'), (STACK, 414, 336, (8, -34, 88, 0), 'cr2'),
     ]
     _sfl, _swa = RB.sheets(RBD)
     SFT, SWS = RB.tiles(_sfl, _swa, 384, 96, 576, 96)
     sroom, SW, SH_, scx = RB.shell(11, 8, SFT, SWS, (58, 40, 30, 255))
     scols, sspots = [], []
     for n, x, base, col, key in SFURN:
-        im_ = RB.strip_floor(RB.single(GROC, n))
+        im_ = spiece(n)
         sroom.alpha_composite(im_, (x, base - im_.height))
         if col:
             scols.append([x + col[0], base + col[1], x + col[2], base + col[3]])
@@ -901,10 +953,10 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
     # ⚠️ 1:1, never PROP-scaled: the room's plate is baked at the pack's own 48 px and so is everything on it.
     SFULL = [('sh1', 403, 28, 176), ('sh2', 404, 76, 176), ('sh3', 405, 124, 176),
              ('sh4', 403, 172, 176), ('sh5', 404, 220, 176),
-             ('tbl1', 423, 104, 336), ('tbl2', 428, 330, 344)]
+             ('tbl1', 423, 120, 336), ('tbl2', 428, 312, 344)]
     sfull = []
     for skey, n, x, base in SFULL:
-        im_ = RB.strip_floor(RB.single(GROC, n))
+        im_ = spiece(n)
         fk = 'full' + skey
         im_.save(os.path.join(OUT, 's-%s-0.png' % fk), optimize=True)
         STATE[fk] = [im_.width, im_.height, 1]
@@ -919,7 +971,7 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
     for n, x, base, col, key in SFURN:
         if key not in SOVER:
             continue
-        im_ = RB.strip_floor(RB.single(GROC, n))
+        im_ = spiece(n)
         ok_ = 'over' + key
         im_.save(os.path.join(OUT, 's-%s-0.png' % ok_), optimize=True)
         STATE[ok_] = [im_.width, im_.height, 1]
