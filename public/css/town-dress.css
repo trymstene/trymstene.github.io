@@ -27,12 +27,22 @@
 
 /* ---- the mirror: a lit changing room, built out of light rather than out of more boxes ---------- */
 .tw-dress__stage {
-  /* ⚠️ 92, NOT 108. The room went from three rails to FIVE on 20 Sep (Trym: "why isnt it Shades,
-     Hats, Body, Shoes, Extras like in the original Make A Banana for consistency?") and 440 px of card
-     does not hold five rails, a mirror, a caption and a button. Measured at 360×640: the mirror and the
-     button gave back 28 px between them, which is a whole rail's worth of the scroller — three rows
-     visible instead of two and a half, so it is obvious the rails go on. */
-  position: relative; height: 92px; display: grid; place-items: end center;
+  /* 🪞 THE MIRROR IS THE POINT OF THE ROOM, so it gets its height back — but it TAKES WHAT THE SCREEN
+     HAS, which a fixed number cannot. It was 108, then 92 when the room went from three rails to five
+     and 440 px of card would not hold them all; Trym, 20 Sep: "make the banana preview bigger".
+     ⚠️ 132 FLAT WAS THE WRONG ANSWER and the walk showed it: on a tall window it was right, and on a
+     360×640 phone it left room for two rails and half of a third — worse than what it replaced. So it
+     is a clamp against the VIEWPORT: about 100 px on the shortest phone the house supports, 140 on a
+     tall one, and everything in the stage sized as a share of it rather than in pixels of its own.
+     What pays for the rest is the scrollbars below: the rails wore the browser's own chrome on every
+     one of five rows, and a 6 px bar gives most of that back. */
+  /* ⚠️ A CUSTOM PROPERTY, NOT A PERCENTAGE. `height: calc(100% - 8px)` on the canvas silently did
+     nothing: the stage is a grid, its single row is `auto`, and a grid item's percentage height
+     against an auto row is indefinite — so the rule resolved to `auto` and the canvas sat at its own
+     176 px inside a 102 px box, clipped. Measured, not guessed. One variable, read by everything in
+     the room that has to scale with it. */
+  --stage: clamp(100px, 16vh, 140px);
+  position: relative; height: var(--stage); display: grid; place-items: end center;
   /* the room: a warm lamp above, a cool wall, and a floor the banana stands on. No art, no new file —
      three gradients, which is also why it costs nothing and never loads late. */
   background:
@@ -42,16 +52,17 @@
   overflow: hidden;
 }
 /* two tall mirrors either side, as light on a wall — the one flourish, and it is flat colour */
+  /* the two tall mirrors are a SHARE of the room, so they grow and shrink with it */
 .tw-dress__stage::before,
 .tw-dress__stage::after {
-  content: ''; position: absolute; top: 7px; width: 24px; height: 56px;
+  content: ''; position: absolute; top: 8%; width: 22%; max-width: 30px; height: calc(var(--stage) * 0.62);
   background: linear-gradient(160deg, rgba(226, 240, 255, 0.34) 0 42%, rgba(160, 190, 220, 0.22) 42% 58%, rgba(226, 240, 255, 0.3) 58%);
   border: 3px solid #241c2e; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16);
 }
 .tw-dress__stage::before { left: 10px; }
 .tw-dress__stage::after { right: 10px; }
 .tw-dress__stage canvas {
-  position: relative; display: block; width: auto; height: 84px;
+  position: relative; display: block; width: auto; height: calc(var(--stage) - 12px);
   image-rendering: pixelated;
   /* the banana stands ON the floor band, not in the middle of the room */
   margin-bottom: 4px;
@@ -115,3 +126,26 @@
   -webkit-mask-image: linear-gradient(#000 0 calc(100% - 18px), rgba(0, 0, 0, 0.15) 100%);
   mask-image: linear-gradient(#000 0 calc(100% - 18px), rgba(0, 0, 0, 0.15) 100%);
 }
+
+/* ---- 🍌 THE SCROLLBARS ARE THE GAME'S, not the browser's ---------------------------------------- */
+/* Trym, 20 Sep 2026: "use custom banana CSS for scrollbars here". A pixel changing room with two
+   platform-grey rails down it reads as a web page with a game in it. This is the house idiom — the
+   homestead phone's yellow bar (homestead.astro) — at the size a 44 px chip rail can spare.
+   ⚠️ AND IT BUYS THE MIRROR ITS HEIGHT BACK. The browser's own bar is about 15 px on every one of the
+   five rows; six is 45 px returned, which is where the preview's 40 came from. */
+.tw-dress__rails::-webkit-scrollbar { width: 8px; }
+.tw-dress__row::-webkit-scrollbar { height: 6px; }
+.tw-dress__rails::-webkit-scrollbar-track,
+.tw-dress__row::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.34); border-radius: 999px; }
+.tw-dress__rails::-webkit-scrollbar-thumb,
+.tw-dress__row::-webkit-scrollbar-thumb {
+  background: #ffd21f; border: 1px solid #1a1408; border-radius: 999px;
+}
+.tw-dress__rails::-webkit-scrollbar-thumb:hover,
+.tw-dress__row::-webkit-scrollbar-thumb:hover { background: #ffe135; }
+/* ⚠️ THE STANDARD PROPERTIES ARE NOT A FIREFOX FALLBACK. They were inside an @supports for Gecko
+   until 20 Sep 2026, which left every Chromium that has shipped `scrollbar-color` (121+) painting a
+   platform-grey bar down a pixel changing room — and the ::-webkit- rules above do nothing at all in a
+   browser using overlay scrollbars, which is what this walk runs in. Both, unconditionally: the modern
+   pair for every engine that understands it, the pseudo-elements for the older Chromium and Safari. */
+.tw-dress__rails, .tw-dress__row { scrollbar-width: thin; scrollbar-color: #ffd21f rgba(0, 0, 0, 0.34); }

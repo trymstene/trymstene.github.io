@@ -90,8 +90,15 @@ export function slots() {
   const shadeOf = (id) => SHADE_BY_ID[id] || { id, label: id, art: id };
   const mine = EXTRA_DEFS.filter((d) => !d.raveOnly && ownsWearable(d));
   return [
-    { key: 'glasses', label: 'Shades', kind: 'one', items: GLASSES.map(([id, label]) => (id === 'none' ? { id, label, art: '', locked: false } : row({ ...shadeOf(id), label }))) },
-    { key: 'hat', label: 'Hat', kind: 'one', items: HATS.map(([id, label]) => (id === 'none' ? { id, label, art: '', locked: false } : row({ ...hatOf(id), label }))) },
+    // ❌ AND NEITHER ROW CARRIES A "NONE" CHIP. HATS and GLASSES arrive from the engine with a leading
+    // ['none', 'None'] because the BUILDER needs one: its rows are radio buttons and a radio group needs
+    // an off switch. This room's are not — tapping the garment you are wearing takes it off (town-dress.js)
+    // — so an empty square at the head of each rail was a control that did what a second tap already did.
+    // Trym, 20 Sep 2026: "remove the 'no shades' option in the selection bar, we are toggling things on
+    // and off so they are not needed, same for 'no hat'." The VALUE 'none' is untouched: it is still what
+    // an empty slot is saved as, and still what a second tap writes.
+    { key: 'glasses', label: 'Shades', kind: 'one', items: GLASSES.filter(([id]) => id !== 'none').map(([id, label]) => row({ ...shadeOf(id), label })) },
+    { key: 'hat', label: 'Hat', kind: 'one', items: HATS.filter(([id]) => id !== 'none').map(([id, label]) => row({ ...hatOf(id), label })) },
     { key: 'body', label: 'Body', kind: 'one-of', items: mine.filter(BODY_OF).map(row) },
     { key: 'feet', label: 'Shoes', kind: 'one-of', items: mine.filter(FEET_OF).map(row) },
     { key: 'extras', label: 'Extras', kind: 'many', items: mine.filter(PLAIN).map(row) },

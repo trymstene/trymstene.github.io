@@ -155,3 +155,70 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     expect(errors).toEqual([]);
   });
 }
+
+// 🍌 THE ROOM'S OWN CHROME (Trym, 20 Sep 2026).
+//
+// Three notes in one breath: "use custom banana CSS for scrollbars here - make the banana preview
+// bigger, and remove the 'no shades' option in the selection bar, we are toggling things on and off
+// so they are not needed, same for 'no hat'."
+//
+// ⚠️ THE SCROLLBARS CANNOT BE PHOTOGRAPHED HERE. This walk runs a Chromium with OVERLAY scrollbars —
+// `offsetWidth - clientWidth` is 0 and a screenshot shows nothing — so what is checked is that the
+// declaration lands, which is the thing that was wrong: the standard properties were locked inside an
+// `@supports (-moz-appearance: none)` and every Chromium that understands them was painting grey.
+test('the dressing room wears its own chrome', async ({ page }) => {
+  await shop(page, 571, 840);
+
+  const sb = await page.evaluate(() => {
+    const g = (s) => { const c = getComputedStyle(document.querySelector(s)); return { width: c.scrollbarWidth, color: c.scrollbarColor }; };
+    return { rails: g('.tw-dress__rails'), row: g('.tw-dress__row') };
+  });
+  for (const k of ['rails', 'row']) {
+    expect(sb[k].width, `the ${k} scrollbar is thin`).toBe('thin');
+    expect(sb[k].color, `…and banana yellow, not the platform's grey`).toContain('255, 210, 31');
+  }
+
+  // ⭐ NO "NONE" CHIP ON EITHER SINGLE-CHOICE ROW. Tapping the garment you are wearing takes it off,
+  // so an empty square at the head of the rail was a control that did what a second tap already did.
+  const heads = await page.evaluate(() => {
+    const out = {};
+    document.querySelectorAll('.tw-dress__rail').forEach((r) => {
+      const lab = r.querySelector('.tw-dress__of');
+      if (lab) out[lab.textContent] = [...r.querySelectorAll('.tw-dress__chip')].map((c) => c.dataset.id);
+    });
+    return out;
+  });
+  expect(heads.Shades, 'no "none" on the shades rail').not.toContain('none');
+  expect(heads.Hat, 'nor on the hat rail').not.toContain('none');
+  expect(heads.Shades.length, 'and there are still shades to pick').toBeGreaterThan(4);
+
+  // …and 'none' is still the VALUE an empty slot is saved as: a second tap writes it
+  const id = heads.Hat[0];
+  await page.evaluate((h) => document.querySelector('.tw-dress__chip[data-sl="hat"][data-id="' + h + '"]').click(), id);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.__town.dress().worn().hat)).toBe(id);
+  await page.evaluate((h) => document.querySelector('.tw-dress__chip[data-sl="hat"][data-id="' + h + '"]').click(), id);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.__town.dress().worn().hat), 'a second tap is the off switch').toBe('none');
+
+  // 🪞 AND THE MIRROR FITS ITS ROOM. A percentage height on a grid item in an `auto` row is
+  // indefinite, so `calc(100% - 8px)` resolved to `auto` and the banana sat at 176 px inside a
+  // 102 px stage, clipped off at the knees. It is a custom property now.
+  const st = await page.evaluate(() => {
+    const s = document.querySelector('.tw-dress__stage'), c = s.querySelector('canvas');
+    return { stage: s.getBoundingClientRect().height, canvas: c.getBoundingClientRect().height };
+  });
+  expect(st.canvas, 'the banana is inside the room').toBeLessThanOrEqual(st.stage);
+  expect(st.canvas / st.stage, '…and fills it').toBeGreaterThan(0.8);
+});
+
+// 📱 and the same, on the shortest phone the house supports: the mirror takes what the screen has
+test('the mirror scales with the screen instead of squeezing the rails', async ({ page }) => {
+  await shop(page, 360, 640);
+  const small = await page.evaluate(() => document.querySelector('.tw-dress__stage').getBoundingClientRect().height);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.waitForTimeout(300);
+  const big = await page.evaluate(() => document.querySelector('.tw-dress__stage').getBoundingClientRect().height);
+  expect(big, 'a tall window gets a bigger mirror').toBeGreaterThan(small);
+  expect(small, '…and a short one still leaves the rails room').toBeLessThan(120);
+});

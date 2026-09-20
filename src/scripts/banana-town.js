@@ -139,19 +139,25 @@ for (const [key, spot] of Object.entries(SPOTS)) {
 // the stall and the colours in the card can never disagree. No new art, no second palette, nothing to
 // keep in step — and no pack sprite had to be invented for it (pack-fidelity doctrine).
 //
-// ⚠️ IT DOES NOT ANIMATE and it is not a control: `pointer-events: none`, painted once. The stall
-// underneath stays the tappable thing, which is what a player is aiming at anyway.
+// ⚠️ IT IS NOT A CONTROL: `pointer-events: none`, and the canvas is PAINTED once. It turns — slowly,
+// a full circle a day's walk — but that is a CSS transform on the element, not a redraw (town.astro
+// .tw-decal--spin). The stall underneath stays the tappable thing, which is what a thumb is aiming at.
 function stallWheel() {
   const p = PROPS.wheel;
   if (!p) return;
   const cv = document.createElement('canvas');
-  cv.className = 'tw-decal';
+  cv.className = 'tw-decal tw-decal--spin';
   cv.width = cv.height = 120;   // the drawing buffer; CSS shows it at world size
   cv.setAttribute('aria-hidden', 'true');
   // where it sits, as fractions of the stall's OWN box, so it rides with the prop if the prop moves:
-  // the counter board runs y 88..120 of 147, and the right-hand third of it is clear of the posts
-  const d = Math.round(p.w * 0.17);
-  const cx = p.x + p.w * 0.67, cy = p.y + p.h * 0.70;
+  // the counter board runs y 88..120 of 147, and the right-hand third of it is clear of the posts.
+  // ⚠️ 0.38, NOT 0.17. Trym, 20 Sep 2026: "the wheel of peel can be a bit more than double the size."
+  // At 30 world px it read as a sticker on the counter; at 68 it reads as the wheel the stall is named
+  // after, leaning on its own front — which is what tells the two identical market stands apart from
+  // across the square. It now stands taller than the counter board, so it is centred on the board's
+  // line rather than inside it.
+  const d = Math.round(p.w * 0.38);
+  const cx = p.x + p.w * 0.66, cy = p.y + p.h * 0.72;
   cv.style.left = pct(cx - d / 2, W); cv.style.top = pct(cy - d / 2, H);
   cv.style.width = pct(d, W);
   cv.style.zIndex = String(100 + p.base + 1);

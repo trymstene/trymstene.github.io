@@ -135,3 +135,40 @@ test('the kiosk has somebody in it, and the kiosk overflows them', async ({ page
   expect(await at(45, 11), 'a Recovering one is open again — the kiosk is an EARLY step').not.toBeNull();
   expect(errs).toEqual([]);
 });
+
+// 🎡 THE WHEEL ON THE WHEEL OF PEEL'S COUNTER TURNS.
+//
+// Trym, 20 Sep 2026: "the wheel of peel on the town view can spin a little aswell, to add some life
+// to it when walking around in the town." ⚠️ the CANVAS is painted once and never again — the turn is
+// a CSS transform on the element (design library §21.4: transform and opacity only), so a wheel that
+// spins costs the same as a wheel that does not.
+test('the stall wheel is the card\'s own wheel, and it turns', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.waitForTimeout(500);
+
+  const d = await page.evaluate(() => {
+    const el = document.querySelector('.tw-decal');
+    if (!el) return null;
+    const p = window.__town.PROPS.wheel, r = el.getBoundingClientRect();
+    const stall = [...document.querySelectorAll('img.tw-ov')].find((e) => e.src.endsWith('/' + window.__town.OVERLAYS.find((o) => o[6] === 'wheel')[0]));
+    const q = stall.getBoundingClientRect();
+    const c = getComputedStyle(el);
+    return { w: r.width, stallW: q.width, inside: r.left > q.left - 2 && r.right < q.right + 2, anim: c.animationName, dur: c.animationDuration, hits: c.pointerEvents };
+  });
+  expect(d, 'the stall carries a decal').not.toBeNull();
+  // ⭐ a bit more than double what it first shipped at (0.17 of the stall): big enough to tell the two
+  // identical market stands apart from across the square
+  expect(d.w / d.stallW, 'the wheel is about 38% of the stall').toBeGreaterThan(0.3);
+  expect(d.w / d.stallW, '…and not so big it stops being a stall').toBeLessThan(0.5);
+  expect(d.inside, 'it sits on the stall, not beside it').toBe(true);
+  expect(d.anim, 'it turns').toBe('twSpin');
+  expect(parseFloat(d.dur), '…slowly enough to be life rather than a distraction').toBeGreaterThanOrEqual(12);
+  expect(d.hits, 'and it is scenery: the stall under it is what answers a tap').toBe('none');
+
+  const a = await page.evaluate(() => getComputedStyle(document.querySelector('.tw-decal')).transform);
+  await page.waitForTimeout(1500);
+  const b = await page.evaluate(() => getComputedStyle(document.querySelector('.tw-decal')).transform);
+  expect(b, 'and it really is moving').not.toBe(a);
+});

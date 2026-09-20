@@ -76,6 +76,14 @@ const description = 'The town centre of Banana World, under construction.';
     /* 🎡 a decal painted ON a prop: the wheel on the Wheel of Peel's counter. Scenery, never a control —
        the stall underneath stays the tappable thing, which is what a thumb is aiming at anyway. */
     .tw-decal { position: absolute; image-rendering: pixelated; pointer-events: none; height: auto; }
+    /* 🎡 AND THE WHEEL TURNS. Trym, 20 Sep 2026: "the wheel of peel on the town view can spin a little
+       aswell, to add some life to it when walking around in the town." Twenty-four seconds a turn is
+       slow enough to notice only when you look at it, which is the difference between life and a
+       distraction. ⚠️ transform alone (design library §21.4) — nothing here animates a filter, and the
+       canvas is painted once and never again. */
+    .tw-decal--spin { animation: twSpin 24s linear infinite; transform-origin: 50% 50%; }
+    @keyframes twSpin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .tw-decal--spin { animation: none; } }
     .tw-plank--way { pointer-events: none; font-size: max(0.45rem, calc(4.5px * var(--ws, 1.6))); }
     .tw-plank--big { font-size: max(0.6rem, calc(10px * var(--ws, 1.6))); padding: 0.25em 0.875em; letter-spacing: 0.05em; }   /* the two stalls: a sign you can read from the fountain */
     /* the shopfronts' sign: grey metal over the sprite's own STORE band — sized in world units so it
