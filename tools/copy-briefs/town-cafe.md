@@ -55,6 +55,17 @@ the shift served nothing at all: contented, never a telling-off, because standin
 on a slow afternoon is a perfectly good thing to have done. `receipt.back` is the button that closes
 the card: a verb first, and short enough that it can never wrap onto two lines.
 
+### The button on the tray
+
+The tray has exactly one button and the thumb lives on it. What it says changes with the station:
+`go.grind` while the needle sweeps, `go.pour` while the cup fills under a held thumb, `go.milk` for
+the three taps on the pulse.
+
+One word each, the THING BEING DONE. It is a label on a control, not an instruction — so not “tap
+here”, not “now pour”, just the word for the job. Short enough that it can never wrap onto two
+lines on a 360-wide phone. ⚠️ the drink’s NAME must not appear here: the ticket on the tray is
+pictures, and the names are for the receipt.
+
 ### The cups
 
 Three decks of three or four lines each, one picked at random per cup, so a long shift does not

@@ -92,6 +92,12 @@
 .tw-wait.is-half { --tw-pat: rgba(240, 180, 40, 0.62); }
 .tw-wait.is-last { --tw-pat: rgba(214, 64, 48, 0.72); }
 
+/* ⚠️ THE TOAST SITS ON TOP OF THE TRAY OTHERWISE. The town's toast is z 2000 and docks at bottom 14;
+   the tray is z 1200 and owns the bottom 150 — so every line the counter says lands square on the
+   gauge, at the exact moment the gauge is the only thing that matters. It steps up while a shift is
+   on. (Seen on the QA sweep, 20 Sep; the scout had warned about it and it was built anyway.) */
+.tw-toast.is-above-tray { bottom: 172px; }
+
 @media (prefers-reduced-motion: reduce) {
   .tw-cup { transition: none; }
   .tw-cup__zone { animation: none; opacity: 1; }

@@ -8,6 +8,11 @@
     "none": "The counter kept its company; the cups stayed stacked and dry.",
     "back": "Return"
   },
+  "go": {
+    "grind": "Grinding",
+    "pour": "Pouring",
+    "milk": "Foaming"
+  },
   "cup": {
     "perfect": [
       "A neat cup crosses the rope without a wobble.",

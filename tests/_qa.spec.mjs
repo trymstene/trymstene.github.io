@@ -1,0 +1,122 @@
+// 📸 THE QA SWEEP — every state of the town, at a phone's width, for the eye.
+// Temporary: run it, look at test-results/qa-*.png, delete it.
+import { test, expect } from '@playwright/test';
+
+// ⚠️ NOT test-results/: Playwright empties that directory on every run, and other agents are running
+// the suite in parallel tonight — these are for the eye and have to survive that.
+const SHOT = 'qa-shots/';
+const errs = [];
+
+async function town(page, opts = {}) {
+  page.on('pageerror', (e) => errs.push(opts.name + ': ' + String(e)));
+  page.on('console', (m) => { if (m.type() === 'error') errs.push(opts.name + ' [console] ' + m.text().slice(0, 120)); });
+  if (opts.job) await page.addInitScript((j) => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); localStorage.setItem('tw-job-v1', JSON.stringify({ at: j, week: '', days: 0 })); } catch (e) {} }, opts.job);
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); });
+  await page.evaluate((b) => window.__town.room.set(b), opts.band == null ? 85 : opts.band);
+  await page.evaluate((h) => window.__town.life.set(h), opts.hour == null ? 12 : opts.hour);
+  await page.waitForTimeout(900);
+}
+
+test('the square, day and night and a curse', async ({ page }) => {
+  await town(page, { name: 'square' });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: SHOT + '01-square-day.png' });
+
+  await page.evaluate(() => window.__town.life.set(23));
+  await page.waitForTimeout(2200);
+  await page.screenshot({ path: SHOT + '02-square-night.png' });
+
+  await page.evaluate(() => window.__town.room.nightReady());
+  await page.evaluate(() => window.__town.room.curse('deep'));
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: SHOT + '03-curse-night.png' });
+  expect(true).toBe(true);
+});
+
+test('a low town, and the board', async ({ page }) => {
+  await town(page, { name: 'low', band: 15 });
+  await page.screenshot({ path: SHOT + '04-town-abandoned.png' });
+  await page.evaluate(() => window.__town.room.cards.board && window.__town.room.cards.board());
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: SHOT + '05-board-card.png' });
+  await page.evaluate(() => { const x = document.getElementById('twCardX'); if (x) x.click(); });
+  // the health bar's own card
+  await page.evaluate(() => { const b = document.querySelector('.tw-hbar'); if (b) b.click(); });
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: SHOT + '06-health-card.png' });
+  expect(true).toBe(true);
+});
+
+test('the store, the chore, and a boss', async ({ page }) => {
+  await town(page, { name: 'store', band: 55, job: 'store' });
+  await page.evaluate(() => window.__town.work.set({ at: 'store' }));
+  await page.evaluate(() => window.__town.rooms.enter('store'));
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: SHOT + '07-store-inside.png' });
+  await page.evaluate(() => window.__town.room.open('till'));
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: SHOT + '08-store-till-card.png' });
+  await page.evaluate(() => { const x = document.getElementById('twCardX'); if (x) x.click(); });
+  await page.evaluate(() => window.__town.rooms.exit());
+  await page.waitForTimeout(500);
+
+  // a boss's card, with the job question on it
+  const at = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'pip'); return n ? { x: n.x, y: n.y } : null; });
+  if (at) {
+    await page.evaluate((p) => { const t = window.__town; t.pos.x = t.tgt.x = p.x + 40; t.pos.y = t.tgt.y = p.y + 20; }, at);
+    await page.waitForTimeout(500);
+    await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'pip'); void n; window.__town.room.tapAt && window.__town.room.tapAt('n:pip'); });
+    await page.waitForTimeout(1600);
+    await page.screenshot({ path: SHOT + '09-boss-card.png' });
+  }
+  expect(true).toBe(true);
+});
+
+test('the cafe shift, the queue, the tray and the receipt', async ({ page }) => {
+  await town(page, { name: 'cafe', band: 85, job: 'cafe' });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe() && window.__town.room.cafe().on(), null, { timeout: 5000 });
+  for (let i = 0; i < 3; i++) { await page.evaluate(() => window.__town.room.cafe().call()); await page.waitForTimeout(600); }
+  await page.evaluate(() => window.__town.room.cafe().arrive());
+  await page.waitForTimeout(600);
+  await page.evaluate(() => window.__town.room.cafe().serve());
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: SHOT + '10-cafe-shift.png' });
+
+  // at night, which is the whole argument for the tray
+  await page.evaluate(() => window.__town.life.set(23));
+  await page.waitForTimeout(2200);
+  await page.screenshot({ path: SHOT + '11-cafe-night.png' });
+
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: SHOT + '12-cafe-receipt.png' });
+  expect(true).toBe(true);
+});
+
+test('360 wide: the narrowest phone the house supports', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await town(page, { name: '360', band: 85, job: 'cafe' });
+  await page.screenshot({ path: SHOT + '13-360-square.png' });
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: SHOT + '14-360-tray.png' });
+  // ⚠️ nothing may scroll sideways on a phone
+  const over = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  expect(over, 'nothing overflows sideways at 360').toBe(false);
+  console.log('QA ERRORS ' + JSON.stringify(errs));
+});

@@ -535,6 +535,9 @@ const cafeFields = {
   left: { kind: 'prose', aim: 58, max: 78, note: 'The town’s toast when somebody has waited too long, turns their back and walks off. ⚠️ THEY HAVE NO NAME: the customers are bananas visiting the square from the rest of the town, strangers who came in off the road, so the line cannot name them and must not pretend to — “somebody”, “the one at the back”, the rope itself. A small sadness, not a failure notice; never how long they waited and never what it cost.' },
   ask: { kind: 'prose', aim: 30, max: 38, note: 'The question the PLAYER presses on Bean’s dialogue card to ask about working the counter. The player’s voice, not Bean’s; ends in a question mark; the same length and pitch as the questions already on that card.' },
   bean: { kind: 'prose', aim: 96, max: 130, note: 'Bean’s answer: what the counter is, and that you stand behind it to work it. Bean reads fortunes in coffee grounds and is not entirely joking about it. Never explains the gestures, never gives a number, never instructs.' },
+  'go.grind': { kind: 'label', aim: 8, max: 12, note: 'The word on the tray’s one button while the GRINDER is running: a needle sweeps a bar and the thumb stops it. A single word for the THING BEING DONE — it is a label on a control, not an instruction, so no “tap” and no “now”. Short enough that it can never wrap.' },
+  'go.pour': { kind: 'label', aim: 8, max: 12, note: 'The same button while the POUR is running: hold it down and the cup fills, let go at the right moment. One word, the thing being done.' },
+  'go.milk': { kind: 'label', aim: 8, max: 12, note: 'The same button at the MILK: three taps on a swelling pulse. One word, the thing being done.' },
   'drinks.short': { kind: 'label', aim: 10, max: 16, note: 'The smallest drink’s NAME, one or two words, for the receipt only — the ticket on the tray is pictures. It should sound like this town, not like a chain: nobody here says “grande”.' },
   'drinks.tall': { kind: 'label', aim: 10, max: 16, note: 'The middle drink’s name, same rules.' },
   'drinks.double': { kind: 'label', aim: 10, max: 16, note: 'The strongest drink’s name, same rules.' },
@@ -557,12 +560,14 @@ function cafeShape(data) {
   return bad;
 }
 const cafeSchema = {
-  type: 'object', additionalProperties: false, required: ['on', 'off', 'receipt', 'cup', 'left', 'ask', 'bean', 'drinks'],
+  type: 'object', additionalProperties: false, required: ['on', 'off', 'receipt', 'go', 'cup', 'left', 'ask', 'bean', 'drinks'],
   properties: {
     on: str(cafeFields.on.note),
     off: str(cafeFields.off.note),
     receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'back'],
       properties: { title: str(cafeFields['receipt.title'].note), take: str(cafeFields['receipt.take'].note), line: str(cafeFields['receipt.line'].note), none: str(cafeFields['receipt.none'].note), back: str(cafeFields['receipt.back'].note) } },
+    go: { type: 'object', additionalProperties: false, required: ['grind', 'pour', 'milk'],
+      properties: { grind: str(cafeFields['go.grind'].note), pour: str(cafeFields['go.pour'].note), milk: str(cafeFields['go.milk'].note) } },
     cup: { type: 'object', additionalProperties: false, required: ['perfect', 'fine', 'wrong'],
       properties: {
         perfect: { type: 'array', description: cafeFields['cup.perfect[]'].note, items: { type: 'string' } },
@@ -602,7 +607,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-cafe.json',
     approved: 'src/data/copy/town-cafe.json',
     reads: 'src/scripts/town-cafe.js (through a glob inside the café’s own lazy chunk, so town-room never carries these bytes)',
-    top: ['on', 'off', 'receipt', 'cup', 'left', 'ask', 'bean', 'drinks'],
+    top: ['on', 'off', 'receipt', 'go', 'cup', 'left', 'ask', 'bean', 'drinks'],
     // 🧍 Bean speaks here, so the writer gets the bible
     personas: 'town-personas',
     fields: cafeFields,

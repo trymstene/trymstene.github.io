@@ -147,12 +147,16 @@ export function mountCounter(host, opts = {}) {
   const note = el('p', 'tw-cup__note', box);
 
   let cup = null, raf = 0, holding = false, cx = 0, cy = 0;
+  const toast = (up) => { const t = document.getElementById('twToast'); if (t) t.classList.toggle('is-above-tray', !!up); };
 
+  let shown = '';
   function paint() {
     raf = 0;
     if (!cup || box.hidden) return;
     tick(cup, now());
     const key = stationOf(cup);
+    // the one button follows the cup from station to station — grind, pour, milk
+    if (key && key !== shown) { shown = key; if (opts.label) go.textContent = opts.label(key) || ''; }
     if (key) {
       const z = zoneOf(cup, key);
       zoneEl.style.left = (z.from * 100) + '%';
@@ -211,6 +215,7 @@ export function mountCounter(host, opts = {}) {
     // the ticket is pictures: one pip per thing in the drink, and never a word
     serve(c, label) {
       cup = c;
+      shown = stationOf(c);
       tickEl.textContent = '';
       for (const k of (DRINKS[c.drink] || [])) el('i', 'tw-cup__pip' + (k === 'bean' ? '' : ' tw-cup__pip--' + k), tickEl);
       go.textContent = label || '';
@@ -219,9 +224,11 @@ export function mountCounter(host, opts = {}) {
     },
     idle(label) { cup = null; sleep(); tickEl.textContent = ''; go.textContent = label || ''; go.disabled = true; needle.hidden = true; fillEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
     say(text) { note.textContent = text || ''; },
-    show() { box.hidden = false; box.classList.remove('is-folded'); wake(); },
-    fold() { box.classList.add('is-folded'); sleep(); },       // you stepped off the mark: the cup waits
-    hide() { box.hidden = true; sleep(); },
+    // ⚠️ the town's toast docks at bottom 14 and outranks this by 800 of z-index, so it lands square
+    // on the gauge unless it is moved. It steps up for as long as the tray is up, and back down after.
+    show() { box.hidden = false; box.classList.remove('is-folded'); toast(true); wake(); },
+    fold() { box.classList.add('is-folded'); toast(false); sleep(); },   // off the mark: the cup waits
+    hide() { box.hidden = true; toast(false); sleep(); },
     open: () => !box.hidden && !box.classList.contains('is-folded'),
     cup: () => cup,
     // ⚠️ the walk's door: nothing in tests/ has ever driven a canvas, and a rAF gauge cannot be
@@ -383,7 +390,10 @@ export function bootTownCafe(ctx) {
     const c = newCup(row.drink, served, row.seed);
     c.row = row;
     cup = c;
-    tray.serve(c, (COPY.drinks || {})[row.drink] || row.drink);
+    // ⚠️ NOT THE DRINK'S NAME. The ticket on the tray is pictures and the names are for the
+    // receipt — the button said "Little Wake" for a day, which is the shop's word for a small
+    // coffee and tells a thumb nothing at all. It carries the STATION now, and follows it.
+    tray.serve(c, (COPY.go || {})[stationOf(c)] || '');
   }
   function onCup(c) {
     const row = c.row, i = line.indexOf(row);
@@ -404,7 +414,7 @@ export function bootTownCafe(ctx) {
     on = true;
     served = 0; tips = 0; best = 0; shiftAt = performance.now(); nextAt = 0; line = [];
     standIn();
-    if (!tray) tray = mountCounter(host || world.parentElement, { onCup });
+    if (!tray) tray = mountCounter(host || world.parentElement, { onCup, label: (k) => (COPY.go || {})[k] || '' });
     tray.show();
     tray.idle('');
     if (COPY.on) say(COPY.on);

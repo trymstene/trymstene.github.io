@@ -85,3 +85,4 @@ tools/reel/out/
 # playwright
 test-results/
 playwright-report/
+qa-shots/
