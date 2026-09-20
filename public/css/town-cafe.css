@@ -68,6 +68,12 @@
 /* the pour fills the bar from the left; the grinder and the milk ride a needle across it */
 .tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: #b5763a; transform-origin: 0 50%; transform: scaleX(0); }
 .tw-cup__needle { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: #ffe135; border: 2px solid #000; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+/* the milk wants three taps: each one leaves its mark where it fell, coloured by how it landed, so a
+   player can see two down and one to go without a single word on the tray */
+.tw-cup__tap { position: absolute; top: 3px; height: 10px; width: 4px; margin-left: -2px; border: 2px solid #000; background: #d64030; }
+.tw-cup__tap.is-g1 { background: #f0b428; }
+.tw-cup__tap.is-g2 { background: #7bc35e; }
+.tw-cup__tap[hidden] { display: none; }
 
 /* ---- the button the thumb lives on ------------------------------------------------------------ */
 .tw-cup__go {

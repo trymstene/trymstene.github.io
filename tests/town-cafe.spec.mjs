@@ -310,6 +310,10 @@ async function shift(page) {
 }
 
 test('the queue forms at the rope, above the tray, and patience is the shadow', async ({ page }) => {
+  // ⚠️ 360 WIDE, not the house 393: at 360×740 the whole world fits the view, so the tray owns a
+  // deeper slice of the world than it does on any other phone — and that is the width the old rope
+  // hid all three customers at. The tightest supported screen is the one this has to be true on.
+  await page.setViewportSize({ width: 360, height: 740 });
   const errors = await shift(page);
 
   // ⚠️ THE STYLESHEET. /css/town-cafe.css is what makes the tray a tray and the shadow a patience
@@ -329,9 +333,35 @@ test('the queue forms at the rope, above the tray, and patience is the shadow', 
   const line = await page.evaluate(() => window.__town.room.cafe().line());
   expect(line.length, 'a queue formed').toBeGreaterThan(0);
 
-  // ⭐ the rope is ABOVE the tray, which is the whole argument for the tray (measured on the bench)
-  const rope = await page.evaluate(() => window.__town.room.cafe().rope());
-  for (const r of rope) expect(r.y, `a rope mark at ${r.x},${r.y} is above the tray's strip`).toBeLessThan(1150);
+  // ⭐ THE ROPE IS ABOVE THE TRAY, which is the whole argument for the tray — and it is measured on
+  // the SCREEN now, at the narrowest phone the house supports. A world-y ceiling of 1150 stood here
+  // for a day and was simply wrong: at 360×740 the entire world fits the view, so the tray's 150 px
+  // own everything past world y 1061, and two of three customers were standing behind it at 393.
+  // ⭐ AND THEY DO NOT OVERLAP. A body is 99 world px wide; the marks were 30 px apart, so the queue
+  // was a pile of bananas at 57% overlap, measured. This asserts the daylight between them.
+  const geo = await page.evaluate(() => {
+    const tray = document.querySelector('.tw-cup').getBoundingClientRect();
+    const wl = document.getElementById('twWorld').getBoundingClientRect();
+    const s = wl.width / 2200;                       // town-geo.js WORLD.w
+    const BODY = 99;                                 // what drawComposite lays down for one banana
+    return {
+      maxFoot: (tray.top - wl.top) / s,
+      marks: window.__town.room.cafe().rope().map((m) => ({ x: m.x, y: m.y, l: m.x - BODY / 2, r: m.x + BODY / 2 })),
+      win: window.__town.room.cafe().window(),
+    };
+  });
+  for (const m of geo.marks) {
+    expect(m.y, `a rope mark at ${m.x},${m.y} stands where the counter UI cannot cover its feet`).toBeLessThan(geo.maxFoot);
+    expect(m.y, 'and in front of the storefronts, not inside them').toBeGreaterThan(1040);
+  }
+  for (let i = 1; i < geo.marks.length; i++) {
+    const gap = geo.marks[i].l - geo.marks[i - 1].l;
+    expect(Math.abs(gap), 'a queue, not a pile: one body between marks').toBeGreaterThanOrEqual(99);
+  }
+  // 🪟 and nobody stands in front of the hatch, which is where the player's own face is
+  if (geo.win) for (const m of geo.marks) {
+    expect(m.l > geo.win.x1 || m.r < geo.win.x0, `the customer at ${m.x} leaves the serving window clear`).toBe(true);
+  }
 
   // 🤫 patience is the BODY: a shadow under a banana, never a bubble over one
   const pat = await page.evaluate(() => {
@@ -456,5 +486,62 @@ test('a shift ends when you walk away, and cannot be started twice or behind a s
   await page.waitForTimeout(400);
   const after = await page.evaluate(() => ({ on: window.__town.room.cafe().on(), line: window.__town.room.cafe().line().length, cup: !!window.__town.room.cafe().cup(), atwork: !!document.querySelector('.tw-atwork') }));
   expect(after, 'the shift takes everything with it').toEqual({ on: false, line: 0, cup: false, atwork: false });
+  expect(errors).toEqual([]);
+});
+
+// ⭐ THE DIFFICULTY IS A MEASUREMENT NOW, NOT A HOPE (20 Sep 2026, the critics' §18 and §9).
+//
+// The walk above proves a PERFECT cup is reachable by a machine pressing at an exact millisecond.
+// That is a different claim from "reachable by a person", and for a day it hid two real bugs:
+//   · the grinder's band came from `(seed | 0) % 50` and `seed` is a uint32, so roughly half of all
+//     seeds went NEGATIVE and a quarter of all cups had their target off the left edge of the bar;
+//   · the milk's band sat AT the bar's right edge with a 640 ms up-and-down, which left a ±18 ms
+//     perfect window against ±75 ms at the other two stations — so nobody ever poured a perfect cup.
+// Both are arithmetic, so both can be asserted. This measures the SHIPPING functions.
+test('every station has a perfect window a thumb can hit, and every band lies on the bar', async ({ page }) => {
+  const errors = await bench(page);
+
+  const m = await page.evaluate(() => {
+    const { newCup, zoneOf, press, release, STATIONS } = window.__cafe.fn;
+    const ORDER = ['grind', 'pour', 'milk'];
+    const T0 = 10000;   // an arbitrary clock origin: v is a function of the offset from it
+
+    // 1. every band the town's own seeds can produce lies inside the bar
+    let offBar = 0, narrowest = 1;
+    for (let i = 0; i < 500; i++) {
+      const c = newCup('tall', 0, Math.imul(i + 1, 2654435761) >>> 0);
+      const z = zoneOf(c, 'grind');
+      if (z.from <= 0.0001 || z.to >= 0.9999) offBar++;
+      narrowest = Math.min(narrowest, z.to - z.from);
+    }
+
+    // 2. how far off the perfect instant a thumb may land and still be graded perfect, per station
+    const cupAt = (key) => { const c = newCup('tall', 0, 12345); c.i = ORDER.indexOf(key); c.t0 = T0; return c; };
+    const gradeAt = (key, d) => {
+      const c = cupAt(key), st = STATIONS[key], z = zoneOf(c, key);
+      if (key === 'pour') { press(c, T0); return (release(c, T0 + z.at * st.span + d) || {}).g; }
+      if (key === 'milk') {
+        const t = T0 + (z.at / 2) * st.span;
+        press(c, t + d); press(c, t + st.span + d); press(c, t + st.span * 2 + d);
+        return c.marks[c.marks.length - 1];   // the milk's own mark: the mean of its three taps
+      }
+      return (press(c, T0 + z.at * st.span + d) || {}).g;
+    };
+    const half = {};
+    for (const key of ORDER) { let d = 0; while (d < 600 && gradeAt(key, d) === 2) d += 1; half[key] = d; }
+    return { offBar, narrowest, half, perfectAtZero: ORDER.map((k) => gradeAt(k, 0)) };
+  });
+
+  expect(m.offBar, 'no seed puts the grinder’s band off the end of the bar').toBe(0);
+  expect(m.narrowest, 'and the band is never clipped down to nothing').toBeGreaterThan(0.25);
+  expect(m.perfectAtZero, 'a thumb on the exact instant is perfect at all three').toEqual([2, 2, 2]);
+  // ⚠️ 30 ms is the floor, and it is not a taste: a practised tap on a moving mark lands inside
+  // ±40 ms, so a window narrower than this is a station nobody passes — which is what the milk was.
+  for (const key of ['grind', 'pour', 'milk']) {
+    expect(m.half[key], key + '’s perfect window is wide enough for a person').toBeGreaterThanOrEqual(30);
+  }
+  // and no station may be more than three times tighter than the loosest, or one of them is the game
+  const all = Object.values(m.half);
+  expect(Math.max(...all) / Math.min(...all), 'the three stations are the same kind of hard').toBeLessThan(3);
   expect(errors).toEqual([]);
 });

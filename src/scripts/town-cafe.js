@@ -35,10 +35,16 @@ export const ORDER = ['grind', 'pour', 'milk'];
 
 // ⚠️ MEASURED AGAINST A THUMB, NOT GUESSED. A 1400 ms sweep with a 0.30 band puts ~420 ms of zone
 // under the needle each pass, and a person taps inside ~150 ms of intent.
-const STATIONS = {
+export const STATIONS = {
   grind: { span: 1400, band: 0.30, floor: 0.16 },
   pour: { span: 1700, band: 0.28, floor: 0.15, at: 0.72 },   // the band sits high: the last of the water
-  milk: { span: 640, band: 0.34, floor: 0.18, taps: 3 },
+  // ⚠️ MEASURED AGAINST A THUMB A SECOND TIME, AND THE FIRST NUMBERS WERE WRONG. The swell used to
+  // peak AT the bar's right edge (at: 1), so half of every band fell off the end of the gauge, and a
+  // 640 ms up-and-down moved the needle so fast that the grade-2 window was ±18 ms — against ±75 ms
+  // at the other two stations. Simulated over 20 000 cups against a gaussian thumb: a PERFECT cup
+  // was 0–4% at every skill level, which is not a prize, it is a locked door. The band now sits
+  // inside the bar and the pulse is slower, which puts the three stations within 10 ms of each other.
+  milk: { span: 1000, band: 0.44, floor: 0.24, at: 0.78, taps: 3 },
 };
 
 // ⭐ THE ZONES TIGHTEN THE LONGER YOU STAY ON (the plan). The band closes toward its floor on a
@@ -48,7 +54,7 @@ const bandFor = (st, n) => st.floor + (st.band - st.floor) / (1 + (n | 0) / 7);
 
 export const zoneOf = (cup, key) => {
   const st = STATIONS[key], w = bandFor(st, cup.n);
-  const at = key === 'pour' ? st.at : key === 'milk' ? 1 : cup.at;
+  const at = key === 'pour' || key === 'milk' ? st.at : cup.at;
   return { at, half: w / 2, from: Math.max(0, at - w / 2), to: Math.min(1, at + w / 2) };
 };
 const offBy = (v, z) => Math.abs(v - z.at) / (z.half || 1e-6);
@@ -66,7 +72,7 @@ export const DRINK_IDS = Object.keys(DRINKS);
 // customer's order into an easier one, and two cups in a row are not the same tap.
 export function newCup(drink, n, seed) {
   return {
-    drink: DRINKS[drink] ? drink : 'short', n: n | 0, at: 0.24 + ((seed | 0) % 50) / 100,
+    drink: DRINKS[drink] ? drink : 'short', n: n | 0, at: 0.24 + ((seed >>> 0) % 50) / 100,
     i: 0, t0: 0, held: 0, v: 0, taps: [], marks: [], done: false, grade: 0,
   };
 }
@@ -105,7 +111,12 @@ function land(cup, now, key) {
   if (key === 'milk') {
     cup.taps.push({ v, g });
     if (cup.taps.length < STATIONS.milk.taps) return { key, g, more: true };
-    cup.marks.push(Math.min(...cup.taps.map((t) => t.g)));   // three taps, and the worst is the milk
+    // ⚠️ THE MEAN OF THE THREE, NOT THE WORST. The cup's own grade is still its worst STATION (the
+    // plan's rule, §3) — but making the milk station itself the worst of three taps turned it into
+    // three gates in a row, and three gates cube the chance of passing: one fumble in three killed
+    // every cup. The mean lets a good pour with one slip still be a good cup.
+    const sum = cup.taps.reduce((a, t) => a + t.g, 0);
+    cup.marks.push(Math.round(sum / cup.taps.length));
   } else {
     cup.marks.push(g);
     if (key === 'pour') cup.held = 0;
@@ -142,6 +153,13 @@ export function mountCounter(host, opts = {}) {
   const zoneEl = el('i', 'tw-cup__zone', bar);
   const fillEl = el('i', 'tw-cup__fill', bar);
   const needle = el('i', 'tw-cup__needle', bar);
+  // ⚠️ THE MILK WANTS THREE TAPS AND USED TO SHOW NOTHING FOR THE FIRST TWO. The station landed a
+  // tap, `more: true` came back, and the gauge looked exactly as it had a moment earlier — so the
+  // only readable state was "still going", and a player could not tell a landed tap from a missed
+  // one, or know how many were left. Each tap now leaves its own mark where it fell. No words: it is
+  // a gauge, and the never-instruct rule holds.
+  const tapEls = [0, 1, 2].map(() => { const t = el('i', 'tw-cup__tap', bar); t.hidden = true; return t; });
+  const clearTaps = () => tapEls.forEach((t) => { t.hidden = true; });
   const go = el('button', 'tw-cup__go', box);
   go.type = 'button';
   const note = el('p', 'tw-cup__note', box);
@@ -166,6 +184,11 @@ export function mountCounter(host, opts = {}) {
       if (pour) fillEl.style.transform = 'scaleX(' + cup.v.toFixed(4) + ')';
       else needle.style.left = (cup.v * 100).toFixed(2) + '%';
       stepEls.forEach((s, i) => { s.className = 'tw-cup__step' + (i < cup.i ? ' is-done' : i === cup.i ? ' is-now' : ''); });
+      tapEls.forEach((t, i) => {
+        const tap = key === 'milk' ? cup.taps[i] : null;
+        t.hidden = !tap;
+        if (tap) { t.style.left = (tap.v * 100).toFixed(2) + '%'; t.className = 'tw-cup__tap is-g' + tap.g; }
+      });
     }
     raf = requestAnimationFrame(paint);
   }
@@ -216,6 +239,7 @@ export function mountCounter(host, opts = {}) {
     serve(c, label) {
       cup = c;
       shown = stationOf(c);
+      clearTaps();
       note.textContent = '';
       tickEl.textContent = '';
       for (const k of (DRINKS[c.drink] || [])) el('i', 'tw-cup__pip' + (k === 'bean' ? '' : ' tw-cup__pip--' + k), tickEl);
@@ -226,7 +250,7 @@ export function mountCounter(host, opts = {}) {
     // ⚠️ AN EMPTY TRAY HAS TO SAY WHY. Clocked in with nobody at the rope, the player saw no ticket,
     // a still gauge and a dead button, with nothing to tell them the counter was working and merely
     // quiet rather than broken. (Seen on the QA sweep at 360 wide, 20 Sep.)
-    idle(label) { cup = null; sleep(); tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; needle.hidden = true; fillEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
+    idle(label) { cup = null; sleep(); clearTaps(); tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; needle.hidden = true; fillEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
     say(text) { note.textContent = text || ''; },
     // ⚠️ the town's toast docks at bottom 14 and outranks this by 800 of z-index, so it lands square
     // on the gauge unless it is moved. It steps up for as long as the tray is up, and back down after.
@@ -250,7 +274,9 @@ export function mountCounter(host, opts = {}) {
         const key = stationOf(cup); tick(cup, t);
         const st = STATIONS[key], z = zoneOf(cup, key);
         if (key === 'pour') return (cup.held || t) + z.at * st.span;
-        if (key === 'milk') return cup.t0 + st.span / 2 + Math.ceil((t - cup.t0 - st.span / 2) / st.span) * st.span;
+        // ⚠️ the swell's band no longer sits AT the top of the bar, so the perfect instant is where the
+        // rising leg crosses it (v = 2p on the way up), not the peak — and it comes round every span
+        if (key === 'milk') { const c = cup.t0 + (z.at / 2) * st.span; return c >= t ? c : c + Math.ceil((t - c) / st.span) * st.span; }
         const c = cup.t0 + z.at * st.span;                       // the needle's first pass over the band
         return c >= t ? c : c + Math.ceil((t - c) / (st.span * 2)) * st.span * 2;
       },
@@ -284,22 +310,51 @@ const DRAWN = 58;
 const LEAN = 3;          // how far inside the arch the crown sits, so the head is framed and not cropped
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js — the drawn frame inside its square canvas
 
-// ☕ THE ROPE, measured on the bench at 393×852 and it is a rule, not a preference: the view is 580
-// tall there and the tray owns the bottom 150, so a customer whose feet land past about y 1150 stands
-// BEHIND the counter UI — and a queue you cannot see is the one thing the tray was chosen to prevent.
-// It also runs IN from the serving window rather than out past the frame, because a body is drawn 99
-// world px wide and centred on its mark.
-const ROPE = [[1830, 1075], [1788, 1105], [1746, 1135]];
+// ☕ THE ROPE — and the first three numbers here were wrong in all three ways a queue can be wrong.
+//
+// ⚠️ IT IS NOT A LANE BELOW THE COUNTER. Measured in the real town rather than derived on the bench:
+// at 360×740 the whole 2200×1300 world FITS the view (scale 0.628), so the tray's 150 screen px own
+// the world's bottom 239 — everything past world y 1061 is behind the counter UI, and at 393 past
+// 1083. The old rope ran 1075 → 1135 straight down into that, so two of three customers stood behind
+// the tray at 393 and all three at 360. The band that is actually visible is 1041 to 1061: twenty
+// pixels, between the storefronts' feet and the fold. So the queue runs ALONG the pavement.
+//
+// ⚠️ AND IT IS 102 PX BETWEEN MARKS, because a body is drawn 99 world px wide and centred on its
+// mark. Thirty px of spacing overlapped each banana with the next by 57%, measured — a pile, not a
+// line. Three px of daylight is not much, but it is a queue.
+//
+// ⚠️ AND NOBODY STANDS IN FRONT OF THE HATCH. The serving window is x 1806–1852 and that is where
+// your own banana's face is; a customer on the mark 1830 would span 1780–1880 and cover it. The head
+// of the queue stands at the window's left shoulder, which is where a person stands at a hatch.
+//
+// Every mark is inside the south street's own rectangle (STREETS: 260,1040 → 2020,1140) so the
+// router walks them there, and every foot is below the storefronts' base of 1040 so they are drawn
+// in front of the buildings instead of inside them.
+const ROPE = [[1742, 1052], [1640, 1048], [1538, 1050]];
 const PATIENCE = 34000;          // how long a banana will stand there before it gives up
 const NEXT = [5200, 12000];      // the gap between arrivals, while you are behind the counter
 
+// ⭐ THE COUNTER IS A MARK ON THE GROUND, and the shift is a DISTANCE from it (the plan §7, and
+// Trym's 19 Sep decision in the same words: "step off the mark and it folds; the customer keeps its
+// ticket; step back and it rises"). Without this the shift had no geography at all: clocking in hid
+// your banana with a class and nothing ever measured where you were, so you could walk the whole
+// square as nobody, serving cups for a queue three screens away. Five separate critics found it.
+//
+// NEAR is town-work.js's own number for turning up at your workplace, so the radius that counts as
+// "behind the counter" is the same one that counts as "at work". STAY is how long the world waits
+// before it decides you meant to leave — and AWAY is far enough that it stops waiting and pays you.
+const NEAR = 120, AWAY = 420, STAY = 8000;
+
 export function bootTownCafe(ctx) {
-  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside, shutHere } = ctx;
+  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside, shutHere, pos } = ctx;
   let atWork = null, tray = null, on = false;
   // ☕ THE QUEUE. Each entry is a visitor the counter has borrowed from town-folk.js, its drink, and
   // the moment it arrived — which is its patience clock. ⚠️ the counter does NOT own the body: it
   // borrows it, moves it, and hands it back, so a customer that gives up rejoins its own day.
   let line = [], cup = null, served = 0, tips = 0, best = 0, nextAt = 0, shiftAt = 0;
+  let away = 0;   // the moment the player stepped off the counter mark; 0 while they are on it
+  // the mark is the workplace's own front, the same point town-work.js measures turning up against
+  const mark = () => { const p = PROPS && PROPS.cafe; return p ? { x: p.x + p.w / 2, y: p.base } : null; };
 
   function standIn() {
     if (atWork || !CAFE_WIN) return;
@@ -416,7 +471,7 @@ export function bootTownCafe(ctx) {
   function clockIn(host) {
     if (on) return false;
     on = true;
-    served = 0; tips = 0; best = 0; shiftAt = performance.now(); nextAt = 0; line = [];
+    served = 0; tips = 0; best = 0; shiftAt = performance.now(); nextAt = 0; line = []; away = 0;
     standIn();
     if (!tray) tray = mountCounter(host || world.parentElement, { onCup, label: (k) => (COPY.go || {})[k] || '', idle: () => COPY.idle || '' });
     tray.show();
@@ -471,6 +526,22 @@ export function bootTownCafe(ctx) {
     // running behind a taped-up shutter in a dark window. The shut ENDS the shift and opens the
     // receipt, which is the one outcome that is never a silently dead counter.
     if (shutHere && shutHere()) { clockOut(); return; }
+    // ⭐ AND THE MARK ITSELF. Off it: the tray goes down, your banana steps out of the window and
+    // walks as itself again, and the rope keeps its clock — so "serve the next cup, or step out and
+    // relight the lamp" is finally a choice with a cost on both sides. Stay off it, or go far
+    // enough, and the shift is over and the receipt comes.
+    const m = mark();
+    if (m && pos) {
+      const d = Math.hypot(pos.x - m.x, pos.y - m.y);
+      if (d > AWAY) { clockOut(); return; }
+      if (d > NEAR) {
+        if (!away) { away = now; stepOut(); if (tray) tray.fold(); }
+        else if (now - away > STAY) { clockOut(); return; }
+        patienceTick(now);   // ⚠️ the queue does not pause because you left: that IS the cost
+        return;
+      }
+      if (away) { away = 0; standIn(); if (tray) tray.show(); }
+    }
     if (now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
     patienceTick(now);
     serveNext();

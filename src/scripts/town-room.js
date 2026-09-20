@@ -708,7 +708,7 @@ export function bootTownLife(ctx) {
   function loadFolk() {
     if (!folkP) {
       folkP = import('./town-folk.js')
-        .then((m) => { folk = m.bootTownFolk({ world, W, H, pct, PROPS, drawMe, inside }); return folk; })
+        .then((m) => { folk = m.bootTownFolk({ world, W, H, pct, PROPS, drawMe, inside, band: () => band, nightOut: () => life.beat() === 5 || (curse && curse !== 'hush') }); return folk; })
         .catch((e) => { folkP = null; console.warn('[town] the visitors did not come', e); return null; });
     }
     return folkP;
@@ -723,6 +723,7 @@ export function bootTownLife(ctx) {
     return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track,
       outfit: ctx.outfit || (() => ({})),
       folk: () => folk,   // ☕ the counter borrows its customers from the town's own visitors
+      pos: ctx.pos,   // ☕ the counter mark is a DISTANCE: step off it and the tray folds
       inside,   // ☕ walking into a shop is walking away from the counter
       shutHere: () => shutNow('cafe') || hoardNow('cafe'),   // ☕ a front that closes under a running shift
       openCard, closeCard, esc,

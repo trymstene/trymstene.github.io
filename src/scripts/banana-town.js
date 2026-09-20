@@ -240,7 +240,7 @@ let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
-  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray')) return;
+  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup')) return;   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
   arriveThen = null;   // a new tap cancels a pending cabinet
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;

@@ -29,6 +29,11 @@ const F_LEFT = 0, F_RIGHT = 4;      // the side-facing crouch the beach sits its
 const WALK = 96;                    // px a second — a stroll, slower than the player's 168
 const MAX = 6;                      // ⭐ Trym: "a max of 6-8 roaming bananas … at the same time"
 const GAP = [7000, 19000];          // how long between arrivals, before the cap bites
+// ⭐ AND HOW MANY OF THEM DEPENDS ON THE TOWN. An Abandoned square with six strangers strolling it
+// says nothing is wrong; the crowd IS the band, the same way the lamps and the shutters are. 6 is
+// Trym's own ceiling and thriving keeps it. (The baked statue-visitors in LOOK are a different and
+// much smaller set — 0/0/0/1/3 — because those stand still all day.)
+const CROWD = { abandoned: 0, struggling: 1, recovering: 3, lively: 5, thriving: 6 };
 
 // Where the rest of the town reaches this square: the south road the player themselves came in on,
 // the north road out of the square, and the bus stop on the east side.
@@ -122,9 +127,10 @@ const HELD = ['balloons', 'balloondog', 'mug', 'boombox', 'lemonjug', 'broom', '
 const GLASSES = ['shades', 'nerd', 'potter', 'threed', 'monocle'];
 
 export function bootTownFolk(ctx) {
-  const { world, W, H, pct, PROPS, drawMe, inside } = ctx;
+  const { world, W, H, pct, PROPS, drawMe, inside, band, nightOut } = ctx;
   const folk = [];
   let nextAt = 0, seedN = 0, stopped = false;
+  const capNow = () => { const n = CROWD[band ? band() : 'thriving']; return Math.min(MAX, n == null ? MAX : n); };
 
   // ⚠️ THE SEATS ARE DECLARED AT THE PROP, never guessed from the key. Scanning PROPS for `bench*`
   // sat a banana on the square's Flowers_Bench planters — keyed benchh0/h1 and not a seat at all —
@@ -152,7 +158,7 @@ export function bootTownFolk(ctx) {
   }
 
   function spawn(now) {
-    if (folk.length >= MAX) return;
+    if (folk.length >= capNow()) return;
     const r = rng((Math.floor(now / 1000) * 2654435761 + (seedN++) * 40503) >>> 0);
     const gate = pick(r, GATES);
     const hat = r() < 0.72 ? pick(r, HATS) : 'none';
@@ -275,7 +281,18 @@ export function bootTownFolk(ctx) {
 
   function tick(now, dt) {
     if (stopped) return;
-    if (now > nextAt) { nextAt = now + GAP[0] + Math.random() * (GAP[1] - GAP[0]); spawn(now); }
+    // ⭐ THE VISITORS READ THE TOWN. They are traffic, not fixtures (design library §23) — but traffic
+    // that ignored the clock and the band, so a blacked-out Curse Night square still had six
+    // party-hatted strangers strolling it, and a 2% Abandoned town was as busy as a Thriving one. The
+    // town-wide rule is already written for the baked visitors and the travelling stall (Trym, 15 Sep:
+    // "aren't the townsbananas supposed to go inside in the night?"); these obey it too now.
+    if (nightOut && nightOut()) { for (const v of folk) if (v.job !== 'leave' && v.job !== 'queue') leave(v); }
+    else {
+      // a band that fell while they were out sends the extra ones home, one at a time
+      const cap = capNow();
+      if (folk.length > cap) { const v = folk.find((q) => q.job !== 'leave' && q.job !== 'queue'); if (v) leave(v); }
+      if (now > nextAt) { nextAt = now + GAP[0] + Math.random() * (GAP[1] - GAP[0]); spawn(now); }
+    }
     for (let i = folk.length - 1; i >= 0; i--) {
       const v = folk[i];
       step(v, dt, now);

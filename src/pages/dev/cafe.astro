@@ -78,7 +78,7 @@ const description = 'Internal bench for the Coffee Cup counter. Not a public pag
   </main>
 
   <script>
-    import { mountCounter, newCup, DRINK_IDS, tipFor, GRADES, COPY, deckLine } from '../../scripts/town-cafe.js';
+    import { mountCounter, newCup, DRINK_IDS, tipFor, GRADES, COPY, deckLine, STATIONS, zoneOf, press, release } from '../../scripts/town-cafe.js';
     import { drawComposite, assetsReady } from '../../lib/banana-engine.js';
 
     const view = document.getElementById('cbView');
@@ -196,6 +196,9 @@ const description = 'Internal bench for the Coffee Cup counter. Not a public pag
       else { counter.show(); say('back on the mark'); }
     });
     serve();
-    Object.assign(window.__cafe, { counter, serve, bodies });
+    // ⭐ the PURE half of the counter, for the walk to measure with. The three gestures are functions
+    // of a timestamp and nothing else, so how wide a station's perfect window actually is in
+    // milliseconds can be measured exactly rather than hunted with a real thumb at a real clock.
+    Object.assign(window.__cafe, { counter, serve, bodies, fn: { newCup, zoneOf, press, release, STATIONS } });
   </script>
 </BaseLayout>
