@@ -111,7 +111,13 @@ for (const [key, spot] of Object.entries(SPOTS)) {
   const a = ABOUT[key];
   if (!a || !a[0]) continue;
   const p = document.createElement('div');
-  p.className = 'tw-plank' + (key === 'exchange' || key === 'wheel' ? ' tw-plank--big' : key === 'print' ? ' tw-plank--metal' : '');   // the stalls' signs at double size (Trym, 14 Sep); the print shop's covers the sprite's own
+  // 🪧 THE TWO SHOPFRONTS WEAR THE SAME METAL SIGN, because they are the same sprite: Market_Small_7
+  // and _11 both carry a 66×23 world-px STORE plate over the door, and a plank that does not cover it
+  // leaves the pack's own word showing round the edges. Trym, 20 Sep 2026: "on the Clothes shop, the
+  // Clothes sign should be more metallic like the sign on the Stickers shop. The sign on the Clothes
+  // shop should be a bit bigger aswell to cover the sprite sign."
+  const METAL = ['print', 'clothes'];
+  p.className = 'tw-plank' + (key === 'exchange' || key === 'wheel' ? ' tw-plank--big' : METAL.includes(key) ? ' tw-plank--metal' : '');   // the stalls' signs at double size (Trym, 14 Sep)
   p.dataset.key = key;   // 🏘️ Town Life renames the board's sign to what the board says (town-room.js)
   p.textContent = a[0];
   p.style.left = pct(spot.x + (a[3] || 0), W); p.style.top = pct(spot.y - a[1], H);   // a[3]: a sideways nudge, world px
@@ -120,6 +126,40 @@ for (const [key, spot] of Object.entries(SPOTS)) {
   p.addEventListener('pointerdown', (e) => { if (panel && !panel.hidden) e.stopPropagation(); });   // a prop under an open card is not tappable
   world.appendChild(p);
 }
+
+// 🎡 A LITTLE WHEEL ON THE WHEEL STALL'S COUNTER.
+//
+// Trym, 20 Sep 2026: "can we add a miniature visual of the Wheel of Peel on the outside of this
+// stall-stand-sprite, doesnt have to animate or anything, just to tell the two stalls more apart."
+// The Exchange and the Wheel are the SAME market stand from the pack, one flipped, so across the
+// square they are one building twice — the plank is the only thing that tells them apart, and a plank
+// is a word, which is the slowest thing on screen to read.
+//
+// ⭐ IT IS THE GAME'S OWN WHEEL, NOT A DRAWING OF ONE. drawWheel() and its eight WEDGES are what the
+// card spins; this is the same function on a 30-px canvas with the labels left off, so the colours on
+// the stall and the colours in the card can never disagree. No new art, no second palette, nothing to
+// keep in step — and no pack sprite had to be invented for it (pack-fidelity doctrine).
+//
+// ⚠️ IT DOES NOT ANIMATE and it is not a control: `pointer-events: none`, painted once. The stall
+// underneath stays the tappable thing, which is what a player is aiming at anyway.
+function stallWheel() {
+  const p = PROPS.wheel;
+  if (!p) return;
+  const cv = document.createElement('canvas');
+  cv.className = 'tw-decal';
+  cv.width = cv.height = 120;   // the drawing buffer; CSS shows it at world size
+  cv.setAttribute('aria-hidden', 'true');
+  // where it sits, as fractions of the stall's OWN box, so it rides with the prop if the prop moves:
+  // the counter board runs y 88..120 of 147, and the right-hand third of it is clear of the posts
+  const d = Math.round(p.w * 0.17);
+  const cx = p.x + p.w * 0.67, cy = p.y + p.h * 0.70;
+  cv.style.left = pct(cx - d / 2, W); cv.style.top = pct(cy - d / 2, H);
+  cv.style.width = pct(d, W);
+  cv.style.zIndex = String(100 + p.base + 1);
+  world.appendChild(cv);
+  drawWheel(cv, true);
+}
+
 const park = document.createElement('div');
 park.className = 'tw-plank tw-plank--way';
 park.textContent = 'THE PARK ↓';
@@ -557,21 +597,31 @@ function exchangeCard() {
 const WEDGES = [['5 coins', '#ffe135', '#141208'], ['a firework', '#ff8a3d', '#141208'], ['a peel', '#d9d2c6', '#141208'], ['20 coins', '#ffe135', '#141208'],
   ['a lure', '#7ec8ff', '#141208'], ['spin again', '#c9f26a', '#141208'], ['a peel', '#d9d2c6', '#141208'], ['THE POT', '#ff5c8a', '#fffdf5']];
 let pot = 120 + Math.floor(mix32(dayNum())() * 300), spins = 0, spinning = false, angle = 0;
-function drawWheel(cv) {
+// ⚠️ `mini` LEAVES THE WORDS OFF. The same eight wedges are painted on the stall's counter at 30 world
+// px, where a 24-px label is a smear of grey — the shape and the colours are what carry it that small.
+function drawWheel(cv, mini) {
   const ctx = cv.getContext('2d'), R2 = cv.width / 2, n = WEDGES.length, per = Math.PI * 2 / n;
   ctx.clearRect(0, 0, cv.width, cv.height);
   WEDGES.forEach((w, i) => {
     const a0 = -Math.PI / 2 + i * per, a1 = a0 + per;
     ctx.beginPath(); ctx.moveTo(R2, R2); ctx.arc(R2, R2, R2 - 6, a0, a1); ctx.closePath();
-    ctx.fillStyle = w[1]; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#141208'; ctx.stroke();
+    ctx.fillStyle = w[1]; ctx.fill(); ctx.lineWidth = mini ? 7 : 4; ctx.strokeStyle = '#141208'; ctx.stroke();
+    if (mini) return;
     // the label reads upright on both halves: left-side wedges are turned half a circle and drawn from the rim inward
     const mid = a0 + per / 2, left = Math.cos(mid) < 0;
     ctx.save(); ctx.translate(R2, R2); ctx.rotate(left ? mid + Math.PI : mid); ctx.textAlign = left ? 'left' : 'right'; ctx.textBaseline = 'middle';
     ctx.fillStyle = w[2]; ctx.font = 'bold 24px "Archivo Black", "Arial Black", sans-serif'; ctx.fillText(w[0], left ? -(R2 - 26) : R2 - 26, 0); ctx.restore();
   });
-  ctx.beginPath(); ctx.arc(R2, R2, 26, 0, Math.PI * 2); ctx.fillStyle = '#141208'; ctx.fill();
-  ctx.beginPath(); ctx.arc(R2, R2, 14, 0, Math.PI * 2); ctx.fillStyle = '#ffe135'; ctx.fill();
+  ctx.beginPath(); ctx.arc(R2, R2, mini ? 22 : 26, 0, Math.PI * 2); ctx.fillStyle = '#141208'; ctx.fill();
+  ctx.beginPath(); ctx.arc(R2, R2, mini ? 11 : 14, 0, Math.PI * 2); ctx.fillStyle = '#ffe135'; ctx.fill();
 }
+// ⚠️ CALLED HERE, NOT WHERE IT IS DEFINED. stallWheel() paints with drawWheel(), and drawWheel() reads
+// `WEDGES` — a module-scope `const` declared a few lines above this one. Calling it from up beside the
+// planks threw a ReferenceError out of the temporal dead zone, and a module-scope throw kills every
+// line after it: the whole town booted to an empty green field with no error anyone would look for.
+// (memory: partial-init-trap — consts above init, boot calls last.)
+stallWheel();
+
 function wheelCard() {
   openCard('<h2>The Wheel of Peel</h2><p class="tw-card__sub">One free spin a day. After that a few coins a spin, and every paid spin feeds the pot until one wedge takes it all.</p>'
     + '<p class="tw-pot">THE POT · <span id="twPot">' + pot + '</span> COINS</p>'

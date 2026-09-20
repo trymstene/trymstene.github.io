@@ -36,12 +36,25 @@ export const ANCHORS = {
   // hand-picked ones that were here before — and the 150 px floor is what makes two bin bags in one
   // place impossible by construction rather than by luck.
   street: [[206, 581], [448, 588], [808, 595], [1050, 602], [1292, 582], [1652, 589], [1894, 596], [429, 1083], [671, 1063], [1031, 1070], [1391, 1077], [1633, 1084], [1875, 1064], [747, 815], [830, 1008], [954, 829], [1196, 809], [1202, 1002], [1444, 823], [1122, 1248]],
-  walls: [[560, 1000, 'store'], [1700, 1000, 'print'], [1780, 520, 'post'], [400, 520, 'condo']],
+  // ⚠️ A WALL SPOT SITS A FEW PIXELS INSIDE ITS BUILDING'S EAST FACE, so the paint is ON the wall and
+  // the player stands on the ground beside it. The store's and the print shop's always did (4 px of
+  // masonry, open street behind you); the post office's and the arcade's were 46 px and 22 px DEEP
+  // INSIDE their own footprints — the same defect as the crows on the fountain, found by the same gate
+  // the day that one was reported. Measured: 6 px in, with 47% of the reach disc walkable, which is
+  // what the two that always worked score.
+  walls: [[560, 1000, 'store'], [1700, 1000, 'print'], [1832, 520, 'post'], [576, 520, 'condo']],
   // a perch is a SURFACE of a prop, measured on the plate by the builder's twin of this table in
   // tools/… (the top of each bench at its middle, the cart's umbrella, the shelter's roof, the
   // board's rail, the fountain's upper rim) plus the crow's own feet offset, named so the sprite
   // can outrank the prop. Benches first: that is where crows sit (Trym, 14 Sep).
-  perches: [[960, 1000, 'benchsq0'], [1240, 1000, 'benchsq1'], [960, 588, 'benchh0'], [1240, 588, 'benchh1'], [1500, 423, 'benchm'], [1600, 711, 'benchc0'], [1860, 711, 'benchc1'], [610, 711, 'benchg'], [1670, 1133, 'bencht0'], [1870, 1133, 'bencht1'], [1472, 891, 'cart'], [2060, 224, 'bus'], [800, 866, 'board'], [1100, 768, 'fountain']],
+  // ❌ AND THE FOUNTAIN'S RIM IS NOT ONE. Trym, 20 Sep 2026: "cant seem to touch these crows as the
+  // fountain barrier is in the way, so maybe the crows should be moved somewhere else." Measured, and
+  // he is right in the way that counts: the fountain is a 92 px circle with a second one inside it, and
+  // the only ground within a crow's 74 px reach is a 14 px crescent you have to find between the two
+  // walls — 51% of the reach disc is walkable, against 78–100% for every other anchor in this file. A
+  // chore with one place to stand and no way to see where it is, is not a chore.
+  // tools/check-town-lanes.mjs holds the rule now: room to stand, at every anchor, or it is not one.
+  perches: [[960, 1000, 'benchsq0'], [1240, 1000, 'benchsq1'], [960, 588, 'benchh0'], [1240, 588, 'benchh1'], [1500, 423, 'benchm'], [1600, 711, 'benchc0'], [1860, 711, 'benchc1'], [610, 711, 'benchg'], [1670, 1133, 'bencht0'], [1870, 1133, 'bencht1'], [1472, 891, 'cart'], [2060, 224, 'bus'], [800, 866, 'board']],
   lamps: ['lamp0', 'lamp1', 'lamp2', 'lamp3', 'lamp4', 'lamp5', 'lamp6', 'lamp7'],
   shops: ['cafe', 'info', 'store'],   // every front that can be shut (today.js CLOSABLE) — renamed from `kiosks` when the store joined
   bins: ['bin', 'bin1', 'bin2'],

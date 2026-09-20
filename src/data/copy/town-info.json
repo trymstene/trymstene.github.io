@@ -5,20 +5,16 @@
   "shut": "Shutter down. The maps are behind it for now.",
   "areas": {
     "town": {
-      "name": "Banana Town",
-      "line": "Brick square, fountain, clock tower, and shops on cobbles."
+      "name": "Banana Town"
     },
     "park": {
-      "name": "Park",
-      "line": "Paths circle lawns, pond, garden beds, and the mushroom shop."
+      "name": "Park"
     },
     "bay": {
-      "name": "Banana Bay",
-      "line": "Pier and beach beside a boardwalk, volleyball court, and wrecked bar."
+      "name": "Banana Bay"
     },
     "homestead": {
-      "name": "Homestead",
-      "line": "A fenced roadside plot with a gate, mailbox, and whatever stands there."
+      "name": "Homestead"
     }
   },
   "rave": {

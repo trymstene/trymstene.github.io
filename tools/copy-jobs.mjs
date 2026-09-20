@@ -702,6 +702,12 @@ const postSchema = {
 // view of each area of banana world — world maps of all areas … also for the Rave — not needed with a
 // map for that area — but more like a promotional image of the Rave, can maybe look like a Flyer."
 //
+// ❌ AND THERE ARE NO CAPTIONS ANY MORE. Each map carried a line under it saying what the place was.
+// Trym, 20 Sep 2026: "in the map for the town in the kiosk there some white text over the map that
+// doesnt quite fit, remove that." A map's title and its picture are the whole of it — and a field the
+// game no longer reads is a line the rig keeps writing for nobody, so it leaves the job rather than
+// sitting in the file unread.
+//
 // ⚠️ THE FOUR PLACE NAMES ARE NOT THE WRITER'S TO INVENT. Banana Town, the Park, Banana Bay and the
 // homestead are named all over this world — on planks, in the nav, on the pass — and a map that titles
 // them something else is a map of somewhere else. The shape check holds each one to its own word.
@@ -713,13 +719,9 @@ const infoFields = {
   back: { kind: 'label', aim: 8, max: 14, note: 'The button from an open map back to the rack. A verb first, one or two words, ONE line — buttons in this world never wrap.' },
   shut: { kind: 'prose', aim: 64, max: 88, note: 'What stands in for the maps when the kiosk is closed, which happens only when the town is at its lowest. Ordinary and temporary — the shutter is down. Not an error, not an apology, and it may NOT blame the player for the state of the town.' },
   'areas.town.name': { kind: 'label', aim: 12, max: 20, note: 'The title printed under the town’s map. MUST be the place’s own name — Banana Town — titled, never renamed.' },
-  'areas.town.line': { kind: 'prose', aim: 54, max: 76, note: 'One line under it, the flat useful kind printed under a town plan: what you would SEE if you went. A brick old town on cobbles, a square with a clock tower, shops round it, a post office, a café, an arcade, a notice board, a fountain — pick what fits one line. Not an advertisement, not a tour, no instruction.' },
   'areas.park.name': { kind: 'label', aim: 10, max: 18, note: 'The title under the Park’s map. Its own name, titled.' },
-  'areas.park.line': { kind: 'prose', aim: 54, max: 76, note: 'One line: lawns and paths round a fountain, garden beds you can plant, a pond, a mushroom shop, benches. ⚠️ it must not share a construction with the other three — four captions that all open the same way read as a form.' },
   'areas.bay.name': { kind: 'label', aim: 10, max: 18, note: 'The title under Banana Bay’s map. Its own name, titled.' },
-  'areas.bay.line': { kind: 'prose', aim: 54, max: 76, note: 'One line: a beach with a pier, a beach hut, volleyball, a wrecked ship of a bar, a boardwalk of market stalls.' },
   'areas.homestead.name': { kind: 'label', aim: 12, max: 20, note: 'The title under the homestead’s map. Its own name, titled — and this one is the PLAYER’S OWN place, which the word may acknowledge.' },
-  'areas.homestead.line': { kind: 'prose', aim: 58, max: 80, note: 'One line, and the hardest of the four: the map is of the LAND, not of anybody’s farm, because every homestead is different. A fenced plot on the road, a gate, a mailbox, and whatever has been built on it. ⚠️ it must be true on an empty plot on the first day AND on a full farm a year later.' },
   'rave.name': { kind: 'label', aim: 16, max: 26, note: 'The big name at the top of the flyer: the NIGHT’s name or the club’s, two or three words, the kind of thing printed in capitals above everything else on a poster.' },
   'rave.tonight': { kind: 'label', aim: 8, max: 14, note: 'The small word or two above the name, the way a flyer says when it is on. ⚠️ the poster is up EVERY DAY, so it has to be true every day: nothing dated, no day of the week, no hour.' },
   'rave.bill[]': { kind: 'label', aim: 16, max: 24, note: 'One act on the bill, printed on its own line. The first is the headliner. Banana names or act names, short enough for a phone — and they are BANANAS, never anybody real.' },
@@ -745,9 +747,6 @@ function infoShape(data) {
     const a = (data.areas || {})[k] || {};
     if (!AREA_WORD[k].test(String(a.name || ''))) say('areas.' + k + '.name', 'is not that place’s own name — the four are named all over this world, and a map may title them, never rename them');
   }
-  const lines = AREA_KEYS.map((k) => String(((data.areas || {})[k] || {}).line || ''));
-  const first = lines.map((l) => (l.trim().split(/\s+/)[0] || '').toLowerCase());
-  if (new Set(first).size < first.length) say('areas', 'two captions open on the same word — four that share a construction read as a form, not as a map');
   const bill = (data.rave || {}).bill || [];
   if (new Set(bill.map((b) => String(b).trim().toLowerCase())).size < bill.length) say('rave.bill', 'two acts on the bill share a name');
   if (/\bfree\b/i.test(String((data.rave || {}).door || ''))) say('rave.door', 'says free — the door line says where it is and that everybody is welcome, not what it is worth');
@@ -763,8 +762,8 @@ const infoSchema = {
     areas: {
       type: 'object', additionalProperties: false, required: AREA_KEYS,
       properties: Object.fromEntries(AREA_KEYS.map((k) => [k, {
-        type: 'object', additionalProperties: false, required: ['name', 'line'],
-        properties: { name: str(infoFields['areas.' + k + '.name'].note), line: str(infoFields['areas.' + k + '.line'].note) },
+        type: 'object', additionalProperties: false, required: ['name'],
+        properties: { name: str(infoFields['areas.' + k + '.name'].note) },
       }])),
     },
     rave: {

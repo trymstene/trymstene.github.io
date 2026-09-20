@@ -366,7 +366,7 @@ export function bootTownLife(ctx) {
   const cond = { lamps: {}, shut: new Set(), fountainDry: false, full: new Set(), crows: [], visitors: [], dayghost: null, fixedShut: new Set() };
   const propOf = (key) => PROPS[key] || null;
   // a crow on a perch paints OVER the prop it sits on (the fountain is a keyed animation, not an overlay)
-  const perchZ = (key) => (key === 'fountain' ? 900 : propOf(key) ? propOf(key).base : 1000) + 2;
+  const perchZ = (key) => (propOf(key) ? propOf(key).base : 1000) + 2;   // ⚠️ the fountain's own case went with its perch (problems.js)
   const lampHalo = {};      // key → sprite (the halo over the lamp, lit at night)
   const fullSprites = {}, sideSprites = {};   // key → the full-state sprite over a bin or a dumpster, and what stands beside it
   let dryFountain = null;

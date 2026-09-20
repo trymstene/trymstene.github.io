@@ -49,9 +49,13 @@ for (const s of [{ n: 'a phone', w: 360, h: 640, cols: 2 }, { n: 'a desk', w: 12
       return { vh: Math.round(a.height), vw: Math.round(a.width), ih: Math.round(b.height), iw: Math.round(b.width) };
     });
     expect(win.vh, 'the map window has a height of its own — 1fr is not one').toBeGreaterThan(80);
-    // the window takes the map's shape, so at rest the map covers it within a pixel of rounding
-    expect(Math.abs(win.ih - win.vh), 'no letterbox above and below the map').toBeLessThan(4);
-    expect(Math.abs(win.iw - win.vw), '…nor bars either side').toBeLessThan(4);
+    // ⭐ THE WINDOW TAKES THE MAP'S SHAPE, so at rest the map covers it. ⚠️ measured as a SHARE of the
+    // window, not in pixels: on a tall desktop card the row's own max-height clamps the box a few px
+    // short of the aspect ratio and the map then fits by height, leaving about two pixels of ground
+    // either side. That is not a letterbox — the letterbox this guards against was 40% of the window
+    // black on a phone — and clamp() centres whatever slack there is, so it reads as a margin.
+    expect(Math.abs(win.ih - win.vh) / win.vh, 'no letterbox above and below the map').toBeLessThan(0.03);
+    expect(Math.abs(win.iw - win.vw) / win.vw, '…nor bars either side').toBeLessThan(0.03);
 
     const zoomed = await page.evaluate(() => window.__town.info().zoom(2.5));
     expect(zoomed.z, 'it zooms').toBeCloseTo(2.5, 1);

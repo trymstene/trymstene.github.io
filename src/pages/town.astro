@@ -73,11 +73,18 @@ const description = 'The town centre of Banana World, under construction.';
     }
     /* a plank is a WORLD thing: it follows the world's scale (--ws, banana-town.js layout()) with a floor a thumb can
        read — sized in rem alone, the stalls' signs stood at desktop size over a phone's smaller stalls (Trym, 15 Sep) */
+    /* 🎡 a decal painted ON a prop: the wheel on the Wheel of Peel's counter. Scenery, never a control —
+       the stall underneath stays the tappable thing, which is what a thumb is aiming at anyway. */
+    .tw-decal { position: absolute; image-rendering: pixelated; pointer-events: none; height: auto; }
     .tw-plank--way { pointer-events: none; font-size: max(0.45rem, calc(4.5px * var(--ws, 1.6))); }
     .tw-plank--big { font-size: max(0.6rem, calc(10px * var(--ws, 1.6))); padding: 0.25em 0.875em; letter-spacing: 0.05em; }   /* the two stalls: a sign you can read from the fountain */
-    /* the print shop's sign: grey metal over the sprite's own STORE band (64×22 world px) — sized in world units so it
-       covers the band at every scale, with the same readable floor (Trym, 15 Sep) */
-    .tw-plank--metal { font-size: max(0.62rem, calc(6.5px * var(--ws, 1.6))); padding: 0.3em 0.9em; min-width: calc(72px * var(--ws, 1.6)); min-height: calc(26px * var(--ws, 1.6)); box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+    /* the shopfronts' sign: grey metal over the sprite's own STORE band — sized in world units so it
+       covers the band at every scale, with the same readable floor (Trym, 15 Sep).
+       ⚠️ 80×30, NOT 72×26. The band measures 66×23 world px on both Market_Small sprites, and a plank the
+       same size as the thing it hides shows a rim of it on every edge the moment a letter-space rounds
+       the wrong way — which is exactly what the clothes shop looked like (Trym, 20 Sep: "a bit bigger
+       aswell to cover the sprite sign"). Seven px of margin all round, measured against the band. */
+    .tw-plank--metal { font-size: max(0.62rem, calc(6.5px * var(--ws, 1.6))); padding: 0.3em 0.9em; min-width: calc(80px * var(--ws, 1.6)); min-height: calc(30px * var(--ws, 1.6)); box-sizing: border-box; display: flex; align-items: center; justify-content: center;
       background: linear-gradient(180deg, #d7dbe3 0%, #a9afba 45%, #7d838f 100%); background-image: linear-gradient(180deg, #d7dbe3 0%, #a9afba 45%, #7d838f 100%); color: #f7f8fa; border-color: #2b2f36; text-shadow: 0 1px 0 #2b2f36, 0 0 2px rgba(0, 0, 0, 0.5); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 1px 2px 0 rgba(0, 0, 0, 0.45); }
     .tw-toast {
       position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2000; max-width: min(92%, 520px);
@@ -152,7 +159,7 @@ const description = 'The town centre of Banana World, under construction.';
        these lists name the very classes a room's own fittings are drawn with — a stocked shelf drawn
        over the store's plate would render invisible with nothing at all on screen to say why. A sprite
        that belongs to the ROOM wears .is-in and is exempt. See docs/design-library.md §22. */
-    .tw-world.is-inside :is(.tw-ov, .tw-npc, .tw-plank, .tw-fountain, .tw-litter, .tw-glow):not(.is-in) { visibility: hidden; }
+    .tw-world.is-inside :is(.tw-ov, .tw-npc, .tw-plank, .tw-decal, .tw-fountain, .tw-litter, .tw-glow):not(.is-in) { visibility: hidden; }
     /* 🗣 A RESIDENT'S DIALOGUE — the shared card (/css/dialogue.css, src/lib/world-dialogue.js), in the
        town's brick instead of the park's green. ⭐ There is no speech bubble anywhere in the town on
        purpose (Trym, 12 Sep): a resident speaks only in this card, and only after you walk up and tap.

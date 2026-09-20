@@ -73,6 +73,11 @@ export function bootTownInfo(ctx) {
   // ── an open map ─────────────────────────────────────────────────────────────────────────────────
   const backBtn = () => (COPY.back ? '<button type="button" class="tw-info__back" id="twInfoBack">' + esc(COPY.back) + '</button>' : '');
 
+  // ❌ AND NOTHING IS PRINTED OVER IT. An open map used to carry a line of caption under the picture.
+  // Trym, 20 Sep 2026: "in the map for the town in the kiosk there some white text over the map that
+  // doesnt quite fit, remove that." He is right twice over — it did not fit (measured on four desktop
+  // sizes: the map's box ran 259–684 and the caption was laid out at 648, inside it), and a map does
+  // not want a caption anyway. The name is the title and the picture is the rest.
   function mapHtml(key) {
     const a = (COPY.areas || {})[key] || {};
     return '<div class="tw-info__open">'
@@ -80,7 +85,6 @@ export function bootTownInfo(ctx) {
       + '<div class="tw-info__view" id="twInfoView">'
       + '<img class="tw-info__map" id="twInfoMap" src="' + esc(SRC(key)) + '" alt="' + esc(a.name || '') + '" draggable="false">'
       + '</div>'
-      + (a.line ? '<p class="tw-card__sub">' + esc(a.line) + '</p>' : '')
       + backBtn() + '</div>';
   }
 

@@ -121,6 +121,46 @@ for (const e of ERRANDS) {
 for (const m of [...bad.values()].slice(0, 14)) fail.push(m);
 if (bad.size > 14) fail.push(`…and ${bad.size - 14} more`);
 
+// ---- 4. …and every chore has room to stand at it ------------------------------------------------
+// ⚠️ REACHABLE IS NOT THE SAME AS FINDABLE. Trym, 20 Sep 2026: "cant seem to touch these crows as the
+// fountain barrier is in the way." The crows on the fountain's rim were technically reachable — a probe
+// walked the player to 1098,754 and they cleared — but the fountain is a 92 px circle with a second one
+// inside it, and that was the ONLY place to stand: a 14 px crescent between two walls, with nothing on
+// screen to say so. Every other anchor in the town has walkable ground right up against it.
+//
+// So the rule is room, not possibility: most of the ground a chore can be done from has to be walkable,
+// and some of it has to be at the chore itself. 70% and 8 px sit well below every anchor that works
+// (78–100%, 0 px) and well above the one that did not (51%, 14 px).
+const problems = await import(pathToFileURL(join(ROOT, 'src/data/town/problems.js')).href);
+// ⚠️ `walls` IS JUDGED ON THE NEAREST GROUND ALONE. Graffiti is painted ON a building, so half of its
+// reach disc is masonry by definition and always will be — what matters is that you can stand right up
+// against it. A free-standing chore is judged on both: room AND ground against it.
+const REACH = { perches: [74, true], street: [30, true], walls: [56, false] };
+const ROOM = 0.70, AT = 8;
+const solid = (x, y) => OB_RECTS.some((r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3])
+  || OB_CIRCLES.some((c) => (x - c[0]) ** 2 + (y - c[1]) ** 2 <= c[2] * c[2]);
+for (const [group, [reach, needsRoom]] of Object.entries(REACH)) {
+  for (const row of (problems.ANCHORS || {})[group] || []) {
+    if (typeof row[0] !== 'number') continue;   // `shops`, `lamps` and the rest name a prop, not a point
+    const [x, y] = row;
+    const what = group + ' ' + (row[2] || x + ',' + y);
+    let free = 0, all = 0, near = Infinity;
+    for (let dx = -reach; dx <= reach; dx += 2) {
+      for (let dy = -reach; dy <= reach; dy += 2) {
+        const d = Math.hypot(dx, dy);
+        if (d > reach) continue;
+        all++;
+        if (solid(x + dx, y + dy)) continue;
+        free++;
+        if (d < near) near = d;
+      }
+    }
+    const pc = Math.round((100 * free) / all);
+    if (needsRoom && free / all < ROOM) fail.push(`${what}: only ${pc}% of the ground within reach is walkable — there is nowhere to stand and do it`);
+    else if (near > AT) fail.push(`${what}: the nearest place you can stand is ${Math.round(near)} px away, through a gap — a chore needs ground against it`);
+  }
+}
+
 if (fail.length) {
   console.error('❌ town lanes:\n' + fail.map((f) => '   · ' + f).join('\n'));
   process.exit(1);

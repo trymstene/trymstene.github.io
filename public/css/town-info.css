@@ -54,7 +54,13 @@
 .tw-info__tile.is-flyer .tw-info__name { color: #ff8ad8; }
 
 /* ---- an open map ------------------------------------------------------------------------------ */
-.tw-info__open { display: grid; grid-template-rows: auto auto auto auto; gap: 0.35rem; min-height: 0; align-content: start; }
+/* ⚠️ THE MAP'S ROW HAS TO BE ABLE TO SHRINK, and `auto` cannot. The window takes its height from the
+   map's own aspect ratio, so on a desktop it asked for 425 px inside a 487 px block that also held a
+   title, a caption and a button — and an `auto` track sized to the space left over while the element
+   went on rendering at 425, so it OVERFLOWED its own track and the caption was drawn on top of the
+   map. A flexible track plus `max-height: 100%` on the window is the fix: when the space runs out the
+   map letterboxes a little instead of the card stacking on itself. */
+.tw-info__open { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 0.35rem; min-height: 0; }
 .tw-info__title {
   font-family: "Archivo Black", sans-serif; font-size: 0.72rem; letter-spacing: 0.05em;
   color: #ffd98a; text-transform: uppercase;
@@ -73,10 +79,11 @@
   /* the height comes from the MAP's own aspect ratio, which town-info.js sets on load. This is the
      fallback before the image has loaded, and the cap that stops a tall map pushing the caption and
      the button off the bottom of a short phone. */
-  height: clamp(150px, 34vh, 260px); max-height: 44vh;
+  height: clamp(150px, 34vh, 260px); max-height: min(44vh, 100%); min-height: 0;
   cursor: grab;
 }
 .tw-info__view[style*="aspect-ratio"] { height: auto; }
+.tw-info__open > .tw-info__view { align-self: start; justify-self: stretch; }
 .tw-info__view:active { cursor: grabbing; }
 .tw-info__map {
   position: absolute; left: 0; top: 0; transform-origin: 0 0;
@@ -134,7 +141,7 @@
   .tw-info__acts li { font-size: 0.78rem; }
   .tw-info__acts li.is-top { font-size: 0.98rem; }
   .tw-info__bill p { font-size: 0.8rem; }
-  .tw-info__view { height: clamp(260px, 56vh, 480px); max-height: 60vh; }
+  .tw-info__view { height: clamp(260px, 56vh, 480px); max-height: min(60vh, 100%); }
 }
 
 @media (prefers-reduced-motion: reduce) {

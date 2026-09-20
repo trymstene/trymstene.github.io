@@ -24,6 +24,7 @@
 // cropping banana-dance.png, and that is where the sitting pair comes from — Banana Bay has sat
 // bananas on chairs since July with exactly these two frames.
 import { STREETS, SPOTS, SEATS, OB_RECTS, OB_CIRCLES } from './town-geo.js';
+import { FRAME_H_FRAC, FRAME_TOP_FRAC } from '../lib/banana-geo.js';
 
 const F_LEFT = 0, F_RIGHT = 4;      // the side-facing crouch the beach sits its bananas on
 const WALK = 96;                    // px a second — a stroll, slower than the player's 168
@@ -210,17 +211,37 @@ export function bootTownFolk(ctx) {
   // sat a banana on the square's Flowers_Bench planters — keyed benchh0/h1 and not a seat at all —
   // where it vanished behind the petals with only a nightcap showing. The builder is the only place
   // that knows which bench is a bench, and which way its sitter should look.
-  // ⚠️ AND THE SEAT IS BEHIND THE BENCH'S FOOT. Everything outdoors sorts by its own y, so a sitter
-  // at base + 6 paints IN FRONT of the bench and reads as standing beside it with its feet dangling.
-  // Two pixels the other side and the bench's front slats draw over its legs — which is what sitting
-  // on a bench looks like, and the same trick the café's window uses on a bigger scale.
-  // ⚠️ A SITTER OVERFLOWS THE BENCH, and that needs its Z to be decoupled from its Y. Everything
-  // outdoors sorts by `100 + y`, and a seat is ABOVE the bench's own foot — so a banana sitting at
-  // base - 2 sorted two behind the bench it was sitting on and was drawn with the backrest over its
-  // whole body. Trym, 20 Sep: "when a banana sits on a bench he must overflow the bench, they now sit
-  // behind the bench visually." It keeps its seat position and takes the bench's z plus two, so the
-  // bench peeks out either side and below it, which is what somebody sitting on one looks like.
-  const BENCHES = (SEATS || []).map(([key, x, base, face]) => ({ key, x, y: base - 2, z: 100 + base + 2, face, taken: false }));
+  //
+  // 🪑 SITTING TOOK TWO GOES AND THEY ARE DIFFERENT PROBLEMS. The first is WHICH ORDER, the second is
+  // WHERE.
+  //
+  // ⚠️ ORDER: A SITTER OVERFLOWS THE BENCH, and that needs its z decoupled from its y. Everything
+  // outdoors sorts by `100 + y` and a seat is ABOVE the bench's own foot, so a banana sitting there
+  // sorted BEHIND the thing it was sitting on and was painted over with the backrest. Trym, 20 Sep:
+  // "when a banana sits on a bench he must overflow the bench, they now sit behind the bench
+  // visually." It takes the bench's own z plus two instead, so the bench peeks out either side and
+  // below it — which is what somebody sitting on one looks like.
+  //
+  // ⚠️ WHERE: AND IT SITS DOWN ON IT. Trym, same day: "when bananas sit on the bench in the town they
+  // can anchor a bit lower on the bench, right now it looks like they stand sitting on the bench."
+  // At base - 2 the feet landed 58% of the way down the square's plank — above the seat, which is the
+  // pose of somebody standing behind it.
+  //
+  // ⭐ A FRACTION OF THE BENCH, NEVER A NUMBER OF PIXELS. The town has three bench shapes and they are
+  // 38, 51 and 110 px tall, so one offset cannot serve them: the drop that seats a banana on the low
+  // plank stands it on the grass in front of the tall terrace bench. Photographed at five drops on one
+  // bench of each shape (qa-shots/sit-*) and all three read as SITTING at the same place — the feet
+  // about seven eighths of the way down the bench's own height. So that is the rule, and the pixels
+  // fall out of it.
+  const SEAT_LINE = 0.88;
+  // ⚠️ AND THE FEET ARE NOT THE ELEMENT'S BOTTOM EDGE. The element is a square canvas 4.5% of the world
+  // wide (town.astro .tw-npc) and the banana is drawn inside it with headroom for a hat, so its feet
+  // sit this far above the bottom — the engine's own frame geometry, imported rather than guessed.
+  const FOOT_PAD = (1 - FRAME_TOP_FRAC - FRAME_H_FRAC) * (0.045 * W);
+  const BENCHES = (SEATS || []).map(([key, x, base, face]) => {
+    const h = (PROPS[key] || {}).h || 40;
+    return { key, x, y: Math.round(base - h * (1 - SEAT_LINE) + FOOT_PAD), z: 100 + base + 2, face, taken: false };
+  });
   // the shopfronts a banana might disappear into for a while
   const DOORS = ['store', 'condo', 'post', 'hall', 'print', 'cafe'].filter((k) => PROPS[k]).map((k) => {
     const p = PROPS[k];
@@ -440,15 +461,18 @@ export function bootTownFolk(ctx) {
       // minute to walk, so proving a sitter draws OVER its bench meant standing in the square hoping.
       // This puts a visitor on a named bench in one call — same seat, same frames, same z the ordinary
       // path uses, so what the walk photographs is the real thing and not a staged copy.
-      seat(i, key) {
+      seat(i, key, dy) {
         const v = folk[i | 0], b = BENCHES.find((x) => x.key === key) || BENCHES[0];
         if (!v || !b) return null;
         if (v.seat) v.seat.taken = false;
         b.taken = true; v.seat = b; v.job = 'sit'; v.path = [];
-        v.x = b.x; v.y = b.y;
+        // ⚠️ `dy` IS FOR THE EYE AND NOTHING ELSE. How far a sitter drops onto a bench is a judgement
+        // nobody can make from a number, so the walk can nudge it and take a picture at each value. The
+        // shipped drop lives in BENCHES; this only ever shifts the copy on screen while it is being looked at.
+        v.x = b.x; v.y = b.y + (dy || 0);
         arrive(v, performance.now());
         paint(v);
-        return { key: b.key, x: b.x, y: b.y, z: +v.el.style.zIndex };
+        return { key: b.key, x: b.x, y: v.y, z: +v.el.style.zIndex };
       },
       // the walk cannot stand in the square for twenty minutes waiting for a crowd
       fill: (n, now) => { for (let i = 0; i < (n || MAX); i++) spawn(now || performance.now()); return folk.length; },
