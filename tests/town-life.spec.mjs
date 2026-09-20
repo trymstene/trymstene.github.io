@@ -289,16 +289,18 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   await setBand(page, 70);   // lively: six rows
   await seam(page, () => window.__town.room.rich());
   await seam(page, () => window.__town.room.cards.store());
-  await page.waitForTimeout(300);
+  // ⚠️ POLLED, NEVER SLEPT. Pip's shelf is a LAZY CHUNK (town-shop.js) and 300 ms was enough alone
+  // and not enough with the machine loaded — the rows had not been built yet and the count was 0.
+  // toHaveCount retries by itself, which is the whole reason it exists.
   const rows = page.locator('[data-town-buy]');
-  expect(await rows.count()).toBe(6);
+  await expect(rows).toHaveCount(6, { timeout: 10000 });
   const enabled = page.locator('[data-town-buy]:not([disabled])');
   expect(await enabled.count()).toBeGreaterThan(0);
   const id = await enabled.first().getAttribute('data-town-buy');
   const coins0 = await room(page, 'coins');
   await page.screenshot({ path: SHOT + 'store.png' });
   await enabled.first().click();
-  await page.waitForTimeout(300);
+  await page.waitForFunction((c) => window.__town.room.coins() < c, coins0, { timeout: 10000 });
   expect(await room(page, 'coins')).toBeLessThan(coins0);
   const hs = await page.evaluate(() => JSON.parse(localStorage.getItem('hs-v1') || 'null'));
   const landed = [...(hs.shed || []).map((x) => x.id), ...(hs.orders || []).map((x) => x.id)];
@@ -1106,5 +1108,62 @@ test('the restock chore: only for staff, carried slowly, and the till has the ro
   expect((await page.locator('.tw-toast').first().textContent()).length, 'it tells you the work is done').toBeGreaterThan(0);
   await page.screenshot({ path: SHOT + 'chore-full.png' });
   await seam(page, () => window.__town.rooms.exit());
+  expect(errors).toEqual([]);
+});
+
+// 🤫 THE TWO CHECKS THE DESIGN LIBRARY HAS CLAIMED SINCE 12 SEP AND NEVER HAD. Its own table of
+// "which rule is enforced by what" named `the town walk's silence check` and `the town walk's
+// standingPose check`, and neither string existed anywhere in tests/ or tools/ — so the Quiet Rule
+// and the standing pose were paragraphs pretending to be gates. They are both honoured by the code
+// already; what was missing was anything to stop them quietly stopping being honoured.
+test('silence: not one word floats over a banana in this town', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await seam(page, () => window.__town.room.folkReady());
+  await seam(page, () => window.__town.room.folk().fill(6, performance.now()));
+  await page.waitForTimeout(1200);
+
+  const said = await page.evaluate(() => {
+    const bad = [];
+    // every banana in the world: the nine residents, the visitors, the merchant, the night vendor
+    for (const el of document.querySelectorAll('.tw-npc, .tw-visitor, .tw-me, .tw-atwork')) {
+      const t = (el.textContent || '').trim();
+      if (t) bad.push(el.className + ' says "' + t.slice(0, 40) + '"');
+      for (const kid of el.children) if (kid.tagName !== 'CANVAS' && kid.tagName !== 'IMG') bad.push(el.className + ' carries a <' + kid.tagName.toLowerCase() + '>');
+    }
+    return bad;
+  });
+  expect(said, '⚠️ a banana is wearing words — the Quiet Rule is broken (design library, the Quiet Rule)').toEqual([]);
+
+  // …and the town's own voice is a TOAST at the bottom, not a bubble on a head
+  const toast = await page.evaluate(() => {
+    const t = document.getElementById('twToast');
+    if (!t) return null;
+    const s = getComputedStyle(t);
+    return { pos: s.position, bottom: s.bottom, events: s.pointerEvents };
+  });
+  expect(toast.pos, 'the world speaks from one docked strip').toBe('absolute');
+  expect(toast.events, 'and it never eats a tap meant for the square').toBe('none');
+  expect(errors).toEqual([]);
+});
+
+test('standingPose: a resident at their post stands sideways, never front-on', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  // ⚠️ frames 2, 3, 6 and 7 are the FRONT-FACING dance poses — arms up, the banana's party frame.
+  // A resident standing at their own counter must not be caught in one; standFrame() only ever
+  // returns 0, 1, 4 or 5 for exactly this reason (src/scripts/town-life.js).
+  const FRONT = [2, 3, 6, 7];
+  const bad = [];
+  for (let i = 0; i < 10; i++) {
+    await page.waitForTimeout(700);
+    for (const r of await seam(page, () => window.__town.life.residents())) {
+      if (r.hidden || r.walking || r.leg) continue;
+      if (FRONT.includes(r.frame)) bad.push(`${r.key} stands front-on in frame ${r.frame} at ${r.place}`);
+    }
+  }
+  expect(bad, '⚠️ somebody is posing at their own shop instead of standing at it').toEqual([]);
   expect(errors).toEqual([]);
 });
