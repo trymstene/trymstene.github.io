@@ -52,6 +52,15 @@ class_name = "TownRoom"
 tag = "v5"
 new_sqlite_classes = ["TownRoom"]
 
+# ✉️ THE POST (20 Sep 2026) — one mailbox per player, keyed by slug, exactly like a yard.
+[[durable_objects.bindings]]
+name = "POST"
+class_name = "PostRoom"
+
+[[migrations]]
+tag = "v6"
+new_sqlite_classes = ["PostRoom"]
+
 [vars]
 ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # 🪪 the world token rollout (2 Sep 2026). "0" = SOFT: a wrong token is
@@ -59,3 +68,8 @@ ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 # Flip to "1" once /yards/stats shows wt.none at ~0 for a day: then a
 # person-id claim (pass ≠ alt) without proof is refused too.
 WT_ENFORCE = "1"   # flipped 2 Sep 2026 evening (Trym: "flip it")
+# ✉️ THE LETTER RAIL'S KILL SWITCH, AND IT SHIPS SHUT. "1" = every /post route answers 503 before it
+# reads the origin or the body. This is the plan's gate one: POST_OFF deployed and PROVEN to refuse
+# before a single letter is sent. Flip to "0" only when the filter, the caps, the report and the review
+# list have all been walked on the real worker.
+POST_OFF = "1"
