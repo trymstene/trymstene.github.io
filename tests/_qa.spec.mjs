@@ -65,12 +65,26 @@ test('the store, the chore, and a boss', async ({ page }) => {
   await page.waitForTimeout(500);
 
   // a boss's card, with the job question on it
+  // ⚠️ a REAL tap on the resident's own element, the way the town walk does it, and
+  // :not(.tw-visitor) because the square is full of nameless bananas now
   const at = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'pip'); return n ? { x: n.x, y: n.y } : null; });
   if (at) {
-    await page.evaluate((p) => { const t = window.__town; t.pos.x = t.tgt.x = p.x + 40; t.pos.y = t.tgt.y = p.y + 20; }, at);
-    await page.waitForTimeout(500);
-    await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'pip'); void n; window.__town.room.tapAt && window.__town.room.tapAt('n:pip'); });
-    await page.waitForTimeout(1600);
+    await page.evaluate((p) => { const t = window.__town; t.pos.x = t.tgt.x = p.x + 46; t.pos.y = t.tgt.y = p.y + 16; }, at);
+    await page.waitForTimeout(600);
+    const hit = await page.evaluate(() => {
+      let best = null, d = 1e9;
+      // ⚠️ nearest to the PLAYER, not to the view's centre. Tapping a resident WALKS you to them and
+      // the card opens on arrival, so picking the one across the square just sets off a long walk.
+      const me = document.querySelector('.tw-me').getBoundingClientRect();
+      for (const el of document.querySelectorAll('.tw-npc:not(.tw-visitor)')) {
+        const r = el.getBoundingClientRect();
+        if (!r.width) continue;
+        const k = Math.hypot(r.left + r.width / 2 - (me.left + me.width / 2), r.top + r.height - (me.top + me.height));
+        if (k < d) { d = k; best = { x: r.left + r.width / 2, y: r.top + r.height - 14 }; }
+      }
+      return best;
+    });
+    if (hit) { await page.mouse.click(hit.x, hit.y); await page.waitForTimeout(2000); }
     await page.screenshot({ path: SHOT + '09-boss-card.png' });
   }
   expect(true).toBe(true);

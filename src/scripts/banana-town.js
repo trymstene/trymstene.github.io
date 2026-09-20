@@ -357,7 +357,12 @@ function npcCard(key) {
   const jobQ = work && work.topicFor ? work.topicFor(key) : null;
   dialog = mountDialogue(cardBody, {
     name: d.name, line: d.line, topics: jobQ ? [...d.topics, jobQ] : d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
-    portrait: (ctx, size) => drawComposite(ctx, size, 0, d.outfit),
+    // ⚠️ A PORTRAIT IS A FACE, NOT A FULL LENGTH. `extras` holds exactly the resident's HELD TOOL
+    // (town-life.js builds it as { [r.tool]: true }), and a wide one paints straight over the name
+    // beside it — Pip's rubber chicken covered the P in "Pip" entirely, on the very card you tap to
+    // ask him for a job. The hat and the glasses stay, because those are his face. The tool is still
+    // in his hand out in the square, where it belongs. (Seen on the QA sweep, 20 Sep.)
+    portrait: (ctx, size) => drawComposite(ctx, size, 0, { ...d.outfit, extras: {} }),
     onClose: closeCard,
   });
 }
