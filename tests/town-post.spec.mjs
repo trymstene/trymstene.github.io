@@ -340,3 +340,83 @@ test('the rail refuses a postcard that is not one', async () => {
   expect(COPY.card.lines.length, 'the deck and the gate agree').toBe(CARD.lines);
   expect(Object.keys(COPY.card.places).sort(), 'and so do the places').toEqual([...CARD.tpl].sort());
 });
+
+// 📱👍 THE THUMB WALK — every control of the post office, tapped for real, at four phone widths.
+//
+// docs/town-jobs-plan.md §7 line 26: "Pulse + the walk at 360/375/390/393 with raw taps". The raw
+// part is the whole point. `element.click()` fires on a node whether or not a human could ever have
+// reached it, so it passes on a button that is below the fold, under the HUD, or behind another
+// element — which is exactly the failure this house has been caught by before (memory: the
+// below-fold trap, the stand's buy box). A tap here is a real click at real coordinates, and it is
+// refused unless the control is ON SCREEN and is the topmost thing at that point.
+//
+// ⚠️ WHAT IT DOES AND DOES NOT PROVE, because an overclaiming test is worse than none. It scrolls
+// the control into view first, exactly as a player would — so a button below the fold of a card that
+// SCROLLS is not a failure and is not caught (checked: stretching the deck to ten times its height
+// still passes, and should). What it catches is a control that cannot be reached at all, and one that
+// is covered: a translucent overlay laid over the two reply buttons turns this walk red at every
+// width, which is how the probe itself was proven.
+async function thumb(page, sel, what) {
+  const el = page.locator(sel).first();
+  await el.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(90);
+  const m = await page.evaluate((s) => {
+    const e = document.querySelector(s);
+    if (!e) return null;
+    const r = e.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const top = document.elementFromPoint(x, y);
+    return {
+      x, y, w: r.width, h: r.height,
+      onScreen: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth,
+      topmost: !!(top && (top === e || e.contains(top) || top.contains(e))),
+      covered: top ? top.className || top.tagName : 'nothing',
+    };
+  }, sel);
+  expect(m, `${what} is on the page`).not.toBeNull();
+  // ⚠️ 44 px is the house's own thumb target (design library), and a 2-px slice of a control is a
+  // control nobody hits on the first try
+  expect(Math.min(m.w, m.h), `${what} is big enough for a thumb`).toBeGreaterThan(17);
+  expect(m.onScreen, `${what} is off the screen at this size — a player could never reach it`).toBe(true);
+  expect(m.topmost, `${what} is covered by ${m.covered}`).toBe(true);
+  await page.mouse.click(m.x, m.y);
+  await page.waitForTimeout(260);
+}
+
+// ⚠️ 375×667 is an iPhone SE and the SHORTEST thing the house supports; 393×852 the tallest common
+// Android. A card that holds at 360 and at 393 can still fail in between (memory: mobile viewport
+// targets).
+for (const [w, h] of [[360, 640], [375, 667], [390, 844], [393, 852]]) {
+  test(`every control of the post office answers a real thumb at ${w}×${h}`, async ({ page }) => {
+    const errs = await box(page, w, h);
+    await put(page, [LETTERS[0], CARD_IN]);
+    await page.waitForTimeout(250);
+
+    // ── a sealed envelope opens
+    await thumb(page, '.tw-post__env', 'the envelope');
+    expect(await page.evaluate(() => window.__town.post().state().open), 'it opened').toBeTruthy();
+
+    // ── write back, and send
+    await thumb(page, '#twPostReply', 'Write back');
+    await thumb(page, '.tw-post__sheet', 'the writing sheet');
+    await page.keyboard.type('The hens are laying again.');
+    await thumb(page, '#twPostSend', 'Send letter');
+
+    // ── a postcard opens, and one can be made end to end
+    await page.evaluate((ls) => window.__town.post().set({ letters: ls, unread: 2 }), [LETTERS[0], CARD_IN]);
+    await page.waitForTimeout(250);
+    await thumb(page, '.tw-post__pcrow', 'the postcard in the box');
+    await thumb(page, '#twPostCard', 'Send a card');
+    await thumb(page, '.tw-pc__pick:nth-child(3)', 'the third place');
+    await thumb(page, '.tw-pc__say:last-child', 'the last line of the deck');
+    await thumb(page, '#twPostCardGo', 'Send postcard');
+
+    // ── and the report, which is the one control that must never be hard to reach
+    await page.evaluate((ls) => window.__town.post().set({ letters: ls, unread: 1 }), [LETTERS[0]]);
+    await page.waitForTimeout(250);
+    await thumb(page, '.tw-post__env', 'the envelope again');
+    await thumb(page, '#twPostFlag', 'Report this letter');
+    expect(await page.evaluate(() => window.__town.post().state().letters.length), 'the letter left the box on the tap').toBe(0);
+    expect(errs).toEqual([]);
+  });
+}
