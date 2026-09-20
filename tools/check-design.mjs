@@ -255,6 +255,33 @@ for (const f of files) {
     }
   }
 
+  // 4. A LAMP'S HIT BOX LIVES IN ONE PLACE (design library §24, 20 Sep 2026). Trym, 18 Sep: "i see a
+  //    broken streetlight in the square board, but i dont see any options to fix it … no fix icon on
+  //    any streetlight". It was fixed once, in the reseed — and the ghosts' own path went on planting
+  //    lamps with the default box, so a lamp a ghost put out could not be tapped where its icon was.
+  //    Second time in one class, so it is a check: the numbers are LAMP_HIT in town-room.js and a
+  //    literal copy of them anywhere in the town's scripts fails the build.
+  const lampNums = room && room.match(/const LAMP_HIT = \{[^}]*\}/);
+  if (room && !lampNums) problems.push(['src/scripts/town-room.js', "no LAMP_HIT constant — a lamp's repair icon and tap box must have exactly one home (design library §24)"]);
+  // ⚠️ RELATIVE PATHS, because this block's own `slurp` joins them onto ROOT — handing it the
+  // absolute paths that walk() returns silently read nothing at all and the check passed on air.
+  const TOWN_JS = files.map((x) => String(x).replace(/\\/g, '/'))
+    .filter((x) => /\/src\/scripts\/town-[^/]+\.js$/.test(x))
+    .map((x) => x.slice(x.indexOf('/src/scripts/') + 1));
+  for (const f of TOWN_JS) {
+    const t = slurp(f);
+    // ⚠️ BOTH SHAPES: `grab: 54` in an object literal and `p.grab = 54` on a line of its own. The
+    // first version of this check only knew the colon, and the assignment form walked straight past it.
+    for (const m of t.matchAll(/\b(?:grab|tall)\s*[:=]\s*(\d+)/g)) {
+      // ⚠️ THE SAME LINE, not the neighbourhood: a lookback of 200 characters passed a literal that sat
+      // two lines under the constant's own name, which is exactly the shape the bug had.
+      const from = t.lastIndexOf('\n', m.index) + 1, to = t.indexOf('\n', m.index);
+      if (!/LAMP_HIT/.test(t.slice(from, to < 0 ? t.length : to))) {
+        problems.push([f, `a hard-coded problem hit box (${m[1]}) — a problem's tap box belongs to one named constant (LAMP_HIT for lamps), or the next path that plants one forgets it (design library §24)`]);
+      }
+    }
+  }
+
   // 3. EVERY SHUT FRONT KEEPS ITS KEEPER IN. A cheerful resident standing outside their own taped-off
   //    door is the tell that the lock is skin-deep, so keepFn must ask about every closable key.
   for (const k of closable) {

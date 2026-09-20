@@ -731,3 +731,43 @@ collected. One banana crossing the square with a broom is character, not chaos.
 of it, the centre of it — so it makes sense that the map really is bigger but in the background."*
 That is what makes the visitors honest rather than decoration: they come in from the south road, the
 north road and the bus stop, do something ordinary, and leave. See `src/scripts/town-folk.js`.
+
+## §24 A PROBLEM'S TAP BOX IS SHAPED LIKE THE THING (20 Sep 2026)
+
+Trym, 18 Sep: *"i see a broken streetlight in the square board, but i dont see any options to fix it
+… no fix icon on any streetlight"*. That was fixed once — in the reseed — by giving a lamp's problem
+a repair icon at `lift: 118` (ON the lantern, not floating above it where it reads as belonging to
+whatever stands behind) and a tap box `grab: 54, tall: 190` reaching from the icon down to the foot,
+so the whole lamp answers a tap.
+
+**It was fixed in one of the two places that plant lamps.** The ghosts' own mischief path
+(`town-night.js addProblem`) kept the default box, so a lamp a ghost had just put out could not be
+tapped anywhere near its own repair icon — the closed-door rule again, and the second time in this
+class. So it is a check now, not a paragraph:
+
+- the numbers live in **one** exported constant, `LAMP_HIT` in `src/scripts/town-room.js`
+- `tools/check-design.mjs` §24 fails the build on any hard-coded `grab:`/`tall:` in
+  `src/scripts/town-*.js` whose own line does not name `LAMP_HIT` — both the object-literal shape
+  (`grab: 54`) and the assignment shape (`p.grab = 54`)
+
+⚠️ two traps in writing that gate, both of which made it pass on air: the block's `slurp()` joins a
+**relative** path onto ROOT, so handing it `walk()`'s absolute paths read nothing at all; and a
+lookback of 200 characters accepted a literal that sat two lines under the constant's own name, which
+is exactly the shape the bug had. The check reads the **same line**, and a red run was proven for
+both shapes before it went in.
+
+## §25 TWO TRAYS CANNOT SHARE THE BOTTOM OF THE SCREEN (20 Sep 2026)
+
+The town has two things that rise from the bottom edge: the pocket (`.tw-tray`, z 901) and the
+café counter (`.tw-cup`, z 1200). During a shift the pocket opened completely **behind** the
+counter, so tapping the bag did nothing a player could see.
+
+- the lower one does not fight its way up: the counter **yields** (`cafe.hold(true)`) while the bag
+  is open and comes back when it closes, which is the same courtesy the toast already does
+- and the world's own voice needs somewhere to stand. The toast is z 2000 and docks at the bottom,
+  so it landed on the gauge; raising it by a fixed 172 px landed it square on the barista's face in
+  the serving window instead (measured at 360×740: toast 419–495, the banana 455–510). While a shift
+  is on it docks at the **top** of the view, under the HUD strip — and the offset is MEASURED from
+  the strip and watched with a `ResizeObserver`, because the strip grows a line when the save pill
+  appears. `tests/town-cafe.spec.mjs` asserts the toast overlaps neither the tray, the strip, nor
+  `.tw-atwork`.

@@ -165,7 +165,28 @@ export function mountCounter(host, opts = {}) {
   const note = el('p', 'tw-cup__note', box);
 
   let cup = null, raf = 0, holding = false, cx = 0, cy = 0;
-  const toast = (up) => { const t = document.getElementById('twToast'); if (t) t.classList.toggle('is-above-tray', !!up); };
+  // ⚠️ WHERE THE WORLD'S VOICE STANDS WHILE A SHIFT IS ON, and it has to be MEASURED. The toast docks
+  // at the bottom and is z 2000, so it lands on the gauge; raised by a fixed 172 px it landed square on
+  // the barista's own face in the serving window instead. The only clear band is the top of the view,
+  // under the HUD strip — and the strip is not a fixed height: it grows a line when the save pill
+  // appears. So it is measured, and watched for as long as the tray is up.
+  let ro = null;
+  const placeToast = () => {
+    const t = document.getElementById('twToast'), v = t && t.parentElement;
+    if (!t || !v) return;
+    const wh = document.querySelector('.wh');
+    const top = wh ? Math.round(wh.getBoundingClientRect().bottom - v.getBoundingClientRect().top) + 10 : 44;
+    t.style.setProperty('--tw-toast-top', Math.max(14, top) + 'px');
+  };
+  const toast = (up) => {
+    const t = document.getElementById('twToast'); if (!t) return;
+    if (up) {
+      placeToast();
+      const wh = document.querySelector('.wh');
+      if (!ro && wh && typeof ResizeObserver === 'function') { ro = new ResizeObserver(placeToast); ro.observe(wh); }
+    } else if (ro) { ro.disconnect(); ro = null; }
+    t.classList.toggle('is-above-tray', !!up);
+  };
 
   let shown = '';
   function paint() {
@@ -281,7 +302,7 @@ export function mountCounter(host, opts = {}) {
         return c >= t ? c : c + Math.ceil((t - c) / (st.span * 2)) * st.span * 2;
       },
     },
-    destroy() { sleep(); go.removeEventListener('pointerdown', down); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('pointermove', move); box.remove(); },
+    destroy() { sleep(); toast(false); go.removeEventListener('pointerdown', down); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('pointermove', move); box.remove(); },
   };
 }
 
@@ -353,6 +374,8 @@ export function bootTownCafe(ctx) {
   // borrows it, moves it, and hands it back, so a customer that gives up rejoins its own day.
   let line = [], cup = null, served = 0, tips = 0, best = 0, nextAt = 0, shiftAt = 0;
   let away = 0;   // the moment the player stepped off the counter mark; 0 while they are on it
+  let held = false;   // something else asked for the bottom of the screen (the pocket): the tray yields
+  let lastBest = '';   // which drink the last right cup was, for the receipt to name
   // the mark is the workplace's own front, the same point town-work.js measures turning up against
   const mark = () => { const p = PROPS && PROPS.cafe; return p ? { x: p.x + p.w / 2, y: p.base } : null; };
 
@@ -390,12 +413,16 @@ export function bootTownCafe(ctx) {
         + ' at ' + pc((win[0] + win[2]) / 2 - l) + ' ' + pc((win[1] + win[3]) / 2 - t) + ')';
     }
     world.appendChild(el);
+    // 🏷 AND THE FOR SALE SIGN COMES DOWN. A big red plank offering the Coffee Cup for sale, hanging
+    // over your own banana serving in its window, is the building telling two stories at once.
+    world.classList.add('is-shift');
     atWork = el;
     paint();   // ⚠️ only once it is IN the world, because the size it is drawn at is the size it lands at
     const me = world.querySelector('.tw-me');
     if (me) me.classList.add('is-serving');   // ⚠️ a CLASS, never [hidden]: authored display beats it
   }
   function stepOut() {
+    world.classList.remove('is-shift');
     if (atWork) { atWork.remove(); atWork = null; }
     clearTimeout(rz);
     const me = world.querySelector('.tw-me');
@@ -459,7 +486,7 @@ export function bootTownCafe(ctx) {
     const quick = row && row.at && (performance.now() - row.at) < PATIENCE / 2;
     const n = tipFor(c.grade, quick);
     tips += n; served++;
-    if (c.grade === 2) best++;
+    if (c.grade === 2) { best++; lastBest = c.drink; }
     const deck = deckLine(GRADES[c.grade], served);
     if (deck) say(deck);
     track('town_cup', { at: 'cafe', r: GRADES[c.grade] });
@@ -471,7 +498,7 @@ export function bootTownCafe(ctx) {
   function clockIn(host) {
     if (on) return false;
     on = true;
-    served = 0; tips = 0; best = 0; shiftAt = performance.now(); nextAt = 0; line = []; away = 0;
+    served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0;
     standIn();
     if (!tray) tray = mountCounter(host || world.parentElement, { onCup, label: (k) => (COPY.go || {})[k] || '', idle: () => COPY.idle || '' });
     tray.show();
@@ -502,18 +529,34 @@ export function bootTownCafe(ctx) {
   function receipt(paid) {
     const w = COPY.receipt || {};
     if (!openCard || !w.title) return;
+    // ⚠️ THREE OUTCOMES, NOT TWO. paid === 0 meant `none` — "the cups stayed stacked and dry" — and a
+    // player who had served a full queue after the day's 120-coin tip cap was spent read exactly that.
+    // A shift that served nothing and a shift the cap refused are different days, and the receipt says so.
     const line = paid > 0
       ? (w.take || '').replace('{n}', String(paid))
-      : (w.none || '');
+      : served > 0 ? (w.capped || w.none || '') : (w.none || '');
+    // 🧾 AND IT CARRIES EVIDENCE THAT WORK HAPPENED. The card used to show a number and a mood and
+    // nothing else: `served` and `best` were tracked, passed to pay() for Pulse, and never shown. One
+    // cup made right names itself, which is also the only place the three drinks' names are ever read.
+    const drink = best > 0 ? (COPY.drinks || {})[lastBest] || '' : '';
+    const good = drink && w.best ? w.best.replace('{drink}', drink) : '';
     openCard('<div class="tw-cup__till">'
       + '<h2>' + esc(w.title) + '</h2>'
       + (line ? '<p class="tw-cup__take">' + esc(line) + '</p>' : '')
+      + (good ? '<p class="tw-cup__best">' + esc(good) + '</p>' : '')
       + (w.line ? '<p class="tw-card__sub">' + esc(w.line) + '</p>' : '')
       + (w.back ? '<button class="tw-cta" id="twTillX" type="button"><span class="tw-cta__verb">' + esc(w.back) + '</span></button>' : '')
       + '</div>');
     const b = document.getElementById('twTillX');
     if (b && closeCard) b.addEventListener('click', () => closeCard());
   }
+  // ⚠️ A SHIFT THAT ENDS WITH THE PAGE ENDS WITH ITS TIPS PAID. Walking out of the town — the travel
+  // door, the south road, the back button, a closed tab — used to throw the whole shift's earnings
+  // away, because the only thing that ever called pay() was a clock-out the player had to perform.
+  // passStat() writes to storage before it syncs, so a payout on pagehide is durable.
+  const onHide = () => { if (on) clockOut(); };
+  window.addEventListener('pagehide', onHide);
+
   function tick(now) {
     if (!on) return;
     // ⚠️ WALKING INTO A SHOP IS WALKING AWAY, and the brief says walking away IS clocking out. Without
@@ -540,7 +583,7 @@ export function bootTownCafe(ctx) {
         patienceTick(now);   // ⚠️ the queue does not pause because you left: that IS the cost
         return;
       }
-      if (away) { away = 0; standIn(); if (tray) tray.show(); }
+      if (away) { away = 0; standIn(); if (tray && !held) tray.show(); }
     }
     if (now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
     patienceTick(now);
@@ -570,6 +613,12 @@ export function bootTownCafe(ctx) {
 
   return {
     clockIn, clockOut, redraw, tick,
+    // ☕ what the front says to somebody who does not work here — the rig's line, and the reason the
+    // town loads this chunk on a tap from a stranger
+    front: () => COPY.front || '',
+    // ☕ THE BOTTOM OF THE SCREEN IS NOT OURS ALONE. The pocket opens there too and is drawn under us,
+    // so it asks the counter to stand down; tick() honours it rather than fighting it back up.
+    hold(v) { held = !!v; if (!tray || !on) return; if (held) tray.fold(); else if (!away) tray.show(); },
     on: () => on,
     tray: () => tray,
     take: () => ({ served, tips, best }),

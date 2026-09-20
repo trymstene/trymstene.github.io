@@ -83,14 +83,26 @@
     "These cobbles were warmer when I had feet.",
     "The bench has a wobble. It is doing its best."
   ],
-  "closed": [
-    "Closed today: the coffee propeller needs a new bolt.",
-    "Closed today: lemonade jars need washing.",
-    "Closed today: the arcade has a loose floor tile.",
-    "Closed today: the post office scale is stuck.",
-    "Closed today: garden hose has a split.",
-    "Closed today: the wheel needs its handle tightened."
-  ],
+  "closed": {
+    "cafe": [
+      "The coffee machine has swallowed a spoon. Fetch it before it learns foam.",
+      "The propeller bolt is loose. Tighten it before the roof gets ideas.",
+      "The water hose has split by the hatch. A patch will settle it.",
+      "Beans spilled into the grinder. Sweep them out; it sounds hungry."
+    ],
+    "info": [
+      "Map glass has a crack across the north road. It needs replacing.",
+      "Leaflets blew behind the counter. Gather them before they become a new district.",
+      "Map pins have fallen out. Put the square back where it belongs.",
+      "The light inside has gone dark. A new bulb will do."
+    ],
+    "store": [
+      "The till drawer is jammed on a firework receipt. Ease it free.",
+      "A delivery crate is blocking the bell. Shift it before Pip calls it display.",
+      "A shelf bracket has slipped. Set it straight before the duck bread votes.",
+      "The cellar hatch will not shut. Its hinge needs a turn."
+    ]
+  },
   "lowShut": [
     "Nothing failed here. Fix what is broken in the square, and this door opens again.",
     "Hands in the square lift the town. When it rises, this shopfront comes back.",
@@ -106,10 +118,11 @@
       "cafe": "the Coffee Cup"
     },
     "ask": "May I work here?",
-    "hired": "Gladly. {where} could use your hands.",
-    "moved": "You have chosen {where}. Leave your old place tidy.",
+    "hired": "Gladly, {where} could use your hands.",
+    "moved": "You chose {where}; your old place will manage.",
     "already": "You already have a spot here.",
     "keep": "Keep this pass, and the work you do stays yours.",
+    "keepCta": "Keep my pass",
     "day": "Good to see you at your post."
   },
   "locks": {
@@ -120,8 +133,8 @@
     "step": "Story steps: {n} of {of}"
   },
   "rooms": {
-    "condo": "The Arcade is buzzing. Walk back onto the doorway to leave.",
-    "store": "Pip’s General Store. Walk back onto the doorway to leave.",
+    "condo": "Cabinets chatter along the wall while coins clink beneath the prize board.",
+    "store": "Pip’s counter waits beneath shelves, each one either bare or proudly full.",
     "in": "Step inside"
   },
   "objects": [

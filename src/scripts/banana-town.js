@@ -71,7 +71,8 @@ const ABOUT = {
   // the print shop's plank is an OVERLAY on the sprite's own STORE sign (measured: the sign band is 64×22 world px
   // centred at 1585,932): grey metal, a bit bigger, its bottom-centre 2 px under the sign (Trym, 15 Sep)
   print: ['STICKERS', 93, 'The print shop. The real sticker packs in the window. Not built yet.', -35],
-  cafe: ['', 220, 'The Coffee Cup. Bean pours today’s fortune and a rumour about tomorrow’s prices. Not built yet.'],
+  // ☕ no third field: the café answers for itself now, through the rig (town-room openFor + town-cafe.json `front`)
+  cafe: ['', 220, ''],
   board: ['NOTICES', 112, 'The notice board. Board of Works projects, today’s wants, Monday’s results. Not built yet.'],   // 112: the plank's foot 14px into the board's top rail (Trym: "sits on top of the board")
   exchange: ['THE EXCHANGE', 134, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],   // 134: on the awning, not above it
   wheel: ['WHEEL OF PEEL', 134, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
@@ -262,7 +263,7 @@ view.addEventListener('pointerdown', (e) => {
     const spot = SPOTS[hit[1]], wasIn = inRoom;
     // ⚠️ a thing with nothing to say says NOTHING. This used to fall back to the raw key, which was
     // harmless while every tappable thing had an entry — a room full of shelves would have toasted "sh1".
-    if (!openFor(hit[1]) && ABOUT[hit[1]]) say(ABOUT[hit[1]][2]);
+    if (!openFor(hit[1]) && ABOUT[hit[1]] && ABOUT[hit[1]][2]) say(ABOUT[hit[1]][2]);   // ⚠️ an EMPTY third field says nothing rather than flashing an empty toast
     if (inRoom !== wasIn) return;   // 🚪 a door was used: the room placed the banana; a walk target here would march it straight back out
     if (spot) { tgt.x = spot.x; tgt.y = spot.y + 30; }
     else { const rm = roomNow(); const r2 = rm && rm.spots.find((q) => q[0] === hit[1]); if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; } }   // a fitting: stand at its front
@@ -551,8 +552,14 @@ const pocketBtn = document.getElementById('twPocket');
 pocketBtn.innerHTML = iconSvg('pocket', { size: 22 }) + '<b class="tw-act__n" id="twPocketN">0</b>';
 const pocketN = document.getElementById('twPocketN');
 const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid', bread: 'bird-solid' };
+// ⚠️ TWO TRAYS CANNOT SHARE THE BOTTOM OF THE SCREEN. The pocket is z 901 and the counter is z 1200,
+// so during a shift the pocket opened completely behind the counter's tray and a tap on the bag did
+// nothing a player could see. The counter yields while the bag is open and comes back when it closes —
+// the same courtesy the toast already does for the pocket, two lines down.
+const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} };
 function toggleTray() {
-  if (!tray.hidden) { tray.hidden = true; return; }
+  if (!tray.hidden) { tray.hidden = true; cafeYield(false); return; }
+  cafeYield(true);
   toastEl.hidden = true; clearTimeout(toastT);   // the tray is what the player asked for; the chatter yields
   let html = '';
   // a row = glyph + name; the verb button only where the item works HERE, otherwise one small line
@@ -566,8 +573,8 @@ function toggleTray() {
   tray.innerHTML = html || '<div class="tw-row"><b>Empty.</b></div>';
   tray.hidden = false;
   // the tray folds first either way, so the toast never lands on it
-  tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => { tray.hidden = true; pocket.firework--; pocketPaint(); firework(); }));
-  tray.querySelectorAll('[data-say]').forEach((r) => r.addEventListener('click', () => { tray.hidden = true; say(r.dataset.say === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); }));
+  tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => { tray.hidden = true; cafeYield(false); pocket.firework--; pocketPaint(); firework(); }));
+  tray.querySelectorAll('[data-say]').forEach((r) => r.addEventListener('click', () => { tray.hidden = true; cafeYield(false); say(r.dataset.say === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); }));
 }
 
 // ---- 🕹 THE CABINETS (12 Sep 2026): five games, one module, loaded the first time a cabinet is tapped.

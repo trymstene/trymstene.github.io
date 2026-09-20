@@ -260,6 +260,15 @@ export function bootTownLife(ctx) {
   // 🔧 the repair icon rides ONLY over a street lamp; everything smaller glows instead (Trym, 15 Sep:
   // "it has become an icon bonanza … it just looks like you're picking up icons and not fixing
   // town-problems"). The mark is otherwise an invisible anchor.
+  // 💡 THE LAMP'S OWN HIT BOX, AND IT LIVES HERE ONCE (Trym, 18 Sep: "i see a broken streetlight in the
+  // square board, but i dont see any options to fix it … no fix icon on any streetlight"). A lamp is
+  // 190 px tall and its lantern is where the eye goes, so the icon rides at -118 (ON the lantern, not
+  // above it where it reads as belonging to whatever stands behind) and the tap box reaches from the
+  // icon down to the foot — the whole lamp answers. ⚠️ the numbers were copied into the reseed only,
+  // and the ghosts' own path planted lamps with the default box, so a lamp a ghost put out could not
+  // be tapped where its icon was. Two places, two behaviours: now it is one exported constant, and
+  // tools/check-design.mjs §24 fails the build if a second copy of the numbers appears.
+  const LAMP_HIT = { lift: 118, grab: 54, tall: 190 };
   const mark = (x, y, lift, z, icon) => { const m = document.createElement('i'); m.className = 'tw-mark'; m.style.left = pct(x, W); m.style.top = pct(y, H); m.style.zIndex = String(z != null ? z : 100 + Math.round(y) - 1);
     if (icon) { const ic = document.createElement('span'); ic.className = 'tw-mark__ic'; ic.innerHTML = iconSvg('tools', { size: 18 }); ic.style.top = (-(lift || 40)) + 'px'; m.appendChild(ic); } world.appendChild(m); return m; };
   const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof): a thing that merely vanishes
@@ -302,8 +311,20 @@ export function bootTownLife(ctx) {
     ANCHORS.lamps.forEach((k) => { cond.lamps[k] = 'ok'; });
     order.slice(0, look.lampsOut).forEach((k) => { cond.lamps[k] = 'out'; });
     order.slice(look.lampsOut, look.lampsOut + look.lampsFlicker).forEach((k) => { cond.lamps[k] = 'flicker'; });
-    // the fixes this device already made today still hold
-    for (const id of fixed()) { const [t, k] = id.split(':'); if (t === 'lamp' && cond.lamps[k]) cond.lamps[k] = 'ok'; }
+    // ⚠️ THE FIXES THIS DEVICE ALREADY MADE TODAY STILL HOLD — AND A SHUTTER IS ONE OF THEM. Only the
+    // lamps were restored here, so a reload put the tape back on a front you had already opened while
+    // isFixed() still said it was done, which means the forced "every shut front is one of your
+    // problems" loop below SKIPPED it. A dark door with no way to open it, until UTC midnight rolled
+    // the day — the exact state the comment down there forbids — and it kept Bean, Pip or Dot indoors
+    // with it. Found by a verifier that was refuting a different claim.
+    // ⚠️ REBUILT, not added to: fixed() is day-gated, so this also drops yesterday's opened fronts if
+    // the page is left open across UTC midnight.
+    cond.fixedShut = new Set();
+    for (const id of fixed()) {
+      const [t, k] = id.split(':');
+      if (t === 'lamp' && cond.lamps[k]) cond.lamps[k] = 'ok';
+      if (t === 'shutter') cond.fixedShut.add(k);
+    }
     lamps();
     // windows: some homes stay dark in a low town
     life.setGlow((n) => h(d, 2, n.idx) >= look.windowsDark);
@@ -557,8 +578,8 @@ export function bootTownLife(ctx) {
       cands.splice(cands.indexOf(c), 1);
       const id = c.t.id + ':' + c.key; if (isFixed(id)) continue;
       const pb = propOf(c.key) ? propOf(c.key).base : null;
-      problems.push({ id, type: c.t.id, x: c.x, y: c.y, key: c.key, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y, 118, pb != null ? 100 + pb + 3 : null, true), sprite: null, foot: c.y,
-        grab: 54, tall: 190 });   // ⬆ the icon used to ride at -150, clear of the lamp's own top, so it read as
+      problems.push({ id, type: c.t.id, x: c.x, y: c.y, key: c.key, pays: c.t.pays, rep: c.t.rep, el: mark(c.x, c.y, LAMP_HIT.lift, pb != null ? 100 + pb + 3 : null, true), sprite: null, foot: c.y,
+        grab: LAMP_HIT.grab, tall: LAMP_HIT.tall });   // ⬆ the icon used to ride at -150, clear of the lamp's own top, so it read as
         // belonging to whatever stood behind it (a phone box, in Trym's square). At -118 it sits ON the
         // lantern, and the box reaches from the icon down to the foot: the whole lamp answers a tap.
     }
@@ -805,7 +826,15 @@ export function bootTownLife(ctx) {
     // the reason and hands are what bring it back (Trym: "it must be well explained").
     if (shutNow(key)) {
       const day = todayShut.has(key);
-      const line = one(day ? COPY.closed : COPY.lowShut, dayNum() + key.length);
+      // ⚠️ THE REASON BELONGS TO THE FRONT, not to the day. This indexed one flat deck by
+      // dayNum() + key.length, so the line naming the coffee propeller could hang on the general store
+      // and the one naming the ARCADE FLOOR could hang on a front the arcade is forbidden to have — and
+      // 'cafe' and 'info' are both four characters, so those two printed the SAME reason on the same
+      // day. Measured hit rate: about one in eighteen. COPY.closed is a map keyed by front now; the
+      // band's own lowShut stays one deck because being too poor to open is not any one building's
+      // fault (its brief says so).
+      const deck = day ? (COPY.closed || {})[key] : COPY.lowShut;
+      const line = one(deck, dayNum() + key.length);
       if (line) say(fill(line));
       return !!line;
     }
@@ -816,7 +845,16 @@ export function bootTownLife(ctx) {
     // falsy answer here lets banana-town toast ABOUT.cafe ("Not built yet.") straight over the shift.
     if (key === 'cafe') {
       const mine = ctx.job && ctx.job();
-      if (!mine || mine.at !== 'cafe') return false;   // not your counter: the kiosk is a building
+      if (!mine || mine.at !== 'cafe') {
+        // ⚠️ AND A STRANGER GETS THE CAFÉ'S OWN LINE, not the world's fallback. This returned false, and
+        // banana-town then toasted ABOUT.cafe — which ended "Not built yet." on the building carrying the
+        // biggest thing in the release, with Bean standing outside it and a queue at its rope. Four of the
+        // six critics found the same sentence. The line comes from the rig (town-cafe.json `front`) and it
+        // lives in the café's own lazy chunk, so a tap on the kiosk is what fetches it — which is exactly
+        // the tap that wants it. Truthy either way: the fallback must not speak over this.
+        loadCafe().then((c) => { const t = c && c.front && c.front(); if (t) say(t); });
+        return true;
+      }
       ctx.then(() => { loadCafe().then((c) => { if (c) (c.on() ? c.clockOut() : c.clockIn(view)); }); });
       return true;
     }
@@ -886,7 +924,7 @@ export function bootTownLife(ctx) {
     // ⚠️ `pos` is the PLAYER'S OWN position object, handed over by reference because banana-town
     // mutates it in place every frame — the ghosts keep their distance from whoever is standing
     // there, and six lines of the moved code still say ctx.pos.
-    return { pos: ctx.pos, todayShut, DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track,
+    return { pos: ctx.pos, todayShut, DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track, LAMP_HIT,
       poof, burst, mark, sprite, show, kill, moveSprite, body, bodies, killBody, propOf, perchZ,
       glowProblem, setFull, lampsByHour, shutters, dayNum, found, weighted, h, one, fill, keepFn,
       // ⚠️ GETTERS, because this file reassigns every one of them
@@ -1070,6 +1108,9 @@ export function bootTownLife(ctx) {
     work: () => (work ? { id: work.id, w: work.bar.style.width } : null),
     tapAt: (id) => tap(id, (x, y, then) => { ctx.pos.x = x; ctx.pos.y = y; then(); }),   // tap, walk, arrive
     shutWhy: (k) => (todayShut.has(k) ? 'today' : 'band'),
+    // 🧪 shut one front on purpose: the walk cannot wait for the day to roll one, and the reason a
+    // shut front gives has to be checked against the front it hangs on
+    shutShop: (k, today) => { if (!TEST) return false; if (today) todayShut.add(k); story.closeShop(k); return [...cond.shut]; },
     copyOf: (k) => COPY[k],
     open: (k) => openFor(k),
     nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set

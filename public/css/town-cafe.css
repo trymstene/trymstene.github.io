@@ -94,15 +94,20 @@
 /* the shadow a banana already stands on, tinted by how long they have waited. ⚠️ .tw-npc::after is
    one hard-coded rgba in town.astro with no variable, so the café sets the variable and town.astro's
    rule reads it — and the colour has to survive the night scrim at 0.5 over the view. */
-.tw-wait { --tw-pat: rgba(123, 195, 94, 0.5); }
+/* ⚠️ RUNG ONE IS A SHADOW, NOT A GO-LIGHT. It was grass-green at 0.5 over grass, so a banana who
+   had just arrived LOST its shadow instead of gaining a clock — it read as a sprite floating half an
+   inch off the cobbles. It keeps a shadow's darkness and only takes a green cast; the ladder's real
+   signal is amber and red, and those two are the ones that have to shout. */
+.tw-wait { --tw-pat: rgba(30, 62, 22, 0.55); }
 .tw-wait.is-half { --tw-pat: rgba(240, 180, 40, 0.62); }
 .tw-wait.is-last { --tw-pat: rgba(214, 64, 48, 0.72); }
 
-/* ⚠️ THE TOAST SITS ON TOP OF THE TRAY OTHERWISE. The town's toast is z 2000 and docks at bottom 14;
-   the tray is z 1200 and owns the bottom 150 — so every line the counter says lands square on the
-   gauge, at the exact moment the gauge is the only thing that matters. It steps up while a shift is
-   on. (Seen on the QA sweep, 20 Sep; the scout had warned about it and it was built anyway.) */
-.tw-toast.is-above-tray { bottom: 172px; }
+/* ⚠️ THE TOAST HAS NOWHERE TO STAND AT THE BOTTOM OF A SHIFT. It is z 2000 and docks at bottom 14,
+   so it landed square on the gauge — then raising it to 172 put it square on the barista's face in
+   the serving window instead, measured at 360×740: toast 419–495, the banana in the window 455–510.
+   Both halves of the screen are spoken for while a shift is on, so the world's voice goes to the TOP
+   of the view, under the HUD strip, where the only thing it can cover is sky. */
+.tw-toast.is-above-tray { top: var(--tw-toast-top, 44px); bottom: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   .tw-cup { transition: none; }
@@ -113,3 +118,6 @@
    so the square no longer has to be visible behind it. */
 .tw-cup__till h2 { font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1rem; margin: 0 0 0.4rem; letter-spacing: 0.03em; }
 .tw-cup__take { margin: 0 0 0.4rem; font-size: 1.05rem; font-weight: 800; color: #ffe135; }
+/* the one cup that came out right, named. The only place the three drinks' names are ever read. */
+.tw-cup__best { margin: 0 0 0.4rem; font-size: 0.86rem; font-weight: 700; color: #a8e08a; }
+

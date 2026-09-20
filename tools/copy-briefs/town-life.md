@@ -132,10 +132,25 @@ the fountain, the statue with no plaque, the bench, the lamps — things in the 
 
 ## Closed today
 
-Some days a kiosk is shut for a reason, and a player who taps its door reads why. Write
-`closed`: four to six reasons a small kiosk might be shut for the day, one line each, the
-way a note on a door reads. Ordinary, specific, sometimes funny. Fixing whatever it is
-reopens it, so the reason should be something a person could put right.
+Some days a front is shut for a reason, and a player who taps its door reads why. One line each,
+the way a note taped to a door reads: ordinary, specific, sometimes funny. Fixing whatever it is
+reopens it, so the reason has to be something a person could put right.
+
+⚠️ **EXACTLY THREE FRONTS IN THIS TOWN CAN SHUT, and a reason hangs on ITS OWN front and no
+other.** This used to be one flat deck of six lines picked by the day, and a player who tapped the
+general store was told the coffee propeller needed a bolt — while two of the six named buildings
+that can never shut at all. Write three separate decks of three or four lines:
+
+- `closed.cafe` — **the Coffee Cup**, Bean's coffee kiosk. Faults a coffee kiosk has: the machine,
+  the propeller, the beans, the water, the little hatch.
+- `closed.info` — **the info point**, Dot's map-and-noticeboard kiosk. Its own faults: the map, the
+  glass, the leaflets, the light inside it.
+- `closed.store` — **the general store**, Pip's shop, which sells fireworks, lures and duck bread.
+  Its own faults: a delivery, the till, a shelf, the cellar.
+
+**Never name the arcade and never name the post office.** Those two can never shut — the arcade
+because five shipped games must answer on a stranger's worst day, and the post office because the
+mail never stops. A line that names them is a lie on a door.
 
 ## The cursed objects
 
@@ -186,10 +201,18 @@ an apology either — this town has been through worse.
 ## `rooms` — stepping through a door
 
 The town has interiors now: the Arcade, and Pip's general store. A room is ONE SCREEN — the
-square goes dark behind it and the room's own plate floats where the building stands. There is
-no close button anywhere on it. **You leave by walking back onto the doorway you came in by**,
-the bottom middle of the room, so each line has to carry that quietly: name the place, and say
-how you get out. One sentence each, or two short ones.
+square goes dark behind it and the room's own plate floats where the building stands.
+
+⚠️ **THE LINE IS THE PLACE TALKING, NOT A HELP STRING.** Both of these used to end with the same
+seven words about walking back onto the doorway, which made them the only tutorial voice left in
+the town — and the doorway is a LIT FLOOR TILE at the bottom middle of the room that already says
+it. So do not explain how to leave, and do not mention the doorway at all.
+
+Write what it is like to be standing in there, in the room's own way. `rooms.condo` is the arcade:
+cabinets along one wall, a prize board, coins going in. `rooms.store` is Pip's shop: the counter,
+and shelves that are bare or full depending on how the town is doing. **The two must not share a
+clause, a rhythm or an ending** — two rooms saying one sentence is a help string. One sentence
+each, or two short ones.
 
 `rooms.in` is different: it is a BUTTON on Pip's shelf card, out on the street, and it is what
 takes a shopper inside. A verb first, two or three words, no full stop. Buttons in this world
@@ -234,6 +257,11 @@ PLAYER'S voice.
 `{where}` in `hired` and `moved`, so “Gladly, {where} could use your hands” has to read as one
 line. Not the sign planks, which shout, and not a key.
 
+⚠️ **`{where}` IS LOWERCASE AND CARRIES ITS OWN ARTICLE, so it may never start a sentence.**
+“Gladly. {where} could use your hands.” shipped, and for two of the three bosses it printed a
+sentence beginning with a small letter — “Gladly. the Arcade could use your hands.” Keep the
+holder inside a clause: a comma, a dash, anything but a full stop in front of it.
+
 **One job at a time.** Taking a second is leaving the first, which is why `moved` exists and why
 it must read as a decision the player made rather than a rule they broke.
 
@@ -241,6 +269,12 @@ it must read as a decision the player made rather than a rule they broke.
 one tap is not a person. The line must be an INVITATION — here is a thing you could keep — and
 never a punishment, never a rule quoted at somebody, and never in jargon: this world has no
 “accounts” and nobody is “anonymous”, they just have not kept their pass yet.
+
+`work.keepCta` is the BUTTON that appears under that answer, and it is the whole of why the answer
+is no longer a dead end: it opens the page where a pass is kept. A “no” with nothing to tap is
+where a newcomer puts the phone down. A verb first, two to four words, no full stop, short enough
+that it can never wrap on a narrow phone. It is the player's own next step — not an instruction
+from Pip, Spinner or Bean.
 
 ### The restock chore
 

@@ -52,8 +52,29 @@ A card, the moment the shift ends. `receipt.title` is its heading, two or three 
 where the game puts the number of coins. `receipt.line` is the single line under it — the terrace
 as you left it, the cups that are still warm, the quiet after. `receipt.none` replaces the take when
 the shift served nothing at all: contented, never a telling-off, because standing behind a counter
-on a slow afternoon is a perfectly good thing to have done. `receipt.back` is the button that closes
-the card: a verb first, and short enough that it can never wrap onto two lines.
+on a slow afternoon is a perfectly good thing to have done.
+
+`receipt.capped` replaces the take when cups WENT OUT but the day’s tips were already spent — the
+work happened and the coins did not. For a day this case showed `receipt.none` instead, so a player
+who had served ten cups was told the cups had stayed stacked and dry. It is not a refusal and not a
+telling-off: the day’s coin is done, and the coffee was not for nothing. Never a number, never a
+cap, never “come back tomorrow” said as an instruction.
+
+`receipt.best` is one line under the take, shown only when at least one cup came out RIGHT, and it
+NAMES that cup: it MUST contain `{drink}`, where the game puts the drink’s own name. It notices the
+cup, not the player — no count, no grade, and never the word perfect.
+
+`receipt.back` is the button that closes the card: a verb first, and short enough that it can never
+wrap onto two lines.
+
+### The front of the shop, to somebody who does not work there
+
+`front` is what the Coffee Cup says when a player who has NOT been hired taps it. ⚠️ it replaces a
+hand-written “Not built yet.” that shipped inside the code and was simply false: the café is open,
+Bean is behind it, there is a queue at the rope and a red FOR SALE sign over the door. So this line
+is what the place IS, and that the counter belongs to somebody — the way you would describe a shop
+you have walked past a hundred times. It does not instruct, it does not name a price or a condition,
+and it does not tell anybody how to get a job: Bean’s own card is where that is asked for.
 
 ### A quiet counter
 
@@ -98,18 +119,12 @@ in off the road, and the world has never learned their names. So write it about 
 “somebody”, “the one at the back”, or the rope itself going quiet. It is a small sadness, not a
 failure notice, and it never says how long they waited or what it cost.
 
-### Bean's counter, on Bean's own card
-
-`ask` is the question the PLAYER presses on Bean's dialogue card to ask about working the counter.
-It is the player's voice, not Bean's, it ends in a question mark, and it sits beside the questions
-that are already there — so it is about the same length and pitch as "Any work going?".
-
-`bean` is Bean's answer: what the counter is, and that you stand behind it to work it. Bean reads
-fortunes in coffee grounds and is not entirely joking about it; that habit is theirs to use here if
-it helps. Bean never explains the gestures and never gives a number.
-
 ### The drinks
 
 `drinks.short`, `drinks.tall`, `drinks.double` — the three the shop sells. These are NAMES, one or
-two words, and they appear on the receipt and nowhere else: the ticket on the tray is pictures. They
-should sound like this town rather than like a chain — nobody here says "grande".
+two words, and they appear in `receipt.best` and nowhere else: the ticket on the tray is pictures.
+They should sound like this town rather than like a chain — nobody here says "grande".
+
+(Two fields were CUT from this job on 20 Sep: a question for Bean’s card and Bean’s answer to it.
+Nothing in the game ever showed them, and Bean already answers a job question on that card through
+the `town-life` job’s `work.ask`. Words nobody reads are not copy, they are ballast.)

@@ -30,7 +30,7 @@ export function bootTownNight(ctx) {
     DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track, float,
     poof, burst, mark, sprite, show, kill, moveSprite, body, bodies, killBody, propOf, perchZ,
     glowProblem, setFull, lampsByHour, shutters, dayNum, found, weighted, h, one,
-    fill, todayShut, keepFn,
+    fill, todayShut, keepFn, LAMP_HIT,
     // ⚠️ GETTERS, because town-room reassigns every one of these
     band, problems, curse, vendor, night, plainNight, curseTold,
     // …and setters, because a getter cannot stand on the left of an assignment
@@ -98,8 +98,16 @@ export function bootTownNight(ctx) {
   let messN = 0;
   const footOf = (k) => { const p = propOf(k); return p ? [p.x + p.w / 2, p.base] : [-1e9, -1e9]; };
   const rowOf = (id) => PROBLEMS.find((r) => r.id === id);
+  // ⚠️ A LAMP'S PROBLEM IS SHAPED LIKE A LAMP, on this path too. The reseed gives one a lift of 118
+  // and a tap box 190 tall reaching down to its foot; this path gave every problem the same default,
+  // so a lamp a ghost had just put out could not be tapped anywhere near its own repair icon — the
+  // closed-door rule again, and the second time in this class. The numbers come from town-room.js so
+  // there is exactly one copy of them (design library §24).
   function addProblem(t, key, x, y, z, icon) {
-    const p = { id: t.id + ':' + key, type: t.id, x, y, key, pays: t.pays, rep: t.rep, el: mark(x, y, 150, z, icon), sprite: null, foot: y };
+    const lamp = t.on === 'lamps' && LAMP_HIT;
+    const p = { id: t.id + ':' + key, type: t.id, x, y, key, pays: t.pays, rep: t.rep,
+      el: mark(x, y, lamp ? LAMP_HIT.lift : 150, z, icon), sprite: null, foot: y };
+    if (lamp) { p.grab = LAMP_HIT.grab; p.tall = LAMP_HIT.tall; }
     problems().push(p); return p;
   }
   function mischief(g, force) {

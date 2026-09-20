@@ -410,7 +410,9 @@ const lifeFields = {
   'vendor.bought': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said when the vendor buys a cursed object from the player. MUST contain {item}.' },
   'vendor.lines[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said on a sale at the night vendor.' },
   'ghosts[]': { kind: 'prose', aim: 80, max: 100, note: 'What a ghost on the bench says when tapped. Small, odd, a little sad or funny; never a threat, never a riddle, never a question.' },
-  'closed[]': { kind: 'prose', aim: 70, max: 90, note: 'Why a kiosk is shut today, the way a note on a door reads. Something a person could put right.' },
+  'closed.cafe[]': { kind: 'prose', aim: 70, max: 90, note: 'Why THE COFFEE CUP is shut today, the way a note taped to its own door reads — a small fault in a coffee kiosk that somebody will see to. ⚠️ THREE FRONTS CAN SHUT AND NO OTHERS (the café, the info point, the general store), and a line only ever hangs on the one it is written for: naming any other building here is a lie on a door. Never the arcade and never the post office, which can never shut.' },
+  'closed.info[]': { kind: 'prose', aim: 70, max: 90, note: 'The same, for THE INFO POINT — the little map-and-noticeboard kiosk Dot keeps. Its faults are its own: the map, the glass, the leaflets, the light inside it.' },
+  'closed.store[]': { kind: 'prose', aim: 70, max: 90, note: 'The same, for THE GENERAL STORE — Pip’s shop, which sells fireworks, lures and duck bread. Its faults are its own: a delivery, the till, a shelf, the cellar.' },
   'work.at.store': { kind: 'prose', aim: 20, max: 30, note: 'The general store’s name AS IT FITS INSIDE A SENTENCE — it is dropped into {where} in `hired` and `moved`, so it must read naturally mid-line and carry its own article if it needs one. Not the sign plank, which shouts.' },
   'work.at.condo': { kind: 'prose', aim: 20, max: 30, note: 'The arcade’s name, the same way.' },
   'work.at.cafe': { kind: 'prose', aim: 20, max: 30, note: 'The Coffee Cup’s name, the same way.' },
@@ -418,18 +420,19 @@ const lifeFields = {
   'work.stocked': { kind: 'prose', aim: 60, max: 80, note: 'Said as the crate goes onto a bare shelf and the face fills. ⭐ the reward IS the shelf and the row now on the till, so this line notices that rather than praising anybody. Never a number, never coins — the chore does not pay in money.' },
   'work.full': { kind: 'prose', aim: 60, max: 80, note: 'Said when every face the shop has is already filled, so there is nothing left to stock today. Contented, not a refusal — the work is DONE, which is a nice thing to be told.' },
   'work.ask': { kind: 'prose', aim: 26, max: 40, note: 'The question the PLAYER asks a boss to be hired, on their dialogue card beside the two they already answer. The player’s voice, not the boss’s. A question, with a question mark.' },
-  'work.hired': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'The boss saying yes. MUST contain {where} (the building). Warm and a little dry — a job in this town is a favour done gladly, never a contract.' },
-  'work.moved': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'Said when a player who already works somewhere takes a job here instead. MUST contain {where}. One job at a time is the rule; this line makes leaving the old one feel like a decision, never a telling-off.' },
+  'work.hired': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'The boss saying yes. MUST contain {where} (the building). Warm and a little dry — a job in this town is a favour done gladly, never a contract. ⚠️ {where} IS LOWERCASE AND CARRIES ITS OWN ARTICLE (“the Arcade”), so it may never be the first thing after a full stop or start the line: “Gladly. {where} could use your hands.” printed a sentence beginning with a small letter for two of the three bosses. Keep it inside a clause.' },
+  'work.moved': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'Said when a player who already works somewhere takes a job here instead. MUST contain {where}. One job at a time is the rule; this line makes leaving the old one feel like a decision, never a telling-off. ⚠️ {where} is lowercase and carries its own article, so it may never follow a full stop or open the line.' },
   'work.already': { kind: 'prose', aim: 70, max: 90, note: 'Said when you ask for a job you already hold. Fond, brief, no admin.' },
   'work.keep': { kind: 'prose', aim: 90, max: 110, note: 'Said when the player has no kept pass, so wages cannot be theirs yet. ⭐ AN INVITATION, NEVER A PUNISHMENT and never a rule quoted at them: work is something they can keep, and keeping the pass is how. No jargon — not “account”, not “anonymous”.' },
+  'work.keepCta': { kind: 'label', aim: 22, max: 30, note: 'The ONE button under the `keep` answer on the boss’s card, which opens the page where a pass is kept. ⚠️ a “no” with nothing to tap is where a newcomer puts the phone down, and this is the whole of the fix: a verb first, two to four words, no full stop, and short enough that it can never wrap on a 360-wide phone. It is the player’s own next step, not an instruction from anybody.' },
   'work.day': { kind: 'prose', aim: 50, max: 70, note: 'The quiet line when turning up at your own workplace marks the day. Said once a day at most. It should feel noticed, not announced.' },
   'locks.store': { kind: 'prose', aim: 70, max: 90, note: 'What the general store WILL be, said at a boarded front. Not what it is — it is a worksite. A shop worth waiting for, in one line.' },
   'locks.post': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the post office.' },
   'locks.cafe': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the Coffee Cup.' },
   'locks.story': { kind: 'prose', aim: 70, max: 90, note: 'The one line that says the STORY opens this door, not the town’s health and not money. It must read as a hook — something is coming — never as a refusal. Never a date, never a rate.' },
   'locks.step': { kind: 'prose', aim: 40, max: 60, holds: ['{n}', '{of}'], note: 'How far along the player is, MUST contain {n} and {of} (as in 2 and 4). A sign that only says no is a dead end; this is the half that makes it a quest hook.' },
-  'rooms.condo': { kind: 'prose', aim: 60, max: 80, note: 'Said once, as a player steps into the Arcade. Name the place and say how to leave — there is no close button: you walk back onto the doorway you came in by.' },
-  'rooms.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for stepping into the general store. Pip’s counter is inside; the shelves are bare or full depending on the town. Name the place and say how to leave.' },
+  'rooms.condo': { kind: 'prose', aim: 60, max: 80, note: 'Said once, as a player steps into the Arcade: cabinets along one wall, a prize board, coins going in. ⚠️ IT IS THE PLACE TALKING, NOT A HELP STRING. The two room lines used to end with the same seven-word instruction about walking back onto the doorway, which made them the only tutorial voice left in the town — and the doorway is a LIT FLOOR TILE that already says it. So: what it is like to be standing in there. No instruction, and nothing about leaving.' },
+  'rooms.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for stepping into the general store: Pip’s counter, shelves bare or full depending on the town. The place talking, in its own way — it must not share a clause, a rhythm or an ending with the arcade’s line, and it must not tell anybody how to leave.' },
   'rooms.in': { kind: 'prose', aim: 12, max: 16, note: 'The control on Pip’s shelf card that takes you into the shop. A BUTTON: a verb first, two or three words, no full stop. It must never wrap on a phone.' },
   'lowShut[]': { kind: 'prose', aim: 70, max: 90, note: 'Said when a player taps a shopfront THE TOWN has shut — not a one-day fault but a town too low to keep its doors open. It must point at the shared repair: hands in the square lift it and the doors come back. Never a number, never a rate, never a timetable, never a question.' },
   'objects[].id': { kind: 'key', max: 14, note: 'FIXED. The ten ids from the brief, in order.' },
@@ -444,11 +447,23 @@ function lifeShape(data) {
   else bands.forEach((b, i) => { if (!b || b.key !== TOWN_BANDS[i]) say(`bands[${i}].key`, `band ${i} must be "${TOWN_BANDS[i]}" — worst first, the order is fixed`); });
   const names = new Set((bands || []).map((b) => b && String(b.name || '').trim().toLowerCase()).filter(Boolean));
   if (bands && names.size < bands.length) say('bands[].name', 'two bands share a name — each state needs its own word', 'range');
-  for (const [path, list, min] of [['store.sold', data.store && data.store.sold, 3], ['merchant.lines', data.merchant && data.merchant.lines, 3], ['vendor.lines', data.vendor && data.vendor.lines, 3], ['ghosts', data.ghosts, 4], ['closed', data.closed, 4], ['lowShut', data.lowShut, 3]]) {
+  for (const [path, list, min] of [['store.sold', data.store && data.store.sold, 3], ['merchant.lines', data.merchant && data.merchant.lines, 3], ['vendor.lines', data.vendor && data.vendor.lines, 3], ['ghosts', data.ghosts, 4], ['closed.cafe', (data.closed || {}).cafe, 3], ['closed.info', (data.closed || {}).info, 3], ['closed.store', (data.closed || {}).store, 3], ['lowShut', data.lowShut, 3]]) {
     if (!Array.isArray(list) || list.length < min) say(path, `at least ${min}`);
   }
   for (const [path, v] of [['store.sold', data.store && data.store.sold], ['vendor.bought', data.vendor && [data.vendor.bought]]]) {
     (v || []).forEach((l, i) => { if (!String(l || '').includes('{item}')) say(`${path}[${i}]`, 'must contain {item} — the game puts the thing there'); });
+  }
+  // ⚠️ {where} IS LOWERCASE AND CARRIES ITS OWN ARTICLE. "Gladly. {where} could use your hands."
+  // printed a sentence starting with a small letter for two of the three bosses.
+  for (const f of ['hired', 'moved']) {
+    const l = String(((data.work || {})[f]) || '');
+    if (/(^|[.!?]\s+)\{where\}/.test(l)) say(`work.${f}`, '{where} sits at the start of a sentence — it is lowercase and carries its own article, so it must stay inside a clause', 'range');
+  }
+  // ⚠️ and the two rooms may not end with the same words: one repeated instruction read as a help
+  // string rather than as either place talking
+  const tail = (l) => String(l || '').toLowerCase().replace(/[^a-z ]/g, '').trim().split(/\s+/).slice(-4).join(' ');
+  if ((data.rooms || {}).condo && tail((data.rooms || {}).condo) === tail((data.rooms || {}).store)) {
+    say('rooms.store', 'ends with the same four words as rooms.condo — two rooms saying one sentence is a help string, not a place', 'range');
   }
   const objs = data.objects;
   if (!Array.isArray(objs) || objs.length !== CURSED_IDS.length) say('objects', `ten objects: ${CURSED_IDS.join(', ')}`);
@@ -473,9 +488,13 @@ const lifeSchema = {
     vendor: { type: 'object', additionalProperties: false, required: ['name', 'greet', 'bought', 'lines'],
       properties: { name: str(lifeFields['vendor.name'].note), greet: str(lifeFields['vendor.greet'].note), bought: str(lifeFields['vendor.bought'].note), lines: { type: 'array', description: lifeFields['vendor.lines[]'].note, items: { type: 'string' } } } },
     ghosts: { type: 'array', description: lifeFields['ghosts[]'].note, items: { type: 'string' } },
-    closed: { type: 'array', description: lifeFields['closed[]'].note, items: { type: 'string' } },
+    closed: { type: 'object', additionalProperties: false, required: ['cafe', 'info', 'store'], description: 'Why a front is shut today, KEYED BY THE FRONT — only these three can ever shut.', properties: {
+      cafe: { type: 'array', description: lifeFields['closed.cafe[]'].note, items: { type: 'string' } },
+      info: { type: 'array', description: lifeFields['closed.info[]'].note, items: { type: 'string' } },
+      store: { type: 'array', description: lifeFields['closed.store[]'].note, items: { type: 'string' } },
+    } },
     lowShut: { type: 'array', description: lifeFields['lowShut[]'].note, items: { type: 'string' } },
-    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'keep', 'day', 'crate', 'stocked', 'full'], properties: {
+    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'keep', 'keepCta', 'day', 'crate', 'stocked', 'full'], properties: {
       crate: { type: 'string', description: lifeFields['work.crate'].note },
       stocked: { type: 'string', description: lifeFields['work.stocked'].note },
       full: { type: 'string', description: lifeFields['work.full'].note },
@@ -489,6 +508,7 @@ const lifeSchema = {
       moved: { type: 'string', description: lifeFields['work.moved'].note },
       already: { type: 'string', description: lifeFields['work.already'].note },
       keep: { type: 'string', description: lifeFields['work.keep'].note },
+      keepCta: { type: 'string', description: lifeFields['work.keepCta'].note },
       day: { type: 'string', description: lifeFields['work.day'].note },
     } },
     locks: { type: 'object', additionalProperties: false, required: ['store', 'post', 'cafe', 'story', 'step'], properties: {
@@ -528,13 +548,14 @@ const cafeFields = {
   'receipt.take': { kind: 'prose', aim: 54, max: 72, holds: ['{n}'], note: 'The one measured line naming what the tips came to. MUST contain {n} — the game puts the coins there. ⚠️ a TOTAL is fine and a RATE is forbidden: no “per cup”, no “each”, no “an hour”.' },
   'receipt.line': { kind: 'prose', aim: 66, max: 88, note: 'The single line under the take: the terrace as you left it, the cups still warm, the quiet after a rush. It notices the ROOM, never the player’s performance, and never a number.' },
   'receipt.none': { kind: 'prose', aim: 62, max: 84, note: 'Shown INSTEAD of the take when the shift served nothing at all. Contented, never a telling-off — standing behind a counter on a slow afternoon is a perfectly good thing to have done.' },
+  'receipt.capped': { kind: 'prose', aim: 66, max: 88, note: 'Shown INSTEAD of the take when cups WENT OUT but today’s tips are already spent — the work happened and the coins did not. ⚠️ it is not a refusal and not a telling-off: the day’s coin is done, the coffee was not for nothing. Never a number, never a cap, never “come back tomorrow” as an instruction.' },
+  'receipt.best': { kind: 'prose', aim: 58, max: 78, holds: ['{drink}'], note: 'One line under the take, shown only when at least one cup came out RIGHT, naming it: MUST contain {drink} — the game puts the drink’s own name there. It notices the cup, not the player. Never a count, never a grade, never the word perfect.' },
   'receipt.back': { kind: 'label', aim: 12, max: 18, note: 'The button that closes the receipt. A VERB first, and short enough that it can never wrap onto two lines.' },
   'cup.perfect[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 town toasts for a cup that came out right, one picked per cup. Notice the CUP, or the customer taking it — never praise the player, never say “perfect”. Warm, brief, a little pleased with itself.' },
   'cup.fine[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a cup that is good enough, and out it goes. One notch down from the perfect deck: approving, never a correction, and never a hint about what would have been better.' },
   'cup.wrong[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a cup that is not a good cup. It costs the sale and nothing else, so: no blame, no advice, no number, no “try again”. This world is fond of the people in it.' },
   left: { kind: 'prose', aim: 58, max: 78, note: 'The town’s toast when somebody has waited too long, turns their back and walks off. ⚠️ THEY HAVE NO NAME: the customers are bananas visiting the square from the rest of the town, strangers who came in off the road, so the line cannot name them and must not pretend to — “somebody”, “the one at the back”, the rope itself. A small sadness, not a failure notice; never how long they waited and never what it cost.' },
-  ask: { kind: 'prose', aim: 30, max: 38, note: 'The question the PLAYER presses on Bean’s dialogue card to ask about working the counter. The player’s voice, not Bean’s; ends in a question mark; the same length and pitch as the questions already on that card.' },
-  bean: { kind: 'prose', aim: 96, max: 130, note: 'Bean’s answer: what the counter is, and that you stand behind it to work it. Bean reads fortunes in coffee grounds and is not entirely joking about it. Never explains the gestures, never gives a number, never instructs.' },
+  front: { kind: 'prose', aim: 90, max: 120, note: 'What the Coffee Cup says when a player who does NOT work there taps it. ⚠️ it replaces a hand-written “Not built yet.” that shipped in code and was false — the café is open, Bean is behind it, and the counter is simply Bean’s until Bean hands it over. So: what the place IS, and that the counter belongs to somebody. It must not instruct and must not name a price or a condition — Bean’s own card is where a job is asked for.' },
   idle: { kind: 'prose', aim: 40, max: 54, note: 'The small line ON THE TRAY when you are behind the counter and there is nobody at the rope yet. ⚠️ it is the only thing on an otherwise empty tray, so it has a job: it tells the player the counter is working and simply quiet, rather than broken. Never a wait time and never “soon” — the mystery rule. Never an instruction either: not “wait for a customer”.' },
   'go.grind': { kind: 'label', aim: 8, max: 12, note: 'The word on the tray’s one button while the GRINDER is running: a needle sweeps a bar and the thumb stops it. A single word for the THING BEING DONE — it is a label on a control, not an instruction, so no “tap” and no “now”. Short enough that it can never wrap.' },
   'go.pour': { kind: 'label', aim: 8, max: 12, note: 'The same button while the POUR is running: hold it down and the cup fills, let go at the right moment. One word, the thing being done.' },
@@ -554,20 +575,23 @@ function cafeShape(data) {
     if (deck.length < 3) say(`cup.${k}`, `a deck of at least 3 — one line twice in a shift is what a deck exists to prevent (got ${deck.length})`);
     deck.forEach((l, i) => { if (/\?\s*$/.test(String(l || ''))) say(`cup.${k}[${i}]`, 'ends in a question — nobody may ask the player one'); });
   }
-  for (const f of ['on', 'off', 'left']) {
+  for (const f of ['on', 'off', 'left', 'front']) {
     if (/\?\s*$/.test(String(data[f] || ''))) say(f, 'ends in a question — nobody may ask the player one');
   }
-  if (!/\?\s*$/.test(String(data.ask || ''))) say('ask', 'is the PLAYER’s question and must end in a question mark');
+  // ⚠️ the receipt's third and fourth lines exist BECAUSE a shift of ten cups was being told the cups
+  // stayed dry, so the holder that carries the drink's name is not optional
+  if (!String((data.receipt || {}).best || '').includes('{drink}')) say('receipt.best', 'must contain {drink} — the game puts the drink’s own name there');
   return bad;
 }
 const cafeSchema = {
-  type: 'object', additionalProperties: false, required: ['on', 'off', 'idle', 'receipt', 'go', 'cup', 'left', 'ask', 'bean', 'drinks'],
+  type: 'object', additionalProperties: false, required: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks'],
   properties: {
     on: str(cafeFields.on.note),
     off: str(cafeFields.off.note),
-    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'back'],
-      properties: { title: str(cafeFields['receipt.title'].note), take: str(cafeFields['receipt.take'].note), line: str(cafeFields['receipt.line'].note), none: str(cafeFields['receipt.none'].note), back: str(cafeFields['receipt.back'].note) } },
+    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'back'],
+      properties: { title: str(cafeFields['receipt.title'].note), take: str(cafeFields['receipt.take'].note), line: str(cafeFields['receipt.line'].note), none: str(cafeFields['receipt.none'].note), capped: str(cafeFields['receipt.capped'].note), best: str(cafeFields['receipt.best'].note), back: str(cafeFields['receipt.back'].note) } },
     idle: str(cafeFields.idle.note),
+    front: str(cafeFields.front.note),
     go: { type: 'object', additionalProperties: false, required: ['grind', 'pour', 'milk'],
       properties: { grind: str(cafeFields['go.grind'].note), pour: str(cafeFields['go.pour'].note), milk: str(cafeFields['go.milk'].note) } },
     cup: { type: 'object', additionalProperties: false, required: ['perfect', 'fine', 'wrong'],
@@ -577,8 +601,6 @@ const cafeSchema = {
         wrong: { type: 'array', description: cafeFields['cup.wrong[]'].note, items: { type: 'string' } },
       } },
     left: str(cafeFields.left.note),
-    ask: str(cafeFields.ask.note),
-    bean: str(cafeFields.bean.note),
     drinks: { type: 'object', additionalProperties: false, required: ['short', 'tall', 'double'],
       properties: { short: str(cafeFields['drinks.short'].note), tall: str(cafeFields['drinks.tall'].note), double: str(cafeFields['drinks.double'].note) } },
   },
@@ -604,12 +626,12 @@ export const JOBS = {
   'town-cafe': {
     id: 'town-cafe',
     title: 'Banana Town — the Coffee Cup’s counter',
-    what: 'Stepping behind the counter and stepping away, the receipt, the three decks for a cup well or badly made, the one who gives up, Bean’s own answer, and the three drinks’ names.',
+    what: 'Stepping behind the counter and stepping away, what the front says to a stranger, the receipt, the three decks for a cup well or badly made, the one who gives up, and the three drinks’ names.',
     brief: 'tools/copy-briefs/town-cafe.md',
     out: 'tools/copy-out/town-cafe.json',
     approved: 'src/data/copy/town-cafe.json',
     reads: 'src/scripts/town-cafe.js (through a glob inside the café’s own lazy chunk, so town-room never carries these bytes)',
-    top: ['on', 'off', 'idle', 'receipt', 'go', 'cup', 'left', 'ask', 'bean', 'drinks'],
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks'],
     // 🧍 Bean speaks here, so the writer gets the bible
     personas: 'town-personas',
     fields: cafeFields,

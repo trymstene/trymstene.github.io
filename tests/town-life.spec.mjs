@@ -1167,3 +1167,76 @@ test('standingPose: a resident at their post stands sideways, never front-on', a
   expect(bad, '⚠️ somebody is posing at their own shop instead of standing at it').toEqual([]);
   expect(errors).toEqual([]);
 });
+
+// ⚠️ A SHUT DOOR'S REASON BELONGS TO THE DOOR (20 Sep 2026). `closed` was one flat deck of six lines
+// indexed by `dayNum() + key.length`, so the line about the coffee propeller's bolt could hang on the
+// general store — and 'cafe' and 'info' are both four characters, so those two printed the SAME reason
+// on the same day. Only one of the six lines named a front that can shut at all; measured hit rate,
+// about one in eighteen. The decks are keyed by front now, and no line may name a front.
+test('a shut front says why in its OWN words, and only three fronts can shut', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 85);
+
+  const decks = await page.evaluate(() => window.__town.room.copyOf('closed'));
+  expect(Object.keys(decks).sort(), 'one deck per front that can shut').toEqual(['cafe', 'info', 'store']);
+  for (const k of ['cafe', 'info', 'store']) {
+    expect(decks[k].length, `${k} has a deck, not one line`).toBeGreaterThanOrEqual(3);
+  }
+  // ⚠️ and no deck may name a front that can never shut: the arcade's five games must answer on a
+  // stranger's worst day and the mail never stops, so a line naming them is a lie on a door
+  for (const [k, deck] of Object.entries(decks)) {
+    for (const l of deck) {
+      expect(l.toLowerCase(), `${k}: a reason naming the arcade`).not.toContain('arcade');
+      expect(l.toLowerCase(), `${k}: a reason naming the post office`).not.toContain('post office');
+    }
+  }
+
+  // tap each shut front in turn and read what the town says
+  for (const key of ['cafe', 'info', 'store']) {
+    // ⚠️ shut as TODAY'S fault, which is the branch that names a reason. A front the BAND shut answers
+    // with `lowShut`, which is deliberately front-agnostic: being too poor to open is nobody's bolt.
+    await page.evaluate((k) => window.__town.room.shutShop(k, true), key);
+    await page.waitForTimeout(400);
+    await page.evaluate((k) => { const p = window.__town.PROPS[k], t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; }, key);
+    await page.evaluate((k) => window.__town.room.open(k), key);
+    await page.waitForTimeout(400);
+    const said = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
+    const mine = decks[key].some((l) => said && l.includes(said.slice(0, 20)));
+    const others = ['cafe', 'info', 'store'].filter((k) => k !== key);
+    const theirs = others.filter((k) => decks[k].some((l) => said && l.includes(said.slice(0, 20))));
+    expect(said.length, `tapping the shut ${key} says something`).toBeGreaterThan(8);
+    expect(mine, `and the ${key}'s reason comes from the ${key}'s own deck (got "${said}")`).toBe(true);
+    expect(theirs, 'never from another front’s').toEqual([]);
+  }
+  expect(errors).toEqual([]);
+});
+
+// ⚠️ AND A FRONT YOU OPENED STAYS OPEN ACROSS A RELOAD. condition() restored only the day's LAMP
+// fixes, so a reload put the tape back on a shutter you had already fixed — while isFixed() still
+// said it was done, which made the forced "every shut front is one of your problems" loop skip it.
+// A dark door with no way to open it until UTC midnight rolled, with its keeper shut in behind it.
+// Found by a verifier that was refuting a different claim.
+test('a shutter you fixed today is still open after a reload', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 85);
+  await page.evaluate(() => window.__town.room.shutShop('cafe'));
+  await page.waitForTimeout(500);
+  expect(await room(page, 'shut'), 'the café is shut').toContain('cafe');
+  expect((await room(page, 'problems')).map((j) => j.id), 'and that is one of your jobs').toEqual(expect.arrayContaining([expect.stringContaining('shutter:cafe')]));
+
+  await page.evaluate(() => window.__town.room.fix('shutter:cafe'));
+  await page.waitForTimeout(500);
+  expect(await room(page, 'shut'), 'fixed: the front is open').not.toContain('cafe');
+
+  await town(page);
+  await setBand(page, 85);
+  const after = await room(page, 'shut');
+  const jobs = await room(page, 'problems');
+  const owed = jobs.some((j) => String(j.id).includes('shutter:cafe'));
+  expect(after.includes('cafe') && !owed, 'a reload may not re-tape a front you already opened and then refuse you the job').toBe(false);
+  expect(errors).toEqual([]);
+});

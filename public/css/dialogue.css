@@ -76,6 +76,18 @@
 @keyframes wdMore { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
 @media (prefers-reduced-motion: reduce) { .wd-box.is-typing p::after, .wd-box__more { animation: none; } }
 
+/* ⭐ THE DOOR A TOPIC MAY LEAVE OPEN. A resident who has to send you somewhere gets one link under
+   the typed answer — never a second sentence, and never an instruction (§18). It wears the world's
+   own CTA shape so it reads as the same button the park and the packs use. */
+.wd-cta {
+  display: block; margin: 0.5rem 0 0; text-align: center; text-decoration: none;
+  font-family: "Archivo Black", sans-serif; font-size: 0.8rem; letter-spacing: 0.02em;
+  padding: 0.45rem 0.6rem; color: #241c00; background: linear-gradient(#ffe14d, #f2c012);
+  border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+}
+.wd-cta:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+.wd-cta[hidden] { display: none; }
+
 @media (max-width: 420px) {
   .wd-pop { width: 156px; height: 156px; top: -64px; left: -20px; }
   .wd-card h2 { padding-left: 100px; min-height: 44px; }

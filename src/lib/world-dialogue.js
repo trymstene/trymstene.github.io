@@ -75,7 +75,15 @@ export function mountDialogue(host, opts) {
   more.setAttribute('aria-hidden', 'true');
   more.textContent = '▼';
   box.appendChild(boxP); box.appendChild(more);
-  if (topics.length) { card.appendChild(qs); card.appendChild(box); }
+  // ⭐ A TOPIC MAY LEAVE A DOOR OPEN (20 Sep 2026, design library §18). An answer is typed as text, so
+  // a resident who has to send you somewhere — Bean telling a phone with no kept pass that a job needs
+  // one — could only say so and stop, and a newcomer who hears "no" with nothing to tap puts the phone
+  // down there. This is the park's own pk-cta--keep pattern, moved into the one dialogue template so
+  // every area gets it rather than each growing its own.
+  const cta = document.createElement('a');
+  cta.className = 'wd-cta';
+  cta.hidden = true;
+  if (topics.length) { card.appendChild(qs); card.appendChild(box); card.appendChild(cta); }
   host.appendChild(card);
 
   // 🖼 the portrait: zoomed so the waist-up crop fills the frame (the park's numbers)
@@ -113,6 +121,7 @@ export function mountDialogue(host, opts) {
     }, TYPE_MS);
   }
   function back() {
+    cta.hidden = true;
     clearInterval(timer); timer = null;
     box.hidden = true;
     box.classList.remove('is-typing', 'is-done');
@@ -123,7 +132,12 @@ export function mountDialogue(host, opts) {
     closing = !!t.close;
     if (t.seq && t.seq.length) { seq = t.seq; seqAt = 0; type(seq[0]); return; }
     seq = null;
-    type(typeof t.a === 'function' ? t.a() : t.a);
+    const said = typeof t.a === 'function' ? t.a() : t.a;
+    // ⚠️ AFTER the answer, because a() is what decides whether the door is needed at all
+    const d = typeof t.cta === 'function' ? t.cta() : t.cta;
+    cta.hidden = !(d && d.href && d.label);
+    if (!cta.hidden) { cta.href = d.href; cta.textContent = d.label; }
+    type(said);
   }
   for (const t of topics) {
     const b = document.createElement('button');

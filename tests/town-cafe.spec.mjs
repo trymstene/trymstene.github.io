@@ -204,11 +204,19 @@ async function square(page, hat) {
 test('a shift is standing in the Coffee Cup’s own window, and only for its own staff', async ({ page }) => {
   const errors = await square(page);
 
-  // ── the kiosk is a building to everyone else
-  await page.evaluate(() => window.__town.work.set({ at: '' }));
-  expect(await page.evaluate(() => window.__town.room.open('cafe')), 'a stranger does not clock in').toBe(false);
-  await page.evaluate(() => window.__town.work.set({ at: 'store' }));
-  expect(await page.evaluate(() => window.__town.room.open('cafe')), 'nor does Pip’s restocker').toBe(false);
+  // ── the kiosk is a building to everyone else — and it says so IN ITS OWN WORDS. The tap used to be
+  // answered by the world's fallback, which ended "Not built yet." on the building carrying the biggest
+  // thing in the release; four of six critics found that one sentence. The front answers now, from the
+  // rig, so `open` is TRUTHY for a stranger and what must be false is the SHIFT.
+  for (const at of ['', 'store']) {
+    await page.evaluate((j) => window.__town.work.set({ at: j }), at);
+    await page.evaluate(() => window.__town.room.open('cafe'));
+    await page.waitForTimeout(600);
+    expect(await page.evaluate(() => { const c = window.__town.room.cafe(); return !!(c && c.on()); }), `a ${at || 'stranger'} does not clock in`).toBe(false);
+    const said = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
+    expect(said.length, 'and the front says something rather than nothing').toBeGreaterThan(10);
+    expect(said, '⚠️ never the old hand-written stub').not.toContain('Not built yet');
+  }
   expect(await page.locator('.tw-atwork').count()).toBe(0);
 
   // ── you work here: the tap answers, the walk happens, and the banana is in the window
@@ -543,5 +551,89 @@ test('every station has a perfect window a thumb can hit, and every band lies on
   // and no station may be more than three times tighter than the loosest, or one of them is the game
   const all = Object.values(m.half);
   expect(Math.max(...all) / Math.min(...all), 'the three stations are the same kind of hard').toBeLessThan(3);
+  expect(errors).toEqual([]);
+});
+
+// ⭐ THE COUNTER IS A MARK ON THE GROUND (20 Sep 2026 — five of the six critics found this one).
+//
+// Clocking in hid the player's banana with a class and nothing ever measured where they were, so a
+// shift had no geography at all: you could walk the whole square as nobody with the tray still up,
+// serving a queue three screens away. This is Trym's 19 Sep sentence, asserted: "step off the mark
+// and it folds, the customer keeps its ticket; step back and it rises" — plus the receipt for
+// somebody who walks away and stays away.
+test('stepping off the counter mark folds the tray and gives the banana back', async ({ page }) => {
+  const errors = await square(page);
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe().on(), null, { timeout: 5000 });
+
+  const look = () => page.evaluate(() => {
+    const t = document.querySelector('.tw-cup'), me = document.querySelector('.tw-me'), w = document.querySelector('.tw-atwork');
+    return {
+      on: window.__town.room.cafe().on(),
+      folded: t ? t.classList.contains('is-folded') : null,
+      inWindow: !!w,
+      meShown: me ? getComputedStyle(me).display !== 'none' : null,
+    };
+  });
+
+  const behind = await look();
+  expect(behind.on, 'the shift is on').toBe(true);
+  expect(behind.folded, 'and on the mark the tray is up').toBe(false);
+  expect(behind.inWindow, 'with the banana in the serving window').toBe(true);
+  expect(behind.meShown, 'and the walking banana put away').toBe(false);
+
+  // ── two body-lengths down the lane: the tray goes down, the banana comes back
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2 - 230; t.pos.y = t.tgt.y = p.base + 60; });
+  await page.waitForTimeout(700);
+  const off = await look();
+  expect(off.on, 'the shift survives a step away — the cup waits').toBe(true);
+  expect(off.folded, 'the tray folds').toBe(true);
+  expect(off.inWindow, 'nobody is left standing in the window').toBe(false);
+  expect(off.meShown, 'and you are a banana again, able to walk').toBe(true);
+
+  // ── back on the mark
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.waitForTimeout(700);
+  const back = await look();
+  expect(back.folded, 'and it rises again').toBe(false);
+  expect(back.inWindow, 'with the banana back in the window').toBe(true);
+
+  // ── right across the square: that is leaving, and leaving pays
+  await page.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = 900; t.pos.y = t.tgt.y = 700; });
+  await page.waitForTimeout(900);
+  const gone = await look();
+  expect(gone.on, 'walking away ends the shift').toBe(false);
+  expect(gone.inWindow, 'and empties the window').toBe(false);
+  expect(errors).toEqual([]);
+});
+
+// ⚠️ THE WORLD'S VOICE HAS NOWHERE TO STAND DURING A SHIFT unless it is told where. The toast is z
+// 2000 and docks at the bottom, so it landed on the gauge; raised by 172 px it landed square on the
+// barista's face in the window instead (measured: toast 419–495, banana 455–510 at 360×740).
+test('the toast never lands on the gauge, the strip or the face in the window', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  const errors = await square(page);
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe().on(), null, { timeout: 5000 });
+  await page.evaluate(() => window.__town.say('a line the world says while a thumb is on the gauge'));
+  await page.waitForTimeout(400);
+
+  const r = await page.evaluate(() => {
+    const box = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { top: b.top, bot: b.bottom, h: b.height }; };
+    return { toast: box('.tw-toast'), tray: box('.tw-cup'), work: box('.tw-atwork'), strip: box('.wh'), view: box('#twView') };
+  });
+  expect(r.toast, 'the toast is on screen').not.toBeNull();
+  expect(r.toast.h, 'and has a real height').toBeGreaterThan(8);
+  const clear = (a, b) => a.bot <= b.top + 1 || a.top >= b.bot - 1;
+  for (const [name, other] of [['the tray', r.tray], ['the banana in the window', r.work], ['the HUD strip', r.strip]]) {
+    if (!other) continue;
+    expect(clear(r.toast, other), `the toast does not overlap ${name}`).toBe(true);
+  }
+  expect(r.toast.top, 'and it stays inside the view').toBeGreaterThanOrEqual(r.view.top - 1);
   expect(errors).toEqual([]);
 });

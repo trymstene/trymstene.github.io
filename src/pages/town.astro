@@ -290,6 +290,9 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-burst--curse .tw-burst__flash { background: radial-gradient(circle, #f0e4ff 0 28%, rgba(150, 70, 255, 0.9) 29% 45%, rgba(110, 30, 220, 0) 70%); }
     .tw-state.is-shut.is-todo img { filter: brightness(0.7) saturate(0.7); }
     .tw-world.is-inside :is(.tw-state, .tw-mark, .tw-visitor, .tw-aura, .tw-tape, .tw-shutsign, .tw-forsale, .tw-me-twin, .tw-atwork, .tw-work):not(.is-in) { visibility: hidden; }
+    /* 🏷 and the FOR SALE plank comes down while you are serving in the window under it: one building
+       cannot be both for sale and staffed by you in the same frame (20 Sep) */
+    .tw-world.is-shift .tw-forsale { visibility: hidden; }
     /* the store's shelf and the vendor's: the town's row with the piece's own sprite in front */
     .tw-store { display: grid; gap: 0.45rem; margin: 0.5rem 0; }
     /* 🚪 the way into the shop, under the shelf that is already on the card */

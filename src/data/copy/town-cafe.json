@@ -6,9 +6,12 @@
     "take": "Tips gathered: {n} coins.",
     "line": "The propeller turns above the square, and one cup is still warm.",
     "none": "The counter kept its company; the cups stayed stacked and dry.",
+    "capped": "The cups went down the lane; today’s tips have already gone home.",
+    "best": "A warm {drink} crosses the rope.",
     "back": "Return"
   },
   "idle": "The rope is clear; the counter is open.",
+  "front": "The Coffee Cup is Bean’s kiosk, with her counter beneath the propeller.",
   "go": {
     "grind": "Grinding",
     "pour": "Pouring",
@@ -35,8 +38,6 @@
     ]
   },
   "left": "Somebody turns from the rope, leaving the lane a little emptier.",
-  "ask": "Can I work the counter?",
-  "bean": "The counter is work when you stand behind it. The grounds say the square needs a steady hand today.",
   "drinks": {
     "short": "Little Wake",
     "tall": "Square Cup",
