@@ -220,3 +220,90 @@ test('night: the visitors go home', async ({ page }) => {
   await page.screenshot({ path: SHOT + '21-night-empties.png' });
   expect(true).toBe(true);
 });
+
+// 📸 Trym's 20 Sep notes, walked: the cup that leaves with them, the body as patience, Bean off the
+// window, and the three stations dressed.
+test('the counter after the notes: the cup, the body, the stations', async ({ page }) => {
+  await town(page, { name: 'notes', band: 85, job: 'cafe' });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe() && window.__town.room.cafe().on(), null, { timeout: 5000 });
+  for (let i = 0; i < 3; i++) { await page.evaluate(() => window.__town.room.cafe().call()); await page.waitForTimeout(500); }
+  await page.evaluate(() => window.__town.room.cafe().arrive());
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: SHOT + '22-bean-off-the-window.png' });
+
+  // ── the three stations, each caught mid-gesture
+  for (const st of ['grind', 'pour', 'milk']) {
+    await page.evaluate(async (want) => {
+      const c = window.__town.room.cafe(), g = c.gest();
+      if (!c.cup()) c.serve();
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      for (let n = 0; n < 8 && c.cup() && g.station() !== want; n++) {
+        const key = g.station();
+        const t = g.best(performance.now());
+        await wait(Math.max(0, t - performance.now()));
+        if (key === 'pour') { g.press(performance.now()); await wait(30); g.release(g.best(performance.now())); }
+        else g.press(g.best(performance.now()));
+        await wait(20);
+      }
+      if (want === 'pour') g.press(performance.now());   // the stream only falls while the thumb is down
+    }, st);
+    await page.waitForTimeout(st === 'pour' ? 420 : 300);
+    await page.screenshot({ path: SHOT + '23-station-' + st + '.png', clip: await page.evaluate(() => { const b = document.querySelector('.tw-cup').getBoundingClientRect(); return { x: Math.max(0, b.x - 4), y: Math.max(0, b.y - 4), width: b.width + 8, height: b.height + 8 }; }) });
+  }
+
+  // ── patience as the body, at the last rung
+  await page.evaluate(() => window.__town.room.cafe().rung(2));
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: SHOT + '24-patience-is-the-body.png' });
+
+  // ── a cup made, and the customer walking off with it
+  await page.evaluate(async () => {
+    const c = window.__town.room.cafe(), g = c.gest();
+    if (!c.cup()) c.serve();
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let n = 0; n < 30 && c.cup(); n++) {
+      const key = g.station();
+      const t = g.best(performance.now());
+      await wait(Math.max(0, t - performance.now()));
+      if (key === 'pour') { g.press(performance.now()); await wait(30); g.release(g.best(performance.now())); }
+      else g.press(g.best(performance.now()));
+      await wait(20);
+    }
+  });
+  await page.waitForTimeout(1200);
+  const held = await page.evaluate(() => (window.__town.room.folk().folk() || []).filter((v) => (v.held || []).includes('mug')).length);
+  console.log('QA mugs in hand after one served cup: ' + held);
+  await page.screenshot({ path: SHOT + '25-leaving-with-the-cup.png' });
+  expect(true).toBe(true);
+});
+
+// 📸 the Thriving town's décor at night — the lanterns that stand by the stalls. They were sliced at the
+// wrong cell width, so two of six frames held no lantern at all and the rest jumped half a cell: what was
+// on screen half the time was a bare yellow ground-glow, which is the town's reserved "there is something
+// to do here" colour. (Trym, 20 Sep: "the lantern that shows up as a pickup / cleaning-thing — not sure
+// why its there, has a sprite thats glitchy.")
+test('the lanterns by the stalls, at night', async ({ page }) => {
+  await town(page, { name: 'decor', band: 95, hour: 23 });
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = 800; t.pos.y = t.tgt.y = 780; });
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: SHOT + '26-lanterns-at-night.png' });
+  // ⚠️ clipped around the sprite ITSELF, measured: the whole point is whether it stays put
+  const box = await page.evaluate(() => {
+    const els = [...document.querySelectorAll('.tw-state')].filter((e) => !e.hidden && /s-lantern/.test(getComputedStyle(e).backgroundImage + (e.src || '') + e.outerHTML));
+    if (!els.length) return null;
+    const r = els[0].getBoundingClientRect();
+    return { x: Math.max(0, r.x - 40), y: Math.max(0, r.y - 30), width: r.width + 80, height: r.height + 60 };
+  });
+  console.log('QA lantern box: ' + JSON.stringify(box));
+  // four frames, a quarter-second apart: a sprite sliced right does not jump or vanish
+  for (let i = 0; i < 4; i++) { await page.waitForTimeout(260); await page.screenshot({ path: SHOT + '27-lantern-frame-' + i + '.png', clip: box || { x: 60, y: 180, width: 260, height: 220 } }); }
+  expect(true).toBe(true);
+});

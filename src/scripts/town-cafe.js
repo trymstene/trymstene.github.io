@@ -203,7 +203,9 @@ export function mountCounter(host, opts = {}) {
     tick(cup, now());
     const key = stationOf(cup);
     // the one button follows the cup from station to station — grind, pour, milk
-    if (key && key !== shown) { shown = key; if (opts.label) go.textContent = opts.label(key) || ''; }
+    // ☕ the station is on the BOX, so the stylesheet can dress the gauge as a grinder, a pour or a
+    // swelling foam without a line of per-frame JS. Set here in mountCounter, so /dev/cafe/ dresses too.
+    if (key && key !== shown) { shown = key; box.dataset.st = key; if (opts.label) go.textContent = opts.label(key) || ''; }
     if (key) {
       const z = zoneOf(cup, key);
       zoneEl.style.left = (z.from * 100) + '%';
@@ -237,12 +239,14 @@ export function mountCounter(host, opts = {}) {
     holding = true; cx = e.clientX; cy = e.clientY;
     go.classList.add('is-held');
     const r = press(cup, now());
+    box.classList.toggle('is-pouring', !!(cup && cup.held));   // ☕ the stream falls only while the thumb is down
     if (r) step(r);
   }
   function up() {
     if (!holding) return;
     holding = false;
     go.classList.remove('is-held');
+    box.classList.remove('is-pouring');
     if (!cup || cup.done) return;
     const r = release(cup, now());
     if (r) step(r);
@@ -270,6 +274,7 @@ export function mountCounter(host, opts = {}) {
     serve(c, label) {
       cup = c;
       shown = stationOf(c);
+      box.dataset.st = shown;
       clearTaps();
       note.textContent = '';
       tickEl.textContent = '';
@@ -287,7 +292,7 @@ export function mountCounter(host, opts = {}) {
     // 2 px green borders at width 0, so a still gauge carried a green stub that read as a target; and the
     // one button sat there as a dead yellow slab with no word on it, which reads as broken rather than
     // quiet. The band goes away and the button goes with it — what is left is the line that says why.
-    idle(label) { cup = null; sleep(); clearTaps(); tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; go.hidden = !label; needle.hidden = true; fillEl.hidden = true; zoneEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
+    idle(label) { cup = null; sleep(); clearTaps(); delete box.dataset.st; tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; go.hidden = !label; needle.hidden = true; fillEl.hidden = true; zoneEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
     say(text) { note.textContent = text || ''; },
     // ⚠️ the town's toast docks at bottom 14 and outranks this by 800 of z-index, so it lands square
     // on the gauge unless it is moved. It steps up for as long as the tray is up, and back down after.
@@ -299,8 +304,9 @@ export function mountCounter(host, opts = {}) {
     // ⚠️ the walk's door: nothing in tests/ has ever driven a canvas, and a rAF gauge cannot be
     // thumbed by Playwright at a real millisecond. These let it press at an exact instant.
     seam: {
-      press: (t) => { const r = cup ? press(cup, t) : null; if (r) step(r); return r; },   // ⚠️ a pour's press STARTS a hold and grades nothing: stepping on null would log a phantom wrong
-      release: (t) => { const r = cup ? release(cup, t) : null; if (r) step(r); return r; },
+      // ⚠️ the class too, or the bench and every walk show a pour with no stream while a real thumb shows one
+      press: (t) => { const r = cup ? press(cup, t) : null; box.classList.toggle('is-pouring', !!(cup && cup.held)); if (r) step(r); return r; },   // ⚠️ a pour's press STARTS a hold and grades nothing: stepping on null would log a phantom wrong
+      release: (t) => { const r = cup ? release(cup, t) : null; box.classList.remove('is-pouring'); if (r) step(r); return r; },
       at: (t) => (cup ? (tick(cup, t), cup.v) : -1),
       zone: () => (cup ? zoneOf(cup, stationOf(cup)) : null),
       station: () => (cup ? stationOf(cup) : ''),
@@ -511,7 +517,10 @@ export function bootTownCafe(ctx) {
     if (deck) say(deck);
     track('town_cup', { at: 'cafe', r: GRADES[c.grade] });
     cup = null;
-    if (i >= 0) drop(i, true);          // served: they go and sit with it
+    // ☕ THE CUP GOES WITH THEM, and it is the only thing on screen that says a coffee was made: the
+    // toast is gone in four seconds and the terrace is across the square. `mug` is no longer carried by
+    // random strangers, so one in the town now means exactly this (Trym, 20 Sep).
+    if (i >= 0) { const f = folk && folk(); if (f && f.hand) f.hand(row.v, 'mug'); drop(i, true); }   // served: they go and sit with it
     tray.idle('');
   }
 
@@ -655,6 +664,10 @@ export function bootTownCafe(ctx) {
       cup: () => (tray ? tray.cup() : null),
       serve: () => { serveNext(); return !!(tray && tray.cup()); },
       rope: () => ROPE.map((r) => ({ x: r[0], y: r[1] })),
+      // ☕ age every waiting body to a patience rung: the walk cannot stand at a counter for 34 real
+      // seconds. ⚠️ it moves their ARRIVAL, not the rung — patienceTick recomputes the rung from `at`
+      // every frame, so poking the rung directly is undone before the next paint.
+      rung: (k) => { const n = performance.now(), f = [0, 0.65, 0.85][k | 0] || 0; line.forEach((q) => { if (q.at) q.at = n - PATIENCE * f; }); patienceTick(n); return line.length; },
       take: () => ({ served, tips, best }),
       receipt: (n) => receipt(n | 0),
       gest: () => (tray ? tray.seam : null),   // the tray’s own thumb-door, so a walk can make a real cup

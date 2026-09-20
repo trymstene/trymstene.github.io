@@ -125,7 +125,12 @@ const PATHS = {
   'bean|4': [[1580, 700], [1880, 700], [1730, 700]],
 };
 // home: the door they vanish through, and the window that glows while they are in
-const HOME = { hall: [1100, 590], post: [1700, 590], condo: [480, 592], store: [480, 1068], cafe: [1830, 1068], print: [1620, 1068], garden_w: [520, 704] };
+// ⚠️ BEAN'S DOOR IS NOT THE SERVING HATCH. It was x 1830 — two pixels off the centre of the café's own
+// window (CAFE_WIN spans 1806-1852) — and leaveHome() parks a resident AT their door for up to 74 s of a
+// 120 s beat, so for most of the morning Bean stood squarely in the hatch with his z above the barista's.
+// Trym, 20 Sep: "he stood in front of the window when my banana went into the window so i couldnt see
+// that i entered the shop." At 1770 his drawn box ends at 1801 and the window is clear.
+const HOME = { hall: [1100, 590], post: [1700, 590], condo: [480, 592], store: [480, 1068], cafe: [1770, 1068], print: [1620, 1068], garden_w: [520, 704] };
 const GLOW = { hall: [[1098, 468]], post: [[1694, 215]], condo: [[435, 400], [525, 400]], store: [[516, 1006]], cafe: [[1837, 1012]], print: [[1656, 1000]] };   // no glow for garden_w: a garden has no window (Trym, 15 Sep: "a glow under the bench")
 const MAYOR = [1098, 468];
 // the beds a waterer sprinkles, per place

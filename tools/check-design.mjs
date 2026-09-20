@@ -49,6 +49,19 @@ const walk = (dir, out = []) => {
   }
   return out;
 };
+// ⚠️ AND THE STANDALONE STYLESHEETS, which this gate could not see for its whole life. §21.4 was written
+// after a filter animation cost the town 57% of its frames — and the check only ever read src/, so every
+// rule in public/css/ was exempt from it by accident. Found 20 Sep by a scout that PROVED the hole:
+// a `filter: blur()` keyframe appended to public/css/town-cafe.css passed the gate green. There were no
+// offenders when the hole was closed, so there is no legacy list for these: a new one is a red build.
+const walkCss = (dir, out = []) => {
+  for (const e of readdirSync(dir)) {
+    const f = join(dir, e);
+    if (statSync(f).isDirectory()) walkCss(f, out);
+    else if (/\.css$/.test(e)) out.push(f);
+  }
+  return out;
+};
 
 // 🦶 §17 — pages that may sit without the footer: the desk and the dev pages. A
 // VISITOR page never may, area pages included: the park shipped footerless and
@@ -289,10 +302,31 @@ for (const f of files) {
   }
 }
 
+// ⚡ §21.4 IN THE STANDALONE STYLESHEETS. The loop above walks src/ only, so every rule in public/css/
+// was exempt from this gate by accident for its whole life — proved on 20 Sep by appending a
+// `filter: blur()` keyframe to public/css/town-cafe.css and watching the gate pass green. These files get
+// THIS rule and no other: the checks above read JS and template semantics a stylesheet has none of
+// (public/css/weather.css IS the shared rain layer, for one, and would fail the "rolls its own rain" rule).
+// No legacy list — there were zero offenders when the hole was closed, so a new one is a red build.
+let cssN = 0;
+for (const f of walkCss(join(ROOT, 'public/css'))) {
+  cssN++;
+  const rel = relative(ROOT, f).replace(/\\/g, '/');
+  const css = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const m of css.matchAll(/@keyframes\s+([\w-]+)\s*\{/g)) {
+    if (KF_LEGACY.includes(m[1])) continue;
+    let i = m.index + m[0].length, depth = 1;
+    while (depth && i < css.length) { const ch = css[i++]; if (ch === '{') depth++; else if (ch === '}') depth--; }
+    const body = css.slice(m.index + m[0].length, i - 1);
+    const bad = [...new Set([...body.matchAll(/(?:^|[;{]\s*)([a-z-]+)\s*:/g)].map((x) => x[1]))].filter((prop) => KF_COSTLY.has(prop));
+    if (bad.length) problems.push([rel, `@keyframes ${m[1]} animates ${bad.join(', ')} — the compositor cannot take that, so every element wearing it is re-rasterised or re-laid-out on every frame. Make the ${bad[0]} static and animate opacity instead (design library §21.4)`]);
+  }
+}
+
 if (problems.length) {
   console.error('\n❌ design gate\n');
   for (const [f, why] of problems) console.error(`   ${f}\n     ${why}\n`);
   console.error(`${problems.length} problem(s). See docs/design-library.md.\n`);
   process.exit(1);
 }
-console.log(`✅ design gate — ${files.length} files, no [hidden] traps, no stray payment hosts, every HUD strip has its bar, every visitor page its footer, one dialogue card, the town lock sound`);
+console.log(`✅ design gate — ${files.length} files + ${cssN} stylesheets, no [hidden] traps, no stray payment hosts, every HUD strip has its bar, every visitor page its footer, one dialogue card, the town lock sound`);

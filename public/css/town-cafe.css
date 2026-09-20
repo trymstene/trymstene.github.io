@@ -67,7 +67,10 @@
 @keyframes twCupZone { from { opacity: 0.72; } to { opacity: 1; } }
 /* the pour fills the bar from the left; the grinder and the milk ride a needle across it */
 .tw-cup__zone[hidden] { display: none; }
-.tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: #b5763a; transform-origin: 0 50%; transform: scaleX(0); }
+/* ⚠️ A HORIZONTAL-BAND GRADIENT ONLY. The fill is scaleX'd every frame (town-cafe.js paint), so any
+   detail with an x dimension stretches from a sliver to a slab as the cup fills. A band across the top
+   is invisible to that — and it is what turns a brown progress bar into coffee with crema on it. */
+.tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(#c88a4c 0 6px, #b5763a 6px); transform-origin: 0 50%; transform: scaleX(0); }
 .tw-cup__needle { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: #ffe135; border: 2px solid #000; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 /* the milk wants three taps: each one leaves its mark where it fell, coloured by how it landed, so a
    player can see two down and one to go without a single word on the tray */
@@ -75,6 +78,76 @@
 .tw-cup__tap.is-g1 { background: #f0b428; }
 .tw-cup__tap.is-g2 { background: #7bc35e; }
 .tw-cup__tap[hidden] { display: none; }
+
+/* ---- the three stations, dressed ---------------------------------------------------------------
+ * ⭐ Trym, 20 Sep: "we can probably make the game-part of the coffee making process a bit more visual
+ * with some animations and movements and visuals to reflect grinding and foaming and all that." He is
+ * right and it was literally true: grind was a yellow line sliding, milk was the same yellow line
+ * sliding, and pour was a flat brown block growing. Three different gestures, three identical pictures.
+ *
+ * Everything below hangs off `[data-st]` on the tray, which mountCounter sets per station — so it costs
+ * no per-frame JS, and the bench at /dev/cafe/ dresses itself the same way.
+ *
+ * ⚠️ THE TRAY HAS NO VERTICAL ROOM AT ALL. Measured at 360×740: it renders at exactly 150px, pinned
+ * against its own max-height, while its four rows want 161.7px. The deepest rope mark clears the tray's
+ * top edge by 5.7 SCREEN PIXELS. Nothing here may add a row, grow the bar or add padding — every one of
+ * these lives inside the 34px gauge that already exists.
+ * ⚠️ TRANSFORM AND OPACITY ONLY (design library §21.4). A keyframe naming filter, box-shadow,
+ * text-shadow or any box metric is a red build — and note that tools/check-design.mjs walks src/ only,
+ * so in THIS file the rule is held by hand.
+ */
+
+/* ☕ GRIND — the bar becomes a burr turning under the blade: a field of ground speckle crawling one
+   period, and the needle juddering the way a grinder shakes. inset's -8px right keeps the slide from
+   ever exposing an edge; the bar's own overflow:hidden clips the rest. */
+.tw-cup[data-st="grind"] .tw-cup__bar::before {
+  content: ''; position: absolute; inset: 0 -8px 0 0;
+  background: repeating-linear-gradient(90deg, #3a2517 0 3px, #2a1a10 3px 7px);
+  opacity: 0.85; animation: twCupGrind 420ms linear infinite;
+}
+@keyframes twCupGrind { to { transform: translateX(-7px); } }
+/* ⚠️ the needle's x is written as `left` from JS, so a transform here composes with it instead of fighting */
+.tw-cup[data-st="grind"] .tw-cup__needle { animation: twCupJudder 110ms steps(2) infinite alternate; }
+@keyframes twCupJudder { from { transform: translateY(-1px); } to { transform: translateY(1px); } }
+
+/* ☕ POUR — a stream falls into the cup, and ONLY while the thumb is actually down, so the hold finally
+   has a picture of itself. ⚠️ it hangs off the BAR, never the fill: anything inside the fill is scaleX'd
+   with it and a 5px stream would be a 0.1px sliver at the start of a pour. */
+.tw-cup[data-st="pour"] .tw-cup__bar::after {
+  content: ''; position: absolute; top: 0; left: 50%; width: 5px; height: 100%;
+  margin-left: -2px; background: #8a5423; opacity: 0; transform-origin: 50% 0;
+}
+.tw-cup.is-pouring .tw-cup__bar::after { animation: twCupStream 360ms linear infinite; }
+@keyframes twCupStream {
+  0% { opacity: 0; transform: translateY(-100%) scaleY(0.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(0) scaleY(1); }
+}
+
+/* ☕ MILK — foam rises off the bottom of the gauge and the needle becomes the head on it. The bubbles are
+   three radial gradients baked into ONE element (the homestead's steam recipe), so the whole swell is a
+   single compositor layer rather than three. */
+.tw-cup[data-st="milk"] .tw-cup__bar::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle 3px at 18% 82%, rgba(255, 255, 255, 0.9) 0 100%, transparent 100%),
+    radial-gradient(circle 2px at 47% 92%, rgba(255, 255, 255, 0.72) 0 100%, transparent 100%),
+    radial-gradient(circle 3px at 76% 86%, rgba(255, 255, 255, 0.85) 0 100%, transparent 100%);
+  animation: twCupFoam 1.4s ease-out infinite;
+}
+@keyframes twCupFoam {
+  0% { opacity: 0; transform: translateY(7px); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-28px); }
+}
+/* it echoes the --foam pip, which is already a white circle on the ticket */
+.tw-cup[data-st="milk"] .tw-cup__needle { background: #fffdf5; border-radius: 999px 999px 0 0; }
+
+/* ☕ and the biggest colour surface in the tray stops being the same yellow at every station. The thumb
+   already lives on this button, so it is the one place a station's colour is certainly seen. */
+.tw-cup[data-st="grind"] .tw-cup__go { background: linear-gradient(#b98a52, #8a5c30); color: #1d1206; }
+.tw-cup[data-st="pour"] .tw-cup__go { background: linear-gradient(#ffc966, #e89a2a); }
+.tw-cup[data-st="milk"] .tw-cup__go { background: linear-gradient(#fff6e2, #e8d8b8); }
 
 /* ---- the button the thumb lives on ------------------------------------------------------------ */
 .tw-cup__go {
@@ -92,17 +165,14 @@
 /* the shift's own line: no numbers a clock could read, just where you are */
 .tw-cup__note { margin: 0; font-size: 0.74rem; opacity: 0.8; font-weight: 700; min-height: 1em; }
 
-/* ---- patience is the BODY, never a bubble (the Quiet Rule) ------------------------------------- */
-/* the shadow a banana already stands on, tinted by how long they have waited. ⚠️ .tw-npc::after is
-   one hard-coded rgba in town.astro with no variable, so the café sets the variable and town.astro's
-   rule reads it — and the colour has to survive the night scrim at 0.5 over the view. */
-/* ⚠️ RUNG ONE IS A SHADOW, NOT A GO-LIGHT. It was grass-green at 0.5 over grass, so a banana who
-   had just arrived LOST its shadow instead of gaining a clock — it read as a sprite floating half an
-   inch off the cobbles. It keeps a shadow's darkness and only takes a green cast; the ladder's real
-   signal is amber and red, and those two are the ones that have to shout. */
-.tw-wait { --tw-pat: rgba(30, 62, 22, 0.55); }
-.tw-wait.is-half { --tw-pat: rgba(240, 180, 40, 0.62); }
-.tw-wait.is-last { --tw-pat: rgba(214, 64, 48, 0.72); }
+/* ---- patience is the BODY, never a bubble, and never a COLOUR either -------------------------- */
+/* ⭐ THE SHADOW LADDER IS GONE (Trym, 20 Sep: "the shadow color underneath the banana isn't very
+   pedagogic, i don't understand what it means so i don't think that's something we should use for
+   anything visually"). It tinted the ellipse a waiting banana stands on green, then amber, then red.
+   Nothing else in this world reads a state off the floor, so nobody could learn it — and a shadow
+   that turns green makes a banana look like it is standing on grass, not like it is being patient.
+   Patience is acted by the body now, in town-folk.js: still, then shifting weight, then turned away
+   from the counter. `.tw-wait` survives as the handle a walk selects on and carries no colour. */
 
 /* ⚠️ THE TOAST HAS NOWHERE TO STAND AT THE BOTTOM OF A SHIFT. It is z 2000 and docks at bottom 14,
    so it landed square on the gauge — then raising it to 172 put it square on the barista's face in
@@ -114,6 +184,10 @@
 @media (prefers-reduced-motion: reduce) {
   .tw-cup { transition: none; }
   .tw-cup__zone { animation: none; opacity: 1; }
+  /* ⚠️ EVERY station skin is named here, or it keeps moving for somebody who asked for stillness. The
+     colours and the crema stay — they are not motion, and they are most of what makes a station legible. */
+  .tw-cup__bar::before, .tw-cup__bar::after, .tw-cup__needle { animation: none; }
+  .tw-cup[data-st="pour"] .tw-cup__bar::after { opacity: 0; }
 }
 
 /* 🧾 the receipt, at clock-out. A CARD is right here and nowhere else in the café: the shift is over,

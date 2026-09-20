@@ -156,19 +156,20 @@ test('patience is the body: not one bubble over a customer, day or night', async
   });
   expect(quiet, '⚠️ a customer said something — the Quiet Rule is broken').toEqual([]);
 
-  // the three steps of patience are a colour under the body, and nothing else changes
+  // ⭐ PATIENCE IS THE BODY, AND ONLY THE BODY (Trym, 20 Sep: "the shadow color underneath the banana
+  // isn't very pedagogic, i don't understand what it means"). It used to be the colour of the ellipse
+  // they stand on — green, amber, red — which nobody could learn, because nothing else in this world
+  // states a value on the floor. They act it: still, then shifting weight, then turned away. What this
+  // asserts is that the SHADOW IS JUST A SHADOW and the poses are three different things.
   const steps = await page.evaluate(() => {
     const b = document.querySelector('.cb-body');
-    const read = () => getComputedStyle(b).getPropertyValue('--tw-pat').trim();
-    const out = { green: read() };
-    b.classList.add('is-half'); out.half = read();
-    b.classList.remove('is-half'); b.classList.add('is-last'); out.last = read();
-    b.classList.remove('is-last');
-    return out;
+    return {
+      shadow: getComputedStyle(b, '::after').backgroundColor,
+      ladder: getComputedStyle(b).getPropertyValue('--tw-pat').trim(),
+    };
   });
-  expect(steps.green, 'a fresh customer stands on green').toBeTruthy();
-  expect(steps.half, 'amber at half').not.toBe(steps.green);
-  expect(steps.last, 'red at a fifth').not.toBe(steps.half);
+  expect(steps.ladder, '⚠️ no patience colour survives anywhere').toBe('');
+  expect(steps.shadow, 'a waiting banana stands on the town’s ordinary shadow').toBe('rgba(20, 30, 18, 0.34)');
 
   await page.screenshot({ path: SHOT + 'day.png' });
   await page.evaluate(() => document.getElementById('cbNight').classList.add('is-on'));
@@ -371,14 +372,33 @@ test('the queue forms at the rope, above the tray, and patience is the shadow', 
     expect(m.l > geo.win.x1 || m.r < geo.win.x0, `the customer at ${m.x} leaves the serving window clear`).toBe(true);
   }
 
-  // 🤫 patience is the BODY: a shadow under a banana, never a bubble over one
-  const pat = await page.evaluate(() => {
+  // 🤫 PATIENCE IS THE BODY, never a bubble over one — and never a colour on the floor either. The
+  // rung is driven the whole way up to the last one and what changes is the POSE: still at first, then
+  // shifting weight, then turned away from the counter (every rope mark is left of the window, so the
+  // counter is on their right and the left-facing pair is facing away from it).
+  const pat = await page.evaluate(async () => {
+    const seam = window.__town.room.cafe();
+    const v = seam.line()[0];
+    const who = () => (window.__town.room.folk().folk() || []).find((q) => q.job === 'queue');
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const seen = {};
+    for (const rung of [0, 1, 2]) {
+      window.__town.room.cafe().rung(rung);
+      await wait(700);
+      const q = who();
+      seen[rung] = q ? { pat: q.pat, frame: q.frame } : null;
+    }
     const b = document.querySelector('.tw-wait');
-    return b ? { bg: getComputedStyle(b, '::after').backgroundColor, text: (b.textContent || '').trim() } : null;
+    return { seen, shadow: b ? getComputedStyle(b, '::after').backgroundColor : null, text: b ? (b.textContent || '').trim() : null, some: !!v };
   });
-  expect(pat, 'somebody is waiting').not.toBeNull();
-  expect(pat.bg, '⚠️ the shadow is the patience colour, not the default grey').not.toBe('rgba(20, 30, 18, 0.34)');
+  expect(pat.some, 'somebody is waiting').toBe(true);
+  expect(pat.shadow, '⚠️ a waiting banana stands on the town’s ordinary shadow, not a readout').toBe('rgba(20, 30, 18, 0.34)');
   expect(pat.text, 'and not one word over their head').toBe('');
+  expect(pat.seen[0], 'the rung reaches the body').not.toBeNull();
+  // ⚠️ the FRAME is the assertion: 2 and 3 are the front pair, 4 and 5 the left-facing one, so a
+  // customer at the last rung has literally turned away from the counter
+  expect(pat.seen[2].frame, 'at the last rung they have turned their back on the counter').toBeGreaterThanOrEqual(4);
+  expect(pat.seen[0].frame, 'and a fresh one has not').toBeLessThan(4);
   expect(errors).toEqual([]);
 });
 
@@ -660,5 +680,52 @@ test('a tap on the pour costs nothing: it resets, it does not ruin the cup', asy
   expect(r.afterTap.marks, 'and leaves no mark on the cup').toBe(0);
   expect(r.afterTap.held, 'the pour is simply back to unpoured').toBe(0);
   expect(r.good, 'and the hold that follows it still earns a perfect pour').toBe(2);
+  expect(errors).toEqual([]);
+});
+
+// ☕ THE CUP LEAVES WITH THEM (Trym, 20 Sep: "all customer-bananas that get a coffee should leave with the
+// coffee cup / coffee mug wearable that we have"). It is the only thing on screen that says a coffee was
+// made: the tray's toast is gone in four seconds and the terrace is across the square.
+test('a served customer walks off carrying the cup, and only a served one', async ({ page }) => {
+  const errors = await square(page);
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe().on(), null, { timeout: 5000 });
+
+  // ⚠️ nobody in the square starts with one: `mug` was pulled out of the visitors' random HELD list on
+  // purpose, because a cup on 3% of strangers is what stopped a cup meaning anything.
+  const before = await page.evaluate(() => (window.__town.room.folk().folk() || []).filter((v) => (v.held || []).includes('mug')).length);
+  expect(before, 'no stranger carries a coffee for no reason').toBe(0);
+
+  for (let i = 0; i < 2; i++) { await page.evaluate(() => window.__town.room.cafe().call()); await page.waitForTimeout(400); }
+  await page.evaluate(() => window.__town.room.cafe().arrive());
+  await page.waitForTimeout(400);
+  const queued = await page.evaluate(() => window.__town.room.cafe().line().length);
+  expect(queued, 'a queue formed').toBeGreaterThan(0);
+
+  // one cup, made properly, at the exact instants
+  await page.evaluate(async () => {
+    const c = window.__town.room.cafe(), g = c.gest();
+    c.serve();
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let n = 0; n < 30 && c.cup(); n++) {
+      const key = g.station();
+      const t = g.best(performance.now());
+      await wait(Math.max(0, t - performance.now()));
+      if (key === 'pour') { g.press(performance.now()); await wait(30); g.release(g.best(performance.now())); }
+      else g.press(g.best(performance.now()));
+      await wait(20);
+    }
+  });
+  await page.waitForTimeout(600);
+  // ⚠️ COUNT THE CUPS, not one: the tray serves the next customer the moment a cup is finished, so the
+  // loop above makes as many as the queue can take. What has to hold is that the two numbers match.
+  const after = await page.evaluate(() => (window.__town.room.folk().folk() || []).filter((v) => (v.held || []).includes('mug')).length);
+  const till = await page.evaluate(() => window.__town.room.cafe().take());
+  expect(till.served, 'at least one cup was made').toBeGreaterThan(0);
+  expect(after, 'a cup in a hand for every cup that went out, and not one more').toBe(till.served);
   expect(errors).toEqual([]);
 });

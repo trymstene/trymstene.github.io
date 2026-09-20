@@ -686,6 +686,24 @@ def export_frames(key, sheet_name, cols, fw, fh, row=0, scale=PROP, soft=False):
     # outright (14 Sep: the lamps lit at night and nothing showed). Those keep their alpha.
     if not soft:
         sub = blockify(sub, factor=1, colors=28, warm=0.0, sat=1.0, con=1.0, trim=False)
+    # ⚠️ A GUESSED CELL WIDTH LOOKS LEGAL AND RENDERS AS A GLITCH. `lantern` shipped as 96 wide because
+    # 576 ÷ 96 = 6 divides evenly — and two of those six frames held no lantern at all while the rest sat
+    # half a cell apart. Nothing caught it for weeks; it was found by eye, in the game, at night.
+    # An animation's subject does not teleport between frames: every frame must HAVE something in it, and
+    # its opaque box must stay put. (Deliberately generous — a third of a cell — so real motion passes:
+    # a crow's wings and a rolling shutter both move plenty inside this.)
+    boxes = [sub.crop((k * fw, 0, (k + 1) * fw, fh)).getbbox() for k in range(len(cols))]
+    # ⚠️ A TRAILING EMPTY FRAME IS A FADE-OUT, not a slicing error: `driftgone` is a ghost dissolving and
+    # its last frame is meant to be nothing at all. What is never legitimate is an empty frame with a full
+    # one after it — that is a cell boundary in the wrong place, which is exactly what `lantern` had.
+    empty = [k for k, b in enumerate(boxes) if not b and any(boxes[j] for j in range(k + 1, len(boxes)))]
+    if empty:
+        raise SystemExit('  ❌ %s: frame(s) %s are EMPTY at a cell width of %d — the sheet is %dpx wide, so '
+                         'the cell is probably %d. A frame with nothing in it means the slicing is wrong.'
+                         % (key, empty, fw, sh_.size[0], sh_.size[0] // max(1, len(cols))))
+    # ⚠️ AND NO DRIFT CHECK. The obvious second rule — "the subject must not move far between frames" —
+    # was tried and is wrong: `drift` is a wisp that genuinely travels 177px up its own cell, which is the
+    # entire animation. The interior empty frame is the honest signal and it is the one that caught this.
     w2, h2 = int(fw * scale), int(fh * scale)
     for k in range(len(cols)):
         sub.crop((k * fw, 0, (k + 1) * fw, fh)).resize((w2, h2), Image.NEAREST).save(os.path.join(OUT, 's-%s-%d.png' % (key, k)), optimize=True)
@@ -711,7 +729,12 @@ for key, args in (
     ('wisp', ('Graveyard_Ghosts_1_48x48.png', list(range(0, 6)), 96, 96, 0, PROP, True)),     # a small one rising and gone
     ('crow', ('Crow_idle_Down_48x48.png', [0, 1, 2], 96, 96, 0, PROP * 0.55)),   # a pair of birds at a bird's size, not a banana's (Trym, 14 Sep: "crows look too big")
     ('candle', ('Graveyard_Candle_Standing_48x48.png', [0, 1, 2, 3], 48, 144, 0, PROP, True)),
-    ('lantern', ('Camping_Lantern_48x48_1.png', list(range(6)), 96, 144, 0, PROP, True)),
+    # ⚠️ 144 WIDE, FOUR FRAMES — not 96 and six. The sheet is 576×144 and 576 ÷ 96 = 6, which is what made
+    # the wrong number look right. Measured: sliced at 144 the lantern's opaque box is stable across all
+    # four frames (18,21,126,132 → 21,18,126,132); sliced at 96 two of the six frames are EMPTY and the
+    # rest sit ~48 px apart, so on screen it jumped left and right and vanished every other frame with a
+    # hard seam through its glow. Trym, 20 Sep: "has a sprite that's glitchy."
+    ('lantern', ('Camping_Lantern_48x48_1.png', [0, 1, 2, 3], 144, 144, 0, PROP, True)),
     ('flame', ('Flame_1_48x48.png', [0, 1, 2, 3, 4], 48, 48, 0, PROP * 1.8, True)),   # the pack's low flame, tinted purple in CSS: what a cursed object stands in (Trym, 15 Sep)
     ('spark', ('Flame_2_48x48.png', [0, 1, 2, 3, 4], 48, 48, 0, PROP * 1.4, True)),   # ...and its sparks, in front of it
     ('fountainoff', ('Garden_Fountain_6_Turn_Off_48x48.png', [9], 192, 240)),   # the last frame of the turn-off: dry

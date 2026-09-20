@@ -887,6 +887,16 @@ export function bootTownLife(ctx) {
   }
   const todayHas = (id) => today.includes(id);
   let oddKey = null;
+  // ☕ THE OWNER STEPS OFF HIS OWN PITCH WHILE YOU WORK IT (Trym, 20 Sep). Bean's whole day is spent at
+  // the café, which is exactly where the player now stands too — so while a shift runs he takes his own
+  // terrace and leaves the counter to you. It is a REFRESH, so he walks there rather than blinking out.
+  // ⚠️ COMPOSED, never replaced: setOverride has one slot and the day's `oddspot` event already owns it,
+  // so assigning a café-only function here would silently delete that event for the day.
+  let shiftOn = false;
+  const overrideFor = (n2, beat) => {
+    if (shiftOn && n2.key === 'bean' && beat !== 5) return 'terrace';
+    return oddKey && n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null;
+  };
   function todayStage() {
     const d = dayNum();
     today = picksFor(d);
@@ -896,7 +906,7 @@ export function bootTownLife(ctx) {
     shutters();
     // the odd spot: one resident, one beat, somewhere they never stand
     oddKey = todayHas('oddspot') ? Object.keys(ODD_SPOTS)[Math.floor(h(d, 22) * 9)] : null;
-    life.setOverride(oddKey ? (n2, beat) => (n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null) : null);
+    life.setOverride(overrideFor);
     // the merchant
     killBody(merchant); merchant = null;
     if (todayHas('merchant') && MERCHANT.bands.includes(band)) { merchant = body(MERCHANT.at[0], MERCHANT.at[1], { hat: 'cowboy', glasses: 'shades', extras: { backpack: true } }); bodies.add(merchant); }
@@ -990,6 +1000,10 @@ export function bootTownLife(ctx) {
     paintClock(now);
     if (now < secAt) return;
     secAt = now + 500;
+    // ☕ every way a shift can start or end lands here: the kiosk tap, walking off the mark, stepping into
+    // a shop, a front closing, or the page going away. One poll is cheaper than five call sites agreeing.
+    const onShift = !!(cafe && cafe.on());
+    if (onShift !== shiftOn) { shiftOn = onShift; life.setOverride(overrideFor); }
     const c = curseNow(), cType = c === 'none' ? null : c;
     const om0 = !curse && !!omenNow();
     const beat = life.beat();

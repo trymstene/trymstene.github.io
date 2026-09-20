@@ -122,7 +122,9 @@ const pick = (r, list) => list[Math.floor(r() * list.length) % list.length];
 // parade. Every id here is free to wear: nothing earned, nothing a supporter paid for.
 const HATS = ['party', 'crown', 'tophat', 'cowboy', 'sombrero', 'beanieprop', 'backwardscap', 'gradcap',
   'tricorn', 'jester', 'duckhat', 'watermelonhat', 'buckethat', 'snailhat', 'nightcap', 'fishbowl'];
-const HELD = ['balloons', 'balloondog', 'mug', 'boombox', 'lemonjug', 'broom', 'letter', 'potato',
+// ☕ ⚠️ NO `mug` HERE. A coffee mug means one thing in this town now — that banana just bought a coffee
+// at the counter — and a mug on 3% of random strangers is what stopped it meaning anything.
+const HELD = ['balloons', 'balloondog', 'boombox', 'lemonjug', 'broom', 'letter', 'potato',
   'cactuspot', 'rubberchicken', 'bigfish', 'vinyl', 'trophy', 'oldcane'];
 const GLASSES = ['shades', 'nerd', 'potter', 'threed', 'monocle'];
 
@@ -226,7 +228,13 @@ export function bootTownFolk(ctx) {
 
   function step(v, dt, now) {
     // sitting or gone indoors: nothing moves, and the clock decides when they have had enough
-    if (v.job === 'queue' && !v.path.length) return;   // ☕ holding the rope: the counter owns this one
+    if (v.job === 'queue' && !v.path.length) {
+      // ☕ holding the rope: the counter owns where it stands — but not how it stands. The longer it waits
+      // the faster it shifts its weight, and that is the whole patience readout now.
+      const per = v.pat === 2 ? 470 : v.pat === 1 ? 1100 : 0;
+      if (per && now - v.bobAt > per) { v.bobAt = now; v.bob = v.bob ? 0 : 1; }
+      return;
+    }
     if (v.until) {
       if (now < v.until) return;
       v.until = 0;
@@ -271,8 +279,16 @@ export function bootTownFolk(ctx) {
   function paint(v) {
     // ⭐ the frame is the pose: sitting is LOCKED (it must not dance on a bench), walking bobs
     // between two, standing is the front pose. Same grammar the residents use.
+    // ⚠️ 4 IS THE LEFT-FACING PAIR, taken from the walking line right above rather than from F_LEFT: the
+    // engine's own `face` labels are inverted and these two code paths disagree about it, so the one that is
+    // visually proven every time a banana walks left is the one to copy. Every rope mark is LEFT of the
+    // serving window (marks 1554-1752, window 1806-1852), so the counter is on a waiting banana's right and
+    // facing left is facing away from it.
+    const queued = v.job === 'queue' && !v.sitting && !v.path.length;
     const f = v.sitting ? v.frame : v.path.length
       ? (v.face === 'left' ? 4 : v.face === 'right' ? 0 : 2) + v.bob
+      : queued && v.pat === 2 ? 4 + v.bob
+      : queued && v.pat === 1 ? 2 + v.bob
       : 2;
     if (f !== v.drawn) {
       v.drawn = f;
@@ -315,12 +331,31 @@ export function bootTownFolk(ctx) {
     take(v, to, onArrive) { if (v.seat) { v.seat.taken = false; v.seat = null; } v.job = 'queue'; v.until = 0; v.sitting = false; v.arrived = onArrive || null; v.path = []; go(v, to); },
     // the counter is done with them: back to their own day, or out of town
     release(v, sit) { if (!v || v.gone) return; v.arrived = null; v.job = ''; v.until = 0; if (sit) errand(v, performance.now()); else leave(v); },
-    // ⭐ patience, as the body and nothing else: the shadow under a banana, in three steps. No bubble
-    // ever goes over one of these — they have no name and nothing to say (the Quiet Rule).
-    patience(v, k) { if (!v || !v.el) return; v.el.classList.toggle('tw-wait', k != null); v.el.classList.toggle('is-half', k === 1); v.el.classList.toggle('is-last', k === 2); },
+    // ☕ AND THEY LEAVE WITH THE CUP (Trym, 20 Sep: "all customer-bananas that get a coffee should leave
+    // with the coffee cup / coffee mug wearable that we have"). It is the only thing on screen that says a
+    // coffee was made — the tray's own toast is gone in four seconds and the terrace is across the square.
+    // ⚠️ paint() caches on the FRAME NUMBER alone, so changing an outfit mid-life does not redraw until the
+    // pose happens to change: a served banana whose errand lands where it already stands keeps frame 2 and
+    // would never show the cup. Clearing `drawn` and painting in the same breath is what makes it appear.
+    hand(v, id) {
+      if (!v || v.gone || !id) return;
+      (v.outfit.extras || (v.outfit.extras = {}))[id] = true;
+      v.drawn = -1;
+      if (v.el && !v.el.hidden) paint(v);
+    },
+    // ⭐ PATIENCE IS THE BODY, AND ONLY THE BODY. It was the colour of the ellipse they stand on — green,
+    // amber, red — and Trym's verdict on that was flat: "the shadow color underneath the banana isn't very
+    // pedagogic, i don't understand what it means so i don't think that's something we should use for
+    // anything visually." He is right: a tinted shadow is a HUD reading painted on the floor, and nothing
+    // else in this world speaks that language. So they act it instead, which is what the plan said all
+    // along ("the customer's body does the acting"): they start still, they shift their weight, and at the
+    // end they turn their back on the counter. No bubble ever goes over one of these (the Quiet Rule) —
+    // they have no name and nothing to say. `tw-wait` stays as the handle a walk selects on; it carries no
+    // colour any more.
+    patience(v, k) { if (!v || !v.el) return; v.pat = k; v.el.classList.toggle('tw-wait', k != null); },
     seam: {
       count: () => folk.length,
-      folk: () => folk.map((v) => ({ x: Math.round(v.x), y: Math.round(v.y), job: v.job, sitting: !!v.sitting, frame: v.drawn, hat: v.outfit.hat, hidden: !!v.el.hidden })),
+      folk: () => folk.map((v) => ({ x: Math.round(v.x), y: Math.round(v.y), job: v.job, sitting: !!v.sitting, frame: v.drawn, hat: v.outfit.hat, hidden: !!v.el.hidden, pat: v.pat == null ? null : v.pat, held: Object.keys(v.outfit.extras || {}).filter((k) => v.outfit.extras[k]) })),
       gates: () => GATES.map((g) => ({ at: { ...g.at }, on: { ...g.on } })),
       benches: () => BENCHES.map((b) => ({ key: b.key, x: b.x, y: b.y, taken: b.taken })),
       // the walk cannot stand in the square for twenty minutes waiting for a crowd
