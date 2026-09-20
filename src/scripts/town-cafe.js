@@ -100,8 +100,16 @@ export function press(cup, now) {
   if (key === 'pour') { if (!cup.held) { cup.held = now; cup.t0 = now; cup.v = 0; } return null; }
   return land(cup, now, key);
 }
+// ⚠️ A TAP IS NOT A POUR, AND IT MAY NOT COST A CUP. The other two stations are taps and this one is
+// a HOLD, and nothing on a phone can tell a thumb which is which — the tray's one button looks the
+// same either way. A quick tap used to land a release at v ≈ 0.02, which graded WRONG and silently
+// ruined the cup with no way to know what had gone wrong. A release this early is a slip, not a play:
+// it puts the cup back to an unpoured state and grades nothing, so the bar simply refills and the
+// gesture teaches itself. There is no line of copy anywhere in this — the brief forbids instructing.
+const POUR_MIN = 0.08;
 export function release(cup, now) {
   if (cup.done || stationOf(cup) !== 'pour' || !cup.held) return null;
+  if (vAt(cup, 'pour', now) < POUR_MIN) { cup.held = 0; cup.t0 = 0; cup.v = 0; return null; }
   return land(cup, now, 'pour');
 }
 
@@ -202,7 +210,9 @@ export function mountCounter(host, opts = {}) {
       zoneEl.style.width = ((z.to - z.from) * 100) + '%';
       const pour = key === 'pour';
       fillEl.hidden = !pour; needle.hidden = pour;
-      if (pour) fillEl.style.transform = 'scaleX(' + cup.v.toFixed(4) + ')';
+      // ⭐ and the bar carries a SEED at its left edge before the first press, so the pour reads as a
+      // level that fills from there rather than as an empty box with nothing happening in it
+      if (pour) fillEl.style.transform = 'scaleX(' + Math.max(cup.held ? 0 : 0.02, cup.v).toFixed(4) + ')';
       else needle.style.left = (cup.v * 100).toFixed(2) + '%';
       stepEls.forEach((s, i) => { s.className = 'tw-cup__step' + (i < cup.i ? ' is-done' : i === cup.i ? ' is-now' : ''); });
       tapEls.forEach((t, i) => {
@@ -266,12 +276,18 @@ export function mountCounter(host, opts = {}) {
       for (const k of (DRINKS[c.drink] || [])) el('i', 'tw-cup__pip' + (k === 'bean' ? '' : ' tw-cup__pip--' + k), tickEl);
       go.textContent = label || '';
       go.disabled = false;
+      go.hidden = false;
+      zoneEl.hidden = false;
       wake();
     },
     // ⚠️ AN EMPTY TRAY HAS TO SAY WHY. Clocked in with nobody at the rope, the player saw no ticket,
     // a still gauge and a dead button, with nothing to tell them the counter was working and merely
     // quiet rather than broken. (Seen on the QA sweep at 360 wide, 20 Sep.)
-    idle(label) { cup = null; sleep(); clearTaps(); tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; needle.hidden = true; fillEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
+    // ⚠️ AND AN EMPTY TRAY SHOWS NOTHING THAT IS NOT TRUE. Seen on the 360 sweep: the zone kept its two
+    // 2 px green borders at width 0, so a still gauge carried a green stub that read as a target; and the
+    // one button sat there as a dead yellow slab with no word on it, which reads as broken rather than
+    // quiet. The band goes away and the button goes with it — what is left is the line that says why.
+    idle(label) { cup = null; sleep(); clearTaps(); tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; go.hidden = !label; needle.hidden = true; fillEl.hidden = true; zoneEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
     say(text) { note.textContent = text || ''; },
     // ⚠️ the town's toast docks at bottom 14 and outranks this by 800 of z-index, so it lands square
     // on the gauge unless it is moved. It steps up for as long as the tray is up, and back down after.
@@ -351,7 +367,11 @@ const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js —
 // Every mark is inside the south street's own rectangle (STREETS: 260,1040 → 2020,1140) so the
 // router walks them there, and every foot is below the storefronts' base of 1040 so they are drawn
 // in front of the buildings instead of inside them.
-const ROPE = [[1742, 1052], [1640, 1048], [1538, 1050]];
+// ⚠️ AND EXACTLY ONE BODY BETWEEN MARKS, no more. At 102 the tail of the queue fell off the left edge
+// of the view — the camera follows the player, who is standing at the kiosk, and only about 520 world
+// px are on screen at a phone's width. 99 is what a banana is drawn at, so it is the tightest a queue
+// can be and still be a line, and it brings the third customer back inside the frame.
+const ROPE = [[1752, 1052], [1653, 1048], [1554, 1050]];
 const PATIENCE = 34000;          // how long a banana will stand there before it gives up
 const NEXT = [5200, 12000];      // the gap between arrivals, while you are behind the counter
 

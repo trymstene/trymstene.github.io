@@ -209,6 +209,11 @@ export function bootTownFolk(ctx) {
   function leave(v) {
     if (v.seat) { v.seat.taken = false; v.seat = null; }
     v.sitting = false;
+    // ⚠️ AND THE REST IS OVER. step() returns early for anything with `until` in the future — a banana
+    // on a bench or inside a shop — so calling leave() on one did nothing at all until its own clock ran
+    // out. At nightfall that left half the square still sitting there minutes after the lamps came on.
+    v.until = 0;
+    if (v.el && v.el.hidden) v.el.hidden = false;   // it was indoors: it has to come out to walk home
     v.job = 'leave';
     v.path = [];
     goGate(v);
@@ -325,6 +330,8 @@ export function bootTownFolk(ctx) {
       // ⚠️ every time route() gave up and drew a straight line. It must be 0: a stray is a banana
       // walking through a flower bed, and the street graph being disconnected is how it happens.
       strays: () => strays,
+      cap: () => capNow(),
+      dump: () => folk.map((v) => ({ job: v.job, path: v.path.length, until: Math.round(v.until || 0), x: Math.round(v.x), y: Math.round(v.y), hid: !!(v.el && v.el.hidden) })),
       links: () => LINKS.map((l, i) => ({ i, to: l.map((k) => k.to) })),
     },
   };

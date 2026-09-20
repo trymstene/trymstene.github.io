@@ -1,93 +1,77 @@
-# OS junk
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-.DS_Store
 
-# Editor
-.vscode/
-.idea/
-*.swp
-
-# Claude Code: the LOCAL state is ignored, but the parts that make the rig work on
-# every machine and every fresh clone are TRACKED (12 Sep 2026). The /copy skill and
-# the Stop hook that runs the gates are the guarantee that a lost context cannot lose
-# a house rule — a guarantee that only holds if they are in the repo.
-.claude/*
 !.claude/settings.json
 !.claude/skills/
-.claude/worktrees/
-.mcp.json
-
-# wrangler local-dev secrets (any worker folder)
-.dev.vars
-
-# Local-only planning doc
-ROADMAP.md
-
-# Local-only upload pack for Giphy/Tenor (not for the website)
-giphy-tenor-pack/
-# Local-only Giphy upload staging — the gallery keeps its own tracked copies
-# in public/assets/gallery-bananas/, so these are duplicates we don't deploy
-public/assets/giphy-stickers/
-
-# pixelarticons Pro — PURCHASED pack (one-time licence). The repo is public, so
-# never commit the full set (that would redistribute a paid pack). Only the
-# handful we actually use is committed, in src/icons/pixelart/.
-public/assets/pixelarticons-pro-2.2.1/
-
-# 📦 EVERY PURCHASED PIXEL PACK LIVES HERE — one rule, so a new pack needs no
-# new rule. Drop the pack folder in public/assets/_packs/ and it is ignored
-# automatically. These are BOUGHT packs whose licences forbid redistribution
-# ("resell, repackage or redistribute … even if modified" / "as is OR
-# transformed"), and this repo is PUBLIC and deploys to the live site, so the
-# raw packs must reach neither. The generators bake ONLY the sprites we use
-# into derived atlases under public/assets/beach/ — those are what ship.
 #   tools/build-fish-atlas.py   → beach/fish.png    (Pixel Gnome Fishing Pack)
 #   tools/build-shell-atlas.py  → beach/shells.png  (ShoreThings)
-public/assets/_packs/
-
+# ("resell, repackage or redistribute … even if modified" / "as is OR
 # Astro / Node
-node_modules/
-dist/
-.astro/
-
-__pycache__/
-
-# ✍️ copy GPT has just written, waiting to be read at /dev/copy/. A draft is
-# never committed — `node tools/copy.mjs --approve <job>` promotes it into
-# src/data/copy/, which IS tracked, and that is the only copy the game imports.
-tools/copy-out/
-
-# Local secret configs (API tokens/keys) — NEVER commit. Catch-all + specifics.
-tools/*.local.json
+# Claude Code: the LOCAL state is ignored, but the parts that make the rig work on
+# Editor
 # GA4 pull — secrets, NEVER commit (service-account key + property id)
-tools/ga4.local.json
-tools/*service-account*.json
-tools/*-ga4-key*.json
 # Google service-account keys drop in as project-hash.json — catch them all
-tools/trymstene-com-*.json
-tools/*.iam.gserviceaccount.com.json
-ad-pack/
-
-# wrangler local dev state (miniflare caches, local DO sqlite)
-.wrangler/
-
-banana-3d/
-
+# Local secret configs (API tokens/keys) — NEVER commit. Catch-all + specifics.
+# Local-only Giphy upload staging — the gallery keeps its own tracked copies
+# Local-only planning doc
+# Local-only upload pack for Giphy/Tenor (not for the website)
+# OS junk
 # Printful upload files — regenerate with tools/build-shop-art.py, never deploy
-print-files/
-
-# reel render artifacts — never in the repo
-tools/reel/frames/
-tools/reel/out/
-
+# a house rule — a guarantee that only holds if they are in the repo.
+# automatically. These are BOUGHT packs whose licences forbid redistribution
+# every machine and every fresh clone are TRACKED (12 Sep 2026). The /copy skill and
+# handful we actually use is committed, in src/icons/pixelart/.
+# in public/assets/gallery-bananas/, so these are duplicates we don't deploy
+# into derived atlases under public/assets/beach/ — those are what ship.
+# never commit the full set (that would redistribute a paid pack). Only the
+# never committed — `node tools/copy.mjs --approve <job>` promotes it into
+# new rule. Drop the pack folder in public/assets/_packs/ and it is ignored
+# pixelarticons Pro — PURCHASED pack (one-time licence). The repo is public, so
 # playwright
-test-results/
-playwright-report/
-qa-shots/
-
+# raw packs must reach neither. The generators bake ONLY the sprites we use
+# reel render artifacts — never in the repo
 # scratch files review agents leave behind
+# src/data/copy/, which IS tracked, and that is the only copy the game imports.
+# the Stop hook that runs the gates are the guarantee that a lost context cannot lose
+# transformed"), and this repo is PUBLIC and deploys to the live site, so the
+# wrangler local dev state (miniflare caches, local DO sqlite)
+# wrangler local-dev secrets (any worker folder)
+# ✍️ copy GPT has just written, waiting to be read at /dev/copy/. A draft is
+# 📦 EVERY PURCHASED PIXEL PACK LIVES HERE — one rule, so a new pack needs no
+*.swp
+.DS_Store
+.astro/
+.claude/*
+.claude/worktrees/
+.dev.vars
+.idea/
+.mcp.json
+.vscode/
+.wrangler/
+Desktop.ini
+ROADMAP.md
+Thumbs.db
+__pycache__/
 _look*.mjs
 _qa*.mjs
+ad-pack/
+banana-3d/
+dist/
+ehthumbs.db
+giphy-tenor-pack/
+node_modules/
+playwright-report/
+print-files/
+public/assets/_packs/
+public/assets/giphy-stickers/
+public/assets/pixelarticons-pro-2.2.1/
+qa-shots/
+test-results/
 tests/zz-*.spec.mjs
+tools/*-ga4-key*.json
+tools/*.iam.gserviceaccount.com.json
+tools/*.local.json
+tools/*service-account*.json
+tools/copy-out/
+tools/ga4.local.json
+tools/reel/frames/
+tools/reel/out/
+tools/trymstene-com-*.json

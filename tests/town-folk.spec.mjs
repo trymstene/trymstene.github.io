@@ -113,3 +113,43 @@ test('a visitor is scenery: it cannot be tapped, and a room hides it', async ({ 
   await page.evaluate(() => window.__town.rooms.exit());
   expect(errors).toEqual([]);
 });
+
+// ⭐ THE VISITORS READ THE TOWN (20 Sep 2026, design library §23). They are traffic, not fixtures —
+// but traffic that ignored the clock and the band, so a blacked-out Curse Night square still had six
+// party-hatted strangers strolling it and a 2% Abandoned town was as busy as a Thriving one. The
+// town-wide rule was already written for the baked visitors and the travelling stall (Trym, 15 Sep:
+// "aren't the townsbananas supposed to go inside in the night?"); these obey it too now.
+test('the square empties at nightfall, and a poor town is a quiet one', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); window.__town.life.set(12); });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.waitForTimeout(700);
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => window.__town.room.folk().count()), 'a Thriving square carries a crowd').toBeGreaterThan(3);
+
+  // ── the lamps come on: everybody WALKS home. Not a blink — they cross the square at 96 px a second,
+  // which is why this waits rather than measuring one frame.
+  await page.evaluate(() => window.__town.life.set(23));
+  await page.waitForTimeout(700);
+  const heading = await page.evaluate(() => window.__town.room.folk().dump());
+  expect(heading.every((v) => v.job === 'leave'), 'every one of them is on its way out at once').toBe(true);
+  expect(heading.every((v) => !v.until), '⚠️ including the ones on a bench: a rest must not outlast the day').toBe(true);
+  await page.waitForFunction(() => window.__town.room.folk().count() === 0, null, { timeout: 45000 });
+
+  // ── and nobody new arrives in the dark
+  await page.waitForTimeout(2500);
+  expect(await page.evaluate(() => window.__town.room.folk().count()), 'the dark square stays empty').toBe(0);
+
+  // ── an Abandoned town, by daylight, is quiet on purpose
+  await page.evaluate(() => { window.__town.life.set(12); window.__town.room.set(10); });
+  await page.waitForTimeout(900);
+  expect(await page.evaluate(() => window.__town.room.folk().cap()), 'nobody strolls a 10% town').toBe(0);
+  await page.evaluate(() => { window.__town.room.set(85); });
+  await page.waitForTimeout(900);
+  expect(await page.evaluate(() => window.__town.room.folk().cap()), 'and a Thriving one is busy again').toBeGreaterThan(3);
+  expect(errors).toEqual([]);
+});

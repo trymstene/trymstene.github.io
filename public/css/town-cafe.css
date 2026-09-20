@@ -66,6 +66,7 @@
 }
 @keyframes twCupZone { from { opacity: 0.72; } to { opacity: 1; } }
 /* the pour fills the bar from the left; the grinder and the milk ride a needle across it */
+.tw-cup__zone[hidden] { display: none; }
 .tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: #b5763a; transform-origin: 0 50%; transform: scaleX(0); }
 .tw-cup__needle { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: #ffe135; border: 2px solid #000; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 /* the milk wants three taps: each one leaves its mark where it fell, coloured by how it landed, so a
@@ -86,6 +87,7 @@
 }
 .tw-cup__go:active, .tw-cup__go.is-held { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
 .tw-cup__go[disabled] { opacity: 0.55; cursor: default; }
+.tw-cup__go[hidden] { display: none; }
 
 /* the shift's own line: no numbers a clock could read, just where you are */
 .tw-cup__note { margin: 0; font-size: 0.74rem; opacity: 0.8; font-weight: 700; min-height: 1em; }

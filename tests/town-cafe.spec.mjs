@@ -637,3 +637,28 @@ test('the toast never lands on the gauge, the strip or the face in the window', 
   expect(r.toast.top, 'and it stays inside the view').toBeGreaterThanOrEqual(r.view.top - 1);
   expect(errors).toEqual([]);
 });
+
+// ⚠️ A TAP IS NOT A POUR, AND IT MAY NOT COST A CUP. Two of the three stations are taps and this one
+// is a hold; the tray's one button looks identical either way, and nothing may say "hold" out loud
+// (the brief forbids instructing). A quick tap used to land a release at v ≈ 0.02 — graded WRONG,
+// silently, with nothing on screen to say what had happened.
+test('a tap on the pour costs nothing: it resets, it does not ruin the cup', async ({ page }) => {
+  const errors = await bench(page);
+  const r = await page.evaluate(() => {
+    const { newCup, press, release, zoneOf, STATIONS } = window.__cafe.fn;
+    const c = newCup('tall', 0, 12345);
+    c.i = 1; c.t0 = 5000;                       // straight to the pour
+    press(c, 5000);                             // thumb down
+    const tap = release(c, 5040);               // …and up again 40 ms later: a tap
+    const afterTap = { graded: !!tap, marks: c.marks.length, held: c.held };
+    press(c, 6000);                             // a real hold this time
+    const z = zoneOf(c, 'pour');
+    const good = release(c, 6000 + z.at * STATIONS.pour.span);
+    return { afterTap, good: good && good.g, marks: c.marks.slice() };
+  });
+  expect(r.afterTap.graded, 'a tap grades nothing at all').toBe(false);
+  expect(r.afterTap.marks, 'and leaves no mark on the cup').toBe(0);
+  expect(r.afterTap.held, 'the pour is simply back to unpoured').toBe(0);
+  expect(r.good, 'and the hold that follows it still earns a perfect pour').toBe(2);
+  expect(errors).toEqual([]);
+});

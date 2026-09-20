@@ -550,7 +550,11 @@ test('a streetlight: the whole lamp answers a tap, the repair takes time, and th
   expect(await room(page, 'hit', lamp.x, lamp.y - 118)).toEqual(['room', 'p:' + lamp.id]);   // the icon
   expect(await room(page, 'hit', lamp.x, lamp.y)).toEqual(['room', 'p:' + lamp.id]);         // the foot
   expect(await room(page, 'hit', lamp.x + 50, lamp.y - 100)).toEqual(['room', 'p:' + lamp.id]);   // across the post
-  expect(await room(page, 'hit', lamp.x, lamp.y - 260)).toBeNull();   // …and not the whole sky
+  // …and not the whole sky. ⚠️ NOT `toBeNull`: the square is full of other things, and a crow on a
+  // bench 260 px up answered this about one run in four. What is being asserted is that the LAMP'S box
+  // ends, not that the sky is empty.
+  const sky = await room(page, 'hit', lamp.x, lamp.y - 260);
+  expect(sky && sky[1]).not.toBe('p:' + lamp.id);
 
   // ── the repair is WORK: a bar fills, and the lamp is still broken while it does
   await room(page, 'tapAt', 'p:' + lamp.id);
@@ -890,7 +894,10 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await town(page);
-  await page.waitForFunction(() => window.__town && window.__town.work, null, { timeout: 20000 });
+  // ⚠️ NOT JUST `work`: the topic is null until the ROOM'S copy has landed too (topicFor returns
+  // null without w.ask — a half-built question is worse than none), and under a parallel run that
+  // second import can arrive a beat later. Waiting for the thing being asserted, not for its module.
+  await page.waitForFunction(() => window.__town && window.__town.work && window.__town.work.ask('pip'), null, { timeout: 20000 });
   const bosses = await seam(page, () => window.__town.work.bosses());
   expect(bosses).toEqual({ pip: 'store', spinner: 'condo', bean: 'cafe' });
 

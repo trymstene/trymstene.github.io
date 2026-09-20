@@ -1,6 +1,16 @@
-// 📸 THE QA SWEEP — every state of the town, at a phone's width, for the eye.
-// Temporary: run it, look at test-results/qa-*.png, delete it.
+// 📸 THE QA SWEEP — every state of the town, at a phone's width, FOR THE EYE.
+//
+// Not a gate: it asserts almost nothing. It walks the town into each of its states and takes a
+// picture, because the standing rule in this repo is that a change is walked on the BUILT site and
+// LOOKED AT before it is presented — and half the findings on 20 Sep were things no assertion would
+// ever have caught (a queue piled into one banana, a toast landing on the barista's face, a green
+// stub on an empty gauge). The pictures land in qa-shots/, which Playwright does not wipe.
+//
+// ⚠️ OPT-IN, so it does not add a minute and a half to every run:
+//     QA_SHOTS=1 npx playwright test tests/town-qa-shots.spec.mjs
 import { test, expect } from '@playwright/test';
+
+test.skip(!process.env.QA_SHOTS, 'the sweep is for the eye: run it with QA_SHOTS=1');
 
 // ⚠️ NOT test-results/: Playwright empties that directory on every run, and other agents are running
 // the suite in parallel tonight — these are for the eye and have to survive that.
@@ -133,4 +143,80 @@ test('360 wide: the narrowest phone the house supports', async ({ page }) => {
   const over = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(over, 'nothing overflows sideways at 360').toBe(false);
   console.log('QA ERRORS ' + JSON.stringify(errs));
+});
+
+// 📸 the states the 20 Sep fixes created, walked as a player and looked at
+test('the counter mark, a real cup, and the receipt that names it', async ({ page }) => {
+  await town(page, { name: 'mark', band: 85, job: 'cafe' });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe() && window.__town.room.cafe().on(), null, { timeout: 5000 });
+  for (let i = 0; i < 3; i++) { await page.evaluate(() => window.__town.room.cafe().call()); await page.waitForTimeout(500); }
+  await page.evaluate(() => window.__town.room.cafe().arrive());
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: SHOT + '15-queue-on-the-pavement.png' });
+
+  // ── a real cup, thumbed at the exact instant the way the walk does
+  await page.evaluate(async () => {
+    const c = window.__town.room.cafe(), g = c.gest();
+    c.serve();
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let n = 0; n < 30 && c.cup(); n++) {
+      const key = g.station();
+      const t = g.best(performance.now());
+      await wait(Math.max(0, t - performance.now()));
+      if (key === 'pour') { g.press(performance.now()); await wait(30); g.release(g.best(performance.now())); }
+      else g.press(g.best(performance.now()));
+      await wait(20);
+    }
+  });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: SHOT + '16-cup-made.png' });
+
+  // ── two body-lengths down the lane: the tray folds and the banana walks again
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2 - 230; t.pos.y = t.tgt.y = p.base + 60; });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: SHOT + '17-off-the-mark.png' });
+
+  // ── and the receipt, with the cup that came out right named on it
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: SHOT + '18-receipt-with-a-take.png' });
+  expect(true).toBe(true);
+});
+
+test('a stranger taps the Coffee Cup, and a shut front says why', async ({ page }) => {
+  await town(page, { name: 'front', band: 85 });
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: SHOT + '19-front-to-a-stranger.png' });
+
+  await page.evaluate(() => window.__town.room.shutShop('store', true));
+  await page.waitForTimeout(500);
+  await page.evaluate(() => { const p = window.__town.PROPS.store, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.evaluate(() => window.__town.room.open('store'));
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: SHOT + '20-shut-store-says-why.png' });
+  expect(true).toBe(true);
+});
+
+test('night: the visitors go home', async ({ page }) => {
+  await town(page, { name: 'night', band: 85 });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.waitForTimeout(1200);
+  const day = await page.evaluate(() => window.__town.room.folk().count());
+  await page.evaluate(() => window.__town.life.set(23));
+  // ⚠️ they WALK out, at 96 world px a second: a gate is a long way off and three seconds is not it
+  await page.waitForTimeout(18000);
+  const night = await page.evaluate(() => window.__town.room.folk().count());
+  console.log(`QA visitors: ${day} by day, ${night} still walking home 18s after the lamps came on`);
+  await page.screenshot({ path: SHOT + '21-night-empties.png' });
+  expect(true).toBe(true);
 });
