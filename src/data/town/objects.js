@@ -27,7 +27,10 @@ export const WHERE = {
   // ⚠️ every spot MEASURED clear of every prop box (15 Sep): the first set sat under the dumpsters, the square
   //    benches, the garden boxes, a tree, the info kiosk — a cursed thing nobody could see. tools: the finder in
   //    the session notes; re-measure when a prop moves
-  alley: [[1820,  1168],  [290,  330],  [785,  410]],
+  // ⚠️ 326, not 290: the clothes shop was built over the old worksite yard on 20 Sep and its sprite
+  // reaches x 282 — an object at 290 would lie inside the building. 326 is the middle of the 88 px gap
+  // between the shop and the Arcade, which is a better alley than the yard ever was. The walk caught it.
+  alley: [[1820,  1168],  [326,  330],  [785,  410]],
   terrace: [[1750,  1230]],
   square: [[1045,  1030],  [1155,  1030]],
   garden: [[1730,  700],  [560,  690]],

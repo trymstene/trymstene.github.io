@@ -50,7 +50,7 @@ PROP = 0.76                  # the beach's heroic-banana scale rule, park's too
 BOUND = 60
 
 # ---- the streets: every door opens onto one -------------------------------------
-HALL_ST = (260, 560, 2020, 660)      # along the north row's doors
+HALL_ST = (156, 560, 2020, 660)      # along the north row's doors — west to 156 since the clothes shop joined it
 HIGH_ST = (260, 1040, 2020, 1140)    # along the south row's doors
 SQUARE = (660, 660, 1540, 1040)
 WEST_LN = (260, 560, 340, 1140)
@@ -511,14 +511,19 @@ CAFE_WIN += [_cv[1] + _bx[0] - 2, _cv[2] + _bx[1] - 2, _cv[1] + _bx[2] + 3, _cv[
 print('  cafe window: centre x %d, floor y %d, barista %d px; the opening x %d..%d y %d..%d' % (CAFE_WIN[0], CAFE_WIN[1], CAFE_WIN[2], CAFE_WIN[3], CAFE_WIN[5], CAFE_WIN[4], CAFE_WIN[6]))
 NPCS.append(('bean', 1780, 1066, 'Bean'))
 
-# the worksite lot, north-west: the office and the arcade, later
-for i, x in enumerate(range(70, 250, 36)):
-    try_place(['ME_Singles_Worksite_48x48_Fence_1_%d.png' % (1 + i % 3)], x, 250, shade=False, solid=('rect', -18, -12, 18, 2))
-    try_place(['ME_Singles_Worksite_48x48_Fence_1_%d.png' % (1 + (i + 1) % 3)], x, 470, shade=False, solid=('rect', -18, -12, 18, 2))
-try_place(['ME_Singles_Worksite_48x48_Stacked_Material_1.png'], 150, 380, sh=0.4)
-try_place(['ME_Singles_Worksite_48x48_Sign_2.png'], 90, 440, shade=False)
-try_place(['ME_Singles_Worksite_48x48_Cone_1.png'], 210, 430, shade=False)
-SPOTS['lot'] = (160, 470)
+# 👕 THE CLOTHES SHOP, north-west — where the worksite hoarding stood (Trym, 20 Sep, marked on the
+# map: "we need to add another building to the town thats just says CLOTHES"). It is a DRESSING ROOM and
+# nothing else: no job, no boss, no counter — you tap it and change what your banana is wearing.
+#
+# ⚠️ MARKET_SMALL_11, and the number is a choice. The pack has no clothes shop: all twelve Market_Small
+# fronts are the same shell in different colourways, which is why this one wears a CLOTHES plank the way
+# the print shop wears STICKERS. #1 is the general store (green and pink) and #7 is the print shop (blue
+# and orange), so a third shop from either of those families would read as one of them at a glance. #11
+# is the cream-and-red one, and it is the only free front with a BAY window — a display window is what a
+# clothes shop has.
+place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_11.png', 190, 560,
+      solid=foot(240, 180), sh=0.45, key='clothes')
+SPOTS['clothes'] = (190, 560)
 
 # the square: three stalls with room between them, the board, the statue on the axis
 place('FARM:Market_Stand_Yellow_Big_48x48.png', 800, 780, solid=('rect', -80, -24, 80, 4), sh=0.5, key='exchange')
@@ -554,7 +559,10 @@ for (bx, by) in ((380, 960), (1900, 960), (620, 1200), (1580, 1200)):
 # the works yard and by the back lane behind the café
 for (tx, ty, tn) in ((980, 760, 13), (1220, 760, 13), (1260, 1148, 13)):   # Tree_13, the tan stone kerb — not the white-framed ones (Trym)
     try_place(['ME_Singles_City_Props_48x48_Tree_%d.png' % tn], tx, ty, shade=False, solid=('rect', -30, -22, 30, 4))
-try_place(['ME_Singles_City_Props_48x48_Dumpster_4.png'], 200, 330, solid=('rect', -36, -20, 36, 4), sh=0.4, key='dump0')   # the works yard: open and empty by default
+# ⚠️ MOVED, NEVER DELETED (20 Sep): it stood at 200,330 in the works yard, which is inside the clothes
+# shop's sprite now. dump0 is one of the two `dumps` anchors in src/data/town/problems.js, it has its own
+# full/closed art in town-room.js, and a missing anchor is a problem type that can never be drawn.
+try_place(['ME_Singles_City_Props_48x48_Dumpster_4.png'], 96, 706, solid=('rect', -36, -20, 36, 4), sh=0.4, key='dump0')   # west of the clothes shop: open and empty by default
 try_place(['ME_Singles_City_Props_48x48_Dumpster_1.png'], 2070, 1130, solid=('rect', -36, -20, 36, 4), sh=0.4, key='dump1')   # behind the café: closed
 # the info point at the gate, west of the park road: the map of the town (Trym: "theres also info kiosks")
 try_place(['ME_Singles_City_Props_48x48_Kiosk_Infopoint_1.png'], 900, 1226, solid=('rect', -80, -120, 80, 4), sh=0.45, key='info')

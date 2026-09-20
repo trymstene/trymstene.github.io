@@ -134,6 +134,7 @@ export const ALLOW_DYNAMIC = [
   { file: 'src/scripts/banana-rave.js', arg: 'd.flag', why: 'the same DROPS table' },
   { file: 'src/scripts/banana-rave.js', arg: 'DROP.flag', why: 'the same DROPS table' },
   { file: 'src/scripts/banana-builder.js', arg: 'd.flag', why: 'the same DROPS table' },
+  { file: 'src/lib/wardrobe-slots.js', arg: 'd.flag', why: 'the same DROPS table — the earned gate, shared by the shop page and the town’s dressing room so they cannot disagree about what you own' },
   { file: 'src/scripts/park-shops.js', arg: 'd.flag', why: 'the same DROPS table' },
   { file: 'src/scripts/park-shops.js', arg: 'item.flag', why: 'the same DROPS table' },
   { file: 'src/scripts/sticker-pdp.js', arg: 'd.flag', why: 'the same DROPS table' },

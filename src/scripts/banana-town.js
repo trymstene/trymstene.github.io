@@ -76,7 +76,11 @@ const ABOUT = {
   board: ['NOTICES', 112, 'The notice board. Board of Works projects, today’s wants, Monday’s results. Not built yet.'],   // 112: the plank's foot 14px into the board's top rail (Trym: "sits on top of the board")
   exchange: ['THE EXCHANGE', 134, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],   // 134: on the awning, not above it
   wheel: ['WHEEL OF PEEL', 134, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
-  lot: ['COMING SOON', 84, 'The worksite lot. The office and the arcade, later.'],
+  // 👕 the clothes shop: a DRESSING ROOM and nothing else, so it has no room, no job and no boss.
+  // The pack has no clothes front, so it wears a plank the way the print shop does — 93 and -35 are the
+  // print shop's own numbers, and they transfer because this sprite is the same 279 px tall.
+  // ⚠️ no third field: the shop answers for itself through the rig (town-dress.json `front`).
+  clothes: ['CLOTHES', 93, '', -35],
   condo: ['ARCADE', 100, 'The Arcade. Classics in banana wrapping, inside. Tap the door.'],
   // 🕹 the machines inside — names to be argued over; every one says what it will be
   g1: ['', 0, 'PEEL OUT. One thumb, one banana, a jelly vat to miss.'],
@@ -140,6 +144,19 @@ const meCtx = meCv.getContext('2d');
 const CV = 150;
 const frameNow = () => { const cyc = BASE_CYCLE_S * 1000; return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES; };
 let lastF = -1;
+// 👕 THE OUTFIT CHANGED UNDER US. `ME_DRAW` is a const OBJECT and the whole town holds references to
+// it — the café's at-work banana asks for it by getter, the twin draws from it — so it is mutated in
+// place rather than replaced, and `lastF` is cleared because drawMe() skips a frame it has already
+// drawn and the frame number has not changed just because the hat did.
+function rewear() {
+  try {
+    const o = JSON.parse(localStorage.getItem('bb-last') || 'null') || {};
+    myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {} };
+  } catch (e) {}
+  ME_DRAW.hat = myOutfit.hat; ME_DRAW.glasses = myOutfit.glasses; ME_DRAW.extras = myOutfit.extras;
+  lastF = -1;
+  drawMe();
+}
 function drawMe() {
   const f = frameNow();
   if (f === lastF) return;
@@ -237,6 +254,7 @@ function thingAt(wx, wy) {
   }
   return null;
 }
+let dress = null;        // 👕 the clothes shop's dressing room, once its chunk is in
 let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 view.addEventListener('pointerdown', (e) => {
@@ -337,7 +355,10 @@ function tick(now) {
 // it reads the farm you actually have on this device and today's real price.
 const panel = document.getElementById('twPanel'), cardBody = document.getElementById('twCardBody'), card = panel.querySelector('.tw-card');
 function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
-function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board', 'tw-card--health'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } }
+// ⚠️ EVERY MODIFIER THIS CARD CAN WEAR IS NAMED HERE. openCard() never clears a class, so a modifier
+// left behind styles whatever the player opens NEXT — and every chunk that runs a loop inside the card
+// (the dialogue's typewriter, an arcade game, the dressing room's mirror) stops here or it runs forever.
+function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board', 'tw-card--health', 'tw-card--dress'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } if (dress) { dress.stop(); } }
 document.getElementById('twCardX').addEventListener('click', closeCard);
 panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
 // 🗣 A RESIDENT'S DIALOGUE — THE WORLD'S card, not a new one (Trym, 12 Sep: "the dialogue popups for
@@ -367,8 +388,24 @@ function npcCard(key) {
     onClose: closeCard,
   });
 }
+// 👕 the dressing room, loaded on the tap that wants it. ⚠️ the card opens when the chunk lands, not
+// when the tap happens — a card that appears half a second later is the honest shape of a lazy import,
+// and the alternative (a spinner in a card) is a website's answer, not a game's.
+let dressP = null;
+function dressCard() {
+  if (!dressP) {
+    dressP = import('./town-dress.js')
+      .then((m) => { dress = m.bootTownDress({ openCard, closeCard, card, track, onWear: rewear }); return dress; })
+      .catch((e) => { dressP = null; console.warn('[town] the wardrobe did not open', e); return null; });
+  }
+  dressP.then((d) => { if (d) d.open(); });
+}
 function openFor(key) {
   if (room && room.openFor(key)) return true;   // 🏘️ the store's shelf, the notice board, a shut kiosk, a stall
+  // 👕 THE CLOTHES SHOP is a dressing room and nothing else — no room, no job, no boss — so it lives
+  // here beside the wheel rather than in town-room.js, whose business is the town's condition. Its own
+  // lazy chunk: a player who never opens the wardrobe downloads none of it, and town-room is at 84%.
+  if (key === 'clothes') { dressCard(); return true; }
   if (key === 'wheel') { wheelCard(); return true; }
   if (key === 'exchange') { exchangeCard(); return true; }
   // 🚪 a door with a room behind it. ⚠️ town-room.js gets FIRST refusal above, and it still owns
@@ -666,6 +703,9 @@ assetsReady().then(() => {
       if (window.__town) window.__town.work = work.seam;
     }).catch((e) => { console.warn('[town] work did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam,
+  // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
+  // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
+  open: (k) => openFor(k), dress: () => dress && dress.seam, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

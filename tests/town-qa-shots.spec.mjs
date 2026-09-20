@@ -307,3 +307,48 @@ test('the lanterns by the stalls, at night', async ({ page }) => {
   for (let i = 0; i < 4; i++) { await page.waitForTimeout(260); await page.screenshot({ path: SHOT + '27-lantern-frame-' + i + '.png', clip: box || { x: 60, y: 180, width: 260, height: 220 } }); }
   expect(true).toBe(true);
 });
+
+// 📸 👕 THE CLOTHES SHOP — the building, and the dressing room behind it.
+test('the clothes shop and its dressing room', async ({ page }) => {
+  await town(page, { name: 'dress', band: 85 });
+  // ── the building, on the corner where the worksite hoarding stood
+  await page.evaluate(() => { const t = window.__town, p = t.PROPS.clothes; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 60; });
+  await page.waitForTimeout(1100);
+  await page.screenshot({ path: SHOT + '28-clothes-shop.png' });
+
+  // ── the card
+  await page.evaluate(() => window.__town.room && null);
+  await page.evaluate(() => { const p = window.__town.PROPS.clothes, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.evaluate(() => window.__town.open('clothes'));
+  await page.waitForFunction(() => !!document.querySelector('.tw-dress__stage canvas'), null, { timeout: 15000 });
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: SHOT + '29-dressing-room.png' });
+  const card = await page.evaluate(() => { const c = document.querySelector('.tw-card').getBoundingClientRect(); return { x: c.x, y: c.y, width: c.width, height: c.height }; });
+  await page.screenshot({ path: SHOT + '30-dressing-room-card.png', clip: card });
+
+  // ── put a hat on and watch the mirror change
+  await page.evaluate(() => { const b = [...document.querySelectorAll('.tw-dress__chip[data-sl="hat"]')].filter((x) => !x.classList.contains('is-locked'))[3]; if (b) b.click(); });
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: SHOT + '31-dressed-card.png', clip: card });
+  const worn = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('bb-last') || '{}'); } catch (e) { return null; } });
+  console.log('QA dressing room saved: ' + JSON.stringify(worn));
+  expect(true).toBe(true);
+});
+
+test('the dressing room at 360 wide', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  await town(page, { name: 'dress360', band: 85 });
+  await page.evaluate(() => { const p = window.__town.PROPS.clothes, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.evaluate(() => window.__town.open('clothes'));
+  await page.waitForFunction(() => !!document.querySelector('.tw-dress__stage canvas'), null, { timeout: 15000 });
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: SHOT + '32-dressing-room-360.png' });
+  const m = await page.evaluate(() => {
+    const c = document.querySelector('.tw-card'), b = document.getElementById('twCardBody');
+    const st = document.querySelector('.tw-dress__stage'), rails = document.querySelector('.tw-dress__rails');
+    const r = (e) => { const x = e.getBoundingClientRect(); return { w: Math.round(x.width), h: Math.round(x.height), top: Math.round(x.top), bot: Math.round(x.bottom) }; };
+    return { card: r(c), body: r(b), stage: r(st), rails: r(rails), overflowX: b.scrollWidth - b.clientWidth, cardScroll: c.scrollHeight - c.clientHeight };
+  });
+  console.log('QA dress 360: ' + JSON.stringify(m));
+  expect(true).toBe(true);
+});

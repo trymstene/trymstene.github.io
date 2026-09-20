@@ -1,0 +1,97 @@
+/* 👕 THE DRESSING ROOM — the clothes shop's card (Trym, 20 Sep 2026).
+ *
+ * ⚠️ 261 × 440 CSS px is the whole budget. That is the measured content box of a town card at 360×640,
+ * the narrowest phone the house supports — not the 380 max-width, which is desktop. Everything below is
+ * sized against 261, and nothing may assume more.
+ *
+ * ⭐ TWO ZONES, PINNED AND SCROLLING. Every other card in the town is one block-flow column inside an
+ * `overflow: auto` box, so a tall one simply scrolls — which for a dressing room is fatal: the whole
+ * point is watching the banana change while you pick, and the mirror is the first thing to scroll away.
+ * The card becomes a grid here, the mirror is `auto` and the rails are `1fr` with their own scroller.
+ *
+ * ⚠️ NO BOX INSIDE A BOX INSIDE A BOX (design library §2: "a card inside a modal may not [keep its
+ * edges]"). The card already has its border and its hard shadow. The mirror is separated by LIGHT — a
+ * warm wash and a floor — and the rails by air and a label, not by more frames.
+ * ⚠️ Motion is transform and opacity only (§21.4), and this file is read by the design gate now.
+ */
+
+/* the card itself stops scrolling and becomes the frame for two zones.
+   ⚠️ min-height: 0 ON EVERY LINK OF THE CHAIN. A grid item's default min-height is `auto`, which means
+   "as tall as my content" — so one un-zeroed link anywhere between the card and the rails makes the
+   whole column grow instead of the rails scrolling, and the card goes back to being one long scroller
+   with the mirror at the top of it. Measured: 59px of card scroll before this line existed. */
+.tw-card--dress { overflow: hidden; display: flex; flex-direction: column; }
+.tw-card--dress > div { min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; }
+.tw-dress { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 0.35rem; min-height: 0; flex: 1 1 auto; }
+.tw-dress h2 { margin: 0; }
+
+/* ---- the mirror: a lit changing room, built out of light rather than out of more boxes ---------- */
+.tw-dress__stage {
+  position: relative; height: 108px; display: grid; place-items: end center;
+  /* the room: a warm lamp above, a cool wall, and a floor the banana stands on. No art, no new file —
+     three gradients, which is also why it costs nothing and never loads late. */
+  background:
+    radial-gradient(ellipse 70% 42% at 50% 6%, rgba(255, 228, 150, 0.5) 0 40%, rgba(255, 228, 150, 0) 72%),
+    linear-gradient(#2e2740 0 62%, #4a3a2e 62% 66%, #3a2c22 66%);
+  border-bottom: 3px solid #000;
+  overflow: hidden;
+}
+/* two tall mirrors either side, as light on a wall — the one flourish, and it is flat colour */
+.tw-dress__stage::before,
+.tw-dress__stage::after {
+  content: ''; position: absolute; top: 8px; width: 26px; height: 66px;
+  background: linear-gradient(160deg, rgba(226, 240, 255, 0.34) 0 42%, rgba(160, 190, 220, 0.22) 42% 58%, rgba(226, 240, 255, 0.3) 58%);
+  border: 3px solid #241c2e; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16);
+}
+.tw-dress__stage::before { left: 10px; }
+.tw-dress__stage::after { right: 10px; }
+.tw-dress__stage canvas {
+  position: relative; display: block; width: auto; height: 98px;
+  image-rendering: pixelated;
+  /* the banana stands ON the floor band, not in the middle of the room */
+  margin-bottom: 4px;
+}
+
+/* ---- the rails: one per slot, each its own horizontal scroller --------------------------------- */
+/* ⚠️ A RAIL, NOT A GRID. 261px holds five 44px targets across and the extras alone run past forty — a
+   grid of forty is a wall of thumbnails that pushes the mirror off the top of the card on the first
+   scroll. A rail keeps every slot one thumb-flick deep and the mirror always on screen. */
+/* ⚠️ THE RAILS SNAP. If a third rail does not quite fit — and on the shortest phone it is close — what
+   must never happen is a row of chips sliced in half along the bottom edge, which reads as a broken
+   card rather than as something to scroll. Snapping means a scroll lands on a whole rail or none. */
+.tw-dress__rails { overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 0.4rem; align-content: start; min-height: 0; scroll-snap-type: y proximity; }
+.tw-dress__rail { scroll-snap-align: start; }
+.tw-dress__rail { display: grid; gap: 0.25rem; }
+.tw-dress__of { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.72; font-weight: 800; }
+.tw-dress__row {
+  display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain;
+  padding-bottom: 4px; scrollbar-width: thin;
+}
+
+/* ⚠️ 44px, AND THAT IS THE FLOOR. The town's existing in-card buttons are 34-38px tall and that is the
+   grammar for one button on a row, not for a rail of forty small targets a thumb flicks along. */
+.tw-dress__chip {
+  position: relative; flex: 0 0 auto; width: 44px; height: 44px; padding: 0;
+  appearance: none; cursor: pointer; display: grid; place-items: center;
+  background: #2a2119; color: #fffdf5; border: 3px solid #000; box-shadow: 2px 2px 0 #000;
+  touch-action: manipulation;
+}
+.tw-dress__chip.is-on { background: linear-gradient(#ffe14d, #f2c012); color: #241c00; }
+.tw-dress__chip:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
+.tw-dress__art { width: 30px; height: 30px; background: center/contain no-repeat; image-rendering: pixelated; }
+/* "none" has no picture, so it gets a mark rather than an empty square that reads as a missing image */
+.tw-dress__art.is-none { background: none; box-shadow: inset 0 0 0 2px rgba(255, 253, 245, 0.34); width: 22px; height: 22px; border-radius: 50%; }
+.tw-dress__chip.is-on .tw-dress__art.is-none { box-shadow: inset 0 0 0 2px rgba(36, 28, 0, 0.5); }
+
+/* a locked chip is a DOOR: dimmed, with a padlock, and a tap takes you where it is caught */
+.tw-dress__chip.is-locked { opacity: 0.5; }
+.tw-dress__lock {
+  position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px;
+  background: #ffe135; border: 2px solid #000;
+  /* a padlock in eight pixels: a body with a shackle notched out of its top */
+  clip-path: polygon(0 40%, 22% 40%, 22% 16%, 78% 16%, 78% 40%, 100% 40%, 100% 100%, 0 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-dress__chip:active { transform: none; }
+}

@@ -606,6 +606,48 @@ const cafeSchema = {
   },
 };
 
+// --- town-dress ----------------------------------------------------------------
+// 👕 THE CLOTHES SHOP (20 Sep 2026). A card with a mirror and three rails, and the one place in
+// Banana World that is not a workplace, not a shop you buy from and not a game. Six strings and a
+// tooltip. The shop runs wordless until this is approved, like every surface in this world.
+const dressFields = {
+  title: { kind: 'prose', aim: 18, max: 26, note: 'The heading at the top of the card: a NAME for the little room with the mirrors in it, two or three words, not a sentence. ⚠️ not the word on the plank outside — that already says CLOTHES.' },
+  line: { kind: 'prose', aim: 64, max: 86, note: 'The one small line under the rails, and the only prose on the card. It notices the ROOM or the moment — the lamp, the mirrors, the quiet, nobody waiting — and never the player’s taste, never their outfit, never what to do next. ⚠️ nobody works here, so it may not welcome anybody, and nothing is sold here, so no word may smell of a till.' },
+  alt: { kind: 'label', aim: 60, max: 90, note: 'Read out to somebody who cannot see the mirror: one plain sentence describing what is drawn — a banana standing in a lit changing room between two tall mirrors. A label, not atmosphere: plain and useful.' },
+  'rails.hat': { kind: 'label', aim: 8, max: 14, note: 'The small heading over the rail of things that go ON THE HEAD — hats, caps, a crown, a fishbowl. One or two words, the way a shop labels a rail. Set in capitals by the stylesheet, so it reads as a label rather than a sentence.' },
+  'rails.glasses': { kind: 'label', aim: 8, max: 14, note: 'The same, for things that go OVER THE EYES — shades, a monocle, reading glasses. Plainly different from the other two at a glance.' },
+  'rails.extras': { kind: 'label', aim: 8, max: 16, note: 'The same, for everything else a banana can wear or CARRY — things in the hand, on the back, on the feet. It is the widest rail of the three, so the word has to cover a lot without going vague: not “Other” and not “Items”.' },
+  locked: { kind: 'prose', aim: 46, max: 64, holds: ['{where}'], note: 'What a dimmed, padlocked garment says when you rest on it. MUST contain {where} — the game puts the place it is caught there (“the rave”, “the pier”, “the park garden”). ⭐ AN INVITATION, NEVER A REFUSAL: the thing is on the rail precisely so you learn it exists and where it lives, so it is about the PLACE and what happens there. Never “locked”, never “unlock”, never “you can’t”. Short: it sits in a tooltip on a 44-pixel chip.' },
+};
+// 🛒 NOTHING IS SOLD IN THIS ROOM, and that is the one rule a machine can hold. A price, a coin or a
+// verb from a till turns a mirror into a shop, which is the exact thing this card is not.
+const DRESS_TILL = /\b(buy|price|coin|cost|sale|sell|purchase|checkout|unlock|locked)\b/i;
+function dressShape(data) {
+  const bad = [];
+  const say = (f, m) => bad.push([f, m]);
+  const flat = (o, p) => Object.entries(o || {}).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v, p + k + '.') : [[p + k, String(v)]]));
+  for (const [path, v] of flat(data, '')) {
+    if (DRESS_TILL.test(v)) say(path, 'reads like a till — nothing is sold in the dressing room, and no word here may suggest it is');
+    if (/\?\s*$/.test(v)) say(path, 'ends in a question — nobody may ask the player one');
+  }
+  if (!String(data.locked || '').includes('{where}')) say('locked', 'must contain {where} — the game puts the place it is caught there');
+  const rails = data.rails || {};
+  const seen = new Set(Object.values(rails).map((x) => String(x).trim().toLowerCase()));
+  if (Object.keys(rails).length && seen.size < Object.keys(rails).length) say('rails', 'two rails share a word — each one labels a different kind of thing');
+  return bad;
+}
+const dressSchema = {
+  type: 'object', additionalProperties: false, required: ['title', 'line', 'alt', 'rails', 'locked'],
+  properties: {
+    title: str(dressFields.title.note),
+    line: str(dressFields.line.note),
+    alt: str(dressFields.alt.note),
+    rails: { type: 'object', additionalProperties: false, required: ['hat', 'glasses', 'extras'],
+      properties: { hat: str(dressFields['rails.hat'].note), glasses: str(dressFields['rails.glasses'].note), extras: str(dressFields['rails.extras'].note) } },
+    locked: str(dressFields.locked.note),
+  },
+};
+
 export const JOBS = {
   'town-life': {
     id: 'town-life',
@@ -622,6 +664,19 @@ export const JOBS = {
     fields: lifeFields,
     shape: lifeShape,
     schema: lifeSchema,
+  },
+  'town-dress': {
+    id: 'town-dress',
+    title: 'Banana Town — the clothes shop',
+    what: 'The dressing room card: its name, its one line, the three rails, and what a garment you have not caught yet says.',
+    brief: 'tools/copy-briefs/town-dress.md',
+    out: 'tools/copy-out/town-dress.json',
+    approved: 'src/data/copy/town-dress.json',
+    reads: 'src/scripts/town-dress.js (through a glob inside the shop’s own lazy chunk, so a player who never opens the wardrobe downloads none of it)',
+    top: ['title', 'line', 'alt', 'rails', 'locked'],
+    fields: dressFields,
+    shape: dressShape,
+    schema: dressSchema,
   },
   'town-cafe': {
     id: 'town-cafe',

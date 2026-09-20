@@ -43,7 +43,7 @@ const LENS_EVENTS = [
   // 🏘️ Town Life, 14 Sep — the door, a fix, a buy, a Curse Night, a ghost, a cursed object, the stall
   'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_ghost', 'town_object', 'town_merchant',
   // 💼 the jobs, 19 Sep — a boss asked for work, a shift's own chore, and a turn at the café counter
-  'town_job', 'town_chore', 'town_shift',
+  'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -577,7 +577,10 @@ const ANALYST_EVENTS = [
   'quest_step', 'stand_counter',
   'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
   'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
-  'town_job', 'town_chore', 'town_shift',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
+  'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
+  // 👕☕ 20 Sep: the dressing room and every cup served. town_cup was tracked for a day with no reader
+  // anywhere — the string existed in exactly one place in the whole repo, which is the shape of a
+  // surface that is not done (a new event is not done until Pulse READS it, not until it is named).
   // 🏡 without this the analyst structurally cannot mention the farm — the
   // busiest thing built this year was invisible to its own judgement
   'homestead_open',

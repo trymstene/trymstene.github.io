@@ -1,0 +1,11 @@
+{
+  "title": "Mirror Nook",
+  "line": "The lamp keeps both mirrors busy.",
+  "alt": "A banana stands in a lit changing room between two tall mirrors.",
+  "rails": {
+    "hat": "Hats",
+    "glasses": "Specs",
+    "extras": "Carry & Wear"
+  },
+  "locked": "Catch this one at {where}."
+}
