@@ -86,3 +86,8 @@ tools/reel/out/
 test-results/
 playwright-report/
 qa-shots/
+
+# scratch files review agents leave behind
+_look*.mjs
+_qa*.mjs
+tests/zz-*.spec.mjs
