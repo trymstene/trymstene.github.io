@@ -51,7 +51,21 @@ else {
   if (!/status: 404/.test(desk[1])) fail.push('/post-review answers something other than 404 when refused — deny-as-nothing is the house pattern');
 }
 
-// ── 4. and the kill switch is still checked before anything else ────────────────────────────────
+// ── 4. 📮 a postcard survives a letters shutdown ───────────────────────────────────────────
+// ⭐ THE PLAN'S OWN PROMISE (§6): "the line is picked from the rig's deck, never typed, so the postcard
+// survives a letters shutdown and has no moderation surface of its own." That is only true while the
+// CARD path answers BEFORE the TEXT_OFF check — put the switch first and the feature it was built to
+// spare goes down with the words it was built to be free of. It is an ordering, so a source check can
+// hold it: walked live once (a letter 503s, a card 200s), and this is what stops it drifting back.
+const room2 = src.slice(src.indexOf('export class PostRoom'));
+const iCard = room2.indexOf('if (b.card)');
+const iText = room2.indexOf('TEXT_OFF');
+if (iCard < 0) fail.push('PostRoom has no postcard path — /send only takes free text');
+else if (iText < 0) fail.push('nothing checks TEXT_OFF in the room — the letters-only switch does nothing');
+else if (iCard > iText) fail.push('TEXT_OFF is checked BEFORE the postcard path: a letters shutdown would take the postcards down too, which is the one thing they exist not to do');
+if (!/checkCard/.test(src)) fail.push('the room does not run checkCard — a postcard’s shape is not judged anywhere');
+
+// ── 5. and the kill switch is still checked before anything else ────────────────────────
 const rail = src.slice(src.indexOf("url.pathname === '/post'"));
 const off = rail.indexOf('POST_OFF');
 const originCheck = rail.indexOf('allowed.includes(origin)) return');
@@ -62,4 +76,5 @@ if (fail.length) {
   console.error('❌ the post rail:\n' + fail.map((f) => '   · ' + f).join('\n'));
   process.exit(1);
 }
-console.log('✅ post rail: 4 public paths, the review queue behind POST_ADMIN_KEY, the kill switch first');
+console.log('✅ post rail: 4 public paths, the review queue behind POST_ADMIN_KEY, the kill switch'
+  + ' first,\n   and a postcard that outlives a letters shutdown');

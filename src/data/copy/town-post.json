@@ -13,5 +13,27 @@
   "sheet": "Writing to {who}",
   "send": "Send letter",
   "sent": "The letter slips into the blue mailbox.",
-  "refused": "This letter stays in the writing tray."
+  "refused": "This letter stays in the writing tray.",
+  "card": {
+    "title": "Picture Postcard",
+    "make": "Send a card",
+    "places": {
+      "park": "Park",
+      "home": "Your Homestead",
+      "rave": "Banana Rave"
+    },
+    "lines": [
+      "This made me think of you.",
+      "Wish you were here.",
+      "I was here, briefly.",
+      "The view is doing most of the work.",
+      "I picked this spot on purpose.",
+      "Standing here seemed like a plan.",
+      "Nothing urgent. Just a postcard.",
+      "The stamp has been given a job."
+    ],
+    "send": "Send postcard",
+    "sent": "The postcard joins the outgoing mail.",
+    "got": "Sent by {who}"
+  }
 }

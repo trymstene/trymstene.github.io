@@ -669,6 +669,15 @@ const postFields = {
   sheet: { kind: 'prose', aim: 30, max: 44, holds: ['{who}'], note: 'The one small line above the writing paper, saying who it is going to. MUST contain {who}. Nothing else — no instruction, no encouragement, no word count.' },
   send: { kind: 'label', aim: 8, max: 14, note: 'The button that sends the letter. A verb first, one or two words, one line.' },
   sent: { kind: 'prose', aim: 54, max: 76, note: 'The world’s line once a letter has gone. Quiet and done — the feeling of a letter dropping into a box, not a receipt. Never “successfully”, never “delivered”.' },
+  'card.title': { kind: 'prose', aim: 16, max: 24, note: 'The heading on the sheet where a postcard is made: a NAME for the thing being made, two or three words, not an instruction.' },
+  'card.places.park': { kind: 'label', aim: 10, max: 18, note: 'The place name printed under the park’s picture (the fountain and its plaza). Its own name, titled, never renamed.' },
+  'card.places.home': { kind: 'label', aim: 12, max: 20, note: 'The same, under the picture of your own gate on the road. ⚠️ this one is the PLAYER’S OWN place, which the word may acknowledge.' },
+  'card.places.rave': { kind: 'label', aim: 10, max: 18, note: 'The same, under the picture of the Banana Rave: beams, a dark floor, a crowd. Its own name, titled.' },
+  'card.lines[]': { kind: 'prose', aim: 40, max: 62, note: '⭐ ONE LINE OF THE DECK, AND THE DECK IS THE ENTIRE VOCABULARY OF EVERY POSTCARD ANYBODY WILL EVER SEND. Short — the back of a card with somebody waiting behind you in the queue. ⚠️ IT MUST WORK UNDER ALL THREE PICTURES (the park, a gate on a road, the rave), because the sender picks the place and the line separately and will pick the odd combination on purpose. Nobody is named, nothing is asked (a postcard has no reply box, so a question can never be answered), and the eight must not read as eight ways of saying one thing: some warm, some dry, one or two funny because they are so flat.' },
+  'card.make': { kind: 'label', aim: 9, max: 13, note: '⭐ THE BUTTON THAT STARTS A POSTCARD, side by side with the one that starts a letter, under anything you have open. A verb first, ONE line, and SHORT — it shares a row with “Write back” inside a 261-pixel card, and a label that has to be cut with an ellipsis is a label nobody can read. ⚠️ not the sheet’s heading (card.title), which names the thing being made rather than the act of making one.' },
+  'card.send': { kind: 'label', aim: 8, max: 14, note: 'The button that sends the postcard. A verb first, one or two words, ONE line.' },
+  'card.sent': { kind: 'prose', aim: 54, max: 76, note: 'The world’s line once the card has gone — the feeling of a card dropping in, not a receipt. ⚠️ it may not repeat the letter’s own `sent` line: two different things happened.' },
+  'card.got': { kind: 'label', aim: 14, max: 24, holds: ['{who}'], note: 'The small label over a postcard in the mailbox, saying who sent it. MUST contain {who}. ⚠️ not the letter’s `from`: a letter is FROM somebody, a postcard was SENT by somebody from somewhere, and the words may notice it.' },
   refused: { kind: 'prose', aim: 78, max: 105, note: '⭐ THE HARDEST LINE IN THE JOB. What the writer sees when the filter stops their letter. It must be KIND, FINAL and COMPLETELY UNINFORMATIVE: it names no rule, no word and no reason, and it does not suggest what to change — a precise reason is a lesson in getting round the filter next time. It must also not sound like an accusation, because most people who ever see this typed something perfectly ordinary and were caught by a shop’s name or a phone number.' },
 };
 // 🤐 THE REFUSAL MAY NOT TEACH. A machine cannot judge kindness, but it can judge whether a line has
@@ -684,6 +693,23 @@ function postShape(data) {
   for (const [f, hold] of [['from', '{who}'], ['sheet', '{who}']]) {
     if (!String(data[f] || '').includes(hold)) say(f, 'must contain ' + hold);
   }
+  // 📮 the postcard's own rules
+  const card = data.card || {};
+  if (!String(card.got || '').includes('{who}')) say('card.got', 'must contain {who}');
+  const deck = Array.isArray(card.lines) ? card.lines.map((x) => String(x)) : [];
+  if (deck.length !== 8) say('card.lines', 'the deck is exactly eight — letter-gate.js judges a card’s index against that number');
+  if (new Set(deck.map((l) => l.trim().toLowerCase())).size < deck.length) say('card.lines', 'two lines of the deck are the same');
+  for (const [i, l] of deck.entries()) {
+    if (/\?\s*$/.test(l)) say('card.lines[' + i + ']', 'asks a question — a postcard has no reply box, so it can never be answered');
+    // ⚠️ A LINE THAT NAMES ITS PICTURE IS A LINE THAT IS WRONG UNDER THE OTHER TWO. The sender picks
+    // the place and the line separately, so "the flowers are out" read at the rave is a mistake.
+    if (/(fountain|flowers?|garden|pond|beach|gate|fence|rave|dancing|beams?|music)/i.test(l)) {
+      say('card.lines[' + i + ']', 'names one of the three pictures — every line has to work under all of them');
+    }
+  }
+  if (String(card.sent || '').trim().toLowerCase() === String(data.sent || '').trim().toLowerCase()) {
+    say('card.sent', 'is the letter’s own line — a card and a letter are two different things happening');
+  }
   // ⚠️ the mystery rule: this world never publishes its own timetables or its caps
   for (const [f, v] of Object.entries(data)) {
     if (typeof v === 'string' && /\b\d+\s*(letters?|a day|per day|days?|hours?|minutes?)\b/i.test(v)) say(f, 'publishes a cap or a timetable — this world does not');
@@ -692,8 +718,27 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
-  properties: Object.fromEntries(Object.entries(postFields).map(([k, v]) => [k, str(v.note)])),
+  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card'],
+  properties: {
+    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.')).map(([k, v]) => [k, str(v.note)])),
+    // 📮 the postcard: a heading, the three place names, the deck of eight, and the two words
+    // that carry a send. ⚠️ EXACTLY EIGHT LINES — src/lib/letter-gate.js CARD.lines is the number a
+    // card's index is judged against, so a ninth would be a line nobody can ever pick and a seventh
+    // would be a card that refuses itself.
+    card: {
+      type: 'object', additionalProperties: false, required: ['title', 'make', 'places', 'lines', 'send', 'sent', 'got'],
+      properties: {
+        title: str(postFields['card.title'].note),
+        make: str(postFields['card.make'].note),
+        places: { type: 'object', additionalProperties: false, required: ['park', 'home', 'rave'],
+          properties: { park: str(postFields['card.places.park'].note), home: str(postFields['card.places.home'].note), rave: str(postFields['card.places.rave'].note) } },
+        lines: { type: 'array', minItems: 8, maxItems: 8, items: str(postFields['card.lines[]'].note) },
+        send: str(postFields['card.send'].note),
+        sent: str(postFields['card.sent'].note),
+        got: str(postFields['card.got'].note),
+      },
+    },
+  },
 };
 
 
@@ -818,7 +863,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
+    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,

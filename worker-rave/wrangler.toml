@@ -73,3 +73,9 @@ WT_ENFORCE = "1"   # flipped 2 Sep 2026 evening (Trym: "flip it")
 # before a single letter is sent. Flip to "0" only when the filter, the caps, the report and the review
 # list have all been walked on the real worker.
 POST_OFF = "1"
+# 📮 AND THE SECOND SWITCH, which is not the same switch. "1" = free-text LETTERS are refused and
+# POSTCARDS still go, because a card carries nothing anybody typed: a template id, an index into an
+# approved deck, and an outfit. docs/town-jobs-plan.md §6 asks for exactly this — "the postcard
+# survives a letters shutdown and has no moderation surface of its own" — so the lever to pull when
+# the words become a problem is this one, and the town keeps its post.
+TEXT_OFF = "0"

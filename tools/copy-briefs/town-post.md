@@ -103,6 +103,48 @@ word count.
 `sent` is the world's line once a letter has gone. Quiet and done — the feeling of a letter dropping
 into a box, not a receipt. Never "successfully", never "delivered".
 
+## The postcard
+
+A postcard is the other thing the post office sends, and it is a different animal from a letter: it
+is a PICTURE, a PICKED line and a stamp. The picture is one of three places with the sender's own
+banana standing in it — the park's fountain, your own gate on the road, or the rave. Nothing on it is
+typed. The sender chooses a place and chooses a line off a rack; the receiver's own game draws it.
+
+⭐ THAT IS WHY THE DECK MATTERS MORE THAN ANY OTHER FIELD IN THIS JOB. It is the entire vocabulary
+of every postcard anybody will ever send, forever. Eight lines have to cover "thinking of you",
+"come and see this", "I was here", and the small dry ones — and every one of them has to work under
+ALL THREE pictures, because the sender picks them separately and will pick the funny combination on
+purpose.
+
+`card.title` is the heading on the sheet where you make one. Two or three words, a NAME for the
+thing you are making, not an instruction.
+
+`card.places` is the three place names under the three pictures — `park`, `home`, `rave`. One or two
+words each, the way a postcard prints the place at the bottom of the picture. ⚠️ these are PLACES
+this world already names: the Park, your own homestead, the Banana Rave. Title them, do not rename
+them. `home` is the player's own, which the word may acknowledge.
+
+`card.lines` is the deck: EXACTLY EIGHT, one per line, and the sender picks one.
+  · Each one is a whole postcard's worth of words — short, the way you write on the back of a card
+    with somebody standing behind you in the queue.
+  · ⚠️ EVERY LINE MUST WORK UNDER EVERY PICTURE. "Wish you were here" works at the park, at a gate
+    and at a rave. "The flowers are out" only works at one, and picked at the rave it reads as a
+    mistake rather than as a joke.
+  · ⚠️ NOBODY IS NAMED and nothing is asked. There is no reply box on a postcard, so a line that
+    asks a question is a question that can never be answered.
+  · They must not sound like eight ways of saying one thing: some warm, some dry, one or two that
+    are funny because they are so flat.
+  · No emoji, and nothing that needs a name, a number or a date to make sense.
+
+`card.send` is the button that sends it. A verb first, one or two words, ONE line.
+
+`card.sent` is the world's line once it has gone — the feeling of a card dropping in, not a receipt.
+It may not repeat the letter's own `sent` line word for word: two different things happened.
+
+`card.got` is the small label over a postcard in your mailbox, saying who it is from. It MUST contain
+`{who}`. ⚠️ it is NOT the letter's `from` label: a letter is from somebody, a postcard was SENT by
+somebody from somewhere, and the line may notice the difference.
+
 `refused` is what the writer sees when the filter stops it. See rule 2: kind, final, and completely
 uninformative. It names no rule, no word and no reason, and it does not suggest what to change. It
 must not sound like an accusation — most people who see this typed something ordinary.

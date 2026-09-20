@@ -26,7 +26,7 @@
 // ⚠️ IT WRITES TO A REAL MAILBOX. `qa-post-proof` is a yard nobody has; what it leaves behind is at
 // most two delivered letters, which expire on the rail's own 30-day clock, and the queue rows it
 // makes are dropped at the end.
-import { CAPS } from '../src/lib/letter-gate.js';
+import { CAPS, CARD } from '../src/lib/letter-gate.js';
 
 const API = process.env.RAVE_API || 'https://banana-rave.trymstene.workers.dev';
 const ORIGIN = process.env.POST_ORIGIN || 'https://trymstene.com';
@@ -114,10 +114,33 @@ const capped = await send('one over ' + stamp);
 ok(capped.status === 429, 'the ' + (CAPS.sendTo + 1) + 'th to one box in a day is refused', capped.status);
 ok(!/\d/.test(String((capped.j || {}).error || '')), '…without publishing the number', JSON.stringify(capped.j));
 
+// ── 4b. 📮 A POSTCARD TAKES THE SAME RAIL ──────────────────────────────────────────────
+// ⚠️ from a FRESH sender, because the cap above is spent — a card is post and pays the same cap
+const CFROM = 'qa-card-' + Math.random().toString(36).slice(2, 8);
+const card = await rail('/send', { to: BOX, from: CFROM, card: { tpl: 'rave', line: 2, look: { hat: 'tophat', glasses: 'shades', extras: {} } } });
+ok(card.status === 200, 'a postcard is delivered', card.status);
+for (const [what, c] of [
+  ['an unknown place', { tpl: 'somewhere', line: 0 }],
+  ['a line off the end of the deck', { tpl: 'park', line: CARD.lines }],
+  ['a line that is not a number', { tpl: 'park', line: '0' }],
+]) {
+  const r = await rail('/send', { to: BOX, from: CFROM + 'x', card: c });
+  ok(r.status === 422, 'refused: ' + what, r.status);
+}
+// ⭐ AND IT CARRIES NO WORDS AT ALL. The one claim that makes a card moderation-free: whatever a
+// sender puts in `text` beside a card is not stored, because the card path never looks at it.
+const sneaky = await rail('/send', { to: BOX, from: CFROM + 'y', card: { tpl: 'park', line: 0 }, text: 'come and see me at bananaworld dot com' });
+ok(sneaky.status === 200, 'a card sent with text beside it still goes', sneaky.status);
+const peek = await rail('/box', null, '?slug=' + BOX);
+const sneaked = ((peek.j || {}).letters || []).find((l) => l.id === (sneaky.j || {}).id);
+ok(!!sneaked && sneaked.kind === 'card', '…as a card', sneaked && sneaked.kind);
+ok(!!sneaked && !sneaked.text, '…and the text beside it was never stored', sneaked && sneaked.text);
+
 // ── 5. the box ───────────────────────────────────────────────────────────────────────────────────
 const box = await rail('/box', null, '?slug=' + BOX);
 const mine = ((box.j || {}).letters || []).filter((l) => String(l.text || '').includes(stamp));
 ok(mine.length === sent, 'the box holds every letter that was delivered and none that was refused', mine.length + ' of ' + sent);
+ok(((box.j || {}).letters || []).some((l) => l.kind === 'card' && l.card && l.card.tpl === 'rave'), 'and the postcard is in it, as a recipe', 'no');
 
 // ── 6. a report takes it out on the tap ──────────────────────────────────────────────────────────
 const victim = mine[0];

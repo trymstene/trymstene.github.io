@@ -60,6 +60,7 @@ const RANGE = {
     // ✉️ the post office (20 Sep): the mailbox opened -> a letter read -> a letter written back, and
     // the two that only exist here (a refusal's reason, and the review queue's own length)
     { name: 'post_open', v: 22, u: 14 }, { name: 'post_read', v: 17, u: 11 }, { name: 'post_send', v: 6, u: 5 }, { name: 'post_refused', v: 3, u: 3 }, { name: 'post_report', v: 1, u: 1 },
+    { name: 'post_card', v: 9, u: 7 },
   ],
   eventMap: { gif_download: { US: 100, NO: 20, DE: 12 }, offer_pack: { US: 15, NO: 4 } },
   stepTimes: {},
@@ -154,7 +155,7 @@ out.world = {
   town: ['Banana Town', 'walked into Banana Town', 'put something right in the town', 'bought a piece for home in the town', 'was in the town on a Curse Night'].map((t) => [t, has(wd, t)]),
   // ✉️ the post office (20 Sep): its own card, because its events are `post_*` and the town's reads
   // `town_*` — and because the question is different in kind (does anybody ANSWER, not do they return)
-  post: ['The post office', 'opened their mailbox', 'read a letter', 'wrote back', 'a letter did not go', 'reported a letter'].map((t) => [t, has(wd, t)]),
+  post: ['The post office', 'opened their mailbox', 'read a letter', 'a letter did not go', 'reported a letter', 'started a postcard'].map((t) => [t, has(wd, t)]),
   tiles: ['saw the pill', 'tapped it', 'asked for a link', 'logged in'].map((t) => [t, has(wd, t)]),
   rate: (wd.match(/[0-9.]+% of them/) || [''])[0],
 };

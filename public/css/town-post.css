@@ -113,3 +113,79 @@
   .tw-post__open.is-opening .tw-post__sheetin { animation: none; }
   .tw-post__env:active, .tw-post__thread:active, .tw-post__back:active { transform: none; }
 }
+
+/* ---- 📮 THE POSTCARD ---------------------------------------------------------------------------
+ *
+ * ⭐ A CARD IS AN OBJECT, NOT A MESSAGE (docs/town-jobs-plan.md §6). So it is drawn as a THING with a
+ * border and a shadow, sitting on the card the way a photograph sits on a desk — never as a row in a
+ * list. The picture is a baked 600×400 template; the banana standing in it is a canvas on top, drawn
+ * live from the recipe that travelled.
+ *
+ * ⚠️ image-rendering: pixelated, and the picture is shown at a MULTIPLE of its own size wherever it
+ * can be. A 600 px plate smoothed down to 261 turns hand-placed pixels into porridge.
+ */
+.tw-pc {
+  position: relative; border: 3px solid #000; box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+  background: #0d0904; overflow: hidden; aspect-ratio: 3 / 2;
+}
+.tw-pc__bg { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+/* the banana stands on the lower middle of every one of the three, which is why all three were
+   cropped with that spot clear — the plaza, the road, the floor */
+.tw-pc__me {
+  position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+  width: 34%; height: auto; image-rendering: pixelated;
+}
+.tw-pc__place {
+  position: absolute; left: 0; top: 0; padding: 0.2rem 0.45rem;
+  font-family: "Archivo Black", sans-serif; font-size: 0.55rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #ffe135; background: rgba(0, 0, 0, 0.55);
+}
+.tw-pc__line {
+  position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.3rem 0.5rem;
+  font-size: 0.7rem; line-height: 1.3; color: #fffdf5; background: rgba(0, 0, 0, 0.62);
+  text-align: center;
+}
+.tw-pc.is-big { margin: 0.1rem 0 0.4rem; }
+
+/* ---- the sheet: three places, eight lines ------------------------------------------------------ */
+.tw-post__make { display: grid; gap: 0.35rem; }
+/* ⚠️ A ROW, NOT A GRID, and the same reason the dressing room's rails are: 261 px holds three
+   thumbnails across and nothing else, so a fourth template would have to scroll rather than wrap. */
+.tw-pc__row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3rem; }
+.tw-pc__pick {
+  appearance: none; padding: 0; border: 2px solid #000; background: #241811; cursor: pointer;
+  line-height: 0;
+}
+.tw-pc__pick img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; image-rendering: pixelated; }
+.tw-pc__pick.is-on { border-color: #ffb347; box-shadow: 0 0 0 2px #ffb347; }
+/* the deck: every line the world has, one tap each. ⚠️ it scrolls on a phone and the mask says so —
+   the same fade the dressing room's rails use, so "there is more" reads the same way twice. */
+.tw-pc__deck {
+  display: grid; gap: 0.18rem; max-height: 132px; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: #ffd21f rgba(0, 0, 0, 0.34);
+  -webkit-mask-image: linear-gradient(#000 0 calc(100% - 16px), rgba(0, 0, 0, 0.15) 100%);
+  mask-image: linear-gradient(#000 0 calc(100% - 16px), rgba(0, 0, 0, 0.15) 100%);
+}
+.tw-pc__deck::-webkit-scrollbar { width: 8px; }
+.tw-pc__deck::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.34); border-radius: 999px; }
+.tw-pc__deck::-webkit-scrollbar-thumb { background: #ffd21f; border: 1px solid #1a1408; border-radius: 999px; }
+.tw-pc__say {
+  appearance: none; text-align: left; font: inherit; font-size: 0.74rem; line-height: 1.3;
+  padding: 0.3rem 0.45rem; border: 2px solid #3a2718; background: #1f150e; color: #fffdf5; cursor: pointer;
+}
+.tw-pc__say.is-on { border-color: #ffb347; background: #2f2013; color: #ffd98a; }
+
+/* ---- two ways to answer -------------------------------------------------------------------- */
+/* ⚠️ buttons in this world never line-break, so two side by side get equal thirds of the row and the
+   longer label ellipses rather than wrapping the card open. */
+.tw-post__two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
+.tw-post__two .tw-btn--in { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- a postcard in the box --------------------------------------------------------------------- */
+.tw-post__pcrow {
+  appearance: none; display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  padding: 0.3rem; border: 2px solid #3a2718; background: #1f150e; color: #fffdf5; cursor: pointer;
+  text-align: left;
+}
+.tw-post__pcrow.is-new { border-color: #ffb347; }
+.tw-post__pcthumb { flex: none; width: 62px; aspect-ratio: 3 / 2; object-fit: cover; border: 2px solid #000; image-rendering: pixelated; }

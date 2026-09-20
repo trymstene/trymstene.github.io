@@ -44,7 +44,7 @@ const LENS_EVENTS = [
   'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_ghost', 'town_object', 'town_merchant',
   // 💼 the jobs, 19 Sep — a boss asked for work, a shift's own chore, and a turn at the café counter
   'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',
-  'post_open', 'post_read', 'post_send', 'post_refused', 'post_report',
+  'post_open', 'post_read', 'post_send', 'post_refused', 'post_report', 'post_card',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -578,7 +578,7 @@ const ANALYST_EVENTS = [
   'quest_step', 'stand_counter',
   'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
   'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
-  'post_open', 'post_read', 'post_send', 'post_refused', 'post_report',   // ✉️ the post, 20 Sep
+  'post_open', 'post_read', 'post_send', 'post_refused', 'post_report', 'post_card',   // ✉️ the post, 20 Sep
   'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
   // 👕☕ 20 Sep: the dressing room and every cup served. town_cup was tracked for a day with no reader
   // anywhere — the string existed in exactly one place in the whole repo, which is the shape of a

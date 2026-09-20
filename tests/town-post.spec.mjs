@@ -233,3 +233,110 @@ test('a player with no homestead is told they have no address, not that the post
   expect(/sorry|cannot|can.t|error|unable|must/i.test(said), 'no refusal words: ' + said).toBe(false);
   expect(errs).toEqual([]);
 });
+
+// 📮 THE POSTCARD (docs/town-jobs-plan.md §6, "Postcards v2").
+//
+// ⭐ A CARD IS AN OBJECT, NOT A MESSAGE. That is the plan's answer to "in a world with instant
+// messaging": a picture with the sender's own banana standing in it, one line off an approved rack,
+// and a stamp. Nothing on it was typed by anybody, which is why it has no moderation surface of its
+// own and why it survives a letters shutdown.
+//
+// ⚠️ AND IT TRAVELS AS A RECIPE. Three template ids, an index into the deck, and an outfit — a few
+// hundred bytes rather than forty kilobytes of PNG through a Durable Object, which is the whole
+// reason it fits the $0 model. Every check below is on that shape.
+const CARD_IN = { id: 'c1', from: 'moss-yard', at: Date.now(), read: false, kind: 'card',
+  card: { tpl: 'rave', line: 3, look: { hat: 'tophat', glasses: 'shades', extras: {} } } };
+
+test('a postcard arrives as a picture, and is not an envelope', async ({ page }) => {
+  const errs = await box(page, 360, 640);
+  await put(page, [LETTERS[0], CARD_IN]);
+  await page.waitForTimeout(300);
+
+  // in the stack: one envelope and one card, and they do not look alike
+  expect(await page.locator('.tw-post__env').count(), 'the letter is an envelope').toBe(1);
+  expect(await page.locator('.tw-post__pcrow').count(), 'the card is a card').toBe(1);
+  expect(await page.locator('.tw-post__pcrow img').getAttribute('src'), 'wearing its own picture').toContain('pc-rave');
+
+  // opened, it is the picture with the SENDER's banana drawn in it
+  await page.evaluate(() => document.querySelector('.tw-post__pcrow').click());
+  await page.waitForTimeout(700);
+  const got = await page.evaluate(() => {
+    const pc = document.querySelector('.tw-pc'), cv = pc && pc.querySelector('.tw-pc__me');
+    return {
+      bg: pc && pc.querySelector('.tw-pc__bg').getAttribute('src'),
+      line: pc && pc.querySelector('.tw-pc__line').textContent,
+      place: pc && pc.querySelector('.tw-pc__place').textContent,
+      look: cv && cv.dataset.look, drawn: cv && cv.dataset.f,
+      inside: !!(pc && cv && cv.getBoundingClientRect().bottom <= pc.getBoundingClientRect().bottom + 1),
+    };
+  });
+  expect(got.bg, 'the rave template').toContain('pc-rave');
+  expect(got.line, 'the line it was sent with, from the deck').toBe(COPY.card.lines[3]);
+  expect(got.place, 'and the place it was sent from').toBe(COPY.card.places.rave);
+  // ⭐ THE RECIPE, PUT BACK TOGETHER. The sender's outfit rode the rail and the receiver's own
+  // browser drew it — so the banana in the picture is THEIRS, not the reader's.
+  expect(JSON.parse(got.look || '{}').hat, 'the sender’s hat').toBe('tophat');
+  expect(got.drawn, 'and the banana really was drawn').toBeTruthy();
+  expect(got.inside, 'the banana stands inside the picture, not below it').toBe(true);
+  expect(errs).toEqual([]);
+});
+
+test('making one: three places, eight lines, and the picture follows your thumb', async ({ page }) => {
+  const errs = await box(page, 360, 640);
+  await page.evaluate(() => { try { localStorage.setItem('bb-last', JSON.stringify({ hat: 'party', glasses: 'nerd', extras: { balloons: true } })); } catch (e) {} });
+  await put(page, [LETTERS[0]]);
+  await page.waitForTimeout(200);
+  await page.evaluate(() => document.querySelector('.tw-post__env').click());
+  await page.waitForTimeout(600);
+
+  // ⚠️ TWO WAYS TO ANSWER, side by side, and NEITHER MAY BE CUT WITH AN ELLIPSIS. "Picture Postcard"
+  // was used as this button's label and came out "Picture Post…" on a phone; buttons in this world
+  // never line-break, and a label hidden behind an ellipsis is the same failure wearing a hat.
+  const two = await page.evaluate(() => [...document.querySelectorAll('.tw-post__two .tw-btn--in')]
+    .map((b) => ({ text: b.textContent, cut: b.scrollWidth > b.clientWidth + 1 })));
+  expect(two.length, 'a letter and a card').toBe(2);
+  for (const b of two) expect(b.cut, `"${b.text}" is cut off`).toBe(false);
+
+  await page.evaluate(() => document.querySelector('#twPostCard').click());
+  await page.waitForTimeout(700);
+  expect(await page.locator('.tw-pc__pick').count(), 'three places').toBe(3);
+  expect(await page.locator('.tw-pc__say').count(), 'and the whole deck').toBe(COPY.card.lines.length);
+
+  // the picture follows the picks — which is the whole of the fun
+  const shown = () => page.evaluate(() => ({
+    bg: document.querySelector('.tw-pc__bg').getAttribute('src'),
+    line: document.querySelector('.tw-pc__line').textContent,
+  }));
+  const before = await shown();
+  await page.evaluate(() => document.querySelectorAll('.tw-pc__pick')[2].click());
+  await page.waitForTimeout(250);
+  await page.evaluate(() => document.querySelectorAll('.tw-pc__say')[5].click());
+  await page.waitForTimeout(250);
+  const after = await shown();
+  expect(after.bg, 'the place changed').not.toBe(before.bg);
+  expect(after.line, 'and so did the line').toBe(COPY.card.lines[5]);
+
+  // ⭐ AND IT IS YOUR BANANA IN IT, read when the sheet opened rather than when it is sent — so the
+  // preview and the post can never disagree about what you had on.
+  const look = JSON.parse(await page.evaluate(() => document.querySelector('.tw-pc__me').dataset.look) || '{}');
+  expect(look.hat, 'your hat is in the picture').toBe('party');
+  expect(errs).toEqual([]);
+});
+
+// ⚠️ EVERY FIELD ON A CARD IS AN INDEX OR AN ID, NEVER A STRING THE SENDER COMPOSED. Send prose
+// instead and it is not a card, it is a letter wearing a picture.
+test('the rail refuses a postcard that is not one', async () => {
+  const { checkCard, CARD } = await import('../src/lib/letter-gate.js');
+  expect(checkCard({ tpl: 'park', line: 0 }).ok, 'a real one').toBe(true);
+  expect(checkCard({ tpl: 'somewhere-else', line: 0 }).reason, 'an unknown place').toBe('tpl');
+  expect(checkCard({ tpl: 'park', line: CARD.lines }).reason, 'a line off the end of the deck').toBe('line');
+  expect(checkCard({ tpl: 'park', line: '0' }).reason, 'a line that is not a number').toBe('line');
+  expect(checkCard({ tpl: 'park', line: 1.5 }).reason, 'nor half of one').toBe('line');
+  // ⚠️ the outfit is player data that will be drawn on somebody ELSE's screen: bounded, always
+  const fat = checkCard({ tpl: 'park', line: 0, look: { extras: Object.fromEntries(Array.from({ length: 900 }, (_, i) => ['x' + i, true])) } });
+  expect(Object.keys(fat.card.look.extras).length, 'the recipe has a ceiling').toBeLessThanOrEqual(CARD.extras);
+  expect(checkCard({ tpl: 'park', line: 0, look: { hat: '<script>x</script>' } }).card.look.hat, 'and an id is an id').toBe('none');
+  // …and the deck the copy file ships is exactly the length the gate judges against
+  expect(COPY.card.lines.length, 'the deck and the gate agree').toBe(CARD.lines);
+  expect(Object.keys(COPY.card.places).sort(), 'and so do the places').toEqual([...CARD.tpl].sort());
+});
