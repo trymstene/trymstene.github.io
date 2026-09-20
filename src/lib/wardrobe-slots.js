@@ -58,18 +58,44 @@ export function earnDoor(d) {
 // table, which renders as an empty chip with no error anywhere — measured, on the whole SPECS rail.
 const row = (d) => ({ id: d.id, label: d.label, art: d.art || d.front || d.id, locked: !earnedUnlocked(d), door: earnDoor(d) });
 
+// ⭐ THE FIVE ROWS, AND THEY ARE MAKE A BANANA'S OWN. Trym, 20 Sep 2026: "why isnt it Shades, Hats,
+// Body, Shoes, Extras like in the original Make A Banana for consistency?" It was three — hats, specs
+// and one bag called CARRY & WEAR — and that is two problems at once: a player who has dressed a banana
+// on the builder arrives at a room with different words AND with the neckwear and the shoes tipped into
+// a drawer with the balloons. The builder splits the very same EXTRA_DEFS three ways, so this splits it
+// the same three ways, in the builder's own order (make-a-banana.astro's <label> rows, minus Background
+// and Effects, which are picture settings and not garments).
+//
+// ⚠️ BODY AND SHOES ARE SINGLE-SELECT, and that is a rule and not a preference: the builder's own
+// comment says why — "bow tie OR chain OR tie, never a pile of neckwear on ten pixels of banana" — and a
+// shoe is one pair of feet. They still live in `extras` on the saved outfit, because that is the one
+// place the engine looks; `kind: 'one-of'` says how a PICK behaves, never where it is kept.
+//
+// ⚠️ THE LABELS LIVE HERE, not in the copy file. They are the builder's words, Trym's for years, and
+// tools/check-wardrobe-rows.mjs proves this list still matches make-a-banana.astro line for line. The
+// copy rig keeps them as a LOCKED section (tools/copy-jobs.mjs) so it can never redraft them.
+const FEET_OF = (d) => d.anchor === 'feet';
+const BODY_OF = (d) => d.zone === 'body';
+const PLAIN = (d) => !FEET_OF(d) && !BODY_OF(d);
+
 /**
- * The three trays, as plain data. `pick` is the id to write into its slot; extras are a SET, so an
- * extra's pick toggles. Nothing here is a DOM node: the caller draws it.
+ * The five trays, as plain data, in Make A Banana's order. `kind` says how a pick behaves:
+ *   'one'    — a single-choice row kept in its own key (hat, glasses)
+ *   'one-of' — a single-choice row kept inside `extras` (body, shoes)
+ *   'many'   — a set of toggles inside `extras`
+ * Nothing here is a DOM node: the caller draws it.
  */
 export function slots() {
   const hatOf = (id) => HAT_BY_ID[id] || { id, label: id, art: id };
   const shadeOf = (id) => SHADE_BY_ID[id] || { id, label: id, art: id };
+  const mine = EXTRA_DEFS.filter((d) => !d.raveOnly && ownsWearable(d));
   return [
-    { key: 'hat', kind: 'one', items: HATS.map(([id, label]) => (id === 'none' ? { id, label, art: '', locked: false } : row({ ...hatOf(id), label }))) },
-    { key: 'glasses', kind: 'one', items: GLASSES.map(([id, label]) => (id === 'none' ? { id, label, art: '', locked: false } : row({ ...shadeOf(id), label }))) },
-    { key: 'extras', kind: 'many', items: EXTRA_DEFS.filter(ownsWearable).map(row) },
-  ];
+    { key: 'glasses', label: 'Shades', kind: 'one', items: GLASSES.map(([id, label]) => (id === 'none' ? { id, label, art: '', locked: false } : row({ ...shadeOf(id), label }))) },
+    { key: 'hat', label: 'Hat', kind: 'one', items: HATS.map(([id, label]) => (id === 'none' ? { id, label, art: '', locked: false } : row({ ...hatOf(id), label }))) },
+    { key: 'body', label: 'Body', kind: 'one-of', items: mine.filter(BODY_OF).map(row) },
+    { key: 'feet', label: 'Shoes', kind: 'one-of', items: mine.filter(FEET_OF).map(row) },
+    { key: 'extras', label: 'Extras', kind: 'many', items: mine.filter(PLAIN).map(row) },
+  ].filter((s) => s.items.length);
 }
 
 // ── the one key ───────────────────────────────────────────────────────────────────────────────────

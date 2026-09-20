@@ -29,7 +29,7 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, OVERLAYS } from './town-geo.js';
+import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, INFO_WIN, OVERLAYS } from './town-geo.js';
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS } from '../data/town/condition.js';
@@ -298,6 +298,69 @@ export function bootTownLife(ctx) {
   }
   const killBody = (b) => { if (b) { b.el.remove(); bodies.delete(b); } };
 
+  // ℹ️ SOMEBODY IN THE INFO KIOSK, and the kiosk overflows THEM. Trym, 20 Sep: "if we can make a
+  // banana sit inside the kiosk sprite-wise aswell that would be cool — must be implemented like we did
+  // with the coffee shop, half upper body-banana that sits inside the info kiosk in locked hands-up-frame,
+  // same size on the kiosk-banana as for the coffee shop-banana."
+  //
+  // It is the café's own recipe (town-cafe.js standIn) with two differences that matter:
+  //   · the clip is a RECTANGLE, because the recess is a square-cut counter and not an arch. Its
+  //     straight lower edge is what makes this read as half a banana leaning on a counter.
+  //   · nobody works here — Trym: "you cant work in the kiosk" — so this banana is never the player and
+  //     never has a card of its own. It is the kiosk being OPEN, the way a lit window is a house being
+  //     awake, and it goes when the shutter comes down.
+  // ⚠️ AND IT NEVER SPEAKS. The Quiet Rule: no bubble over any banana in this town, ever.
+  const KIOSK = { drawn: 58, lean: 3, hFrac: 0.66, topFrac: 0.20 };   // the café's numbers, so the two are the same size
+  let kiosker = null;
+  function kioskOpen() {
+    const p = PROPS && PROPS.info;
+    if (!INFO_WIN || !p) return false;
+    if (cond.shut.has('info') && !cond.fixedShut.has('info')) return false;   // the shutter is down
+    if (hoardNow && hoardNow('info')) return false;                            // it is not built for you yet
+    return life.beat() !== 5;                                                  // and everybody goes home at night
+  }
+  function kioskShow() {
+    const want = kioskOpen();
+    if (!want) { if (kiosker) { kiosker.remove(); kiosker = null; } return; }
+    if (kiosker) return;
+    const [cx, top, x0, y0, x1, y1] = INFO_WIN;
+    const w = KIOSK.drawn / KIOSK.hFrac;   // the ELEMENT is taller than the banana: a hat lives in the headroom
+    const floor = top + KIOSK.lean + KIOSK.drawn;
+    const el = document.createElement('div');
+    // ⚠️ ITS OWN CLASS, NOT `tw-atwork`. That class means THE PLAYER IS AT WORK HERE — the café's
+    // walk counts it to prove a stranger is not standing in the serving window — and nobody works in
+    // the kiosk at all (Trym: "you cant work in the kiosk"). Borrowing it made the café's own test
+    // find a barista who was never hired, which is exactly what that assertion is for.
+    el.className = 'tw-kiosker';
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 150;
+    el.appendChild(cv);
+    el.style.width = pct(w, W);
+    el.style.left = pct(cx, W);
+    el.style.top = pct(floor + (1 - KIOSK.topFrac - KIOSK.hFrac) * w, H);
+    el.style.zIndex = String(100 + Math.round(PROPS.info.base) + 1);
+    const l = cx - w / 2, t = floor - (KIOSK.topFrac + KIOSK.hFrac) * w;
+    // ⚠️ CLAMPED AT ZERO. The recess is 110 world px across and the element is 88, so both side insets
+    // come out NEGATIVE — and a negative inset is not "no clip", it is invalid, and the whole rule is
+    // dropped by some engines and normalised to three values by others. Nothing needs clipping
+    // sideways here; only the counter's edge and the sign above it do any cutting.
+    const pc = (v) => (Math.max(0, v) / w * 100).toFixed(2) + '%';
+    // inset(top right bottom left) against the element's own square box, in world px
+    el.style.clipPath = 'inset(' + pc(y0 - t) + ' ' + pc(l + w - x1) + ' ' + pc(t + w - y1) + ' ' + pc(x0 - l) + ')';
+    world.appendChild(el);
+    kiosker = el;
+    // ⚠️ drawn ONCE IT IS IN THE WORLD, because drawMe paints at the size the canvas is shown at
+    const d = dayNum();
+    const hats = ['none', 'buckethat', 'woolbeanie', 'backwardscap', 'tophat', 'snailhat'];
+    try {
+      drawMe(el.firstChild.getContext('2d'), 150, 2, {
+        hat: hats[Math.floor(h(d, 41, 0) * hats.length)] || 'none',
+        glasses: h(d, 42, 0) < 0.3 ? 'nerd' : 'none',
+        extras: {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
+      });
+    } catch (e) { /* a partial outfit throws and would take every banana after it with it */ }
+  }
+
   // ══════════════════════════════════ the condition ═══════════════════════════════════
   // the look of the band, seeded by the day: the same dark lamps for everyone today
   const cond = { lamps: {}, shut: new Set(), fountainDry: false, full: new Set(), crows: [], visitors: [], dayghost: null, fixedShut: new Set() };
@@ -337,6 +400,7 @@ export function bootTownLife(ctx) {
     todayShut.forEach((k) => cond.shut.add(k));
     hoardings();   // ⚠️ BEFORE shutters(): the tape asks hoardNow() whether it may paint at all
     shutters();
+    kioskShow();
     life.setKeep(keepFn);
     life.setLitter(look.litter);
     // which street bins and dumpsters are full today (a fix this device made today holds)
@@ -1053,7 +1117,7 @@ export function bootTownLife(ctx) {
       if (cType !== curse) { if (curse) dusk.leaveCurse(); if (cType) dusk.enterCurse(cType); }
       if (om0 !== dusk.omenOn()) dusk.omens(om0);
     }
-    if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); }
+    if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); kioskShow(); }   // ℹ️ the kiosk's own banana goes home with everybody else
     if (dusk) dusk.setBananas([...life.seam.residents().filter((r) => !r.hidden).map((r) => ({ x: r.x, y: r.y })), ...(ctx.others ? ctx.others() : [])]);
     night.hidden = inside();
     hbar.hidden = inside();
@@ -1168,6 +1232,7 @@ export function bootTownLife(ctx) {
     shutShop: (k, today) => { if (!TEST) return false; if (today) todayShut.add(k); story.closeShop(k); return [...cond.shut]; },
     copyOf: (k) => COPY[k],
     open: (k) => openFor(k),
+    shutNow,   // 🗺️ the kiosk's card asks whether its own shutter is down
     nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night

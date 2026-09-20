@@ -36,7 +36,7 @@ const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&':
 
 export function bootTownDress(ctx) {
   const { openCard, card, closeCard, track } = ctx;
-  let raf = 0, worn = null, cv = null, g = null, t0 = 0;
+  let raf = 0, worn = null, cv = null, g = null, t0 = 0, saved = false;
 
   // ── the mirror ──────────────────────────────────────────────────────────────────────────────────
   // ⚠️ drawComposite wants a WHOLE outfit or it throws on the first extra it looks for, and every
@@ -60,8 +60,15 @@ export function bootTownDress(ctx) {
   // forty is a wall of thumbnails that pushes the mirror off the top of the card on the first scroll.
   function rail(sl) {
     const w = worn[sl.key];
-    const on = (it) => (sl.kind === 'many' ? !!(worn.extras || {})[it.id] : w === it.id);
-    const label = (COPY.rails || {})[sl.key] || '';
+    // ⭐ BODY AND SHOES LIVE IN `extras` AND PICK LIKE A HAT. The builder does exactly this and says
+    // why: one garment on the body, one pair on the feet. So `on` asks the saved outfit where the
+    // slot actually keeps it, and `kind` says only how a tap behaves.
+    const on = (it) => (sl.kind === 'one' ? w === it.id : !!(worn.extras || {})[it.id]);
+    // ⚠️ THE ROW'S NAME IS NOT COPY. It is Make A Banana's own word, held in wardrobe-slots.js so
+    // the builder and this room cannot drift apart (Trym, 20 Sep: "why isnt it Shades, Hats, Body,
+    // Shoes, Extras like in the original Make A Banana for consistency?"). The copy file still carries
+    // them so the game imports one file, but as a LOCKED section the rig may not redraft.
+    const label = sl.label || '';
     return '<div class="tw-dress__rail">'
       + (label ? '<b class="tw-dress__of">' + esc(label) + '</b>' : '')
       + '<div class="tw-dress__row" role="group"' + (label ? ' aria-label="' + esc(label) + '"' : '') + '>'
@@ -100,6 +107,7 @@ export function bootTownDress(ctx) {
       + '<div class="tw-dress__stage"><canvas id="twDressCv" width="' + CV + '" height="' + CV + '" aria-label="' + esc(w.alt || '') + '"></canvas></div>'
       + '<div class="tw-dress__rails">' + slots().map(rail).join('') + '</div>'
       + (w.line ? '<p class="tw-card__sub">' + esc(w.line) + '</p>' : '')
+      + '<button type="button" class="tw-cta tw-dress__ok" id="twDressOk"><span class="tw-cta__verb">' + esc(w.confirm || '') + '</span></button>'
       + '</div>';
   }
 
@@ -122,19 +130,26 @@ export function bootTownDress(ctx) {
         if (it && it.door) location.href = it.door.href;
         return;
       }
-      if (sl === 'extras') {
-        const ex = { ...(worn.extras || {}) };
-        if (ex[id]) delete ex[id]; else ex[id] = true;
-        worn = { ...worn, extras: ex };
+      const row = slots().find((x) => x.key === sl) || { kind: 'many', items: [] };
+      if (row.kind === 'one') {
+        worn = { ...worn, [sl]: worn[sl] === id ? 'none' : id };   // tapping the worn one takes it off
       } else {
-        worn = { ...worn, [sl]: worn[sl] === id ? 'none' : id };
+        const ex = { ...(worn.extras || {}) };
+        const had = !!ex[id];
+        // ⚠️ A SINGLE-SELECT ROW CLEARS ITS OWN SIBLINGS, AND ONLY ITS OWN. Body and shoes are kept in
+        // the same `extras` bag as the balloons, so "one at a time" has to be enforced against THAT
+        // ROW's items rather than against the bag — clearing the bag would take the party hat off too.
+        if (row.kind === 'one-of') for (const it of row.items) delete ex[it.id];
+        if (had) delete ex[id]; else ex[id] = true;   // and tapping the worn one takes it off, in both
+        worn = { ...worn, extras: ex };
       }
-      // ⭐ SAVED ON EVERY PICK, not behind a Save button. `bb-last` is the one thing the whole world
-      // reads for what your banana wears, so there is no draft state to lose — and writeWorn MERGES,
-      // so a community item caught at the rave cannot be taken off by dressing in town.
-      writeWorn(worn, passPush);
-      if (ctx.onWear) ctx.onWear();
-      track('town_dress', { at: 'clothes', step: 'wear', sl });
+      // ⭐ THE MIRROR CHANGES; NOTHING IS SAVED UNTIL YOU SAY SO. Trym, 20 Sep: "theres no Confirm
+      // button at the end of the popup for UX? Its not logical that the user can click outside the
+      // window and then the attire is saved." A changing room where walking out commits whatever you
+      // happened to be holding is not a changing room. Every pick is a DRAFT: the only writeWorn in
+      // this file is on the Confirm button, and closing any other way leaves `bb-last` exactly as it
+      // was found — which is why `open()` never wrote either.
+      track('town_dress', { at: 'clothes', step: 'try', sl });
       redraw();
       wake();
     }));
@@ -142,6 +157,7 @@ export function bootTownDress(ctx) {
 
   function open() {
     worn = readWorn();
+    saved = false;
     openCard(html());
     card.classList.add('tw-card--dress');
     card.scrollTop = 0;   // ⚠️ openCard never resets it, so a tall card before this one leaves it scrolled
@@ -150,6 +166,15 @@ export function bootTownDress(ctx) {
     t0 = 0;
     const host = card.querySelector('.tw-dress__rails');
     if (host) { art(host); wire(host); }
+    const ok = card.querySelector('#twDressOk');
+    if (ok) ok.addEventListener('click', () => {
+      // writeWorn MERGES, so a community item caught at the rave cannot be taken off by dressing here
+      writeWorn(worn, passPush);
+      saved = true;
+      if (ctx.onWear) ctx.onWear();
+      track('town_dress', { at: 'clothes', step: 'wear' });
+      closeCard();
+    });
     // the engine's art may still be loading on a cold open: paint once it is, and once now either way
     assetsReady().then(() => { wake(); }).catch(() => {});
     wake();
@@ -157,5 +182,5 @@ export function bootTownDress(ctx) {
     return true;
   }
 
-  return { open, stop: sleep, seam: { open, worn: () => worn, slots: () => slots().map((s) => ({ key: s.key, n: s.items.length, locked: s.items.filter((i) => i.locked).length })), pick: (sl, id) => { const b = card.querySelector('.tw-dress__chip[data-sl="' + sl + '"][data-id="' + id + '"]'); if (b) b.click(); return !!b; } } };
+  return { open, stop: sleep, seam: { open, worn: () => worn, saved: () => saved, slots: () => slots().map((s) => ({ key: s.key, n: s.items.length, locked: s.items.filter((i) => i.locked).length })), pick: (sl, id) => { const b = card.querySelector('.tw-dress__chip[data-sl="' + sl + '"][data-id="' + id + '"]'); if (b) b.click(); return !!b; } } };
 }

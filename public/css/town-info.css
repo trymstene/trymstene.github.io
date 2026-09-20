@@ -1,0 +1,142 @@
+/* 🗺️ THE INFORMATION KIOSK — the rack of maps, an open map, and the rave's flyer.
+ *
+ * ⚠️ 261 × 440 CSS px is the phone budget: the measured content box of a town card at 360×640, the
+ * narrowest phone the house supports. Everything below is sized against that, and the desktop card is
+ * allowed to grow at the bottom of this file — never the other way round.
+ *
+ * ⭐ THE OPEN MAP IS TWO ZONES, PINNED AND SCROLLING, the dressing room's grammar: the title and the
+ * caption stay put and only the map moves, because a map you have to scroll the card to see is not a
+ * map you can read.
+ *
+ * ⚠️ Motion is transform and opacity only (design library §21.4), and this file is read by the gate.
+ */
+
+.tw-card--info { overflow: hidden; display: flex; flex-direction: column; }
+.tw-card--info > div { min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; }
+.tw-info { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 0.4rem; min-height: 0; flex: 1 1 auto; }
+.tw-info h2 { margin: 0; }
+
+/* ---- the rack: five tiles, two to a row ------------------------------------------------------- */
+/* ⚠️ A TILE IS A PICTURE WITH A NAME UNDER IT, and the picture does the work — the thumbnails are the
+   places themselves, so nothing here needs a caption to say which is which. */
+.tw-info__rack {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+  min-height: 0; overflow: auto; align-content: start;
+  -webkit-overflow-scrolling: touch;
+}
+.tw-info__tile {
+  appearance: none; border: 3px solid #000; background: #241811; color: #fffdf5;
+  padding: 0; cursor: pointer; display: grid; gap: 0; text-align: left;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+}
+.tw-info__tile:hover, .tw-info__tile:focus-visible { border-color: #ffb347; outline: none; }
+.tw-info__shot {
+  display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover;
+  image-rendering: pixelated; background: #1a120c;
+}
+.tw-info__name {
+  font-family: "Archivo Black", sans-serif; font-size: 0.62rem; letter-spacing: 0.04em;
+  padding: 0.3rem 0.4rem; color: #ffd98a; text-transform: uppercase;
+  /* ⚠️ a name that wraps turns a tidy grid into two heights of tile */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* the fifth tile is a POSTER, not a photograph: it wears the flyer's own ink so the rack reads as
+   four maps and one thing that is not a map */
+.tw-info__tile.is-flyer { background: #150a1c; }
+.tw-info__poster {
+  aspect-ratio: 16 / 10; display: grid; place-content: center; gap: 2px; text-align: center;
+  background: radial-gradient(ellipse 80% 60% at 50% 30%, #55217a 0 45%, #1d0b2a 78%);
+  padding: 0.3rem;
+}
+.tw-info__poster i { font-style: normal; font-size: 0.5rem; letter-spacing: 0.22em; color: #ff8ad8; }
+.tw-info__poster b { font-family: "Archivo Black", sans-serif; font-size: 0.62rem; line-height: 1.05; color: #fff; letter-spacing: 0.02em; }
+.tw-info__tile.is-flyer .tw-info__name { color: #ff8ad8; }
+
+/* ---- an open map ------------------------------------------------------------------------------ */
+.tw-info__open { display: grid; grid-template-rows: auto auto auto auto; gap: 0.35rem; min-height: 0; align-content: start; }
+.tw-info__title {
+  font-family: "Archivo Black", sans-serif; font-size: 0.72rem; letter-spacing: 0.05em;
+  color: #ffd98a; text-transform: uppercase;
+}
+/* ⚠️ touch-action: none IS LOAD-BEARING. Without it the browser claims the drag for its own scrolling
+   and the map jumps out from under the thumb on the first pan — the pointer events still fire, so it
+   looks like the code is running and it is the browser that is winning. */
+/* ⚠️ THE MAP WINDOW NEEDS A HEIGHT OF ITS OWN, and `1fr` is not one. The image inside is absolutely
+   positioned so it contributes nothing to the row, the card's own height is its content's, and the
+   whole thing resolved to a 0-pixel strip with a caption under it — a card that looked finished and
+   showed no map at all. A stated height is the honest answer: enough of the screen to read a town
+   plan, never taller than the card can hold on the shortest phone the house supports. */
+.tw-info__view {
+  position: relative; overflow: hidden; touch-action: none; user-select: none;
+  background: #0d0904; border: 3px solid #000;
+  /* the height comes from the MAP's own aspect ratio, which town-info.js sets on load. This is the
+     fallback before the image has loaded, and the cap that stops a tall map pushing the caption and
+     the button off the bottom of a short phone. */
+  height: clamp(150px, 34vh, 260px); max-height: 44vh;
+  cursor: grab;
+}
+.tw-info__view[style*="aspect-ratio"] { height: auto; }
+.tw-info__view:active { cursor: grabbing; }
+.tw-info__map {
+  position: absolute; left: 0; top: 0; transform-origin: 0 0;
+  image-rendering: pixelated; pointer-events: none; max-width: none;
+}
+.tw-info__back {
+  appearance: none; border: 3px solid #000; background: #2a1a10; color: #ffd98a;
+  font-family: "Archivo Black", sans-serif; font-size: 0.6rem; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 0.45rem 0.7rem; cursor: pointer;
+  /* ⚠️ buttons in this world never line-break */
+  white-space: nowrap; justify-self: start;
+}
+.tw-info__back:hover { background: #3d2818; }
+.tw-info__none { margin: 0; font-size: 0.78rem; line-height: 1.45; align-self: center; }
+
+/* ---- the flyer -------------------------------------------------------------------------------- */
+/* ⭐ A POSTER IS TYPE AND ONE PICTURE. No rows, no chips, no card furniture — the thing on the wall of
+   a club, printed once and pinned up. It scrolls as one block, because a flyer is read top to bottom. */
+.tw-info__flyer { grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+/* ⚠️ PACKED TO THE TOP, NOT CENTRED. A poster is read from the top down, and the card is taller than
+   the bill on a desktop — centred, it left a hand's width of empty purple above the headline. */
+.tw-info__bill {
+  min-height: 0; overflow: auto; text-align: center; color: #fff; align-content: start;
+  background: radial-gradient(ellipse 90% 55% at 50% 22%, #5b2482 0 42%, #1d0b2a 76%), #150a1c;
+  border: 3px solid #000; padding: 0.7rem 0.6rem 0.8rem;
+  -webkit-overflow-scrolling: touch;
+}
+.tw-info__when { display: block; font-style: normal; font-size: 0.56rem; letter-spacing: 0.3em; color: #ff8ad8; }
+.tw-info__big {
+  display: block; font-family: "Archivo Black", sans-serif; font-size: 1.05rem; line-height: 1.05;
+  letter-spacing: 0.02em; margin: 0.15rem 0 0.35rem; text-shadow: 0 0 10px rgba(255, 138, 216, 0.55);
+}
+.tw-info__dj { display: block; margin: 0.1rem auto 0; width: 104px; height: 104px; image-rendering: pixelated; }
+.tw-info__acts { list-style: none; margin: 0.25rem 0 0.45rem; padding: 0; display: grid; gap: 1px; }
+.tw-info__acts li { font-size: 0.66rem; letter-spacing: 0.06em; color: #e8d6ff; text-transform: uppercase; }
+.tw-info__acts li.is-top { font-family: "Archivo Black", sans-serif; font-size: 0.8rem; color: #ffe7a1; }
+.tw-info__bill p { margin: 0.1rem 0 0; font-size: 0.68rem; line-height: 1.4; color: #efe3ff; }
+.tw-info__door { display: block; margin-top: 0.5rem; font-style: normal; font-size: 0.56rem; letter-spacing: 0.1em; color: #b79ad0; }
+
+/* ---- the bigger popup on a desktop ------------------------------------------------------------- */
+/* Trym: "It can all be in a popup i think — bigger popup for desktop." A map is the one thing in this
+   town that is genuinely better with room: the card keeps its 380 px everywhere else, and only the
+   kiosk's is allowed to take the screen when there is screen to take. */
+@media (min-width: 720px) {
+  /* ⚠️ TWO CLASSES, because `.tw-card` states its own 380 px max-width inside town.astro and that
+     stylesheet is authored after this one — a single class ties and loses on source order, which is
+     how the “bigger popup for desktop” came out exactly 380 px wide. */
+  .tw-card.tw-card--info { max-width: min(760px, 92vw); }
+  .tw-info__rack { grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+  .tw-info__name { font-size: 0.72rem; }
+  .tw-info__poster b { font-size: 0.8rem; }
+  .tw-info__title { font-size: 0.9rem; }
+  .tw-info__big { font-size: 1.5rem; }
+  .tw-info__dj { width: 150px; height: 150px; }
+  .tw-info__acts li { font-size: 0.78rem; }
+  .tw-info__acts li.is-top { font-size: 0.98rem; }
+  .tw-info__bill p { font-size: 0.8rem; }
+  .tw-info__view { height: clamp(260px, 56vh, 480px); max-height: 60vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-info__dj { animation: none; }
+}

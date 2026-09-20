@@ -27,7 +27,12 @@
 
 /* ---- the mirror: a lit changing room, built out of light rather than out of more boxes ---------- */
 .tw-dress__stage {
-  position: relative; height: 108px; display: grid; place-items: end center;
+  /* ⚠️ 92, NOT 108. The room went from three rails to FIVE on 20 Sep (Trym: "why isnt it Shades,
+     Hats, Body, Shoes, Extras like in the original Make A Banana for consistency?") and 440 px of card
+     does not hold five rails, a mirror, a caption and a button. Measured at 360×640: the mirror and the
+     button gave back 28 px between them, which is a whole rail's worth of the scroller — three rows
+     visible instead of two and a half, so it is obvious the rails go on. */
+  position: relative; height: 92px; display: grid; place-items: end center;
   /* the room: a warm lamp above, a cool wall, and a floor the banana stands on. No art, no new file —
      three gradients, which is also why it costs nothing and never loads late. */
   background:
@@ -39,14 +44,14 @@
 /* two tall mirrors either side, as light on a wall — the one flourish, and it is flat colour */
 .tw-dress__stage::before,
 .tw-dress__stage::after {
-  content: ''; position: absolute; top: 8px; width: 26px; height: 66px;
+  content: ''; position: absolute; top: 7px; width: 24px; height: 56px;
   background: linear-gradient(160deg, rgba(226, 240, 255, 0.34) 0 42%, rgba(160, 190, 220, 0.22) 42% 58%, rgba(226, 240, 255, 0.3) 58%);
   border: 3px solid #241c2e; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16);
 }
 .tw-dress__stage::before { left: 10px; }
 .tw-dress__stage::after { right: 10px; }
 .tw-dress__stage canvas {
-  position: relative; display: block; width: auto; height: 98px;
+  position: relative; display: block; width: auto; height: 84px;
   image-rendering: pixelated;
   /* the banana stands ON the floor band, not in the middle of the room */
   margin-bottom: 4px;
@@ -94,4 +99,19 @@
 
 @media (prefers-reduced-motion: reduce) {
   .tw-dress__chip:active { transform: none; }
+}
+
+/* ---- the foot: one button, and it is the only thing that dresses the banana -------------------- */
+/* ⭐ A CHANGING ROOM COMMITS ON THE WAY OUT. Trym, 20 Sep: "theres no Confirm button at the end of the
+   popup for UX? Its not logical that the user can click outside the window and then the attire is
+   saved." Every pick before this button changes the MIRROR and nothing else — see town-dress.js. */
+.tw-dress__ok { margin: 0; padding-block: 0.45rem; }
+
+/* ⚠️ THE RAILS GO ON PAST THE BOTTOM AND HAVE TO LOOK LIKE IT. Five rails is 367 px of scroller in a
+   171 px window, and a row sliced flat along the edge reads as a broken card rather than as more to
+   come. The box fades into the card's own ink at its foot, which is the only thing on screen that says
+   "keep going" without a word or an arrow. A mask, so it costs no element and tints nothing. */
+.tw-dress__rails {
+  -webkit-mask-image: linear-gradient(#000 0 calc(100% - 18px), rgba(0, 0, 0, 0.15) 100%);
+  mask-image: linear-gradient(#000 0 calc(100% - 18px), rgba(0, 0, 0, 0.15) 100%);
 }

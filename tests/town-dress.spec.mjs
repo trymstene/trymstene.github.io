@@ -58,28 +58,73 @@ test('the dressing room dresses the banana, and saves it where the whole world r
   await page.addInitScript(() => { try { localStorage.setItem('bb-last', JSON.stringify({ hat: 'none', glasses: 'none', extras: {}, c: 'cat-test-item', effect: 'disco' })); } catch (e) {} });
   const errors = await shop(page);
 
+  // ⭐ MAKE A BANANA'S OWN FIVE ROWS, IN ITS OWN ORDER AND ITS OWN WORDS. Trym, 20 Sep 2026: "why
+  // isnt it Shades, Hats, Body, Shoes, Extras like in the original Make A Banana for consistency?"
+  // It was three — and the neckwear and the shoes were tipped into a drawer with the balloons.
   const sl = await page.evaluate(() => window.__town.dress().slots());
-  expect(sl.map((s) => s.key), 'three rails: head, eyes, and everything carried or worn').toEqual(['hat', 'glasses', 'extras']);
+  expect(sl.map((s) => s.key), "the builder’s five rows, in the builder’s order").toEqual(['glasses', 'hat', 'body', 'feet', 'extras']);
+  expect(await page.evaluate(() => [...document.querySelectorAll('.tw-dress__of')].map((e) => e.textContent)),
+    "and the builder’s own words, which tools/check-wardrobe-rows.mjs holds to make-a-banana.astro")
+    .toEqual(['Shades', 'Hat', 'Body', 'Shoes', 'Extras']);
   for (const s of sl) expect(s.n, `the ${s.key} rail has something on it`).toBeGreaterThan(1);
 
   const hat = await page.evaluate(() => { const b = [...document.querySelectorAll('.tw-dress__chip[data-sl="hat"]')].filter((x) => !x.classList.contains('is-locked') && x.dataset.id !== 'none')[0]; if (b) b.click(); return b ? b.dataset.id : null; });
   expect(hat, 'a hat is pickable').toBeTruthy();
   await page.waitForTimeout(300);
+
+  // ⭐ A PICK IS A DRAFT. Trym: "theres no Confirm button at the end of the popup for UX? Its not
+  // logical that the user can click outside the window and then the attire is saved." The mirror
+  // changes; `bb-last` does not, until the one button at the foot of the card.
+  expect(await page.evaluate(() => window.__town.dress().worn().hat), 'the mirror is wearing it').toBe(hat);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bb-last') || '{}').hat), '…and nothing is saved yet').toBe('none');
+  expect(await page.evaluate(() => window.__town.dress().saved()), 'the draft is uncommitted').toBe(false);
+
+  await page.evaluate(() => document.querySelector('#twDressOk').click());
+  await page.waitForTimeout(300);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('bb-last') || '{}'));
-  expect(saved.hat, 'the pick is saved at once, with no Save button').toBe(hat);
+  expect(saved.hat, 'Step Out is what dresses the banana').toBe(hat);
   // ⭐ THE MERGE. `c` is a community item caught at the rave and this card never offers one — saving
   // here must not be able to take it off.
   expect(saved.c, 'dressing in town may not undress a rave catch').toBe('cat-test-item');
   expect(saved.effect, 'nor drop an effect this card does not own').toBe('disco');
+  expect(await page.evaluate(() => document.querySelector('#twPanel').hidden), 'and the card closes behind you').toBe(true);
 
   // ── and the banana in the square is wearing it, not just the mirror
   const me = await page.evaluate(() => { const c = document.querySelector('.tw-me canvas'); return c ? c.toDataURL().length : 0; });
   expect(me, 'the player is drawn').toBeGreaterThan(100);
 
+  // ── ❌ AND WALKING OUT KEEPS WHAT YOU CAME IN WEARING
+  await page.evaluate(() => window.__town.open('clothes'));
+  await page.waitForTimeout(500);
   await page.evaluate((id) => { const b = document.querySelector('.tw-dress__chip[data-sl="hat"][data-id="' + id + '"]'); if (b) b.click(); }, hat);
-  await page.waitForTimeout(300);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bb-last') || '{}').hat), 'a second tap takes it off').toBe('none');
+  await page.waitForTimeout(250);
+  expect(await page.evaluate(() => window.__town.dress().worn().hat), 'a second tap takes it off in the mirror').toBe('none');
+  await page.evaluate(() => document.querySelector('.tw-cardx').click());
+  await page.waitForTimeout(250);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bb-last') || '{}').hat),
+    '…but closing the card without Step Out changes nothing').toBe(hat);
   expect(errors).toEqual([]);
+});
+
+// ✖️ THE CLOSE BUTTON IS ON THE RIGHT, IN EVERY CARD. Trym, 20 Sep: "why is the X for closing the
+// window on the wrong side of the popup?" It was `float: right`, which does nothing to a flex item —
+// and this card is the one that makes the card a flex column, so the ✖ dropped to the left.
+test('the close button is on the right of the card', async ({ page }) => {
+  await shop(page, 360, 640);
+  const m = await page.evaluate(() => {
+    const x = document.querySelector('.tw-cardx').getBoundingClientRect();
+    const c = document.querySelector('.tw-card').getBoundingClientRect();
+    // ⚠️ THE TEXT'S OWN BOX, NOT THE HEADING'S. An h2 is a block and spans the whole card whatever its
+    // padding, so its rect always reaches the ✖ — the question is whether the WORDS do.
+    const h2 = document.querySelector('.tw-dress h2');
+    const rng = document.createRange(); rng.selectNodeContents(h2);
+    const h = rng.getBoundingClientRect();
+    return { xMid: x.left + x.width / 2, cardMid: c.left + c.width / 2, cardRight: c.right, headRight: h.right, xLeft: x.left, pad: parseFloat(getComputedStyle(h2).paddingRight) };
+  });
+  expect(m.xMid, 'the ✖ sits in the right half of the card').toBeGreaterThan(m.cardMid);
+  expect(m.cardRight - m.xMid, '…and up against its right edge').toBeLessThan(30);
+  expect(m.headRight, 'the heading’s words keep clear of it').toBeLessThanOrEqual(m.xLeft + 1);
+  expect(m.pad, '…and the heading reserves room for it whatever the title says').toBeGreaterThan(18);
 });
 
 // 📱 the card is 261 × 440 at the narrowest phone the house supports, and everything has to sit in it

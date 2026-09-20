@@ -614,9 +614,14 @@ const dressFields = {
   title: { kind: 'prose', aim: 18, max: 26, note: 'The heading at the top of the card: a NAME for the little room with the mirrors in it, two or three words, not a sentence. ⚠️ not the word on the plank outside — that already says CLOTHES.' },
   line: { kind: 'prose', aim: 64, max: 86, note: 'The one small line under the rails, and the only prose on the card. It notices the ROOM or the moment — the lamp, the mirrors, the quiet, nobody waiting — and never the player’s taste, never their outfit, never what to do next. ⚠️ nobody works here, so it may not welcome anybody, and nothing is sold here, so no word may smell of a till.' },
   alt: { kind: 'label', aim: 60, max: 90, note: 'Read out to somebody who cannot see the mirror: one plain sentence describing what is drawn — a banana standing in a lit changing room between two tall mirrors. A label, not atmosphere: plain and useful.' },
-  'rails.hat': { kind: 'label', aim: 8, max: 14, note: 'The small heading over the rail of things that go ON THE HEAD — hats, caps, a crown, a fishbowl. One or two words, the way a shop labels a rail. Set in capitals by the stylesheet, so it reads as a label rather than a sentence.' },
-  'rails.glasses': { kind: 'label', aim: 8, max: 14, note: 'The same, for things that go OVER THE EYES — shades, a monocle, reading glasses. Plainly different from the other two at a glance.' },
-  'rails.extras': { kind: 'label', aim: 8, max: 16, note: 'The same, for everything else a banana can wear or CARRY — things in the hand, on the back, on the feet. It is the widest rail of the three, so the word has to cover a lot without going vague: not “Other” and not “Items”.' },
+  // ❌ THE RAIL NAMES ARE NOT IN THIS JOB ANY MORE, and that is the honest answer rather than a lock.
+  // Trym, 20 Sep 2026: "why isnt it Shades, Hats, Body, Shoes, Extras like in the original Make A
+  // Banana for consistency?" They are not this room's words to choose at all — they are Make A
+  // Banana's own <label> rows, years old, and the dressing room reads them straight out of
+  // src/lib/wardrobe-slots.js, the file that exists so the builder, the shop and the world cannot
+  // drift. A copy of them here, even a locked one, would be a second source to keep in step.
+  // tools/check-wardrobe-rows.mjs holds the builder and the library to the same five words.
+  confirm: { kind: 'label', aim: 10, max: 16, note: 'The one button at the foot of the card, and the ONLY thing that puts the outfit on — close the card any other way and the banana walks out in what it came in wearing. A verb first, one or two words, ONE line. ⚠️ it is the last word in a changing room, so it belongs to the moment of stepping out in something, not to a form: never “Save”, never “OK”, never “Apply”, and nothing that smells of a till.' },
   locked: { kind: 'prose', aim: 46, max: 64, holds: ['{where}'], note: 'What a dimmed, padlocked garment says when you rest on it. MUST contain {where} — the game puts the place it is caught there (“the rave”, “the pier”, “the park garden”). ⭐ AN INVITATION, NEVER A REFUSAL: the thing is on the rail precisely so you learn it exists and where it lives, so it is about the PLACE and what happens there. Never “locked”, never “unlock”, never “you can’t”. Short: it sits in a tooltip on a 44-pixel chip.' },
 };
 // 🛒 NOTHING IS SOLD IN THIS ROOM, and that is the one rule a machine can hold. A price, a coin or a
@@ -631,19 +636,15 @@ function dressShape(data) {
     if (/\?\s*$/.test(v)) say(path, 'ends in a question — nobody may ask the player one');
   }
   if (!String(data.locked || '').includes('{where}')) say('locked', 'must contain {where} — the game puts the place it is caught there');
-  const rails = data.rails || {};
-  const seen = new Set(Object.values(rails).map((x) => String(x).trim().toLowerCase()));
-  if (Object.keys(rails).length && seen.size < Object.keys(rails).length) say('rails', 'two rails share a word — each one labels a different kind of thing');
   return bad;
 }
 const dressSchema = {
-  type: 'object', additionalProperties: false, required: ['title', 'line', 'alt', 'rails', 'locked'],
+  type: 'object', additionalProperties: false, required: ['title', 'line', 'alt', 'confirm', 'locked'],
   properties: {
     title: str(dressFields.title.note),
     line: str(dressFields.line.note),
     alt: str(dressFields.alt.note),
-    rails: { type: 'object', additionalProperties: false, required: ['hat', 'glasses', 'extras'],
-      properties: { hat: str(dressFields['rails.hat'].note), glasses: str(dressFields['rails.glasses'].note), extras: str(dressFields['rails.extras'].note) } },
+    confirm: str(dressFields.confirm.note),
     locked: str(dressFields.locked.note),
   },
 };
@@ -694,6 +695,91 @@ const postSchema = {
   properties: Object.fromEntries(Object.entries(postFields).map(([k, v]) => [k, str(v.note)])),
 };
 
+
+// --- town-info ----------------------------------------------------------------
+// ℹ️ THE INFORMATION KIOSK (20 Sep 2026) — a rack of maps and a flyer, which is the first thing in
+// this world that TELLS A NEW PLAYER WHAT IS IN IT. Trym: "the info kiosk can open a nice interactive
+// view of each area of banana world — world maps of all areas … also for the Rave — not needed with a
+// map for that area — but more like a promotional image of the Rave, can maybe look like a Flyer."
+//
+// ⚠️ THE FOUR PLACE NAMES ARE NOT THE WRITER'S TO INVENT. Banana Town, the Park, Banana Bay and the
+// homestead are named all over this world — on planks, in the nav, on the pass — and a map that titles
+// them something else is a map of somewhere else. The shape check holds each one to its own word.
+const AREA_KEYS = ['town', 'park', 'bay', 'homestead'];
+const AREA_WORD = { town: /banana town/i, park: /\bpark\b/i, bay: /banana bay|\bbay\b/i, homestead: /homestead|smallholding|your land/i };
+const infoFields = {
+  title: { kind: 'prose', aim: 16, max: 24, note: 'The heading on the kiosk’s card: a NAME for the rack of maps, two or three words, not a sentence. What you would CALL the thing, not what it does.' },
+  line: { kind: 'prose', aim: 62, max: 84, note: 'The one small line under the tiles, and the only prose on the first screen. It notices the kiosk or the PAPER — the rack, the fold marks, the pin holes, the counter. ⚠️ it may not instruct (no “tap”, no “zoom”, no “drag”) and may not list what the maps are, because the tiles are pictures of the places and already say.' },
+  back: { kind: 'label', aim: 8, max: 14, note: 'The button from an open map back to the rack. A verb first, one or two words, ONE line — buttons in this world never wrap.' },
+  shut: { kind: 'prose', aim: 64, max: 88, note: 'What stands in for the maps when the kiosk is closed, which happens only when the town is at its lowest. Ordinary and temporary — the shutter is down. Not an error, not an apology, and it may NOT blame the player for the state of the town.' },
+  'areas.town.name': { kind: 'label', aim: 12, max: 20, note: 'The title printed under the town’s map. MUST be the place’s own name — Banana Town — titled, never renamed.' },
+  'areas.town.line': { kind: 'prose', aim: 54, max: 76, note: 'One line under it, the flat useful kind printed under a town plan: what you would SEE if you went. A brick old town on cobbles, a square with a clock tower, shops round it, a post office, a café, an arcade, a notice board, a fountain — pick what fits one line. Not an advertisement, not a tour, no instruction.' },
+  'areas.park.name': { kind: 'label', aim: 10, max: 18, note: 'The title under the Park’s map. Its own name, titled.' },
+  'areas.park.line': { kind: 'prose', aim: 54, max: 76, note: 'One line: lawns and paths round a fountain, garden beds you can plant, a pond, a mushroom shop, benches. ⚠️ it must not share a construction with the other three — four captions that all open the same way read as a form.' },
+  'areas.bay.name': { kind: 'label', aim: 10, max: 18, note: 'The title under Banana Bay’s map. Its own name, titled.' },
+  'areas.bay.line': { kind: 'prose', aim: 54, max: 76, note: 'One line: a beach with a pier, a beach hut, volleyball, a wrecked ship of a bar, a boardwalk of market stalls.' },
+  'areas.homestead.name': { kind: 'label', aim: 12, max: 20, note: 'The title under the homestead’s map. Its own name, titled — and this one is the PLAYER’S OWN place, which the word may acknowledge.' },
+  'areas.homestead.line': { kind: 'prose', aim: 58, max: 80, note: 'One line, and the hardest of the four: the map is of the LAND, not of anybody’s farm, because every homestead is different. A fenced plot on the road, a gate, a mailbox, and whatever has been built on it. ⚠️ it must be true on an empty plot on the first day AND on a full farm a year later.' },
+  'rave.name': { kind: 'label', aim: 16, max: 26, note: 'The big name at the top of the flyer: the NIGHT’s name or the club’s, two or three words, the kind of thing printed in capitals above everything else on a poster.' },
+  'rave.tonight': { kind: 'label', aim: 8, max: 14, note: 'The small word or two above the name, the way a flyer says when it is on. ⚠️ the poster is up EVERY DAY, so it has to be true every day: nothing dated, no day of the week, no hour.' },
+  'rave.bill[]': { kind: 'label', aim: 16, max: 24, note: 'One act on the bill, printed on its own line. The first is the headliner. Banana names or act names, short enough for a phone — and they are BANANAS, never anybody real.' },
+  'rave.lines[]': { kind: 'prose', aim: 48, max: 68, note: 'One short line of what is on down there. Between the two of them they carry the music and the floor, and the things a night gets you — gear you can wear, coins. ⚠️ no number, no price, no rate, no odds: a flyer boasts, it does not quote a rate card.' },
+  'rave.door': { kind: 'label', aim: 34, max: 52, note: 'The one small line at the foot of the flyer, the way a poster prints the door: where it is and that everybody is welcome. Never a time, never a price, and never the word free as a promise of value.' },
+};
+function infoShape(data) {
+  const bad = [];
+  const say = (f, m) => bad.push([f, m]);
+  const flat = (o, p) => Object.entries(o || {}).flatMap(([k, v]) => (Array.isArray(v)
+    ? v.map((x, i) => [p + k + '.' + i, String(x)])
+    : (v && typeof v === 'object' ? flat(v, p + k + '.') : [[p + k, String(v)]])));
+  const all = flat(data, '');
+  for (const [path, v] of all) {
+    if (/\?\s*$/.test(v)) say(path, 'ends in a question — nobody may ask the player one');
+    // the mystery rule, and a flyer's version of it: no rates, no odds, no clock
+    if (/\b\d+\s*(coins?|%|per|a day|days?|hours?|minutes?|pm|am)\b/i.test(v)) say(path, 'publishes a rate or a clock — this world does not, and a flyer boasts rather than quotes');
+    // ⭐ A MAP RACK DOES NOT TALK TO ANYBODY: nobody works in the kiosk, so no line is in a voice
+    if (/\b(welcome to|we\b|our\b|thanks|thank you)\b/i.test(v)) say(path, 'speaks in somebody’s voice — nobody works in the kiosk and this is printed matter');
+  }
+  if (/\b(tap|click|drag|pinch|zoom|swipe|press)\b/i.test(String(data.line || ''))) say('line', 'instructs — the tiles are pictures of the places and already say what they are');
+  for (const k of AREA_KEYS) {
+    const a = (data.areas || {})[k] || {};
+    if (!AREA_WORD[k].test(String(a.name || ''))) say('areas.' + k + '.name', 'is not that place’s own name — the four are named all over this world, and a map may title them, never rename them');
+  }
+  const lines = AREA_KEYS.map((k) => String(((data.areas || {})[k] || {}).line || ''));
+  const first = lines.map((l) => (l.trim().split(/\s+/)[0] || '').toLowerCase());
+  if (new Set(first).size < first.length) say('areas', 'two captions open on the same word — four that share a construction read as a form, not as a map');
+  const bill = (data.rave || {}).bill || [];
+  if (new Set(bill.map((b) => String(b).trim().toLowerCase())).size < bill.length) say('rave.bill', 'two acts on the bill share a name');
+  if (/\bfree\b/i.test(String((data.rave || {}).door || ''))) say('rave.door', 'says free — the door line says where it is and that everybody is welcome, not what it is worth');
+  return bad;
+}
+const infoSchema = {
+  type: 'object', additionalProperties: false, required: ['title', 'line', 'back', 'shut', 'areas', 'rave'],
+  properties: {
+    title: str(infoFields.title.note),
+    line: str(infoFields.line.note),
+    back: str(infoFields.back.note),
+    shut: str(infoFields.shut.note),
+    areas: {
+      type: 'object', additionalProperties: false, required: AREA_KEYS,
+      properties: Object.fromEntries(AREA_KEYS.map((k) => [k, {
+        type: 'object', additionalProperties: false, required: ['name', 'line'],
+        properties: { name: str(infoFields['areas.' + k + '.name'].note), line: str(infoFields['areas.' + k + '.line'].note) },
+      }])),
+    },
+    rave: {
+      type: 'object', additionalProperties: false, required: ['name', 'tonight', 'bill', 'lines', 'door'],
+      properties: {
+        name: str(infoFields['rave.name'].note),
+        tonight: str(infoFields['rave.tonight'].note),
+        bill: { type: 'array', minItems: 3, maxItems: 3, items: str(infoFields['rave.bill[]'].note) },
+        lines: { type: 'array', minItems: 2, maxItems: 2, items: str(infoFields['rave.lines[]'].note) },
+        door: str(infoFields['rave.door'].note),
+      },
+    },
+  },
+};
+
 export const JOBS = {
   'town-life': {
     id: 'town-life',
@@ -710,6 +796,19 @@ export const JOBS = {
     fields: lifeFields,
     shape: lifeShape,
     schema: lifeSchema,
+  },
+  'town-info': {
+    id: 'town-info',
+    title: 'Banana Town — the information kiosk',
+    what: 'The rack of maps: its name, the four places and what each one is, the flyer for tonight at the Rave, and what the kiosk says with its shutter down.',
+    brief: 'tools/copy-briefs/town-info.md',
+    out: 'tools/copy-out/town-info.json',
+    approved: 'src/data/copy/town-info.json',
+    reads: 'src/scripts/town-info.js (through a glob inside the kiosk’s own lazy chunk, so a player who never opens the maps downloads none of it)',
+    top: ['title', 'line', 'back', 'shut', 'areas', 'rave'],
+    fields: infoFields,
+    shape: infoShape,
+    schema: infoSchema,
   },
   'town-post': {
     id: 'town-post',
@@ -732,7 +831,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-dress.json',
     approved: 'src/data/copy/town-dress.json',
     reads: 'src/scripts/town-dress.js (through a glob inside the shop’s own lazy chunk, so a player who never opens the wardrobe downloads none of it)',
-    top: ['title', 'line', 'alt', 'rails', 'locked'],
+    top: ['title', 'line', 'alt', 'confirm', 'locked'],
     fields: dressFields,
     shape: dressShape,
     schema: dressSchema,

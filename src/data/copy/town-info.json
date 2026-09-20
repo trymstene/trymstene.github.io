@@ -1,0 +1,38 @@
+{
+  "title": "Map Counter",
+  "line": "Folded paper waits beneath the round i sign.",
+  "back": "Return to Maps",
+  "shut": "Shutter down. The maps are behind it for now.",
+  "areas": {
+    "town": {
+      "name": "Banana Town",
+      "line": "Brick square, fountain, clock tower, and shops on cobbles."
+    },
+    "park": {
+      "name": "Park",
+      "line": "Paths circle lawns, pond, garden beds, and the mushroom shop."
+    },
+    "bay": {
+      "name": "Banana Bay",
+      "line": "Pier and beach beside a boardwalk, volleyball court, and wrecked bar."
+    },
+    "homestead": {
+      "name": "Homestead",
+      "line": "A fenced roadside plot with a gate, mailbox, and whatever stands there."
+    }
+  },
+  "rave": {
+    "name": "PEEL THE NIGHT",
+    "tonight": "TONIGHT",
+    "bill": [
+      "DJ Plantain",
+      "The Soft Peels",
+      "Bruised Bunch"
+    ],
+    "lines": [
+      "Bass, beams, and a floor full of dancing bananas.",
+      "Wearable gear and coins are in the mix."
+    ],
+    "door": "At Banana Rave, all bananas welcome."
+  }
+}

@@ -257,6 +257,7 @@ function thingAt(wx, wy) {
 }
 let dress = null;        // 👕 the clothes shop's dressing room, once its chunk is in
 let post = null;         // ✉️ the post office's mailbox, once its chunk is in
+let info = null;         // 🗺️ the kiosk's rack of maps, once its chunk is in
 let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 view.addEventListener('pointerdown', (e) => {
@@ -377,7 +378,7 @@ function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
 // ⚠️ EVERY MODIFIER THIS CARD CAN WEAR IS NAMED HERE. openCard() never clears a class, so a modifier
 // left behind styles whatever the player opens NEXT — and every chunk that runs a loop inside the card
 // (the dialogue's typewriter, an arcade game, the dressing room's mirror) stops here or it runs forever.
-function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board', 'tw-card--health', 'tw-card--dress', 'tw-card--post'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } if (dress) { dress.stop(); } if (post) { post.stop(); } }
+function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board', 'tw-card--health', 'tw-card--dress', 'tw-card--post', 'tw-card--info'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } if (dress) { dress.stop(); } if (post) { post.stop(); } if (info) { info.stop(); } }
 document.getElementById('twCardX').addEventListener('click', closeCard);
 panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
 // 🗣 A RESIDENT'S DIALOGUE — THE WORLD'S card, not a new one (Trym, 12 Sep: "the dialogue popups for
@@ -426,6 +427,21 @@ function postCard() {
   }
   postP.then((p) => { if (p) p.openBox(); });
 }
+// 🗺️ THE INFORMATION KIOSK'S RACK OF MAPS. Its own lazy chunk, and the heaviest of the three by
+// what it PULLS rather than by what it weighs: four baked area maps, one of which is 1400 px wide. A
+// player who never taps the kiosk downloads none of them, and the thumbnails are `loading="lazy"` so
+// even opening the rack does not fetch a full map until one is asked for.
+// ⚠️ town-room.js gets first refusal on 'info' and keeps it — a kiosk with its shutter down answers
+// with the town's own closed line, which is the band talking and not the maps.
+let infoP = null;
+function infoCard() {
+  if (!infoP) {
+    infoP = import('./town-info.js')
+      .then((m) => { info = m.bootTownInfo({ openCard, closeCard, card, track, shut: () => !!(room && room.seam && room.seam.shutNow && room.seam.shutNow('info')) }); return info; })
+      .catch((e) => { infoP = null; console.warn('[town] the maps did not open', e); return null; });
+  }
+  infoP.then((i) => { if (i) i.open(); });
+}
 let dressP = null;
 function dressCard() {
   if (!dressP) {
@@ -442,6 +458,7 @@ function openFor(key) {
   // lazy chunk: a player who never opens the wardrobe downloads none of it, and town-room is at 84%.
   if (key === 'clothes') { dressCard(); return true; }
   if (key === 'post') { postCard(); return true; }   // ✉️ your letters, and writing back
+  if (key === 'info') { infoCard(); return true; }   // 🗺️ the rack of maps, and the rave's flyer
   if (key === 'wheel') { wheelCard(); return true; }
   if (key === 'exchange') { exchangeCard(); return true; }
   // 🚪 a door with a room behind it. ⚠️ town-room.js gets FIRST refusal above, and it still owns
@@ -742,6 +759,6 @@ assetsReady().then(() => {
   window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam,
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
-  open: (k) => openFor(k), dress: () => dress && dress.seam, post: () => post && post.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => openFor(k), dress: () => dress && dress.seam, post: () => post && post.seam, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });
