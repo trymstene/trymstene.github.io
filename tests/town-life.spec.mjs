@@ -1245,3 +1245,103 @@ test('a shutter you fixed today is still open after a reload', async ({ page }) 
   expect(after.includes('cafe') && !owed, 'a reload may not re-tape a front you already opened and then refuse you the job').toBe(false);
   expect(errors).toEqual([]);
 });
+
+// 🗑 RUBBISH LIES WHERE YOU CAN SEE IT, AND NEVER IN A HEAP (Trym, 20 Sep 2026: "always one garbage bag
+// by itself … but only one garbage bags-sprite at once each town location … small litter can overlap
+// some no worries, but total overlap cant happen … for garbage its nice to use the whole town to spread
+// it around, but not behind buildings where users cant see them").
+//
+// ⚠️ TWO DIFFERENT NUMBERS, because they are two different things. A bin bag is a 65px heap the eye
+// reads as ONE object, so two on a patch read as a rendering fault; a crisp packet is small and a few
+// together IS what litter looks like. The spots themselves are derived from the street rectangles now,
+// thinned to 150px apart, so the seeded half cannot heap by construction — this proves it stays true
+// across a day of waves and a night of ghosts throwing things down.
+test('rubbish is spread, never heaped, and never behind a building', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 30);   // a low town: the most rubbish there is
+
+  // ⚠️ AND THE NIGHT, which is where the heap actually came from. The seeded waves draw from spots that
+  // are 150px apart by construction, so they cannot heap — but a ghost threw its rubbish down at its own
+  // waypoint ±20px whatever was already there, and one that rests twice at the same bench built a pile of
+  // three bin bags on one patch. Driving waves alone proves nothing about that.
+  await seam(page, () => window.__town.room.nightReady());
+  await seam(page, () => window.__town.room.curse('deep'));
+  await page.waitForTimeout(1600);
+  for (let i = 0; i < 14; i++) { await seam(page, () => window.__town.room.mischief()); await page.waitForTimeout(90); }
+
+  // ⚠️ MEASURED IN WORLD COORDINATES, from the problem list — not from the sprites on screen. The
+  // camera shows a fraction of the town, so a screen-rect check saw two pieces of rubbish out of twenty
+  // and proved nothing: it passed just as happily against the placement that built the heap.
+  const all = [];
+  for (let wave = 0; wave < 6; wave++) {
+    await seam(page, () => window.__town.room.nextWave());
+    await page.waitForTimeout(220);
+    for (let i = 0; i < 6; i++) { await seam(page, () => window.__town.room.mischief()); await page.waitForTimeout(70); }
+    const rows = await page.evaluate(() => (window.__town.room.problems() || [])
+      .filter((p) => p.type === 'litter' || p.type === 'leaves')
+      .map((p) => ({ x: p.x, y: p.y, art: p.art, id: p.id })));
+    for (const r of rows) if (!all.some((q) => q.id === r.id)) all.push(r);
+  }
+  console.log('QA rubbish: ' + all.length + ' pieces :: ' + JSON.stringify(all.map((r) => r.art + '@' + r.x + ',' + r.y)));
+  expect(all.length, 'a low town has rubbish in it').toBeGreaterThan(5);
+
+  // ⭐ ONE BIN BAG PER PATCH. A bag is a 65px heap the eye reads as ONE object, so two on a patch read
+  // as a rendering fault rather than as a mess.
+  const bags = all.filter((r) => r.art === 'pile');
+  for (let i = 0; i < bags.length; i++) {
+    for (let k = i + 1; k < bags.length; k++) {
+      const d = Math.hypot(bags[i].x - bags[k].x, bags[i].y - bags[k].y);
+      expect(Math.round(d), 'two bin bags on one patch — a bag stands on its own').toBeGreaterThanOrEqual(100);
+    }
+  }
+  // ⭐ AND NOTHING IS A TOTAL OVERLAP. Small litter may lie close together — that is what litter looks
+  // like — but never on top of itself.
+  for (let i = 0; i < all.length; i++) {
+    for (let k = i + 1; k < all.length; k++) {
+      const d = Math.hypot(all[i].x - all[k].x, all[i].y - all[k].y);
+      expect(Math.round(d), 'two pieces of rubbish in the same place — that is a total overlap, not a mess').toBeGreaterThanOrEqual(20);
+    }
+  }
+  // ⭐ AND IT IS NEVER BEHIND A BUILDING, where the player can never find work they are paid for.
+  const hidden = await page.evaluate((pts) => {
+    const O = window.__town.OVERLAYS || [];
+    return pts.filter((p) => O.some((o) => o[4] >= 90 && p.x > o[1] && p.x < o[1] + o[3] && p.y > o[2] && p.y < o[2] + o[4] - 10))
+      .map((p) => [p.x, p.y]);
+  }, all);
+  expect(hidden, 'no rubbish is dropped behind something tall enough to hide it').toEqual([]);
+
+  // ⭐ AND IT USES THE WHOLE TOWN rather than piling in one corner.
+  const xs = all.map((p) => p.x), ys = all.map((p) => p.y);
+  expect(Math.max(...xs) - Math.min(...xs), 'spread across the town').toBeGreaterThan(700);
+  expect(Math.max(...ys) - Math.min(...ys), 'on both axes').toBeGreaterThan(250);
+  // ⭐ AND THE RULE ITSELF, asked directly. The end-to-end heap needs a ghost to rest twice on one
+  // waypoint, which is probabilistic and cannot be forced — so what the walk above proves is that a
+  // realistic day and night stay clean, and what this proves is the mechanism that keeps them clean.
+  const rule = await page.evaluate(() => {
+    // ⚠️ THE LIVE LIST, NOT THE RUNNING TALLY. `all` above accumulates across six waves and a bag from
+    // wave one is long gone by wave six — asking whether a bag may go where that one USED to be is a
+    // question about empty cobbles, and it answers yes, correctly, while proving nothing.
+    const bag = (window.__town.room.problems() || []).find((p) => p.art === 'pile');
+    if (!bag) return { skip: true };
+    const R = window.__town.room;
+    return {
+      onTopOfABag: R.litterRoom(bag.x, bag.y, 'pile'),
+      besideABag: R.litterRoom(bag.x + 40, bag.y, 'pile'),
+      wellAwayFromABag: R.litterRoom(bag.x + 260, bag.y, 'pile'),
+      smallOnTop: R.litterRoom(bag.x, bag.y, 'trash1'),
+      smallNearby: R.litterRoom(bag.x + 34, bag.y + 6, 'trash1'),
+      behindAShopfront: R.litterRoom(window.__town.PROPS.post.x + 60, window.__town.PROPS.post.y + 120, 'trash1'),
+    };
+  });
+  if (!rule.skip) {
+    expect(rule.onTopOfABag, 'a second bin bag may not go where one already is').toBe(false);
+    expect(rule.besideABag, 'nor a body’s length from it').toBe(false);
+    expect(rule.wellAwayFromABag, 'but across the square is fine').toBe(true);
+    expect(rule.smallOnTop, 'and nothing at all may go exactly on top of something').toBe(false);
+    expect(rule.smallNearby, 'while small litter beside a bag is what a mess looks like').toBe(true);
+    expect(rule.behindAShopfront, 'and nothing is dropped behind a building').toBe(false);
+  }
+  expect(errors).toEqual([]);
+});

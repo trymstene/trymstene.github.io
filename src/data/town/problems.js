@@ -28,8 +28,14 @@ export const PROBLEMS = [
 // own keys (OVERLAYS carries them since 14 Sep) and town-room.js reads the position from
 // the placed prop, so they never drift from the plate.
 export const ANCHORS = {
-  street: [[1180, 985], [1300, 850], [900, 650], [1350, 640], [1650, 1100], [1860, 1120], [560, 620], [1560, 620],
-    [800, 1100], [1440, 1100], [320, 900], [1990, 900], [1100, 1190], [1230, 830], [980, 830]],
+  // 🗑 WHERE RUBBISH MAY LIE, and it is DERIVED, not eyeballed (20 Sep 2026). Trym: "for garbage
+  // its nice to use the whole town to spread it around, but not behind buildings where users cant see
+  // them." So these are a grid laid over the street rectangles in town-geo.js, with every spot inside a
+  // tall overlay's box thrown away, thinned to 150 px apart and then jittered so they do not read as a
+  // line painted down the middle of the road. Twenty spots across the whole town, against the fifteen
+  // hand-picked ones that were here before — and the 150 px floor is what makes two bin bags in one
+  // place impossible by construction rather than by luck.
+  street: [[206, 581], [448, 588], [808, 595], [1050, 602], [1292, 582], [1652, 589], [1894, 596], [429, 1083], [671, 1063], [1031, 1070], [1391, 1077], [1633, 1084], [1875, 1064], [747, 815], [830, 1008], [954, 829], [1196, 809], [1202, 1002], [1444, 823], [1122, 1248]],
   walls: [[560, 1000, 'store'], [1700, 1000, 'print'], [1780, 520, 'post'], [400, 520, 'condo']],
   // a perch is a SURFACE of a prop, measured on the plate by the builder's twin of this table in
   // tools/… (the top of each bench at its middle, the cart's umbrella, the shelter's roof, the

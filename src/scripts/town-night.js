@@ -30,7 +30,7 @@ export function bootTownNight(ctx) {
     DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track, float,
     poof, burst, mark, sprite, show, kill, moveSprite, body, bodies, killBody, propOf, perchZ,
     glowProblem, setFull, lampsByHour, shutters, dayNum, found, weighted, h, one,
-    fill, todayShut, keepFn, LAMP_HIT,
+    fill, todayShut, keepFn, LAMP_HIT, litterRoom,
     // ⚠️ GETTERS, because town-room reassigns every one of these
     band, problems, curse, vendor, night, plainNight, curseTold,
     // …and setters, because a getter cannot stand on the left of an assignment
@@ -127,9 +127,21 @@ export function bootTownNight(ctx) {
       const p0 = propOf(bin), t = rowOf(ANCHORS.dumps.includes(bin) ? 'dumpster' : 'bin');
       glowProblem(addProblem(t, bin, p0.x + p0.w / 2, p0.base + 4, 100 + p0.base + 3, false)); did = t.id;
     } else {
-      const x = Math.round(gx + Math.random() * 40 - 20), y = Math.round(gy + 8);
+      // 🗑 A GHOST DROPS RUBBISH WHERE THERE IS ROOM FOR IT, or it does not drop any. This threw a
+      // sprite down at the waypoint ±20 px whatever was already there, and a ghost that rests twice at
+      // the same bench built a heap of three bin bags on one patch — which reads as a broken sprite, not
+      // as a mess. Trym, 20 Sep: "now i see often garbage sprites totally overlap, and it shouldnt."
+      // It tries a few spots around the waypoint and gives up rather than stack.
+      const kind = ['pile', 'trash1', 'trash2', 'trash3'][Math.floor(Math.random() * 4)];
+      let x = 0, y = 0, room = false;
+      for (let tries = 0; tries < 8 && !room; tries++) {
+        const r = 24 + tries * 22, a = Math.random() * Math.PI * 2;
+        x = Math.round(gx + Math.cos(a) * r); y = Math.round(gy + 8 + Math.sin(a) * r * 0.5);
+        room = !litterRoom || litterRoom(x, y, kind);
+      }
+      if (!room) return null;   // nowhere to put it: this ghost simply does not litter this time
       const p = addProblem(rowOf('litter'), 'g' + (messN++), x, y, null, false);
-      p.sprite = sprite(['pile', 'trash1', 'trash2', 'trash3'][Math.floor(Math.random() * 4)], x, y); glowProblem(p); poof(x, y - 6); did = 'litter';
+      p.sprite = sprite(kind, x, y); glowProblem(p); poof(x, y - 6); did = 'litter';
     }
     g.mess = (g.mess || 0) + 1;
     return did;

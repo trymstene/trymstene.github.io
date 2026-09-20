@@ -29,7 +29,7 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN } from './town-geo.js';
+import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, OVERLAYS } from './town-geo.js';
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, DECOR_SPOTS, VISITOR_SPOTS } from '../data/town/condition.js';
@@ -934,7 +934,7 @@ export function bootTownLife(ctx) {
     // ⚠️ `pos` is the PLAYER'S OWN position object, handed over by reference because banana-town
     // mutates it in place every frame — the ghosts keep their distance from whoever is standing
     // there, and six lines of the moved code still say ctx.pos.
-    return { pos: ctx.pos, todayShut, DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track, LAMP_HIT,
+    return { pos: ctx.pos, todayShut, DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track, LAMP_HIT, litterRoom,
       poof, burst, mark, sprite, show, kill, moveSprite, body, bodies, killBody, propOf, perchZ,
       glowProblem, setFull, lampsByHour, shutters, dayNum, found, weighted, h, one, fill, keepFn,
       // ⚠️ GETTERS, because this file reassigns every one of them
@@ -976,6 +976,34 @@ export function bootTownLife(ctx) {
   // cannot stand on) — a lamp is a repair, and a repair is a tap (Trym, 15 Sep: "it became tedious to tap on all
   // objects. streetlights can be tapped"). The reach is measured from the thing's foot; the tap's own walk
   // ends 26 px in front of it, so every reach covers that spot too.
+  // 🗑 HOW CLOSE TWO PIECES OF RUBBISH MAY LIE (Trym, 20 Sep 2026): "always one garbage bag by
+  // itself … but only one garbage bags-sprite at once each town location … small litter can overlap some
+  // no worries, but total overlap cant happen."
+  //
+  // ⚠️ TWO DIFFERENT NUMBERS, because they are two different things. A bin bag is a 65 px heap and the
+  // eye reads it as ONE object, so two of them on the same patch read as a rendering fault rather than
+  // as a mess — they keep a whole body's length apart. A crisp packet is small and a few of them lying
+  // together IS what litter looks like, so they only have to be distinguishable from each other.
+  const LITTER_GAP = { pile: 118, small: 26 };
+  const isBag = (k) => k === 'pile';
+  // true = this spot is clear enough to drop `kind` on. Reads the live problem list, so it holds across
+  // the seeded street litter and whatever a ghost throws down in the night.
+  function litterRoom(x, y, kind) {
+    for (const q of problems) {
+      if (q.type !== 'litter' && q.type !== 'leaves') continue;
+      const other = q.sprite && q.sprite.key;
+      const gap = (isBag(kind) && isBag(other)) ? LITTER_GAP.pile : LITTER_GAP.small;
+      if (Math.hypot(q.x - x, q.y - y) < gap) return false;
+    }
+    // ⚠️ AND NEVER BEHIND A BUILDING. Trym: "not behind buildings where users cant see them." A tall
+    // overlay draws over anything whose foot is above its own, so rubbish dropped there is paid work the
+    // player can never find. 120 px is the shortest thing in the town you could lose a bin bag behind.
+    for (const o of OVERLAYS) {
+      if (o[4] < 90) continue;   // a bench or a kerb hides nothing; a tree or a shopfront hides a bin bag
+      if (x > o[1] - 8 && x < o[1] + o[3] + 8 && y > o[2] - 8 && y < o[2] + o[4] - 10) return false;
+    }
+    return true;
+  }
   const REACH = { litter: 30, leaves: 30, bin: 60, dumpster: 64, shutter: 62, fountain: 72, graffiti: 56, crows: 74 };
   let autoAt = 0;
   function autoPick(now) {
@@ -1124,6 +1152,9 @@ export function bootTownLife(ctx) {
     shutWhy: (k) => (todayShut.has(k) ? 'today' : 'band'),
     // 🧪 shut one front on purpose: the walk cannot wait for the day to roll one, and the reason a
     // shut front gives has to be checked against the front it hangs on
+    // 🗑 QA: may a piece of rubbish of this kind lie here? The end-to-end heap is probabilistic — it
+    // needs a ghost resting twice on one waypoint — so the walk asserts the RULE directly as well.
+    litterRoom: (x, y, kind) => litterRoom(x, y, kind),
     shutShop: (k, today) => { if (!TEST) return false; if (today) todayShut.add(k); story.closeShop(k); return [...cond.shut]; },
     copyOf: (k) => COPY[k],
     open: (k) => openFor(k),
@@ -1131,7 +1162,9 @@ export function bootTownLife(ctx) {
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
     omen: () => !!(dusk && dusk.omenOn()), nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
-    problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, key: p.key, glow: !!(p.glow && p.glow.el && p.glow.el.classList.contains('is-todo') && !p.glow.gone) })),
+    // ⚠️ `art` is the SPRITE this problem wears, not its type: a litter problem is a bin bag or a
+    // crisp packet and the spacing rule is different for each, so a walk cannot check it without this.
+    problems: () => problems.map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, key: p.key, art: (p.sprite && p.sprite.key) || '', glow: !!(p.glow && p.glow.el && p.glow.el.classList.contains('is-todo') && !p.glow.gone) })),
     // QA: one more problem — of a container type at the first full one with none, or a litter piece at a spot
     plant: (type, at) => {
       if (!TEST) return null;
