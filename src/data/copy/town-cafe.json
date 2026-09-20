@@ -28,7 +28,7 @@
       "A cup and its order part ways by the lane."
     ]
   },
-  "left": "{who} turns from the rope, leaving the lane a little emptier.",
+  "left": "Somebody turns from the rope, leaving the lane a little emptier.",
   "ask": "Can I work the counter?",
   "bean": "The counter is work when you stand behind it. The grounds say the square needs a steady hand today.",
   "drinks": {

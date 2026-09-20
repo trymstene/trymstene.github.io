@@ -279,3 +279,114 @@ test('the tallest hat in the game stays inside the window', async ({ page }) => 
   expect(fit.overSign, '⚠️ a horn reached the COFFEE AND TEA sign').toBe(false);
   expect(errors).toEqual([]);
 });
+
+// ☕ THE QUEUE AND THE TILL — the whole shift, in the town (20 Sep 2026).
+//
+// Bananas visiting the square peel off to the rope, the front one's order goes on the tray, and the
+// tips are paid ONCE at clock-out through the only faucet the server knows.
+//
+// ⚠️ WHAT THIS EXISTS TO CATCH:
+//   · the counter's STYLESHEET not being linked in the town. It was not, for a day: the bench at
+//     /dev/cafe/ linked it and the town did not, so the tray was fully styled where it was being
+//     thumbed and completely unstyled in the actual game. Nothing else would have noticed.
+//   · patience showing nothing, because the shadow reads a custom property that file provides
+//   · the till paying what the grades came to rather than what the day's cap still allows
+async function shift(page) {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); } catch (e) {} });
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.life.set(12); window.__town.room.set(85); });
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.waitForTimeout(250);
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe() && window.__town.room.cafe().on(), null, { timeout: 5000 });
+  return errors;
+}
+
+test('the queue forms at the rope, above the tray, and patience is the shadow', async ({ page }) => {
+  const errors = await shift(page);
+
+  // ⚠️ THE STYLESHEET. /css/town-cafe.css is what makes the tray a tray and the shadow a patience
+  // clock — and the town did not link it for a day while the bench did.
+  const styled = await page.evaluate(() => {
+    const t = document.querySelector('.tw-cup');
+    const s = getComputedStyle(t);
+    return { pos: s.position, z: +s.zIndex, bottom: s.bottom, touch: s.touchAction };
+  });
+  expect(styled.pos, '.tw-cup is positioned by the stylesheet, not by luck').toBe('absolute');
+  expect(styled.z, 'and sits above the world').toBeGreaterThan(9);
+  expect(styled.touch, '⚠️ touch-action:none, or the pour dies to pointercancel on a phone').toBe('none');
+
+  for (let i = 0; i < 3; i++) { await page.evaluate(() => window.__town.room.cafe().call()); await page.waitForTimeout(500); }
+  await page.evaluate(() => window.__town.room.cafe().arrive());
+  await page.waitForTimeout(300);
+  const line = await page.evaluate(() => window.__town.room.cafe().line());
+  expect(line.length, 'a queue formed').toBeGreaterThan(0);
+
+  // ⭐ the rope is ABOVE the tray, which is the whole argument for the tray (measured on the bench)
+  const rope = await page.evaluate(() => window.__town.room.cafe().rope());
+  for (const r of rope) expect(r.y, `a rope mark at ${r.x},${r.y} is above the tray's strip`).toBeLessThan(1150);
+
+  // 🤫 patience is the BODY: a shadow under a banana, never a bubble over one
+  const pat = await page.evaluate(() => {
+    const b = document.querySelector('.tw-wait');
+    return b ? { bg: getComputedStyle(b, '::after').backgroundColor, text: (b.textContent || '').trim() } : null;
+  });
+  expect(pat, 'somebody is waiting').not.toBeNull();
+  expect(pat.bg, '⚠️ the shadow is the patience colour, not the default grey').not.toBe('rgba(20, 30, 18, 0.34)');
+  expect(pat.text, 'and not one word over their head').toBe('');
+  expect(errors).toEqual([]);
+});
+
+test('a served cup pays tips at clock-out, once, through the faucet the server knows', async ({ page }) => {
+  const errors = await shift(page);
+  for (let i = 0; i < 3; i++) { await page.evaluate(() => window.__town.room.cafe().call()); await page.waitForTimeout(500); }
+  await page.evaluate(() => window.__town.room.cafe().arrive());
+  await page.waitForTimeout(300);
+
+  // make cups the way the bench proved they can be made
+  await page.evaluate(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let k = 0; k < 3; k++) {
+      window.__town.room.cafe().serve();
+      const sm = window.__town.room.cafe().gest();
+      if (!sm) break;
+      for (let g = 0; g < 20 && window.__town.room.cafe().cup(); g++) {
+        const key = sm.station(); if (!key) break;
+        const t = sm.best(performance.now());
+        await wait(Math.max(0, t - performance.now()));
+        if (key === 'pour') { sm.press(performance.now()); await wait(30); sm.release(sm.best(performance.now())); }
+        else sm.press(sm.best(performance.now()));
+        await wait(20);
+      }
+      await wait(150);
+    }
+  });
+  const took = await page.evaluate(() => window.__town.room.cafe().take());
+  expect(took.served, 'cups were served').toBeGreaterThan(0);
+  expect(took.tips, 'and they are worth something').toBeGreaterThan(0);
+
+  // ⚠️ NOTHING IS PAID UNTIL YOU STEP AWAY. A tip banked per cup would be a faucet the server sees
+  // a dozen times a shift instead of once.
+  const before = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').length; } catch (e) { return -1; } });
+  expect(before, 'not a coin has moved yet').toBe(0);
+
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  await page.waitForTimeout(400);
+  const paid = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').map((e) => e.d); } catch (e) { return []; } });
+  expect(paid.length, 'paid ONCE, at the end').toBe(1);
+  expect(paid[0], 'and it is what the shift came to').toBe(took.tips);
+  // ⚠️ a nominal cup may never exceed 6: the stew buff DOUBLES a faucet and 6 × 2 = 12 = the max,
+  // and a faucet over its max is refused WHOLE, so the coins would evaporate at the next ack
+  expect(paid[0] / Math.max(1, took.served), 'no cup is worth more than the faucet allows').toBeLessThanOrEqual(6);
+
+  const card = await page.evaluate(() => (document.getElementById('twCardBody') || {}).textContent || '');
+  expect(card, 'the receipt names the take').toContain(String(took.tips));
+  expect(errors).toEqual([]);
+});

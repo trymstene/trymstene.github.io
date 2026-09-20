@@ -96,3 +96,8 @@
   .tw-cup { transition: none; }
   .tw-cup__zone { animation: none; opacity: 1; }
 }
+
+/* 🧾 the receipt, at clock-out. A CARD is right here and nowhere else in the café: the shift is over,
+   so the square no longer has to be visible behind it. */
+.tw-cup__till h2 { font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1rem; margin: 0 0 0.4rem; letter-spacing: 0.03em; }
+.tw-cup__take { margin: 0 0 0.4rem; font-size: 1.05rem; font-weight: 800; color: #ffe135; }

@@ -71,9 +71,13 @@ nothing else. No blame, no number, no advice. This world is fond of the people i
 
 ### The one who gives up
 
-`left` is the town's toast when somebody has waited too long, turns their back and walks off. It
-MUST contain `{who}`, where the game puts that banana's name. It is a small sadness, not a failure
-notice, and it never says how long they waited or what it cost.
+`left` is the town's toast when somebody has waited too long, turns their back and walks off.
+
+⚠️ **They have no name, and the line must not pretend they do.** The customers are not the nine
+residents — they are bananas visiting the square from the rest of Banana Town, strangers who walked
+in off the road, and the world has never learned their names. So write it about somebody unnamed:
+“somebody”, “the one at the back”, or the rope itself going quiet. It is a small sadness, not a
+failure notice, and it never says how long they waited or what it cost.
 
 ### Bean's counter, on Bean's own card
 

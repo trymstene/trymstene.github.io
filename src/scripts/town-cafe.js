@@ -273,9 +273,22 @@ const DRAWN = 58;
 const LEAN = 3;          // how far inside the arch the crown sits, so the head is framed and not cropped
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js — the drawn frame inside its square canvas
 
+// ☕ THE ROPE, measured on the bench at 393×852 and it is a rule, not a preference: the view is 580
+// tall there and the tray owns the bottom 150, so a customer whose feet land past about y 1150 stands
+// BEHIND the counter UI — and a queue you cannot see is the one thing the tray was chosen to prevent.
+// It also runs IN from the serving window rather than out past the frame, because a body is drawn 99
+// world px wide and centred on its mark.
+const ROPE = [[1830, 1075], [1788, 1105], [1746, 1135]];
+const PATIENCE = 34000;          // how long a banana will stand there before it gives up
+const NEXT = [5200, 12000];      // the gap between arrivals, while you are behind the counter
+
 export function bootTownCafe(ctx) {
-  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track } = ctx;
+  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc } = ctx;
   let atWork = null, tray = null, on = false;
+  // ☕ THE QUEUE. Each entry is a visitor the counter has borrowed from town-folk.js, its drink, and
+  // the moment it arrived — which is its patience clock. ⚠️ the counter does NOT own the body: it
+  // borrows it, moves it, and hands it back, so a customer that gives up rejoins its own day.
+  let line = [], cup = null, served = 0, tips = 0, best = 0, nextAt = 0, shiftAt = 0;
 
   function standIn() {
     if (atWork || !CAFE_WIN) return;
@@ -323,13 +336,77 @@ export function bootTownCafe(ctx) {
     if (me) me.classList.remove('is-serving');
   }
 
+  // ---- the queue ---------------------------------------------------------------------------------
+  const seedAt = (n) => Math.abs(Math.floor(Date.now() / 60000) * 2654435761 + n * 40503) >>> 0;
+  function callOne(now) {
+    if (line.length >= ROPE.length || !folk) return;
+    const f = folk();
+    if (!f) return;
+    const free = f.idle().filter((v) => !line.some((q) => q.v === v));
+    if (!free.length) return;
+    const seed = seedAt(served + line.length);
+    const v = free[seed % free.length];
+    const spot = ROPE[line.length];
+    const row = { v, drink: DRINK_IDS[seed % DRINK_IDS.length], at: 0, seed };
+    line.push(row);
+    f.take(v, { x: spot[0], y: spot[1] }, () => { row.at = performance.now(); });
+    void now;
+  }
+  // ⭐ PATIENCE IS THE BODY AND NOTHING ELSE (the Quiet Rule). Green, amber at half, red at a fifth,
+  // and then they turn and go — a shadow under a banana, never a bubble over one.
+  function patienceTick(now) {
+    for (let i = line.length - 1; i >= 0; i--) {
+      const row = line[i];
+      if (!row.at) continue;
+      const left = 1 - (now - row.at) / PATIENCE;
+      folk().patience(row.v, left <= 0.2 ? 2 : left <= 0.5 ? 1 : 0);
+      if (left > 0) continue;
+      // gone. The body does the acting: it turns its back and walks off, and the town says so once.
+      drop(i, false);
+      if (COPY.left) say(COPY.left);
+      track('town_cup', { at: 'cafe', r: 'left' });
+    }
+  }
+  function drop(i, sit) {
+    const row = line[i];
+    line.splice(i, 1);
+    if (folk()) { folk().patience(row.v, null); folk().release(row.v, sit); }
+    if (cup && cup.row === row) { cup = null; if (tray) tray.idle(''); }
+    // everyone behind shuffles up
+    line.forEach((q, n) => { const spot = ROPE[n]; if (folk()) folk().take(q.v, { x: spot[0], y: spot[1] }, () => { if (!q.at) q.at = performance.now(); }); });
+  }
+  // the banana at the front puts its order on the tray, and nothing happens until it has
+  function serveNext() {
+    if (cup || !tray || !on) return;
+    const row = line.find((q) => q.at);
+    if (!row) return;
+    const c = newCup(row.drink, served, row.seed);
+    c.row = row;
+    cup = c;
+    tray.serve(c, (COPY.drinks || {})[row.drink] || row.drink);
+  }
+  function onCup(c) {
+    const row = c.row, i = line.indexOf(row);
+    const quick = row && row.at && (performance.now() - row.at) < PATIENCE / 2;
+    const n = tipFor(c.grade, quick);
+    tips += n; served++;
+    if (c.grade === 2) best++;
+    const deck = deckLine(GRADES[c.grade], served);
+    if (deck) say(deck);
+    track('town_cup', { at: 'cafe', r: GRADES[c.grade] });
+    cup = null;
+    if (i >= 0) drop(i, true);          // served: they go and sit with it
+    tray.idle('');
+  }
+
   function clockIn(host) {
     if (on) return false;
     on = true;
+    served = 0; tips = 0; best = 0; shiftAt = performance.now(); nextAt = 0; line = [];
     standIn();
-    if (!tray) tray = mountCounter(host || world.parentElement, {});
+    if (!tray) tray = mountCounter(host || world.parentElement, { onCup });
     tray.show();
-    tray.say(COPY.on || '');
+    tray.idle('');
     if (COPY.on) say(COPY.on);
     track('town_shift', { at: 'cafe', step: 'in' });
     return true;
@@ -337,11 +414,43 @@ export function bootTownCafe(ctx) {
   function clockOut() {
     if (!on) return false;
     on = false;
+    for (let i = line.length - 1; i >= 0; i--) drop(i, false);
+    cup = null;
     stepOut();
     if (tray) { tray.idle(''); tray.hide(); }
     if (COPY.off) say(COPY.off);
-    track('town_shift', { at: 'cafe', step: 'out' });
+    track('town_shift', { at: 'cafe', step: 'out', cups: served });
+    // ⭐ THE TILL. Paid ONCE, at the end, through the only faucet the server knows — and `pay` reads
+    // what today's cap still allows BEFORE it hands anything over, so the counter stops paying rather
+    // than paying coins that evaporate at the next ack.
+    const paid = tips > 0 && pay ? pay(tips, { cups: served, best }) : 0;
+    receipt(paid);
     return true;
+  }
+  // ⭐ THE RECEIPT is a card, and a card is right HERE and nowhere else in the café: the shift is over,
+  // so the square no longer has to be visible behind it. ⚠️ it shows WHAT THE CAP ALLOWED, not what the
+  // grades came to — a receipt that promises coins the server refused would be a lie on a piece of paper.
+  function receipt(paid) {
+    const w = COPY.receipt || {};
+    if (!openCard || !w.title) return;
+    const line = paid > 0
+      ? (w.take || '').replace('{n}', String(paid))
+      : (w.none || '');
+    openCard('<div class="tw-cup__till">'
+      + '<h2>' + esc(w.title) + '</h2>'
+      + (line ? '<p class="tw-cup__take">' + esc(line) + '</p>' : '')
+      + (w.line ? '<p class="tw-card__sub">' + esc(w.line) + '</p>' : '')
+      + (w.back ? '<button class="tw-cta" id="twTillX" type="button"><span class="tw-cta__verb">' + esc(w.back) + '</span></button>' : '')
+      + '</div>');
+    const b = document.getElementById('twTillX');
+    if (b && closeCard) b.addEventListener('click', () => closeCard());
+  }
+  function tick(now) {
+    if (!on) return;
+    if (now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
+    patienceTick(now);
+    serveNext();
+    void shiftAt;
   }
   // ⚠️ DRAWN AT THE SIZE IT IS SHOWN, never at 150 and scaled down. The town's own bananas live in a
   // 150 px canvas inside a 4.5% element — about a 3× downscale — but this one is a third of that width,
@@ -365,15 +474,26 @@ export function bootTownCafe(ctx) {
   window.addEventListener('resize', onResize);
 
   return {
-    clockIn, clockOut, redraw,
+    clockIn, clockOut, redraw, tick,
     on: () => on,
     tray: () => tray,
+    take: () => ({ served, tips, best }),
     seam: {
       on: () => on, clockIn, clockOut,
       at: () => (atWork ? { z: +atWork.style.zIndex, w: atWork.style.width, top: atWork.style.top, clip: atWork.style.clipPath } : null),
       // ⚠️ the walk must measure what is SEEN, not the element: the banana is deliberately bigger
       // than the window now, and getBoundingClientRect knows nothing about a clip-path
       window: () => (CAFE_WIN.length > 6 ? { x0: CAFE_WIN[3], y0: CAFE_WIN[4], x1: CAFE_WIN[5], y1: CAFE_WIN[6] } : null),
+      // ☕ the walk cannot stand at a counter for two minutes waiting for a queue to form
+      line: () => line.map((q) => ({ drink: q.drink, waiting: !!q.at, x: Math.round(q.v.x), y: Math.round(q.v.y) })),
+      call: () => { callOne(performance.now()); return line.length; },
+      arrive: () => { line.forEach((q) => { if (!q.at) { q.at = performance.now(); q.v.path = []; q.v.job = 'queue'; } }); return line.length; },
+      cup: () => (tray ? tray.cup() : null),
+      serve: () => { serveNext(); return !!(tray && tray.cup()); },
+      rope: () => ROPE.map((r) => ({ x: r[0], y: r[1] })),
+      take: () => ({ served, tips, best }),
+      receipt: (n) => receipt(n | 0),
+      gest: () => (tray ? tray.seam : null),   // the tray’s own thumb-door, so a walk can make a real cup
     },
   };
 }

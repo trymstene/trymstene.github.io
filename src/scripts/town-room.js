@@ -26,7 +26,7 @@
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
 import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto } from '../lib/world.js';
-import { passStat, passSpend, passRaw, statTotal, coinsNow } from '../lib/banana-pass.js';
+import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
 import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN } from './town-geo.js';
@@ -722,6 +722,20 @@ export function bootTownLife(ctx) {
   function cafeCtx() {
     return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track,
       outfit: ctx.outfit || (() => ({})),
+      folk: () => folk,   // ☕ the counter borrows its customers from the town's own visitors
+      openCard, closeCard, esc,
+      // ⭐ THE TILL, and it reads the cap BEFORE it pays. RULES.town.tips allows 12 a cup and 120 a
+      // day per person, and a faucet over its cap is refused WHOLE — so a counter that just handed
+      // over its total would watch the coins evaporate at the next ack. It pays what today still
+      // allows, through coinsPaid() so a stew buff shows the doubled number it will actually get.
+      pay: (n, how) => {
+        let room = 120;
+        try { const u = ruleUsed('town:tips'); room = Math.max(0, 120 - (u.used | 0)); } catch (e) {}
+        const give = Math.min(n | 0, room);
+        if (give > 0) { passStat('coins_earned', give, 'tips'); float(ctx.pos.x, ctx.pos.y - 40, '+' + coinsPaid(give)); if (hud && hud.refresh) hud.refresh(); }
+        track('town_shift', { at: 'cafe', step: 'paid', n: give, cups: (how && how.cups) | 0 });
+        return give;
+      },
       // ⚠️ GETTERS, not values: this file reassigns every one of them
       band: () => band, life: () => L, problems: () => problems, curse: () => curse };
   }
@@ -926,6 +940,7 @@ export function bootTownLife(ctx) {
     stepSprites(dt);
     carryTick();
     if (folk) folk.tick(now, dt);
+    if (cafe) cafe.tick(now);
     workTick(now);
     autoPick(now);
     if (dusk) { dusk.stepMeCurse(now); dusk.stepGhosts(dt, now); }

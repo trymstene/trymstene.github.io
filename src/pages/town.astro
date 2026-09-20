@@ -14,6 +14,10 @@ const description = 'The town centre of Banana World, under construction.';
   <link rel="stylesheet" href="/css/dialogue.css" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />
   <link rel="stylesheet" href="/css/world-frame.css" slot="head" />
+  <!-- ☕ the Coffee Cup's counter: the tray, its gauge and the patience shadow. ⚠️ the bench at
+       /dev/cafe/ links this too, and for a day it was the ONLY page that did — so the tray was fully
+       styled where it was being thumbed and completely unstyled in the actual town. -->
+  <link rel="stylesheet" href="/css/town-cafe.css" slot="head" />
   <style is:inline slot="head">
     .tw-wrap [hidden] { display: none !important; }
     body { background: #1a120c; }
@@ -50,7 +54,10 @@ const description = 'The town centre of Banana World, under construction.';
     .tw-me, .tw-npc { position: absolute; width: 4.5%; transform: translate(-50%, -100%); pointer-events: none; }
     .tw-me::after, .tw-npc::after {
       content: ''; position: absolute; left: 50%; bottom: -3px; width: 76%; aspect-ratio: 3 / 1;
-      transform: translateX(-50%); background: rgba(20, 30, 18, 0.34); border-radius: 50%; z-index: -1;
+      /* ☕ the shadow is also PATIENCE, when the café borrows this banana for its queue: town-cafe.css
+         sets --tw-pat on the body (green, amber at half, red at a fifth) and this reads it. The Quiet
+         Rule is why it lives here — a waiting banana shows how it feels with its shadow, never a bubble. */
+      transform: translateX(-50%); background: var(--tw-pat, rgba(20, 30, 18, 0.34)); border-radius: 50%; z-index: -1;
     }
     .tw-me canvas, .tw-npc canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
     /* the planks: the park's waypost idiom, one per door */

@@ -215,6 +215,7 @@ export function bootTownFolk(ctx) {
 
   function step(v, dt, now) {
     // sitting or gone indoors: nothing moves, and the clock decides when they have had enough
+    if (v.job === 'queue' && !v.path.length) return;   // ☕ holding the rope: the counter owns this one
     if (v.until) {
       if (now < v.until) return;
       v.until = 0;
@@ -249,6 +250,10 @@ export function bootTownFolk(ctx) {
       return;
     }
     if (v.job === 'shop') { v.el.hidden = true; v.until = now + 9000 + v.r() * 22000; return; }
+    // ☕ sent to the café's rope: it waits there until whoever sent it says otherwise. ⚠️ `until` is
+    // left at 0 on purpose — a queued banana must not wander off on the ordinary timer, because the
+    // counter is holding its patience clock and owns when it gives up.
+    if (v.job === 'queue') { v.frame = 2; if (v.arrived) { const f = v.arrived; v.arrived = null; f(v); } return; }
     v.until = now + 6000 + v.r() * 16000;      // standing about
   }
 
@@ -285,7 +290,12 @@ export function bootTownFolk(ctx) {
     stop() { stopped = true; folk.forEach(kill); folk.length = 0; },
     // 🪑 the café's queue asks for these: a visitor already in town who can be sent to the rope
     idle: () => folk.filter((v) => !v.gone && !v.sitting && v.job !== 'leave' && !v.el.hidden),
-    take(v, to) { if (v.seat) { v.seat.taken = false; v.seat = null; } v.job = 'queue'; v.until = 0; v.sitting = false; go(v, to); },
+    take(v, to, onArrive) { if (v.seat) { v.seat.taken = false; v.seat = null; } v.job = 'queue'; v.until = 0; v.sitting = false; v.arrived = onArrive || null; v.path = []; go(v, to); },
+    // the counter is done with them: back to their own day, or out of town
+    release(v, sit) { if (!v || v.gone) return; v.arrived = null; v.job = ''; v.until = 0; if (sit) errand(v, performance.now()); else leave(v); },
+    // ⭐ patience, as the body and nothing else: the shadow under a banana, in three steps. No bubble
+    // ever goes over one of these — they have no name and nothing to say (the Quiet Rule).
+    patience(v, k) { if (!v || !v.el) return; v.el.classList.toggle('tw-wait', k != null); v.el.classList.toggle('is-half', k === 1); v.el.classList.toggle('is-last', k === 2); },
     seam: {
       count: () => folk.length,
       folk: () => folk.map((v) => ({ x: Math.round(v.x), y: Math.round(v.y), job: v.job, sitting: !!v.sitting, frame: v.drawn, hat: v.outfit.hat, hidden: !!v.el.hidden })),

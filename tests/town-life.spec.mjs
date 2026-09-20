@@ -921,7 +921,11 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   const hit = await page.evaluate((p) => {
     // the resident's own element, found by where it stands
     let best = null, d = 1e9;
-    for (const el of document.querySelectorAll('.tw-npc')) {
+    // ⚠️ :not(.tw-visitor) — since 20 Sep the square also has bananas VISITING from the rest of the
+    // town (town-folk.js), and they wear .tw-npc so the room hide lists blank them. They have no name
+    // and no card, so "the nearest banana" is no longer "the resident": it picked one of them and the
+    // tap opened nothing.
+    for (const el of document.querySelectorAll('.tw-npc:not(.tw-visitor)')) {
       const r = el.getBoundingClientRect();
       if (!r.width) continue;
       const w = window.__town, s = document.getElementById('twView').getBoundingClientRect();
