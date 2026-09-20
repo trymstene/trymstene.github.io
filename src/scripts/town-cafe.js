@@ -294,7 +294,7 @@ const PATIENCE = 34000;          // how long a banana will stand there before it
 const NEXT = [5200, 12000];      // the gap between arrivals, while you are behind the counter
 
 export function bootTownCafe(ctx) {
-  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc } = ctx;
+  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside } = ctx;
   let atWork = null, tray = null, on = false;
   // ☕ THE QUEUE. Each entry is a visitor the counter has borrowed from town-folk.js, its drink, and
   // the moment it arrived — which is its patience clock. ⚠️ the counter does NOT own the body: it
@@ -461,6 +461,11 @@ export function bootTownCafe(ctx) {
   }
   function tick(now) {
     if (!on) return;
+    // ⚠️ WALKING INTO A SHOP IS WALKING AWAY, and the brief says walking away IS clocking out. Without
+    // this the tray stayed up over the store's plate and your own banana went on standing in the café's
+    // window while you were inside somebody else's shop — the tray is a child of the VIEW, so neither of
+    // the world's `.is-inside` hide lists can reach it. (Seen on the QA sweep, 20 Sep.)
+    if (inside && inside()) { clockOut(); return; }
     if (now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
     patienceTick(now);
     serveNext();

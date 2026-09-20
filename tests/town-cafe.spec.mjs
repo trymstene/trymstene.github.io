@@ -390,3 +390,71 @@ test('a served cup pays tips at clock-out, once, through the faucet the server k
   expect(card, 'the receipt names the take').toContain(String(took.tips));
   expect(errors).toEqual([]);
 });
+
+// ⚠️ THE EDGES OF A SHIFT, all four found by probing rather than by reading (20 Sep).
+test('a shift ends when you walk away, and cannot be started twice or behind a shut door', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); } catch (e) {} });
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.life.set(12); });
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  const stand = () => page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+
+  // ── a town too low to keep the café open: the door answers, and nobody clocks in
+  await page.evaluate(() => window.__town.room.set(15));
+  await page.waitForTimeout(800);
+  await stand();
+  expect(await page.evaluate(() => window.__town.room.open('cafe')), 'the shut door still says why').toBe(true);
+  expect(await page.evaluate(() => window.__town.room.cafe().on()), '…but there is no shift behind a shutter').toBe(false);
+
+  // ── clocked in, then into the general store
+  await page.evaluate(() => window.__town.room.set(85));
+  await page.waitForTimeout(800);
+  await stand();
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe().on(), null, { timeout: 5000 });
+  await page.evaluate(() => window.__town.rooms.enter('store'));
+  await page.waitForTimeout(600);
+  const room = await page.evaluate(() => {
+    const t = document.querySelector('.tw-cup');
+    const w = document.querySelector('.tw-atwork');
+    return {
+      on: window.__town.room.cafe().on(),
+      tray: t ? (!t.hidden && getComputedStyle(t).visibility === 'visible') : false,
+      atWork: w ? getComputedStyle(w).visibility === 'visible' : false,
+    };
+  });
+  // ⚠️ WALKING INTO A SHOP IS WALKING AWAY. Before this the tray stayed up over the store's plate and
+  // your own banana went on standing in the café window while you were inside somebody else's shop —
+  // the tray is a child of the VIEW, so neither `.is-inside` hide list can reach it.
+  expect(room.on, 'a room ends the shift').toBe(false);
+  expect(room.tray, '⚠️ and the tray is not left over the shop’s plate').toBe(false);
+  expect(room.atWork, '⚠️ nor your banana still serving coffee from inside the grocer’s').toBe(false);
+  await page.evaluate(() => window.__town.rooms.exit());
+  await page.waitForTimeout(400);
+
+  // ── clocking in twice is once
+  await stand();
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe().on(), null, { timeout: 5000 });
+  const twice = await page.evaluate(() => { const c = window.__town.room.cafe(); c.clockIn(); return { on: c.on(), trays: document.querySelectorAll('.tw-cup').length, windows: document.querySelectorAll('.tw-atwork').length }; });
+  expect(twice.on).toBe(true);
+  expect(twice.trays, 'one tray, however many times you tap').toBe(1);
+  expect(twice.windows, 'and one banana in the window').toBe(1);
+
+  // ── clocking out mid-cup leaves nothing behind
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.waitForTimeout(400);
+  await page.evaluate(() => { const c = window.__town.room.cafe(); c.call(); c.arrive(); c.serve(); });
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => !!window.__town.room.cafe().cup()), 'a cup is in hand').toBe(true);
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  await page.waitForTimeout(400);
+  const after = await page.evaluate(() => ({ on: window.__town.room.cafe().on(), line: window.__town.room.cafe().line().length, cup: !!window.__town.room.cafe().cup(), atwork: !!document.querySelector('.tw-atwork') }));
+  expect(after, 'the shift takes everything with it').toEqual({ on: false, line: 0, cup: false, atwork: false });
+  expect(errors).toEqual([]);
+});

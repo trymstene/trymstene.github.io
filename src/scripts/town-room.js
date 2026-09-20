@@ -723,6 +723,7 @@ export function bootTownLife(ctx) {
     return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track,
       outfit: ctx.outfit || (() => ({})),
       folk: () => folk,   // ☕ the counter borrows its customers from the town's own visitors
+      inside,   // ☕ walking into a shop is walking away from the counter
       openCard, closeCard, esc,
       // ⭐ THE TILL, and it reads the cap BEFORE it pays. RULES.town.tips allows 12 a cup and 120 a
       // day per person, and a faucet over its cap is refused WHOLE — so a counter that just handed
