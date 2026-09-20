@@ -130,9 +130,10 @@ export function bootTownLife(ctx) {
   setInterval(() => { if (!document.hidden && Date.now() - readAt > 55000) read(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - readAt > 20000) read(); });
 
-  // 🪧 the board's sign in the square says what the board's card says (the copy's title), so the
-  // plank and the card agree the day the words land; without words it keeps its old label
-  if (COPY.board && COPY.board.title) { const pl = world.querySelector('.tw-plank[data-key="board"]'); if (pl) pl.textContent = String(COPY.board.title).toUpperCase(); }
+  // 🪧 ❌ THE BOARD'S PLANK WENT WITH THE BOARD (20 Sep 2026). Its sign used to be renamed here to
+  // whatever the copy's `board.title` said, so the square and the card agreed the day the words landed.
+  // There is no board and no plank now — `board.title` is the heading of nothing, and COPY.board's other
+  // fields are the Square Report, which the health card mounts (town-shop.js report()).
 
   // 🌸 THE TOWN HEALTH BAR — the park's, to the pixel (Trym, 15 Sep: "look at the health bar in
   // the park for park health, make it the same"): bottom-docked, the face and the palette ride
@@ -164,10 +165,22 @@ export function bootTownLife(ctx) {
     }
   }
   const paintMeter = renderHBar;
-  // 🌸 THE TOWN-HEALTH CARD — the park's health card: the band's name, the big number, ONE
-  // continuous bar with the five bands as zones (ticks at the band lines, a glyph over each,
-  // the live one ringed), tap a zone and read that band's line; then today's tally and your
-  // ten pips. Every word is the copy file's.
+  // 🌸 THE TOWN-HEALTH CARD — and since 20 Sep 2026 it is the ONLY place the town reports itself.
+  //
+  // It is the park's health card to start with: the band's name, the big number, ONE continuous bar
+  // with the five bands as zones (ticks at the band lines, a glyph over each, the live one ringed),
+  // tap a zone and read that band's line; then your ten pips.
+  //
+  // ⭐ AND THEN THE SQUARE REPORT, which used to be a notice board you walked across the square to
+  // read. Trym: "the Square Report sign is a bit unnecessary now that we have the Town Health Meter
+  // popup — can we move the Square Report content into the Town Health popup? And remove the sign?"
+  // The two said the same thing twice. The meter is on screen at all times, so the report lives under
+  // it: the eight lamps as they are, what wants doing today, tonight's news, and the tally.
+  //
+  // ⚠️ THE REPORT COMES FROM town-shop.js, a lazy chunk, and this card mounts an empty host for it.
+  // Not tidiness — budget: that block pulls the cursed-object table, the decor catalogue and the icon
+  // set, and this file is at 87% of its ceiling. The meter is up instantly and the report lands a
+  // frame later, which is the whole point of a chunk.
   function healthCard() {
     const v = Math.max(0, Math.min(100, L.life + nudge)), p = BANDS.indexOf(band), w = COPY.board || {}, wb = W_BAND[band] || {};
     const starts = BANDS.map((k) => BAND_LO[k]), ends = starts.slice(1).concat([100]);
@@ -182,7 +195,13 @@ export function bootTownLife(ctx) {
       + FACES.map((f, i) => '<button class="tw-bzone" type="button" data-p="' + i + '" style="left:' + starts[i] + '%;width:' + (ends[i] - starts[i]) + '%" aria-label="town health band ' + (i + 1) + ' of 5"></button>').join('')
       + '</div>'
       + '<p id="twBexp"></p>'
-      + '<p class="tw-bmeta">' + (L.today.fixes | 0) + ' ' + esc((w.fixes || '').toLowerCase()) + ' · ' + (L.today.people | 0) + ' ' + esc((w.people || '').toLowerCase()) + '</p>'
+      // ⚠️ THE TALLY LINE WENT WITH THE BOARD. It said "3 fixes · 2 people" in plain text; the report
+      // below says the same in the three pinned notes it always had, with the cursed objects beside
+      // them. Two tallies a finger apart is how a card starts repeating itself.
+      // ⭐ THE REPORT SITS BETWEEN THE BAND AND THE PIPS. Reading down: how the town IS, what wants
+      // doing about it, what was done today, and how much of that was yours. The pips are the last of
+      // the three "today" things and belong beside the tally, not stranded above the whole report.
+      + '<div id="twReport"></div>'
       + '<div class="tw-bpips' + (used >= 10 ? ' is-done' : '') + '">' + FACES.concat(FACES).map((_, i) => '<i' + (i < used ? ' class="is-on"' : '') + '></i>').join('') + '</div>');
     const exp = document.getElementById('twBexp');
     const show = (i) => {
@@ -194,6 +213,10 @@ export function bootTownLife(ctx) {
     if (card) card.classList.add('tw-card--health');
     cardBody.querySelectorAll('.tw-bzone').forEach((bz) => bz.addEventListener('click', () => show(+bz.dataset.p)));
     show(Math.max(0, p));
+    // 📌 and the report underneath, out of its own chunk. ⚠️ the host is looked up again when the
+    // chunk lands, not closed over: a card opened and shut while the import was in flight would
+    // otherwise have the report painted into a node that is no longer on the page.
+    loadShop().then((s) => { const h = document.getElementById('twReport'); if (s && h) s.report(h); }).catch(() => {});
     track('town_health', { life: Math.round(v) });
     return true;
   }
@@ -947,7 +970,6 @@ export function bootTownLife(ctx) {
       return true;
     }
     if (key === 'store' || key === 'till') return shopCard('store');   // 🏪 the front AND the counter inside: the shelf is the same shelf
-    if (key === 'board') return shopCard('board');
     return false;
   }
 
@@ -1266,7 +1288,7 @@ export function bootTownLife(ctx) {
     merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
     full: () => [...cond.full], fountain: () => (cond.fountainDry ? 'dry' : 'on'),
     // the four that moved out answer with a PROMISE so a walk can await the render either way
-    cards: { store: () => shopSeam('store'), board: () => shopSeam('board'), merchant: () => shopSeam('merchant'), vendor: () => shopSeam('vendor'), health: healthCard },
+    cards: { store: () => shopSeam('store'), merchant: () => shopSeam('merchant'), vendor: () => shopSeam('vendor'), health: healthCard },
     shopReady: () => loadShop().then(() => true),
     story, copy: () => Object.keys(COPY),
     coins: () => coinsNow(), found,

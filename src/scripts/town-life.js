@@ -109,7 +109,7 @@ const ST = {
   monument: [[1416, 372]], 'monument|bench': [[1450, 482]],
   hall: [[1140, 590], [1060, 590]], post: [[1750, 590], [1650, 590]],
   store: [[530, 1068], [440, 1068]], bank: [[620, 1072]], print: [[1580, 1068]], cafe: [[1780, 1068], [1880, 1068]],
-  board: [[800, 1012], [872, 1012]], cart: [[1405, 1034], [1478, 1034]], info: [[1012, 1210]],
+  cart: [[1405, 1034], [1478, 1034]], info: [[1012, 1210]],   // ❌ `board` went with the notice board (20 Sep 2026)
   terrace: [[1705, 1242], [1835, 1242]], orchard: [[792, 322]], stand: [[890, 576], [962, 576]], bus: [[1962, 352]],
   garden_w: [[485, 704], [556, 704]], garden_e: [[1730, 698]],
   // the lunch pairs stand just behind their bench (feet above its top edge: nothing overlaps), each pair framed by its own

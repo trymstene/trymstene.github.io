@@ -74,7 +74,6 @@ const ABOUT = {
   print: ['STICKERS', 93, 'The print shop. The real sticker packs in the window. Not built yet.', -35],
   // ☕ no third field: the café answers for itself now, through the rig (town-room openFor + town-cafe.json `front`)
   cafe: ['', 220, ''],
-  board: ['NOTICES', 112, 'The notice board. Board of Works projects, today’s wants, Monday’s results. Not built yet.'],   // 112: the plank's foot 14px into the board's top rail (Trym: "sits on top of the board")
   exchange: ['THE EXCHANGE', 134, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],   // 134: on the awning, not above it
   wheel: ['WHEEL OF PEEL', 134, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
   // 👕 the clothes shop: a DRESSING ROOM and nothing else, so it has no room, no job and no boss.
@@ -418,7 +417,7 @@ function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
 // ⚠️ EVERY MODIFIER THIS CARD CAN WEAR IS NAMED HERE. openCard() never clears a class, so a modifier
 // left behind styles whatever the player opens NEXT — and every chunk that runs a loop inside the card
 // (the dialogue's typewriter, an arcade game, the dressing room's mirror) stops here or it runs forever.
-function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board', 'tw-card--health', 'tw-card--dress', 'tw-card--post', 'tw-card--info'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } if (dress) { dress.stop(); } if (post) { post.stop(); } if (info) { info.stop(); } }
+function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--health', 'tw-card--dress', 'tw-card--post', 'tw-card--info'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } if (dress) { dress.stop(); } if (post) { post.stop(); } if (info) { info.stop(); } }
 document.getElementById('twCardX').addEventListener('click', closeCard);
 panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
 // 🗣 A RESIDENT'S DIALOGUE — THE WORLD'S card, not a new one (Trym, 12 Sep: "the dialogue popups for

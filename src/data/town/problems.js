@@ -54,7 +54,7 @@ export const ANCHORS = {
   // walls — 51% of the reach disc is walkable, against 78–100% for every other anchor in this file. A
   // chore with one place to stand and no way to see where it is, is not a chore.
   // tools/check-town-lanes.mjs holds the rule now: room to stand, at every anchor, or it is not one.
-  perches: [[960, 1000, 'benchsq0'], [1240, 1000, 'benchsq1'], [960, 588, 'benchh0'], [1240, 588, 'benchh1'], [1500, 423, 'benchm'], [1600, 711, 'benchc0'], [1860, 711, 'benchc1'], [610, 711, 'benchg'], [1670, 1133, 'bencht0'], [1870, 1133, 'bencht1'], [1472, 891, 'cart'], [2060, 224, 'bus'], [800, 866, 'board']],
+  perches: [[960, 1000, 'benchsq0'], [1240, 1000, 'benchsq1'], [960, 588, 'benchh0'], [1240, 588, 'benchh1'], [1500, 423, 'benchm'], [1600, 711, 'benchc0'], [1860, 711, 'benchc1'], [610, 711, 'benchg'], [1670, 1133, 'bencht0'], [1870, 1133, 'bencht1'], [1472, 891, 'cart'], [2060, 224, 'bus']],
   lamps: ['lamp0', 'lamp1', 'lamp2', 'lamp3', 'lamp4', 'lamp5', 'lamp6', 'lamp7'],
   shops: ['cafe', 'info', 'store'],   // every front that can be shut (today.js CLOSABLE) — renamed from `kiosks` when the store joined
   bins: ['bin', 'bin1', 'bin2'],

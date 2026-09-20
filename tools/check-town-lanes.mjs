@@ -85,7 +85,7 @@ const SPOTS = geoConst('SPOTS');
 const SEATS = geoConst('SEATS');
 const GATE_ON = [{ x: 1100, y: 1200 }, { x: 1944, y: 140 }, { x: 1952, y: 330 }];
 const ERRANDS = [
-  ...['exchange', 'wheel', 'board', 'cart', 'info', 'monument', 'terrace']
+  ...['exchange', 'wheel', 'cart', 'info', 'monument', 'terrace']
     .filter((k) => SPOTS[k]).map((k) => ({ what: 'the ' + k + ' spot', ...mod.__near(SPOTS[k].x, SPOTS[k].y + 30) })),
   ...SEATS.map(([key, x, base]) => ({ what: 'bench ' + key, x, y: base - 2 })),
   ...Object.entries(SPOTS).filter(([k]) => ['condo', 'hall', 'post', 'store', 'bank', 'print', 'cafe', 'clothes'].includes(k))

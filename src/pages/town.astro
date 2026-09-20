@@ -337,10 +337,15 @@ const description = 'The town centre of Banana World, under construction.';
     /* 📌 THE NOTICE BOARD, as a card that IS the board (Trym, 14 Sep: "a game-popup, not a
        website popup"): the wood of the in-world planks, papers pinned to it, the band stamped
        in red, the tally on three notes. The frame stays the world's (4px black, hard shadow). */
-    .tw-card--board { background: #8a5a2b; background-image: linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.12) 2px, transparent 2px); background-size: 100% 6px, 64px 100%; box-shadow: inset 0 0 0 4px #5c3a18, 6px 6px 0 #000; padding: 1.1rem 1rem 1rem; }
-    .tw-card--board .tw-cardx { color: #fffdf5; background: rgba(0, 0, 0, 0.35); border-radius: 0; }
+    /* ❌ `.tw-card--board` — the whole card dressed as a wooden board — went with the notice board on
+       20 Sep 2026. The report it framed lives under the town-health meter now, and a second wooden
+       frame inside that card would be a box inside a box inside a box (design library §2). The papers
+       keep their own pins and grain; the card behind them is the town's brick-warm one. */
     .tw-board2 { display: grid; gap: 0.7rem; }
-    .tw-board2__head { display: flex; justify-content: center; margin: -0.45rem 0 0.1rem; }   /* inside the frame at every width: the card clips its overflow */
+    .tw-board2__of { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.66; font-weight: 800; margin-bottom: -0.3rem; }
+    /* the report, mounted INSIDE the health card: a rule of its own above it instead of a heading,
+       because the card already has one and the papers say the rest */
+    .tw-board2--in { margin-top: 0.55rem; padding-top: 0.6rem; border-top: 2px solid rgba(255, 179, 71, 0.22); }
     /* the title on a plank — the same nameplate the square hangs on every door, resting on the frame */
     .tw-plank--card { position: static; transform: rotate(-1.5deg); font-size: 0.72rem; padding: 4px 12px; box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.55); cursor: default; }
     .tw-paper { position: relative; background: #f6ecd2; color: #241c00; border: 2px solid #000; box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45); padding: 0.75rem 0.7rem 0.6rem; }

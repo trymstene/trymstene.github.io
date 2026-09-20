@@ -295,7 +295,7 @@ export function bootTownFolk(ctx) {
       go(v, { x: d.x, y: d.y }, head);
     } else if (roll < 0.72) {
       v.job = 'stand'; v.until = 0;
-      const s = SPOTS[pick(v.r, ['exchange', 'wheel', 'board', 'cart', 'info', 'monument', 'terrace'])] || SPOTS.board;
+      const s = SPOTS[pick(v.r, ['exchange', 'wheel', 'cart', 'info', 'monument', 'terrace'])] || SPOTS.exchange;
       go(v, nearLane(s.x + (v.r() - 0.5) * 90, s.y + 30), head);
     } else {
       v.job = 'leave';

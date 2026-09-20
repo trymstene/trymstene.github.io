@@ -12,6 +12,17 @@ import * as decorMod from '../src/data/decor.js';
 import { OVERLAYS } from '../src/scripts/town-geo.js';
 
 const SHOT = 'test-results/town-';
+
+// 📌 THE SQUARE REPORT LIVES UNDER THE TOWN-HEALTH METER (20 Sep 2026). Trym: "the Square Report
+// sign is a bit unnecessary now that we have the Town Health Meter popup — can we move the Square
+// Report content into the Town Health popup? And remove the sign?" So there is no board to open: the
+// meter's card mounts an empty host and town-shop.js paints the report into it when the chunk lands.
+// ⚠️ every walk that reads the report therefore has to WAIT for that, not for the card.
+async function openReport(page) {
+  await page.evaluate(() => window.__town.room.cards.health());
+  await page.waitForFunction(() => !!document.querySelector('#twReport .tw-board2'), null, { timeout: 10000 });
+  await page.waitForTimeout(120);
+}
 // 🔭 the whole town at 1:1 for the eye: the camera's transform is switched off and the view
 // opened to the world's size for one shot, then everything is put back
 async function overview(page, name, clip) {
@@ -217,7 +228,7 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect(await room(page, 'crows')).toBeGreaterThanOrEqual(1);
   expect(await page.evaluate(() => [...document.querySelectorAll('.tw-state')].filter((el) => /s-crow-/.test((el.querySelector('img') || {}).src || '')).length)).toBeGreaterThanOrEqual(5);
   expect((await room(page, 'ghosts')).some((g) => g.id === 'wisp')).toBe(true);
-  await seam(page, () => window.__town.room.cards.board());
+  await openReport(page);
   await page.waitForTimeout(300);
   await page.setViewportSize({ width: 1000, height: 800 });
   await page.waitForTimeout(400);
@@ -307,7 +318,7 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   expect(landed).toContain(id);
   expect(hs.dirty).toBe(1);
   // the notice board opens with today's tally
-  await seam(page, () => window.__town.room.cards.board());
+  await openReport(page);
   await page.waitForTimeout(200);
   expect(await page.locator('.tw-tally b').count()).toBe(3);
   // the report lists what wants doing today, one entry per kind of thing open (or one line when nothing is)
@@ -317,7 +328,7 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   expect(await page.locator('.tw-paper--news').count()).toBe(0);   // an ordinary noon: no night notice; the nights are Moss's to tell
   expect(await page.locator('.tw-forsale').count()).toBe(1);   // the Coffee Cup is for sale until it can be bought
   expect((await page.evaluate(() => window.__town.life.talk('moss'))).topics.length).toBe(3);   // his two, and the nights
-  expect(await page.locator('.tw-card--board .tw-lamps').count()).toBe(1);
+  expect(await page.locator('#twReport .tw-lamps').count()).toBe(1);   // 📌 the report is mounted under the meter now, not in a board card
   await page.screenshot({ path: SHOT + 'board.png' });
   // and the board at a desktop width, the card alone
   await page.setViewportSize({ width: 1000, height: 800 });
@@ -584,7 +595,7 @@ test('a streetlight: the whole lamp answers a tap, the repair takes time, and th
   //    and no shading, which at sixteen pixels is indistinguishable from working.
   const lamps = await room(page, 'lamps');
   expect(Object.values(lamps).filter((s) => s === 'flicker').length, 'the walk needs a stuttering lamp').toBeGreaterThan(0);
-  await seam(page, () => window.__town.room.cards.board());
+  await openReport(page);
   await page.waitForTimeout(1200);
   const lum = await page.evaluate(() => {
     const cv = document.querySelector('.tw-lamps'), g = cv.getContext('2d');
@@ -756,8 +767,8 @@ test('a card opens even when its chunk is still on the wire, and a chunk that ne
   await seam(page, () => document.getElementById('twCardX').click());
 
   // once it is here, every later card is synchronous again
-  await seam(page, () => window.__town.room.open('board'));
-  await page.waitForTimeout(60);
+  await seam(page, () => window.__town.room.cards.health());
+  await page.waitForTimeout(80);
   expect(await page.locator('.tw-board2').count(), 'the second card needs no wait at all').toBe(1);
   expect(errors).toEqual([]);
 });

@@ -108,12 +108,20 @@ export function bootTownShop(ctx) {
       }));
       return true;
     }
-    // 📌 THE NOTICE BOARD — the card IS the board (Trym, 14 Sep: "make this more visual and look
-    // like a game-popup, not a website popup"): a wooden frame, the title on a plank, the
-    // town's word for itself stamped on a pinned notice with five street lamps under it (as
-    // many lit as the town is well — the one place its state is drawn), and three pinned
-    // notes for the tally. The words are the copy file's; the pictures are the town's own.
-    function boardCard() {
+    // 📌 THE SQUARE REPORT — and it is not a card of its own any more.
+    //
+    // Trym, 20 Sep 2026: "i think the Square Report sign is a bit unnecessary now that we have the Town
+    // Health Meter popup — can we move the Square Report content into the Town Health popup? And remove
+    // the sign?" He is right: the two said the same thing in two places, one of which you had to walk
+    // across the square to find. The meter is on screen at all times; the report belongs under it.
+    //
+    // ⚠️ IT STAYS IN THIS CHUNK, and that is a budget decision rather than a tidy one. town-room.js
+    // carries the health card and is at 87% of its ceiling; this block is the lamps, the to-do list, the
+    // tally and the found objects, and it pulls OBJECTS, DEX and the icon set with it. So the health
+    // card mounts an empty host and asks for this, and the report lands a frame later — which is what a
+    // lazy chunk is for. The pictures are still the town's own; the words are still the copy file's.
+    function report(host) {
+      if (!host) return false;
       const w = COPY.board || {};
       const foundN = OBJECTS.filter((o) => found(o.id)).length;
       const note = (icon, n, label, cls) => '<div class="tw-paper tw-paper--note ' + (cls || '') + '"><i class="tw-pin"></i>' + iconSvg(icon, { size: 26 }) + '<b>' + n + '</b><small>' + esc(label) + '</small></div>';
@@ -123,8 +131,15 @@ export function bootTownShop(ctx) {
       const om = omenNow(), after = !cu && !om && L.curseAt && Date.now() - L.curseAt < 8 * 3600000;
       const news = cu && cu !== 'hush' ? w.night : om ? w.omen : after ? w.after : null;   // the nights are Moss's to explain (his card); the board only reports one that is coming, on, or just gone
       const bi = BANDS.indexOf(band()), nb = W_BAND[BANDS[bi + 1]] || null, todo = todoList();
-      openCard('<div class="tw-board2">'
-        + '<div class="tw-board2__head"><span class="tw-plank tw-plank--card">' + esc(w.title || 'Notices') + '</span></div>'
+      // ⚠️ NO PLANK AND NO SECOND FRAME. The board's card was a wooden board with its own title on a
+      // plank, because it WAS the board. Inside the health popup that is a box inside a box inside a box
+      // (design library §2) with a second heading under the one the card already has.
+      // ⭐ AND IT KEEPS ITS NAME. The board is gone but the words on it are still THE SQUARE REPORT —
+      // the copy's own `board.title` — and a small label over the papers is what makes them read as one
+      // thing reported rather than three loose notes under a meter. (It also keeps that string read:
+      // it used to name the plank in the square, and the plank went with the board.)
+      host.innerHTML = ('<div class="tw-board2 tw-board2--in">'
+        + (w.title ? '<b class="tw-board2__of">' + esc(w.title) + '</b>' : '')
         // 📋 THE REPORT, for a banana who has just walked in (Trym, 15 Sep: "look at the totality … fixing copy means often
         // cutting crap"): what this square is; the eight lamps as they are; what wants doing today — the player's own
         // open list, in plain words; one line on what the next state brings; one on the nights. No state stamp, no band
@@ -139,8 +154,7 @@ export function bootTownShop(ctx) {
         + '<div class="tw-tally">' + note('tools', L.today.fixes | 0, w.fixes || '', 'is-a') + note('users', L.today.people | 0, w.people || '', 'is-b') + note('moon-solid', foundN + '/' + OBJECTS.length, w.found || '', 'is-c') + '</div>'
         + (foundN ? '<div class="tw-paper tw-paper--list"><i class="tw-pin"></i>' + OBJECTS.filter((o) => found(o.id)).map((o) => { const d = DEX[o.decor], wo = W_OBJ[o.id] || {}; return '<div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(wo.name || d.name) + '</b>' + (wo.desc ? '<small>' + esc(wo.desc) + '</small>' : '') + '</div></div>'; }).join('') + '</div>' : '')
         + '</div>');
-      if (card) card.classList.add('tw-card--board');
-      drawLamps(cardBody.querySelector('.tw-lamps'));
+      drawLamps(host.querySelector('.tw-lamps'));
       return true;
     }
     // today's open list in plain words — "2 dark lamps · a full bin · rubbish on the cobbles" — from the player's own
@@ -181,5 +195,5 @@ export function bootTownShop(ctx) {
       };
     }
 
-  return { store: storeCard, board: boardCard, merchant: merchantCard, vendor: vendorCard };
+  return { store: storeCard, report, merchant: merchantCard, vendor: vendorCard };
 }

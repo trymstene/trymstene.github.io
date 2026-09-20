@@ -50,7 +50,7 @@ test('the square, day and night and a curse', async ({ page }) => {
 test('a low town, and the board', async ({ page }) => {
   await town(page, { name: 'low', band: 15 });
   await page.screenshot({ path: SHOT + '04-town-abandoned.png' });
-  await page.evaluate(() => window.__town.room.cards.board && window.__town.room.cards.board());
+  await page.evaluate(() => window.__town.room.cards.health && window.__town.room.cards.health());   // 📌 the Square Report is under the meter now
   await page.waitForTimeout(900);
   await page.screenshot({ path: SHOT + '05-board-card.png' });
   await page.evaluate(() => { const x = document.getElementById('twCardX'); if (x) x.click(); });

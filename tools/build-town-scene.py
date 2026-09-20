@@ -345,51 +345,6 @@ def foot(w, h_solid=18):
     return ('rect', -int(w * PROP // 2) + 8, -h_solid, int(w * PROP // 2) - 8, 4)
 
 
-# ---- the notice board: our own drawn board, the supporters' board's big cousin ----
-def build_noticeboard(w=130, ph=84, legh=40, K=3):
-    WOOD_, LIT_, GRAIN_, DARK_ = (146, 102, 56), (178, 128, 72), (120, 83, 44), (104, 71, 38)
-    INK_ = (52, 36, 21)
-    PAPERS = [(34, 26, -5, (247, 240, 214), (214, 203, 176)), (26, 20, 6, (238, 231, 208), (206, 196, 170)),
-              (30, 22, -3, (250, 243, 222), (219, 208, 182)), (24, 18, 7, (236, 224, 200), (203, 191, 164)),
-              (28, 20, -7, (245, 236, 210), (212, 200, 174))]
-
-    def note(pw, ph2, tilt, col, shade):
-        n = Image.new('RGBA', (pw * K, ph2 * K), (0, 0, 0, 0))
-        nd = ImageDraw.Draw(n)
-        nd.rectangle([0, 0, pw * K - 1, ph2 * K - 1], fill=shade)
-        nd.rectangle([0, 0, pw * K - K - 1, ph2 * K - K - 1], fill=col)
-        for i, ly in enumerate(range(6, ph2 - 4, 4)):
-            x2 = (5 + (pw - 12) * (0.9 if i % 3 == 0 else 0.62 if i % 3 == 1 else 0.75)) * K
-            nd.rectangle([4 * K, ly * K, x2, ly * K + K - 1], fill=shade)
-        nd.rectangle([(pw // 2 - 1) * K, 0, (pw // 2) * K + K - 1, 2 * K - 1], fill=(74, 48, 30))
-        return n.rotate(tilt, expand=True, resample=Image.NEAREST)
-
-    W2, H2 = w * K, (ph + legh) * K
-    s = Image.new('RGBA', (W2, H2), (0, 0, 0, 0))
-    dd = ImageDraw.Draw(s)
-    lw, lx1, lx2 = 8 * K, 18 * K, (w - 26) * K
-    for lx in (lx1, lx2):
-        dd.rectangle([lx, (ph - 6) * K, lx + lw - 1, H2 - 1], fill=INK_)
-        dd.rectangle([lx + K, (ph - 6) * K + K, lx + lw - K - 1, H2 - K - 1], fill=WOOD_)
-        dd.rectangle([lx + K, (ph - 6) * K + K, lx + 2 * K - 1, H2 - K - 1], fill=LIT_)
-    dd.rectangle([0, 0, W2 - 1, ph * K - 1], fill=INK_)
-    dd.rectangle([K, K, W2 - K - 1, ph * K - K - 1], fill=WOOD_)
-    dd.rectangle([K, K, W2 - K - 1, 6 * K - 1], fill=LIT_)
-    dd.rectangle([K, (ph - 7) * K, W2 - K - 1, ph * K - K - 1], fill=DARK_)
-    for gy in (26, 52):
-        dd.rectangle([K, gy * K, W2 - K - 1, gy * K + K - 1], fill=GRAIN_)
-    for pxx in (7, w - 9):
-        for pyy in (10, ph - 13):
-            dd.rectangle([pxx * K, pyy * K, pxx * K + K - 1, pyy * K + K - 1], fill=INK_)
-    for (pxx, pyy), spec in zip([(10, 12), (52, 14), (92, 11), (26, 46), (66, 48)], PAPERS):
-        pim = note(*spec)
-        sh2 = Image.new('RGBA', pim.size, (0, 0, 0, 0))
-        sh2.paste((0, 0, 0, 60), (0, 0), pim.split()[3])
-        s.alpha_composite(sh2, (pxx * K + K, pyy * K + K))
-        s.alpha_composite(pim, (pxx * K, pyy * K))
-    return blockify(s, factor=K, colors=14, alpha_thresh=0.4, trim=False)
-
-
 # ---- ⛲ the fountain: the pack's six-frame garden fountain, one strip ------------------
 FOUNTAIN = []
 sheet = Image.open(os.path.join(ANIM, 'Garden_Fountain_6_48x48.png')).convert('RGBA')   # the grey one: the cobbles are grey
@@ -532,9 +487,12 @@ NPCS.append(('figjr', 800, 800, 'Fig Jr.'))
 place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('rect', -80, -24, 80, 4), sh=0.5, key='wheel')
 SPOTS['wheel'] = (1400, 780)
 NPCS.append(('spinner', 1400, 800, 'Spinner'))
-_cache[('__board', 1, 28, 0.0, 1.0, 1.0)] = build_noticeboard()
-place('__board', 800, 990, scale=1.0, solid=('rect', -48, -12, 48, 4), sh=0.5, key='board')   # 800: clear of the lamp at 690 (Trym, 14 Sep: "cramped into a street light")
-SPOTS['board'] = (800, 990)
+# ❌ THE NOTICE BOARD IS GONE (20 Sep 2026). It stood here at 800,990 and its card was the Square
+# Report. Trym: "i think the Square Report sign is a bit unnecessary now that we have the Town Health
+# Meter popup — can we move the Square Report content into the Town Health popup? And remove the
+# sign?" The report is under the meter now (town-room.js healthCard → town-shop.js report), which is
+# on screen at all times — so the board was a second copy of it that you had to walk across the square
+# to read. build_noticeboard() went with it; it drew nothing else.
 try_place(['ME_Singles_Vehicles_48x48_Fruit_Flowers_Cart_2.png'], 1460, 1010, solid=('rect', -36, -16, 36, 4), sh=0.45, key='cart')
 SPOTS['cart'] = (1460, 1010)
 # (the putto that stood on the door-to-fountain axis is gone — Trym, 11 Sep: "remove the statue in the town centre")
