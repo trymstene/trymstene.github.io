@@ -27,7 +27,25 @@ const NIB_DRAW = {
   top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
 };
 
-const KEY = 'bwq-c1';
+// 🕯 TWO CHAPTERS NOW, AND IT IS THE SAME ENGINE. Chapter 1 lives out in the world and carries
+// its dialogue inline — it predates the rule that GPT writes every player-facing word. Chapter 2
+// lives in the town and carries NONE: its steps come from src/data/quest-c2.js (mechanics) and its
+// words from src/data/copy/town-quest.json (prose), joined at boot. That split is the shape every
+// chapter from here takes; chapter 1 is the grandfathered exception, not the pattern.
+// ⚠️ THE TWO NEVER RUN AT ONCE. An area belongs to exactly one chapter, and each keeps its own
+// localStorage key, its own pass counter and its own finish line — so finishing one has no opinion
+// about the other, and a player may be mid-chapter in both.
+const CH = {
+  c1: { key: 'bwq-c1', stat: 'quest_c1', areas: ['homestead', 'park', 'beach', 'rave'],
+    intro: ['chapter i', 'what the plot?'], over: '🍌 CHAPTER ONE — complete', cast: 1 },
+  // ⚠️ cast: 0 — THE TOWN DRAWS ITS OWN PEOPLE. Its nine residents walk a twelve-minute day, so a
+  // Nib drawn by the quest would stand frozen beside the real one walking past. Every chapter-2
+  // mark hangs on a BUILDING instead, and tapping the real Nib opens the same sheet through
+  // window.bwqTalk — the way the park hands Old Peel over.
+  c2: { key: 'bwq-c2', stat: 'quest_c2', areas: ['town'], over: '🍌 CHAPTER TWO — complete', cast: 0 },
+};
+let ch = CH.c1;        // named for real in bootQuest(), before any state is read
+let KEY = ch.key;
 // 🔤 THE SPLASH FONT, warmed at boot and gated at show time. Anton is only
 // FETCHED on first use (font-display:swap), so the first chapter splash on a
 // page flashed the fallback font for a beat and swapped (Trym). Two-part
@@ -80,12 +98,21 @@ const AREAS = {
   // Barty rides inside it — a marker parented to the untransformed floor
   // drifted off him until the 2.5s self-heal tick caught up
   rave: { sel: '#rvWorld', view: '#rvFloor', chipHost: '.rv-booth' },
+  // 🏘 the town — chapter 2. wh = town-geo WORLD.h, which feeds the same depth formula the square
+  // itself uses. ⚠️ the view, not the world: #twWorld is the layer that PANS.
+  town: { sel: '#twWorld', view: '#twView', wh: 1300 },
 };
 
 // ---- state ----------------------------------------------------------------
 let S = { s: 0, k: {}, res: 0, done: 0 };
 let syncBound = false;   // the cross-device listener is bound once per page
-try { S = { ...S, ...(JSON.parse(localStorage.getItem(KEY) || '{}')) }; } catch (e) {}
+// ⚠️ RE-RUNNABLE, because KEY is not known until the area is. The module-scope call below keeps
+// chapter 1 reading exactly as it always did; bootQuest calls it again once it knows the chapter.
+function readS() {
+  S = { s: 0, k: {}, res: 0, done: 0 };
+  try { S = { ...S, ...(JSON.parse(localStorage.getItem(KEY) || '{}')) }; } catch (e) {}
+}
+readS();
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const track = (ev, p) => { try { window.gtag && window.gtag('event', ev, p || {}); } catch (e) {} };
 
@@ -137,7 +164,7 @@ function myDraw() {
 // kind: talk (marker → dialogue) · objects (tap the spawned things) ·
 //       goal (watch for a real-world condition, homestead tent)
 // at: {sel} anchors to a live element, {x,y} = % of the world plate.
-const STEPS = [
+const C1_STEPS = [
   // ⚠️ atRes: for RESIDENTS (stage ≥ 1) the gate spot sits in their fence
   // opening / on their built plot — Nib waits on the far side of the road
   // instead, a bit further down, off their property (Trym)
@@ -412,6 +439,42 @@ const STEPS = [
         pill: 'your name · badges · keepsakes', art: () => passCanvas() } },
     hint: '' },
 ];
+
+// the chapter being played. Swapped once, in bootQuest, before anything reads it.
+let STEPS = C1_STEPS;
+
+// 🏘 CHAPTER 2'S TABLE AND ITS WORDS, BOTH LAZY — a player who never walks into the town
+// downloads neither, which is what keeps world-quest.js inside its budget.
+// ⚠️ A GLOB, NOT A STATIC import(): the copy file is written by the rig and approved by hand, so
+// it may legitimately not exist yet, and a static import of a missing file fails the BUILD. The
+// same pattern the town's own surfaces use (town-room.js: "the town runs wordless until this is
+// approved") — except a chapter cannot run wordless, so no words means no chapter at all.
+const C2_COPY = import.meta.glob('../data/copy/town-quest.json', { import: 'default' });
+async function loadC2() {
+  const get = Object.values(C2_COPY)[0];
+  if (!get) return null;
+  const [d, c] = await Promise.all([import('../data/quest-c2.js'), get()]);
+  if (!c || !Array.isArray(c.steps)) return null;
+  CH.c2.intro = [c.chapter, c.title];
+  // ⚠️ the copy is an ORDERED ARRAY of rows, each carrying its own `key` — the rig's rule matcher
+  // only collapses array indices, so a keyed object could not be checked field by field, and an
+  // array also lets the schema pin the order. Keyed here, once, by that same key.
+  const by = {};
+  for (const r of c.steps) if (r && r.key) by[r.key] = r;
+  // mechanics on the left, words on the right, joined here and nowhere else. A step whose copy key
+  // is missing would open an empty sheet, so the whole chapter is refused instead — one missing
+  // line is a copy bug to fix, never a silent hole in the middle of a story.
+  const out = [];
+  for (const st of d.STEPS) {
+    const w = by[st.say];
+    if (!w || !Array.isArray(w.lines) || !w.lines.length) return null;
+    out.push({ ...st, area: 'town',
+      find: w.find || '', hint: w.hint || '',
+      lines: w.lines.map((l) => [l.who, l.text]),
+      ...(st.pay ? { reward: { coins: st.pay, ...(w.note ? { note: w.note } : {}) } } : {}) });
+  }
+  return out;
+}
 
 // ---- css ------------------------------------------------------------------
 let styled = false;
@@ -1145,13 +1208,26 @@ function passCanvas() {
 }
 
 // ---- the engine -----------------------------------------------------------
-export function bootQuest() {
+export async function bootQuest() {
   const path = location.pathname;
   const area = path.includes('homestead') ? 'homestead'
     : path.includes('park') ? 'park'
       : path.includes('beach') ? 'beach'
-        : path.includes('rave') ? 'rave' : null;
+        : path.includes('rave') ? 'rave'
+          : path.includes('town') ? 'town' : null;
   if (!area) return;
+
+  // 🕯 WHICH CHAPTER THIS AREA BELONGS TO, decided before any state is read — S and KEY are
+  // module-scope and chapter-specific, so reading them first would read the wrong chapter's save.
+  ch = Object.values(CH).find((c) => c.areas.includes(area)) || CH.c1;
+  KEY = ch.key;
+  readS();
+  if (ch === CH.c2) {
+    STEPS = await loadC2();
+    // ⚠️ NO WORDS, NO CHAPTER. The town keeps every other thing it has — the square, the arcade,
+    // the shops, the problems, the residents, the post — and simply has no story in it today.
+    if (!STEPS) return;
+  }
 
   // test conveniences — ⚠️ questreset must run BEFORE the done gate, or a
   // finished chapter can never be replayed on the device
@@ -1338,7 +1414,18 @@ export function bootQuest() {
       // it IS saying it — straight into the NPC's answer.
       if (who === 'you') {
         awaiting = true;
-        sp.hidden = true; pop.hidden = false; h2.hidden = false; box.hidden = false;
+        // ⚠️ …BUT ONLY IF THERE ARE LAST WORDS TO KEEP. A paper / map / photo line takes the stage
+        // alone in `sp` and never writes into the bubble, so unhiding the bubble after one put an
+        // EMPTY speech box under a nameless portrait — seen in the town on the works-order steps,
+        // and chapter 1 has the same pair (the letter, then "whoever comes asking…"). When the prop
+        // is what you are answering, the prop stays up while you answer it.
+        const held = !!p.textContent.trim();
+        const prop = !held && !!sp.innerHTML;
+        sp.hidden = !prop; pop.hidden = prop; h2.hidden = prop; box.hidden = prop;
+        // …and the prop's own “tap to continue” stops being true the moment a reply button is up,
+        // because the sheet's tap is deliberately dead while one is (the button is the only door).
+        // It comes back by itself: the next special line rewrites sp wholesale.
+        if (prop) { const cue = sp.querySelector('small'); if (cue) cue.hidden = true; }
         box.classList.remove('is-done');   // the ▼ yields to the reply button
         ans.innerHTML = '';
         const b = document.createElement('button');
@@ -1393,10 +1480,27 @@ export function bootQuest() {
   }
 
   function advance() {
-    track('quest_step', { id: STEPS[S.s] && STEPS[S.s].id, done: 1 });
+    const cur = STEPS[S.s];
+    track('quest_step', { id: cur && cur.id, done: 1 });
+    // 🚧 A SIGNATURE. The front this step certified goes into bwq-c2.open, which town-room.js's
+    // openedSet() already reads — the lock half shipped on 19 Sep and has been waiting for this
+    // one line. ⚠️ additive and de-duplicated: the list only ever grows, like the step index, so a
+    // replay or a sync can never take a building back off somebody.
+    if (cur && cur.opens) S.open = [...new Set([...(S.open || []), cur.opens])];
     S.s++; S.k = {};
-    passStat('quest_c1', 1);            // steps cleared, summed — never an index
-    if (S.s >= STEPS.length) { S.done = 1; toast('🍌 CHAPTER ONE — complete', 4200); }
+    passStat(ch.stat, 1);               // steps cleared, summed — never an index
+    if (S.s >= STEPS.length) {
+      S.done = 1;
+      toast(ch.over, 4200);
+      // ⭐ THE FINISH LINE, READABLE BY EVENT NAME — and that is the point of it.
+      // quest_step carries the step in its id parameter, but that is not a registered GA4
+      // custom dimension (only area is), so it cannot be queried at all: on 21 Sep "how many players finish
+      // chapter 1?" — the plan's one BLOCKING question — could only be ANSWERED AS A BOUND, from
+      // 409 steps divided among 76 people, sixteen steps a finisher. An event NAME always reads,
+      // and a chapter is finished once per player, so totalUsers on this event IS the number, for
+      // every chapter, forever, with nothing to configure in GA4.
+      track(ch.stat + '_done', {});
+    }
     save();
     render();
   }
@@ -1484,13 +1588,17 @@ export function bootQuest() {
       // Once per device (S.in); ?questreset replays it.
       const talk = () => {
         if (introBusy) return;
-        if (step.who !== 'nib' || S.s !== 0 || S.in) { openDialog(step); return; }
+        if (step.who !== 'nib' || S.s !== 0 || S.in || !ch.intro) { openDialog(step); return; }
         introBusy = true;
         hideHint();          // the chip yields to the splash too
         S.in = 1; save();
         const sp = document.createElement('div');
         sp.className = 'bwq-intro';
-        sp.innerHTML = '<i>chapter i</i><b>what the plot?</b>';
+        // ⚠️ textContent, not innerHTML: chapter 2's title is written by the rig and read out of a
+        // JSON file, and copy is never spliced into markup anywhere else in this world either.
+        sp.innerHTML = '<i></i><b></b>';
+        sp.querySelector('i').textContent = ch.intro[0];
+        sp.querySelector('b').textContent = ch.intro[1];
         (document.querySelector(AREAS[area].view) || document.body).appendChild(sp);
         track('quest_intro');
         // fade in only once the display font is ready — the FOUT hides
@@ -1545,7 +1653,9 @@ export function bootQuest() {
       }
       // 🍌 Nib stands there in person — the ! floats above HIM, and tapping
       // either talks. Existing NPCs (Peel, Barty…) already have bodies.
-      if (step.who === 'nib') {
+      // ⚠️ ch.cast: the TOWN has its own Nib, walking his own day, so chapter 2 draws nobody and
+      // hangs its marks on buildings. Drawing here would put a frozen second Nib in the square.
+      if (step.who === 'nib' && ch.cast) {
         const n = document.createElement('div');
         n.className = 'bwq-npc';
         const cv = document.createElement('canvas');
@@ -1565,7 +1675,14 @@ export function bootQuest() {
       m.innerHTML = step.turnin ? MARKQ_SVG : MARK_SVG;
       // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
       // (-9: -11.5 floated it a full head-height too high — Trym)
-      place(m, step.who === 'nib' ? { ...at, y: at.y - 9 } : at);
+      // the -9 lifts the glyph over Nib's HEAD; with no body drawn the mark belongs on the
+      // notice itself, which is where the step's own anchor already points.
+      place(m, (step.who === 'nib' && ch.cast) ? { ...at, y: at.y - 9 } : at);
+      // ⚠️ A MARK ON A WALL NEEDS THE WALL'S DEPTH. Chapter 1's marks float over open ground and
+      // stack by DOM order; the town sorts every sprite explicitly (z = 100 + y), so an unpositioned
+      // sibling loses to the building it is nailed to — walked once, and the town hall painted clean
+      // over its own notice. An anchor may carry its own z; nothing else changes.
+      if (at.z) m.style.zIndex = String(at.z);
       m.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);

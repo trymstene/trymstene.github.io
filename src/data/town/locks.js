@@ -13,12 +13,16 @@
 // front joins the shared weather like every other shop. One building, one state, always the one
 // whose action is available to you now.
 //
-// ⚠️ SHIPPED OFF. HOARD_ON is false and stays false until BOTH of these are true:
-//   1. chapter 2 exists to open these fronts (docs/town-jobs-plan.md §2), and
-//   2. somebody has read how many players finish chapter 1 (§8, question 1, still unanswered).
-// Flipping it before then boards up the store, the post office and the café for every player who
-// never finished chapter 1 — which is the one outcome the plan says out loud it must not cause.
-// The whole system is built and walked; this line is the switch, and it is Trym's.
+// ⚠️ SHIPPED OFF, AND BOTH CONDITIONS ARE NOW ANSWERED — one yes and one no.
+//   1. ✅ chapter 2 exists to open these fronts (src/data/quest-c2.js, 21 Sep).
+//   2. ❌ the number was read on 21 Sep and it is small: of 4 400 people who met the questline,
+//      116 started it and 76 cleared a step, 409 steps between them — at most 22 finishers ever.
+// So the plan's answer for a small number holds (§8 q1: "gate less behind the chapter"), and
+// chapter 2 gates nothing: it is town-only and asks nothing of chapter 1. Turning THIS on is a
+// separate decision, because it boards up the store, the post office and the café for everyone who
+// has not played chapter 2 either — which is still very nearly everybody.
+// The whole system is built and walked; this line is the switch, and it is Trym's, by name.
+// tools/check-quest-c2.mjs goes red if it changes, so it cannot drift on by accident.
 export const HOARD_ON = false;
 
 // the order chapter 2 opens them, which is what "the second of four signatures" counts.

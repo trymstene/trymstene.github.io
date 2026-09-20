@@ -825,6 +825,122 @@ const infoSchema = {
   },
 };
 
+// --- town-quest ---------------------------------------------------------------
+// 🕯 CHAPTER TWO OF THE QUESTLINE. The biggest writing job on the rig, and the first STORY to go
+// through it — chapter one's dialogue is written into src/lib/world-quest.js because it predates the
+// rule, and this is what the rule looks like applied: src/data/quest-c2.js holds the mechanics and
+// not one word, this holds the words and not one mechanic.
+//
+// ⭐ THE STEP KEYS ARE NOT WRITTEN HERE. They are derived from SIGNATURES in src/data/town/locks.js,
+// which is the same list the hoarding's signpost counts "the second of four" against. Three files
+// therefore agree about the order by construction rather than by comment, and check-quest-c2.mjs
+// proves the fourth (quest-c2.js) agrees too.
+export const QUEST_KEYS = ['open',
+  ...['store', 'condo', 'post', 'cafe'].flatMap((k) => [k + '_fault', k + '_sign']),
+  'done'];
+const QUEST_PAYS = ['store_sign', 'condo_sign', 'post_sign', 'cafe_sign', 'done'];
+export const QUEST_WHO = ['nib', 'you', 'paper'];
+const questFields = {
+  'steps[].key': { kind: 'key', max: 14 },
+  chapter: { kind: 'label', aim: 10, max: 14, note: 'The eyebrow over the title splash. Chapter one\u2019s reads exactly \u201cchapter i\u201d \u2014 lower case, a roman numeral, nothing else. This one is the second.' },
+  title: { kind: 'label', aim: 18, max: 30, note: 'The chapter\u2019s NAME on the splash that plays once before its first line. Chapter one\u2019s is \u201cwhat the plot?\u201d: short, lower case, curious rather than epic, and a phrase or a question rather than a statement. Never a colon and never a subtitle.' },
+  'steps[].find': { kind: 'prose', aim: 40, max: 58, note: 'The journal chip while this step is open \u2014 the little yellow note in the corner, which is also the compass that says WHERE TO GO. The one field in this job where an instruction belongs. Lower case, very short, names the place and never the mechanic.' },
+  'steps[].hint': { kind: 'prose', emptyOk: true, aim: 40, max: 58, note: 'The same note once the talking is done, pointing at what comes NEXT. Same voice as find. \u26a0\ufe0f the last step\u2019s is EMPTY: there is nothing after the chapter.' },
+  'steps[].note': { kind: 'prose', emptyOk: true, aim: 34, max: 52, note: 'The one line on the receipt card after a step pays. It names THE THING YOU WERE GIVEN and never the money \u2014 the stamped order, the certificate. Chapter one\u2019s register: \u201cPeel\u2019s old watering can\u201d, \u201cthe flipbook \u2014 a keepsake\u201d. No verb, no sentence, no thanks. \u26a0\ufe0f only the five paying steps have one; the rest are "".' },
+  'steps[].lines[].who': { kind: 'enum', values: QUEST_WHO },
+  'steps[].lines[].text': { kind: 'prose', aim: 130, max: 220, note: 'One speech bubble. \u26a0\ufe0f THREE VOICES AND THEY ARE DIFFERENT KINDS OF THING: nib is the town clerk, warm and delighted by paperwork and never a bureaucrat; paper is the 1999 works order nailed to the front, printed matter that addresses NOBODY; you is the player thinking out loud, one short sentence, never enthusiastic on the player\u2019s behalf. A line sits in a 261-pixel bubble, so 220 characters is the ceiling \u2014 and the lengths must VARY, because a one-word answer between two long ones is what makes it sound like people.' },
+};
+// 🤐 what a chapter may not do. Every one of these is a rule in the brief, and a rule that can be
+// checked is checked rather than repeated (CLAUDE.md).
+const Q_PAY = /\b(coin|coins|bananacoin|reward|payout|prize|bonus|jelly)\b/i;
+const Q_UI = /\b(tap|click|button|swipe|press the|menu|screen|card opens)\b/i;
+const Q_RUSH = /\b(hurry|quickly|urgent|urgently|immediately|too late|running out|deadline|before it)\b/i;
+const Q_NEXT = /\bchapter\s*(three|3|iii)\b/i;
+const Q_DESK = /\b(registry|archive|deed|pursuant|hereby|aforementioned|statutory|ordinance)\b/i;
+function questShape(data) {
+  const bad = [];
+  const say = (f, m) => bad.push([f, m]);
+  const rows = Array.isArray(data.steps) ? data.steps : [];
+  const got = rows.map((r) => String((r && r.key) || ''));
+  // ⚠️ IN ORDER, not merely all present: the chapter is four round trips and the hoarding's
+  // signpost counts "the second of four" against this same order.
+  if (got.join(',') !== QUEST_KEYS.join(',')) {
+    say('steps', 'must be the ten steps in order (' + QUEST_KEYS.join(', ') + ') — it is ' + (got.join(', ') || 'empty'));
+  }
+  const steps = Object.fromEntries(rows.filter((r) => r && r.key).map((r) => [r.key, r]));
+  if (!/^chapter [ivx]+$/.test(String(data.chapter || ''))) say('chapter', 'must read like chapter one\u2019s: lower case, the words "chapter" and a roman numeral, nothing else');
+  if (/[:.]/.test(String(data.title || ''))) say('title', 'carries a colon or a full stop \u2014 a chapter name is a phrase, not a sentence and not a subtitle');
+  if (String(data.title || '') !== String(data.title || '').toLowerCase()) say('title', 'is not lower case, and the splash is set in the display face without a capital in sight');
+  for (const k of QUEST_KEYS) {
+    const st = steps[k];
+    if (!st) continue;
+    const at = (f) => 'steps.' + k + '.' + f;
+    const lines = Array.isArray(st.lines) ? st.lines : [];
+    if (lines.length < 3) say(at('lines'), 'has fewer than three bubbles \u2014 too short to be a scene');
+    if (k === 'open' && lines.length < 5) say(at('lines'), 'is the step that has to make a stranger want the other nine, and it is shorter than five bubbles');
+    for (const [i, l] of lines.entries()) {
+      const who = String((l && l.who) || ''), t = String((l && l.text) || '');
+      const where = at('lines[' + i + ']');
+      if (!QUEST_WHO.includes(who)) say(where, 'is spoken by "' + who + '", and this chapter has three voices: ' + QUEST_WHO.join(', '));
+      if (Q_PAY.test(t)) say(where, 'names what the player gets \u2014 the world never publishes its own numbers');
+      if (Q_UI.test(t)) say(where, 'reads like a tutorial: no line in this world tells anybody which control to use');
+      if (Q_RUSH.test(t)) say(where, 'puts the player in a hurry, and nothing in Banana Town is urgent');
+      if (Q_NEXT.test(t)) say(where, 'trails the next chapter, which is the one thing the mystery rule forbids');
+      // ⚠️ THE ORDER IS PRINTED MATTER. A works order that says "you" is a person talking, and the
+      // whole joke of the four faults is that nobody has read them for twenty-seven years.
+      if (who === 'paper' && /\b(you|your|you\u2019re|you\u2019ll)\b/i.test(t)) say(where, 'is the works order addressing the player \u2014 printed matter speaks to nobody');
+      if (who === 'nib' && Q_DESK.test(t)) say(where, 'gives Nib a bureaucrat\u2019s vocabulary; he says "the big book", "the top drawer", "the yellow form"');
+      if (who === 'you' && (t.match(/[.!?]/g) || []).length > 1) say(where, 'gives the player more than one sentence \u2014 they think out loud, briefly');
+    }
+    // ⭐ THE PLAYER NOTICES THE FAULT. A fault step that is all paperwork has nobody in it.
+    if (/_fault$/.test(k) && !lines.some((l) => l && l.who === 'you')) say(at('lines'), 'has no line from the player, and finding the fault is THEIR moment');
+    if (/_fault$/.test(k) && !lines.some((l) => l && l.who === 'paper')) say(at('lines'), 'never shows the works order, which is the thing being read');
+    for (const f of ['find', 'hint']) {
+      const v = String(st[f] || '');
+      if (v && /^[A-Z]/.test(v)) say(at(f), 'starts with a capital, and every chip in this world is lower case');
+      if (Q_UI.test(v)) say(at(f), 'names a control; a chip says where to go, never how');
+    }
+    if (k === 'done' && String(st.hint || '')) say(at('hint'), 'must be empty \u2014 there is nothing after the chapter');
+    if (k !== 'done' && !String(st.find || '')) say(at('find'), 'is empty, and without it the chip cannot say where to go');
+    const note = String(st.note || '');
+    if (QUEST_PAYS.includes(k) && !note) say(at('note'), 'is the receipt for a step that pays, and it is empty');
+    if (!QUEST_PAYS.includes(k) && note) say(at('note'), 'has a receipt line and this step pays nothing');
+    if (note && Q_PAY.test(note)) say(at('note'), 'names the money; a receipt names the THING');
+  }
+  return bad;
+}
+const lineItems = {
+  type: 'object', additionalProperties: false, required: ['who', 'text'],
+  properties: {
+    who: { type: 'string', enum: QUEST_WHO, description: 'nib (the clerk), paper (the 1999 works order \u2014 addresses nobody) or you (the player, one short sentence).' },
+    text: { type: 'string', description: questFields['steps[].lines[].text'].note },
+  },
+};
+const stepItem = {
+  type: 'object', additionalProperties: false, required: ['key', 'find', 'hint', 'note', 'lines'],
+  properties: {
+    key: { type: 'string', enum: QUEST_KEYS, description: 'The step\u2019s key, copied from the brief in the brief\u2019s order. Never shown to a player.' },
+    find: { type: 'string', description: questFields['steps[].find'].note },
+    hint: { type: 'string', description: questFields['steps[].hint'].note },
+    note: { type: 'string', description: questFields['steps[].note'].note },
+    lines: { type: 'array', description: 'The scene, in order.', items: lineItems },
+  },
+};
+const questSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['chapter', 'title', 'steps'],
+  properties: {
+    chapter: { type: 'string', description: questFields.chapter.note },
+    title: { type: 'string', description: questFields.title.note },
+    steps: {
+      type: 'array', minItems: 10, maxItems: 10,
+      description: 'All ten steps, IN THIS ORDER: open, then each of the four buildings as a _fault and then a _sign, then done.',
+      items: stepItem,
+    },
+  },
+};
+
 export const JOBS = {
   'town-life': {
     id: 'town-life',
@@ -867,6 +983,20 @@ export const JOBS = {
     fields: postFields,
     shape: postShape,
     schema: postSchema,
+  },
+  'town-quest': {
+    id: 'town-quest',
+    title: 'Banana Town \u2014 chapter two: the four signatures',
+    what: 'The whole of chapter two: the title splash, and ten steps of dialogue between the town clerk, the 1999 works order nailed to each front, and the player.',
+    brief: 'tools/copy-briefs/town-quest.md',
+    out: 'tools/copy-out/town-quest.json',
+    approved: 'src/data/copy/town-quest.json',
+    reads: 'src/lib/world-quest.js (through a glob, joined to src/data/quest-c2.js at boot \u2014 no words means no chapter, and the town simply has no story in it)',
+    top: ['chapter', 'title', 'steps'],
+    // 🧍 Nib is not one of the town's nine, so the bible is not his \u2014 his voice is in the brief
+    fields: questFields,
+    shape: questShape,
+    schema: questSchema,
   },
   'town-dress': {
     id: 'town-dress',

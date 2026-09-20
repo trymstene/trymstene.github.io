@@ -322,7 +322,18 @@ view.addEventListener('pointerdown', (e) => {
     if (hit[0] === 'room') { room.tap(hit[1], (x, y, then) => { tgt.x = x; tgt.y = y; arriveThen = then; }); return; }   // 🏘️ walk to it, then it happens
     if (hit[0] === 'npc') {   // 🗣 walk up first, THEN the dialogue opens (the park's Old Peel rule)
       const n = life.standBy(hit[1]);
-      if (n) { tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8; const key = hit[1]; arriveThen = () => npcCard(key); }
+      if (n) {
+        tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8;
+        const key = hit[1];
+        // 🕯 QUEST FIRST. Chapter 2's marks hang on buildings, because the residents walk — so the
+        // resident himself is the OTHER door to the same sheet, and it has to be the same door the
+        // park uses for Old Peel. The everyday card is what he says when the story wants nothing.
+        arriveThen = () => {
+          const q = window.bwqTalk;
+          if (q && q.who === key && q.open) { q.open(); return; }
+          npcCard(key);
+        };
+      }
       return;
     }
     if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { if (life.pick(hit[1])) { float(f.x, f.y - 30, '+1'); hud.refresh(); } }; } return; }   // walk to it, then it is picked up: a point of rep, the park's litter rule
@@ -810,6 +821,15 @@ assetsReady().then(() => {
       });
       if (window.__town) window.__town.work = work.seam;
     }).catch((e) => { console.warn('[town] work did not load', e); });
+    // 🕯 CHAPTER TWO — THE FOUR SIGNATURES (docs/town-jobs-plan.md §2). Last, and deliberately: its
+    // marks are placed against the world's measured rects, so the square has to be standing first.
+    // ⚠️ THE DONE CHECK HAPPENS BEFORE THE IMPORT, exactly as the other four areas do it (see the
+    // note in park.astro): bootQuest returns at once on S.done, but only after the chunk has been
+    // fetched and parsed — so a finisher would pay for the whole questline on every visit forever.
+    // bwq-c2 is the chapter's own local state and one flag off it costs nothing.
+    let c2done = false;
+    try { c2done = !!(JSON.parse(localStorage.getItem('bwq-c2') || 'null') || {}).done; } catch (e) {}
+    if (!c2done) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
   window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam,
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel

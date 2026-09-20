@@ -143,4 +143,9 @@ export const ALLOW_DYNAMIC = [
   { file: 'src/scripts/banana-beach.js', arg: 'MAP_KEY', why: "'bh-mappieces-' + day: the day's map pieces" },
   { file: 'src/scripts/banana-homestead.js', arg: 'wkey', why: "'hs-wd:' + slug: whether this device watered a given yard today" },
   { file: 'src/scripts/banana-homestead.js', arg: 'hkey', why: "'hs-hg:' + slug: which of a neighbour's animals this device hugged today — the server is the real gate, this only saves a round trip" },
+  // 🕯 THE QUESTLINE HAS TWO CHAPTERS AND THEY DO NOT SHARE A SAVE. KEY was a const while there
+  // was one chapter; it now holds CH[<chapter>].key, named in bootQuest from the AREA — 'bwq-c1'
+  // out in the world, 'bwq-c2' in the town. Both are declared above, an area belongs to exactly
+  // one chapter, and there is no third value it can ever take.
+  { file: 'src/lib/world-quest.js', arg: 'KEY', why: "CH[chapter].key — 'bwq-c1' or 'bwq-c2', both declared above; bootQuest picks one from the area and nothing else assigns it" },
 ];

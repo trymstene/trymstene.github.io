@@ -35,6 +35,7 @@ const GATES = [
   ['lanes', 'tools/check-town-lanes.mjs', []],
   ['wardrobe', 'tools/check-wardrobe-rows.mjs', []],
   ['post rail', 'tools/check-post-rail.mjs', []],
+  ['chapter ii', 'tools/check-quest-c2.mjs', []],
   ['generated', 'tools/build-worker-allowlists.mjs', ['--check']],
 ];
 const quiet = process.argv.includes('--quiet');

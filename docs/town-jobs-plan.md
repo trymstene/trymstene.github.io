@@ -232,9 +232,27 @@ games, Pip's shelf card at the hatch, the Exchange, the Wheel, the problems, the
 ghosts and the Square Report. The hoardings must read as *a place with a story* and never as a
 dead end.
 
-⚠️ **Measure first.** Chapter 2 sits behind chapter 1's sixteen steps. **What fraction of
-players finish chapter 1 is measurable from Pulse today and unknown.** If it is small, this plan
-boards up the town for almost everyone. Do that measurement before step 1. (**TRYM**)
+✅ **MEASURED, 21 Sep 2026 — and the answer changed the build.** GA4, from 1 June:
+
+| | people |
+|---|---|
+| met the questline (`quest_boot`) | **4 400** |
+| started it — the title splash, once per player (`quest_intro`) | **116** |
+| cleared at least one step (`quest_step`) | **76** |
+| steps cleared in total | **409** |
+
+Sixteen steps a finisher, so at most **22 people have ever finished chapter 1** — half a percent of
+everyone who met it. (A bound, not a count: `id` is not a registered GA4 custom dimension, so
+`quest_step`'s own parameter cannot be queried at all. **That is fixed forward**: each chapter now
+fires `quest_c1_done` / `quest_c2_done`, and an event NAME always reads, so from today the number
+is one query with nothing to configure.)
+
+So the plan's own recommendation applies: **gate less behind the chapter.** Chapter 2 is built
+town-only and asks nothing of chapter 1 — the fiction still joins them (the works order is signed
+by the hand that scratched a name out of Nib's book) but the lock does not. And `HOARD_ON` stays
+**false**: chapter 2 now exists to open the fronts, which was condition 1, but boarding three
+shopfronts for 99.5% of visitors is the outcome this plan forbids, and flipping it is Trym's call
+by name. `tools/check-quest-c2.mjs` fails if it changes without one.
 
 ---
 
@@ -655,7 +673,7 @@ silent yes is a workable plan.
 ### Blocking — answer before any of this is built
 | # | Question | Recommendation |
 |---|---|---|
-| 1 | **How many players finish chapter 1?** The whole town now sits behind it, and the number is in Pulse today. | Measure it first. If it is small, gate less behind the chapter. |
+| 1 | **How many players finish chapter 1?** The whole town now sits behind it, and the number is in Pulse today. | ✅ **MEASURED 21 Sep 2026, and it is small — so chapter 2 gates nothing.** See below. |
 | 2 | **What ships first — the town's jobs, or the post?** | **The world's own post**: the mailbox flag, the letter card, the residents' notes. One or two sessions, no recipients, no risk, and it answers whether anyone enjoys finding post before thirty sessions are spent. |
 | 3 | **The budget.** The build order already spends the free total on one 40 KB town chunk; the post wants its own. | Decide the `totalBudget` raise up front, in `_raises`, not in the pull request. |
 

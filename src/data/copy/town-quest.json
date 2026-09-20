@@ -1,0 +1,270 @@
+{
+  "chapter": "chapter ii",
+  "title": "four signatures?",
+  "steps": [
+    {
+      "key": "open",
+      "find": "town hall counter",
+      "hint": "general store front",
+      "note": "",
+      "lines": [
+        {
+          "who": "nib",
+          "text": "I found four works orders under my big book. They say the General Store, Arcade, Post Office and Coffee Cup do not exist."
+        },
+        {
+          "who": "nib",
+          "text": "They have all been standing there very patiently."
+        },
+        {
+          "who": "nib",
+          "text": "Each order has one fault. Four proper signatures will put the buildings back on paper."
+        },
+        {
+          "who": "nib",
+          "text": "The same pen scratched a name from my big book and signed these orders in 1999."
+        },
+        {
+          "who": "nib",
+          "text": "I cannot read the name. It has been scratched with real commitment."
+        },
+        {
+          "who": "nib",
+          "text": "The General Store order is still nailed to its front."
+        }
+      ]
+    },
+    {
+      "key": "store_fault",
+      "find": "general store front",
+      "hint": "town hall counter",
+      "note": "",
+      "lines": [
+        {
+          "who": "paper",
+          "text": "WORKS ORDER. FILED 1999."
+        },
+        {
+          "who": "paper",
+          "text": "GENERAL STORE: CONDEMNED UNTIL 31 FEBRUARY 1999."
+        },
+        {
+          "who": "you",
+          "text": "February does not have thirty-one days."
+        },
+        {
+          "who": "paper",
+          "text": "STATUS: PENDING."
+        }
+      ]
+    },
+    {
+      "key": "store_sign",
+      "find": "town hall counter",
+      "hint": "arcade front",
+      "note": "the General Store order — certified",
+      "lines": [
+        {
+          "who": "you",
+          "text": "The date cannot happen."
+        },
+        {
+          "who": "nib",
+          "text": "Thirty-first of February. A date with nowhere to put its coat."
+        },
+        {
+          "who": "nib",
+          "text": "I have corrected the order and signed it."
+        },
+        {
+          "who": "nib",
+          "text": "The General Store boards have come down."
+        },
+        {
+          "who": "nib",
+          "text": "The Arcade order calls its building something else entirely."
+        }
+      ]
+    },
+    {
+      "key": "condo_fault",
+      "find": "arcade front",
+      "hint": "town hall counter",
+      "note": "",
+      "lines": [
+        {
+          "who": "paper",
+          "text": "WORKS ORDER. FILED 1999."
+        },
+        {
+          "who": "paper",
+          "text": "STRUCTURE: MUNICIPAL WATER TANK."
+        },
+        {
+          "who": "you",
+          "text": "This is an arcade, not a water tank."
+        },
+        {
+          "who": "paper",
+          "text": "STATUS: CONDEMNED."
+        }
+      ]
+    },
+    {
+      "key": "condo_sign",
+      "find": "town hall counter",
+      "hint": "post office front",
+      "note": "the Arcade order — certified",
+      "lines": [
+        {
+          "who": "you",
+          "text": "The order calls the Arcade a water tank."
+        },
+        {
+          "who": "nib",
+          "text": "A water tank with an arcade written all over it. Paper can be very determined."
+        },
+        {
+          "who": "nib",
+          "text": "I have corrected the building name and signed it."
+        },
+        {
+          "who": "nib",
+          "text": "The Arcade boards have come down."
+        },
+        {
+          "who": "nib",
+          "text": "The Post Office order has put a name where a building should be."
+        }
+      ]
+    },
+    {
+      "key": "post_fault",
+      "find": "post office front",
+      "hint": "town hall counter",
+      "note": "",
+      "lines": [
+        {
+          "who": "paper",
+          "text": "WORKS ORDER. FILED 1999."
+        },
+        {
+          "who": "paper",
+          "text": "CONDEMNED PREMISES: NIB."
+        },
+        {
+          "who": "you",
+          "text": "Nib is the clerk, not the Post Office."
+        },
+        {
+          "who": "paper",
+          "text": "STATUS: PENDING."
+        }
+      ]
+    },
+    {
+      "key": "post_sign",
+      "find": "town hall counter",
+      "hint": "coffee cup front",
+      "note": "the Post Office order — certified",
+      "lines": [
+        {
+          "who": "you",
+          "text": "The order names you as the building."
+        },
+        {
+          "who": "nib",
+          "text": "It does. I am flattered, but I am much too small for mail slots."
+        },
+        {
+          "who": "nib",
+          "text": "I have put the Post Office back in its proper space and signed it."
+        },
+        {
+          "who": "nib",
+          "text": "The Post Office boards have come down."
+        },
+        {
+          "who": "nib",
+          "text": "The Coffee Cup order has a signature for the wrong thing."
+        }
+      ]
+    },
+    {
+      "key": "cafe_fault",
+      "find": "coffee cup front",
+      "hint": "town hall counter",
+      "note": "",
+      "lines": [
+        {
+          "who": "paper",
+          "text": "WORKS ORDER. FILED 1999."
+        },
+        {
+          "who": "paper",
+          "text": "COFFEE CUP: CONDEMNED."
+        },
+        {
+          "who": "paper",
+          "text": "CERTIFIED FOR: FOUNTAIN, CENTRAL SQUARE."
+        },
+        {
+          "who": "you",
+          "text": "The signature is for the fountain."
+        }
+      ]
+    },
+    {
+      "key": "cafe_sign",
+      "find": "town hall counter",
+      "hint": "the certificate at town hall",
+      "note": "the Coffee Cup order — certified",
+      "lines": [
+        {
+          "who": "you",
+          "text": "The order certifies the fountain instead."
+        },
+        {
+          "who": "nib",
+          "text": "It has condemned coffee and signed for water. That is a full day for one form."
+        },
+        {
+          "who": "nib",
+          "text": "I have signed for the Coffee Cup."
+        },
+        {
+          "who": "nib",
+          "text": "The Coffee Cup boards have come down."
+        },
+        {
+          "who": "nib",
+          "text": "The four-signature certificate is ready at my counter."
+        }
+      ]
+    },
+    {
+      "key": "done",
+      "find": "town hall counter",
+      "hint": "",
+      "note": "the four-signature certificate",
+      "lines": [
+        {
+          "who": "nib",
+          "text": "Four proper signatures. The four buildings are back in my big book."
+        },
+        {
+          "who": "nib",
+          "text": "I am filing this certificate in the top drawer."
+        },
+        {
+          "who": "nib",
+          "text": "It has a very satisfying square corner."
+        },
+        {
+          "who": "nib",
+          "text": "The old order may remain on its nail. It has earned the fresh air."
+        }
+      ]
+    }
+  ]
+}
