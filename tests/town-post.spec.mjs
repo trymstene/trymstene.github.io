@@ -9,6 +9,7 @@
 //   · THE CLOSED COUNTER IS THE NORMAL PATH TODAY. POST_OFF ships ON, so every player sees the shut
 //     line — a card that showed an error for its own expected state would be wrong on day one.
 import { test, expect } from '@playwright/test';
+import COPY from '../src/data/copy/town-post.json' with { type: 'json' };
 
 async function box(page, w, h) {
   const errs = [];
@@ -195,5 +196,40 @@ test('the envelope opens, and does not open again while you are reading', async 
   expect(after.opening, 'the envelope is done').toBe(false);
   expect(after.flap, 'and gone').toBe(0);
   expect(after.body, 'the letter is still open and readable').toBe(1);
+  expect(errs).toEqual([]);
+});
+
+// 🏠 A PLAYER WITH NO YARD HAS NO ADDRESS, and the card has to say so rather than lie.
+//
+// A mailbox is keyed to the sign name on your homestead's fence, so somebody who has never claimed a
+// yard has nowhere for a letter to land. The rail returned the kill switch's own error for that case,
+// so the card said "the post counter is closed" — which is false: the post office is fine and the
+// player has no door. ⭐ A DOOR, NOT A REFUSAL: the line names the homestead, the way a padlocked
+// garment on the dressing room's rail names the place it is caught.
+test('a player with no homestead is told they have no address, not that the post is shut', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  // ⚠️ NO hs-v1 at all — the one thing that separates this case from every other test in the file
+  await page.addInitScript(() => { try { localStorage.removeItem('hs-v1'); } catch (e) {} });
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.PROPS, null, { timeout: 30000 });
+  await page.evaluate(() => { const p = window.__town.PROPS.post, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.evaluate(() => window.__town.open('post'));
+  await page.waitForFunction(() => !!document.querySelector('.tw-post'), null, { timeout: 20000 });
+  await page.waitForTimeout(500);
+
+  const st = await page.evaluate(() => window.__town.post().state());
+  expect(st.why, 'the rail says WHICH kind of nothing this is').toBe('noaddress');
+
+  const said = (await page.locator('.tw-post__none').textContent()) || '';
+  expect(said.length, 'it says something').toBeGreaterThan(10);
+  // ⚠️ and NOT the closed-counter line: that WAS the bug, so the approved words are read from the
+  // file the game reads rather than typed here, where they would rot the day the rig redrafts them
+  expect(said.trim(), 'never the closed-counter line').not.toBe(String(COPY.shut || '').trim());
+  expect(said.trim(), '…and it is the line written for this case').toBe(String(COPY.noaddress || '').trim());
+  // it names the place an address comes from
+  expect(/home|house|sign|fence|yard/i.test(said), 'it names where an address comes from: ' + said).toBe(true);
+  // ⭐ and it is a door, not a telling-off
+  expect(/sorry|cannot|can.t|error|unable|must/i.test(said), 'no refusal words: ' + said).toBe(false);
   expect(errs).toEqual([]);
 });

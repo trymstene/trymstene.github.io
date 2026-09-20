@@ -89,6 +89,12 @@ export const AREAS=[
   // 🏘️ the town (14 Sep): a HIDDEN page still — a card here reads the walks, not a launch
   {key:'town', name:'Banana Town', icon:'🏘️', door:'town_open',
    q:'Do they CARE? — fixes per visit is the town’s whole bet; a buy or a cursed find is the payoff'},
+  // ✉️ the post office (20 Sep): the FIRST place in this world where one player's words reach another.
+  // ⚠️ its own area and not a line on the town's, because its events are `post_*` and the town's card
+  // reads `town_*` — and because the question is different in kind: everything else here asks whether
+  // somebody comes back, and this one asks whether anybody ANSWERS.
+  {key:'post', name:'The post office', icon:'✉️', door:'post_open',
+   q:'Do they ANSWER? — a rail nobody writes back on is a broadcast, not post; and watch refusals against sends, because the filter is the whole defence and one tuned too hard kills this quietly'},
 ];
 
 // 🏳 FLAGS, AND THE MACHINE THAT CANNOT DRAW THEM.

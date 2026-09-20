@@ -2,6 +2,7 @@
   "front": "The post office keeps your letters in its mailbox. The scale looks busy regardless.",
   "title": "Your Mailbox",
   "empty": "No letters in your mailbox. Its corners are very orderly.",
+  "noaddress": "Post goes to a house with a sign name. Your homestead fence has no name on it yet.",
   "shut": "The post counter is closed. The scale is having a quiet moment.",
   "from": "From {who}",
   "threads": "Kept Letters",

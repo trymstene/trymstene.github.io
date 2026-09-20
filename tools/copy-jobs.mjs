@@ -658,6 +658,7 @@ const postFields = {
   front: { kind: 'prose', aim: 84, max: 110, note: 'What the post office says when a player taps it. ⚠️ it replaces a hand-written line ending “Not built yet.”, which is no longer true — there is a mailbox in there with post in it. What the building IS, and that your post is inside. No instruction, no promise of anything that is not there, and no mention of postcards (not built).' },
   title: { kind: 'prose', aim: 16, max: 24, note: 'The heading on the mailbox card: a NAME for the place your letters sit, two or three words, not a sentence.' },
   empty: { kind: 'prose', aim: 78, max: 105, note: 'The whole of the card when there is no post at all. ⭐ THIS IS THE MOST-READ STRING IN THE JOB — an empty box is what most players will find for a long time, so it has to be a pleasant place to land rather than a failure. One or two short lines. It may not promise post is coming and may not tell anybody to go and write one.' },
+  noaddress: { kind: 'prose', aim: 92, max: 120, note: 'The whole of the card for a player with NO ADDRESS YET. A mailbox is keyed to the homestead’s sign name, so somebody who has never claimed a yard has nowhere for a letter to land. ⚠️ NOT the same as the counter being closed — it used to print that line, which is a lie: the post office is fine and the player has no door. ⭐ A DOOR, NOT A REFUSAL, the same rule as a locked garment on the dressing-room rail: post goes to a house, this player has not put a name on one, and the HOMESTEAD is where that is fixed. No instruction ("go and claim one"), no promise that post is waiting, and nothing that suggests they did something wrong.' },
   shut: { kind: 'prose', aim: 66, max: 90, note: 'Replaces the letters when the post is not running at all. An ordinary, temporary thing — the counter is closed. Not an error and not an apology. Never “server”, never “down”, never “error”, never a time.' },
   from: { kind: 'label', aim: 10, max: 18, holds: ['{who}'], note: 'The small label over who a letter came from. One or two words, MUST contain {who} — the game puts the sender’s name there.' },
   threads: { kind: 'label', aim: 10, max: 16, note: 'The small heading over the older post, under the new envelopes. Under it is one row per PERSON you have letters from, not one row per letter — sixty letters from eight people is eight rows. One or two words, the way you would label a drawer of kept correspondence. Set in capitals by the stylesheet.' },
@@ -677,7 +678,7 @@ function postShape(data) {
   const bad = [];
   const say = (f, m) => bad.push([f, m]);
   if (POST_TELLS.test(String(data.refused || ''))) say('refused', 'names what was wrong with the letter — a refusal that teaches is a lesson in getting round the filter next time');
-  for (const f of ['empty', 'shut', 'reported', 'sent', 'refused', 'front']) {
+  for (const f of ['empty', 'noaddress', 'shut', 'reported', 'sent', 'refused', 'front']) {
     if (/\?\s*$/.test(String(data[f] || ''))) say(f, 'ends in a question — nobody may ask the player one');
   }
   for (const [f, hold] of [['from', '{who}'], ['sheet', '{who}']]) {
@@ -691,7 +692,7 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
+  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
   properties: Object.fromEntries(Object.entries(postFields).map(([k, v]) => [k, str(v.note)])),
 };
 
@@ -817,7 +818,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
+    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,

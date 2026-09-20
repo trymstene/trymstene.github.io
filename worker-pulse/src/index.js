@@ -579,7 +579,7 @@ const ANALYST_EVENTS = [
   'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
   'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
   'post_open', 'post_read', 'post_send', 'post_refused', 'post_report',   // ✉️ the post, 20 Sep
-    'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
+  'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
   // 👕☕ 20 Sep: the dressing room and every cup served. town_cup was tracked for a day with no reader
   // anywhere — the string existed in exactly one place in the whole repo, which is the shape of a
   // surface that is not done (a new event is not done until Pulse READS it, not until it is named).

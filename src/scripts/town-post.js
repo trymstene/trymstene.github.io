@@ -41,7 +41,10 @@ export function bootTownPost(ctx) {
   // state would be wrong on the day it shipped.
   async function ask(path, body) {
     const me = slug ? slug() : '';
-    if (!me) return { error: 'off' };
+    // ✉️⚠️ NO ADDRESS IS NOT A CLOSED COUNTER. A mailbox is keyed to the homestead's sign name, so a
+    // player who has never claimed a yard has nowhere for a letter to land — and this returned the kill
+    // switch's own error, so the card told them the post office was shut. It is not; they have no door.
+    if (!me) return { error: 'noaddress' };
     try {
       const res = await fetch(API + path + (body ? '' : '?slug=' + encodeURIComponent(me)), {
         method: body ? 'POST' : 'GET',
@@ -102,7 +105,12 @@ export function bootTownPost(ctx) {
     const bare = !box || box.error || !letters.length;
     const front = (bare && !open && !writing && !thread && w.front) ? '<p class="tw-card__sub">' + esc(w.front) + '</p>' : '';
 
-    if (!box || box.error) {
+    if (box && box.error === 'noaddress') {
+      // ✉️⚠️ A DOOR, NOT A CLOSED COUNTER. A mailbox is keyed to the homestead's sign name, so a player
+      // who has never claimed a yard has nowhere for a letter to land — and this branch used to print
+      // the kill switch's line, which told them the post office was shut. It is not; they have no door.
+      body = '<p class="tw-post__none">' + esc(w.noaddress || w.shut || '') + '</p>';
+    } else if (!box || box.error) {
       body = '<p class="tw-post__none">' + esc(w.shut || '') + '</p>';
     } else if (writing) {
       // ⚠️ maxlength is the SERVER's number, read from the one file that owns it, so the sheet cannot let
@@ -234,7 +242,7 @@ export function bootTownPost(ctx) {
     seam: {
       state: () => ({
         letters: (box && box.letters) || [], open: open && open.id, writing: writing && writing.to,
-        thread, opening, shut: !!(box && box.error),
+        thread, opening, shut: !!(box && box.error), why: (box && box.error) || '',
         threads: threadsOf(((box && box.letters) || []).filter((l) => l.read)).map((t) => ({ from: t.from, n: t.letters.length })),
       }),
       set: (b) => { box = b; open = null; writing = null; thread = null; render(); },   // QA: a box without a worker

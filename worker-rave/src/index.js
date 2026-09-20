@@ -557,12 +557,52 @@ export default {
       // everybody's outgoing post in their own box and nobody's incoming post anywhere.
       const to = box(body.to || url.searchParams.get('slug') || body.slug);
       if (!to) return new Response('{"error":"no slug"}', { status: 400, headers: cors });
-      const sub = (url.pathname.replace('/post', '') || '/') + url.search;
-      const res = await env.POST.get(env.POST.idFromName('box:' + to)).fetch(new Request('https://room' + sub, {
+      // 🛡 FOUR PATHS, AND THE REST ARE NOT HERE. This route forwarded whatever came after /post
+      // straight into the room, and the room also answers /review — the list of letters somebody
+      // reported, kept whole. A yard slug is PUBLIC (it is the sign on the fence), so `/post/review?slug=
+      // anyone` from any allowed origin was a reader for the one thing in this world that is held on
+      // purpose. The room's own comment said "internal only: no origin ever reaches this", and it was
+      // wrong the day it was written. An allow-list, so the next path added to the room is closed until
+      // somebody says otherwise.
+      const path = url.pathname.replace('/post', '') || '/';
+      if (!['/send', '/box', '/read', '/report'].includes(path)) return new Response('{"error":"nope"}', { status: 404, headers: cors });
+      // ⚠️ AND THE ROOM IS TOLD WHOSE IT IS, by the router rather than by the caller. A report has to be
+      // filed in the review queue under the box it came out of, and the room is addressed by name — it
+      // cannot read its own. `__box` is injected here, where `to` has already been through box().
+      const res = await env.POST.get(env.POST.idFromName('box:' + to)).fetch(new Request('https://room' + path + url.search, {
         method: request.method,
-        body: request.method === 'POST' ? JSON.stringify(body) : undefined,
+        body: request.method === 'POST' ? JSON.stringify({ ...body, __box: to }) : undefined,
       }));
       return new Response(await res.text(), { status: res.status, headers: cors });
+    }
+    // ✉️⚠️ THE REVIEW DESK (Banana HQ → Inbox). Read-only over the letters somebody REPORTED, plus the
+    // ones the filter let through and flagged. Key-gated by POST_ADMIN_KEY and FAILS CLOSED — 404,
+    // deny-as-nothing, the Pulse pattern — so an unset secret is a desk that does not exist rather than
+    // a desk that is open.
+    //
+    // ⭐ ONE QUEUE, NOT SIXTY THOUSAND BOXES. A report is filed in the recipient's own room, which is
+    // the only place that has the letter; it is ALSO copied here, because a review list you have to
+    // find box by box is a review list nobody reads. The plan's gate is "the report path lands
+    // somewhere Trym opens" (docs/town-jobs-plan.md §6) and this is that somewhere.
+    //
+    // ⚠️ POST_ADMIN_KEY MUST BE THE SAME STRING AS worker-pass's PASS_ADMIN_KEY. Banana HQ holds ONE
+    // key (`pass-admin-key-v1` in its own storage) and sends it to every desk it reads; a second value
+    // here would mean a desk that is 404 while every tile beside it works, with nothing on screen to
+    // say why. One key at the desk, two secrets on two workers, the same string in both.
+    if (url.pathname === '/post-review') {
+      const key = (url.searchParams.get('key') || '').trim();
+      if (!env.POST_ADMIN_KEY || key !== String(env.POST_ADMIN_KEY).trim()) return new Response('nope', { status: 404 });
+      const h = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' };
+      if (request.method === 'OPTIONS') return new Response(null, { headers: { ...h, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'content-type' } });
+      let body = '';
+      if (request.method === 'POST') body = await request.text();
+      // ⚠️ `review:all` is not a slug and can never become one: a box is `box:<slug>` and box() strips
+      // the colon, so no yard can be named into this room.
+      const res = await env.POST.get(env.POST.idFromName('review:all')).fetch(new Request(
+        'https://room' + (request.method === 'POST' ? '/queue-drop' : '/queue'),
+        { method: request.method, body: body || undefined },
+      ));
+      return new Response(await res.text(), { status: res.status, headers: h });
     }
     if (url.pathname === '/beach-count') { // …and its beach headcount
       const res = await env.BEACH.get(env.BEACH.idFromName('banana-bay')).fetch(new Request('https://room/count'));
@@ -3590,6 +3630,17 @@ export class PostRoom {
         flag: v.flag ? 'platform' : '',
       });
       await this.state.storage.put('cap:' + day + ':' + from, mine + 1);
+      // 🚩 A FLAGGED LETTER IS DELIVERED AND QUEUED. The filter refuses a way to REACH somebody and
+      // merely flags a platform's NAME, because refusing the word would refuse innocent letters while
+      // this world links its own Discord. Flagged means nobody was harmed and somebody should look —
+      // so it goes on the desk without ever bothering the two people involved.
+      if (v.flag) {
+        try {
+          await this.env.POST.get(this.env.POST.idFromName('review:all')).fetch(new Request('https://room/queue-put', {
+            method: 'POST', body: JSON.stringify({ id, from, to: String(b.__box || ''), at: now, text: v.text, flag: v.flag, kind: 'flagged' }),
+          }));
+        } catch (e) { /* a letter that arrives is worth more than a copy on a desk */ }
+      }
 
       // the box holds a fixed number: the oldest READ ones go first, and only then the oldest of all
       const all = (await this.list('L:')).sort((x, y) => x.at - y.at);
@@ -3625,11 +3676,45 @@ export class PostRoom {
       const L = await this.state.storage.get('L:' + String(b.id || ''));
       if (!L) return j({ error: 'gone' }, 404);
       await this.state.storage.delete('L:' + L.id);
-      await this.state.storage.put('R:' + L.id, { ...L, reportedAt: now, by: String(b.by || '').slice(0, 40) });
+      const row = { ...L, to: String(b.__box || ''), reportedAt: now, by: String(b.by || '').slice(0, 40) };
+      await this.state.storage.put('R:' + L.id, row);
+      // ✉️⚠️ AND A COPY INTO THE ONE QUEUE THE DESK READS. Without this a report sits in the reporter's
+      // own room and can only be found by already knowing whose room to look in — which is not a review
+      // queue, it is a haystack. ⚠️ IT MUST NOT BE ABLE TO FAIL THE REPORT: the tap's whole promise is
+      // that the letter leaves your box, and it already has by this line. A queue that is down loses a
+      // copy; it never leaves the letter sitting there.
+      try {
+        await this.env.POST.get(this.env.POST.idFromName('review:all')).fetch(new Request('https://room/queue-put', {
+          method: 'POST', body: JSON.stringify({ ...row, kind: 'reported' }),
+        }));
+      } catch (e) { /* the report stands whatever the queue does */ }
       return j({ ok: true });
     }
 
-    // ---- the review list, for the desk. Internal only: no origin ever reaches this. ----------------
+    // ---- the ONE queue (the `review:all` room only) ------------------------------------------------
+    // ⚠️ REACHED BY THE ROUTER, NEVER BY AN ORIGIN. /post allows four paths and none of them is here.
+    if (url.pathname === '/queue-put') {
+      const id = String(b.id || '') || (now.toString(36) + Math.random().toString(36).slice(2, 6));
+      await this.state.storage.put('Q:' + (99999999999999 - now) + ':' + id, { ...b, id, queuedAt: now });
+      // the queue is not an archive: the oldest go when it is full, so one bad week cannot fill the room
+      const all = await this.list('Q:');
+      if (all.length > 400) for (const dead of all.slice(400)) await this.state.storage.delete(dead.k);
+      return j({ ok: true });
+    }
+    if (url.pathname === '/queue') {
+      // ⚠️ the key is (a big number minus the time), so a plain list is newest-first with no sort
+      const rows = (await this.list('Q:')).slice(0, 120);
+      return j({ rows, n: rows.length });
+    }
+    if (url.pathname === '/queue-drop') {
+      const ks = Array.isArray(b.keys) ? b.keys.slice(0, 60) : [];
+      for (const k of ks) if (String(k).startsWith('Q:')) await this.state.storage.delete(String(k));
+      return j({ ok: true, gone: ks.length });
+    }
+
+    // ---- what THIS box has had reported out of it -------------------------------------------------
+    // ⚠️ not reachable from the rail either; kept because a box's own history is the thing a GDPR
+    // request asks for, and it is one list away when it is asked for.
     if (url.pathname === '/review') {
       const rows = (await this.list('R:')).sort((x, y) => y.reportedAt - x.reportedAt);
       return j({ reported: rows.slice(0, 50), flagged: (await this.list('L:')).filter((x) => x.flag).slice(0, 50) });

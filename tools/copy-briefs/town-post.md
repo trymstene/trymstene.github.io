@@ -55,6 +55,16 @@ mailbox is the state MOST players will see for a long time, so this is the singl
 in the job: it has to be a pleasant place to land rather than a failure. It may not promise that
 post is coming, and it may not tell anybody to go and write one.
 
+`noaddress` is the whole of the card for a player who has **no address yet**. A mailbox in this world
+is keyed to your homestead's sign name — the one on your fence — so a player who has never claimed a
+yard has nowhere for a letter to land. ⚠️ THIS IS NOT THE SAME AS THE COUNTER BEING CLOSED, and it used
+to print that line, which is a lie: the post office is fine, the player has no door for it to reach.
+⭐ IT IS A DOOR, NOT A REFUSAL — the same rule as a locked garment on the dressing room's rail. It says
+plainly that post goes to a house and that the player has not put a name on one, and it names the
+homestead as the place that fixes it. It may not instruct ("go and claim one"), may not promise post is
+waiting, and may not make the player feel they have done something wrong: most people reading this
+simply have not been to the homestead yet.
+
 `shut` replaces the letters when the post is not running at all. It is a temporary, ordinary thing —
 the counter is closed, come back — and it is not an error and not an apology. Never "server", never
 "down", never "error", never a time.

@@ -430,7 +430,42 @@ export function renderLedger(el, data) {
     }
   }
 
+  // ✉️⚠️ REPORTED LETTERS (20 Sep 2026) — the plan's own gate before the first letter is sent:
+  // "the report path lands somewhere Trym opens, and removes the letter in the same tap"
+  // (docs/town-jobs-plan.md §6). The tap already does the second half. This is the first.
+  //
+  // ⭐ IT IS AT THE TOP OF NOTHING AND THE BOTTOM OF NOTHING WHEN IT IS EMPTY. A review queue with a
+  // standing empty state is a thing you learn to scroll past; the section is only drawn when there is
+  // something in it, and then it is the loudest thing on the desk.
+  const post = data.letters;
+  if (post && Array.isArray(post.rows) && post.rows.length) {
+    s = section(el, '✉️ Reported letters', 'Every letter somebody reported, and every one the filter let through but flagged — kept whole, newest first. A report already took the letter out of the reader\u2019s box; this is the copy, so nothing here is urgent for THEM. Clearing a row deletes it for good.');
+    const list = div('hqp-lets', null, s);
+    for (const r of post.rows.slice(0, 40)) {
+      const row = div('hqp-let' + (r.kind === 'flagged' ? ' is-flag' : ''), null, list);
+      const head = div('hqp-let__h', null, row);
+      head.textContent = (r.kind === 'flagged' ? 'FLAGGED' : 'REPORTED') + ' · '
+        + (r.from || '?') + ' → ' + (r.to || '?') + ' · ' + when(r.queuedAt || r.reportedAt || r.at);
+      // ⚠️ textContent, ALWAYS. This is the one string on the whole desk a stranger wrote.
+      div('hqp-let__t', String(r.text || ''), row);
+      if (typeof data.letterDrop === 'function') {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'hqp-wipe'; b.textContent = 'clear';
+        b.addEventListener('click', () => {
+          b.disabled = true;
+          data.letterDrop([r.k]).then((ok) => { if (ok) row.remove(); else b.textContent = 'failed'; });
+        });
+        head.appendChild(b);
+      }
+    }
+  }
+
   const foot = div('hqp-foot', null, el);
   foot.textContent = 'rolled up ' + (now.done ? 'in full' : 'part-way') + ' · '
     + nfmt(now.scanned) + ' records over ' + nfmt(now.pages) + ' passes · ' + now.day;
+}
+
+// how long ago, in the desk's own plain words
+function when(t) {
+  const m = Math.max(0, Math.round((Date.now() - (+t || 0)) / 60000));
+  return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago';
 }
