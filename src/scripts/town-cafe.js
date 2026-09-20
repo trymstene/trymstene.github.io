@@ -294,7 +294,7 @@ const PATIENCE = 34000;          // how long a banana will stand there before it
 const NEXT = [5200, 12000];      // the gap between arrivals, while you are behind the counter
 
 export function bootTownCafe(ctx) {
-  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside } = ctx;
+  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside, shutHere } = ctx;
   let atWork = null, tray = null, on = false;
   // ☕ THE QUEUE. Each entry is a visitor the counter has borrowed from town-folk.js, its drink, and
   // the moment it arrived — which is its patience clock. ⚠️ the counter does NOT own the body: it
@@ -466,6 +466,11 @@ export function bootTownCafe(ctx) {
     // window while you were inside somebody else's shop — the tray is a child of the VIEW, so neither of
     // the world's `.is-inside` hide lists can reach it. (Seen on the QA sweep, 20 Sep.)
     if (inside && inside()) { clockOut(); return; }
+    // ⚠️ AND A FRONT CAN CLOSE UNDER YOU. enterCurse() adds the café to the town's shut set on every
+    // creeping and deep night, and a band that falls far enough does the same — so a shift can end up
+    // running behind a taped-up shutter in a dark window. The shut ENDS the shift and opens the
+    // receipt, which is the one outcome that is never a silently dead counter.
+    if (shutHere && shutHere()) { clockOut(); return; }
     if (now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
     patienceTick(now);
     serveNext();
