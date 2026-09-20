@@ -259,6 +259,10 @@ export function initLife({ world, W, H, pct }) {
   const res = R.map((r, idx) => {
     const el = document.createElement('div');
     el.className = 'tw-npc';
+    // 🧪 WHO THIS ONE IS, for a walk to tap. The square also carries nameless VISITORS wearing the same
+    // class, so "the nearest banana" stopped being "the resident" on 20 Sep and a walk that tapped by
+    // proximity was a coin flip — it failed both its attempts in one full-suite run and passed alone.
+    el.dataset.k = r.key;
     const cv = document.createElement('canvas'); cv.width = cv.height = 150;
     el.appendChild(cv);
     el.hidden = true;

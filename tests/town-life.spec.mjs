@@ -927,23 +927,21 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   const at = await seam(page, () => { const n = window.__town.life.residents().find((r) => r.key === 'pip'); return { x: n.x, y: n.y }; });
   await stand(page, at.x + 40, at.y + 20);
   await page.waitForTimeout(500);
-  const hit = await page.evaluate((p) => {
-    // the resident's own element, found by where it stands
-    let best = null, d = 1e9;
-    // ⚠️ :not(.tw-visitor) — since 20 Sep the square also has bananas VISITING from the rest of the
-    // town (town-folk.js), and they wear .tw-npc so the room hide lists blank them. They have no name
-    // and no card, so "the nearest banana" is no longer "the resident": it picked one of them and the
-    // tap opened nothing.
-    for (const el of document.querySelectorAll('.tw-npc:not(.tw-visitor)')) {
-      const r = el.getBoundingClientRect();
-      if (!r.width) continue;
-      const w = window.__town, s = document.getElementById('twView').getBoundingClientRect();
-      const k = Math.hypot(r.left + r.width / 2 - (s.left + s.width / 2), r.top + r.height - (s.top + s.height / 2));
-      if (k < d) { d = k; best = { x: r.left + r.width / 2, y: r.top + r.height - 12 }; }
-    }
-    return best;
-  }, at);
-  if (hit) { await page.mouse.click(hit.x, hit.y); await page.waitForTimeout(1800); }
+  // ⚠️ PIP'S OWN ELEMENT, BY NAME. This used to take the resident nearest the view's CENTRE, which is
+  // a different banana whenever the camera has not caught up with stand() yet — and since 20 Sep the
+  // square also carries nameless VISITORS wearing the same class. It failed both its attempts in one
+  // full-suite run and passed alone in six seconds: a guard that is a coin flip at two workers is
+  // close to no guard. town-life.js stamps `data-k` on every resident for exactly this.
+  await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k=\"pip\"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
+  const hit = await page.evaluate(() => {
+    const e = document.querySelector('.tw-npc[data-k=\"pip\"]');
+    const r = e.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height - 12 };
+  });
+  expect(hit, 'Pip is on screen to be tapped').toBeTruthy();
+  await page.mouse.click(hit.x, hit.y);
+  await page.waitForFunction(() => (document.getElementById('twCardBody').textContent || '').trim().length > 0, null, { timeout: 10000 });
+
   const said = await page.evaluate(() => document.getElementById('twCardBody').textContent || '');
   const q = await seam(page, () => (window.__town.work.ask('pip') || {}).q);
   expect(q, 'the question exists for a boss').toBeTruthy();
