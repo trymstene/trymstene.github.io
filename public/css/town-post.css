@@ -1,0 +1,62 @@
+/* ✉️ THE MAILBOX — the post office's card (20 Sep 2026, docs/town-jobs-plan.md §6).
+ *
+ * ⚠️ 261 × 440 CSS px is the budget: the measured content box of a town card at 360×640, the narrowest
+ * phone the house supports. Everything below is sized against 261.
+ *
+ * ⚠️ NOTHING HERE IS ROTATED, and that is a decision rather than a shortcut. The plan names the caret
+ * inside a tilted, torn, clipped sheet as the one risk no test can discharge — iOS puts the caret where
+ * it likes inside a transformed box and drops the selection handles outside it. The paper look is the
+ * box AROUND a plain <textarea>, so the native caret, selection and keyboard all behave.
+ */
+
+/* the stack: letters, newest first, each one a piece of paper you can tap */
+.tw-post { display: grid; gap: 0.5rem; }
+.tw-post h2 { margin: 0; }
+.tw-post__stack { display: grid; gap: 0.4rem; }
+.tw-post__let {
+  appearance: none; text-align: left; cursor: pointer; width: 100%;
+  display: grid; gap: 2px; padding: 0.5rem 0.6rem;
+  background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+  font: inherit;
+}
+.tw-post__let:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+/* an unread letter leans out of the stack a little — the one flourish, and it is a transform */
+.tw-post__let.is-new { transform: rotate(-0.6deg); }
+.tw-post__let.is-new:active { transform: rotate(-0.6deg) translate(1px, 1px); }
+.tw-post__who { font-family: "Archivo Black", sans-serif; font-size: 0.72rem; letter-spacing: 0.02em; }
+/* ⚠️ the peek is ONE line and it is clipped, never wrapped: three unread letters each three lines deep
+   push the stack past the card and turn a mailbox into a scroller */
+.tw-post__peek { font-size: 0.78rem; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
+
+/* an open letter: the whole sheet, and the two things you can do with it */
+.tw-post__open { display: grid; gap: 0.45rem; background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000; padding: 0.6rem; }
+/* ⚠️ break-word, not just wrap: a letter is player-typed and one 400-character word is a letter a
+   player CAN send — it would otherwise run straight off the side of the card */
+.tw-post__body { margin: 0; font-size: 0.84rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tw-post__open .tw-btn--in { margin-top: 0.15rem; }
+/* reporting is a normal thing to do, so it is quiet: a plain line, not a red button shouting at you */
+.tw-post__flag {
+  appearance: none; font: inherit; cursor: pointer; width: 100%;
+  background: none; border: 0; padding: 0.3rem 0; margin: 0;
+  font-size: 0.72rem; text-decoration: underline; opacity: 0.6; color: inherit;
+}
+.tw-post__flag:active { opacity: 1; }
+
+/* writing back */
+.tw-post__write { display: grid; gap: 0.4rem; }
+.tw-post__to { margin: 0; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.72; font-weight: 800; }
+.tw-post__sheet {
+  width: 100%; box-sizing: border-box; resize: none;
+  background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.12);
+  padding: 0.5rem 0.6rem; font: inherit; font-size: 0.84rem; line-height: 1.5;
+  /* ruled paper, drawn rather than fetched: one repeating gradient, no file, nothing to load late */
+  background-image: repeating-linear-gradient(#fbf3dd 0 calc(1.5em - 1px), rgba(40, 60, 90, 0.16) calc(1.5em - 1px), rgba(40, 60, 90, 0.16) 1.5em);
+  background-attachment: local;
+}
+.tw-post__sheet:focus { outline: 3px solid #ffe135; outline-offset: 1px; }
+
+.tw-post__none { margin: 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.85; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-post__let:active, .tw-post__let.is-new, .tw-post__let.is-new:active { transform: none; }
+}

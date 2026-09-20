@@ -1,0 +1,14 @@
+{
+  "front": "The post office keeps your letters in its mailbox. The scale looks busy regardless.",
+  "title": "Your Mailbox",
+  "empty": "No letters in your mailbox. Its corners are very orderly.",
+  "shut": "The post counter is closed. The scale is having a quiet moment.",
+  "from": "From {who}",
+  "report": "Report this letter",
+  "reported": "The letter has left your mailbox. It will be read.",
+  "reply": "Write back",
+  "sheet": "Writing to {who}",
+  "send": "Send letter",
+  "sent": "The letter slips into the blue mailbox.",
+  "refused": "This letter stays in the writing tray."
+}

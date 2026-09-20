@@ -648,6 +648,50 @@ const dressSchema = {
   },
 };
 
+// --- town-post ----------------------------------------------------------------
+// ✉️ THE POST OFFICE (20 Sep 2026, docs/town-jobs-plan.md §6) — the first surface in Banana World
+// where one player's words reach another. Eleven strings, and one of them is the hardest line in the
+// town: a refusal that must be kind, final and completely uninformative, because a precise reason is
+// a lesson in how to get round the filter next time.
+const postFields = {
+  front: { kind: 'prose', aim: 84, max: 110, note: 'What the post office says when a player taps it. ⚠️ it replaces a hand-written line ending “Not built yet.”, which is no longer true — there is a mailbox in there with post in it. What the building IS, and that your post is inside. No instruction, no promise of anything that is not there, and no mention of postcards (not built).' },
+  title: { kind: 'prose', aim: 16, max: 24, note: 'The heading on the mailbox card: a NAME for the place your letters sit, two or three words, not a sentence.' },
+  empty: { kind: 'prose', aim: 78, max: 105, note: 'The whole of the card when there is no post at all. ⭐ THIS IS THE MOST-READ STRING IN THE JOB — an empty box is what most players will find for a long time, so it has to be a pleasant place to land rather than a failure. One or two short lines. It may not promise post is coming and may not tell anybody to go and write one.' },
+  shut: { kind: 'prose', aim: 66, max: 90, note: 'Replaces the letters when the post is not running at all. An ordinary, temporary thing — the counter is closed. Not an error and not an apology. Never “server”, never “down”, never “error”, never a time.' },
+  from: { kind: 'label', aim: 10, max: 18, holds: ['{who}'], note: 'The small label over who a letter came from. One or two words, MUST contain {who} — the game puts the sender’s name there.' },
+  report: { kind: 'label', aim: 14, max: 20, note: 'The button under an open letter that reports it. A verb first, two or three words, plain — this is a normal thing a person might do, not an accusation. One line, always.' },
+  reported: { kind: 'prose', aim: 66, max: 88, note: 'The one line after they tap it: the letter is gone from their box and somebody will read it. Matter-of-fact and brief. It must not thank them, must not praise them, and must not say what happens to the sender, because nobody knows yet.' },
+  reply: { kind: 'label', aim: 12, max: 18, note: 'The button that opens the sheet to write back. A verb first, two or three words, one line.' },
+  sheet: { kind: 'prose', aim: 30, max: 44, holds: ['{who}'], note: 'The one small line above the writing paper, saying who it is going to. MUST contain {who}. Nothing else — no instruction, no encouragement, no word count.' },
+  send: { kind: 'label', aim: 8, max: 14, note: 'The button that sends the letter. A verb first, one or two words, one line.' },
+  sent: { kind: 'prose', aim: 54, max: 76, note: 'The world’s line once a letter has gone. Quiet and done — the feeling of a letter dropping into a box, not a receipt. Never “successfully”, never “delivered”.' },
+  refused: { kind: 'prose', aim: 78, max: 105, note: '⭐ THE HARDEST LINE IN THE JOB. What the writer sees when the filter stops their letter. It must be KIND, FINAL and COMPLETELY UNINFORMATIVE: it names no rule, no word and no reason, and it does not suggest what to change — a precise reason is a lesson in getting round the filter next time. It must also not sound like an accusation, because most people who ever see this typed something perfectly ordinary and were caught by a shop’s name or a phone number.' },
+};
+// 🤐 THE REFUSAL MAY NOT TEACH. A machine cannot judge kindness, but it can judge whether a line has
+// started naming the rules — which is the exact failure this string has.
+const POST_TELLS = /\b(link|url|website|web address|email|e-mail|phone|number|address|handle|username|discord|snapchat|instagram|contact|swear|word|rude|filter|blocked|banned|violat|policy|rule)\b/i;
+function postShape(data) {
+  const bad = [];
+  const say = (f, m) => bad.push([f, m]);
+  if (POST_TELLS.test(String(data.refused || ''))) say('refused', 'names what was wrong with the letter — a refusal that teaches is a lesson in getting round the filter next time');
+  for (const f of ['empty', 'shut', 'reported', 'sent', 'refused', 'front']) {
+    if (/\?\s*$/.test(String(data[f] || ''))) say(f, 'ends in a question — nobody may ask the player one');
+  }
+  for (const [f, hold] of [['from', '{who}'], ['sheet', '{who}']]) {
+    if (!String(data[f] || '').includes(hold)) say(f, 'must contain ' + hold);
+  }
+  // ⚠️ the mystery rule: this world never publishes its own timetables or its caps
+  for (const [f, v] of Object.entries(data)) {
+    if (typeof v === 'string' && /\b\d+\s*(letters?|a day|per day|days?|hours?|minutes?)\b/i.test(v)) say(f, 'publishes a cap or a timetable — this world does not');
+  }
+  return bad;
+}
+const postSchema = {
+  type: 'object', additionalProperties: false,
+  required: ['front', 'title', 'empty', 'shut', 'from', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
+  properties: Object.fromEntries(Object.entries(postFields).map(([k, v]) => [k, str(v.note)])),
+};
+
 export const JOBS = {
   'town-life': {
     id: 'town-life',
@@ -664,6 +708,19 @@ export const JOBS = {
     fields: lifeFields,
     shape: lifeShape,
     schema: lifeSchema,
+  },
+  'town-post': {
+    id: 'town-post',
+    title: 'Banana Town — the post office',
+    what: 'What the building says, the mailbox card, an open letter, writing back, and the refusal that may not say why.',
+    brief: 'tools/copy-briefs/town-post.md',
+    out: 'tools/copy-out/town-post.json',
+    approved: 'src/data/copy/town-post.json',
+    reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
+    top: ['front', 'title', 'empty', 'shut', 'from', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused'],
+    fields: postFields,
+    shape: postShape,
+    schema: postSchema,
   },
   'town-dress': {
     id: 'town-dress',

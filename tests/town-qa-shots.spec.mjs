@@ -352,3 +352,33 @@ test('the dressing room at 360 wide', async ({ page }) => {
   console.log('QA dress 360: ' + JSON.stringify(m));
   expect(true).toBe(true);
 });
+
+// 📸 ✉️ the mailbox: the stack, an open letter, and the sheet you write back on
+test('the post office mailbox', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.addInitScript(() => { try { localStorage.setItem('hs-v1', JSON.stringify({ slug: 'ada-yard', claimedAt: Date.now() })); } catch (e) {} });
+  await town(page, { name: 'post', band: 85 });
+  await page.evaluate(() => { const p = window.__town.PROPS.post, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  await page.evaluate(() => window.__town.open('post'));
+  await page.waitForFunction(() => !!document.querySelector('.tw-post'), null, { timeout: 20000 });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: SHOT + '33-mailbox-closed.png' });
+
+  await page.evaluate(() => window.__town.post().set({ letters: [
+    { id: 'a1', from: 'pip-yard', at: Date.now(), read: false, text: 'Your sunflowers are enormous this year. Mine came to nothing again, as usual.' },
+    { id: 'a2', from: 'moss-yard', at: Date.now() - 9e5, read: true, text: 'Thanks for the eggs. The hens send nothing back, but they never do.' },
+  ], unread: 1 }));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: SHOT + '34-mailbox-stack.png' });
+
+  await page.evaluate(() => window.__town.post().tap('.tw-post__let'));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: SHOT + '35-letter-open.png' });
+
+  await page.evaluate(() => window.__town.post().tap('#twPostReply'));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.__town.post().type('They only look like that because the fountain leaks all over that corner.'));
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: SHOT + '36-writing-back.png' });
+  expect(true).toBe(true);
+});

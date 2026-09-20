@@ -65,7 +65,8 @@ for (const [key, fx, fbase, fw, fh, n, period] of ANIM_ALL) {
 // ---- what each door is (the plan's words) and the plank that names it
 const ABOUT = {
   hall: ['TOWN HALL', 96, 'Town Hall. Nib’s desk and the big book, inside the clock tower. Chapter two starts here. Not built yet.'],
-  post: ['', 0, 'Post Office. Stamp sends stock postcards; your mailbox is by the door. Not built yet.'],
+  // ✉️ no third field: the post office answers for itself now, through the rig (town-post.json `front`)
+  post: ['', 0, ''],
   store: ['', 104, 'General Store. Pip sells fireworks, lures and duck bread. Not built yet.'],
   bank: ['', 118, 'The bank. It is an ATM. Not built yet.'],
   // the print shop's plank is an OVERLAY on the sprite's own STORE sign (measured: the sign band is 64×22 world px
@@ -255,6 +256,7 @@ function thingAt(wx, wy) {
   return null;
 }
 let dress = null;        // 👕 the clothes shop's dressing room, once its chunk is in
+let post = null;         // ✉️ the post office's mailbox, once its chunk is in
 let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 view.addEventListener('pointerdown', (e) => {
@@ -375,7 +377,7 @@ function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
 // ⚠️ EVERY MODIFIER THIS CARD CAN WEAR IS NAMED HERE. openCard() never clears a class, so a modifier
 // left behind styles whatever the player opens NEXT — and every chunk that runs a loop inside the card
 // (the dialogue's typewriter, an arcade game, the dressing room's mirror) stops here or it runs forever.
-function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board', 'tw-card--health', 'tw-card--dress'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } if (dress) { dress.stop(); } }
+function closeCard() { panel.hidden = true; cardBody.innerHTML = ''; card.classList.remove('tw-card--npc', 'tw-card--board', 'tw-card--health', 'tw-card--dress', 'tw-card--post'); if (dialog) { dialog.stop(); dialog = null; } if (arcGame) { arcGame.stop(); arcGame = null; } if (dress) { dress.stop(); } if (post) { post.stop(); } }
 document.getElementById('twCardX').addEventListener('click', closeCard);
 panel.addEventListener('click', (e) => { if (e.target === panel) closeCard(); });
 // 🗣 A RESIDENT'S DIALOGUE — THE WORLD'S card, not a new one (Trym, 12 Sep: "the dialogue popups for
@@ -408,6 +410,22 @@ function npcCard(key) {
 // 👕 the dressing room, loaded on the tap that wants it. ⚠️ the card opens when the chunk lands, not
 // when the tap happens — a card that appears half a second later is the honest shape of a lazy import,
 // and the alternative (a spinner in a card) is a website's answer, not a game's.
+// ✉️ the post office's mailbox, loaded on the tap that wants it.
+// ⚠️ YOUR HOUSE IS YOUR ADDRESS. The mailbox room is keyed by the yard slug the server gave you when you
+// claimed a homestead, which is the plan's own shape (§6: "the mailbox room keyed by slug") — a post
+// office delivers to houses. A player with no claimed yard therefore has no address yet, and today sees
+// the same closed-counter line as everybody else, because the rail ships shut. ⚠️ that case wants its own
+// line before the rail is turned on; it is not the same thing as the counter being closed.
+const mySlug = () => { try { return (JSON.parse(localStorage.getItem('hs-v1') || '{}') || {}).slug || ''; } catch (e) { return ''; } };
+let postP = null;
+function postCard() {
+  if (!postP) {
+    postP = import('./town-post.js')
+      .then((m) => { post = m.bootTownPost({ openCard, closeCard, card, say, track, slug: mySlug }); return post; })
+      .catch((e) => { postP = null; console.warn('[town] the mailbox did not open', e); return null; });
+  }
+  postP.then((p) => { if (p) p.openBox(); });
+}
 let dressP = null;
 function dressCard() {
   if (!dressP) {
@@ -423,6 +441,7 @@ function openFor(key) {
   // here beside the wheel rather than in town-room.js, whose business is the town's condition. Its own
   // lazy chunk: a player who never opens the wardrobe downloads none of it, and town-room is at 84%.
   if (key === 'clothes') { dressCard(); return true; }
+  if (key === 'post') { postCard(); return true; }   // ✉️ your letters, and writing back
   if (key === 'wheel') { wheelCard(); return true; }
   if (key === 'exchange') { exchangeCard(); return true; }
   // 🚪 a door with a room behind it. ⚠️ town-room.js gets FIRST refusal above, and it still owns
@@ -723,6 +742,6 @@ assetsReady().then(() => {
   window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam,
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
-  open: (k) => openFor(k), dress: () => dress && dress.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => openFor(k), dress: () => dress && dress.seam, post: () => post && post.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });
