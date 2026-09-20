@@ -83,7 +83,12 @@ const description = 'The town centre of Banana World, under construction.';
     }
     .tw-note { margin: 0.9rem 0 0; font-size: 0.84rem; opacity: 0.75; text-align: center; }
     /* 🃏 the card panel — the park's pk-panel/pk-card, in the town's brick warmth */
-    .tw-panel { position: absolute; inset: 0; z-index: 1500; display: grid; place-items: center; background: rgba(0, 0, 0, 0.55); padding: 0.8rem; }
+    /* ⚠️ THE PANEL OUTRANKS THE TOAST. It was z 1500 against the toast's 2000, so the world's chatter
+       landed square across whatever the player had opened to read — measured on three cards at 360×640,
+       and worst on the café's receipt, where the two yellow boxes overlap by 17px and read as one broken
+       layout. Design library §8: floating UI is placed against the WHOLE surface's z-stack. A card owns
+       the screen while it is open, so it owns the top of the stack too. */
+    .tw-panel { position: absolute; inset: 0; z-index: 2100; display: grid; place-items: center; background: rgba(0, 0, 0, 0.55); padding: 0.8rem; }
     .tw-card { background: #1a120c; color: #fffdf5; border: 4px solid #000; box-shadow: 6px 6px 0 #000; padding: 0.9rem 1rem; max-width: 380px; width: 100%; max-height: 100%; overflow: auto; }
     .tw-card h2 { font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1rem; margin: 0 0 0.15rem; letter-spacing: 0.03em; }
     .tw-cardx { position: sticky; top: 0; float: right; z-index: 3; margin: -2px -6px 0 0.5rem; appearance: none; background: none; border: 0; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #fffdf5; font-size: 1.15rem; font-weight: 800; line-height: 1; cursor: pointer; opacity: 0.7; }

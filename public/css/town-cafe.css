@@ -70,7 +70,7 @@
 /* ⚠️ A HORIZONTAL-BAND GRADIENT ONLY. The fill is scaleX'd every frame (town-cafe.js paint), so any
    detail with an x dimension stretches from a sliver to a slab as the cup fills. A band across the top
    is invisible to that — and it is what turns a brown progress bar into coffee with crema on it. */
-.tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(#c88a4c 0 6px, #b5763a 6px); transform-origin: 0 50%; transform: scaleX(0); }
+.tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(#e6b072 0 7px, #a86a2e 7px); transform-origin: 0 50%; transform: scaleX(0); }
 .tw-cup__needle { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: #ffe135; border: 2px solid #000; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 /* the milk wants three taps: each one leaves its mark where it fell, coloured by how it landed, so a
    player can see two down and one to go without a single word on the tray */
@@ -114,8 +114,11 @@
    has a picture of itself. ⚠️ it hangs off the BAR, never the fill: anything inside the fill is scaleX'd
    with it and a 5px stream would be a 0.1px sliver at the start of a pour. */
 .tw-cup[data-st="pour"] .tw-cup__bar::after {
-  content: ''; position: absolute; top: 0; left: 50%; width: 5px; height: 100%;
-  margin-left: -2px; background: #8a5423; opacity: 0; transform-origin: 50% 0;
+  content: ''; position: absolute; top: 0; left: 50%; width: 7px; height: 100%;
+  /* ⚠️ LIGHT, NOT DARK. #8a5423 on the bar's #2a1a10 was a dark-brown sliver on dark brown and did not
+     appear in a single one of the four phone crops. Falling coffee catches the light; this is that. */
+  margin-left: -3px; background: linear-gradient(#f0c088, #c07a30); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  opacity: 0; transform-origin: 50% 0;
 }
 .tw-cup.is-pouring .tw-cup__bar::after { animation: twCupStream 360ms linear infinite; }
 @keyframes twCupStream {
@@ -129,10 +132,14 @@
    single compositor layer rather than three. */
 .tw-cup[data-st="milk"] .tw-cup__bar::before {
   content: ''; position: absolute; inset: 0;
+  /* ⚠️ BIG ENOUGH TO BE FOAM. At r=2-3 these rendered as faint grey specks in a 34px bar on a phone —
+     measured, not guessed. Five bubbles at r=4-6, opaque, is the smallest that reads as milk swelling. */
   background:
-    radial-gradient(circle 3px at 18% 82%, rgba(255, 255, 255, 0.9) 0 100%, transparent 100%),
-    radial-gradient(circle 2px at 47% 92%, rgba(255, 255, 255, 0.72) 0 100%, transparent 100%),
-    radial-gradient(circle 3px at 76% 86%, rgba(255, 255, 255, 0.85) 0 100%, transparent 100%);
+    radial-gradient(circle 6px at 14% 86%, rgba(255, 255, 255, 0.96) 0 100%, transparent 100%),
+    radial-gradient(circle 4px at 34% 94%, rgba(255, 253, 245, 0.88) 0 100%, transparent 100%),
+    radial-gradient(circle 5px at 52% 88%, rgba(255, 255, 255, 0.94) 0 100%, transparent 100%),
+    radial-gradient(circle 4px at 71% 95%, rgba(255, 253, 245, 0.86) 0 100%, transparent 100%),
+    radial-gradient(circle 6px at 88% 87%, rgba(255, 255, 255, 0.92) 0 100%, transparent 100%);
   animation: twCupFoam 1.4s ease-out infinite;
 }
 @keyframes twCupFoam {
@@ -140,8 +147,10 @@
   30% { opacity: 1; }
   100% { opacity: 0; transform: translateY(-28px); }
 }
-/* it echoes the --foam pip, which is already a white circle on the ticket */
-.tw-cup[data-st="milk"] .tw-cup__needle { background: #fffdf5; border-radius: 999px 999px 0 0; }
+/* ⚠️ THE NEEDLE STAYS YELLOW AT THE MILK. A white dome echoing the foam pip was the idea; on screen it
+   landed inside its own pale-green band and cut it into two blocks that read as TWO targets. The needle
+   is the one thing in the gauge that must never be mistaken for the target, so it keeps its own colour
+   at every station and the foam does the talking. */
 
 /* ☕ and the biggest colour surface in the tray stops being the same yellow at every station. The thumb
    already lives on this button, so it is the one place a station's colour is certainly seen. */
@@ -162,8 +171,14 @@
 .tw-cup__go[disabled] { opacity: 0.55; cursor: default; }
 .tw-cup__go[hidden] { display: none; }
 
-/* the shift's own line: no numbers a clock could read, just where you are */
-.tw-cup__note { margin: 0; font-size: 0.74rem; opacity: 0.8; font-weight: 700; min-height: 1em; }
+/* the shift's own line: no numbers a clock could read, just where you are.
+   ⚠️ IT COLLAPSES WHEN IT IS EMPTY. A permanent `min-height: 1em` left 21px of dead dark band along the
+   bottom of the tray whenever a cup was up — it read as an unfinished edge, it pushed the tray's last
+   3px outside the clipped view on every phone, and it was what took the tray over 30% of the square on
+   the two short ones (31.7% at 360×640). Reserving room for a line that is usually not there costs the
+   square the one thing the tray form was chosen to protect. */
+.tw-cup__note { margin: 0; font-size: 0.74rem; opacity: 0.8; font-weight: 700; }
+.tw-cup__note:empty { display: none; }
 
 /* ---- patience is the BODY, never a bubble, and never a COLOUR either -------------------------- */
 /* ⭐ THE SHADOW LADDER IS GONE (Trym, 20 Sep: "the shadow color underneath the banana isn't very

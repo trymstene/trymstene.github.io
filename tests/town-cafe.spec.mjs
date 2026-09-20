@@ -729,3 +729,56 @@ test('a served customer walks off carrying the cup, and only a served one', asyn
   expect(after, 'a cup in a hand for every cup that went out, and not one more').toBe(till.served);
   expect(errors).toEqual([]);
 });
+
+// 📱 THE TRAY ON A REAL PHONE, measured in the TOWN and not on the bench. The bench's view is taller, so
+// the existing "the tray takes a strip, never the screen" assertion ran where it could not fail: in the
+// town at 360×640 the tray was 31.7% of the square, over its own bound, because an empty note row held
+// 21px open whenever a cup was up. And the toast outranked every card in the town by 500 of z-index, so
+// the clock-out line landed square on the receipt on both short phones (design library §8).
+for (const [w, h] of [[360, 640], [375, 667], [393, 852]]) {
+  test(`the counter holds together at ${w}×${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    const errors = await shift(page);
+    await page.evaluate(() => window.__town.room.cafe().call());
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.__town.room.cafe().arrive());
+    await page.evaluate(() => window.__town.room.cafe().serve());
+    await page.waitForTimeout(400);
+
+    const m = await page.evaluate(() => {
+      const box = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { top: b.top, bot: b.bottom, left: b.left, right: b.right, h: b.height, w: b.width }; };
+      const view = box('#twView'), tray = box('.tw-cup'), wl = document.getElementById('twWorld').getBoundingClientRect();
+      const s = wl.width / 2200;
+      return {
+        share: tray.h / view.h,
+        clipped: tray.bot - view.bot,
+        goWrap: (() => { const g = document.querySelector('.tw-cup__go'); return g ? g.scrollWidth - g.clientWidth : 0; })(),
+        // every customer at the rope, fully inside the frame
+        marks: window.__town.room.cafe().rope().map((r) => ({ l: wl.left + (r.x - 49.5) * s, r: wl.left + (r.x + 49.5) * s, foot: wl.top + r.y * s })),
+        view, tray,
+      };
+    });
+    expect(m.share, 'the tray takes a strip of the square, never a third of it').toBeLessThan(0.3);
+    expect(m.clipped, 'and no part of it is cut off by the frame').toBeLessThanOrEqual(1);
+    expect(m.goWrap, '⚠️ a button in this world never wraps and never clips').toBeLessThanOrEqual(0);
+    for (const k of m.marks) {
+      expect(k.l, 'every customer at the rope is inside the frame').toBeGreaterThanOrEqual(m.view.left - 1);
+      expect(k.r, 'on both sides').toBeLessThanOrEqual(m.view.right + 1);
+      expect(k.foot, 'with its feet above the counter UI').toBeLessThan(m.tray.top);
+    }
+
+    // ── and the receipt: a card owns the screen, so nothing of the world's chatter lands on it
+    await page.evaluate(() => window.__town.room.cafe().clockOut());
+    await page.waitForTimeout(500);
+    const over = await page.evaluate(() => {
+      const c = document.querySelector('.tw-card'), t = document.querySelector('.tw-toast');
+      if (!c || !t || t.hidden) return { clear: true, z: 0 };
+      const a = c.getBoundingClientRect(), b = t.getBoundingClientRect();
+      const hit = !(b.bottom <= a.top || b.top >= a.bottom || b.right <= a.left || b.left >= a.right);
+      const zc = +getComputedStyle(document.querySelector('.tw-panel')).zIndex, zt = +getComputedStyle(t).zIndex;
+      return { clear: !hit || zc > zt, z: zc - zt };
+    });
+    expect(over.clear, 'the toast does not paint over an open card').toBe(true);
+    expect(errors).toEqual([]);
+  });
+}

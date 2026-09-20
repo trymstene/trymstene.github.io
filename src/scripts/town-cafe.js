@@ -44,7 +44,10 @@ export const STATIONS = {
   // at the other two stations. Simulated over 20 000 cups against a gaussian thumb: a PERFECT cup
   // was 0–4% at every skill level, which is not a prize, it is a locked door. The band now sits
   // inside the bar and the pulse is slower, which puts the three stations within 10 ms of each other.
-  milk: { span: 1000, band: 0.44, floor: 0.24, at: 0.78, taps: 3 },
+  // ⚠️ 0.74, NOT 0.78: at 0.78 the band's right border landed exactly ON the bar's inner edge on the
+  // first cup of every shift (measured 0.0px of daylight at all four phone sizes) and was clipped away,
+  // so the target read as open-ended — a zone with only one wall does not say "land inside me".
+  milk: { span: 1000, band: 0.44, floor: 0.24, at: 0.74, taps: 3 },
 };
 
 // ⭐ THE ZONES TIGHTEN THE LONGER YOU STAY ON (the plan). The band closes toward its floor on a
@@ -377,7 +380,13 @@ const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js —
 // of the view — the camera follows the player, who is standing at the kiosk, and only about 520 world
 // px are on screen at a phone's width. 99 is what a banana is drawn at, so it is the tightest a queue
 // can be and still be a line, and it brings the third customer back inside the frame.
-const ROPE = [[1752, 1052], [1653, 1048], [1554, 1050]];
+// ⚠️ AND IT IS TWO MARKS, NOT THREE. Measured on four phones: the camera follows the player, who is
+// standing at the kiosk, so only about 520 world px are on screen — and with bodies 99 px wide the third
+// customer's left edge sat 37 to 43 px OUTSIDE the view at every size, including Trym's own 393. The
+// arithmetic does not bend: three bodies that do not overlap need 297 px of a band that starts at the
+// serving window and runs off the frame. A queue of two that you can see beats a queue of three you
+// cannot, and two at a kiosk hatch is what a queue looks like anyway.
+const ROPE = [[1752, 1052], [1653, 1048]];
 const PATIENCE = 34000;          // how long a banana will stand there before it gives up
 const NEXT = [5200, 12000];      // the gap between arrivals, while you are behind the counter
 
