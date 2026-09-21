@@ -3098,7 +3098,10 @@ export class YardRoom {
     // 📇 `who` and `pass` ride the row so the directory is a single storage read rather than 400
     // gets. ⚠️ the index is ONE stored value capped at 400 rows — keep what goes in it small.
     rest.unshift({ slug: doc.slug, name: doc.name, stage: (doc.state && doc.state.stage) || 0,
-      updated: doc.updated, owner: doc.otag || '', who: doc.who || undefined, pass: doc.pass ? 1 : 0 });
+      updated: doc.updated, owner: doc.otag || '', who: doc.who || undefined, pass: doc.pass ? 1 : 0,
+      // 👋 the last time somebody was actually HERE, which is not the same as the last time the yard
+      // changed — see /who. Only the book reads it.
+      seen: doc.seen || undefined });
     await this.state.storage.put('index', rest.slice(0, 400));
   }
 
@@ -3609,6 +3612,32 @@ export class YardRoom {
     // visit could not already reach; what it adds is the NAME and the BANANA, which is the whole
     // point — "a small profile image of the actual users' banana with their name and
     // Homestead-name" (Trym). ⚠️ `mine` is passed so you are never in your own address book.
+    // 📇 I AM HERE — the half the book needs and /save cannot give it. A yard only publishes when
+    // something CHANGES, so a player who opens their homestead, looks at the chickens and leaves
+    // never pushes at all, and would never appear in the address book however often they played.
+    // This is that one line: who lives here, and that they were about today.
+    //
+    // ⚠️ IT TOUCHES NOTHING ELSE, and that is the whole reason it is its own route rather than a
+    // boot-time /save. A save REPLACES the yard's state wholesale, so firing one at boot to carry a
+    // name is the clobber this repo has already been bitten by. This writes two fields.
+    //
+    // ⚠️ AND IT DOES NOT MOVE doc.updated. That stamp is the cross-device sync's own clock — bumping
+    // it here would make every other device's next save look stale and 409 for no reason. `seen` is
+    // a separate stamp that only the book reads.
+    if (path === '/who' && request.method === 'POST') {
+      const slug = await this.ownSlug(pass, alt, aliases);
+      if (!slug) return json({ err: 'unclaimed' }, 404);
+      const doc = await this.state.storage.get('y:' + slug);
+      if (!doc) return json({ err: 'gone' }, 404);
+      const w = yWho(body.who);
+      if (!w) return json({ err: 'nobody' }, 400);
+      doc.who = w;
+      doc.seen = Date.now();
+      await this.state.storage.put('y:' + slug, doc);
+      await this.indexUpsert(doc);
+      return json({ ok: 1, slug });
+    }
+
     if (path === '/folk' && request.method === 'GET') {
       const q = (url.searchParams.get('q') || '').toLowerCase().replace(/[^a-z0-9 '-]/g, '').trim().slice(0, 24);
       const mine = (url.searchParams.get('mine') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
@@ -3617,7 +3646,7 @@ export class YardRoom {
       const folk = [];
       for (const e of idx) {
         if (!e || !e.pass || !e.who || !e.who.n) continue;      // a Pass and a name: Trym's own bar
-        if (!(e.updated > cut)) continue;                        // …and somebody who still plays
+        if (!(Math.max(e.updated || 0, e.seen || 0) > cut)) continue;   // …and somebody who still plays
         if (e.slug === mine || yQa(e.slug)) continue;
         if (q && !((e.who.n || '').toLowerCase().includes(q) || (e.name || '').toLowerCase().includes(q))) continue;
         folk.push({ slug: e.slug, house: e.name || '', n: e.who.n, fit: e.who.fit || {} });

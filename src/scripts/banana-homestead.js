@@ -376,6 +376,20 @@ function init(visitDoc, visitMiss) {
   };
   // write the state down WITHOUT queueing a push — for bookkeeping fields only
   const saveRaw = () => { try { localStorage.setItem(HS_KEY, JSON.stringify(state)); } catch (e) {} };
+
+  // 📇 I AM HERE — once a visit, and only ever about YOU. The post office's address book is built
+  // out of who has a homestead, and a yard only publishes when something CHANGES: a player who opens
+  // their homestead, looks at the chickens and leaves never pushes at all, so they would never appear
+  // in the book however often they played. One request says who lives here and that they were about.
+  // ⚠️ NOT a /save. A save replaces the yard's state wholesale, which is the clobber this file has
+  // already been bitten by — /who writes two fields and touches nothing else.
+  let saidWho = false;
+  function sayWho() {
+    if (saidWho || visiting || !state.claimedAt || !state.slug || !myName) return;
+    saidWho = true;
+    yFetch('/who', { who: { n: myName, fit: { hat: myOutfit.hat, glasses: myOutfit.glasses, extras: myOutfit.extras } } })
+      .catch(() => { saidWho = false; });   // a lost request is a row that fills in next visit
+  }
   // debounced publish of the public snapshot (the yard the neighbours see)
   let pushT = null;
   function yardBody() {
@@ -3040,6 +3054,10 @@ function init(visitDoc, visitMiss) {
   async function yardBoot() {
     if (visiting || !state.claimedAt) return;
     try {
+      // 📇 the address book's other half, and it runs on EVERY visit rather than on a change:
+      // a yard only publishes when something moves, so somebody who opens their homestead, looks at
+      // the chickens and leaves would never once appear in the post office's book.
+      sayWho();
       if (!state.slug) {
         const r = await yFetch('/claim', { name: state.name });
         if (!r || !r.slug) return;

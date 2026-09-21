@@ -46,6 +46,25 @@ for (const p of people) {
   ok(s.status === 200, '…and saved it' + (p.name ? ' with who lives there' : ' with nobody named'), s.status);
 }
 
+// ── 👋 I AM HERE: the half /save cannot give, because a yard only publishes when it CHANGES ──
+// somebody who opens their homestead, looks at the chickens and leaves must still reach the book
+const lurker = { pass: 'proof-lurk-' + Date.now(), house: 'Quiet Gate', name: 'Lurk' };
+{
+  const c = await yard('/claim', { pass: lurker.pass, alt: lurker.pass, name: lurker.house });
+  lurker.slug = c.j && c.j.slug;
+  ok(!!lurker.slug, 'a homestead claimed and then never saved again', c.status);
+  const before = ((await yard('/folk')).j || {}).folk || [];
+  ok(!before.some((f) => f.slug === lurker.slug), '…is not in the book yet', 'it is');
+  const w = await yard('/who', { pass: lurker.pass, alt: lurker.pass, who: who(lurker.name) });
+  ok(w.status === 200, 'and one line says who lives there', w.status + ' ' + JSON.stringify(w.j));
+  const after = ((await yard('/folk')).j || {}).folk || [];
+  ok(after.some((f) => f.slug === lurker.slug), '…which is all it takes to be in it', 'still missing');
+}
+{
+  const bare = await yard('/who', { pass: lurker.pass, alt: lurker.pass, who: { n: '' } });
+  ok(bare.status === 400, 'a nameless hello is refused rather than filed', bare.status);
+}
+
 // ── the book ────────────────────────────────────────────────────────────────────────────────
 const all = await yard('/folk');
 const folk = (all.j || {}).folk || [];
