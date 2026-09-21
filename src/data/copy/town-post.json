@@ -13,6 +13,7 @@
   "sheet": "Writing to {who}",
   "send": "Send letter",
   "sent": "The letter slips into the blue mailbox.",
+  "nopass": "The counter cannot find your house name yet. Your letter waits in the writing tray.",
   "refused": "This letter stays in the writing tray.",
   "card": {
     "title": "Picture Postcard",

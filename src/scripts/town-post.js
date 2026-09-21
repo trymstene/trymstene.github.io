@@ -27,6 +27,7 @@ import { readWorn, drawable } from '../lib/wardrobe-slots.js';
 // 🪪 the proof that a letter is really from your house — the rail resolves the sender from this
 // and never from anything the page claims, so a send without it is refused.
 import { worldToken, worldOwner, worldSid } from '../lib/world.js';
+import { passPush } from '../lib/banana-pass.js';
 
 const COPY_MODS = import.meta.glob('../data/copy/town-post.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
@@ -64,12 +65,47 @@ export function bootTownPost(ctx) {
   // ⚠️ EVERY CALL FAILS SOFT. The kill switch answers 503 by design and it ships ON, so "the counter is
   // closed" is the NORMAL path today, not an error — a card that showed a stack trace for the expected
   // state would be wrong on the day it shipped.
+  // 🪪 A SEND NEEDS A PROOF, AND A PROOF GOES STALE. `world-wt` lasts 30 days and is refreshed
+  // by a pass push — which happens constantly while somebody is playing, and not at all for
+  // somebody who comes back after a month and walks straight to the post office. Without this
+  // their letter would be refused by the rail and the card would show the MODERATION line: telling
+  // a person their perfectly ordinary letter was rejected, which is the one lie this card must
+  // never tell. So a missing proof is FETCHED rather than reported.
+  // ⚠️ verified on the live site: a fresh visitor to the town already has 30 days on the clock, so
+  // this path is for the returning player and nobody else — it costs nothing when the token is good.
+  async function proof() {
+    if (worldToken()) return true;
+    // ⚠️ A PUSH CAN ONLY REFRESH A PASS THAT EXISTS. With neither a link nor a world id there is
+    // nothing to fetch, and waiting two seconds to discover that helps nobody — it also leaves the
+    // card BUSY meanwhile, so the next tap does nothing, which the thumb walk caught by tapping
+    // Report straight after a send and watching it be ignored. Hopeless is answered immediately.
+    let known = false;
+    try { known = !!(localStorage.getItem('pass-link') || localStorage.getItem('world-gid')); } catch (e) {}
+    if (!known) return false;
+    try { passPush(); } catch (e) {}
+    for (let i = 0; i < 10 && !worldToken(); i++) await new Promise((r) => setTimeout(r, 140));
+    return !!worldToken();
+  }
+
+  // ⚠️ A REFUSAL AND A STRANGER ARE NOT THE SAME THING. Everything the server turns down says the
+  // same unhelpful — and deliberately uninformative — line, because a precise reason is a lesson in
+  // getting round the filter. But “the counter does not know who you are” is not a judgement on the
+  // letter at all, and showing the refusal there tells somebody their perfectly ordinary words were
+  // rejected. That is the one lie this card must never tell.
+  const turnedDown = (res) => ((res && res.error === 'noproof') ? (COPY.nopass || COPY.refused || '') : (COPY.refused || ''));
+
   async function ask(path, body) {
     const me = slug ? slug() : '';
     // ✉️⚠️ NO ADDRESS IS NOT A CLOSED COUNTER. A mailbox is keyed to the homestead's sign name, so a
     // player who has never claimed a yard has nowhere for a letter to land — and this returned the kill
     // switch's own error, so the card told them the post office was shut. It is not; they have no door.
     if (!me) return { error: 'noaddress' };
+    // ⚠️ THE SEND, AND NOTHING ELSE. This was every POST for a few minutes, which quietly broke
+    // REPORTING — caught by the thumb walk. Reading, reporting and marking a letter read are things
+    // you do to YOUR OWN box, addressed by a slug the router already has; only a send has to be
+    // signed, because only a send puts your name on somebody else's screen. And the one path that
+    // must never be blocked by a stale anything is the one that takes a bad letter away.
+    if (path === '/send' && !(await proof())) return { error: 'noproof' };
     try {
       const res = await fetch(API + path + (body ? '' : '?slug=' + encodeURIComponent(me)), {
         method: body ? 'POST' : 'GET',
@@ -497,7 +533,7 @@ export function bootTownPost(ctx) {
       } else {
         // ⚠️ THE SAME LINE WHATEVER THE SERVER SAID, exactly as for a letter: a card can only be
         // refused by the cap or by the master switch, and neither is the sender's business.
-        say(COPY.refused || '');
+        say(turnedDown(res));
         track('post_refused', { at: 'post', why: (res && res.error) || 'off' });
       }
     });
@@ -520,7 +556,7 @@ export function bootTownPost(ctx) {
         // ⚠️ THE SAME LINE WHATEVER THE SERVER SAID. It answers `refused` for the filter and for the cap
         // alike, and even if it did not, telling somebody WHICH wall they hit is a lesson in getting
         // round it next time. The reason rides the event for us, never the screen for them.
-        say(COPY.refused || '');
+        say(turnedDown(res));
         track('post_refused', { at: 'post', why: (res && res.error) || 'off' });
       }
     });

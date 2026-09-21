@@ -684,6 +684,7 @@ const postFields = {
   'folk.wait': { kind: 'prose', aim: 30, max: 44, note: 'The one line where the list goes, for the half-second the book is on its way. Calm and brief — it is a page turning, not a load. Never “Loading”, never a spinner’s words, never a promise about what will be there.' },
   'folk.empty': { kind: 'prose', aim: 74, max: 100, note: 'The whole of the list when there is genuinely NOBODY to write to — a world this small will hit it. ⚠️ it must not read as a fault and must not read as sad: the people are simply not about. It may not explain the rule (a Pass and a Homestead), may not name a number, and may not tell anybody to come back later.' },
   'folk.none': { kind: 'prose', aim: 56, max: 78, note: 'The same place, when a SEARCH found nobody. It is about the word they typed, not about the world being empty — the two states are different and must not share a line. Never an apology, never “try again”.' },
+  nopass: { kind: 'prose', aim: 74, max: 100, note: '⚠️ WHAT THE COUNTER SAYS WHEN IT CANNOT TELL WHOSE THE LETTER IS. Post is signed by the house it came from, and this device has not shown the counter who it is — which happens to somebody coming back after a long time away, before anything has caught up. ⭐ IT MUST NOT BLAME THE LETTER: the words are fine, the writer is simply not known yet, and telling them their ordinary letter was rejected is the one lie this card must never tell. Not technical (never “pass”, “token”, “sync”, “device”, “signed in”), not an error, and it does not instruct — it is the clerk not finding your name behind the counter yet. Calm and brief, and it leaves the letter still there to send.' },
   refused: { kind: 'prose', aim: 78, max: 105, note: '⭐ THE HARDEST LINE IN THE JOB. What the writer sees when the filter stops their letter. It must be KIND, FINAL and COMPLETELY UNINFORMATIVE: it names no rule, no word and no reason, and it does not suggest what to change — a precise reason is a lesson in getting round the filter next time. It must also not sound like an accusation, because most people who ever see this typed something perfectly ordinary and were caught by a shop’s name or a phone number.' },
 };
 // 🤐 THE REFUSAL MAY NOT TEACH. A machine cannot judge kindness, but it can judge whether a line has
@@ -724,7 +725,7 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card', 'folk'],
+  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk'],
   properties: {
     ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.')).map(([k, v]) => [k, str(v.note)])),
     // 📮 the postcard: a heading, the three place names, the deck of eight, and the two words
@@ -1063,7 +1064,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card', 'folk'],
+    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,
