@@ -134,6 +134,10 @@ export function bootTownPost(ctx) {
 
   // ---- the pieces --------------------------------------------------------------------------------
   const who = (n) => esc((COPY.from || '{who}').replace('{who}', n));
+  // ⚠️ `bare` is already taken inside html() for something else entirely — a shadowed helper is a
+  // bug waiting for the day somebody moves a line.
+  const plain = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const same = (a, b) => !b || plain(a) === plain(b);
   const peek = (t) => esc(String(t || '').slice(0, 64)) + (String(t || '').length > 64 ? '…' : '');
   // ✍️ the door OUT of the mailbox. ⭐ it is at the top level and not on a letter, which is the whole
   // fix: before this, writing to somebody required already having heard from them.
@@ -275,7 +279,12 @@ export function bootTownPost(ctx) {
       const f = w.folk || {};
       const rows = folk.rows.map((p) => '<button type="button" class="tw-folk__row" data-slug="' + esc(p.slug) + '" data-name="' + esc(p.n) + '">'
         + '<span class="tw-folk__pic"><canvas class="tw-folk__me" width="' + CV + '" height="' + CV + '"></canvas></span>'
-        + '<span class="tw-folk__who"><b>' + esc(p.n) + '</b><small>' + esc(p.house) + '</small></span>'
+        // ⚠️ A PERSON AND THEIR HOUSE ARE OFTEN THE SAME WORDS. Plenty of players name the
+        // homestead after themselves — Trym's own row came back “Trym Stene / Trym Stene” — and a
+        // row that says it twice reads as a bug. One name, once; the house only when it adds
+        // something. Compared loosely, because “Ada” and “ada's” are not two facts either.
+        + '<span class="tw-folk__who"><b>' + esc(p.n) + '</b>'
+        + (same(p.n, p.house) ? '' : '<small>' + esc(p.house) + '</small>') + '</span>'
         + '</button>').join('');
       body = '<div class="tw-folk">'
         + '<input type="search" class="tw-folk__find" id="twFolkFind" autocomplete="off" spellcheck="false"'
