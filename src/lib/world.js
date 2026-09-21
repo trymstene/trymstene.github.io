@@ -436,4 +436,16 @@ export function curseBetween(from, to) {
   }
   return out.sort((a, b) => a.at - b.at);
 }
+
+// 🌃 THE TOWN'S OWN NIGHT — the last beat of its twelve-minute day, as a pure function of time. The
+// square keeps this clock itself (town-life.js: DAY_MS 720000, six beats of two minutes, beat 5 is
+// night); the TownRoom needs the same answer so it takes a ghost's damage only while ghosts are out.
+// ⚠️ the numbers are town-life.js's — change them there and here, or the room refuses every night.
+export const TOWN_DAY_MS = 720000;
+export function townNightAt(t) {
+  const inDay = t % TOWN_DAY_MS;
+  // the night runs 600000–720000; a report lands a moment after the thing it reports, so the first
+  // half-minute of dawn still counts as the night just gone
+  return inDay >= 600000 || inDay < 30000;
+}
 // CLOCK-END

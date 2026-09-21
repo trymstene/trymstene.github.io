@@ -28,15 +28,17 @@ const town = async (page, life = 95) => {
 };
 // ⚠️ WAIT FOR THE SQUARE, never for a clock. A fixed sleep passed alone and failed in the full
 // suite, where two workers share a machine and the re-render lands later than it does on its own.
-// ⚠️ …and for the WHOLE mark. Waiting for the first lamp and then reading the bins raced the reseed
-// under two workers: lamps were in, bins were not yet, and "bins to put right" read 0.
-const settle = async (page, want, binsBefore = 0) => {
-  await page.waitForFunction(([w, b0]) => {
+// ⚠️ …and for the WHOLE mark: the lamps AND more problems than before. Waiting for the first lamp
+// alone raced the reseed under two workers. ⚠️ NOT for the bins by name: a dark lamp is ALWAYS one of
+// your problems (the closed-door rule), but a full bin is one candidate in a weighted, wave-capped
+// draw (PROBLEM_OPEN = 6, and a deep night's six lamps can fill every slot) — so "bins to put right"
+// was a coin toss on the seed, and it came up 0 once in three runs.
+const settle = async (page, want, before = 0) => {
+  await page.waitForFunction(([w, n0]) => {
     const s = window.__town.room, ps = s.problems();
     const lamps = ps.filter((p) => p.type === 'lamp').length;
-    const bins = ps.filter((p) => p.type === 'bin' || p.type === 'dumpster').length;
-    return w === 'marked' ? (lamps > 0 && bins > b0) : lamps === 0;
-  }, [want, binsBefore], { timeout: 15000 }).catch(() => {});
+    return w === 'marked' ? (lamps > 0 && ps.length > n0) : lamps === 0;
+  }, [want, before], { timeout: 15000 }).catch(() => {});
 };
 const seen = (page) => page.evaluate(() => {
   const s = window.__town.room, ps = s.problems();
@@ -64,21 +66,21 @@ test('a curse night leaves work behind, even on a thriving square', async ({ pag
   // ── the morning after a deep night
   const door = await page.evaluate(() => window.__town.room.morning('deep', 180));
   expect(door && door.kind, 'the room says which night it was').toBe('deep');
-  await settle(page, 'marked', before.bins);
+  await settle(page, 'marked', before.problems);
   const after = await seen(page);
 
   // ⚠️ the band has NOT moved — which is the whole point. The square changed anyway.
   expect(after.band, 'the band is untouched').toBe(before.band);
   expect(after.curseNow, 'and no curse is happening NOW — this is the morning').toBe('none');
   expect(after.lamps, 'there are lamps to relight where there were none').toBeGreaterThan(0);
-  expect(after.bins, '…and bins to put right').toBeGreaterThan(before.bins);
+  expect(after.bins, '…and no bin was emptied by the night').toBeGreaterThanOrEqual(before.bins);
   expect(after.litter, '…and more on the ground').toBeGreaterThan(before.litter);
   expect(after.problems, 'so a thriving square has real work in it the morning after')
     .toBeGreaterThan(before.problems);
 
   // ── a creep is the lighter night, and it says so
   await page.evaluate(() => window.__town.room.morning('creep', 180));
-  await settle(page, 'marked', before.bins);
+  await settle(page, 'marked', before.problems);
   const creep = await seen(page);
   expect(creep.problems, 'a creep leaves less than a deep').toBeLessThan(after.problems);
   expect(creep.problems, '…and still more than a quiet night').toBeGreaterThan(before.problems);
@@ -89,5 +91,40 @@ test('a curse night leaves work behind, even on a thriving square', async ({ pag
   await settle(page, 'clear');
   const later = await seen(page);
   expect(later.lamps, 'a night long past leaves no lamps out').toBe(0);
+  expect(errs, 'nothing threw').toEqual([]);
+});
+
+// 👻 THE GHOSTS' DAMAGE COSTS THE TOWN (21 Sep 2026). Trym: *"just stood still by the fountain through
+// a night - the town health didnt decrease a single percent while ghosts had fun for the whole night -
+// the meter didnt move a bit - doesnt feel very scary then"*. The night he sat through was the town's
+// own (one every twelve minutes) and only Curse Nights charged the meter. Now a lamp a ghost puts out
+// and a bin it tips are a point each: at once on the bar, then on the room's word, and capped per
+// person per day so a script cannot sink the town faster than a player can lift it.
+test('a ghost’s damage costs the town — at once, on the room’s word, and never past the day’s cap', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => { window.__ev = []; window.gtag = (kind, name, p) => window.__ev.push([name, p]); });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await town(page, 95);
+  const before = await page.evaluate(() => window.__town.room.life().life);
+  expect(before, 'a healthy town').toBeGreaterThanOrEqual(90);
+
+  // ── two things broken: the bar drops two, and the room agrees
+  const j = await page.evaluate(() => window.__town.room.dark(2));
+  expect(j && j.counted, 'the room counted both').toBe(2);
+  const after = await page.evaluate(() => ({ life: window.__town.room.life().life, bar: document.querySelector('.tw-hbar').textContent }));
+  expect(after.life, 'two points off the meter').toBeCloseTo(before - 2, 5);
+  expect(after.bar, 'and the bar on screen says so').toContain(Math.round(before - 2) + '%');
+  const ev = await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_dark'));
+  expect(ev.length, 'Pulse hears about it once per batch').toBe(1);
+
+  // ── the day's cap: eight per person, then the town stops paying (the lamp stays yours to relight)
+  const j2 = await page.evaluate(() => window.__town.room.dark(6));
+  expect(j2 && j2.counted, 'six more, all counted').toBe(6);
+  const j3 = await page.evaluate(() => window.__town.room.dark(3));
+  expect(j3 && j3.counted, 'past the cap nothing is counted…').toBe(0);
+  const capped = await page.evaluate(() => window.__town.room.life());
+  expect(capped.life, '…and the meter stands where the cap left it').toBeCloseTo(before - 8, 5);
+  expect(capped.dark && capped.dark.used, 'the day’s share is spent').toBe(8);
   expect(errs, 'nothing threw').toEqual([]);
 });

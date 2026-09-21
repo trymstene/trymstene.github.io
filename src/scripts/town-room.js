@@ -83,7 +83,7 @@ export function bootTownLife(ctx) {
   // worker and pushed to any band from the QA seam. The shim answers like the room does.
   // 🌑 `night` is the QA door for the MORNING AFTER: a walk cannot wait a month for a deep Curse
   // Night (3% of days) and then stay up for it. { tier, at } is exactly what the room would say.
-  const shim = { v: 42, used: 0, fixes: 0, people: 0, night: null };
+  const shim = { v: 42, used: 0, fixes: 0, people: 0, night: null, dark: 0 };
   function bandOf(v) {
     let b = BANDS[0];
     for (const k of BANDS) if (v >= BAND_LO[k]) b = k;
@@ -95,7 +95,10 @@ export function bootTownLife(ctx) {
     const own = worldOwner(), sid = worldSid(), wt = worldToken();
     if (TEST) {
       if (path === '/fix') { if (shim.used < 24) { shim.v = Math.min(100, shim.v + 2); shim.used++; shim.fixes++; shim.people = 1; } }   // mirrors worker-rave TOWN_FIX / TOWN_FIX_CAP
-      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, today: { fixes: shim.fixes, people: shim.people },
+      let counted = 0;
+      // 👻 mirrors worker-rave TOWN_DARK / TOWN_DARK_CAP / TOWN_DARK_N (the night gate is the room's; the shim is always night)
+      if (path === '/dark') { const n = Math.max(1, Math.min(6, Math.round(+(body && body.n)) || 1)); counted = Math.max(0, Math.min(n, 8 - shim.dark)); shim.v = Math.max(5, shim.v - counted); shim.dark += counted; }
+      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 8 }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
         // ⚠️ a forced MORNING says a night happened and that none is happening now — setting `curse`
         // to the tier put ghosts in the square in daylight, which is a different thing entirely.
         curse: curseAt(Date.now()).type, stormAt: 0,
@@ -134,6 +137,29 @@ export function bootTownLife(ctx) {
   let wasBand = null, wasMark = '';
   const lampWas = {};
   async function read() { readAt = Date.now(); apply(await lifeFetch('')); }
+  // 👻 A GHOST'S DAMAGE IS CHARGED TO THE TOWN (21 Sep 2026; Trym: "the meter didnt move a bit -
+  // doesnt feel very scary then"). Each lamp a ghost puts out and each bin it tips is a point off the
+  // meter — at once here, and on the room's word a moment later (worker-rave /life/dark: capped per
+  // person per day, taken only while ghosts are out). Batched: a ghost rests every twenty seconds or
+  // so, so a night is a handful of calls, never one a frame.
+  let darkN = 0, darkT = 0;
+  const flushDark = async () => {
+    clearTimeout(darkT); darkT = 0;
+    const n = darkN; darkN = 0;
+    if (!n) return null;
+    track('town_dark', { n });
+    const j = await lifeFetch('/dark', { n });
+    if (j) apply(j);
+    return j;
+  };
+  function dark(n) {
+    n = Math.max(1, Math.round(+n || 1));
+    // the optimistic notch, the fix's mirror: drawn only while the day's share is unspent, so the bar
+    // never shows a drop the room will not confirm
+    if (!L.dark || L.dark.used < L.dark.max) { L.life = Math.max(0, L.life - n); if (L.dark) L.dark.used += n; paintMeter(); }
+    darkN += n;
+    if (!darkT) darkT = setTimeout(flushDark, 1500);
+  }
   // a read on arrival, then every minute while the tab is looked at; a tab that comes back
   // reads at once (a storm may have passed)
   read();
@@ -791,7 +817,7 @@ export function bootTownLife(ctx) {
     }
     // the optimistic notch: the room's word replaces it on the reply (and if the day's share is
     // spent the notch is not drawn at all — the bar never lies and comes back)
-    if (L.cap && L.cap.used < L.cap.max) { L.life = Math.min(100, L.life + 1.2); L.cap.used += 1; paintMeter(); }
+    if (L.cap && L.cap.used < L.cap.max) { L.life = Math.min(100, L.life + 2); L.cap.used += 1; paintMeter(); }   // 2 = worker-rave TOWN_FIX
     // the pay: on the pass, area 'town', faucet 'fix' (worker-pass RULES.town.fix)
     const coins = p.pays[0] + Math.floor(h(dayNum(), i, 99) * (p.pays[1] - p.pays[0] + 1));
     const got = passStat('coins_earned', coins, 'fix') != null ? coins : 0;
@@ -1091,6 +1117,8 @@ export function bootTownLife(ctx) {
       // ⚠️ GETTERS, because this file reassigns every one of them
       band: () => band, problems: () => problems, curse: () => curse, vendor: () => vendor,
       night: () => night, plainNight: () => plainNight, curseTold: () => curseTold,
+      // 👻 what a ghost's mischief costs the town, and the float that shows it where it happens
+      dark, float,
       // …and setters, because a getter cannot stand on the left of an assignment
       setCurse: (v) => { curse = v; }, setVendor: (v) => { vendor = v; },
       setPlainNight: (v) => { plainNight = v; }, setCurseTold: (v) => { curseTold = v; } };
@@ -1316,6 +1344,8 @@ export function bootTownLife(ctx) {
     // The only way to see it otherwise is to wait for a deep night, which is 3% of days.
     // ⚠️ `morning`, not `night` — this seam already has a night() further down (the darkness level)
     // and the later key silently wins, so the door answered 0.5 and the walk saw nothing change.
+    // 👻 QA: charge the town for a ghost's damage, through the real path (the notch, the batch, the room's reply)
+    dark: (n) => { if (!TEST) return null; dark(n); return flushDark(); },
     morning: (tier, agoMins) => { if (!TEST) return null; shim.night = tier ? { tier, at: Date.now() - (agoMins || 0) * 60000 } : null; return read().then(() => ({ kind: L.curseKind, at: L.curseAt, now: L.curse })); },
     omen: () => !!(dusk && dusk.omenOn()), nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
     // ⚠️ `art` is the SPRITE this problem wears, not its type: a litter problem is a bin bag or a

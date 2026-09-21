@@ -27,7 +27,7 @@ import { grantToShed } from '../lib/homestead-inventory.js';
 export function bootTownNight(ctx) {
   const {
     // tables and plain things, passed once
-    DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track, float,
+    DEX, W_OBJ, ANCHORS, W, H, pct, view, world, cond, life, weather, say, track, float, dark,
     poof, burst, mark, sprite, show, kill, moveSprite, body, bodies, killBody, propOf, perchZ,
     glowProblem, setFull, lampsByHour, shutters, dayNum, found, weighted, h, one,
     fill, todayShut, keepFn, LAMP_HIT, litterRoom,
@@ -174,6 +174,11 @@ export function bootTownNight(ctx) {
       p.sprite = sprite(kind, x, y); glowProblem(p); poof(x, y - 6); did = 'litter';
     }
     g.mess = (g.mess || 0) + 1;
+    // 👻 …AND THE TOWN PAYS FOR IT: a lamp out or a bin tipped is a point off the meter (town-room's
+    // dark(); a dropped piece of litter is free). The −1 rises where the ghost rests, so the cost is
+    // seen the moment it happens — the night's whole complaint was a meter that never moved (Trym,
+    // 21 Sep: "ghosts had fun for the whole night - the meter didnt move a bit").
+    if (did && did !== 'litter' && dark) { dark(1); if (float) float(gx, gy - 48, '\u22121'); }
     return did;
   }
   // 👋 CAUGHT: walked into, a ghost un-forms — the pack's own forming frames played backwards — in a purple burst;

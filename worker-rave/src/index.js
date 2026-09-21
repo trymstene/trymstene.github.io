@@ -268,6 +268,18 @@ function curseBetween(from, to) {
   }
   return out.sort((a, b) => a.at - b.at);
 }
+
+// 🌃 THE TOWN'S OWN NIGHT — the last beat of its twelve-minute day, as a pure function of time. The
+// square keeps this clock itself (town-life.js: DAY_MS 720000, six beats of two minutes, beat 5 is
+// night); the TownRoom needs the same answer so it takes a ghost's damage only while ghosts are out.
+// ⚠️ the numbers are town-life.js's — change them there and here, or the room refuses every night.
+const TOWN_DAY_MS = 720000;
+function townNightAt(t) {
+  const inDay = t % TOWN_DAY_MS;
+  // the night runs 600000–720000; a report lands a moment after the thing it reports, so the first
+  // half-minute of dawn still counts as the night just gone
+  return inDay >= 600000 || inDay < 30000;
+}
 // CLOCK-END
 function vinylSpot(w) {
   let x = 12 + seedRand(0x5eed + w * 2) * 70;
@@ -1303,6 +1315,18 @@ const TOWN_CURSE = { hush: 0, creep: 20, deep: 35 };
 const TOWN_FIX = 2.0, TOWN_FIX_CAP = 24;     // one contribution, and the most one person moves the town in a UTC day
                                              // (1.2 / 10 until 15 Sep: a day of fixing barely showed on the bar — Trym: "i dont know
                                              //  what more i can do to increase it". A full day now lifts a band; the drift still takes it back)
+// 👻 THE GHOSTS' DAMAGE IS CHARGED TO THE TOWN (21 Sep 2026). Trym: "just stood still by the fountain
+// through a night - the town health didnt decrease a single percent while ghosts had fun for the
+// whole night - the meter didnt move a bit - doesnt feel very scary then". The night he sat through
+// was the town's own (one every twelve minutes, cosmetic by design); only the rare real-time Curse
+// Nights charged the meter, and since 20 Sep every night has ghosts, so it LOOKED like one. Now each
+// lamp a ghost puts out and each bin it tips costs the town a point, reported by the client that
+// watched it happen (/life/dark) — and relighting it pays two back, so a night's damage is exactly
+// the work the morning has in it. Bounded twice: TOWN_DARK_N per report and TOWN_DARK_CAP per person
+// per UTC day (about one night's worth — the fix cap's mirror, so a script cannot sink the town any
+// faster than a player can lift it), and taken only while ghosts are out: the town's own night
+// (townNightAt, the shared clock) or a Curse Night.
+const TOWN_DARK = 1, TOWN_DARK_CAP = 8, TOWN_DARK_N = 6;
 const TOWN_WALK_MAX = 48 * 3600_000;         // a room nobody read for a week walks two days of it, not seven
 const TOWN_BANDS = [[85, 'thriving'], [65, 'lively'], [40, 'recovering'], [15, 'struggling'], [0, 'abandoned']];
 const townBand = (v) => (TOWN_BANDS.find(([lo]) => v >= lo) || TOWN_BANDS[TOWN_BANDS.length - 1])[1];
@@ -1377,10 +1401,22 @@ export class TownRoom {
     const proven = !!tok && tok.gid.slice(0, 8) === pP;
     const day = dayOf(now);
     const usedBy = (short) => (short && fday[short] && fday[short].d === day ? fday[short].n : 0);
+    const darkBy = (short) => (short && fday[short] && fday[short].d === day ? (fday[short].k || 0) : 0);
     const used = Math.max(usedBy(pP), pA && pA !== pP ? usedBy(pA) : 0);
+    const darkUsed = Math.max(darkBy(pP), pA && pA !== pP ? darkBy(pA) : 0);
     const cu = curseAt(now);
-    let people = 0, fixes = 0;
-    for (const k of Object.keys(fday)) if (fday[k].d === day) { people++; fixes += fday[k].n; }
+    let people = 0, fixes = 0, darkN = 0;
+    const tally = () => { people = 0; fixes = 0; darkN = 0; for (const k of Object.keys(fday)) if (fday[k].d === day) { people++; fixes += fday[k].n || 0; darkN += fday[k].k || 0; } };
+    tally();
+    // bounded — yesterday's names go first, then the oldest of today's
+    const prune = () => {
+      const keys = Object.keys(fday);
+      if (keys.length > 400) {
+        for (const k of keys) if (fday[k].d !== day) { delete fday[k]; if (Object.keys(fday).length <= 320) break; }
+        const left = Object.keys(fday);
+        while (left.length > 400) delete fday[left.shift()];
+      }
+    };
     const payload = (extra) => ({
       // ⚠️ ONE DECIMAL: a single contribution is 1.2 and the client's band has hysteresis
       life: Math.round(life.v * 10) / 10,
@@ -1389,7 +1425,8 @@ export class TownRoom {
       stormAt, curseAt: curseAt_, curseKind: curseKind_,
       curse: cu.type,                          // the clock's own word, so a client can prove it agrees
       cap: { used, max: TOWN_FIX_CAP },
-      today: { fixes, people },
+      dark: { used: darkUsed, max: TOWN_DARK_CAP },
+      today: { fixes, people, dark: darkN },
       at: now,
       ...extra,
     });
@@ -1416,7 +1453,8 @@ export class TownRoom {
       await persist();
       return json(payload({ ok: 1 }));
     }
-    if (url.pathname !== '/life/fix') return json(payload({ err: 'not found' }), 404);
+    const isDark = url.pathname === '/life/dark';
+    if (url.pathname !== '/life/fix' && !isDark) return json(payload({ err: 'not found' }), 404);
     const pass = typeof b.pass === 'string' ? b.pass.slice(0, 24) : '';
     const short = pass.slice(0, 8);
     if (!short) return json(payload({ err: 'bad pass' }), 400);
@@ -1430,28 +1468,47 @@ export class TownRoom {
       }
     }
     const alt = (typeof b.alt === 'string' ? b.alt.slice(0, 8) : '');
+    // the person's two counters today, whichever name they were kept under
+    const haveFix = () => Math.max(usedBy(short), alt && alt !== short ? usedBy(alt) : 0);
+    const haveDark = () => Math.max(darkBy(short), alt && alt !== short ? darkBy(alt) : 0);
+    const mine = () => ({ cap: { used: haveFix(), max: TOWN_FIX_CAP }, dark: { used: haveDark(), max: TOWN_DARK_CAP } });
+    if (isDark) {
+      // 👻 only while ghosts are out — the town's own night or a Curse Night. TOWN_NIGHT_ANYTIME is
+      // a wrangler --var for the local proof (tools/town-dark-proof.mjs); production never sets it.
+      const anytime = !!(this.env && String(this.env.TOWN_NIGHT_ANYTIME || '') === '1');
+      const cursed = cu.type === 'creep' || cu.type === 'deep';
+      if (!anytime && !cursed && !townNightAt(now)) { if (dirty) await persist(); return json({ ...payload({ ok: 1, counted: 0, why: 'day' }), ...mine() }); }
+      const n = Math.max(1, Math.min(TOWN_DARK_N, Math.round(+b.n) || 1));
+      const had = haveDark();
+      // ⚠️ THE CAP IS SILENT HERE TOO: past it the lamp is still out on the client and still yours
+      // to relight; only the town stops paying for it. Never an error — the payload with counted: 0.
+      const counted = Math.max(0, Math.min(n, TOWN_DARK_CAP - had));
+      if (counted) {
+        // ⚠️ ONLY EVER DOWNWARD, and never through the floor — the storm's rule, the ghosts' too
+        life.v = Math.max(TOWN_FLOOR, life.v - TOWN_DARK * counted);
+        fday[short] = { d: day, n: haveFix(), k: had + counted };
+        if (alt && alt !== short) delete fday[alt];   // fold the old name in
+        prune();
+      }
+      await persist();
+      tally();
+      return json({ ...payload({ ok: 1, counted }), ...mine() });
+    }
     // ⚠️ THE CAP IS INVISIBLE TO THE PERSON FIXING. Past it the fix still clears the
     // problem and still pays on the client; only the town stops absorbing it. So the
     // answer is never an error — it is the same payload with counted: 0.
-    const have = Math.max(usedBy(short), alt && alt !== short ? usedBy(alt) : 0);
+    const have = haveFix();
     let counted = 0;
     if (have < TOWN_FIX_CAP) {
       life.v = Math.min(100, life.v + TOWN_FIX);
-      fday[short] = { d: day, n: have + 1 };
+      fday[short] = { d: day, n: have + 1, k: haveDark() };   // ⚠️ k rides along, or a fix would forgive the night
       if (alt && alt !== short) delete fday[alt];   // fold the old name in
       counted = 1;
-      // bounded — yesterday's names go first, then the oldest of today's
-      const keys = Object.keys(fday);
-      if (keys.length > 400) {
-        for (const k of keys) if (fday[k].d !== day) { delete fday[k]; if (Object.keys(fday).length <= 320) break; }
-        const left = Object.keys(fday);
-        while (left.length > 400) delete fday[left.shift()];
-      }
+      prune();
     }
     await persist();
-    people = 0; fixes = 0;
-    for (const k of Object.keys(fday)) if (fday[k].d === day) { people++; fixes += fday[k].n; }
-    return json({ ...payload({ ok: 1, counted }), cap: { used: Math.max(usedBy(short), alt && alt !== short ? usedBy(alt) : 0), max: TOWN_FIX_CAP }, today: { fixes, people } });
+    tally();
+    return json({ ...payload({ ok: 1, counted }), ...mine() });
   }
 }
 

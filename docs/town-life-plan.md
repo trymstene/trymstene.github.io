@@ -216,6 +216,17 @@ other way). The ledger of what a player has found lives on the pass (`cur_<id>`,
 that travels). Found, the object goes home as the ordinary thing; the night vendor buys
 one back at a bounty. **Every word of that text comes through the copy rig.**
 
+**The ghosts' damage is charged (21 Sep 2026).** Trym sat by the fountain through a night: *"the
+town health didnt decrease a single percent while ghosts had fun for the whole night … doesnt feel
+very scary then."* That night was the town's own — one every twelve minutes, cosmetic by design —
+and only Curse Nights charged the meter; since 20 Sep every night has ghosts, so it looked like one.
+Now each lamp a ghost puts out and each bin it tips costs the town **one point**, reported by the
+client that watched it (`/life/dark`), and relighting it pays two back — a night's damage is exactly
+the work the morning has in it. Bounded twice: six per report and **eight per person per UTC day**
+(about one night's worth, the fix cap's mirror), taken only while ghosts are out (the town's night,
+`townNightAt` in the shared clock, or a Curse Night), never through the floor. A `−1` rises where the
+ghost rests, so the cost is seen at the moment it happens. Pulse: `town_dark`.
+
 **Both feelings at once.** A Curse Night costs the town, so the morning after needs you.
 It also carries the only route to the vendor's shelf and the objects. A healthy town is
 desirable; disruption is where the good things are.
