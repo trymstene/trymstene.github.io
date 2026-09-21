@@ -79,7 +79,35 @@ export function bootTownNight(ctx) {
     return best;
   }
   // a roamer's next waypoint: reachable on a clear line, and by preference far from every banana
+  // 💡 ⭐ A GHOST GOES FOR THE LIGHTS (Trym, 21 Sep: "maybe you actually see ghosts ruin the
+  // streetlights aswell, they are causing it and frequently targets the streetlights?").
+  //
+  // They always COULD snuff a lamp — but only one that happened to be within 130 px of wherever they
+  // chose to rest, and they chose at random over the whole square. So a night's lamps came down to
+  // luck, and most nights it was none of them: the cause was never on screen, and the morning
+  // looked the same as the evening. Now most rests are AIMED at a lit lamp, so you watch one drift
+  // to a streetlight, hang there, and put it out.
+  //
+  // ⚠️ NOT ALWAYS, and that is deliberate: a ghost that only ever walks lamp to lamp is a machine
+  // with a route. One rest in three is still wherever it likes, which is what keeps it a wanderer.
+  const LAMP_HUNT = 0.66;
+  function wayNearLamp(g) {
+    const lit = ANCHORS.lamps.filter((k) => cond.lamps[k] === 'ok' && !problems().some((q) => q.key === k));
+    if (!lit.length) return null;
+    // the waypoints that sit within snuffing reach of a lamp that is still burning
+    const spots = [];
+    for (const k of lit) {
+      const [lx, ly] = footOf(k);
+      for (const w of ROAM) {
+        const dd = Math.hypot(w[0] - g.x, w[1] - g.y);
+        if (dd > 40 && dd < 700 && Math.hypot(w[0] - lx, w[1] - ly) < 120
+          && nearestBanana(w[0], w[1]).d > 160 && clearWay(g.x, g.y, w[0], w[1])) spots.push(w);
+      }
+    }
+    return spots.length ? spots[Math.floor(Math.random() * spots.length)] : null;
+  }
   function pickWay(g) {
+    if (Math.random() < LAMP_HUNT) { const w = wayNearLamp(g); if (w) return w; }
     const can = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]); });
     const far = can.filter((w) => nearestBanana(w[0], w[1]).d > 160);
     const from = far.length ? far : can.length ? can : ROAM;
@@ -119,7 +147,9 @@ export function bootTownNight(ctx) {
     let did = null;
     const lamp = ANCHORS.lamps.find((k) => cond.lamps[k] === 'ok' && free(k) && near(k));
     const bin = [...ANCHORS.bins, ...ANCHORS.dumps].find((k) => !cond.full.has(k) && free(k) && near(k));
-    if (lamp && Math.random() < 0.5) {
+    // ⚠️ 0.5 → 0.85: it came all this way. A ghost that drifts to a streetlight and then flips a
+    // coin over it reads as a ghost doing nothing, which is half of what made the nights dull.
+    if (lamp && Math.random() < 0.85) {
       cond.lamps[lamp] = 'out'; lampsByHour();
       const p0 = propOf(lamp); addProblem(rowOf('lamp'), lamp, p0.x + p0.w / 2, p0.base + 4, 100 + p0.base + 3, true); poof(p0.x + p0.w / 2, p0.base - 40); did = 'lamp';
     } else if (bin && Math.random() < 0.5) {
