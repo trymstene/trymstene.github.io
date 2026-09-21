@@ -138,7 +138,10 @@ export function bootTownPost(ctx) {
   const focusSheet = () => setTimeout(() => { const t = document.getElementById('twPostText'); if (t) t.focus(); }, 30);
 
   // ---- the pieces --------------------------------------------------------------------------------
+  // ⚠️ a letter carries a NAME when the world has one (a resident's note does) and an address when
+  // it does not — a mailbox is the one place a person must never be shown as a lower-case id.
   const who = (n) => esc((COPY.from || '{who}').replace('{who}', n));
+  const nameOf = (l) => (l && l.name) || (l && l.from) || '';
   // ⚠️ `bare` is already taken inside html() for something else entirely — a shadowed helper is a
   // bug waiting for the day somebody moves a line.
   const plain = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -160,13 +163,13 @@ export function bootTownPost(ctx) {
 
   const sealed = (l) => (l.kind === 'card' ? cardRow(l) : '<button type="button" class="tw-post__env" data-id="' + esc(l.id) + '">'
     + '<i class="tw-post__stamp" aria-hidden="true"></i>'
-    + '<b class="tw-post__who">' + who(l.from) + '</b>'
+    + '<b class="tw-post__who">' + who(nameOf(l)) + '</b>'
     + '</button>');
 
   const rowOf = (o) => '<button type="button" class="tw-post__thread' + (o.unread ? ' is-new' : '') + '"'
     + (o.id ? ' data-id="' + esc(o.id) + '"' : ' data-who="' + esc(o.from) + '"') + '>'
     + '<i class="tw-post__stamp is-open" aria-hidden="true"></i>'
-    + '<span class="tw-post__row"><b class="tw-post__who">' + who(o.from) + '</b>'
+    + '<span class="tw-post__row"><b class="tw-post__who">' + who(nameOf(o)) + '</b>'
     + '<span class="tw-post__peek">' + peek(o.last) + '</span></span>'
     + '</button>';
 
@@ -174,10 +177,13 @@ export function bootTownPost(ctx) {
   // postcard is a picture; the plan's whole differentiator is that the second is an OBJECT rather than
   // a message ("sending is giving someone décor with your name on it"), so it is not hidden behind
   // the first.
-  const replies = (w) => '<div class="tw-post__two">'
+  // ⚠️ …EXCEPT FROM A RESIDENT. Nib, Stamp, Moss and Bean write to you (the server does, so nobody
+  // can forge one) and they have no mailbox of their own — writing back to “nib” would address a yard
+  // nobody owns. A button that cannot work is worse than no button, so a note carries neither.
+  const replies = (w, note) => (note ? '' : '<div class="tw-post__two">'
     + '<button type="button" class="tw-btn--in" id="twPostReply">' + esc(w.reply || '') + '</button>'
     + '<button type="button" class="tw-btn--in" id="twPostCard">' + esc((w.card || {}).make || '') + '</button>'
-    + '</div>';
+    + '</div>');
   const backBtn = () => (COPY.back ? '<button type="button" class="tw-post__back" id="twPostBack">' + esc(COPY.back) + '</button>' : '');
 
   // ⭐ ONE ROW PER PERSON, NOT PER LETTER. A flat list of sixty letters is sixty rows and a thumb-ache;
@@ -253,9 +259,9 @@ export function bootTownPost(ctx) {
       body = '<div class="tw-post__open">'
         + '<b class="tw-post__who">' + esc(((COPY.card || {}).got || '{who}').replace('{who}', open.from)) + '</b>'
         + picture(open.card, 'is-big')
-        + replies(w)
+        + replies(w, open && open.kind === 'note')
         + '<div class="tw-post__feet">' + backBtn()
-        + '<button type="button" class="tw-post__flag" id="twPostFlag">' + esc(w.report || '') + '</button></div>'
+        + (open && open.kind === 'note' ? '' : '<button type="button" class="tw-post__flag" id="twPostFlag">' + esc(w.report || '') + '</button>') + '</div>'
         + '</div>';
     } else if (open) {
       // ⭐ THE ENVELOPE COMES OPEN AND THE LETTER COMES OUT. Both halves run ONCE, on transform and
@@ -264,11 +270,11 @@ export function bootTownPost(ctx) {
       // envelope again over a letter that is already open.
       body = '<div class="tw-post__open' + (opening ? ' is-opening' : '') + '">'
         + (opening ? '<i class="tw-post__flap" aria-hidden="true"></i>' : '')
-        + '<div class="tw-post__sheetin"><b class="tw-post__who">' + who(open.from) + '</b>'
+        + '<div class="tw-post__sheetin"><b class="tw-post__who">' + who(nameOf(open)) + '</b>'
         + '<p class="tw-post__body">' + esc(open.text) + '</p></div>'
-        + replies(w)
+        + replies(w, open && open.kind === 'note')
         + '<div class="tw-post__feet">' + backBtn()
-        + '<button type="button" class="tw-post__flag" id="twPostFlag">' + esc(w.report || '') + '</button></div>'
+        + (open && open.kind === 'note' ? '' : '<button type="button" class="tw-post__flag" id="twPostFlag">' + esc(w.report || '') + '</button>') + '</div>'
         + '</div>';
     } else if (thread) {
       // ⚠️ INSIDE a thread a row opens THAT letter, not the thread again — so it carries the id, and the

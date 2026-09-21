@@ -960,6 +960,71 @@ const questSchema = {
   },
 };
 
+// --- town-notes -------------------------------------------------------------
+// ✉️ THE LETTERS THE RESIDENTS WRITE TO YOU — the plan's "load-bearing beam, not a flourish"
+// (docs/town-jobs-plan.md §6). At ten players most mailboxes are empty most of the time, and an
+// empty mailbox is where a social feature quietly dies.
+//
+// ⚠️ THIS COPY IS READ BY A WORKER, not by a page. worker-rave imports the approved JSON directly
+// (it already imports src/lib/letter-gate.js), because a letter the server writes has to be written
+// by the server — the alternative is letting a page claim to be Nib, which is exactly the forgery
+// the rail was just closed against.
+export const NOTE_FOLK = [['nib', 'Nib'], ['stamp', 'Stamp'], ['moss', 'Moss'], ['bean', 'Bean']];
+export const NOTE_KINDS = ['welcome', 'quiet'];
+const noteFields = {
+  'welcome[].key': { kind: 'key', max: 8 },
+  'welcome[].text': { kind: 'prose', aim: 150, max: 260, note: '⭐ THE FIRST THING ANYBODY EVER READS IN THEIR MAILBOX — there has never been a letter in it. A neighbour noticed the new sign on the fence and wrote. ⚠️ IT MAY NOT BE A TUTORIAL: it does not explain the mailbox, does not ask them to write back, and names no part of the game. Two or three short sentences in this resident’s own voice, on paper, in handwriting.' },
+  'quiet[].key': { kind: 'key', max: 8 },
+  'quiet[].text': { kind: 'prose', aim: 150, max: 260, note: 'A letter for no reason at all, when nothing has arrived for days — which is the reason: people who like you write when nothing is happening. ⚠️ it must NEVER mention that the box was empty, never suggest anybody was forgotten or lonely, and never ask why they have not written. Something small the writer noticed: the light over the square, the queue at their counter, what the night left behind.' },
+};
+// 🤐 what a letter from a neighbour may not sound like
+const NOTE_APP = /(welcome to|click|tap|button|menu|inbox|notification|account|feature|unlock|reward|coins?)/i;
+const NOTE_OWED = /(write back|reply|respond|let me know|get in touch|drop me a line|waiting to hear|hope to hear)/i;
+const NOTE_PITY = /(lonely|alone|forgotten|nobody has|empty|quiet in there|no one writes)/i;
+function noteShape(data) {
+  const bad = [];
+  const say = (f, m) => bad.push([f, m]);
+  for (const kind of NOTE_KINDS) {
+    const rows = Array.isArray(data[kind]) ? data[kind] : [];
+    const keys = rows.map((r) => String((r && r.key) || ''));
+    if (keys.join(',') !== NOTE_FOLK.map((f) => f[0]).join(',')) {
+      say(kind, 'must be the four residents in order (' + NOTE_FOLK.map((f) => f[0]).join(', ') + ') — it is ' + (keys.join(', ') || 'empty'));
+    }
+    for (const r of rows) {
+      const t = String((r && r.text) || ''), at = kind + '.' + (r && r.key);
+      if (NOTE_APP.test(t)) say(at, 'sounds like an app rather than a person — no part of the game is ever named in a letter');
+      if (NOTE_OWED.test(t)) say(at, 'asks for a reply, and nothing in this world is ever owed');
+      if (kind === 'quiet' && NOTE_PITY.test(t)) say(at, 'notices that the box was empty — the whole point is that the letter has no reason');
+      if (/\d/.test(t)) say(at, 'carries a number, and the world never publishes its own');
+    }
+    // ⭐ four people, not one voice with four signatures
+    const texts = rows.map((r) => String((r && r.text) || '').toLowerCase());
+    for (let i = 0; i < texts.length; i++) {
+      for (let k = i + 1; k < texts.length; k++) {
+        const a = new Set(texts[i].split(/\W+/).filter((w) => w.length > 4));
+        const b = texts[k].split(/\W+/).filter((w) => w.length > 4);
+        const shared = b.filter((w) => a.has(w)).length;
+        if (shared >= 4) say(kind, keys[i] + ' and ' + keys[k] + ' share too much of their wording — four residents, four voices');
+      }
+    }
+  }
+  return bad;
+}
+const noteRow = {
+  type: 'object', additionalProperties: false, required: ['key', 'text'],
+  properties: {
+    key: { type: 'string', enum: NOTE_FOLK.map((f) => f[0]), description: 'The resident’s key, copied from the brief in the brief’s order.' },
+    text: { type: 'string' },
+  },
+};
+const noteSchema = {
+  type: 'object', additionalProperties: false, required: NOTE_KINDS,
+  properties: {
+    welcome: { type: 'array', minItems: 4, maxItems: 4, description: 'One per resident, in order: ' + NOTE_FOLK.map((f) => f[0]).join(', ') + '. ' + noteFields['welcome[].text'].note, items: noteRow },
+    quiet: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['quiet[].text'].note, items: noteRow },
+  },
+};
+
 export const JOBS = {
   'town-life': {
     id: 'town-life',
@@ -1016,6 +1081,21 @@ export const JOBS = {
     fields: questFields,
     shape: questShape,
     schema: questSchema,
+  },
+  'town-notes': {
+    id: 'town-notes',
+    title: 'Banana Town — the letters the residents write to you',
+    what: 'Eight letters: a welcome from each of the four residents for somebody who has never had post, and a note for no reason at all when nothing has arrived for days.',
+    brief: 'tools/copy-briefs/town-notes.md',
+    out: 'tools/copy-out/town-notes.json',
+    approved: 'src/data/copy/town-notes.json',
+    reads: 'worker-rave/src/index.js — the SERVER writes these, because a page that could claim to be Nib is the forgery the rail was closed against',
+    top: ['welcome', 'quiet'],
+    // 🧍 four residents speak here, so the writer gets the bible
+    personas: 'town-personas',
+    fields: noteFields,
+    shape: noteShape,
+    schema: noteSchema,
   },
   'town-dress': {
     id: 'town-dress',

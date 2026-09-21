@@ -1,0 +1,38 @@
+{
+  "welcome": [
+    {
+      "key": "nib",
+      "text": "The new sign on the fence has been noted. I have opened a clean page in my big book."
+    },
+    {
+      "key": "stamp",
+      "text": "I saw the new sign on the fence. It has the crisp look of a letter worth keeping."
+    },
+    {
+      "key": "moss",
+      "text": "New sign up. It stays bright against the wet cobbles."
+    },
+    {
+      "key": "bean",
+      "text": "The new sign means a clear morning. A warm cup follows."
+    }
+  ],
+  "quiet": [
+    {
+      "key": "nib",
+      "text": "The upper hall window was lit after sunset. I entered it in the margin, where proper occurrences go."
+    },
+    {
+      "key": "stamp",
+      "text": "I weighed three parcels before noon. One was lighter than its string."
+    },
+    {
+      "key": "moss",
+      "text": "Hard rain last night. The cobbles are nearly black, and one leaf has settled on the fountain lip again."
+    },
+    {
+      "key": "bean",
+      "text": "The queue reaches the fountain today. The last cup in line stays warm."
+    }
+  ]
+}

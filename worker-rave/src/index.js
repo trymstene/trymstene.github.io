@@ -25,6 +25,14 @@
 // ✉️ the letter gate lives in src/lib so the page and the worker cannot disagree about it — the same
 // shape worker-pass already uses for pass-defs.js. The SERVER's call is the only one that decides.
 import { checkLetter, checkCard, CAPS } from '../../src/lib/letter-gate.js';
+// ✉️ THE LETTERS THE RESIDENTS WRITE TO YOU (docs/town-jobs-plan.md §6 — "the load-bearing beam,
+// not a flourish"). Written by the rig, approved by hand, and read HERE rather than in the page:
+// a letter from Nib has to be posted by the server, because a page that could claim to be Nib is
+// exactly the forgery the rail was closed against an hour before this shipped.
+import TOWN_NOTES from '../../src/data/copy/town-notes.json';
+// ⚠️ the NAME beside the key. A mailbox that said “from nib” in lower case would be the one
+// place in this world a person is shown as an id. tools/copy-jobs.mjs NOTE_FOLK is the source.
+const NOTE_NAMES = { nib: 'Nib', stamp: 'Stamp', moss: 'Moss', bean: 'Bean' };
 
 import { WEED_GRID, BORDER_SPOTS_N, ALGAE_SPOTS, BIRD_SPOTS_N } from './park-weed-grid.js';
 
@@ -3727,6 +3735,47 @@ export class PostRoom {
   // the box holds a fixed number: the oldest READ ones go first, and only then the oldest of all.
   // ⚠️ a method since the postcard arrived (20 Sep) — two paths deliver now and a box that only one
   // of them trimmed would grow without limit on the other.
+  // ✉️ WHEN A RESIDENT WRITES, and it is deliberately not much: two occasions, both of which a
+  // mailbox can answer entirely on its own without asking the town, the yard or the pass a thing.
+  //
+  //   welcome — the very first time anybody opens a box that has never held a letter. This is the
+  //             one that matters: nobody's first mailbox is empty any more.
+  //   quiet   — nothing has arrived for NOTE_QUIET days. Somebody writes for no reason at all,
+  //             which is the reason. ⚠️ the letter never mentions that the box was empty.
+  //
+  // ⭐ NEITHER KNOWS ANYTHING ABOUT THE READER, on purpose. The plan's fact-keyed letters (you fixed
+  // the square, the curse took your lamps) are a later slice and want the town's own numbers; these
+  // two have to read perfectly to a total stranger, so they carry no facts at all.
+  //
+  // ⚠️ AND A NOTE IS NOT POST YOU CAN ANSWER. A resident has no mailbox — writing back to "nib"
+  // would address a yard nobody owns — so the page hides Reply on kind: 'note'.
+  async townNote(now, box) {
+    const NOTE_QUIET = 6 * 86400000;
+    const sent = (await this.state.storage.get('notes')) || {};
+    const all = await this.list('L:');
+    const newest = all.reduce((m, l) => Math.max(m, l.at || 0), 0);
+    let kind = '';
+    if (!sent.welcome && !all.length) kind = 'welcome';
+    else if (sent.welcome && now - Math.max(newest, sent.quiet || 0) > NOTE_QUIET) kind = 'quiet';
+    if (!kind) return;
+    const deck = (TOWN_NOTES && TOWN_NOTES[kind]) || [];
+    if (!deck.length) return;
+    // ⚠️ SEEDED BY THE BOX AND THE DAY, so one player does not hear from the same resident every
+    // time and two players on the same morning do not get the same letter.
+    const seed = (box || '') + ':' + Math.floor(now / 86400000) + ':' + kind;
+    let h = 7;
+    for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % 100003;
+    const pick = deck[h % deck.length];
+    const id = now.toString(36) + Math.random().toString(36).slice(2, 8);
+    await this.state.storage.put('L:' + id, {
+      id, from: String(pick.key || 'town'), name: NOTE_NAMES[pick.key] || '',
+      at: now, read: false, flag: '', kind: 'note', text: String(pick.text || ''),
+    });
+    sent[kind] = now;
+    await this.state.storage.put('notes', sent);
+    await this.trim();
+  }
+
   async trim() {
     const all = (await this.list('L:')).sort((x, y) => x.at - y.at);
     if (all.length <= CAPS.boxMax) return;
@@ -3821,12 +3870,20 @@ export class PostRoom {
 
     // ---- the box ----------------------------------------------------------------------------------
     if (url.pathname === '/box') {
+      // ✉️ …and before the box is read, the town may have written to you. Checked HERE because it is
+      // the one moment somebody is definitely looking: no cron, no queue, nothing to keep running.
+      // ⚠️ the box's own name comes off the QUERY here: /box is a GET, so there is no body and no
+      // __box to read. It is only used to seed which resident writes, never to address anything.
+      await this.townNote(now, String(url.searchParams.get('slug') || ''));
       const cut = now - CAPS.keepDays * 86400000;
       const all = (await this.list('L:')).sort((x, y) => y.at - x.at);
       // a letter expires quietly: no notice, no tombstone, it is simply not there any more
       for (const old of all.filter((x) => x.at < cut)) await this.state.storage.delete('L:' + old.id);
       const live = all.filter((x) => x.at >= cut);
-      return j({ letters: live.map((x) => ({ id: x.id, from: x.from, at: x.at, text: x.text, read: !!x.read, kind: x.kind || '', card: x.card || null })), unread: live.filter((x) => !x.read).length });
+      // ⚠️ `name` rides along for a resident's note: their address is a key, not a house, and a
+      // mailbox that said "from nib" in lower case would be the one place in this world a person is
+      // shown as an id. The page prefers it and falls back to the address for everybody else.
+      return j({ letters: live.map((x) => ({ id: x.id, from: x.from, at: x.at, text: x.text, read: !!x.read, kind: x.kind || '', name: x.name || '', card: x.card || null })), unread: live.filter((x) => !x.read).length });
     }
 
     if (url.pathname === '/read') {

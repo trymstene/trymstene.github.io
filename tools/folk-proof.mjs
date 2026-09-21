@@ -144,6 +144,35 @@ ok(((bj.letters) || []).some((l) => l.from === people[1].slug), '…and it is in
     '…and none of the three is in the mailbox', 'one got in');
 }
 
+// ── ✉️ NOBODY'S FIRST MAILBOX IS EMPTY ──────────────────────────────────────────
+// The plan calls this the load-bearing beam: at ten players most boxes are empty most of the time,
+// and an empty mailbox is where a social feature quietly dies.
+{
+  const fresh = 'qa-first-' + Math.random().toString(36).slice(2, 8);
+  const r = await fetch(API + '/post/box?slug=' + fresh, { headers: O });
+  const j = await r.json().catch(() => ({}));
+  const ls = j.letters || [];
+  ok(ls.length === 1, 'a mailbox nobody has ever written to has a letter in it', ls.length + ' letters');
+  const n = ls[0] || {};
+  ok(n.kind === 'note', '…and it is a note from the town', n.kind);
+  ok(!!n.name && /^[A-Z]/.test(n.name), '…signed with a NAME, not a lower-case id', JSON.stringify(n.name));
+  ok(!!String(n.text || '').trim(), '…with something actually written on it', JSON.stringify(n.text));
+  ok(!/\d/.test(String(n.text || '')), '…and the world still publishes no numbers', n.text);
+
+  // ⚠️ ONCE. A welcome that lands on every open is a mailbox that fills itself with itself.
+  await fetch(API + '/post/box?slug=' + fresh, { headers: O });
+  const again = await (await fetch(API + '/post/box?slug=' + fresh, { headers: O })).json();
+  ok(((again.letters) || []).length === 1, '…and opening the box again does not write another', ((again.letters) || []).length);
+
+  // ⭐ and two different people do not get the same resident every time
+  const whos = new Set();
+  for (let i = 0; i < 8; i++) {
+    const b = await (await fetch(API + '/post/box?slug=qa-who-' + i + '-' + Math.random().toString(36).slice(2, 6), { headers: O })).json();
+    const l = ((b.letters) || [])[0]; if (l) whos.add(l.from);
+  }
+  ok(whos.size > 1, 'and the same resident does not write to everybody', [...whos].join(', '));
+}
+
 for (const [yes, what, saw] of out) console.log((yes ? '  ✓ ' : '  ✗ ') + what + (yes ? '' : '   — saw ' + saw));
 if (bad) { console.error('\n✗ ' + bad + ' of ' + out.length + ' did not hold'); process.exit(1); }
 console.log('\n✅ the address book holds: ' + out.length + ' checks — the bar, the search, what leaves the room,\n   and a first letter that lands');
