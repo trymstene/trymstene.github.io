@@ -11,6 +11,7 @@ import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE } from './town-geo.js';
+import { snapScale } from '../lib/world.js';   // 🔍 whole device pixels
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
@@ -219,7 +220,7 @@ function layout() {
   const want = Math.max(viewW / VIEW_ART_W, viewH / VIEW_ART_V);
   const fill = Math.max(viewW / W, viewH / H);
   const maxIn = viewW / PLAZA_FIT;
-  scale = Math.min(1.7, maxIn, Math.max(0.55, fill, want));
+  scale = snapScale(Math.min(1.7, maxIn, Math.max(0.55, fill, want)), 0.55, Math.min(1.7, maxIn));   // 🔍 whole device pixels — see world.js
   world.style.width = (W * scale) + 'px';
   world.style.height = (H * scale) + 'px';
   world.style.setProperty('--ws', scale.toFixed(3));   // the world's scale, for what CSS sizes in the world: the planks
@@ -349,9 +350,26 @@ view.addEventListener('pointerdown', (e) => {
   tgt.x = Math.max(BOUND, Math.min(W - BOUND, wx)); tgt.y = Math.max(BOUND, Math.min(H - 8, wy));
 });
 let toastT = 0;
+// 💬 TWO OF TRYM'S RULES MEET HERE, AND BOTH HOLD. A message sits ABOVE the popup veil (21 Sep:
+// "should be in the foreground") — and nothing of the world's chatter lands ON an open card (the café
+// receipt rule, town-cafe.spec: two yellow boxes overlapping read as one broken layout). So the toast
+// keeps its z over the veil and moves out of the card's rectangle: below it when there is room, above
+// it when there is not. ⚠️ run from BOTH doors — a toast said while a card is open, and a card opened
+// while a toast is up (the café's "off" line lands a beat before its receipt does).
+function placeToast() {
+  toastEl.style.top = ''; toastEl.style.bottom = '';
+  if (toastEl.hidden || !panel || panel.hidden) return;
+  const card = panel.querySelector('.tw-card');
+  const v = view.getBoundingClientRect(), c = card ? card.getBoundingClientRect() : null, t = toastEl.getBoundingClientRect();
+  if (!c || t.bottom <= c.top || t.top >= c.bottom) return;
+  const below = v.bottom - c.bottom, above = c.top - v.top;
+  if (below >= t.height + 20) toastEl.style.bottom = Math.max(14, Math.round((below - t.height) / 2)) + 'px';
+  else if (above >= t.height + 20) { toastEl.style.bottom = 'auto'; toastEl.style.top = Math.round((above - t.height) / 2) + 'px'; }
+}
 function say(text) {
   toastEl.textContent = text;
   toastEl.hidden = false;
+  placeToast();
   clearTimeout(toastT);
   toastT = setTimeout(() => { toastEl.hidden = true; }, 4200);
 }
@@ -430,7 +448,7 @@ function tick(now) {
 // server picks the wedge and writes the tape. The Exchange is the honest one:
 // it reads the farm you actually have on this device and today's real price.
 const panel = document.getElementById('twPanel'), cardBody = document.getElementById('twCardBody'), card = panel.querySelector('.tw-card');
-function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; }
+function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; placeToast(); }
 // ⚠️ EVERY MODIFIER THIS CARD CAN WEAR IS NAMED HERE. openCard() never clears a class, so a modifier
 // left behind styles whatever the player opens NEXT — and every chunk that runs a loop inside the card
 // (the dialogue's typewriter, an arcade game, the dressing room's mirror) stops here or it runs forever.

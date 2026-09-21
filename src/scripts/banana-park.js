@@ -10,7 +10,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { passStat } from '../lib/banana-pass.js';
-import { presenceRoom, poofInto } from '../lib/world.js';
+import { presenceRoom, poofInto, snapScale } from '../lib/world.js';
 // ⚠️ coinBalance rides along: the park hands `coinBal` to the garden, fountain
 // and shops through ctx. Extracting the HUD took the old inline definition with
 // it and the ctx reference was left dangling — a ReferenceError at ctx build
@@ -98,7 +98,7 @@ function init() {
     const want = Math.max(viewW / VIEW_ART_W, viewH / VIEW_ART_V);
     const fill = Math.max(viewW / W, viewH / H);
     const maxIn = viewW / PLAZA_FIT;
-    scale = Math.min(1.7, maxIn, Math.max(0.55, fill, want));
+    scale = snapScale(Math.min(1.7, maxIn, Math.max(0.55, fill, want)), 0.55, Math.min(1.7, maxIn));   // 🔍 whole device pixels — see world.js
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
     replaceMovers();   // transform placement is in px — a new scale moves it

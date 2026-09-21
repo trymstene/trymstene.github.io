@@ -75,6 +75,13 @@ export function bootTownPost(ctx) {
   // this path is for the returning player and nobody else — it costs nothing when the token is good.
   async function proof() {
     if (worldToken()) return true;
+    // ⚠️ HOPELESS IS ANSWERED AT ONCE. With neither a link nor a world id there is nothing a push
+    // could refresh, and waiting 3.4 s to learn that holds the card BUSY — so the Report tapped straight
+    // after was ignored. This line was here, was lost in the best-effort rewrite, and the thumb walk
+    // caught its absence the same way it caught it the first time.
+    let known = false;
+    try { known = !!(localStorage.getItem('pass-link') || localStorage.getItem('world-gid')); } catch (e) {}
+    if (!known) return false;
     try { await ensureAnon(); } catch (e) {}
     if (worldToken()) return true;
     // ⚠️ passFlush, NEVER passPush. schedulePush debounces by SIXTY SECONDS, so the first version of
@@ -85,6 +92,14 @@ export function bootTownPost(ctx) {
     for (let i = 0; i < 24 && !worldToken(); i++) await new Promise((r) => setTimeout(r, 140));
     return !!worldToken();
   }
+
+  // ⚠️ A REFUSAL AND A STRANGER ARE NOT THE SAME THING. Everything the server turns down says the
+  // same deliberately uninformative line, because a precise reason is a lesson in getting round
+  // the filter. But “the counter does not know who you are” is not a judgement on the letter, and
+  // showing the refusal there tells somebody their ordinary words were rejected — the one lie this
+  // card must never tell. (⚠️ this helper was deleted once by a patch that sliced from proof() to
+  // ask() and took everything between; the thumb walk found the ReferenceError the same night.)
+  const turnedDown = (res) => ((res && res.error === 'noproof') ? (COPY.nopass || COPY.refused || '') : (COPY.refused || ''));
 
   async function ask(path, body) {
     const me = slug ? slug() : '';

@@ -115,6 +115,31 @@ export function worldToken() {
   } catch (e) { return undefined; }
 }
 
+// 🔍 ⭐ A PIXEL WORLD SCALES TO WHOLE DEVICE PIXELS (21 Sep 2026).
+//
+// Trym, on the Coffee Cup's badge: "the coffee banner on the building sprite is a bit weird and
+// broken, the text looks weird". It was not a second sprite and not the art — one clean overlay was
+// the only thing painted there. On his phone the world landed at 2.07 DEVICE pixels per source pixel,
+// and nearest-neighbour scaling at a non-integer ratio draws most strokes two pixels wide and every
+// thirteenth three: on the smallest high-contrast detail in the square — one-pixel letters — that
+// reads as doubled, broken text, while the big smooth cup beside it looks fine. Reproduced at 3× DPR.
+//
+// So the free scale every world computes is snapped to the nearest k/devicePixelRatio, which is a
+// whole number of device pixels per source pixel — the one thing pixel art needs. On a 3× phone that is
+// 2/3 css px instead of 0.69 (all but identical framing, every letter crisp); on a 2× phone halves.
+// ⚠️ NEVER PAST THE CEILING. Each world has a "must fit" bound (the plaza, the yard); a snap that
+// would break it takes the step below instead, and if no whole-pixel step fits in [lo, hi] at all
+// (a narrow DPR-1 window) the free scale stands: crisp when it can be, framed always.
+export function snapScale(scale, lo, hi) {
+  const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+  const step = 1 / dpr;
+  const k = Math.round(scale / step) * step;
+  if (k >= lo - 1e-9 && k <= hi + 1e-9) return k;
+  const below = Math.floor(scale / step) * step;
+  if (below >= lo - 1e-9 && below <= hi + 1e-9) return below;
+  return scale;
+}
+
 // the three-frame smoke puff — leavers and expired pickups go in a puff,
 // never a blink (art authored once for the rave floor, worn world-wide)
 export const POOF_FRAMES = ['<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="1" width="2" height="1" fill="#b8bcd0"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="4" y="2" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="3" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="6" y="3" width="1" height="1" fill="#8890a8"/><rect x="4" y="4" width="2" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="1" fill="#b8bcd0"/><rect x="7" y="0" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="2" y="1" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="7" y="1" width="1" height="1" fill="#8890a8"/><rect x="8" y="1" width="1" height="1" fill="#b8bcd0"/><rect x="0" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="1" y="2" width="1" height="1" fill="#8890a8"/><rect x="2" y="2" width="3" height="1" fill="#e8eaf2"/><rect x="5" y="2" width="1" height="1" fill="#b8bcd0"/><rect x="6" y="2" width="1" height="1" fill="#8890a8"/><rect x="7" y="2" width="1" height="1" fill="#e8eaf2"/><rect x="8" y="2" width="1" height="1" fill="#8890a8"/><rect x="1" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="3" width="2" height="1" fill="#e8eaf2"/><rect x="4" y="3" width="1" height="1" fill="#8890a8"/><rect x="5" y="3" width="3" height="1" fill="#e8eaf2"/><rect x="8" y="3" width="1" height="1" fill="#8890a8"/><rect x="2" y="4" width="2" height="1" fill="#8890a8"/><rect x="4" y="4" width="1" height="1" fill="#b8bcd0"/><rect x="5" y="4" width="2" height="1" fill="#e8eaf2"/><rect x="7" y="4" width="1" height="1" fill="#8890a8"/><rect x="4" y="5" width="3" height="1" fill="#8890a8"/></svg>', '<svg viewBox="0 0 12 6" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="1" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="0" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="9" y="0" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="0" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="2" y="1" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="4" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="6" y="1" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="3" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="7" y="2" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="9" y="2" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="0" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="3" y="3" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="5" y="3" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="2" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/><rect x="7" y="4" width="1" height="1" fill="#b8bcd0" opacity="0.6"/><rect x="10" y="4" width="1" height="1" fill="#8890a8" opacity="0.6"/></svg>'];

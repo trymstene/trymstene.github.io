@@ -9,7 +9,7 @@
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid, passBest, passBestGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
-import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim } from '../lib/world.js';
+import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { mountHud } from '../lib/world-hud.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
@@ -195,7 +195,7 @@ function init() {
     // against a 480-wide court, so you could never see both sidelines. On
     // those screens the horizontal floor wins and you accept more sea.
     const maxIn = viewW / (COURT_FIT);
-    scale = Math.min(1.7, maxIn, Math.max(0.55, fill, want));
+    scale = snapScale(Math.min(1.7, maxIn, Math.max(0.55, fill, want)), 0.55, Math.min(1.7, maxIn));   // 🔍 whole device pixels — see world.js
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
   }

@@ -28,12 +28,15 @@ const town = async (page, life = 95) => {
 };
 // ⚠️ WAIT FOR THE SQUARE, never for a clock. A fixed sleep passed alone and failed in the full
 // suite, where two workers share a machine and the re-render lands later than it does on its own.
-const settle = async (page, want) => {
-  await page.waitForFunction((w) => {
+// ⚠️ …and for the WHOLE mark. Waiting for the first lamp and then reading the bins raced the reseed
+// under two workers: lamps were in, bins were not yet, and "bins to put right" read 0.
+const settle = async (page, want, binsBefore = 0) => {
+  await page.waitForFunction(([w, b0]) => {
     const s = window.__town.room, ps = s.problems();
     const lamps = ps.filter((p) => p.type === 'lamp').length;
-    return w === 'marked' ? lamps > 0 : lamps === 0;
-  }, want, { timeout: 15000 }).catch(() => {});
+    const bins = ps.filter((p) => p.type === 'bin' || p.type === 'dumpster').length;
+    return w === 'marked' ? (lamps > 0 && bins > b0) : lamps === 0;
+  }, [want, binsBefore], { timeout: 15000 }).catch(() => {});
 };
 const seen = (page) => page.evaluate(() => {
   const s = window.__town.room, ps = s.problems();
@@ -61,7 +64,7 @@ test('a curse night leaves work behind, even on a thriving square', async ({ pag
   // ── the morning after a deep night
   const door = await page.evaluate(() => window.__town.room.morning('deep', 180));
   expect(door && door.kind, 'the room says which night it was').toBe('deep');
-  await settle(page, 'marked');
+  await settle(page, 'marked', before.bins);
   const after = await seen(page);
 
   // ⚠️ the band has NOT moved — which is the whole point. The square changed anyway.
@@ -75,7 +78,7 @@ test('a curse night leaves work behind, even on a thriving square', async ({ pag
 
   // ── a creep is the lighter night, and it says so
   await page.evaluate(() => window.__town.room.morning('creep', 180));
-  await settle(page, 'marked');
+  await settle(page, 'marked', before.bins);
   const creep = await seen(page);
   expect(creep.problems, 'a creep leaves less than a deep').toBeLessThan(after.problems);
   expect(creep.problems, '…and still more than a quiet night').toBeGreaterThan(before.problems);

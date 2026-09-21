@@ -354,6 +354,28 @@ for (const f of files) {
   }
 }
 
+// 🔍 §25 A PIXEL WORLD SCALES TO WHOLE DEVICE PIXELS (21 Sep 2026). The Coffee Cup's badge read as
+// doubled, broken text on Trym's phone: one clean overlay was the only thing painted there, and the
+// world sat at 2.07 device pixels per source pixel — nearest-neighbour at a non-integer ratio draws
+// most strokes 2 px and every thirteenth 3. src/lib/world.js snapScale() is the one rule; every
+// world's scale assignment goes through it, and a fifth world cannot quietly skip it.
+// ⚠️ WRITTEN WITHOUT A SINGLE BACKSLASH, on purpose. Twice a rule in this file arrived through a
+// patch script with its regex literals mangled and the whole gate died on a syntax error. Plain
+// string methods cannot be mangled by anything that interprets escapes.
+{
+  const WORLDS = ['src/scripts/banana-town.js', 'src/scripts/banana-park.js', 'src/scripts/banana-beach.js', 'src/scripts/banana-homestead.js'];
+  const read = (rel) => { try { return readFileSync(join(ROOT, rel), 'utf8'); } catch { return ''; } };
+  const EOL = String.fromCharCode(10);
+  for (const w of WORLDS) {
+    const lines = read(w).split(EOL).map((l) => l.split('//')[0].trim()).filter((l) => l.startsWith('scale =') || l.startsWith('scale='));
+    for (const l of lines) {
+      if (!l.includes('snapScale(')) problems.push([w, '§25: the world scale is set without snapScale() — at a non-integer device ratio one-pixel art (the badge lettering) renders doubled: ' + l.slice(0, 70)]);
+    }
+    if (!lines.length) problems.push([w, '§25: no scale assignment found — the snap rule cannot be checked here']);
+  }
+  if (!read('src/lib/world.js').includes('export function snapScale')) problems.push(['src/lib/world.js', '§25: snapScale() is gone, and the four worlds call it']);
+}
+
 let cssN = 0;
 for (const f of walkCss(join(ROOT, 'public/css'))) {
   cssN++;

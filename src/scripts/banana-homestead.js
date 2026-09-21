@@ -21,7 +21,7 @@ import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 
 import { askName } from '../lib/banana-id.js';
-import { worldOwner, worldSid, worldToken, presenceRoom, poofInto } from '../lib/world.js';
+import { worldOwner, worldSid, worldToken, presenceRoom, poofInto, snapScale } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
@@ -633,7 +633,7 @@ function init(visitDoc, visitMiss) {
     viewW = r.width; viewH = r.height;
     const want = Math.max(viewW / VIEW_ART_W, viewH / VIEW_ART_V);
     const fill = Math.max(viewW / W, viewH / H);
-    scale = Math.min(1.7, viewW / YARD_FIT, Math.max(0.55, fill, want));
+    scale = snapScale(Math.min(1.7, viewW / YARD_FIT, Math.max(0.55, fill, want)), 0.55, Math.min(1.7, viewW / YARD_FIT));   // 🔍 whole device pixels — see world.js
     if (planner) {   // 🔨 build mode: frame the WHOLE clearing (max deed), not the
       // current tier — fit-to-deed made tier 1 and tier 3 fill the same screen,
       // so upgrades didn't LOOK bigger (Trym's "my area didnt expand?")
@@ -647,9 +647,12 @@ function init(visitDoc, visitMiss) {
       // Sideways is also the only safe axis on a phone: a vertical drag would
       // compete with the page scroll (the view sets touch-action:none while
       // building, but the gesture still reads as "the page should move").
-      scale = viewW < viewH
+      // 🔍 snapped to whole device pixels like every other scale (world.js snapScale) — and
+      // only ever DOWN here, because the value IS the fit: a step up would put the room off screen.
+      const fit = viewW < viewH
         ? Math.min(1.2, viewH / dh)
         : Math.min(1.2, viewW / dw, viewH / dh);
+      scale = snapScale(fit, 0, fit);
     }
     world.style.width = (W * scale) + 'px';
     world.style.height = (H * scale) + 'px';
