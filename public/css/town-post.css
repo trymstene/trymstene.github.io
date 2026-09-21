@@ -233,6 +233,12 @@
   image-rendering: pixelated;
 }
 .tw-folk__who { display: grid; gap: 1px; min-width: 0; }
+/* 🔤 A PLAYER'S NAME IS ISOLATED WHEREVER IT IS SHOWN. src/lib/player-name.js strips the bidi
+   OVERRIDES, which stops a name reordering the row it sits in — but a genuinely right-to-left name
+   (Arabic, Hebrew) still drags neighbouring punctuation around without this. Both halves are
+   needed, and this half belongs to the surface. Trym, 21 Sep: “fallback font is fine, let them
+   render” — so they do, and they render in their own direction without disturbing the card. */
+.tw-folk__who b, .tw-folk__who small, .tw-post__who { unicode-bidi: isolate; }
 .tw-folk__who b { font-family: "Archivo Black", sans-serif; font-size: 0.74rem; letter-spacing: 0.02em; }
 .tw-folk__who small {
   font-size: 0.7rem; opacity: 0.75;
