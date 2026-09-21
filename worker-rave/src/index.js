@@ -577,9 +577,38 @@ export default {
       // ⚠️ AND THE ROOM IS TOLD WHOSE IT IS, by the router rather than by the caller. A report has to be
       // filed in the review queue under the box it came out of, and the room is addressed by name — it
       // cannot read its own. `__box` is injected here, where `to` has already been through box().
+      //
+      // ⭐⭐ AND SO IS WHO IT IS FROM, for the same reason and a worse one. `from` was read straight off
+      // the request body and never checked, so ANY caller could post a letter into ANY mailbox signed
+      // with ANY house's name. That was survivable only while nobody could find out another player's
+      // address; the town's address book (21 Sep) made every house findable by design, which turned a
+      // theoretical hole into a usable one — and a note that looks like it came from a neighbour is
+      // exactly the shape of thing worth forging.
+      //
+      // So the sender is resolved from the world token the same way the yard resolves ownership, and
+      // the room is handed `__from`. The caller's own `from` is never read again.
+      // ⚠️ NOT SOFT. The letter rail is four days old, the town is unlisted, and there is no install
+      // base worth protecting against a refusal — an unproven send is turned away rather than
+      // delivered under somebody else's name.
+      let sender = '';
+      if (path === '/send') {
+        const tok = await worldTokenOf(env, String(body.wt || '').slice(0, 200));
+        if (tok) {
+          try {
+            const r = await env.YARDS.get(env.YARDS.idFromName('the-neighbourhood')).fetch(new Request('https://room/whoami', {
+              method: 'POST',
+              body: JSON.stringify({ pass: tok.gid, alt: tok.gid, wt: body.wt }),
+            }));
+            const j = await r.json();
+            sender = box(j && j.slug);
+          } catch (e) { sender = ''; }
+        }
+        // ⚠️ a proof that resolves to no yard is not a sender either: post comes FROM a house.
+        if (!sender) return new Response('{"error":"whose"}', { status: 401, headers: cors });
+      }
       const res = await env.POST.get(env.POST.idFromName('box:' + to)).fetch(new Request('https://room' + path + url.search, {
         method: request.method,
-        body: request.method === 'POST' ? JSON.stringify({ ...body, __box: to }) : undefined,
+        body: request.method === 'POST' ? JSON.stringify({ ...body, __box: to, ...(sender ? { __from: sender } : {}) }) : undefined,
       }));
       return new Response(await res.text(), { status: res.status, headers: cors });
     }
@@ -3624,6 +3653,17 @@ export class YardRoom {
     // ⚠️ AND IT DOES NOT MOVE doc.updated. That stamp is the cross-device sync's own clock — bumping
     // it here would make every other device's next save look stale and 409 for no reason. `seen` is
     // a separate stamp that only the book reads.
+    // 🪪 WHICH ADDRESS IS YOURS. A yard slug is public — it is the sign on the fence — so it is not a
+    // secret and never was; what this answers is the other question: which slug belongs to the person
+    // holding THIS proof. The letter rail asks, so a letter's sender can be a fact instead of a claim.
+    // ⚠️ READ-ONLY on purpose. It must never claim, rename, heal or mint: an unclaimed caller gets
+    // nothing back, which is the honest answer and not a reason to make them a homestead.
+    if (path === '/whoami' && request.method === 'POST') {
+      if (!proven) return json({ err: 'token' }, 401);
+      const slug = await this.state.storage.get('own:' + pass);
+      return json({ slug: slug || '' });
+    }
+
     if (path === '/who' && request.method === 'POST') {
       const slug = await this.ownSlug(pass, alt, aliases);
       if (!slug) return json({ err: 'unclaimed' }, 404);
@@ -3712,7 +3752,11 @@ export class PostRoom {
 
     // ---- a letter arrives -------------------------------------------------------------------------
     if (url.pathname === '/send') {
-      const from = String(b.from || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+      // ⚠️ `__from` IS THE ROUTER'S, RESOLVED FROM A PROOF — see the note beside its injection. The
+      // caller's own `from` is a fallback for nothing: it is read only when the router did not speak,
+      // which on the shipped rail cannot happen, and it is kept solely so a room called directly in a
+      // test says "no sender" rather than filing a letter from nobody.
+      const from = String(b.__from || b.from || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
       if (!from) return j({ error: 'no sender' }, 400);
       // ⚠️ THE CAP IS COUNTED IN THE RECIPIENT'S ROOM, which is the only place that can see how much of
       // one sender's post lands HERE. The per-day-across-everybody cap is the sender's own room's job;

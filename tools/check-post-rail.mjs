@@ -72,6 +72,32 @@ const originCheck = rail.indexOf('allowed.includes(origin)) return');
 if (off < 0) fail.push('the /post route no longer checks POST_OFF');
 else if (originCheck > -1 && off > originCheck) fail.push('POST_OFF is checked AFTER the origin — the kill switch must be the first thing in the route');
 
+// ── 6. 🛡 A LETTER COMES FROM SOMEBODY WHO PROVED IT ───────────────────────────────
+// `from` was read straight off the request body and never checked — anybody could drop a letter into
+// anybody's mailbox signed with any house's name. It was only ever hidden by the fact that nobody
+// could find out another player's address, and the town's address book (21 Sep) publishes exactly
+// that, by design. The sender is resolved from the world token in the ROUTER now and handed to the
+// room as `__from`; this holds the three halves of that so none of them can quietly come undone.
+{
+  // ⚠️ SCOPED TO THE ROUTER, not to the file. `__from` also appears in the ROOM (where it is read),
+  // so a whole-file search for it passed happily with the injection deleted — which is the exact
+  // failure this check exists to catch. Proven red by removing the injection.
+  const route = src.slice(src.indexOf("url.pathname === '/post'"), src.indexOf('export class PostRoom'));
+  if (!/__from: sender/.test(route)) {
+    fail.push('the rail no longer injects __from — a letter’s sender would be whatever the caller typed');
+  }
+  if (!/worldTokenOf\(env, String\(body\.wt/.test(route)) {
+    fail.push('the /post route does not verify a world token, so __from is not resolved from a proof');
+  }
+  if (!/status: 401/.test(route)) {
+    fail.push('an unproven /send is not refused — it must be 401, never delivered under a borrowed name');
+  }
+  const send = room2.slice(room2.indexOf("url.pathname === '/send'"), room2.indexOf("url.pathname === '/send'") + 600);
+  if (!/b\.__from \|\| b\.from/.test(send)) {
+    fail.push('PostRoom reads `from` before `__from` (or instead of it) — the caller’s claim must never win');
+  }
+}
+
 if (fail.length) {
   console.error('❌ the post rail:\n' + fail.map((f) => '   · ' + f).join('\n'));
   process.exit(1);

@@ -24,6 +24,9 @@
 import { checkLetter, LETTER, CARD } from '../lib/letter-gate.js';
 import { drawComposite, assetsReady } from '../lib/banana-engine.js';
 import { readWorn, drawable } from '../lib/wardrobe-slots.js';
+// 🪪 the proof that a letter is really from your house — the rail resolves the sender from this
+// and never from anything the page claims, so a send without it is refused.
+import { worldToken, worldOwner, worldSid } from '../lib/world.js';
 
 const COPY_MODS = import.meta.glob('../data/copy/town-post.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
@@ -64,7 +67,9 @@ export function bootTownPost(ctx) {
       const res = await fetch(API + path + (body ? '' : '?slug=' + encodeURIComponent(me)), {
         method: body ? 'POST' : 'GET',
         headers: body ? { 'Content-Type': 'application/json' } : undefined,
-        body: body ? JSON.stringify({ ...body, slug: me }) : undefined,
+        // ⚠️ `from` is NOT sent any more, because it was never believed: the rail reads the world
+        // token, asks the yard room which address it belongs to, and signs the letter with that.
+        body: body ? JSON.stringify({ ...body, slug: me, wt: worldToken(), pass: worldOwner(), alt: worldSid() }) : undefined,
       });
       const j = await res.json().catch(() => ({}));
       return res.ok ? j : { error: j.error || 'off', status: res.status };
@@ -464,7 +469,7 @@ export function bootTownPost(ctx) {
       if (busy || !making) return;
       busy = true;
       const to = making.to;
-      const res = await ask('/send', { to, from: (slug ? slug() : ''), card: { tpl: making.tpl, line: making.line, look: making.look } });
+      const res = await ask('/send', { to, card: { tpl: making.tpl, line: making.line, look: making.look } });
       busy = false;
       if (res && res.ok) {
         // ⚠️ THE TEMPLATE IS READ BEFORE THE SHEET IS CLEARED. This fired after `making = null` and sent
@@ -491,7 +496,7 @@ export function bootTownPost(ctx) {
       // the page's own read of the gate: it spares a round trip, it does not decide anything
       if (!checkLetter(text).ok) { say(COPY.refused || ''); track('post_refused', { at: 'post', why: 'page' }); return; }
       busy = true;
-      const res = await ask('/send', { to: writing.to, from: (slug ? slug() : ''), text });
+      const res = await ask('/send', { to: writing.to, text });
       busy = false;
       if (res && res.ok) {
         writing = null; open = null;

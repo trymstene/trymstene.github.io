@@ -12,7 +12,21 @@
 // ⚠️ THE LAST TWO CHECKS NEED THE LETTER RAIL OPEN. POST_OFF is the first line in the /post route
 // and it ships SHUT, so without --var POST_OFF:0 they answer 503 — which is the switch working, not
 // a fault in the walk.
+import { createHmac, randomBytes } from 'node:crypto';
+
 const API = process.env.RAVE_API || 'http://127.0.0.1:8799';
+// 🪪 A REAL WORLD TOKEN, minted the way worker-rave signs one — because a letter's sender is now
+// resolved from the PROOF and never from the body, so a walk that cannot prove who it is cannot send
+// a letter either. The worker needs the matching secret:
+//   npx wrangler dev --local --var POST_OFF:0 --var MEMBER_HMAC:proof-secret
+const HMAC = process.env.MEMBER_HMAC || 'proof-secret';
+const gid = () => randomBytes(8).toString('hex');
+const tokenFor = (id) => {
+  // ⚠️ FOUR fields: gid.expiry.aliases.signature — and the aliases field is EMPTY, not absent, so
+  // the dot before the signature is load-bearing. Three fields do not match the worker's regex at all.
+  const base = id + '.' + (Date.now() + 3600000) + '.';
+  return base + '.' + createHmac('sha256', HMAC).update('wt:' + base).digest('hex');
+};
 const O = { Origin: 'https://trymstene.com', 'Content-Type': 'application/json' };
 const out = []; let bad = 0;
 const ok = (yes, what, saw) => { out.push([yes, what, saw]); if (!yes) bad++; };
@@ -29,17 +43,18 @@ const yard = async (path, body) => {
 // three neighbours: one full citizen, one with no name yet, and one who is me
 const who = (n) => ({ n, fit: { hat: 'tophat', glasses: 'shades', extras: { bowtie: true } } });
 const people = [
-  { pass: 'proof-ada-' + Date.now(), house: 'Ada Orchard', name: 'Ada' },
-  { pass: 'proof-bo-' + Date.now(), house: 'Bo Bottom', name: 'Bo' },
-  { pass: 'proof-nameless-' + Date.now(), house: 'Quiet Acre', name: '' },
+  { pass: gid(), house: 'Ada Orchard', name: 'Ada' },
+  { pass: gid(), house: 'Bo Bottom', name: 'Bo' },
+  { pass: gid(), house: 'Quiet Acre', name: '' },
 ];
+for (const p of people) p.wt = tokenFor(p.pass);
 
 for (const p of people) {
-  const c = await yard('/claim', { pass: p.pass, alt: p.pass, name: p.house });
+  const c = await yard('/claim', { pass: p.pass, alt: p.pass, wt: p.wt, name: p.house });
   p.slug = c.j && c.j.slug;
   ok(!!p.slug, 'claimed a homestead for ' + p.house, c.status + ' ' + JSON.stringify(c.j));
   const s = await yard('/save', {
-    pass: p.pass, alt: p.pass, name: p.house,
+    pass: p.pass, alt: p.pass, wt: p.wt, name: p.house,
     state: { stage: 1, items: [], soil: [] },
     ...(p.name ? { who: who(p.name) } : {}),
   });
@@ -48,20 +63,21 @@ for (const p of people) {
 
 // ── 👋 I AM HERE: the half /save cannot give, because a yard only publishes when it CHANGES ──
 // somebody who opens their homestead, looks at the chickens and leaves must still reach the book
-const lurker = { pass: 'proof-lurk-' + Date.now(), house: 'Quiet Gate', name: 'Lurk' };
+const lurker = { pass: gid(), house: 'Quiet Gate', name: 'Lurk' };
+lurker.wt = tokenFor(lurker.pass);
 {
-  const c = await yard('/claim', { pass: lurker.pass, alt: lurker.pass, name: lurker.house });
+  const c = await yard('/claim', { pass: lurker.pass, alt: lurker.pass, wt: lurker.wt, name: lurker.house });
   lurker.slug = c.j && c.j.slug;
   ok(!!lurker.slug, 'a homestead claimed and then never saved again', c.status);
   const before = ((await yard('/folk')).j || {}).folk || [];
   ok(!before.some((f) => f.slug === lurker.slug), '…is not in the book yet', 'it is');
-  const w = await yard('/who', { pass: lurker.pass, alt: lurker.pass, who: who(lurker.name) });
+  const w = await yard('/who', { pass: lurker.pass, alt: lurker.pass, wt: lurker.wt, who: who(lurker.name) });
   ok(w.status === 200, 'and one line says who lives there', w.status + ' ' + JSON.stringify(w.j));
   const after = ((await yard('/folk')).j || {}).folk || [];
   ok(after.some((f) => f.slug === lurker.slug), '…which is all it takes to be in it', 'still missing');
 }
 {
-  const bare = await yard('/who', { pass: lurker.pass, alt: lurker.pass, who: { n: '' } });
+  const bare = await yard('/who', { pass: lurker.pass, alt: lurker.pass, wt: lurker.wt, who: { n: '' } });
   ok(bare.status === 400, 'a nameless hello is refused rather than filed', bare.status);
 }
 
@@ -99,11 +115,34 @@ ok((((none.j || {}).folk) || []).length === 0, 'a search for nobody finds nobody
 
 // ── and a letter to an address out of the book actually lands ───────────────────────────────
 const send = await fetch(API + '/post/send', { method: 'POST', headers: O,
-  body: JSON.stringify({ to: people[0].slug, from: people[1].slug, text: 'The sunflowers came up crooked this year.' }) });
+  body: JSON.stringify({ to: people[0].slug, wt: people[1].wt, text: 'The sunflowers came up crooked this year.' }) });
 ok(send.status === 200, 'a first letter to a house found in the book is delivered', send.status);
 const box = await fetch(API + '/post/box?slug=' + people[0].slug, { headers: O });
 const bj = await box.json().catch(() => ({}));
 ok(((bj.letters) || []).some((l) => l.from === people[1].slug), '…and it is in their mailbox', JSON.stringify(bj).slice(0, 80));
+
+// ── 🛡 A LETTER COMES FROM SOMEBODY WHO PROVED IT ────────────────────────────────────
+// `from` was read off the request body and never checked, so anybody could drop a letter into
+// anybody's mailbox signed with any house's name. The address book made every house findable, which
+// is what turned that from theoretical into usable.
+{
+  const forged = await fetch(API + '/post/send', { method: 'POST', headers: O,
+    body: JSON.stringify({ to: people[0].slug, from: people[1].slug, text: 'I am definitely your neighbour.' }) });
+  ok(forged.status === 401, 'a letter signed with somebody else’s house is refused', forged.status);
+
+  const nowt = await fetch(API + '/post/send', { method: 'POST', headers: O,
+    body: JSON.stringify({ to: people[0].slug, text: 'From nobody at all.' }) });
+  ok(nowt.status === 401, '…and so is one with no proof on it', nowt.status);
+
+  const junk = await fetch(API + '/post/send', { method: 'POST', headers: O,
+    body: JSON.stringify({ to: people[0].slug, wt: 'deadbeef.9999999999999.".64hex"', text: 'Hello.' }) });
+  ok(junk.status === 401, '…and a made-up proof proves nothing', junk.status);
+
+  const box2 = await fetch(API + '/post/box?slug=' + people[0].slug, { headers: O });
+  const bj2 = await box2.json().catch(() => ({}));
+  ok(!((bj2.letters) || []).some((l) => /definitely your neighbour|nobody at all/.test(l.text || '')),
+    '…and none of the three is in the mailbox', 'one got in');
+}
 
 for (const [yes, what, saw] of out) console.log((yes ? '  ✓ ' : '  ✗ ') + what + (yes ? '' : '   — saw ' + saw));
 if (bad) { console.error('\n✗ ' + bad + ' of ' + out.length + ' did not hold'); process.exit(1); }
