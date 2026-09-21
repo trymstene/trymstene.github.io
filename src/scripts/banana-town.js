@@ -332,6 +332,7 @@ let info = null;         // 🗺️ the kiosk's rack of maps, once its chunk is 
 let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 let crowd = null;        // 👥 src/scripts/town-crowd.js — the other players, once the square stands (22 Sep 2026)
+let duties = null;       // 💼 src/scripts/town-duties.js — the work note, once the jobs are up (22 Sep 2026)
 view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
   if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup')) return;   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
@@ -878,6 +879,11 @@ assetsReady().then(() => {
         copy: () => (room && room.seam.copyOf ? room.seam.copyOf('work') : null),
       });
       if (window.__town) window.__town.work = work.seam;
+      // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §9.2)
+      import('./town-duties.js').then((d) => {
+        duties = d.bootTownDuties({ view, work, track });
+        if (window.__town) window.__town.duties = duties ? duties.seam : null;
+      }).catch((e) => { console.warn('[town] the work note did not load', e); });
     }).catch((e) => { console.warn('[town] work did not load', e); });
     // 🕯 THE STORY. Chapter one opens here since 21 Sep 2026 (Nib at the fountain); chapter two — the
     // four signatures — is parked, and only the walk plays it (?towntest&chapter=2). Last, and

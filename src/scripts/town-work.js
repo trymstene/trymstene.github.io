@@ -35,13 +35,26 @@ export function bootTownWork(ctx) {
   const W = () => copy() || {};
   let job = readJob();
   let toldDay = '';   // the day we last said the quiet line, so it is said once
+  const todayKey = () => new Date().toISOString().slice(0, 10);
+  // 💼 the duties chip listens (town-duties.js): every landing, take or QA set says so
+  const listeners = [];
+  const notify = () => { for (const fn of listeners) { try { fn(); } catch (e) {} } };
 
-  // the server's answer is the truth; the mirror follows it
+  // the server's answer is the truth; the mirror follows it. ⚠️ `up`, `hm` and `told` are the
+  // DEVICE's own (turned up today, the chip folded, what the chip has said) and ride along untouched.
   function land(res) {
     if (!res || res.error) return res;
-    if (res.job) { job = { at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0 }; writeJob(job); }
+    if (res.job) {
+      job = { ...job, at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0, pay: res.job.pay | 0, sofar: res.job.sofar | 0, owed: res.job.owed | 0 };
+      if (job.at !== (res.job.at || '')) job.up = '';
+      writeJob(job);
+    }
+    notify();
     return res;
   }
+  // the job as it stands, marking nothing — on boot, so the chip can speak before you turn up
+  function view() { if (!job.at) return; passPost('/job/view', {}).then(land); }
+  view();
 
   // ---- the question on a boss's card ------------------------------------------------------
   // ⚠️ returns a plain {q, a} or null — the shape world-dialogue.js already takes, so the card that
@@ -77,8 +90,9 @@ export function bootTownWork(ctx) {
           if (res && res.error === 'keep') { job = { ...job, at: before }; writeJob(job); if (w.keep) say(w.keep); }
         });
         // optimistic, and honestly so: if the server refuses, the line above corrects it
-        job = { ...job, at };
+        job = { ...job, at, up: '' };
         writeJob(job);
+        notify();
         return line;
       },
     };
@@ -103,6 +117,7 @@ export function bootTownWork(ctx) {
     const day = new Date().toISOString().slice(0, 10);
     if (toldDay === day) return;
     passPost('/job/chore', {}).then((res) => {
+      if (res && !res.error) { job.up = day; writeJob(job); }   // 💼 turned up today: the chip turns from the duty to the wage
       land(res);
       if (res && res.error) return;
       toldDay = day;
@@ -118,7 +133,14 @@ export function bootTownWork(ctx) {
       job: () => ({ ...job }),
       bosses: () => ({ ...BOSS }),
       // ⚠️ the walk's door: it cannot keep a pass, so it drives the module rather than the server
-      set: (j) => { job = { at: '', week: '', days: 0, ...(j || {}) }; writeJob(job); },
+      set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', ...(j || {}) }; writeJob(job); notify(); },
+      // 💼 for the duties chip: the mirror as one plain object, plus whether you have turned up today
+      state: () => ({ at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey() }),
+      turnUp: () => { job.up = todayKey(); job.days = (job.days | 0) + 1; job.sofar = Math.round((job.pay | 0) * Math.min(7, job.days) / 7); writeJob(job); notify(); },   // QA: the chore landed
+      onChange: (fn) => { if (typeof fn === 'function') listeners.push(fn); },
+      folded: () => !!job.hm, fold: (v) => { job.hm = v ? 1 : 0; writeJob(job); },
+      told: () => job.told || '', tell: (k) => { job.told = k; writeJob(job); },
+      view,
       ask: (key) => { const t = topicFor(key); return t ? { q: t.q, a: t.a() } : null; },
       near: () => { const p = job.at && PROPS[job.at]; return !!p && Math.hypot(pos.x - (p.x + p.w / 2), pos.y - p.base) <= NEAR; },
     },

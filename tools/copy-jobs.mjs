@@ -1131,6 +1131,49 @@ const pageSchema = {
   properties: { title: str(pageFields.title.note), description: str(pageFields.description.note), tag: str(pageFields.tag.note), note: str(pageFields.note.note) },
 };
 
+// --- town-duties -----------------------------------------------------------------
+// 💼 THE DUTIES CHIP (22 Sep 2026; docs/town-jobs-plan.md §9.2): the quest chip's sibling in the
+// town's paper — one line at a time about the job you hold. The numbers are the pass worker's and
+// go into {coins} and {days}; the words never carry one.
+export const DUTY_AT = ['store', 'condo', 'cafe'];
+const dutyFields = {
+  'duty.store': { kind: 'prose', aim: 44, max: 70, note: 'The note while today\u2019s work at the General Store is undone: the shelf wants restocking (the crate by the till, the faces on the shelf). Lower case first letter, a phrase or one plain sentence.' },
+  'duty.condo': { kind: 'prose', aim: 44, max: 70, note: 'The note for the Arcade. For now the arcade wants nothing but your company \u2014 being there is the day\u2019s work. Do not invent a chore. Lower case first letter.' },
+  'duty.cafe': { kind: 'prose', aim: 44, max: 70, note: 'The note for the Coffee Cup: clock in at the serving window and make cups. Lower case first letter.' },
+  wage: { kind: 'prose', aim: 60, max: 80, holds: ['{coins}', '{days}'], note: 'Once you have turned up today at a cheque job: how much the week has earned so far and how far away payday is. MUST contain {coins} and {days} exactly once each \u2014 the game prints the numbers. Payday is Monday. Lower case first letter.' },
+  cafeDone: { kind: 'prose', aim: 50, max: 70, note: 'The Coffee Cup once you have clocked in today: tips are counted on the tray as you pour and paid when you step away. No numbers. Lower case first letter.' },
+  payslip: { kind: 'prose', aim: 50, max: 70, note: 'A cheque has been paid and the payslip waits in the letterbox at your homestead: it sends you home to open it. No numbers \u2014 the payslip has them. Lower case first letter.' },
+};
+const DUTY_UI = new RegExp('\\b(tap|click|button|menu|screen|swipe)\\b', 'i');
+const DUTY_PAY = new RegExp('\\b(reward|bonus|prize|jackpot)\\b', 'i');
+function dutyShape(data) {
+  const bad = [];
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
+  const d = data.duty || {};
+  const all = [['duty.store', d.store], ['duty.condo', d.condo], ['duty.cafe', d.cafe], ['wage', data.wage], ['cafeDone', data.cafeDone], ['payslip', data.payslip]];
+  for (const [p, v0] of all) {
+    const v = String(v0 || '');
+    if (!v) { say(p, 'is empty'); continue; }
+    if (/^[A-Z]/.test(v)) say(p, 'starts with a capital, and a note to yourself starts small');
+    if (DUTY_UI.test(v)) say(p, 'names a control; a chip says what the place wants, never which button');
+    if (DUTY_PAY.test(v)) say(p, 'calls a wage or a tip a reward');
+    if (/\d/.test(v.replace(/\{coins\}|\{days\}/g, ''))) say(p, 'carries a number of its own \u2014 the game prints the numbers');
+    if (p !== 'wage' && /\{(coins|days)\}/.test(v)) say(p, 'has a placeholder, and only the wage line carries the numbers');
+  }
+  const w = String(data.wage || '');
+  if ((w.match(/\{coins\}/g) || []).length !== 1) say('wage', 'must contain {coins} exactly once');
+  if ((w.match(/\{days\}/g) || []).length !== 1) say('wage', 'must contain {days} exactly once');
+  return bad;
+}
+const dutySchema = {
+  type: 'object', additionalProperties: false, required: ['duty', 'wage', 'cafeDone', 'payslip'],
+  properties: {
+    duty: { type: 'object', additionalProperties: false, required: DUTY_AT,
+      properties: { store: str(dutyFields['duty.store'].note), condo: str(dutyFields['duty.condo'].note), cafe: str(dutyFields['duty.cafe'].note) } },
+    wage: str(dutyFields.wage.note), cafeDone: str(dutyFields.cafeDone.note), payslip: str(dutyFields.payslip.note),
+  },
+};
+
 export const JOBS = {
   'town-life': {
     id: 'town-life',
@@ -1228,6 +1271,19 @@ export const JOBS = {
     fields: pageFields,
     shape: pageShape,
     schema: pageSchema,
+  },
+  'town-duties': {
+    id: 'town-duties',
+    title: 'Banana Town \u2014 the duties chip',
+    what: 'The one-line work note in the corner of the square: today\u2019s duty at your workplace, the wage so far and the days to payday, the payslip waiting at home.',
+    brief: 'tools/copy-briefs/town-duties.md',
+    out: 'tools/copy-out/town-duties.json',
+    approved: 'src/data/copy/town-duties.json',
+    reads: 'src/scripts/town-duties.js (through a glob \u2014 no words, no chip)',
+    top: ['duty', 'wage', 'cafeDone', 'payslip'],
+    fields: dutyFields,
+    shape: dutyShape,
+    schema: dutySchema,
   },
   'town-dress': {
     id: 'town-dress',

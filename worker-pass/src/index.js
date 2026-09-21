@@ -72,6 +72,7 @@ export default {
       if (url.pathname === '/job/take') return jobTake(request, env);
       if (url.pathname === '/job/chore') return jobChore(request, env);
       if (url.pathname === '/job/pay') return jobPay(request, env);
+      if (url.pathname === '/job/view') return jobViewRoute(request, env);
       if (url.pathname === '/citizen') return citizen(request, env);
       if (url.pathname === '/arcade/board') return arcadeBoard(request, env, url);
       if (url.pathname === '/arcade/score') return arcadeScore(request, env);
@@ -1253,7 +1254,33 @@ function jobPrune(j, now) {
 }
 function jobView(j, now) {
   const wk = jobWeek(now);
-  return { at: j.at || '', since: j.since || 0, week: wk, days: jobDays(j.wk && j.wk[wk]), pay: JOB_PAY[j.at] || 0 };
+  const days = jobDays(j.wk && j.wk[wk], j.at);
+  // 💼 what the duties chip prints (docs/town-jobs-plan.md §9.3): the wage so far is the cheque's own
+  // formula on this week's days, and `owed` is what /job/pay would hand over right now — the same walk,
+  // without marking anything paid, so the town can say "your payslip is in the letterbox" honestly.
+  let owed = 0;
+  for (let i = 1; i <= PAY_BACK; i++) {
+    const w0 = jobWeek(now - i * 7 * DAY), w = j.wk && j.wk[w0];
+    if (!w || (j.paid && j.paid[w0] != null)) continue;
+    const byJob = {};
+    for (const d in w) byJob[w[d]] = (byJob[w[d]] || 0) + 1;
+    for (const at in byJob) owed += Math.round((JOB_PAY[at] || 0) * Math.min(7, byJob[at]) / 7);
+  }
+  return { at: j.at || '', since: j.since || 0, week: wk, days, pay: JOB_PAY[j.at] || 0,
+    sofar: Math.round((JOB_PAY[j.at] || 0) * Math.min(7, days) / 7), owed };
+}
+// ---------- POST /job/view — the job as it stands, marking nothing (the duties chip's read) ----------
+async function jobViewRoute(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const R = await tokenRec(env, b.credId, b.token);
+  if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+  if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+  const j = jobRec(R.home, false);
+  const now = Date.now();
+  return json({ ok: true, job: jobView(j || { at: '', since: 0, wk: {}, paid: {} }, now) }, 200, cors(env, request));
 }
 
 // ---------- POST /job/take — ask a boss for the job, or hand it back ----------

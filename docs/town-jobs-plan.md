@@ -770,8 +770,8 @@ simple minigame."*
 | The café | ✅ tips per cup, at clock-out; ✅ 21 Sep: the window is the tap target, `+n` per cup, the tray counts the shift |
 | The lemonade stand (Fig Jr.) | ❌ scenery |
 | The post office job (Stamp) | ❌ never resolved (§3: "under review") |
-| Duty notifications | ❌ none — the only chip in the world is the quest's |
-| Wage so far / payday countdown | ❌ nowhere on screen |
+| Duty notifications | ✅ 22 Sep: the duties chip (`src/scripts/town-duties.js`, words `town-duties`) — the quest chip's sibling in the town's paper, under the quest chip when both are up |
+| Wage so far / payday countdown | ✅ 22 Sep: on the chip once you have turned up — `sofar` from the pass worker's `jobView` (the cheque's formula), payday counted to Monday; `owed` says "your payslip is in the letterbox" (`POST /job/view`, read-only) |
 
 ### 9.1 The two kinds of work — Trym's split, written down
 - **Payslip jobs**: the General Store, the Arcade, the Post Office. Passive attendance + one daily

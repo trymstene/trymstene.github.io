@@ -1,0 +1,10 @@
+{
+  "duty": {
+    "store": "restock the shelf from the crate by the till; faces forward.",
+    "condo": "be at the arcade; it needs company more than anything.",
+    "cafe": "clock in at the serving window and make cups; they lack initiative."
+  },
+  "wage": "the week’s wage is {coins}; payday is Monday, {days} days away.",
+  "cafeDone": "tips gather on the tray as you pour; paid when you step away.",
+  "payslip": "go home and open the payslip waiting in your letterbox; it has news."
+}
