@@ -1,0 +1,97 @@
+---
+// 🛍 THE SHOPPING-BAG BENCH (21 Sep 2026). Trym: *"i would like to preview how the bags look on bananas
+// first before deploy though so give me a preview of the variants with bananas animated with the bags"*.
+//
+// Three papers — cream, beige, brown — on the real engine, in every pose the town will show them in:
+// the dance (the builder's loop), the walk-bob left and right, the front stand, the bench crouch, and
+// beside a hat and a second held thing (two hands). On the square's own cobble grey, at 2× and 4×.
+// Internal: noindexed, in no sitemap, linked from nowhere. Nothing here is copy.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+const title = 'The shopping-bag bench — Banana Town';
+const description = 'Internal bench for the town’s shopping bags. Not a public page.';
+const BAGS = ['shopbag_cream', 'shopbag_beige', 'shopbag_brown'];
+---
+<BaseLayout title={title} description={description} robots="noindex,nofollow" showFooter={false}>
+  <style is:inline>
+    .bb-wrap { max-width: 1100px; margin: 0 auto; padding: 1rem 1rem 3rem; color: #fffdf5; }
+    .bb-h { font-family: "Archivo Black", sans-serif; color: #ffb347; margin: 0 0 0.2rem; font-size: 1.3rem; }
+    .bb-sub { opacity: 0.72; font-size: 0.86rem; margin: 0 0 1rem; }
+    .bb-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+    .bb-col { border: 4px solid #000; box-shadow: 6px 6px 0 #000; background: #6f7580; padding: 0.7rem; }
+    .bb-col h2 { font-family: "Archivo Black", sans-serif; font-size: 1rem; margin: 0 0 0.5rem; color: #fffdf5; text-shadow: 2px 2px 0 #000; }
+    /* the square's own cobbles, so the papers are judged against what they will stand on */
+    .bb-ground { background: url('/assets/town/town.png') -1400px -1800px / 4400px 2600px no-repeat; image-rendering: pixelated; border: 3px solid #000; padding: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: flex-end; justify-content: center; }
+    .bb-ground--big { min-height: 330px; }
+    .bb-fig { display: grid; justify-items: center; gap: 2px; font-size: 0.66rem; color: #fffdf5; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
+    .bb-fig canvas { image-rendering: pixelated; display: block; }
+    .bb-x2 canvas { width: 150px; height: 150px; }
+    .bb-x4 canvas { width: 300px; height: 300px; }
+    .bb-x1 canvas { width: 75px; height: 75px; }
+    .bb-row { margin-top: 0.6rem; }
+    .bb-row h3 { font-size: 0.8rem; margin: 0 0 0.3rem; opacity: 0.85; }
+    .bb-note { opacity: 0.7; font-size: 0.8rem; margin-top: 1rem; }
+  </style>
+  <main class="bb-wrap">
+    <h1 class="bb-h">The shopping-bag bench</h1>
+    <p class="bb-sub">Cream, beige, brown — on the real engine, in every pose the square will show them in. Sizes: 1× is a visitor on a phone, 2× the builder, 4× for the pixels.</p>
+    <div class="bb-cols" id="bbCols">
+      {BAGS.map((id) => (
+        <section class="bb-col" data-bag={id}>
+          <h2>{id.replace('shopbag_', '')}</h2>
+          <div class="bb-row"><h3>the dance · 4×</h3><div class="bb-ground bb-ground--big bb-x4"><div class="bb-fig"><canvas data-pose="dance" width="300" height="300"></canvas></div></div></div>
+          <div class="bb-row"><h3>in the square · 2× — walk right · walk left · stand · on a bench</h3>
+            <div class="bb-ground bb-x2">
+              <div class="bb-fig"><canvas data-pose="walkr" width="150" height="150"></canvas>walk →</div>
+              <div class="bb-fig"><canvas data-pose="walkl" width="150" height="150"></canvas>← walk</div>
+              <div class="bb-fig"><canvas data-pose="stand" width="150" height="150"></canvas>stand</div>
+              <div class="bb-fig"><canvas data-pose="sit" width="150" height="150"></canvas>bench</div>
+            </div></div>
+          <div class="bb-row"><h3>with company · 2× — a hat and balloons in the other hand · a visitor's size 1×</h3>
+            <div class="bb-ground bb-x2">
+              <div class="bb-fig"><canvas data-pose="dressed" width="150" height="150"></canvas>hat + balloons</div>
+              <div class="bb-fig"><canvas data-pose="dressed2" width="150" height="150"></canvas>cap + jug</div>
+              <div class="bb-fig bb-x1"><canvas data-pose="walkr" width="150" height="150"></canvas>1×</div>
+              <div class="bb-fig bb-x1"><canvas data-pose="stand" width="150" height="150"></canvas>1×</div>
+            </div></div>
+        </section>
+      ))}
+    </div>
+    <p class="bb-note">The bag hangs from the right glove by its handle (grip 1.5), so it swings with the arm exactly as the jug and the letter do. Two-hand rule: a visitor's own held thing keeps its left hand, the bag takes the right.</p>
+  </main>
+  <script>
+    import { drawComposite, assetsReady, NFRAMES } from '../../lib/banana-engine.js';
+    const fit = (bag, more = {}) => ({ hat: more.hat || 'none', glasses: more.glasses || 'none', extras: { [bag]: true, ...(more.extras || {}) }, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+    // the town's own frame grammar (town-folk.js paint): walking bobs between a pair, standing is
+    // the front pose, a sitter is locked on the beach's crouch
+    const POSES = {
+      dance: (t) => Math.floor(t / 100) % NFRAMES,
+      walkr: (t) => 0 + (Math.floor(t / 260) % 2),
+      walkl: (t) => 4 + (Math.floor(t / 260) % 2),
+      stand: () => 2,
+      sit: () => 0,
+      dressed: (t) => 0 + (Math.floor(t / 260) % 2),
+      dressed2: (t) => 4 + (Math.floor(t / 260) % 2),
+    };
+    const DRESS = { dressed: { hat: 'party', extras: { balloons: true } }, dressed2: { hat: 'backwardscap', extras: { lemonjug: true } } };
+    assetsReady().then(() => {
+      const cells = [...document.querySelectorAll('.bb-col')].flatMap((col) => [...col.querySelectorAll('canvas')].map((cv) => ({ cv, ctx: cv.getContext('2d'), pose: cv.dataset.pose, fit: fit(col.dataset.bag, DRESS[cv.dataset.pose]), drawn: -1 })));
+      const frame = (now) => {
+        for (const c of cells) {
+          const f = POSES[c.pose](now);
+          if (f === c.drawn) continue;
+          c.drawn = f;
+          c.ctx.clearRect(0, 0, c.cv.width, c.cv.height);
+          try { drawComposite(c.ctx, c.cv.width, f, c.fit); } catch (e) { console.warn('bag bench', e); }
+        }
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+      // @ts-ignore — the walk reads this to know every cell has drawn at least once
+      window.__bags = {
+        cells: () => cells.map((c) => ({ pose: c.pose, drawn: c.drawn })),
+        // QA: draw one exact frame into every dance canvas and hand the pixels back (the GIF for Trym)
+        snap: (f, pose) => cells.filter((c) => c.pose === (pose || 'dance')).map((c) => { c.ctx.clearRect(0, 0, c.cv.width, c.cv.height); drawComposite(c.ctx, c.cv.width, f, c.fit); c.drawn = -2; return c.cv.toDataURL(); }),
+      };
+    });
+  </script>
+</BaseLayout>

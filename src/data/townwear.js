@@ -50,4 +50,23 @@ const wateringcan = svg(120, 120,
   + B(40, 100, 10, 10, K) + B(50, 100, 60, 10, TIN2) + B(110, 100, 10, 10, K)
   + B(40, 110, 80, 10, K));
 
-export const TOWN_SVG = { letter, lemonjug, wateringcan };
+// 🛍 SHOPPING BAGS (21 Sep 2026; Trym: "a new wearable that is shopping bags … cream white and beige
+// and brown and such - normal shopping bags"). One shape, three papers: a paper carrier with a looped
+// handle, a lit left edge, a shaded right edge and a shaded base. Nothing on the front — a normal bag.
+// Held by the handle (grip 1.5 in wearables.js), so it hangs to the feet and swings with the arm.
+const bag = (L, F, S) => svg(100, 100,
+  B(30, 0, 40, 10, K)
+  + B(20, 10, 10, 10, K) + B(70, 10, 10, 10, K)
+  + B(20, 20, 10, 10, K) + B(70, 20, 10, 10, K)
+  + B(0, 30, 100, 10, K)
+  + B(0, 40, 10, 10, K) + B(10, 40, 10, 10, L) + B(20, 40, 60, 10, F) + B(80, 40, 10, 10, S) + B(90, 40, 10, 10, K)
+  + B(0, 50, 10, 10, K) + B(10, 50, 10, 10, L) + B(20, 50, 60, 10, F) + B(80, 50, 10, 10, S) + B(90, 50, 10, 10, K)
+  + B(0, 60, 10, 10, K) + B(10, 60, 10, 10, L) + B(20, 60, 60, 10, F) + B(80, 60, 10, 10, S) + B(90, 60, 10, 10, K)
+  + B(0, 70, 10, 10, K) + B(10, 70, 10, 10, L) + B(20, 70, 60, 10, F) + B(80, 70, 10, 10, S) + B(90, 70, 10, 10, K)
+  + B(0, 80, 10, 10, K) + B(10, 80, 80, 10, S) + B(90, 80, 10, 10, K)
+  + B(0, 90, 100, 10, K));
+const shopbag_cream = bag('#ffffff', '#fff3d9', '#e9dcc2');
+const shopbag_beige = bag('#f3e2c4', '#e3c99f', '#c8ab7d');
+const shopbag_brown = bag('#c69267', '#ab7648', '#8b5c36');
+
+export const TOWN_SVG = { letter, lemonjug, wateringcan, shopbag_cream, shopbag_beige, shopbag_brown };

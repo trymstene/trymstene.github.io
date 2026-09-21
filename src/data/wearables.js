@@ -249,6 +249,11 @@ export const WEARABLE_PACKS = {
       { id: 'letter', label: 'Letter', anchor: 'hand', hand: 'left', grip: 4, art: 'letter', raveOnly: true },
       { id: 'lemonjug', label: 'Lemonade jug', anchor: 'hand', hand: 'left', grip: 5.5, art: 'lemonjug', raveOnly: true },
       { id: 'wateringcan', label: 'Watering can', anchor: 'hand', hand: 'left', grip: 3, art: 'wateringcan', raveOnly: true },
+      // 🛍 the town's shopping bags (21 Sep 2026) — draw-time only, carried by visitors on their errands
+      // (town-folk.js). Right-handed, so a bag rides beside the left-handed things they already carry.
+      { id: 'shopbag_cream', label: 'Shopping bag', anchor: 'hand', hand: 'right', grip: 1.5, art: 'shopbag_cream', raveOnly: true },
+      { id: 'shopbag_beige', label: 'Shopping bag', anchor: 'hand', hand: 'right', grip: 1.5, art: 'shopbag_beige', raveOnly: true },
+      { id: 'shopbag_brown', label: 'Shopping bag', anchor: 'hand', hand: 'right', grip: 1.5, art: 'shopbag_brown', raveOnly: true },
     ],
   },
   // Example future pack (art not drawn yet):
