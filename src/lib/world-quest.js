@@ -35,14 +35,19 @@ const NIB_DRAW = {
 // ⚠️ THE TWO NEVER RUN AT ONCE. An area belongs to exactly one chapter, and each keeps its own
 // localStorage key, its own pass counter and its own finish line — so finishing one has no opinion
 // about the other, and a player may be mid-chapter in both.
+// 🏘 21 Sep 2026: CHAPTER ONE OPENS IN THE TOWN. Its first scene moved from the plot to the fountain
+// (Trym: "our starting point for Banana World is now — the town"), so the town belongs to chapter
+// one now and chapter two is parked: its code, its words and its gate all stay, and the walk still
+// plays it through ?towntest&chapter=2, but no area boots it. Something bigger that continues the
+// story is owed before it comes back.
 const CH = {
-  c1: { key: 'bwq-c1', stat: 'quest_c1', areas: ['homestead', 'park', 'beach', 'rave'],
+  c1: { key: 'bwq-c1', stat: 'quest_c1', areas: ['town', 'homestead', 'park', 'beach', 'rave'],
     intro: ['chapter i', 'what the plot?'], over: '🍌 CHAPTER ONE — complete', cast: 1 },
   // ⚠️ cast: 0 — THE TOWN DRAWS ITS OWN PEOPLE. Its nine residents walk a twelve-minute day, so a
   // Nib drawn by the quest would stand frozen beside the real one walking past. Every chapter-2
   // mark hangs on a BUILDING instead, and tapping the real Nib opens the same sheet through
   // window.bwqTalk — the way the park hands Old Peel over.
-  c2: { key: 'bwq-c2', stat: 'quest_c2', areas: ['town'], over: '🍌 CHAPTER TWO — complete', cast: 0 },
+  c2: { key: 'bwq-c2', stat: 'quest_c2', areas: [], over: '🍌 CHAPTER TWO — complete', cast: 0 },
 };
 let ch = CH.c1;        // named for real in bootQuest(), before any state is read
 let KEY = ch.key;
@@ -100,7 +105,9 @@ const AREAS = {
   rave: { sel: '#rvWorld', view: '#rvFloor', chipHost: '.rv-booth' },
   // 🏘 the town — chapter 2. wh = town-geo WORLD.h, which feeds the same depth formula the square
   // itself uses. ⚠️ the view, not the world: #twWorld is the layer that PANS.
-  town: { sel: '#twWorld', view: '#twView', wh: 1300 },
+  // own: the town DRAWS ITS OWN NIB — he walks a twelve-minute day — so no chapter draws a body here
+  // (a frozen second Nib beside the walking one); its marks hang where the real one stands.
+  town: { sel: '#twWorld', view: '#twView', wh: 1300, own: 1 },
 };
 
 // ---- state ----------------------------------------------------------------
@@ -160,66 +167,23 @@ function myDraw() {
   return { ...o, ...NPC };
 }
 
-// ---- chapter one ----------------------------------------------------------
-// kind: talk (marker → dialogue) · objects (tap the spawned things) ·
-//       goal (watch for a real-world condition, homestead tent)
 // at: {sel} anchors to a live element, {x,y} = % of the world plate.
 const C1_STEPS = [
-  // ⚠️ atRes: for RESIDENTS (stage ≥ 1) the gate spot sits in their fence
-  // opening / on their built plot — Nib waits on the far side of the road
-  // instead, a bit further down, off their property (Trym)
-  // ⚠️ NIB MUST BE ON SCREEN AT SPAWN (14 Aug, from the ad's day-one funnel).
-  // At the gate (63%) he sat ~1000 world px east of the west road entrance
-  // where a direct visit lands — so the chip pointed at somebody the camera
-  // was not showing, and 7 of 181 arrivals ever tapped him. He now waits a
-  // short walk up the road, in the frame, between the newcomer and the plot.
-  // ⚠️ MEASURED, not guessed: at the west spawn a 393-wide phone sees world
-  // x 6-591 only. 34% (x612) was clipped at the right edge; 24% (x432) sits
-  // ~3/4 across the frame — plainly visible, still a real walk away.
-  // ⚠️ THE MEASUREMENT ABOVE WAS FOR ONE OF THE TWO DOORS. 24% (x432) was
-  // measured at the WEST road entrance — where you land walking in from the
-  // park — and it is right for that. But a DIRECT visit to /homestead/ walks
-  // you east to the gate at x1152, which leaves Nib ~700px BEHIND you, off the
-  // left edge, and that is the door most new players use (Trym, 4 Sep: "he is
-  // off screen far left ... they miss Nib completely"). atDirect puts him just
-  // south of the road beside the post-box (x1252, y985 of an 1800x1100 plate),
-  // a few steps ahead of where the arrival walk sets you down.
-  { id: 'c1_nib_hello', area: 'homestead', kind: 'talk', who: 'nib', leave: 1, at: { x: 24, y: 83 },
-    atDirect: { x: 70, y: 89 },
-    atRes: { x: 66, y: 90 },
-    find: 'someone is waiting up the road — go say hello!',
-    findRes: 'someone is waiting across the road — go say hello!',
-    // ✍️ THE VOICE BAR (Trym, 12 Aug round 3): dialogue a 13-year-old and a
-    // 50-year-old both read without a stumble — short sentences, plain
-    // words, a STORYTELLER's warmth, no bureaucrat jargon ("registry/deed/
-    // archive" → "the big book"). Nib helps the MAYOR (plants ch.2) and
-    // heard a RUMOUR (a rumour has a source — also ch.2).
-    lines: [
-      ['nib', 'Oh! Hello hello! You’re here!'],
-      ['nib', 'I’m Nib. I help the Mayor keep track of Banana World — every banana, every plot of land, every little shop. It all goes in my big book.'],
-      ['nib', 'And this morning I heard a rumour. Somebody new was coming to town today. That’s you!'],
-      ['you', 'Me? I only just got here.'],
-      ['nib', 'Then the rumour was right! And it gets stranger. This is Plot 11 — nobody has lived here since 1999.'],
-      ['nib', 'There’s no owner in my book. No name. Nothing. Just one old letter, waiting in a drawer all these years.'],
-      ['paper', '“the eleventh plot, to whoever comes asking. it has waited long enough.”'],
-      ['you', 'Whoever comes asking… that could be anyone.'],
-      ['nib', 'Could be. But you’re the one standing here, aren’t you? Sign your name, and Plot 11 is yours.'],
-      ['nib', 'Who wrote the letter? Nobody knows. My book only goes back to 1999 — but Old Peel, in the Park? He’s older than any book.'],
-      ['nib', 'Go ask him about Plot 11. Tell him it’s official business. He hates official business. It’s wonderful.'],
-    ],
-    linesRes: [
-      ['nib', 'Hello hello! I’m Nib. I help the Mayor keep track of Banana World — every banana, every plot of land, every little shop. It all goes in my big book.'],
-      ['nib', 'I heard somebody finally lives on Plot 11 again — so I came to write you in. That’s you!'],
-      ['you', 'That’s me. Is something wrong?'],
-      ['nib', 'A little, yes. Nobody lived here since 1999. And when I looked up your plot in the book… there was no owner at all. No name. Nothing.'],
-      ['nib', 'Just this one old letter, waiting in a drawer all these years.'],
-      ['paper', '“the eleventh plot, to whoever comes asking. it has waited long enough.”'],
-      ['you', 'Who wrote it?'],
-      ['nib', 'Nobody knows! No name on it. No date. It isn’t even filed properly. I had to sit down.'],
-      ['nib', 'My book only goes back to 1999 — but Old Peel, in the Park? He’s older than any book.'],
-      ['nib', 'Go ask him about Plot 11. Tell him it’s official business. He hates official business. It’s wonderful.'],
-    ],
-    hint: 'find Old Peel in the Park' },
+  // ⚠️ NIB MUST BE ON SCREEN AT SPAWN — the lesson of 14 Aug, when he waited at the homestead gate
+  // ~1000 world px from where a direct visit landed and 7 of 181 arrivals ever tapped him. The town
+  // spawns you at (1100, 1230) on the south road; the fountain point is 245 px north of that, in
+  // the frame on a 393-wide phone (the walk in tests/quest-c1-town.spec.mjs measures it).
+  // 🏘 CHAPTER ONE OPENS IN THE TOWN (21 Sep 2026). Nib waits BY THE FOUNTAIN — the town's own Nib,
+  // walking his own day, so no body is drawn here (AREAS.town.own) and the ! hangs where he stands:
+  // ST.fountain in town-life.js is (1160, 985), and the anchor below is that point less his height,
+  // in the town's own %-space (W 2200 × H 1300) with the square's depth (z = 100 + y). `station` is
+  // what the square reads off window.bwqTalk: while this step is open he stands there whatever the
+  // hour, and the moment it closes he walks up to the town hall (town-room.js overrideFor).
+  // ⚠️ THE WORDS ARE THE RIG'S — src/data/copy/quest-c1.json, joined on at boot (loadC1): the plot is
+  // a place you travel to now, and you cannot put your name on it until you have asked Old Peel.
+  { id: 'c1_nib_hello', area: 'town', kind: 'talk', who: 'nib', leave: 1, station: 'fountain',
+    at: { x: 1160 / 22, y: 889 / 13, z: 100 + 985 + 3 },
+    find: '', findRes: '', lines: [], linesRes: [], hint: '' },
 
   { id: 'c1_peel_hi', area: 'park', kind: 'talk', who: 'peel', at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
@@ -442,6 +406,32 @@ const C1_STEPS = [
 
 // the chapter being played. Swapped once, in bootQuest, before anything reads it.
 let STEPS = C1_STEPS;
+
+// 🕯 CHAPTER ONE'S FIRST SCENE IS THE RIG'S (21 Sep 2026) — the one scene that changed when the
+// chapter moved to the town, joined onto C1_STEPS[0] at boot. The rest of the chapter keeps its
+// inline words. Same glob rule as chapter 2: the file is written by the rig and approved by hand.
+const C1_COPY = import.meta.glob('../data/copy/quest-c1.json', { import: 'default' });
+let c1Loaded = false;
+async function loadC1() {
+  if (c1Loaded) return true;
+  const get = Object.values(C1_COPY)[0];
+  if (!get) return false;
+  let c = null;
+  try { c = await get(); } catch (e) { return false; }
+  const o = c && c.open;
+  if (!o || !Array.isArray(o.lines) || !o.lines.length) return false;
+  const rows = (ls) => ls.map((l) => [l.who, l.text]);
+  Object.assign(C1_STEPS[0], {
+    find: o.find || '', findRes: o.findRes || o.find || '', hint: o.hint || '',
+    lines: rows(o.lines), linesRes: rows(o.linesRes && o.linesRes.length ? o.linesRes : o.lines),
+  });
+  // ⚠️ the chip after the scene is the NEXT step's `find`, and Old Peel's step never had one — the
+  // fallback read "talk to old peel", which is a name and not a place. The rig's `hint` is that
+  // compass ("old peel in the park"), so it becomes step 1's find rather than sitting unread.
+  if (o.hint && C1_STEPS[1] && !C1_STEPS[1].find) C1_STEPS[1].find = o.hint;
+  c1Loaded = true;
+  return true;
+}
 
 // 🏘 CHAPTER 2'S TABLE AND ITS WORDS, BOTH LAZY — a player who never walks into the town
 // downloads neither, which is what keeps world-quest.js inside its budget.
@@ -1219,9 +1209,14 @@ export async function bootQuest() {
 
   // 🕯 WHICH CHAPTER THIS AREA BELONGS TO, decided before any state is read — S and KEY are
   // module-scope and chapter-specific, so reading them first would read the wrong chapter's save.
-  ch = Object.values(CH).find((c) => c.areas.includes(area)) || CH.c1;
+  // 🧪 chapter two is parked (see CH); the walk plays it through ?towntest&chapter=2, nobody else does
+  const wantC2 = area === 'town' && /[?&]towntest/.test(location.search) && /[?&]chapter=2/.test(location.search);
+  ch = wantC2 ? CH.c2 : (Object.values(CH).find((c) => c.areas.includes(area)) || CH.c1);
   KEY = ch.key;
   readS();
+  // ⚠️ NO WORDS, NO FIRST SCENE: the town has no chapter to open without them, and everywhere else the
+  // chip would point at an empty scene — so the whole chapter waits for its file, as chapter 2 does.
+  if (ch === CH.c1 && !(await loadC1())) return;
   if (ch === CH.c2) {
     STEPS = await loadC2();
     // ⚠️ NO WORDS, NO CHAPTER. The town keeps every other thing it has — the square, the arcade,
@@ -1622,7 +1617,8 @@ export async function bootQuest() {
       // ambient chit-chat holds its tongue (chatter under the ! / ? is
       // noise, Trym). The digzone's bwqTalk carries no mark, so Sabreface
       // may still mutter during the hunt.
-      window.bwqTalk = { who: step.who, open: talk, mark: 1 };
+      // `station`: where the town's own Nib must stand while this step is open (town-life.js ST)
+      window.bwqTalk = { who: step.who, open: talk, mark: 1, station: step.station || '' };
       // (document-level capture, delegated: the NPC element may not exist yet
       // when this render runs, and it fires before every area handler)
       const tapSel = step.tapSel || (step.at && step.at.sel);
@@ -1655,7 +1651,7 @@ export async function bootQuest() {
       // either talks. Existing NPCs (Peel, Barty…) already have bodies.
       // ⚠️ ch.cast: the TOWN has its own Nib, walking his own day, so chapter 2 draws nobody and
       // hangs its marks on buildings. Drawing here would put a frozen second Nib in the square.
-      if (step.who === 'nib' && ch.cast) {
+      if (step.who === 'nib' && ch.cast && !AREAS[area].own) {
         const n = document.createElement('div');
         n.className = 'bwq-npc';
         const cv = document.createElement('canvas');
@@ -1677,7 +1673,7 @@ export async function bootQuest() {
       // (-9: -11.5 floated it a full head-height too high — Trym)
       // the -9 lifts the glyph over Nib's HEAD; with no body drawn the mark belongs on the
       // notice itself, which is where the step's own anchor already points.
-      place(m, (step.who === 'nib' && ch.cast) ? { ...at, y: at.y - 9 } : at);
+      place(m, (step.who === 'nib' && ch.cast && !AREAS[area].own) ? { ...at, y: at.y - 9 } : at);
       // ⚠️ A MARK ON A WALL NEEDS THE WALL'S DEPTH. Chapter 1's marks float over open ground and
       // stack by DOM order; the town sorts every sprite explicitly (z = 100 + y), so an unpositioned
       // sibling loses to the building it is nailed to — walked once, and the town hall painted clean

@@ -1,0 +1,79 @@
+{
+  "open": {
+    "find": "fountain in banana town",
+    "findRes": "fountain in banana town",
+    "hint": "old peel in the park",
+    "lines": [
+      {
+        "who": "nib",
+        "text": "Hello! I’m Nib, the town clerk. I heard a rumour somebody new was coming, and there you are."
+      },
+      {
+        "who": "you",
+        "text": "I just got here."
+      },
+      {
+        "who": "nib",
+        "text": "My big book has an ownerless page for Plot 11, out past the park. Nobody has lived on it since 1999."
+      },
+      {
+        "who": "nib",
+        "text": "No name at all. Just an old letter from the top drawer. I do love a page with a surprise in it."
+      },
+      {
+        "who": "paper",
+        "text": "“the eleventh plot, to whoever comes asking. it has waited long enough.”"
+      },
+      {
+        "who": "nib",
+        "text": "It’s yours, but we must find who left it before you can put your name on Plot 11."
+      },
+      {
+        "who": "nib",
+        "text": "My big book only goes back to 1999. Old Peel in the Park is older than any book."
+      },
+      {
+        "who": "nib",
+        "text": "Go ask Old Peel about Plot 11. He hates official business. Wonderful."
+      },
+      {
+        "who": "nib",
+        "text": "I’ll be at the town hall, putting the drawer back where it belongs."
+      }
+    ],
+    "linesRes": [
+      {
+        "who": "nib",
+        "text": "Hello! I’m Nib, the town clerk. I heard you’d settled on Plot 11, so I came to write you in properly."
+      },
+      {
+        "who": "you",
+        "text": "I just got here."
+      },
+      {
+        "who": "nib",
+        "text": "But its page is empty. Nobody has lived on it since 1999 in my big book."
+      },
+      {
+        "who": "nib",
+        "text": "No name, only an old letter from the top drawer."
+      },
+      {
+        "who": "paper",
+        "text": "“the eleventh plot, to whoever comes asking. it has waited long enough.”"
+      },
+      {
+        "who": "nib",
+        "text": "We must find who left it before I can put your name on Plot 11."
+      },
+      {
+        "who": "nib",
+        "text": "My big book only goes back to 1999. Ask Old Peel in the Park about Plot 11. He hates official business. Wonderful."
+      },
+      {
+        "who": "nib",
+        "text": "I’ll be at the town hall."
+      }
+    ]
+  }
+}

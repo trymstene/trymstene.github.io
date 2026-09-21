@@ -36,6 +36,7 @@ const PAGES = [
   { path: '/rave/', images: [] },
   { path: '/beach/', images: [['/assets/og/beach.png', 'Banana Bay — a free banana beach game']] },
   { path: '/park/', images: [['/assets/og/park.png', 'The Park — a free cozy garden game']] },
+  { path: '/town/', images: [['/assets/og/town.png', 'Banana Town — where Banana World begins']] },
   { path: '/forge/', images: [] },
   { path: '/guides/', images: [] },
   // ⚠️ GENERATED FROM THE REGISTRY, never listed by hand. The two guides that

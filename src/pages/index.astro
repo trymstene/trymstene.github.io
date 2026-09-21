@@ -64,7 +64,7 @@ const FEATURES = [
   { k: 'homestead', line: 'Build your corner.', href: '/homestead/' },
   { k: 'builder', line: 'Dress the legend.', href: '/make-a-banana/' },
   { k: 'items', line: 'Draw it. Own it.', href: '/forge/items/' },
-  { k: 'quest', line: 'A mystery from 1999.', href: '/homestead/' },
+  { k: 'quest', line: 'A mystery from 1999.', href: '/town/' },
   { k: 'rave', line: 'The floor never stops.', href: '/rave/' },
   { k: 'treasure', line: 'X marks the sand.', href: '/beach/' },
   { k: 'fishing', line: 'Something’s biting.', href: '/beach/' },
@@ -186,7 +186,7 @@ const FEATURES = [
          chosen verb: a place you walk into — "Join" read as signing up,
          "Play" shrank it to a minigame. -->
     <div class="hero__cta">
-      <a class="btn btn--dark" href="/homestead/">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark" href="/town/">🌍 Enter Banana World →</a>
       <a class="btn btn--light" href="/make-a-banana/" data-place="hero"><PixelIcon name="palette" /> Make a banana</a>
     </div>
   </section>
@@ -218,7 +218,7 @@ const FEATURES = [
         <img class={i === 0 ? 'on' : ''} src={h.img} alt={h.alt}
              width="1400" height="600" loading={i === 0 ? 'eager' : 'lazy'} />
       ))}
-      <a class="btn btn--dark bwl-hero__cta" href="/homestead/">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark bwl-hero__cta" href="/town/">🌍 Enter Banana World →</a>
     </div>
     <p class="doors__daily" style="text-align:center">
       <span class="door__dot" style="display:inline-block;vertical-align:1px;margin-right:0.4rem"></span>
@@ -268,7 +268,7 @@ const FEATURES = [
     </div>
 
     <div class="bwl-cta">
-      <a class="btn btn--dark" href="/homestead/">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark" href="/town/">🌍 Enter Banana World →</a>
       <p class="bwl-fine">free · plays in the browser · your banana is waiting</p>
     </div>
     <p class="bwl-also">
@@ -347,8 +347,8 @@ const FEATURES = [
 
   <script>
     // 🌍 the one-door funnel: which frontpage door opened Banana World —
-    // homestead_open via=direct can't tell the hero button from a typed URL
-    document.querySelectorAll('a[href="/homestead/"]').forEach((a) => {
+    // town_open can't tell the hero button from a typed URL (the door is /town/ since 21 Sep 2026)
+    document.querySelectorAll('a[href="/town/"]').forEach((a) => {
       a.addEventListener('click', () => {
         try {
           // @ts-ignore

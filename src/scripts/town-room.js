@@ -1070,7 +1070,15 @@ export function bootTownLife(ctx) {
   // ⚠️ COMPOSED, never replaced: setOverride has one slot and the day's `oddspot` event already owns it,
   // so assigning a café-only function here would silently delete that event for the day.
   let shiftOn = false;
+  // 🕯 …and the chapter's claim on Nib comes first (21 Sep 2026): at the fountain while chapter one's
+  // first scene is open — whatever the hour, so `always` — then up to the town hall for the rest of
+  // the beat it closed in, so "he walks up to his regular place" is what you see, not a lunch break.
+  let nibSt = ctx.nibStation ? ctx.nibStation() : null, nibHallBeat = -1;
   const overrideFor = (n2, beat) => {
+    if (n2.key === 'nib') {
+      if (nibSt) return { place: nibSt, always: true };
+      if (nibHallBeat === beat && beat !== 5) return 'hall';
+    }
     if (shiftOn && n2.key === 'bean' && beat !== 5) return 'terrace';
     return oddKey && n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null;
   };
@@ -1215,6 +1223,9 @@ export function bootTownLife(ctx) {
     const c = curseNow(), cType = c === 'none' ? null : c;
     const om0 = !curse && !!omenNow();
     const beat = life.beat();
+    // 🕯 the chapter released (or claimed) Nib: a refresh walks him where he now belongs
+    const ns = ctx.nibStation ? ctx.nibStation() : null;
+    if (ns !== nibSt) { const freed = nibSt && !ns; if (freed) nibHallBeat = beat; nibSt = ns; life.setOverride(overrideFor); if (freed && life.nudge) life.nudge('nib'); }
     // ⭐ THE GATE. Evening, a Curse Night, an omen — or a day ghost, which condition() asks for itself.
     if (!dusk && (beat >= 4 || cType || om0)) loadDusk();
     if (dusk) {

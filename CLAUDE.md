@@ -75,6 +75,8 @@ node tools/check-copy.mjs      node tools/build-worker-allowlists.mjs --check
   look at the screenshots before presenting it.
 - Secrets live in `tools/*.local.json` (gitignored) and nowhere else. Never in
   git, chat, a memory file, or a log line.
-- `/town` is a hidden prototype: noindex, in no sitemap, linked from nowhere.
+- `/town/` is the FRONT DOOR of Banana World (21 Sep 2026): indexed, in the sitemap, every
+  "Enter Banana World" link lands there, chapter one opens at its fountain. It was a hidden
+  prototype from 7 Sep to 21 Sep.
 - Commit and push automatically when work is done and green; never for
   destructive or DNS changes.

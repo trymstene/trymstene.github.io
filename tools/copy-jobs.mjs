@@ -569,7 +569,7 @@ const cafeFields = {
 // must be decks (one line repeated twice over a long shift is what a deck exists to prevent).
 function cafeShape(data) {
   const bad = [];
-  const say = (f, m) => bad.push([f, m]);
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
   for (const k of ['perfect', 'fine', 'wrong']) {
     const deck = ((data.cup || {})[k]) || [];
     if (deck.length < 3) say(`cup.${k}`, `a deck of at least 3 — one line twice in a shift is what a deck exists to prevent (got ${deck.length})`);
@@ -629,7 +629,7 @@ const dressFields = {
 const DRESS_TILL = /\b(buy|price|coin|cost|sale|sell|purchase|checkout|unlock|locked)\b/i;
 function dressShape(data) {
   const bad = [];
-  const say = (f, m) => bad.push([f, m]);
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
   const flat = (o, p) => Object.entries(o || {}).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v, p + k + '.') : [[p + k, String(v)]]));
   for (const [path, v] of flat(data, '')) {
     if (DRESS_TILL.test(v)) say(path, 'reads like a till — nothing is sold in the dressing room, and no word here may suggest it is');
@@ -692,7 +692,7 @@ const postFields = {
 const POST_TELLS = /\b(link|url|website|web address|email|e-mail|phone|number|address|handle|username|discord|snapchat|instagram|contact|swear|word|rude|filter|blocked|banned|violat|policy|rule)\b/i;
 function postShape(data) {
   const bad = [];
-  const say = (f, m) => bad.push([f, m]);
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
   if (POST_TELLS.test(String(data.refused || ''))) say('refused', 'names what was wrong with the letter — a refusal that teaches is a lesson in getting round the filter next time');
   for (const f of ['empty', 'noaddress', 'shut', 'reported', 'sent', 'refused', 'front']) {
     if (/\?\s*$/.test(String(data[f] || ''))) say(f, 'ends in a question — nobody may ask the player one');
@@ -796,7 +796,7 @@ const infoFields = {
 };
 function infoShape(data) {
   const bad = [];
-  const say = (f, m) => bad.push([f, m]);
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
   const flat = (o, p) => Object.entries(o || {}).flatMap(([k, v]) => (Array.isArray(v)
     ? v.map((x, i) => [p + k + '.' + i, String(x)])
     : (v && typeof v === 'object' ? flat(v, p + k + '.') : [[p + k, String(v)]])));
@@ -879,7 +879,7 @@ const Q_NEXT = /\bchapter\s*(three|3|iii)\b/i;
 const Q_DESK = /\b(registry|archive|deed|pursuant|hereby|aforementioned|statutory|ordinance)\b/i;
 function questShape(data) {
   const bad = [];
-  const say = (f, m) => bad.push([f, m]);
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
   const rows = Array.isArray(data.steps) ? data.steps : [];
   const got = rows.map((r) => String((r && r.key) || ''));
   // ⚠️ IN ORDER, not merely all present: the chapter is four round trips and the hoarding's
@@ -984,7 +984,7 @@ const NOTE_OWED = /(write back|reply|respond|let me know|get in touch|drop me a
 const NOTE_PITY = /(lonely|alone|forgotten|nobody has|empty|quiet in there|no one writes)/i;
 function noteShape(data) {
   const bad = [];
-  const say = (f, m) => bad.push([f, m]);
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
   for (const kind of NOTE_KINDS) {
     const rows = Array.isArray(data[kind]) ? data[kind] : [];
     const keys = rows.map((r) => String((r && r.key) || ''));
@@ -1024,6 +1024,111 @@ const noteSchema = {
     welcome: { type: 'array', minItems: 4, maxItems: 4, description: 'One per resident, in order: ' + NOTE_FOLK.map((f) => f[0]).join(', ') + '. ' + noteFields['welcome[].text'].note, items: noteRow },
     quiet: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['quiet[].text'].note, items: noteRow },
   },
+};
+
+// --- quest-c1 -----------------------------------------------------------------
+// 🕯 CHAPTER ONE'S FIRST SCENE, MOVED TO THE TOWN (21 Sep 2026). The rest of chapter one keeps its
+// inline words (grandfathered); this scene is the one that CHANGED, and a change goes through the
+// rig. Nib now waits by the fountain, the plot is a place you travel to, and you cannot name it until
+// you have asked Old Peel. The ending is not in this job — it still happens at the plot, unchanged.
+export const C1_WHO = ['nib', 'you', 'paper'];
+const C1_LETTER = '“the eleventh plot, to whoever comes asking. it has waited long enough.”';
+const c1Fields = {
+  'open.find': { kind: 'prose', aim: 40, max: 58, note: 'The journal chip while the first scene is waiting: WHERE TO GO. Lower case, very short, names the fountain in the town. ⚠️ it is read in the park, the bay and the homestead as the compass too, so it must make sense to somebody who is not in the town yet.' },
+  'open.findRes': { kind: 'prose', aim: 40, max: 58, note: 'The same chip for a player who already lives on Plot 11. Lower case, very short.' },
+  'open.hint': { kind: 'prose', aim: 40, max: 58, note: 'The chip once the scene is done: where next — Old Peel, in the park. Lower case, very short, names the place never the mechanic.' },
+  'open.lines[].who': { kind: 'enum', values: C1_WHO },
+  'open.lines[].text': { kind: 'prose', aim: 120, max: 220, note: 'One speech bubble of the STRANGER’s scene, in order. nib is the town clerk, warm and delighted by paperwork; you is the player, one short sentence; paper is the old letter and says exactly the line in the brief. The plot is a DESTINATION: never “here”, “this plot”, “where you’re standing”. Ends by sending the player to Old Peel in the park, and Nib says he will be at the town hall.' },
+  'open.linesRes[].who': { kind: 'enum', values: C1_WHO },
+  'open.linesRes[].text': { kind: 'prose', aim: 120, max: 220, note: 'The same scene for somebody who ALREADY lives on Plot 11: Nib came to write them in properly and found the page empty. Same letter, same send-off, shorter.' },
+};
+// 🤐 what the scene may not do — every one a rule in the brief, checked rather than repeated
+// not a bare "here": "and here you are" is about the person, not the ground (the first draft tripped on it)
+const C1_HERE = new RegExp('\\b(this plot|this land|where you.re standing|standing here|right here|this spot|this very spot|under your feet)\\b', 'i');
+const C1_END = new RegExp('\\b(scratch|laminat|already something on|somebody wrote a name|write you in(to)? the book)\\b', 'i');
+const C1_PAY = new RegExp('\\b(coin|coins|bananacoin|reward|payout|prize)\\b', 'i');
+const C1_UI = new RegExp('\\b(tap|click|button|menu|screen)\\b', 'i');
+const C1_DESK = new RegExp('\\b(registry|archive|deed|pursuant|hereby|statutory)\\b', 'i');
+function c1Shape(data) {
+  const bad = [];
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
+  const o = data.open || {};
+  for (const [k, cap] of [['lines', 10], ['linesRes', 8]]) {
+    const ls = Array.isArray(o[k]) ? o[k] : [];
+    if (ls.length < 5) say('open.' + k, 'is shorter than five bubbles — too short to open a chapter');
+    if (ls.length > cap) say('open.' + k, 'runs past ' + cap + ' bubbles');
+    const papers = ls.filter((l) => l && l.who === 'paper');
+    if (papers.length !== 1) say('open.' + k, 'must read the letter exactly once (paper); it reads it ' + papers.length + ' times');
+    for (const p of papers) if (String(p.text || '').trim() !== C1_LETTER) say('open.' + k, 'rephrases the letter — it has been the same line since August, on the player’s own paper in three places');
+    if (!ls.some((l) => l && l.who === 'nib' && /old peel/i.test(l.text || ''))) say('open.' + k, 'never sends the player to Old Peel, which is the whole reason the plot cannot be named yet');
+    if (!ls.some((l) => l && /\bpark\b/i.test(l.text || ''))) say('open.' + k, 'never says WHERE Old Peel is — the park');
+    if (!ls.some((l) => l && /plot 11|eleventh plot/i.test(l.text || ''))) say('open.' + k, 'never names Plot 11');
+    if (!ls.some((l) => l && l.who === 'nib' && /town hall/i.test(l.text || ''))) say('open.' + k, 'Nib never says he will be at the town hall, and he is about to walk there');
+    for (const [i, l] of ls.entries()) {
+      const t = String((l && l.text) || ''), at = 'open.' + k + '[' + i + ']';
+      if (!C1_WHO.includes(String(l && l.who))) say(at, 'is spoken by "' + (l && l.who) + '"; this scene has three voices');
+      if ((l && l.who) !== 'paper' && C1_HERE.test(t)) say(at, 'treats the plot as the ground underfoot — the player is in the square, the plot is a place to travel to');
+      if (C1_END.test(t)) say(at, 'describes the ENDING, which is not this job');
+      if (C1_PAY.test(t)) say(at, 'names what the player gets');
+      if (C1_UI.test(t)) say(at, 'reads like a tutorial');
+      if ((l && l.who) === 'nib' && C1_DESK.test(t)) say(at, 'gives Nib a bureaucrat’s vocabulary; he says "the big book", "the top drawer", "the yellow form"');
+      if ((l && l.who) === 'you' && (t.match(/[.!?]/g) || []).length > 1) say(at, 'gives the player more than one sentence');
+    }
+  }
+  for (const f of ['find', 'findRes', 'hint']) {
+    const v = String(o[f] || '');
+    if (!v) say('open.' + f, 'is empty');
+    if (/^[A-Z]/.test(v)) say('open.' + f, 'starts with a capital, and every chip in this world is lower case');
+    if (C1_UI.test(v)) say('open.' + f, 'names a control; a chip says where to go, never how');
+  }
+  if (!/fountain/i.test(String(o.find || ''))) say('open.find', 'does not say the fountain — it is the compass for a player who is not in the town yet');
+  if (!/peel|park/i.test(String(o.hint || ''))) say('open.hint', 'does not point at Old Peel or the park');
+  return bad;
+}
+const c1Line = { type: 'object', additionalProperties: false, required: ['who', 'text'],
+  properties: { who: { type: 'string', enum: C1_WHO, description: 'nib (the clerk), paper (the old letter — addresses nobody) or you (the player, one short sentence).' }, text: { type: 'string' } } };
+const c1Schema = {
+  type: 'object', additionalProperties: false, required: ['open'],
+  properties: { open: { type: 'object', additionalProperties: false, required: ['find', 'findRes', 'hint', 'lines', 'linesRes'],
+    properties: {
+      find: str(c1Fields['open.find'].note), findRes: str(c1Fields['open.findRes'].note), hint: str(c1Fields['open.hint'].note),
+      lines: { type: 'array', minItems: 5, maxItems: 10, description: c1Fields['open.lines[].text'].note, items: c1Line },
+      linesRes: { type: 'array', minItems: 5, maxItems: 8, description: c1Fields['open.linesRes[].text'].note, items: c1Line },
+    } } },
+};
+
+// --- town-page -----------------------------------------------------------------
+// 🏘 THE TOWN PAGE ITSELF (21 Sep 2026): the four lines nobody in the world speaks — the tab title,
+// the search line, the line under the sign and the how-to under the square. Written the day the
+// town stopped being a hidden prototype and became the front door of Banana World.
+const pageFields = {
+  title: { kind: 'label', aim: 48, max: 60, note: 'The browser tab and the search headline. MUST start with the two words "Banana Town" (the desk counts world pages by that prefix), then a dash and a few plain words: a free pixel-art town you walk around in, where Banana World begins.' },
+  description: { kind: 'prose', aim: 130, max: 155, note: 'The search result’s grey line: one or two plain sentences — what you do there, that the story starts here, free and in the browser. No exclamation marks, no "welcome to".' },
+  tag: { kind: 'label', aim: 44, max: 70, note: 'The small line right under the big BANANA TOWN sign. Lower case, a phrase not a sentence, in the world’s own voice: this is where Banana World begins. It may name the fountain or Nib.' },
+  note: { kind: 'prose', aim: 140, max: 180, note: 'The one line under the square that tells a newcomer how to play: walk by tapping or with the arrow keys; tap a door, a sign or a resident; the roads lead out to the rest of Banana World. The one place on the page where an instruction belongs.' },
+};
+const PAGE_PROTO = new RegExp('\\b(prototype|construction|coming soon|under development|beta|placeholder|work in progress)\\b', 'i');
+const PAGE_FLUFF = new RegExp('\\b(immersive|experience|vibrant|cozy|cosy|charming|explore|discover|unlock|adventure awaits|welcome to)\\b', 'i');
+function pageShape(data) {
+  const bad = [];
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
+  const t = String(data.title || '');
+  if (!/^Banana Town\b/.test(t)) say('title', 'must start with "Banana Town" — the desk matches world pages by that prefix (pulse-dicts WORLD_TITLES)');
+  for (const f of ['title', 'description', 'tag', 'note']) {
+    const v = String(data[f] || '');
+    if (!v) say(f, 'is empty');
+    if (PAGE_PROTO.test(v)) say(f, 'still talks about a prototype — the town is simply open');
+    if (PAGE_FLUFF.test(v)) say(f, 'reaches for a brochure word');
+    if (/\d/.test(v)) say(f, 'publishes a number, and the world never does');
+    if (f !== 'note' && /!/.test(v)) say(f, 'has an exclamation mark');
+  }
+  if (/^[A-Z]/.test(String(data.tag || ''))) say('tag', 'starts with a capital, and the line under the sign is lower case');
+  if (!/Banana World/.test(String(data.description || '') + ' ' + String(data.tag || ''))) say('description', 'neither it nor the tag says "Banana World", and the page is its front door');
+  return bad;
+}
+const pageSchema = {
+  type: 'object', additionalProperties: false, required: ['title', 'description', 'tag', 'note'],
+  properties: { title: str(pageFields.title.note), description: str(pageFields.description.note), tag: str(pageFields.tag.note), note: str(pageFields.note.note) },
 };
 
 export const JOBS = {
@@ -1097,6 +1202,32 @@ export const JOBS = {
     fields: noteFields,
     shape: noteShape,
     schema: noteSchema,
+  },
+  'quest-c1': {
+    id: 'quest-c1',
+    title: 'Return to Sender \u2014 chapter one opens in the town',
+    what: 'The first scene of chapter one, moved from the plot to the fountain in Banana Town: Nib, the letter, Plot 11 as a place to travel to, and the send-off to Old Peel.',
+    brief: 'tools/copy-briefs/quest-c1.md',
+    out: 'tools/copy-out/quest-c1.json',
+    approved: 'src/data/copy/quest-c1.json',
+    reads: 'src/lib/world-quest.js (through a glob; until this is approved the town has no first scene and the chapter cannot open)',
+    top: ['open'],
+    fields: c1Fields,
+    shape: c1Shape,
+    schema: c1Schema,
+  },
+  'town-page': {
+    id: 'town-page',
+    title: 'Banana Town \u2014 the page, now the front door',
+    what: 'The four lines of the town page nobody in the world speaks: the tab title, the search line, the line under the sign and the how-to under the square.',
+    brief: 'tools/copy-briefs/town-page.md',
+    out: 'tools/copy-out/town-page.json',
+    approved: 'src/data/copy/town-page.json',
+    reads: 'src/pages/town.astro (a static import at build time \u2014 the page does not build without it)',
+    top: ['title', 'description', 'tag', 'note'],
+    fields: pageFields,
+    shape: pageShape,
+    schema: pageSchema,
   },
   'town-dress': {
     id: 'town-dress',

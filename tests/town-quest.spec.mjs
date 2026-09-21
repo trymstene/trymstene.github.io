@@ -24,7 +24,7 @@ import { SIGNATURES, HOARDABLE } from '../src/data/town/locks.js';
 const W = 2200, H = 1300;
 
 const town = async (page, qs = '') => {
-  await page.goto('/town/?towntest&questreset' + qs, { waitUntil: 'domcontentloaded' });
+  await page.goto('/town/?towntest&chapter=2&questreset' + qs, { waitUntil: 'domcontentloaded' });   // chapter 2 is parked: the walk asks for it by name
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
   await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(70); window.__town.life.set(11); });
   await page.waitForTimeout(400);
@@ -107,7 +107,7 @@ test('every mark hangs on its own building, and in front of it', async ({ page }
   const spots = [['hall', HALL], ...FRONTS.map((f) => [f.key, f.at])];
   for (const [key, at] of spots) {
     const step = STEPS.findIndex((s) => s.at.x === at.x && s.at.y === at.y);
-    await page.goto('/town/?towntest&queststep=' + step, { waitUntil: 'domcontentloaded' });
+    await page.goto('/town/?towntest&chapter=2&queststep=' + step, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
     await stand(page, (at.x / 100) * W, Math.min(H - 60, (at.y / 100) * H + 140));
     await page.waitForTimeout(900);
@@ -199,8 +199,9 @@ test('the whole chapter, and the boards come off as it goes', async ({ page }) =
   expect(ev.filter((n) => n === 'quest_step').length, 'every step was counted').toBe(STEPS.length);
 
   // a finished chapter leaves the square alone: no chip, no marks
+  // (asked for by name — without ?chapter=2 the town now boots chapter ONE, which has a scene here)
   await town(page.constructor === Object ? page : page, '');
-  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.goto('/town/?towntest&chapter=2', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
   await page.waitForTimeout(6500);
   expect(await page.locator('.bwq-mark').count(), 'a finished chapter leaves no marks behind').toBe(0);

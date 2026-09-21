@@ -174,6 +174,19 @@ world.appendChild(park);
 
 // ---- the people: the residents live in town-life.js (their days, walks, speech, the litter, the windows)
 const life = initLife({ world, W, H, pct });
+// 🕯 CHAPTER ONE OPENS AT THE FOUNTAIN (21 Sep 2026): while its first scene is open Nib waits there —
+// whatever the hour — and when it closes he walks up to the town hall. The chapter says so through
+// window.bwqTalk.station once it has booted (after the room, a second in); before that the square
+// reads the chapter's own save, so he is standing there from the first frame instead of walking down
+// from his desk while the splash plays. ONE answer, read by the first override below and by
+// town-room's composed one (overrideFor) from then on.
+function nibStation() {
+  const q = window.bwqTalk;
+  if (q) return (q.who === 'nib' && q.station) || null;
+  if (/[?&]chapter=2/.test(location.search)) return null;   // 🧪 the walk asked for the parked chapter: nobody waits at the fountain
+  try { const s = JSON.parse(localStorage.getItem('bwq-c1') || 'null'); if (!s) return 'fountain'; return (!s.done && !(+s.s > 0)) ? 'fountain' : null; } catch (e) { return null; }
+}
+life.setOverride((n) => (n.key === 'nib' && nibStation()) ? { place: nibStation(), always: true } : null);
 
 // ---- me
 let myOutfit = { hat: 'none', glasses: 'none', extras: {} };
@@ -806,9 +819,8 @@ document.getElementById('twEmote').addEventListener('click', function () {
   const s = this.querySelector('svg');
   float(pos.x, pos.y - 44, s ? s.cloneNode(true) : '');
 });
-// 🚪 the travel door lands last in the bar. 'town' is not in the module's area
-// list, so the card offers the four known areas and no area's card offers the
-// town — the prototype stays unlisted (Rule Zero) while still being leavable.
+// 🚪 the travel door lands last in the bar. The town is the FRONT DOOR of Banana World since
+// 21 Sep 2026, so it heads the module's list: every area's card offers it, and its own offers the four.
 const travel = initTravel({ here: 'town', mount: document.querySelector('.tw-actions'), btnClass: 'tw-act tw-act--icon' });
 assetsReady().then(() => {
   life.start();   // the residents take their stations for this hour of the town's day
@@ -821,6 +833,7 @@ assetsReady().then(() => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos,
       hud, esc, track, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
       setSlow: (v) => { slow = +v > 0 ? +v : 1; },
+      nibStation,   // 🕯 where chapter one wants Nib right now ('fountain' while its first scene is open)
       // ⭐ WALK TO IT, THEN IT HAPPENS — the grammar every other reachable thing in this world already
       // uses (a cabinet, a flyer, a resident, a town problem). The tap has already set the target to
       // the thing's own front by the time this runs, so all the room has to hand over is the deed.
@@ -839,15 +852,18 @@ assetsReady().then(() => {
       });
       if (window.__town) window.__town.work = work.seam;
     }).catch((e) => { console.warn('[town] work did not load', e); });
-    // 🕯 CHAPTER TWO — THE FOUR SIGNATURES (docs/town-jobs-plan.md §2). Last, and deliberately: its
-    // marks are placed against the world's measured rects, so the square has to be standing first.
+    // 🕯 THE STORY. Chapter one opens here since 21 Sep 2026 (Nib at the fountain); chapter two — the
+    // four signatures — is parked, and only the walk plays it (?towntest&chapter=2). Last, and
+    // deliberately: a chapter's marks are placed against the world's measured rects, so the square
+    // has to be standing first.
     // ⚠️ THE DONE CHECK HAPPENS BEFORE THE IMPORT, exactly as the other four areas do it (see the
     // note in park.astro): bootQuest returns at once on S.done, but only after the chunk has been
     // fetched and parsed — so a finisher would pay for the whole questline on every visit forever.
-    // bwq-c2 is the chapter's own local state and one flag off it costs nothing.
-    let c2done = false;
-    try { c2done = !!(JSON.parse(localStorage.getItem('bwq-c2') || 'null') || {}).done; } catch (e) {}
-    if (!c2done) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
+    // The chapter's local state is one flag, and reading it costs nothing.
+    const wantC2 = /[?&]towntest/.test(location.search) && /[?&]chapter=2/.test(location.search);
+    let qdone = false;
+    try { qdone = !!(JSON.parse((wantC2 ? localStorage.getItem('bwq-c2') : localStorage.getItem('bwq-c1')) || 'null') || {}).done; } catch (e) {}
+    if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
   window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam,
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel

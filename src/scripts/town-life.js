@@ -115,6 +115,10 @@ const ST = {
   // the lunch pairs stand just behind their bench (feet above its top edge: nothing overlaps), each pair framed by its own
   square: [[1100, 990], [1000, 950], [1200, 950]], bench_w: [[935, 992], [995, 992]], bench_e: [[1215, 992], [1275, 992]],
   condo: [[480, 592], [562, 592]], wheel: [[1400, 802]], exchange: [[800, 802]],
+  // 🕯 where Nib waits for a newcomer while chapter one's first scene is open (world-quest.js step 0 —
+  // its ! is anchored to this exact point, so the two change together): just east of the fountain's
+  // foot, facing it, off the lunch pair's marks
+  fountain: [[1160, 985]],
 };
 // the sweeps and strolls: a line on the lane, walked back and forth
 const PATHS = {
@@ -300,8 +304,10 @@ export function initLife({ world, W, H, pct }) {
   function stationFor(n, beat) {
     const [place, act, face, lines] = n.day[beat];
     // 🏘️ today's oddity: a resident standing where they never stand, for this one beat
-    const odd = overrideFn && overrideFn(n, beat);
-    if (odd && ST[odd] && act !== 'home') { const p = ST[odd][0]; return { place: odd, act: 'stand', face: p[0] > 1100 ? 'left' : 'right', lines, x: p[0], y: p[1], loop: null }; }
+    const odd0 = overrideFn && overrideFn(n, beat);
+    // 🕯 an override may INSIST ({ place, always }): the chapter's Nib waits at the fountain through the night too
+    const odd = odd0 && odd0.place ? odd0.place : odd0, insist = !!(odd0 && odd0.always);
+    if (odd && ST[odd] && (act !== 'home' || insist)) { const p = ST[odd][0]; return { place: odd, act: 'stand', face: p[0] > 1100 ? 'left' : 'right', lines, x: p[0], y: p[1], loop: null }; }
     const loop = PATHS[n.key + '|' + beat] || null;
     if (loop) return { place, act, face, lines, x: loop[0][0], y: loop[0][1], loop };
     if (act === 'home') { const d = HOME[n.home]; return { place, act, face, lines, x: d[0], y: d[1], loop: null }; }
@@ -541,6 +547,10 @@ export function initLife({ world, W, H, pct }) {
   const setKeep = (fn) => { keepFn = fn || null; refresh(); };
   const setGlow = (fn) => { glowFn = fn || null; for (const n of res) if (n.hidden && n.glow) n.glow.hidden = !!n.kept || !!(glowFn && !glowFn(n)); };
   const setOverride = (fn) => { overrideFn = fn || null; refresh(); };
+  // 🕯 …and one resident sets off NOW: a refresh gives everybody their own moment (up to 74 s), which is
+  // right for a beat and wrong for Nib the second the chapter lets him go — "he walks up to the town
+  // hall" has to be what you see, not what happens a minute after you looked away
+  const nudge = (key) => { const n = byKey(key); if (n && n.path.length) n.wait = Math.min(n.wait, 500); };
   const setLitter = (level) => { const l = Math.max(0, Math.min(2, level | 0)); if (l === litterLevel) return; litterLevel = l; if (ready) spawnLitter(curBeat, true); };
   const seam = {
     hour: () => hourNow(),
@@ -558,5 +568,5 @@ export function initLife({ world, W, H, pct }) {
     mayor: () => !!(mayorEl && !mayorEl.hidden),
   };
   COPY_P.then((COPY) => applyCopy(res, COPY)).catch((e) => console.error('town-life: the words did not load', e));
-  return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, setKeep, setGlow, setOverride, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
+  return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, setKeep, setGlow, setOverride, nudge, setLitter, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
 }

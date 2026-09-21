@@ -14,6 +14,7 @@
 // one line per row — Trym 3 Aug: the two-line rows read asymmetric, so the
 // descriptions went. The name + icon is the whole pitch.
 const AREAS = {
+  town: { icon: '🏘️', name: 'Banana Town' },   // the front door first (21 Sep 2026)
   homestead: { icon: '🏡', name: 'The Homestead' },
   rave: { icon: '🪩', name: 'The Rave' },
   park: { icon: '🌳', name: 'The Park' },

@@ -1,15 +1,18 @@
 ---
-// 🏘️ BANANA TOWN — the hidden prototype (7 Sep 2026). NOINDEXED, not in the
-// sitemap, linked from nowhere (Trym: "hidden until it's ready"). The square
-// exists to be walked and judged while the town is being planned — see the
-// town-centre plan. Rule Zero: the world advertises an area when it is ready.
+// 🏘️ BANANA TOWN — THE FRONT DOOR OF BANANA WORLD (21 Sep 2026). Indexed, in the sitemap,
+// every "Enter Banana World" link lands here, and chapter one opens at the fountain (Nib waits
+// there). It was a hidden prototype from 7 Sep — noindexed, unlinked, "hidden until it's ready" —
+// and Rule Zero held: the world advertises an area when it is ready.
+// ⚠️ THE PAGE'S OWN FOUR LINES ARE THE RIG'S (tools/copy-jobs.mjs town-page): the title, the
+// search line, the line under the sign, the how-to under the square. Code holds no prose.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PAGE from '../data/copy/town-page.json';
 
-const title = 'Banana Town — prototype';
-const description = 'The town centre of Banana World, under construction.';
+const title = PAGE.title;
+const description = PAGE.description;
 ---
-<BaseLayout title={title} description={description} robots="noindex,nofollow">
+<BaseLayout title={title} description={description} ogImage="https://trymstene.com/assets/og/town.png">
   <!-- 🗣 the world's shared NPC dialogue card (design library §18) -->
   <link rel="stylesheet" href="/css/dialogue.css" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />
@@ -451,7 +454,7 @@ const description = 'The town centre of Banana World, under construction.';
 
   <main class="tw-wrap">
     <h1 class="tw-sign">BANANA TOWN</h1>
-    <p class="tw-tag">the square, as a prototype. Not linked from anywhere.</p>
+    <p class="tw-tag">{PAGE.tag}</p>
     <div class="tw-stage">
       <div class="tw-view" id="twView">
         <div class="tw-world" id="twWorld"></div>
@@ -476,7 +479,7 @@ const description = 'The town centre of Banana World, under construction.';
         <button class="tw-act tw-act--icon" id="twEmote" type="button" aria-label="Send a heart"><PixelIcon name="heart" size="1.25em" /></button>
       </div>
     </div>
-    <p class="tw-note">Walk with a tap or the arrow keys. Tap a door, a sign or a banana to read what it will be. The road south goes back to the park.</p>
+    <p class="tw-note">{PAGE.note}</p>
   </main>
 
   <script src="../scripts/banana-town.js"></script>
