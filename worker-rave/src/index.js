@@ -1290,7 +1290,16 @@ const TOWN_SET = 42;                         // Recovering: a few things wrong, 
 const TOWN_UP = 1.0, TOWN_DOWN = 0.6;        // per hour, below / above the set point
 const TOWN_FLOOR = 5;                        // a curse can empty the square, never delete the town
 const TOWN_WX = { heavy: 1, storm: 4 };      // flat hits: the park's scaled pull would drop Thriving to Struggling in one night
-const TOWN_CURSE = { hush: 0, creep: 10, deep: 18 };
+// 🌑 THE HIT A CURSE NIGHT LANDS ON THE METER (raised 21 Sep 2026; Trym: "yes make the hit bigger").
+// 10 / 18 was invisible: every band above 65 LOOKS identical, so a deep night on a town at 100
+// left it at 82 — still lively, still every lamp lit, still nothing to fix. The bar the numbers
+// are set to now is "from a healthy town, a deep night reaches the first band whose look
+// changes": 100 − 35 = 65, the lively/recovering line, where a lamp goes dark and a bin fills.
+// From the set point (42) a deep goes to 7 — abandoned — which is what TOWN_FLOOR exists for:
+// a curse can empty the square, never delete the town, and below the set point it climbs back at
+// TOWN_UP an hour on its own. In fixes, 35 is about a day and a half of one person at the cap and
+// an evening for four — a real event, not a wipe. deep is 3% of days, creep 9%; hush stays 0.
+const TOWN_CURSE = { hush: 0, creep: 20, deep: 35 };
 const TOWN_FIX = 2.0, TOWN_FIX_CAP = 24;     // one contribution, and the most one person moves the town in a UTC day
                                              // (1.2 / 10 until 15 Sep: a day of fixing barely showed on the bar — Trym: "i dont know
                                              //  what more i can do to increase it". A full day now lifts a band; the drift still takes it back)
