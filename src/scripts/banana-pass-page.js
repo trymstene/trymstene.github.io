@@ -7,6 +7,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams, EXTRA_DEFS } from '../lib/banana-engine.js';
 import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
+import { cleanName } from '../lib/player-name.js';
 import { passGet, passVisit, passToast, passPush, passNotices, passNoticeAdd, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies, PASS_API } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, levelFor } from '../lib/pass-defs.js';
 import { MANAGE } from '../data/pay-rail.js';
@@ -834,7 +835,10 @@ function wireName() {
     const done = (save) => {
       if (closed) return;
       if (save) {
-        const v = inp.value.trim().slice(0, 24);
+        // 🔤 folded as it is typed, so what a player sees when they name themselves is what every
+        // other surface will draw — src/lib/player-name.js. A name in mathematical bold becomes the
+        // same letters in the world's own font instead of a fallback-font row.
+        const v = cleanName(inp.value);
         if (v && !captionsClean({ top: v })) {
           passToast('Let’s keep it family friendly 🍌 — try another name');
           inp.focus();

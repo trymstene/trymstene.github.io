@@ -29,6 +29,9 @@
 // the real one is retuned. Bundled by esbuild the way worker/ pulls in
 // shared/products.js; pass-defs is pure data + pure functions, no DOM.
 import { levelFor } from '../../src/lib/pass-defs.js';
+// 🔤 ONE RULE FOR A NAME A PLAYER CHOSE — see src/lib/player-name.js. The pass is where a name is
+// BORN, so this is the first place it has to be foldable into something the fonts can draw.
+import { cleanName } from '../../src/lib/player-name.js';
 
 const MAX_BLOB = 2 * 1024 * 1024;   // 🚨 6 Sep 2026: 256 KB refused every veteran phone (a big shelf) silently, forever — see the mint
 const MAX_TOKENS = 10;
@@ -339,10 +342,13 @@ function mergeBlob(oldB, newB) {
   if (nAt > oAt) { out.bbLast = newB.bbLast; out.bbAt = nAt; }
   else if (oAt > nAt) { out.bbLast = oldB.bbLast; out.bbAt = oAt; }
   else if (!newB.bbLast && oldB.bbLast) out.bbLast = oldB.bbLast;
+  // 🔤 THE NAME IS FOLDED ON THE WAY IN, at the merge every device's blob passes through — so a
+  // name typed in mathematical bold on one phone is DJCOOKIE everywhere, including on the devices
+  // that never typed it. See src/lib/player-name.js for why the rule is the font's own range.
   const oNAt = +(oldB.nameAt || 0) || 0, nNAt = +(newB.nameAt || 0) || 0;
-  if (nNAt > oNAt) { out.name = newB.name || ''; out.nameAt = nNAt; }
-  else if (oNAt > nNAt) { out.name = oldB.name || ''; out.nameAt = oNAt; }
-  else if (!newB.name && oldB.name) out.name = oldB.name;
+  if (nNAt > oNAt) { out.name = cleanName(newB.name); out.nameAt = nNAt; }
+  else if (oNAt > nNAt) { out.name = cleanName(oldB.name); out.nameAt = oNAt; }
+  else if (!newB.name && oldB.name) out.name = cleanName(oldB.name);
   // 🎩 the membership grant is person-scoped and merges by max(until), rank
   // breaking the tie (a prorated tier upgrade keeps the renewal date) — a
   // stale device can never regress it, and revocation happens by TIME (the

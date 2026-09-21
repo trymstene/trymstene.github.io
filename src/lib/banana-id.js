@@ -18,6 +18,7 @@
 // does), and otherwise the card simply shows no banana. See the static-import
 // back door in banana-world-engineering.
 import { passPush } from './banana-pass.js';
+import { cleanName } from './player-name.js';
 
 const KEY = 'ps-name-v1';
 const ASKED = 'ps-name-asked-v1';
@@ -146,7 +147,10 @@ export function askName(o = {}) {
     inp.addEventListener('input', () => { go.disabled = !inp.value.trim(); err.hidden = true; });
 
     const save = async () => {
-      const v = inp.value.trim().slice(0, 24);
+      // 🔤 folded as it is typed, so what a player sees when they name themselves is what every
+      // other surface will draw — src/lib/player-name.js. A name in mathematical bold becomes the
+      // same letters in the world's own font instead of a fallback-font row.
+      const v = cleanName(inp.value);
       if (!v || go.disabled) return;
       // ⚠️ the same family-friendly bar the pass's own editor uses — a name
       // shown on other people's screens has to clear it too.

@@ -25,6 +25,9 @@
 // ✉️ the letter gate lives in src/lib so the page and the worker cannot disagree about it — the same
 // shape worker-pass already uses for pass-defs.js. The SERVER's call is the only one that decides.
 import { checkLetter, checkCard, CAPS } from '../../src/lib/letter-gate.js';
+// 🔤 ONE RULE FOR A NAME A PLAYER CHOSE — see src/lib/player-name.js. It folds the formatting
+// stunts back to letters the shipped fonts can actually draw, rather than refusing them.
+import { cleanName } from '../../src/lib/player-name.js';
 // ✉️ THE LETTERS THE RESIDENTS WRITE TO YOU (docs/town-jobs-plan.md §6 — "the load-bearing beam,
 // not a flourish"). Written by the rig, approved by hand, and read HERE rather than in the page:
 // a letter from Nib has to be posted by the server, because a page that could claim to be Nib is
@@ -798,10 +801,11 @@ function normName(s) {
 // Defense in depth: family filter + Trym's strike list; a name that fails
 // either simply doesn't travel — the banana falls back to its outfit-name.
 function sanitizeName(s, strikes) {
-  s = String(s || '').split('').filter((c) => {
-    const k = c.charCodeAt(0);
-    return k >= 32 && k !== 127;
-  }).join('').trim().slice(0, 24);
+  // 🔤 DRAWABLE FIRST, then judged. This used to drop control characters and let everything else
+  // through, so a name in mathematical bold (𝐃𝐉𝐂…) was stored as-is and rendered in whatever font the
+  // browser fell back to — a broken-looking row in a pixel world. cleanName folds it to DJCOOKIE.
+  // ⚠️ it is not a moderation step: dirty() and the strike list below still run, unchanged.
+  s = cleanName(s);
   if (!s) return '';
   if (dirty(s)) return '';
   const n = normName(s);
@@ -3697,7 +3701,12 @@ export class YardRoom {
         if (!(Math.max(e.updated || 0, e.seen || 0) > cut)) continue;   // …and somebody who still plays
         if (e.slug === mine || yQa(e.slug)) continue;
         if (q && !((e.who.n || '').toLowerCase().includes(q) || (e.name || '').toLowerCase().includes(q))) continue;
-        folk.push({ slug: e.slug, house: e.name || '', n: e.who.n, fit: e.who.fit || {} });
+        // 🔤 FOLDED ON THE WAY OUT AS WELL AS ON THE WAY IN. Names stored before the rule existed
+        // are still in the index in whatever the player typed — folding here means every row reads
+        // properly today rather than the next time that person happens to save. Same one rule.
+        const n = cleanName(e.who.n);
+        if (!n) continue;
+        folk.push({ slug: e.slug, house: cleanName(e.name) || e.name || '', n, fit: e.who.fit || {} });
         if (folk.length >= FOLK_PAGE) break;
       }
       return json({ folk, more: folk.length >= FOLK_PAGE });
