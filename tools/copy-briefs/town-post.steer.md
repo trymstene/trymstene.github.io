@@ -8,4 +8,5 @@
 
 
 ## Never write these again
+- NOT THIS: “sent was 'The letter slips into the blue mailbox.' — nobody remembers what colour the mailbox is, and a line that makes the reader picture a specific object they cannot see is a line that stops them. Just say that the letter is sent. Plain, done, one short sentence; no colour, no object, no scenery.”
 - NOT THIS: “folk.title was 'Town Correspondence' and that is the wrong subject: it names the LETTERS, and this card is a list of PEOPLE with their faces and their houses on it. Never 'Correspondence', 'Mail', 'Post' or 'Letters' in this heading — the letters are elsewhere on the card. It is the book of who is out there.”

@@ -95,8 +95,15 @@ const description = 'The town centre of Banana World, under construction.';
        aswell to cover the sprite sign"). Seven px of margin all round, measured against the band. */
     .tw-plank--metal { font-size: max(0.62rem, calc(6.5px * var(--ws, 1.6))); padding: 0.3em 0.9em; min-width: calc(80px * var(--ws, 1.6)); min-height: calc(30px * var(--ws, 1.6)); box-sizing: border-box; display: flex; align-items: center; justify-content: center;
       background: linear-gradient(180deg, #d7dbe3 0%, #a9afba 45%, #7d838f 100%); background-image: linear-gradient(180deg, #d7dbe3 0%, #a9afba 45%, #7d838f 100%); color: #f7f8fa; border-color: #2b2f36; text-shadow: 0 1px 0 #2b2f36, 0 0 2px rgba(0, 0, 0, 0.5); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 1px 2px 0 rgba(0, 0, 0, 0.45); }
+    /* 💬 A MESSAGE SITS ABOVE EVERY POPUP (Trym, 21 Sep: “the messages are shown in the background
+       with overlay color over them — like the letter is sent message — should be in the foreground”).
+       The toast was 2000 and the card veil is 2100, so every line the world said while a card was
+       open landed BEHIND the dimming: dimmed, small, and on a phone barely there. Design library §8 —
+       floating UI is placed against the WHOLE surface’s z-stack — and tools/check-design.mjs now
+       holds it: on every page with a veil, the toast sorts above it. The park and the homestead had
+       the same fault (20 under 1000, 30 under a FIXED 950) and were fixed as the same class. */
     .tw-toast {
-      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2000; max-width: min(92%, 520px);
+      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2200; max-width: min(92%, 520px);
       background: #ffe135; color: #141208; border: 3px solid #000; box-shadow: 4px 4px 0 #000;
       padding: 0.5rem 0.8rem; font-size: 0.86rem; font-weight: 700; line-height: 1.3; pointer-events: none;
     }

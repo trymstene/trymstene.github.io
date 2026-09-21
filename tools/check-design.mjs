@@ -308,6 +308,52 @@ for (const f of files) {
 // THIS rule and no other: the checks above read JS and template semantics a stylesheet has none of
 // (public/css/weather.css IS the shared rain layer, for one, and would fail the "rolls its own rain" rule).
 // No legacy list — there were zero offenders when the hole was closed, so a new one is a red build.
+// 💬 §8 A MESSAGE SITS ABOVE EVERY POPUP (21 Sep 2026). Trym: "all messages displayed when you have a
+// popup on your screen active, the messages are shown in the background with overlay color over them
+// — like the letter is sent message — should be in the foreground". Three pages had it: the town's
+// toast at 2000 under a 2100 veil, the park's at 20 under 1000, the homestead's at 30 under a FIXED
+// veil at 950. A rule stated twice becomes a check (CLAUDE.md), so: on every page that has both a
+// toast and a full-inset veil, the toast's z-index is the larger. Parsed from the page's own CSS,
+// which is the only place the numbers exist. ⚠️ a page that gains a veil and no toast, or a toast
+// and no veil, is not this rule's business — only the pair.
+{
+  // ⚠️ `slurp` up in the world-page block is block-scoped; this block reads for itself
+  const slurp = (rel) => { try { return readFileSync(join(ROOT, rel), 'utf8'); } catch { return ''; } };
+  const zOf = (css, sel) => {
+    // ⚠️ NOT A REGEX BUILT FROM AN ESCAPED STRING. The first version of this escaped the selector for
+    // a RegExp and the escaping collapsed on the way through a patch script: the character class
+    // never closed, the literal swallowed the rest of the line and the gate died on "invalid flags".
+    // A plain indexOf on comment-stripped CSS cannot be mangled, and it reads the same way twice.
+    const clean = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    let i = -1;
+    for (const form of [sel + ' {', sel + '{']) {
+      let at = clean.indexOf(form);
+      // the selector must start its rule: `.tw-toast {` and not `.x .tw-toast {` or `.tw-toast--wait {`
+      while (at !== -1 && !/[\n;}]\s*$/.test(clean.slice(Math.max(0, at - 40), at))) at = clean.indexOf(form, at + 1);
+      if (at !== -1) { i = at + form.length; break; }
+    }
+    if (i === -1) return null;
+    const body = clean.slice(i, clean.indexOf('}', i));
+    const z = /z-index\s*:\s*(-?\d+)/.exec(body);
+    return z ? +z[1] : null;
+  };
+  const PAIRS = [
+    ['src/pages/town.astro', '.tw-toast', ['public/css/world-card.css', '.tw-panel']],
+    ['src/pages/park.astro', '.pk-toast', [null, '.pk-panel']],
+    ['src/pages/homestead.astro', '.hs-toast', [null, '.hs-veil']],
+  ];
+  for (const [page, toast, [veilFile, veil]] of PAIRS) {
+    const pageCss = slurp(page);
+    const veilCss = veilFile ? slurp(veilFile) : pageCss;
+    const zt = zOf(pageCss, toast), zv = zOf(veilCss, veil);
+    if (zt == null) { problems.push([page, `§8: ${toast} has no z-index, so nothing says where a message sits against the popup veil`]); continue; }
+    if (zv == null) { problems.push([veilFile || page, `§8: ${veil} has no z-index — the toast rule cannot be checked against it`]); continue; }
+    if (zt <= zv) {
+      problems.push([page, `§8: ${toast} (z ${zt}) sits UNDER ${veil} (z ${zv}) — every line the world says while a card is open lands behind the dimming, which is what Trym saw on "the letter is sent"`]);
+    }
+  }
+}
+
 let cssN = 0;
 for (const f of walkCss(join(ROOT, 'public/css'))) {
   cssN++;
