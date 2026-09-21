@@ -28,13 +28,14 @@ import { FRAME_H_FRAC, FRAME_TOP_FRAC } from '../lib/banana-geo.js';
 
 const F_LEFT = 0, F_RIGHT = 4;      // the side-facing crouch the beach sits its bananas on
 const WALK = 96;                    // px a second — a stroll, slower than the player's 168
-const MAX = 6;                      // ⭐ Trym: "a max of 6-8 roaming bananas … at the same time"
+const MAX = 8;                      // ⭐ Trym: "a max of 6-8 roaming bananas … at the same time" — 8 since 21 Sep: the three
+                                    //   baked statues by the fountain became living traffic, so the head count is what it was
 const GAP = [7000, 19000];          // how long between arrivals, before the cap bites
 // ⭐ AND HOW MANY OF THEM DEPENDS ON THE TOWN. An Abandoned square with six strangers strolling it
 // says nothing is wrong; the crowd IS the band, the same way the lamps and the shutters are. 6 is
 // Trym's own ceiling and thriving keeps it. (The baked statue-visitors in LOOK are a different and
 // much smaller set — 0/0/0/1/3 — because those stand still all day.)
-const CROWD = { abandoned: 0, struggling: 1, recovering: 3, lively: 5, thriving: 6 };
+const CROWD = { abandoned: 0, struggling: 1, recovering: 3, lively: 6, thriving: 8 };   // lively 5 → 6, thriving 6 → 8: the statues' worth, alive
 
 // Where the rest of the town reaches this square: the south road the player themselves came in on,
 // the north road out of the square, and the bus stop on the east side.
@@ -200,6 +201,24 @@ const HATS = ['party', 'crown', 'tophat', 'cowboy', 'sombrero', 'beanieprop', 'b
 const HELD = ['balloons', 'balloondog', 'boombox', 'lemonjug', 'broom', 'letter', 'potato',
   'cactuspot', 'rubberchicken', 'bigfish', 'vinyl', 'trophy', 'oldcane'];
 const GLASSES = ['shades', 'nerd', 'potter', 'threed', 'monocle'];
+// 🛍 THE SHOPPING BAGS (21 Sep 2026; Trym: "so it looks like they are walking around, sitting on benches and
+// occationally shopping, so atleast it looks like they have lives"). A visitor that goes into a shop comes out
+// carrying one — and more often than not has somewhere else to be first, so the bag is seen on a bench and on
+// the road out. A few arrive already carrying shopping from wherever they were before. Right-handed, so it
+// rides beside whatever they hold in the left (src/data/wearables.js).
+const BAGS = ['shopbag_cream', 'shopbag_beige', 'shopbag_brown'];
+const hasBag = (v) => BAGS.some((b) => v.outfit.extras[b]);
+// 🛍 TWO PAPERS, ONE IN EACH HAND, when both hands are free (Trym: "a bag in each hand is the trick for it to
+// make it look like shopping and not a suitcase … as long as they are different colors"). A hand already
+// holding balloons or a jug keeps them: then it is one bag, in the other hand (the engine's two-hand rule).
+const bagUp = (v, r) => {
+  if (hasBag(v)) return;
+  const rr = r || v.r;
+  const a = pick(rr, BAGS), b = pick(rr, BAGS.filter((k) => k !== a));
+  v.outfit.extras[a] = true;
+  if (!Object.keys(v.outfit.extras).some((k) => v.outfit.extras[k] && HELD.includes(k))) v.outfit.extras[b] = true;
+  v.drawn = -1;
+};
 
 export function bootTownFolk(ctx) {
   const { world, W, H, pct, PROPS, drawMe, inside, band, nightOut } = ctx;
@@ -265,6 +284,7 @@ export function bootTownFolk(ctx) {
     const hat = r() < 0.72 ? pick(r, HATS) : 'none';
     const extras = {};
     if (r() < 0.45) extras[pick(r, HELD)] = true;
+    if (r() < 0.25) { const a = pick(r, BAGS); extras[a] = true; if (!Object.keys(extras).some((k) => extras[k])) extras[pick(r, BAGS.filter((k) => k !== a))] = true; }   // 🛍 came into town already carrying shopping — a pair, unless a hand is full
     const v = {
       x: gate.at.x, y: gate.at.y, path: [], frame: 2, face: 'front', bob: 0, bobAt: now,
       outfit: { hat, glasses: r() < 0.22 ? pick(r, GLASSES) : 'none', extras, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' },
@@ -280,9 +300,11 @@ export function bootTownFolk(ctx) {
   // ⭐ what a banana came into town to do. Mostly nothing much, which is the point: a square where
   // everybody has an errand reads like a stage, and a square where some of them are only passing
   // through reads like a place.
-  function errand(v, now, from) {
+  function errand(v, now, from, noShop) {
     const head = from || { x: v.x, y: v.y };
-    const roll = v.r();
+    let roll = v.r();
+    // 🛍 a banana that has just shopped does not shop again: that share of the roll becomes a stand
+    if (noShop && roll >= 0.30 && roll < 0.55) roll = 0.60;
     const free = BENCHES.filter((b) => !b.taken);
     if (roll < 0.30 && free.length) {
       const b = pick(v.r, free);
@@ -337,7 +359,13 @@ export function bootTownFolk(ctx) {
     if (v.until) {
       if (now < v.until) return;
       v.until = 0;
-      if (v.job === 'shop' && v.el.hidden) v.el.hidden = false;
+      if (v.job === 'shop' && v.el.hidden) {
+        v.el.hidden = false;
+        // 🛍 out of the shop with a bag — and, two times in three, with somewhere else to be first: a
+        // bench, a stand about, and only then the road home. That is the whole "they have lives".
+        bagUp(v);
+        if (v.r() < 0.65) { errand(v, now, null, true); return; }
+      }
       leave(v);
       return;
     }
@@ -456,6 +484,10 @@ export function bootTownFolk(ctx) {
       count: () => folk.length,
       folk: () => folk.map((v) => ({ x: Math.round(v.x), y: Math.round(v.y), job: v.job, sitting: !!v.sitting, frame: v.drawn, hat: v.outfit.hat, hidden: !!v.el.hidden, pat: v.pat == null ? null : v.pat, held: Object.keys(v.outfit.extras || {}).filter((k) => v.outfit.extras[k]) })),
       gates: () => GATES.map((g) => ({ at: { ...g.at }, on: { ...g.on } })),
+      // 🛍 QA: send visitor i into a shop NOW, for a moment — the walk cannot wait on a one-in-four roll
+      // and a half-minute stroll to prove that what comes out carries a bag
+      shop: (i, ms) => { const v = folk[i | 0]; if (!v || v.job === 'queue') return false; if (v.seat) { v.seat.taken = false; v.seat = null; } v.sitting = false; v.job = 'shop'; v.path = []; v.el.hidden = true; v.until = performance.now() + (ms || 400); return true; },
+      bagged: () => folk.filter(hasBag).length,
       benches: () => BENCHES.map((b) => ({ key: b.key, x: b.x, y: b.y, z: b.z, taken: b.taken })),
       // 🪑 SIT SOMEBODY DOWN NOW. A bench is a one-in-three roll on an errand that takes half a
       // minute to walk, so proving a sitter draws OVER its bench meant standing in the square hoping.

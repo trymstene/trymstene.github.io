@@ -429,6 +429,12 @@ test('a served cup pays tips at clock-out, once, through the faucet the server k
   const took = await page.evaluate(() => window.__town.room.cafe().take());
   expect(took.served, 'cups were served').toBeGreaterThan(0);
   expect(took.tips, 'and they are worth something').toBeGreaterThan(0);
+  // 🪙 AND EACH ONE SAID SO AS IT POURED (Trym, 21 Sep: "its not very obvious how i make tips while
+  // working"): the tray's coin counter carries the shift's total, and a +n floated from the hatch.
+  const chip = await page.evaluate(() => { const t = document.querySelector('.tw-cup__tips'); return t ? { hidden: t.hidden, n: parseInt(t.textContent, 10) } : null; });
+  expect(chip, 'the tray has a tips counter').not.toBeNull();
+  expect(chip.hidden, 'and it is showing').toBe(false);
+  expect(chip.n, 'with the shift’s total on it').toBe(took.tips);
 
   // ⚠️ NOTHING IS PAID UNTIL YOU STEP AWAY. A tip banked per cup would be a faucet the server sees
   // a dozen times a shift instead of once.
@@ -787,3 +793,25 @@ for (const [w, h] of [[360, 640], [375, 667], [393, 852]]) {
     expect(errors).toEqual([]);
   });
 }
+
+// ☕ THE WINDOW IS THE TAP TARGET (Trym, 21 Sep): "to walk into the coffee shop for work i should have to
+// tap the window - the hitbox now is a bit large so when i try to walk past the coffee shop i start
+// working there because i auto-jump into the building". A tap on the kiosk's roof or its side is a walk
+// like any tap on a wall; only the serving hatch answers as the café.
+test('the café answers at its serving window, and nowhere else on the kiosk', async ({ page }) => {
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band() && window.__town.thing, null, { timeout: 30000 });
+  const hits = await page.evaluate(() => {
+    const w = window.__town.room.cafeReady ? null : null; void w;
+    const [x0, y0, x1, y1] = (window.__town.room.cafe && window.__town.room.cafe() && window.__town.room.cafe().window) ? [window.__town.room.cafe().window().x0, window.__town.room.cafe().window().y0, window.__town.room.cafe().window().x1, window.__town.room.cafe().window().y1] : [1806, 960, 1852, 1010];
+    const t = window.__town.thing;
+    return { hatch: t((x0 + x1) / 2, (y0 + y1) / 2), roof: t((x0 + x1) / 2, y0 - 70), side: t(x0 - 60, (y0 + y1) / 2), window: [x0, y0, x1, y1] };
+  });
+  // the hatch answers as the café — the kiosk itself, or its shutter to raise on a day it is shut
+  expect(hits.hatch && String(hits.hatch[1]).endsWith('cafe'), 'a tap on the hatch is the café: ' + JSON.stringify(hits.hatch)).toBe(true);
+  // ⚠️ "not the café" rather than "nothing": Bean stands at his own counter beside the hatch, and a
+  // resident or a problem under the tap is a fair answer — a walk into the kiosk is not.
+  const isCafe = (h) => !!(h && h[0] === 'spot' && h[1] === 'cafe');
+  expect(isCafe(hits.roof), 'a tap on the roof never opens the counter: ' + JSON.stringify(hits.roof)).toBe(false);
+  expect(isCafe(hits.side), '…nor does a tap beside the hatch: ' + JSON.stringify(hits.side)).toBe(false);
+});

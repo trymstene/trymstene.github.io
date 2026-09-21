@@ -139,7 +139,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect((await room(page, 'full')).length).toBe(0);
   expect(await page.locator('.tw-tape').count()).toBe(2 * shutT.length);   // only a kiosk the day's event shut is taped off in a thriving town
   expect(await room(page, 'fountain')).toBe('on');
-  expect(await room(page, 'visitors')).toBe(3);
+  expect(await room(page, 'visitors'), 'no baked statue-visitors any more: the crowd is living traffic (town-folk.js), 21 Sep').toBe(0);
   expect((await room(page, 'shelf')).length).toBe(7);   // basic 2 + common 2 + good 2 + rare 1
   expect(Object.values(await room(page, 'lamps')).every((s) => s === 'ok')).toBe(true);
   // the town's night: the lamps light and the décor glows
@@ -417,8 +417,8 @@ test('walking onto a thing picks it up; a lamp waits for a tap', async ({ page }
 // 👻 every night has its ghosts (Trym, 15 Sep), and dawn takes them
 test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   await town(page);
-  await setBand(page, 90);   // Thriving: three visitors by day
-  expect(await room(page, 'visitorsOut')).toBe(3);
+  await setBand(page, 90);   // Thriving — and no baked statue-visitor stands about by day any more (21 Sep: the crowd is living traffic)
+  expect(await room(page, 'visitorsOut')).toBe(0);
   await seam(page, () => window.__town.life.set(21));   // the town's night
   await page.waitForTimeout(1400);   // the room looks twice a second
   const ids = (await room(page, 'ghosts')).map((g) => g.id);
@@ -464,7 +464,7 @@ test('every night has its ghosts, and dawn takes them', async ({ page }) => {
   await stand(page, 1360, 880);
   await seam(page, () => window.__town.life.set(8));   // morning
   await page.waitForTimeout(1400);
-  expect(await room(page, 'visitorsOut')).toBe(3);   // morning: they are back
+  expect(await room(page, 'visitorsOut')).toBe(0);   // morning: still none baked — the living crowd is town-folk's to bring back
   const day = (await room(page, 'ghosts')).map((g) => g.id);
   expect(day).not.toContain('drift');
   expect(day).not.toContain('sit');

@@ -18,6 +18,11 @@ export const LOOK = {
   //             kiosks with the shutter down · litter level (town-life.js LITTER_MORE)
   //             full street bins (of three) · full dumpsters (of two) · the fountain
   //             share of residents out · crows · visitors · décor
+  // ❌ `visitors` IS 0 EVERYWHERE NOW (21 Sep 2026). It used to bake one or three bananas beside the
+  //  fountain, standing still all day — Trym: "these three suspects always stands there statically …
+  //  looks very mechanical". Their head count moved into the LIVING crowd (town-folk.js CROWD), which
+  //  walks in, shops, carries the bags home and sits on the benches. The column stays so the room's
+  //  reader needs no change, and so nobody adds a statue back without reading this.
   // (rubbish piles and graffiti are not a shared look: they come only as a player's own
   //  problems, src/data/town/problems.js, so what you can fix is what you see)
   abandoned:  { lampsOut: 5, lampsFlicker: 2, windowsDark: 0.8, shut: ['cafe', 'info', 'store'], litter: 2,
@@ -27,9 +32,9 @@ export const LOOK = {
   recovering: { lampsOut: 1, lampsFlicker: 1, windowsDark: 0.2, shut: [], litter: 1,
                 bins: 1, dumps: 1, fountain: 'on', outside: 0.9, crows: 1, visitors: 0, dayghost: 0 },
   lively:     { lampsOut: 0, lampsFlicker: 0, windowsDark: 0, shut: [], litter: 0,
-                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 1, dayghost: 0 },
+                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 0, dayghost: 0 },
   thriving:   { lampsOut: 0, lampsFlicker: 0, windowsDark: 0, shut: [], litter: 0,
-                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 3, dayghost: 0 },
+                bins: 0, dumps: 0, fountain: 'on', outside: 1, crows: 0, visitors: 0, dayghost: 0 },
 };
 
 // 🔁 HOW MUCH THERE IS TO DO — and it is the same at every band (19 Sep 2026).

@@ -47,6 +47,13 @@
 .tw-cup__pip--dark { background: #2a1330; }
 /* the station you are on, and the two you are not */
 .tw-cup__steps { display: flex; gap: 5px; margin-left: auto; }
+/* 🪙 the shift's tips so far — a coin and a number, popped a little each time a cup pays */
+.tw-cup__tips { display: inline-flex; align-items: center; gap: 4px; margin-left: 0.5rem; padding: 2px 6px; border: 2px solid #000; background: #2a1e12; color: #ffe135; font-style: normal; font-weight: 800; font-size: 0.8rem; line-height: 1; }
+.tw-cup__tips svg { display: block; }
+.tw-cup__tips[hidden] { display: none; }
+.tw-cup__tips.is-pop { animation: tw-tip-pop 320ms ease-out; }
+@keyframes tw-tip-pop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .tw-cup__tips.is-pop { animation: none; } }
 .tw-cup__step { width: 9px; height: 9px; border: 2px solid #000; background: #3a2a1c; }
 .tw-cup__step.is-now { background: #ffe135; }
 .tw-cup__step.is-done { background: #7bc35e; }

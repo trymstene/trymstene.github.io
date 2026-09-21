@@ -165,7 +165,9 @@ test('a sitter is drawn over the bench, and on it', async ({ page }) => {
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
-  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(52); });
+  // ⚠️ BY DAY. The visitors leave at nightfall, so a run that lands in the town's two-minute night
+  // (one in six, by the real clock) seats nobody and matches nothing — it failed exactly that way once.
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(52); window.__town.life.set(11); });
   await page.evaluate(() => window.__town.room.folkReady());
   await page.waitForTimeout(500);
 
@@ -206,4 +208,43 @@ test('a sitter is drawn over the bench, and on it', async ({ page }) => {
     expect(p.v[3], 'the feet are below the top of the bench').toBeGreaterThan(p.b[1]);
   }
   expect(errors).toEqual([]);
+});
+
+// 🛍 THE SHOPPING BAGS (21 Sep 2026). Trym: *"these three suspects always stands there statically - not
+// doing much - looks very mechanical … they should either do 'something' … maybe we can add a new wearable
+// that is shopping bags so it looks like they are walking around, sitting on benches and occationally
+// shopping"*. The three were the band's baked statue-visitors; they are gone, their head count is living
+// traffic now, and a banana that goes into a shop comes out carrying a bag — usually with somewhere else
+// to be before it leaves.
+test('nobody stands baked by the fountain, and shopping ends with a bag in hand', async ({ page }) => {
+  const { LOOK } = await import('../src/data/town/condition.js');
+  for (const b of Object.keys(LOOK)) expect(LOOK[b].visitors, b + ' bakes no statue-visitor').toBe(0);
+  await town(page);
+  await page.evaluate(() => window.__town.room.folkReady());
+  expect(await page.evaluate(() => window.__town.room.folk().max()), 'the crowd ceiling took the statues in').toBe(8);
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.waitForTimeout(400);
+  const before = await folk(page);
+  expect(before.length, 'six visitors are about').toBeGreaterThanOrEqual(6);
+  // one is sent shopping; a moment later it is back on the street with a bag, and it has not left
+  expect(await page.evaluate(() => window.__town.room.folk().shop(0, 300)), 'visitor 0 went into a shop').toBe(true);
+  await page.waitForFunction(() => { const v = window.__town.room.folk().folk()[0]; return v && !v.hidden && v.held.some((k) => k.startsWith('shopbag_')); }, null, { timeout: 8000 });
+  const out = (await folk(page))[0];
+  const bagsOut = out.held.filter((k) => k.startsWith('shopbag_'));
+  const other = out.held.filter((k) => !k.startsWith('shopbag_'));
+  expect(bagsOut.length, other.length ? 'one bag beside the thing it already held' : 'a bag in each hand, and they differ').toBe(other.length ? 1 : 2);
+  expect(new Set(bagsOut).size, 'never the same paper twice').toBe(bagsOut.length);
+  expect(['sit', 'stand', 'leave'], 'and it is on to a bench, a stand about, or the road home').toContain(out.job);
+  // a bag never sends the left hand's thing away: both are carried
+  const both = await page.evaluate(() => { const f = window.__town.room.folk(); const i = f.folk().findIndex((v) => v.held.length && !v.held.some((k) => k.startsWith('shopbag_'))); if (i < 0) return null; f.shop(i, 300); return i; });
+  if (both != null) {
+    await page.waitForFunction((i) => { const v = window.__town.room.folk().folk()[i]; return v && !v.hidden && v.held.some((k) => k.startsWith('shopbag_')); }, both, { timeout: 8000 });
+    const v = (await folk(page))[both];
+    expect(v.held.length, 'the bag rides beside what it already held').toBe(2);
+  }
+  // …and a second trip to the shops does not hand out a second bag
+  await page.evaluate(() => window.__town.room.folk().shop(0, 300));
+  await page.waitForTimeout(1200);
+  const again = (await folk(page))[0];
+  if (again) expect(again.held.filter((k) => k.startsWith('shopbag_')).length, 'no more bags than before').toBe(bagsOut.length);
 });

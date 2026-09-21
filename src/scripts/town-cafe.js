@@ -174,6 +174,10 @@ export function mountCounter(host, opts = {}) {
   const go = el('button', 'tw-cup__go', box);
   go.type = 'button';
   const note = el('p', 'tw-cup__note', box);
+  // 🪙 the shift's tips so far: a coin and a number in the tray's corner, nothing to read
+  const tipsEl = el('i', 'tw-cup__tips', top);
+  tipsEl.hidden = true;
+  const COIN = '<svg viewBox="0 0 8 8" width="12" height="12" shape-rendering="crispEdges" aria-hidden="true"><path fill="#111" d="M2 0h4v1h-4zM1 1h1v1h-1zM6 1h1v1h-1zM0 2h1v4h-1zM7 2h1v4h-1zM1 6h1v1h-1zM6 6h1v1h-1zM2 7h4v1h-4z"/><path fill="#f2c012" d="M2 1h4v1h-4zM1 2h6v4h-6zM2 6h4v1h-4z"/><path fill="#ffe97a" d="M2 2h2v1h-2zM2 3h1v1h-1z"/><path fill="#b8860b" d="M4 4h2v1h-2zM5 3h1v1h-1z"/></svg>';
 
   let cup = null, raf = 0, holding = false, cx = 0, cy = 0;
   // ⚠️ WHERE THE WORLD'S VOICE STANDS WHILE A SHIFT IS ON, and it has to be MEASURED. The toast docks
@@ -296,6 +300,8 @@ export function mountCounter(host, opts = {}) {
     // one button sat there as a dead yellow slab with no word on it, which reads as broken rather than
     // quiet. The band goes away and the button goes with it — what is left is the line that says why.
     idle(label) { cup = null; sleep(); clearTaps(); delete box.dataset.st; tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; go.hidden = !label; needle.hidden = true; fillEl.hidden = true; zoneEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
+    // 🪙 the running total for the shift (0 hides it: a fresh shift has nothing to show yet)
+    tips(n) { n = n | 0; tipsEl.hidden = n <= 0; tipsEl.innerHTML = COIN + '<b>' + n + '</b>'; tipsEl.classList.remove('is-pop'); void tipsEl.offsetWidth; tipsEl.classList.add('is-pop'); },
     say(text) { note.textContent = text || ''; },
     // ⚠️ the town's toast docks at bottom 14 and outranks this by 800 of z-index, so it lands square
     // on the gauge unless it is moved. It steps up for as long as the tray is up, and back down after.
@@ -402,7 +408,7 @@ const NEXT = [5200, 12000];      // the gap between arrivals, while you are behi
 const NEAR = 120, AWAY = 420, STAY = 8000;
 
 export function bootTownCafe(ctx) {
-  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside, shutHere, pos } = ctx;
+  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside, shutHere, pos, float } = ctx;
   let atWork = null, tray = null, on = false;
   // ☕ THE QUEUE. Each entry is a visitor the counter has borrowed from town-folk.js, its drink, and
   // the moment it arrived — which is its patience clock. ⚠️ the counter does NOT own the body: it
@@ -521,6 +527,13 @@ export function bootTownCafe(ctx) {
     const quick = row && row.at && (performance.now() - row.at) < PATIENCE / 2;
     const n = tipFor(c.grade, quick);
     tips += n; served++;
+    // 🪙 THE TIP IS SEEN THE MOMENT IT IS EARNED (Trym, 21 Sep: "its not very obvious how i make tips while
+    // working, so there needs to be some system to visualize how im making a couple of coins per coffee").
+    // A +n floats up from the hatch, and the tray's own counter keeps the shift's total — numbers and the
+    // coin, no words. The coins themselves still land at clock-out, through the one faucet the server knows.
+    const m = mark();
+    if (float && m && n > 0) float(m.x, m.y - 96, '+' + n);
+    if (tray && tray.tips) tray.tips(tips);
     if (c.grade === 2) { best++; lastBest = c.drink; }
     const deck = deckLine(GRADES[c.grade], served);
     if (deck) say(deck);
@@ -539,6 +552,7 @@ export function bootTownCafe(ctx) {
     served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0;
     standIn();
     if (!tray) tray = mountCounter(host || world.parentElement, { onCup, label: (k) => (COPY.go || {})[k] || '', idle: () => COPY.idle || '' });
+    if (tray.tips) tray.tips(0);
     tray.show();
     tray.idle('');
     if (COPY.on) say(COPY.on);

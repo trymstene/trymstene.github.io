@@ -222,10 +222,13 @@ very scary then."* That night was the town's own — one every twelve minutes, c
 and only Curse Nights charged the meter; since 20 Sep every night has ghosts, so it looked like one.
 Now each lamp a ghost puts out and each bin it tips costs the town **one point**, reported by the
 client that watched it (`/life/dark`), and relighting it pays two back — a night's damage is exactly
-the work the morning has in it. Bounded twice: six per report and **eight per person per UTC day**
-(about one night's worth, the fix cap's mirror), taken only while ghosts are out (the town's night,
-`townNightAt` in the shared clock, or a Curse Night), never through the floor. A `−1` rises where the
-ghost rests, so the cost is seen at the moment it happens. Pulse: `town_dark`.
+the work the morning has in it. Bounded by the night, not the person (Trym, after a second night:
+*"up to 10% off the town meter a night until its atleast 60% minimum, and cursed nights can bring it
+further down"*): **ten points a night, shared** however many watched it, ten per report at most,
+taken only while ghosts are out (the town's night, `townNightAt` in the shared clock, or a Curse
+Night), and **never below 60** on a plain night — under a Curse Night the ghosts may go on down to
+the town's own floor. A `−1` rises where the ghost rests, so the cost is seen at the moment it
+happens. Pulse: `town_dark`.
 
 **Both feelings at once.** A Curse Night costs the town, so the morning after needs you.
 It also carries the only route to the vendor's shelf and the objects. A healthy town is

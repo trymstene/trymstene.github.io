@@ -98,9 +98,10 @@ test('a curse night leaves work behind, even on a thriving square', async ({ pag
 // a night - the town health didnt decrease a single percent while ghosts had fun for the whole night -
 // the meter didnt move a bit - doesnt feel very scary then"*. The night he sat through was the town's
 // own (one every twelve minutes) and only Curse Nights charged the meter. Now a lamp a ghost puts out
-// and a bin it tips are a point each: at once on the bar, then on the room's word, and capped per
-// person per day so a script cannot sink the town faster than a player can lift it.
-test('a ghost’s damage costs the town — at once, on the room’s word, and never past the day’s cap', async ({ page }) => {
+// and a bin it tips are a point each: at once on the bar, then on the room's word. Later that evening,
+// after a second night: *"up to 10% off the town meter a night until its atleast 60% minimum"* — so a
+// night takes ten at most, shared, and the ghosts never drag a town below 60 on their own.
+test('a ghost’s damage costs the town — at once, on the room’s word, ten a night, never below sixty', async ({ page }) => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.addInitScript(() => { window.__ev = []; window.gtag = (kind, name, p) => window.__ev.push([name, p]); });
@@ -118,13 +119,18 @@ test('a ghost’s damage costs the town — at once, on the room’s word, and n
   const ev = await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_dark'));
   expect(ev.length, 'Pulse hears about it once per batch').toBe(1);
 
-  // ── the day's cap: eight per person, then the town stops paying (the lamp stays yours to relight)
+  // ── the night's cap: ten in all, then the town stops paying (the lamp stays yours to relight)
   const j2 = await page.evaluate(() => window.__town.room.dark(6));
   expect(j2 && j2.counted, 'six more, all counted').toBe(6);
-  const j3 = await page.evaluate(() => window.__town.room.dark(3));
-  expect(j3 && j3.counted, 'past the cap nothing is counted…').toBe(0);
+  const j3 = await page.evaluate(() => window.__town.room.dark(5));
+  expect(j3 && j3.counted, 'the last two of the night, and no more').toBe(2);
   const capped = await page.evaluate(() => window.__town.room.life());
-  expect(capped.life, '…and the meter stands where the cap left it').toBeCloseTo(before - 8, 5);
-  expect(capped.dark && capped.dark.used, 'the day’s share is spent').toBe(8);
+  expect(capped.life, '…and the meter stands where the cap left it').toBeCloseTo(before - 10, 5);
+  expect(capped.dark && capped.dark.used, 'the night’s take is spent').toBe(10);
+  // ── the floor: a town at 62 loses two and not a point more, whatever the ghosts do
+  await page.evaluate(() => window.__town.room.set(62));   // a set is a fresh night for the shim's take
+  const j4 = await page.evaluate(() => window.__town.room.dark(5));
+  expect(j4 && j4.counted, 'sixty is the floor the ghosts cannot cross').toBe(2);
+  expect((await page.evaluate(() => window.__town.room.life())).life, 'the meter stops at 60').toBeCloseTo(60, 5);
   expect(errs, 'nothing threw').toEqual([]);
 });

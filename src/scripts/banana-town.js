@@ -10,7 +10,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE } from './town-geo.js';
+import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE, CAFE_WIN } from './town-geo.js';
 import { snapScale } from '../lib/world.js';   // 🔍 whole device pixels
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
@@ -310,7 +310,18 @@ function thingAt(wx, wy) {
   if (lk) return lk;
   for (const [key, spot] of Object.entries(SPOTS)) {
     const box = BOXES.find((b) => spot.x >= b[0] && spot.x <= b[2] && spot.y - 2 >= b[1] && spot.y - 2 <= b[3] && Math.abs(b[4] - spot.y) < 4);
-    if (box && wx >= box[0] && wx <= box[2] && wy >= box[1] && wy <= box[3]) return ['spot', key];
+    if (box && wx >= box[0] && wx <= box[2] && wy >= box[1] && wy <= box[3]) {
+      // ☕ THE COFFEE CUP ANSWERS AT ITS SERVING WINDOW, NOT ITS WHOLE FRONT (Trym, 21 Sep: "to walk into
+      // the coffee shop for work i should have to tap the window - the hitbox now is a bit large so when i
+      // try to walk past the coffee shop i start working there because i auto-jump into the building").
+      // A tap on the rest of the kiosk is a walk like any other tap on a wall.
+      if (key === 'cafe' && CAFE_WIN && CAFE_WIN.length > 6) {
+        const [x0, y0, x1, y1] = CAFE_WIN.slice(3);
+        const pad = 14;   // a thumb's slack round the hatch, no more
+        if (!(wx >= x0 - pad && wx <= x1 + pad && wy >= y0 - pad && wy <= y1 + pad)) return null;
+      }
+      return ['spot', key];
+    }
   }
   return null;
 }
@@ -865,7 +876,7 @@ assetsReady().then(() => {
     try { qdone = !!(JSON.parse((wantC2 ? localStorage.getItem('bwq-c2') : localStorage.getItem('bwq-c1')) || 'null') || {}).done; } catch (e) {}
     if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam,
+  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   open: (k) => openFor(k), dress: () => dress && dress.seam, post: () => post && post.seam, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },

@@ -26,6 +26,7 @@ const ORDER = ['homestead', 'rave', 'park', 'beach'];   // home first — it's h
 // came in by, so a fast travel has to say where it came FROM the same way the
 // walked doors do (park reads ?rave / ?beach, beach reads ?park / ?from=rave).
 function hrefFor(to, from) {
+  if (to === 'town') return '/town/?' + from;   // 🏘️ the front door (21 Sep 2026); the query says which area sent you
   if (to === 'homestead') return '/homestead/?world';
   if (to === 'park') return '/park/?' + from;
   if (to === 'beach') return from === 'rave' ? '/beach/?from=rave' : '/beach/?park';
@@ -103,6 +104,22 @@ const CSS = `
 }
 .wt-card p.wt-sub { margin:0 0 0.85rem; font-size:0.78rem; opacity:0.75; }
 .wt-list { display:grid; gap:0.55rem; }
+/* 🏘️ THE TOWN IS THE FRONT DOOR (21 Sep 2026): from every other area it heads the card as a
+   picture of the square with a sticker on it, and the four areas are the buttons under it. In
+   the town itself there is no picture — the other four are plain buttons, as they always were. */
+.wt-hero {
+  position:relative; display:block; overflow:hidden; margin-bottom:0.7rem; aspect-ratio:8/5;
+  border:3px solid #000; box-shadow:3px 3px 0 #000; background:#4a5a3c center/cover no-repeat;
+  image-rendering:pixelated; text-decoration:none; color:#241c00;
+}
+.wt-hero:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+.wt-hero__sticker {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-6deg);
+  padding:0.45rem 0.9rem; background:linear-gradient(#ffe14d,#f2c012); border:3px solid #000;
+  box-shadow:3px 3px 0 #000, 0 0 0 3px #fffdf5; font-weight:800; font-size:1.25rem; white-space:nowrap;
+  letter-spacing:0.01em;
+}
+.wt-hero__arrow { position:absolute; right:0.6rem; bottom:0.45rem; font-weight:800; font-size:1.1rem; color:#fffdf5; text-shadow:2px 2px 0 #000; }
 .wt-go {
   display:flex; align-items:center; gap:0.7rem; width:100%; cursor:pointer;
   padding:0.7rem 0.8rem; border:3px solid #000; box-shadow:3px 3px 0 #000;
@@ -185,10 +202,15 @@ export function initTravel({ here, mount, before, btnClass, track }) {
   const veil = document.createElement('div');
   veil.className = 'wt-veil';
   veil.hidden = true;
-  const others = ORDER.filter((k) => k !== here);
+  // 🏘️ the town leads the card from every other area — a picture of the square, not a button
+  const hero = here === 'town' ? '' : '<a class="wt-hero" href="' + hrefFor('town', here) + '" data-to="town" style="background-image:url(/assets/world/door-town.jpg)">'
+    + '<span class="wt-hero__sticker">' + AREAS.town.icon + ' ' + AREAS.town.name + '</span>'
+    + '<span class="wt-hero__arrow">→</span></a>';
+  const others = ORDER.filter((k) => k !== here && (here === 'town' || k !== 'town'));
   veil.innerHTML = '<div class="wt-card" role="dialog" aria-modal="true" aria-label="Travel">'
     + '<h2>' + DOOR + ' where to?</h2>'
     + '<p class="wt-sub">the roads still work — this is the shortcut.</p>'
+    + hero
     + '<div class="wt-list">'
     + others.map((k) => '<a class="wt-go" href="' + hrefFor(k, here) + '" data-to="' + k + '">'
       + '<span class="wt-go__icon">' + AREAS[k].icon + '</span>'
@@ -229,7 +251,7 @@ export function initTravel({ here, mount, before, btnClass, track }) {
   veil.addEventListener('click', (e) => { if (e.target === veil) close(); });
   veil.querySelector('.wt-close').addEventListener('click', close);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !veil.hidden) close(); });
-  veil.querySelectorAll('.wt-go').forEach((a) => {
+  veil.querySelectorAll('.wt-go, .wt-hero').forEach((a) => {
     a.addEventListener('click', () => {
       if (track) track('travel_go', { from: here, to: a.dataset.to });
     });

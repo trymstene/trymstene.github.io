@@ -744,3 +744,103 @@ deployed by Trym):
   nobody proposed it. Worth adding.
 - The guestbook already lets players leave text on each other's yards, unfiltered. **The risky
   social layer already exists; it is just unloved.**
+
+
+---
+
+## 9. Jobs 2.0 — duties, payslips, tips, the lemonade stand and the post office job (21 Sep 2026)
+
+Trym, late on the 21st, after the town became the front door: *"there should also be notifications
+similar to the quest notifications … if you have duties regarding your job … the post office or your
+mailbox at the homestead sends you the paycheck, and the paycheck should have a different color paper
+or look or envelope style … a collected amount of pay so far with a counter until payday … The coffee
+shop is just for tips. While store, arcade, post office are for paydays with payslips the coffee shop
+and lemonade stand is for tips."* And: *"The lemonade stand should also have something - maybe you can
+work selling lemonade - and also, the post office job - we need a plan for that aswell, some sort of
+simple minigame."*
+
+### 9.0 What is what, today
+| Thing | State |
+|---|---|
+| Taking a job (Bean, Pip, Spinner) | ✅ built — one job at a time, kept pass required (§3) |
+| Turning up counts a day | ✅ built — `/job/chore` on the client's proximity tick, a quiet line once a day |
+| The weekly cheque | ✅ built — derived on the pass worker (`JOB_PAY × days ÷ 7`, walks back 2 weeks), lands as a letter in the homestead mailbox with the `bw-paper--wage` paper |
+| The store's restock chore | ✅ built (the crate, the till row) |
+| The arcade's chore | ❌ nothing to do yet — Spinner hires, 60 a week, no duty |
+| The café | ✅ tips per cup, at clock-out; ✅ 21 Sep: the window is the tap target, `+n` per cup, the tray counts the shift |
+| The lemonade stand (Fig Jr.) | ❌ scenery |
+| The post office job (Stamp) | ❌ never resolved (§3: "under review") |
+| Duty notifications | ❌ none — the only chip in the world is the quest's |
+| Wage so far / payday countdown | ❌ nowhere on screen |
+
+### 9.1 The two kinds of work — Trym's split, written down
+- **Payslip jobs**: the General Store, the Arcade, the Post Office. Passive attendance + one daily
+  duty each. Paid **once a week, Monday, by payslip in the mailbox**. Between paydays the player
+  sees **wage so far** and **days to payday**.
+- **Tip jobs**: the Coffee Cup, the Lemonade Stand. Paid **per cup, at clock-out**, and every cup
+  shows its tip the moment it is poured. No payslip, no payday, no accrual.
+- One job at a time still (§3). Changing is a walk to another boss.
+
+### 9.2 The duties chip — the quest chip's sibling, in the job's colour
+A second journal chip, mounted exactly where the quest's `.bwq-hint` sits (design library: one
+grammar, one template), **in a work colour** (the town's brown-and-cream paper instead of the quest's
+yellow, a briefcase pixel icon instead of the `!`). It shows ONE line: today's duty at your workplace,
+or, once done, the wage line. It folds like the quest chip and remembers folding.
+- Store: *restock the shelf* → done when the crate lands on the till.
+- Arcade: *sweep the floor* (the litter inside the arcade room) and *wake a dead cabinet* (a
+  tap-and-hold repair on a dark cabinet, like a streetlight) → done when the room is lit. **This is
+  the arcade's missing chore.**
+- Post Office: *sort the post* — the round in 9.4 → done when a round is played.
+- Café / Lemonade: *clock in at the window* → the chip shows the shift's tips while you work.
+- Words: a new copy job `town-duties` (one line per duty per job, one "done" line each, the wage
+  line with `{coins}` and `{days}` placeholders). Never a number in the prose; the numbers are
+  rendered by the chip from the pass worker's job view.
+- The same chip is the **compass** when you are not in the town: *your shift at the General Store*.
+- Pulse: `town_duty` (job, done) beside `town_chore`.
+
+### 9.3 Wage so far, payday, the payslip
+- **Wage so far** = `round(JOB_PAY × days_this_week ÷ 7)` — the cheque's own formula, so the chip
+  never promises a coin the worker will not pay. **Payday** = Monday 00:00 UTC; the chip counts days.
+  Both come back on the existing `/job/*` answers (`jobView` gains `sofar` and `payday`).
+- **The payslip** is the wage letter that already lands in the mailbox (`wage:<week>:<job>`), dressed
+  as a payslip: a **brown window envelope** in the mailbox list (its own sprite, beside the white
+  letters), a ruled paper inside — job · days worked · rate · total — stamped PAID. The words stay
+  the rig's (`homestead-post` `wage`); only the paper and the envelope change. ⚠️ the mailbox flag
+  already goes up on delivery; a payslip should also be **announced in the town** the first time you
+  are there after payday: the duties chip says *your payslip is in the mailbox* — the second thing in
+  this world that ever happened while you were away, and the first one that pays.
+- The HUD's coin chip is unchanged: wages land as coins only when the payslip is opened (as today).
+
+### 9.4 The post office job — sorting the post (a payslip job)
+Stamp hires you at his counter, the way the others do. The duty is a **round of sorting**: cards
+slide onto the counter one at a time, each with one of the world's four postmarks (the Park's leaf,
+the Bay's shell, the Homestead's gate, the Town's fountain — pixel stamps, no words), and four
+pigeonholes stand behind the counter; you tap the right hole. Two minutes, or until the pile is
+done. Grades like the café's (right / late / wrong), a receipt at the end — and the round counts as
+**the day's attendance**, nothing else. It never touches a real letter (§6: delivery is instant; the
+sort is theatre), and it pays on the weekly payslip like the store. Machinery: the counter tray
+already exists (`mountCounter`, written form-blind — §8 of the café plan); a sort round is a second
+deck on the same tray, not a second tray. Words: `town-post` gains the round's lines (hired, clock-in,
+the three grades, the receipt).
+
+### 9.5 The lemonade stand — a tips job
+Fig Jr. hires you at the stand (a fourth boss). Same tray, a **lemonade deck**: squeeze (a hold),
+ice (taps), pour (the needle) — three gestures, no words. Visitors queue at the stand's front the way
+they queue at the café rope; a served visitor walks off with a **lemonade cup** in hand (one new held
+item, the jug's sibling in `townwear.js`). Tips per cup, `+n` as it pours, the shift's count on the
+tray, paid at clock-out through `town/tips`. Fig Jr. steps to the orchard while you work it, as Bean
+takes his terrace.
+
+### 9.6 Build order, and why
+1. **The duties chip + wage/payday** (9.2, 9.3 chip half) — the smallest change that makes every
+   payslip job legible; needs `jobView` on the worker, one copy job, one chip.
+2. **The payslip envelope and paper** (9.3) — cosmetic on an existing rail; a day.
+3. **The arcade's chore** (9.2) — it is the one job you can hold today with nothing to do.
+4. **The post office round** (9.4) — a deck on the tray + `JOB_PAY.post` + the postmark art.
+5. **The lemonade stand** (9.5) — a deck on the tray + a boss + a cup.
+
+### 9.7 Still Trym's to call
+- The post office's weekly rate (the store's 90, the arcade's 60 — the post office's 75?).
+- Whether a tip job's clock-out toast should name the total (words) or just show the coins (numbers).
+- The arcade's chore pay: nothing beyond the cheque (§3's rule), or a small per-chore coin.
+- Whether the duties chip may sit on screen in the other areas as the compass, or only in the town.

@@ -83,7 +83,7 @@ export function bootTownLife(ctx) {
   // worker and pushed to any band from the QA seam. The shim answers like the room does.
   // 🌑 `night` is the QA door for the MORNING AFTER: a walk cannot wait a month for a deep Curse
   // Night (3% of days) and then stay up for it. { tier, at } is exactly what the room would say.
-  const shim = { v: 42, used: 0, fixes: 0, people: 0, night: null, dark: 0 };
+  const shim = { v: 42, used: 0, fixes: 0, people: 0, night: null, dark: 0 };   // dark = tonight's take (the shim has one long night)
   function bandOf(v) {
     let b = BANDS[0];
     for (const k of BANDS) if (v >= BAND_LO[k]) b = k;
@@ -96,9 +96,9 @@ export function bootTownLife(ctx) {
     if (TEST) {
       if (path === '/fix') { if (shim.used < 24) { shim.v = Math.min(100, shim.v + 2); shim.used++; shim.fixes++; shim.people = 1; } }   // mirrors worker-rave TOWN_FIX / TOWN_FIX_CAP
       let counted = 0;
-      // 👻 mirrors worker-rave TOWN_DARK / TOWN_DARK_CAP / TOWN_DARK_N (the night gate is the room's; the shim is always night)
-      if (path === '/dark') { const n = Math.max(1, Math.min(6, Math.round(+(body && body.n)) || 1)); counted = Math.max(0, Math.min(n, 8 - shim.dark)); shim.v = Math.max(5, shim.v - counted); shim.dark += counted; }
-      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 8 }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
+      // 👻 mirrors worker-rave TOWN_DARK_NIGHT / TOWN_DARK_FLOOR / TOWN_DARK_N (the night gate is the room's; the shim is one long night)
+      if (path === '/dark') { const n = Math.max(1, Math.min(10, Math.round(+(body && body.n)) || 1)); counted = Math.max(0, Math.min(n, 10 - shim.dark, Math.floor(shim.v - 60 + 1e-9))); shim.v = Math.max(5, shim.v - counted); shim.dark += counted; }
+      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 10, floor: 60, night: true }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
         // ⚠️ a forced MORNING says a night happened and that none is happening now — setting `curse`
         // to the tier put ghosts in the square in daylight, which is a different thing entirely.
         curse: curseAt(Date.now()).type, stormAt: 0,
@@ -154,9 +154,10 @@ export function bootTownLife(ctx) {
   };
   function dark(n) {
     n = Math.max(1, Math.round(+n || 1));
-    // the optimistic notch, the fix's mirror: drawn only while the day's share is unspent, so the bar
-    // never shows a drop the room will not confirm
-    if (!L.dark || L.dark.used < L.dark.max) { L.life = Math.max(0, L.life - n); if (L.dark) L.dark.used += n; paintMeter(); }
+    // the optimistic notch, the fix's mirror: drawn only while tonight's take is unspent and the meter
+    // is above the ghosts' floor, so the bar never shows a drop the room will not confirm
+    const can = !L.dark || (L.dark.used < L.dark.max && L.life - n >= (L.dark.floor == null ? 0 : L.dark.floor));
+    if (can) { L.life = Math.max(0, L.life - n); if (L.dark) L.dark.used += n; paintMeter(); }
     darkN += n;
     if (!darkT) darkT = setTimeout(flushDark, 1500);
   }
@@ -919,7 +920,7 @@ export function bootTownLife(ctx) {
   // counter's weight would be downloaded by a banana who only ever restocks Pip's shelves.
   let cafe = null, cafeP = null;
   function cafeCtx() {
-    return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track,
+    return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track, float,
       outfit: ctx.outfit || (() => ({})),
       folk: () => folk,   // ☕ the counter borrows its customers from the town's own visitors
       pos: ctx.pos,   // ☕ the counter mark is a DISTANCE: step off it and the tray folds
@@ -1349,7 +1350,7 @@ export function bootTownLife(ctx) {
     open: (k) => openFor(k),
     shutNow,   // 🗺️ the kiosk's card asks whether its own shutter is down
     nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set
-    set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
+    set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); shim.dark = 0; return read(); },   // through the real read, hysteresis and all; a set is a fresh night for the ghosts' take
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
     // 🌑 THE MORNING AFTER: say a night of this tier ended `agoMins` ago and let the square wear it.
     // The only way to see it otherwise is to wait for a deep night, which is 3% of days.
