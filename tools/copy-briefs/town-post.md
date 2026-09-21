@@ -148,3 +148,32 @@ somebody from somewhere, and the line may notice the difference.
 `refused` is what the writer sees when the filter stops it. See rule 2: kind, final, and completely
 uninformative. It names no rule, no word and no reason, and it does not suggest what to change. It
 must not sound like an accusation — most people who see this typed something ordinary.
+
+---
+
+## 📇 The address book — how a FIRST letter gets written (21 Sep 2026)
+
+Until now the post office was **reply-only**: "Write back" hangs off a letter you already have, and
+nothing in Banana World ever wrote the first one. A new player opened the mailbox, read that there
+was nothing in it, and had no way to send anything to anybody. Trym, 21 Sep: *"i must be able to
+actually send a letter for the first time… Other users in banana world shouldnt have to run code in
+their console the first time they send a letter?"*
+
+So there is now a button at the bottom of the mailbox that opens **the address book**: a searchable
+list of everyone who has a Pass and a Homestead and still plays, one row each — their banana drawn
+small, their name, and the name of their house under it. You tap a person and the writing sheet
+opens addressed to them.
+
+**What the words here must and must not do:**
+
+1. **It is a book of PEOPLE, not a feature.** Nothing in these five lines may sound like a system:
+   no *directory*, no *users*, no *results*, no *search results*, no *profiles*, no *database*.
+   These are neighbours with houses.
+2. **Never explain the rule.** Who is in the book (a Pass, a Homestead, somebody who has been about
+   lately) is the world's business, not the player's — the mystery rule. No line may say why
+   somebody is or is not listed, and no line may name a number of people.
+3. **Two different emptinesses, two different lines.** `empty` is *nobody is in the book* — a small
+   world on a quiet day, and it must not read as a fault or as a sadness. `none` is *your search
+   found nobody*, which is about the word they typed. They may not share a sentence.
+4. **Nothing is owed and nobody is waiting.** No line may suggest that somebody wants post, that
+   writing is a kindness the player ought to perform, or that anyone will reply.

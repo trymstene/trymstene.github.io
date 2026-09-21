@@ -189,3 +189,54 @@
 }
 .tw-post__pcrow.is-new { border-color: #ffb347; }
 .tw-post__pcthumb { flex: none; width: 62px; aspect-ratio: 3 / 2; object-fit: cover; border: 2px solid #000; image-rendering: pixelated; }
+
+/* ---- 📇 THE ADDRESS BOOK -------------------------------------------------------------------- */
+/* ⭐ THE ANSWER TO THE FIRST LETTER (Trym, 21 Sep). The rail shipped reply-only, so a player with an
+ * empty box could not write to anybody at all — and no page in this world held another player's
+ * address. This is the book: everyone with a Pass and a Homestead who still plays, searchable, with
+ * "a small profile image of the actual users' banana with their name and Homestead-name".
+ *
+ * ⚠️ 261 px wide like everything else on this card, so a row is a 44-px face, a name and a house —
+ * and the house is CLIPPED rather than wrapped, or a long one turns the book into a ladder. */
+.tw-folk { display: grid; gap: 0.5rem; min-width: 0; }
+.tw-folk__find {
+  appearance: none; font: inherit; font-size: 16px;   /* ⚠️ 16px or iOS zooms the whole page on focus */
+  width: 100%; box-sizing: border-box; padding: 0.42rem 0.55rem; min-height: 44px;
+  background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+}
+.tw-folk__find::placeholder { color: #241c0e; opacity: 0.55; }
+/* the list scrolls inside the card, never the card inside the page — and it wears the world's own
+   bar, the same gold thumb the deck above it uses */
+.tw-folk__stack {
+  /* ⚠️ MEASURED, not guessed: at 46vh the card came to 448 px inside a 445 px frame on a 360×640
+     phone and the Go back button sat 3 px BELOW the fold — a control that works and is never on
+     screen, which is the trap this house has been caught by before. 38vh leaves real room. */
+  display: grid; gap: 0.35rem; max-height: min(38vh, 264px); overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-right: 4px;
+  scrollbar-width: thin; scrollbar-color: #ffd21f rgba(0, 0, 0, 0.34);
+}
+.tw-folk__stack::-webkit-scrollbar { width: 8px; }
+.tw-folk__stack::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.34); border-radius: 999px; }
+.tw-folk__stack::-webkit-scrollbar-thumb { background: #ffd21f; border: 1px solid #1a1408; border-radius: 999px; }
+.tw-folk__row {
+  appearance: none; text-align: left; cursor: pointer; width: 100%; font: inherit;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem;
+  padding: 0.3rem 0.5rem; min-height: 48px;
+  background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+}
+.tw-folk__row:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+/* the face: the canvas is 150 square and the banana stands in the middle of it, so the box crops in
+   rather than scaling the whole sprite down to a smudge */
+.tw-folk__pic { display: block; width: 40px; height: 40px; overflow: hidden; position: relative; }
+.tw-folk__pic canvas {
+  position: absolute; width: 150%; height: 150%; left: -25%; top: -18%;
+  image-rendering: pixelated;
+}
+.tw-folk__who { display: grid; gap: 1px; min-width: 0; }
+.tw-folk__who b { font-family: "Archivo Black", sans-serif; font-size: 0.74rem; letter-spacing: 0.02em; }
+.tw-folk__who small {
+  font-size: 0.7rem; opacity: 0.75;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* the way out of the mailbox: a full-width action under the post, never a chip beside it */
+.tw-post__write { margin-top: 0.2rem; }

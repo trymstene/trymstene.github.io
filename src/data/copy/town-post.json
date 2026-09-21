@@ -35,5 +35,13 @@
     "send": "Send postcard",
     "sent": "The postcard joins the outgoing mail.",
     "got": "Sent by {who}"
+  },
+  "folk": {
+    "title": "Town Correspondence",
+    "write": "Write a letter",
+    "find": "A name or house name",
+    "wait": "The book is opening.",
+    "empty": "Nobody is about just now. The book rests open.",
+    "none": "That name or house name is not in the book."
   }
 }

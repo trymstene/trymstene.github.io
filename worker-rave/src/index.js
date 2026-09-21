@@ -2783,6 +2783,37 @@ const yTag = async (id) => {
   return [...new Uint8Array(buf)].slice(0, 4).map((b) => b.toString(16).padStart(2, '0')).join('');
 };
 const yStrip = (x, n) => String(x == null ? '' : x).replace(/[\x00-\x1f<>]/g, '').trim().slice(0, n);
+
+// 📇 THE DIRECTORY (Trym, 21 Sep 2026): "a list over other players names that you can send to,
+// valid players with a Pass and a Homestead. The list is searchable and maybe has a small profile
+// image of the actual users' banana with their name and Homestead-name."
+//
+// ⭐ IT IS THE ANSWER TO THE FIRST LETTER. The post rail shipped reply-only — Write back exists on
+// a letter you already have, and nothing in the world wrote the first one, so a player with an
+// empty box had no way to send anything at all. Nothing in Banana World even LINKED to another
+// player's house: the only slug a client ever held was its own.
+//
+// ⚠️ WHAT IS NEW HERE IS THE PERSON, NOT THE HOUSE. Slugs and house names are already public —
+// /yard?slug serves any yard to anybody and /stats lists every one of them. The player's own name
+// and their banana are the new part, so the bar is Trym's: a PASS and a HOMESTEAD, which is a
+// person who has committed to this world, and nobody who has been away for FOLK_DAYS.
+const FOLK_DAYS = 30;          // …and a directory of ghosts helps nobody
+const FOLK_PAGE = 40;          // one screenful and a bit; the search narrows it
+// every testy-* slug is QA (the walk and the nightly proof mint them) — the same rule the census
+// uses, hoisted so the directory cannot disagree with the numbers Trym reads in HQ
+const yQa = (slug) => /^testy(-|$)/.test(slug || '') || slug === 'trym' || /^qa-/.test(slug || '');
+// ⚠️ IT IS DRAWN ON SOMEBODY ELSE'S SCREEN, so it is judged rather than cleaned: a name that does
+// not survive the family filter, or an item id that is not an item id, does not go in the book.
+const yWho = (w) => {
+  if (!w || typeof w !== 'object') return undefined;
+  const n = sanitizeName(yStrip(w.n, 24), []);
+  if (!n || dirty(n)) return undefined;
+  const f = (w.fit && typeof w.fit === 'object') ? w.fit : {};
+  const one = (v) => (typeof v === 'string' && /^[a-z0-9_-]{1,24}$/i.test(v) ? v : '');
+  const extras = {};
+  for (const k of Object.keys(f.extras || {}).slice(0, 8)) if ((f.extras || {})[k] && one(k)) extras[k] = 1;
+  return { n, fit: { hat: one(f.hat), glasses: one(f.glasses), extras } };
+};
 const yDay = () => new Date().toISOString().slice(0, 10);
 const yIso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
 // "Trym's Homestead" → trym — the sign name IS the address (clean slugs)
@@ -3064,7 +3095,10 @@ export class YardRoom {
   async indexUpsert(doc) {
     const idx = (await this.state.storage.get('index')) || [];
     const rest = idx.filter((e) => e.slug !== doc.slug);
-    rest.unshift({ slug: doc.slug, name: doc.name, stage: (doc.state && doc.state.stage) || 0, updated: doc.updated, owner: doc.otag || '' });
+    // 📇 `who` and `pass` ride the row so the directory is a single storage read rather than 400
+    // gets. ⚠️ the index is ONE stored value capped at 400 rows — keep what goes in it small.
+    rest.unshift({ slug: doc.slug, name: doc.name, stage: (doc.state && doc.state.stage) || 0,
+      updated: doc.updated, owner: doc.otag || '', who: doc.who || undefined, pass: doc.pass ? 1 : 0 });
     await this.state.storage.put('index', rest.slice(0, 400));
   }
 
@@ -3296,6 +3330,10 @@ export class YardRoom {
       if (Number.isFinite(since) && since > 0 && doc.updated && since < doc.updated) return json({ err: 'stale', updated: doc.updated, mark: doc.mark || null }, 409);
       doc.state = this.yardSan(body.state);
       if (name) doc.name = name;
+      // 📇 who lives here. It rides /save because that is the call every player makes constantly,
+      // so the directory fills itself in as people play rather than needing a migration.
+      const who = yWho(body.who);
+      if (who) doc.who = who;
       doc.mark = mark || undefined;
       doc.updated = Date.now();
       if (!doc.otag && doc.pass) doc.otag = await yTag(doc.pass);
@@ -3566,6 +3604,28 @@ export class YardRoom {
     }
 
     // 🚪 the doors — the most recently lived-in homesteads (the signpost feed)
+    // 📇 THE DIRECTORY — who you can write a letter to. See the note by FOLK_DAYS for why it
+    // exists and what the bar is. Public like /yard and /stats beside it, and it carries no slug a
+    // visit could not already reach; what it adds is the NAME and the BANANA, which is the whole
+    // point — "a small profile image of the actual users' banana with their name and
+    // Homestead-name" (Trym). ⚠️ `mine` is passed so you are never in your own address book.
+    if (path === '/folk' && request.method === 'GET') {
+      const q = (url.searchParams.get('q') || '').toLowerCase().replace(/[^a-z0-9 '-]/g, '').trim().slice(0, 24);
+      const mine = (url.searchParams.get('mine') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+      const idx = (await this.state.storage.get('index')) || [];
+      const cut = Date.now() - FOLK_DAYS * 86400000;
+      const folk = [];
+      for (const e of idx) {
+        if (!e || !e.pass || !e.who || !e.who.n) continue;      // a Pass and a name: Trym's own bar
+        if (!(e.updated > cut)) continue;                        // …and somebody who still plays
+        if (e.slug === mine || yQa(e.slug)) continue;
+        if (q && !((e.who.n || '').toLowerCase().includes(q) || (e.name || '').toLowerCase().includes(q))) continue;
+        folk.push({ slug: e.slug, house: e.name || '', n: e.who.n, fit: e.who.fit || {} });
+        if (folk.length >= FOLK_PAGE) break;
+      }
+      return json({ folk, more: folk.length >= FOLK_PAGE });
+    }
+
     if (path === '/doors' && request.method === 'GET') {
       const idx = (await this.state.storage.get('index')) || [];
       return json({ doors: idx.slice(0, 8).map((e) => ({ slug: e.slug, name: e.name, stage: e.stage })) });

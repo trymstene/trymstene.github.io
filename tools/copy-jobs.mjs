@@ -678,6 +678,12 @@ const postFields = {
   'card.send': { kind: 'label', aim: 8, max: 14, note: 'The button that sends the postcard. A verb first, one or two words, ONE line.' },
   'card.sent': { kind: 'prose', aim: 54, max: 76, note: 'The world’s line once the card has gone — the feeling of a card dropping in, not a receipt. ⚠️ it may not repeat the letter’s own `sent` line: two different things happened.' },
   'card.got': { kind: 'label', aim: 14, max: 24, holds: ['{who}'], note: 'The small label over a postcard in the mailbox, saying who sent it. MUST contain {who}. ⚠️ not the letter’s `from`: a letter is FROM somebody, a postcard was SENT by somebody from somewhere, and the words may notice it.' },
+  'folk.title': { kind: 'prose', aim: 16, max: 24, note: '⚠️ THE HEADING OVER THE ADDRESS BOOK, and it REPLACES the mailbox’s own — you tapped “Write a letter” and landed on a page headed “Your Mailbox”, which names the wrong room. Two or three words, a NAME for the list of people you could write to, never an instruction and never a question. It may not be the mailbox’s title and may not use the word mailbox.' },
+  'folk.write': { kind: 'label', aim: 12, max: 16, note: '⭐ THE BUTTON THAT OPENS THE ADDRESS BOOK, and the most important label in this job — it sits at the bottom of the mailbox and it is the ONLY way anybody ever writes a first letter. A verb first, two or three words, ONE line inside 261 pixels. It is about writing to somebody, not about the book: never “Directory”, never “Find people”, never “Browse”.' },
+  'folk.find': { kind: 'label', aim: 20, max: 28, note: 'The placeholder inside the search box above the list of people. It says what you can type — a name, or the name of a house. Never an instruction with a verb (“Search for…”): a placeholder is an example, not an order.' },
+  'folk.wait': { kind: 'prose', aim: 30, max: 44, note: 'The one line where the list goes, for the half-second the book is on its way. Calm and brief — it is a page turning, not a load. Never “Loading”, never a spinner’s words, never a promise about what will be there.' },
+  'folk.empty': { kind: 'prose', aim: 74, max: 100, note: 'The whole of the list when there is genuinely NOBODY to write to — a world this small will hit it. ⚠️ it must not read as a fault and must not read as sad: the people are simply not about. It may not explain the rule (a Pass and a Homestead), may not name a number, and may not tell anybody to come back later.' },
+  'folk.none': { kind: 'prose', aim: 56, max: 78, note: 'The same place, when a SEARCH found nobody. It is about the word they typed, not about the world being empty — the two states are different and must not share a line. Never an apology, never “try again”.' },
   refused: { kind: 'prose', aim: 78, max: 105, note: '⭐ THE HARDEST LINE IN THE JOB. What the writer sees when the filter stops their letter. It must be KIND, FINAL and COMPLETELY UNINFORMATIVE: it names no rule, no word and no reason, and it does not suggest what to change — a precise reason is a lesson in getting round the filter next time. It must also not sound like an accusation, because most people who ever see this typed something perfectly ordinary and were caught by a shop’s name or a phone number.' },
 };
 // 🤐 THE REFUSAL MAY NOT TEACH. A machine cannot judge kindness, but it can judge whether a line has
@@ -718,9 +724,9 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card'],
+  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card', 'folk'],
   properties: {
-    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.')).map(([k, v]) => [k, str(v.note)])),
+    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.')).map(([k, v]) => [k, str(v.note)])),
     // 📮 the postcard: a heading, the three place names, the deck of eight, and the two words
     // that carry a send. ⚠️ EXACTLY EIGHT LINES — src/lib/letter-gate.js CARD.lines is the number a
     // card's index is judged against, so a ninth would be a line nobody can ever pick and a seventh
@@ -736,6 +742,19 @@ const postSchema = {
         send: str(postFields['card.send'].note),
         sent: str(postFields['card.sent'].note),
         got: str(postFields['card.got'].note),
+      },
+    },
+    // 📇 the address book — the way a FIRST letter is ever written (21 Sep 2026)
+    folk: {
+      type: 'object', additionalProperties: false, required: ['title', 'write', 'find', 'wait', 'empty', 'none'],
+      description: 'The list of players a first letter can be addressed to, and the button that opens it.',
+      properties: {
+        title: str(postFields['folk.title'].note),
+        write: str(postFields['folk.write'].note),
+        find: str(postFields['folk.find'].note),
+        wait: str(postFields['folk.wait'].note),
+        empty: str(postFields['folk.empty'].note),
+        none: str(postFields['folk.none'].note),
       },
     },
   },
@@ -979,7 +998,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card'],
+    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'card', 'folk'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,

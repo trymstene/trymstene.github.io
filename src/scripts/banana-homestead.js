@@ -387,7 +387,12 @@ function init(visitDoc, visitMiss) {
           .map((it) => ({ id: it.id, x: Math.round(it.x), y: Math.round(it.y) }));
         if (l.length) pubIn[t2] = l;
       });
-      return { name: state.name, since: state.pubUpdated || undefined, mark: stampMark(), state: {
+      // 📇 WHO LIVES HERE — the player's own name and the banana they wear, so the post office can
+      // put a face beside a house (Trym, 21 Sep). It rides the save every player already makes, so
+      // the directory fills itself in as people play. ⚠️ the SERVER judges both; this only offers.
+      return { name: state.name, since: state.pubUpdated || undefined, mark: stampMark(),
+        who: myName ? { n: myName, fit: { hat: myOutfit.hat, glasses: myOutfit.glasses, extras: myOutfit.extras } } : undefined,
+        state: {
         stage: state.stage, style: state.style, look: state.look, home: state.home,
         items: state.items, soil: state.soil, fence: state.fence,
         mailAt: state.mailAt, signAt: state.signAt,

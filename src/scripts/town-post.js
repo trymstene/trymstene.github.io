@@ -29,6 +29,9 @@ const COPY_MODS = import.meta.glob('../data/copy/town-post.json', { eager: true,
 export const COPY = Object.values(COPY_MODS)[0] || {};
 
 const API = 'https://banana-rave.trymstene.workers.dev/post';
+// 📇 the address book lives on the YARD room, not the post room: it is built out of who has a
+// homestead, which is the thing the yard room knows and the post room does not.
+const FOLK_API = 'https://banana-rave.trymstene.workers.dev/yards/folk';
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function bootTownPost(ctx) {
@@ -38,6 +41,13 @@ export function bootTownPost(ctx) {
   let opening = false;    // one pass of the envelope coming open, then it is just a letter
   // 📮 the postcard being made: who it is for, which of the three places, which line of the deck
   let making = null;
+  // 📇 THE ADDRESS BOOK — the answer to the first letter (Trym, 21 Sep: "i must be able to actually
+  // send a letter for the first time"). The rail shipped REPLY-ONLY: Write back hangs off a letter
+  // you already have, and nothing in this world ever wrote the first one — so a new player's box
+  // was a dead end, and no page anywhere even held another player's address.
+  // null = shut · { q, rows, busy, asked } = open
+  let folk = null;
+  let folkT = 0;   // the search waits a beat for the typing to stop
   let raf = 0;            // the banana in the picture, drawn in its own loop while a card is on screen
 
   // ---- the rail ----------------------------------------------------------------------------------
@@ -109,9 +119,26 @@ export function bootTownPost(ctx) {
     wake();
   }
 
+  // 📇 who can be written to: a Pass, a Homestead, and somebody who still plays. The server holds
+  // that bar (worker-rave FOLK_DAYS) — this only asks and draws.
+  async function askFolk(q) {
+    const me = slug ? slug() : '';
+    try {
+      const res = await fetch(FOLK_API + '?mine=' + encodeURIComponent(me) + (q ? '&q=' + encodeURIComponent(q) : ''));
+      const j = await res.json().catch(() => ({}));
+      return Array.isArray(j.folk) ? j.folk : [];
+    } catch (e) { return []; }
+  }
+
+  const focusSheet = () => setTimeout(() => { const t = document.getElementById('twPostText'); if (t) t.focus(); }, 30);
+
   // ---- the pieces --------------------------------------------------------------------------------
   const who = (n) => esc((COPY.from || '{who}').replace('{who}', n));
   const peek = (t) => esc(String(t || '').slice(0, 64)) + (String(t || '').length > 64 ? '…' : '');
+  // ✍️ the door OUT of the mailbox. ⭐ it is at the top level and not on a letter, which is the whole
+  // fix: before this, writing to somebody required already having heard from them.
+  const writeBtn = () => '<button type="button" class="tw-cta tw-post__write" id="twPostNew">'
+    + '<span class="tw-cta__verb">' + esc(((COPY.folk || {}).write) || '') + '</span></button>';
 
   // ✉️ the state is in the ART, not in a badge: the pack ships two envelopes, one with a red wax seal
   // and one without. You can see which post is new from across a room, which is what a mailbox is for.
@@ -171,7 +198,10 @@ export function bootTownPost(ctx) {
     // would have had nowhere to go. It says what the place IS on the screens that are otherwise one
     // sentence in an empty box, and stays out of the way once there is post to read.
     const bare = !box || box.error || !letters.length;
-    const front = (bare && !open && !writing && !thread && w.front) ? '<p class="tw-card__sub">' + esc(w.front) + '</p>' : '';
+    // ⚠️ …and NOT in the address book. The building's own line (“the post office keeps your letters
+    // in its mailbox”) is about the room you are standing in, and in a list of PEOPLE it is both the
+    // wrong subject and the 38 px that pushed Go back below the fold on a 360×640 phone.
+    const front = (bare && !open && !writing && !thread && !folk && w.front) ? '<p class="tw-card__sub">' + esc(w.front) + '</p>' : '';
 
     if (box && box.error === 'noaddress') {
       // ✉️⚠️ A DOOR, NOT A CLOSED COUNTER. A mailbox is keyed to the homestead's sign name, so a player
@@ -184,8 +214,8 @@ export function bootTownPost(ctx) {
       // ⚠️ maxlength is the SERVER's number, read from the one file that owns it, so the sheet cannot let
       // somebody write past what the rail will take and then refuse them for it.
       body = '<div class="tw-post__write">'
-        + '<p class="tw-post__to">' + esc((w.sheet || '{who}').replace('{who}', writing.to)) + '</p>'
-        + '<textarea class="tw-post__sheet" id="twPostText" maxlength="' + LETTER.max + '" rows="5" aria-label="' + esc((w.sheet || '').replace('{who}', writing.to)) + '"></textarea>'
+        + '<p class="tw-post__to">' + esc((w.sheet || '{who}').replace('{who}', writing.name || writing.to)) + '</p>'
+        + '<textarea class="tw-post__sheet" id="twPostText" maxlength="' + LETTER.max + '" rows="5" aria-label="' + esc((w.sheet || '').replace('{who}', writing.name || writing.to)) + '"></textarea>'
         + '<button type="button" class="tw-cta" id="twPostSend"><span class="tw-cta__verb">' + esc(w.send || '') + '</span></button>'
         + backBtn() + '</div>';
     } else if (making) {
@@ -239,8 +269,22 @@ export function bootTownPost(ctx) {
       // thread row with an empty peek where the first line of the letter would be
       const rows = t ? t.letters.map((l) => (l.kind === 'card' || !l.read ? sealed(l) : rowOf({ from: l.from, last: l.text, id: l.id }))).join('') : '';
       body = '<div class="tw-post__stack">' + rows + '</div>' + backBtn();
+    } else if (folk) {
+      // 📇 one row per person: their banana, their name, their house. ⚠️ the canvas is painted after
+      // the card is in the DOM (dressFolk), never from a string — an outfit is somebody else's data.
+      const f = w.folk || {};
+      const rows = folk.rows.map((p) => '<button type="button" class="tw-folk__row" data-slug="' + esc(p.slug) + '" data-name="' + esc(p.n) + '">'
+        + '<span class="tw-folk__pic"><canvas class="tw-folk__me" width="' + CV + '" height="' + CV + '"></canvas></span>'
+        + '<span class="tw-folk__who"><b>' + esc(p.n) + '</b><small>' + esc(p.house) + '</small></span>'
+        + '</button>').join('');
+      body = '<div class="tw-folk">'
+        + '<input type="search" class="tw-folk__find" id="twFolkFind" autocomplete="off" spellcheck="false"'
+        + ' maxlength="24" placeholder="' + esc(f.find || '') + '" aria-label="' + esc(f.find || '') + '" value="' + esc(folk.q) + '">'
+        + (rows ? '<div class="tw-folk__stack">' + rows + '</div>'
+          : '<p class="tw-post__none">' + esc((folk.asked ? (folk.q ? f.none : f.empty) : f.wait) || '') + '</p>')
+        + '</div>' + backBtn();
     } else if (!letters.length) {
-      body = '<p class="tw-post__none">' + esc(w.empty || '') + '</p>';
+      body = '<p class="tw-post__none">' + esc(w.empty || '') + '</p>' + writeBtn();
     } else {
       const fresh = letters.filter((l) => !l.read).sort((a, b) => b.at - a.at);
       // ⚠️ A KEPT POSTCARD IS NOT A THREAD ROW. threadsOf() groups by sender and previews the last
@@ -250,9 +294,14 @@ export function bootTownPost(ctx) {
       const kept = threadsOf(letters.filter((l) => l.read && l.kind !== 'card'));
       body = (fresh.length ? '<div class="tw-post__new">' + fresh.map(sealed).join('') + '</div>' : '')
         + (keptCards.length ? '<div class="tw-post__new">' + keptCards.map(cardRow).join('') + '</div>' : '')
-        + (kept.length ? '<b class="tw-post__of">' + esc(w.threads || '') + '</b><div class="tw-post__stack">' + kept.map(rowOf).join('') + '</div>' : '');
+        + (kept.length ? '<b class="tw-post__of">' + esc(w.threads || '') + '</b><div class="tw-post__stack">' + kept.map(rowOf).join('') + '</div>' : '')
+        + writeBtn();
     }
-    return '<div class="tw-post">' + (w.title ? '<h2>' + esc(w.title) + '</h2>' : '') + body + front + '</div>';
+    // ⚠️ THE HEADING NAMES THE ROOM YOU ARE IN. Every state wore the mailbox's own title, so
+    // tapping “Write a letter” landed you on a page headed “Your Mailbox” — the wrong name over the
+    // right thing, which is the one mistake the world's naming rule is about.
+    const head = (folk ? (w.folk || {}).title : '') || w.title;
+    return '<div class="tw-post">' + (head ? '<h2>' + esc(head) + '</h2>' : '') + body + front + '</div>';
   }
 
   function render() {
@@ -269,6 +318,31 @@ export function bootTownPost(ctx) {
       looks.push(making && big && !open ? making.look : (open && open.card ? open.card.look : {}));
     });
     if (looks.length) dressPictures(looks);
+    // 📇 the address book's faces, and the caret the rebuild would otherwise throw away
+    if (folk) dressFolk();
+  }
+
+  // 📇 one banana per row, drawn once. ⚠️ A STILL, NOT A LOOP: the postcard preview animates
+  // because it is one banana being posed; forty of them bobbing in a list is a flicker and forty
+  // rAF draws a frame. Frame 2 is the standing pose the whole world uses for a portrait.
+  function dressFolk() {
+    const cvs = card.querySelectorAll('.tw-folk__me');
+    if (!cvs.length) return;
+    const draw = () => cvs.forEach((cv, i) => {
+      const p = folk && folk.rows[i];
+      if (!p || !cv.isConnected) return;
+      try { drawComposite(cv.getContext('2d'), CV, 2, drawable(p.fit || {})); } catch (e) {}
+    });
+    draw();
+    assetsReady().then(draw).catch(() => {});
+    // ⚠️ THE KEYBOARD SURVIVES THE SEARCH. render() rebuilds the card from a string, so the input
+    // is a brand-new element every keystroke's answer — without this the field loses focus and the
+    // phone keyboard drops mid-word, which is the one thing a search box may never do.
+    const find = card.querySelector('#twFolkFind');
+    if (find && folk && folk.q && document.activeElement !== find) {
+      find.focus();
+      try { find.setSelectionRange(folk.q.length, folk.q.length); } catch (e) {}
+    }
   }
 
   function wire() {
@@ -295,15 +369,53 @@ export function bootTownPost(ctx) {
     }));
     const back = card.querySelector('#twPostBack');
     if (back) back.addEventListener('click', () => {
-      // one step at a time: the sheet → the letter → the thread → the mailbox
+      // one step at a time: the sheet → the address book → the letter → the thread → the mailbox
       if (making) making = null;
       else if (writing) writing = null;
+      else if (folk) folk = null;
       else if (open) open = null;
       else thread = null;
       render();
     });
     const reply = card.querySelector('#twPostReply');
-    if (reply) reply.addEventListener('click', () => { writing = { to: open.from }; render(); setTimeout(() => { const t = document.getElementById('twPostText'); if (t) t.focus(); }, 30); });
+    if (reply) reply.addEventListener('click', () => { writing = { to: open.from, name: open.name || '' }; render(); focusSheet(); });
+
+    // ── 📇 THE ADDRESS BOOK ───────────────────────────────────────────────────────────────────
+    const fresh = card.querySelector('#twPostNew');
+    if (fresh) fresh.addEventListener('click', async () => {
+      folk = { q: '', rows: [], asked: false };
+      open = null; writing = null; thread = null;
+      render();
+      track('post_folk', { at: 'post', step: 'open' });
+      const rows = await askFolk('');
+      if (!folk) return;                       // they closed it while the book was on its way
+      folk.rows = rows; folk.asked = true;
+      render();
+    });
+    const find = card.querySelector('#twFolkFind');
+    if (find) {
+      // ⚠️ the caret is restored by hand after every render: the card is rebuilt from a string, so
+      // the input is a NEW element each time and a naive re-render throws the keyboard away mid-word.
+      find.addEventListener('input', () => {
+        if (!folk) return;
+        folk.q = find.value.slice(0, 24);
+        clearTimeout(folkT);
+        folkT = setTimeout(async () => {
+          const q = folk && folk.q;
+          const rows = await askFolk(q);
+          if (!folk || folk.q !== q) return;   // they kept typing; a later answer owns the list
+          folk.rows = rows; folk.asked = true;
+          render();
+        }, 260);
+      });
+    }
+    card.querySelectorAll('.tw-folk__row').forEach((b) => b.addEventListener('click', () => {
+      writing = { to: b.dataset.slug, name: b.dataset.name || '' };
+      folk = null;
+      render();
+      focusSheet();
+      track('post_folk', { at: 'post', step: 'pick' });
+    }));
     const flag = card.querySelector('#twPostFlag');
     if (flag) flag.addEventListener('click', async () => {
       if (busy || !open) return; busy = true;

@@ -599,6 +599,16 @@ const description = 'A clearing west of the park with your name on the sign: cla
     .hs-list { display: grid; gap: 0.8rem; max-height: min(46vh, 380px); overflow-y: auto;
       overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .hs-note { margin: 0; font-size: 0.8rem; opacity: 0.75; }
+    /* 🍌 THE WORLD'S OWN SCROLLBAR, on every list inside a cream card — the same gold thumb the
+       town's cards wear (public/css/town-post.css), tuned for cream instead of dark. ⚠️ ONE RULE
+       OVER THE CLASS, never per list: the mailbox was the one that got noticed, and the guestbook
+       and the recipe shelf had exactly the same platform-grey bar. ⚠️ the standard properties stay
+       OUT of any @supports block — hiding them behind a Firefox test left every modern Chromium
+       (121+, which ships scrollbar-color) painting grey, which is how this was missed before. */
+    .hs-post, .hs-guestlist, .hs-krecipes { scrollbar-width: thin; scrollbar-color: #d8a400 rgba(26, 20, 8, 0.16); }
+    .hs-post::-webkit-scrollbar, .hs-guestlist::-webkit-scrollbar, .hs-krecipes::-webkit-scrollbar { width: 8px; }
+    .hs-post::-webkit-scrollbar-track, .hs-guestlist::-webkit-scrollbar-track, .hs-krecipes::-webkit-scrollbar-track { background: rgba(26, 20, 8, 0.16); border-radius: 999px; }
+    .hs-post::-webkit-scrollbar-thumb, .hs-guestlist::-webkit-scrollbar-thumb, .hs-krecipes::-webkit-scrollbar-thumb { background: #ffd21f; border: 1px solid #1a1408; border-radius: 999px; }
     /* 📱 THE BANANA PHONE DESIGN LANGUAGE (Trym, 1 Sep: "this is the
        way"): inside the phone there are NO black borders — sticker cards
        (radius 16, soft 0 3px 0 shadow), pastel tiles, PILL buttons and
@@ -923,7 +933,14 @@ const description = 'A clearing west of the park with your name on the sign: cla
     }
     @keyframes hs-dotbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
     @media (prefers-reduced-motion: reduce) { .hs-maildot { animation: none; } }
-    .hs-post { display: grid; gap: 0.7rem; }
+    /* 📬 THE MAILBOX SCROLLS ITSELF (Trym, 21 Sep: "when i try to scroll, i scroll the
+       background page, and not the popup list over letters"). It had no height and no overflow
+       at all, so a boxful of letters simply grew the card and the PAGE took the gesture — while
+       .hs-guestlist and .hs-list beside it have had the right rule for months. `overscroll-behavior:
+       contain` is the half that actually stops the page moving once the list hits its end. */
+    .hs-post { display: grid; gap: 0.7rem; max-height: min(52vh, 420px); overflow-y: auto;
+      overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+      padding-right: 4px; }
     .hs-post__it { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
     .hs-post__it.is-new .bw-paper { box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.4), 0 0 0 3px #e2342a; }
     /* 💼 a cheque is the same paper as every other letter, with one seam of gold leaf at the fold —
