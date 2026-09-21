@@ -32,7 +32,7 @@ import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shi
 import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, INFO_WIN, OVERLAYS } from './town-geo.js';
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
-import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS } from '../data/town/condition.js';
+import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, MERCHANT, CURSE_SHELF } from '../data/town/stock.js';
 import { TODAY, TODAY_N, ODD_SPOTS, CLOSABLE } from '../data/town/today.js';
@@ -81,7 +81,9 @@ export function bootTownLife(ctx) {
   let band = null, nudge = 0, readAt = 0, lastErr = '';
   // 🧪 ?towntest: the room's arithmetic in memory, so the whole town can be walked with no
   // worker and pushed to any band from the QA seam. The shim answers like the room does.
-  const shim = { v: 42, used: 0, fixes: 0, people: 0 };
+  // 🌑 `night` is the QA door for the MORNING AFTER: a walk cannot wait a month for a deep Curse
+  // Night (3% of days) and then stay up for it. { tier, at } is exactly what the room would say.
+  const shim = { v: 42, used: 0, fixes: 0, people: 0, night: null };
   function bandOf(v) {
     let b = BANDS[0];
     for (const k of BANDS) if (v >= BAND_LO[k]) b = k;
@@ -94,7 +96,10 @@ export function bootTownLife(ctx) {
     if (TEST) {
       if (path === '/fix') { if (shim.used < 24) { shim.v = Math.min(100, shim.v + 2); shim.used++; shim.fixes++; shim.people = 1; } }   // mirrors worker-rave TOWN_FIX / TOWN_FIX_CAP
       return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, today: { fixes: shim.fixes, people: shim.people },
-        curse: curseAt(Date.now()).type, stormAt: 0, curseAt: 0, ok: 1 };
+        // ⚠️ a forced MORNING says a night happened and that none is happening now — setting `curse`
+        // to the tier put ghosts in the square in daylight, which is a different thing entirely.
+        curse: curseAt(Date.now()).type, stormAt: 0,
+        curseAt: shim.night ? shim.night.at : 0, curseKind: shim.night ? shim.night.tier : '', ok: 1 };
     }
     if (body) { body.pass = own; body.alt = sid; if (wt) body.wt = wt; }
     try {
@@ -111,7 +116,12 @@ export function bootTownLife(ctx) {
     L = j;
     const b = bandOf(Math.max(0, Math.min(100, j.life + nudge)));
     // today first (it decides what is shut), then the look, then what you can put right
-    if (b !== band) { band = b; todayStage(); condition(); reseedProblems(); if (roomAt) roomShow(roomAt); }
+    // ⚠️ …OR WHEN THE NIGHT'S MARK CHANGES. This ran on a band change alone, so a Curse Night that
+    // did not move the band changed nothing on screen — which, since every band above 65 looks
+    // identical, meant the hardest night in the game was invisible on a healthy town. The mark
+    // coming ON at dawn and OFF twelve hours later are both events the square has to notice.
+    const mk = wornKind();
+    if (b !== band || mk !== wasMark) { band = b; wasMark = mk; todayStage(); condition(); reseedProblems(); if (roomAt) roomShow(roomAt); }
     // 🎉 a band change while you are here is an EVENT: the new name, and what it brings (up) or
     // what it looks like (down) — and a puff on every lamp whose state changed. (An arrival toast with the
     // band's words used to show on every load; the board and the health card say the same — Trym, 15 Sep:
@@ -121,7 +131,7 @@ export function bootTownLife(ctx) {
     wasBand = band;
     paintMeter();
   }
-  let wasBand = null;
+  let wasBand = null, wasMark = '';
   const lampWas = {};
   async function read() { readAt = Date.now(); apply(await lifeFetch('')); }
   // a read on arrival, then every minute while the tab is looked at; a tab that comes back
@@ -394,8 +404,50 @@ export function bootTownLife(ctx) {
   const fullSprites = {}, sideSprites = {};   // key → the full-state sprite over a bin or a dumpster, and what stands beside it
   let dryFountain = null;
   const shutSprites = {};
+  // 🌑 WHAT THE SQUARE WEARS: the band, plus the mark a Curse Night left on it.
+  // See NIGHT_AFTER in src/data/town/condition.js for why — in short, every band above 65 looks
+  // identical, so the hardest night in the game used to change nothing you could see or fix.
+  // ⚠️ SHARED, because it hangs off the clock's own curse time (L.curseAt, the room's word for when
+  // the night was) rather than off anything this device decided. Everyone sees the same morning.
+  // which night the square is still wearing, or '' — the identity apply() watches, because the mark
+  // can come and go without the band moving an inch.
+  function wornKind() {
+    const at = +L.curseAt || 0;
+    if (!at) return '';
+    const since = Date.now() - at;
+    if (!(since >= 0 && since < NIGHT_AFTER_MS)) return '';
+    // ⚠️ THE ROOM'S WORD FIRST. It watched the night happen and says which tier it was; the clock is
+    // the fallback for a room that has not been redeployed yet, and L.curse (what is happening NOW) is
+    // the last resort — by the morning that is 'none', which is the whole reason the other two exist.
+    let kind = L.curseKind || '';
+    if (!NIGHT_AFTER[kind]) { try { kind = curseAt(at + 60000).type; } catch (e) { kind = ''; } }
+    if (!NIGHT_AFTER[kind] && NIGHT_AFTER[L.curse]) kind = L.curse;
+    return NIGHT_AFTER[kind] ? kind : '';
+  }
+
+  function wornLook() {
+    const base = LOOK[band];
+    const at = +L.curseAt || 0;
+    if (!at) return base;
+    const since = Date.now() - at;
+    if (!(since >= 0 && since < NIGHT_AFTER_MS)) return base;
+    // ⚠️ WHICH NIGHT IT WAS, asked of the CLOCK rather than carried on the wire. L.curse is what is
+    // happening NOW ('none', by the morning); the tier of the night that left this mark is a pure
+    // function of when it was, and the room and the page already agree about that function.
+    const mark = NIGHT_AFTER[wornKind()] || null;
+    if (!mark) return base;
+    const cap = (n, m) => Math.min(m, n);
+    return { ...base,
+      lampsOut: cap(base.lampsOut + mark.lampsOut, ANCHORS.lamps.length),
+      lampsFlicker: cap(base.lampsFlicker + mark.lampsFlicker, Math.max(0, ANCHORS.lamps.length - base.lampsOut - mark.lampsOut)),
+      litter: cap(base.litter + mark.litter, 2),
+      bins: cap(base.bins + mark.bins, ANCHORS.bins.length),
+      dumps: cap(base.dumps + mark.dumps, ANCHORS.dumps.length),
+      crows: base.crows + mark.crows };
+  }
+
   function condition() {
-    const look = LOOK[band], d = dayNum();
+    const look = wornLook(), d = dayNum();
     // lamps: which are out and which stutter, from the day seed
     const order = pickN(ANCHORS.lamps, ANCHORS.lamps.length, d * 7 + 1);
     ANCHORS.lamps.forEach((k) => { cond.lamps[k] = 'ok'; });
@@ -634,7 +686,9 @@ export function bootTownLife(ctx) {
     workStop();   // a job in hand cannot outlive the list it belongs to
     problems.forEach((p) => { if (p.el) p.el.remove(); kill(p.sprite); });
     problems = [];
-    const look = LOOK[band], d = dayNum(), who = parseInt(me().slice(0, 6), 16) || 7;
+    // 🌑 the night's mark counts here too — a dark lamp it left is one of your problems like any
+    // other, which is the whole point: the morning after a Curse Night has WORK in it.
+    const look = wornLook(), d = dayNum(), who = parseInt(me().slice(0, 6), 16) || 7;
     const seed = who % 100000 + d * 31 + BANDS.indexOf(band) + waveNum() * 7919;   // the wave moves the draw on
     const stormRecent = L.stormAt && Date.now() - L.stormAt < 6 * 3600000;
     const types = PROBLEMS.filter((t) => t.bands.includes(band) && (!t.wx || (t.wx === 'storm' && stormRecent)));
@@ -1258,6 +1312,11 @@ export function bootTownLife(ctx) {
     nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set
     set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); return read(); },   // through the real read, hysteresis and all
     curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
+    // 🌑 THE MORNING AFTER: say a night of this tier ended `agoMins` ago and let the square wear it.
+    // The only way to see it otherwise is to wait for a deep night, which is 3% of days.
+    // ⚠️ `morning`, not `night` — this seam already has a night() further down (the darkness level)
+    // and the later key silently wins, so the door answered 0.5 and the walk saw nothing change.
+    morning: (tier, agoMins) => { if (!TEST) return null; shim.night = tier ? { tier, at: Date.now() - (agoMins || 0) * 60000 } : null; return read().then(() => ({ kind: L.curseKind, at: L.curseAt, now: L.curse })); },
     omen: () => !!(dusk && dusk.omenOn()), nextIn: () => { const o = omenNow(); return o && o.at ? Math.round((o.at - Date.now()) / 60000) : null; },
     // ⚠️ `art` is the SPRITE this problem wears, not its type: a litter problem is a bin bag or a
     // crisp packet and the spacing rule is different for each, so a walk cannot check it without this.

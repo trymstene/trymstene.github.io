@@ -1322,6 +1322,10 @@ export class TownRoom {
     const life = (await this.state.storage.get('life')) || { v: TOWN_SET, at: now };
     let stormAt = (await this.state.storage.get('lastStormAt')) || 0;
     let curseAt_ = (await this.state.storage.get('lastCurseAt')) || 0;
+    // 🌑 …AND WHICH NIGHT IT WAS. The tier is what the square wears the next morning
+    // (src/data/town/condition.js NIGHT_AFTER); a client reconstructing it from its own copy of the
+    // clock would be one generated-block drift away from wearing the wrong night, or none at all.
+    let curseKind_ = (await this.state.storage.get('lastCurseKind')) || '';
     const fday = (await this.state.storage.get('fday')) || {};
     let dirty = false;
 
@@ -1349,7 +1353,7 @@ export class TownRoom {
         // ⚠️ ONLY EVER DOWNWARD, and never through the floor. Weather damages; it never heals.
         if (e.hit) v = Math.max(TOWN_FLOOR, v - e.hit);
         if (e.kind === 'wx' && e.type === 'storm') stormAt = e.at;
-        if (e.kind === 'curse' && e.type !== 'hush') curseAt_ = e.at;
+        if (e.kind === 'curse' && e.type !== 'hush') { curseAt_ = e.at; curseKind_ = e.type; }
       }
       v = drift(v, now - cursor);
       life.v = Math.max(TOWN_FLOOR, Math.min(100, v));
@@ -1373,7 +1377,7 @@ export class TownRoom {
       life: Math.round(life.v * 10) / 10,
       band: townBand(life.v),
       set: TOWN_SET,
-      stormAt, curseAt: curseAt_,
+      stormAt, curseAt: curseAt_, curseKind: curseKind_,
       curse: cu.type,                          // the clock's own word, so a client can prove it agrees
       cap: { used, max: TOWN_FIX_CAP },
       today: { fixes, people },
@@ -1385,6 +1389,7 @@ export class TownRoom {
       await this.state.storage.put('fday', fday);
       if (stormAt) await this.state.storage.put('lastStormAt', stormAt);
       if (curseAt_) await this.state.storage.put('lastCurseAt', curseAt_);
+      if (curseKind_) await this.state.storage.put('lastCurseKind', curseKind_);
     };
 
     if (url.pathname === '/life' && request.method !== 'POST') {
@@ -3758,13 +3763,29 @@ export class PostRoom {
   //
   // ⚠️ AND A NOTE IS NOT POST YOU CAN ANSWER. A resident has no mailbox — writing back to "nib"
   // would address a yard nobody owns — so the page hides Reply on kind: 'note'.
+  // is there actually a homestead at this address? ⚠️ FAILS CLOSED: if the yard room cannot be
+  // reached we write nothing, because a missing letter is a smaller wrong than a letter to nobody.
+  async realHouse(box) {
+    if (!box || !this.env || !this.env.YARDS) return false;
+    try {
+      const r = await this.env.YARDS.get(this.env.YARDS.idFromName('the-neighbourhood'))
+        .fetch(new Request('https://room/yard?slug=' + encodeURIComponent(box)));
+      return r.ok;
+    } catch (e) { return false; }
+  }
+
   async townNote(now, box) {
     const NOTE_QUIET = 6 * 86400000;
     const sent = (await this.state.storage.get('notes')) || {};
     const all = await this.list('L:');
     const newest = all.reduce((m, l) => Math.max(m, l.at || 0), 0);
     let kind = '';
-    if (!sent.welcome && !all.length) kind = 'welcome';
+    // ⚠️ A WELCOME GOES TO A HOUSE THAT EXISTS. Reading an empty box CREATES the room and used to
+    // write a note into it, so any slug anybody typed became a mailbox with a letter in it — found by
+    // my own diagnostic, which queried four resident names and made four of them. The yard room is
+    // asked once, on the one read where it can matter: after this the stamp is set and it never runs
+    // again. A box with no house behind it simply stays empty, which is the truth about it.
+    if (!sent.welcome && !all.length) kind = (await this.realHouse(box)) ? 'welcome' : '';
     else if (sent.welcome && now - Math.max(newest, sent.quiet || 0) > NOTE_QUIET) kind = 'quiet';
     if (!kind) return;
     const deck = (TOWN_NOTES && TOWN_NOTES[kind]) || [];

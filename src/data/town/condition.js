@@ -72,3 +72,37 @@ export const NIGHT = { evening: 0.2, night: 0.5, hush: 0.3, curse: 0.5 };   // a
 
 // where visitors stand about (feet, world px), facing into the square
 export const VISITOR_SPOTS = [[1010, 905], [1190, 905], [900, 1000], [1310, 1000], [1600, 1200]];
+
+// 🌑 THE MORNING AFTER A CURSE NIGHT (21 Sep 2026).
+//
+// Trym: *"a cursed night wreaks too little havoc, towns been on over 90% all day, its been boring,
+// and the ghosts and cursed nights dont feel impactful on the town health at all, streetlights been
+// fine all day"*. He is right, and the arithmetic says exactly why:
+//
+//   · the bands above 65 have an IDENTICAL look. lively and thriving are both 0 lamps out, 0 litter,
+//     0 full bins, 0 crows — they differ in `visitors` and nothing else.
+//   · the hardest night in the game is a `deep`, which takes the meter down 18. From a town sitting
+//     at 100 that is 82, which is still lively.
+//   · so a deep Curse Night on a healthy town changes the number of wandering visitors and NOTHING
+//     ELSE. No dark streetlight, no litter, no tipped bin. There was nothing to see and nothing to do.
+//
+// ⭐ SO THE NIGHT LEAVES ITS OWN MARK, on top of whatever the band says. It is not a band change and
+// it is not a second meter: it is damage, it is shared (everyone sees the same square, because it
+// hangs off the clock's own curse time), and — the part that matters — every dark lamp and every
+// tipped bin is ALREADY one of your problems, so the morning after a curse night is a square with
+// work in it even when the meter is at 100. That is the other half of his sentence: a thriving town
+// with nothing to do is the boring one.
+//
+// ⚠️ `hush` LEAVES NOTHING. It is the gentle tier, it costs the meter nothing, and a night that is
+// only atmosphere should stay only atmosphere.
+export const NIGHT_AFTER = {
+  hush: null,
+  creep: { lampsOut: 2, lampsFlicker: 1, litter: 1, bins: 1, dumps: 0, crows: 1 },
+  deep: { lampsOut: 4, lampsFlicker: 2, litter: 2, bins: 2, dumps: 1, crows: 2 },
+};
+// how long the square wears it. The curse window is 18:00–23:30 UTC, so twelve hours is "until the
+// morning after" for a night at either end of it.
+// ⚠️ a fix is gated on the UTC day (town-room fixed()), so a lamp relit before midnight comes back
+// dark at midnight and needs relighting once more. That is the same rule every other problem in the
+// square follows, and the night is not special enough to earn its own clock.
+export const NIGHT_AFTER_MS = 12 * 3600000;

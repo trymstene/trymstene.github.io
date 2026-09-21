@@ -27,7 +27,7 @@ import { readWorn, drawable } from '../lib/wardrobe-slots.js';
 // 🪪 the proof that a letter is really from your house — the rail resolves the sender from this
 // and never from anything the page claims, so a send without it is refused.
 import { worldToken, worldOwner, worldSid } from '../lib/world.js';
-import { passPush } from '../lib/banana-pass.js';
+import { passFlush, ensureAnon } from '../lib/banana-pass.js';
 
 const COPY_MODS = import.meta.glob('../data/copy/town-post.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
@@ -75,24 +75,16 @@ export function bootTownPost(ctx) {
   // this path is for the returning player and nobody else — it costs nothing when the token is good.
   async function proof() {
     if (worldToken()) return true;
-    // ⚠️ A PUSH CAN ONLY REFRESH A PASS THAT EXISTS. With neither a link nor a world id there is
-    // nothing to fetch, and waiting two seconds to discover that helps nobody — it also leaves the
-    // card BUSY meanwhile, so the next tap does nothing, which the thumb walk caught by tapping
-    // Report straight after a send and watching it be ignored. Hopeless is answered immediately.
-    let known = false;
-    try { known = !!(localStorage.getItem('pass-link') || localStorage.getItem('world-gid')); } catch (e) {}
-    if (!known) return false;
-    try { passPush(); } catch (e) {}
-    for (let i = 0; i < 10 && !worldToken(); i++) await new Promise((r) => setTimeout(r, 140));
+    try { await ensureAnon(); } catch (e) {}
+    if (worldToken()) return true;
+    // ⚠️ passFlush, NEVER passPush. schedulePush debounces by SIXTY SECONDS, so the first version of
+    // this waited 1.4s for something that could not possibly have happened yet and then told the
+    // player their letter was staying in the writing tray. That is what Trym hit on his first real
+    // send. passFlush pushes now, and the poll ends the moment the token lands.
+    try { passFlush(); } catch (e) {}
+    for (let i = 0; i < 24 && !worldToken(); i++) await new Promise((r) => setTimeout(r, 140));
     return !!worldToken();
   }
-
-  // ⚠️ A REFUSAL AND A STRANGER ARE NOT THE SAME THING. Everything the server turns down says the
-  // same unhelpful — and deliberately uninformative — line, because a precise reason is a lesson in
-  // getting round the filter. But “the counter does not know who you are” is not a judgement on the
-  // letter at all, and showing the refusal there tells somebody their perfectly ordinary words were
-  // rejected. That is the one lie this card must never tell.
-  const turnedDown = (res) => ((res && res.error === 'noproof') ? (COPY.nopass || COPY.refused || '') : (COPY.refused || ''));
 
   async function ask(path, body) {
     const me = slug ? slug() : '';
@@ -105,7 +97,12 @@ export function bootTownPost(ctx) {
     // you do to YOUR OWN box, addressed by a slug the router already has; only a send has to be
     // signed, because only a send puts your name on somebody else's screen. And the one path that
     // must never be blocked by a stale anything is the one that takes a bad letter away.
-    if (path === '/send' && !(await proof())) return { error: 'noproof' };
+    //
+    // ⭐ AND IT IS BEST-EFFORT, NEVER A GATE. This used to refuse the send itself when it could not
+    // find a proof — so a bug in proof() was a bug that stopped letters, which is exactly what
+    // happened. The SERVER decides; all this does is fetch a stale proof first so the server can say
+    // yes. A 401 coming back is the only thing that means "it does not know who you are".
+    if (path === '/send') await proof();
     try {
       const res = await fetch(API + path + (body ? '' : '?slug=' + encodeURIComponent(me)), {
         method: body ? 'POST' : 'GET',
@@ -115,7 +112,7 @@ export function bootTownPost(ctx) {
         body: body ? JSON.stringify({ ...body, slug: me, wt: worldToken(), pass: worldOwner(), alt: worldSid() }) : undefined,
       });
       const j = await res.json().catch(() => ({}));
-      return res.ok ? j : { error: j.error || 'off', status: res.status };
+      return res.ok ? j : { error: res.status === 401 ? 'noproof' : (j.error || 'off'), status: res.status };
     } catch (e) { return { error: 'off' }; }
   }
 

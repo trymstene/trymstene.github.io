@@ -148,7 +148,13 @@ ok(((bj.letters) || []).some((l) => l.from === people[1].slug), '…and it is in
 // The plan calls this the load-bearing beam: at ten players most boxes are empty most of the time,
 // and an empty mailbox is where a social feature quietly dies.
 {
-  const fresh = 'qa-first-' + Math.random().toString(36).slice(2, 8);
+  // ⚠️ A REAL HOUSE, because a welcome only goes to one. Reading an empty box CREATES the room, so
+  // before that check a note landed in any slug anybody typed — four resident names became four
+  // mailboxes when a diagnostic merely looked at them.
+  const fp = gid(), fwt = tokenFor(fp);
+  const fc = await yard('/claim', { pass: fp, alt: fp, wt: fwt, name: 'First Light' });
+  const fresh = (fc.j && fc.j.slug) || '';
+  ok(!!fresh, 'a brand-new homestead is claimed', fc.status);
   const r = await fetch(API + '/post/box?slug=' + fresh, { headers: O });
   const j = await r.json().catch(() => ({}));
   const ls = j.letters || [];
@@ -159,6 +165,10 @@ ok(((bj.letters) || []).some((l) => l.from === people[1].slug), '…and it is in
   ok(!!String(n.text || '').trim(), '…with something actually written on it', JSON.stringify(n.text));
   ok(!/\d/.test(String(n.text || '')), '…and the world still publishes no numbers', n.text);
 
+  // …and a box with no house behind it stays empty, which is the truth about it
+  const nowhere = await (await fetch(API + '/post/box?slug=qa-no-such-house-' + Math.random().toString(36).slice(2, 7), { headers: O })).json();
+  ok(((nowhere.letters) || []).length === 0, 'a mailbox with no house behind it is not written to', ((nowhere.letters) || []).length);
+
   // ⚠️ ONCE. A welcome that lands on every open is a mailbox that fills itself with itself.
   await fetch(API + '/post/box?slug=' + fresh, { headers: O });
   const again = await (await fetch(API + '/post/box?slug=' + fresh, { headers: O })).json();
@@ -167,7 +177,11 @@ ok(((bj.letters) || []).some((l) => l.from === people[1].slug), '…and it is in
   // ⭐ and two different people do not get the same resident every time
   const whos = new Set();
   for (let i = 0; i < 8; i++) {
-    const b = await (await fetch(API + '/post/box?slug=qa-who-' + i + '-' + Math.random().toString(36).slice(2, 6), { headers: O })).json();
+    const p = gid();
+    const c = await yard('/claim', { pass: p, alt: p, wt: tokenFor(p), name: 'Who House ' + i });
+    const sl = (c.j && c.j.slug) || '';
+    if (!sl) continue;
+    const b = await (await fetch(API + '/post/box?slug=' + sl, { headers: O })).json();
     const l = ((b.letters) || [])[0]; if (l) whos.add(l.from);
   }
   ok(whos.size > 1, 'and the same resident does not write to everybody', [...whos].join(', '));
