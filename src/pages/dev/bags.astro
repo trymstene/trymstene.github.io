@@ -46,6 +46,14 @@ const BAGS = ['shopbag_cream', 'shopbag_beige', 'shopbag_brown'];
               <div class="bb-fig"><canvas data-pose="stand" width="150" height="150"></canvas>stand</div>
               <div class="bb-fig"><canvas data-pose="sit" width="150" height="150"></canvas>bench</div>
             </div></div>
+          <div class="bb-row"><h3>a bag in each hand · 2× — this paper with the next (Trym: "shopping, not a suitcase")</h3>
+            <div class="bb-ground bb-x2">
+              <div class="bb-fig"><canvas data-pose="pairr" width="150" height="150"></canvas>walk →</div>
+              <div class="bb-fig"><canvas data-pose="pairl" width="150" height="150"></canvas>← walk</div>
+              <div class="bb-fig"><canvas data-pose="pairstand" width="150" height="150"></canvas>stand</div>
+              <div class="bb-fig"><canvas data-pose="pairsit" width="150" height="150"></canvas>bench</div>
+            </div></div>
+          <div class="bb-row"><h3>the pair dancing · 4×</h3><div class="bb-ground bb-ground--big bb-x4"><div class="bb-fig"><canvas data-pose="pairdance" width="300" height="300"></canvas></div></div></div>
           <div class="bb-row"><h3>with company · 2× — a hat and balloons in the other hand · a visitor's size 1×</h3>
             <div class="bb-ground bb-x2">
               <div class="bb-fig"><canvas data-pose="dressed" width="150" height="150"></canvas>hat + balloons</div>
@@ -71,10 +79,17 @@ const BAGS = ['shopbag_cream', 'shopbag_beige', 'shopbag_brown'];
       sit: () => 0,
       dressed: (t) => 0 + (Math.floor(t / 260) % 2),
       dressed2: (t) => 4 + (Math.floor(t / 260) % 2),
+      pairr: (t) => 0 + (Math.floor(t / 260) % 2),
+      pairl: (t) => 4 + (Math.floor(t / 260) % 2),
+      pairstand: () => 2,
+      pairsit: () => 0,
+      pairdance: (t) => Math.floor(t / 100) % NFRAMES,
     };
+    const NEXT = { shopbag_cream: 'shopbag_beige', shopbag_beige: 'shopbag_brown', shopbag_brown: 'shopbag_cream' };
     const DRESS = { dressed: { hat: 'party', extras: { balloons: true } }, dressed2: { hat: 'backwardscap', extras: { lemonjug: true } } };
+    const dressFor = (bag, pose) => pose.startsWith('pair') ? { extras: { [NEXT[bag]]: true } } : DRESS[pose];
     assetsReady().then(() => {
-      const cells = [...document.querySelectorAll('.bb-col')].flatMap((col) => [...col.querySelectorAll('canvas')].map((cv) => ({ cv, ctx: cv.getContext('2d'), pose: cv.dataset.pose, fit: fit(col.dataset.bag, DRESS[cv.dataset.pose]), drawn: -1 })));
+      const cells = [...document.querySelectorAll('.bb-col')].flatMap((col) => [...col.querySelectorAll('canvas')].map((cv) => ({ cv, ctx: cv.getContext('2d'), pose: cv.dataset.pose, fit: fit(col.dataset.bag, dressFor(col.dataset.bag, cv.dataset.pose)), drawn: -1 })));
       const frame = (now) => {
         for (const c of cells) {
           const f = POSES[c.pose](now);
