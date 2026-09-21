@@ -62,7 +62,7 @@ tag = "v6"
 new_sqlite_classes = ["PostRoom"]
 
 [vars]
-ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
+ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803,http://127.0.0.1:4321,http://localhost:4321"   # + the built-site preview the Playwright walks run on (22 Sep 2026: the first presence walk)
 # 🪪 the world token rollout (2 Sep 2026). "0" = SOFT: a wrong token is
 # refused, a missing one still passes (tabs on cached JS have none yet).
 # Flip to "1" once /yards/stats shows wt.none at ~0 for a day: then a
@@ -79,3 +79,12 @@ POST_OFF = "1"
 # survives a letters shutdown and has no moderation surface of its own" — so the lever to pull when
 # the words become a problem is this one, and the town keeps its post.
 TEXT_OFF = "0"
+
+# 🏘️👥 the square's presence room (22 Sep 2026)
+[[durable_objects.bindings]]
+name = "SQUARE"
+class_name = "SquareRoom"
+
+[[migrations]]
+tag = "v7"
+new_sqlite_classes = ["SquareRoom"]

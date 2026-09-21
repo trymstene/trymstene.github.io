@@ -215,6 +215,7 @@ function rewear() {
   } catch (e) {}
   ME_DRAW.hat = myOutfit.hat; ME_DRAW.glasses = myOutfit.glasses; ME_DRAW.extras = myOutfit.extras;
   lastF = -1;
+  if (crowd) crowd.outfit();   // 👥 the square sees the change too
   drawMe();
 }
 function drawMe() {
@@ -330,6 +331,7 @@ let post = null;         // ✉️ the post office's mailbox, once its chunk is 
 let info = null;         // 🗺️ the kiosk's rack of maps, once its chunk is in
 let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
+let crowd = null;        // 👥 src/scripts/town-crowd.js — the other players, once the square stands (22 Sep 2026)
 view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
   if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup')) return;   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
@@ -454,6 +456,7 @@ function tick(now) {
   cam(false);
   drawMe();
   life.tick(now, dt);
+  if (crowd) crowd.tick(now);   // 👥 the other players' frames, and my own position out to them
   weather.tick(now);
   if (room) room.tick(now, dt);
   if (work) work.tick(now);
@@ -574,6 +577,7 @@ function enterRoom(key) {
   const rm = ROOMS[key]; if (!rm || inRoom) return;
   inRoom = key;
   world.classList.add('is-inside');
+  if (crowd) crowd.rooms();   // 👥 the square's crowd is on another plate now
   if (!inShade) { inShade = document.createElement('div'); inShade.className = 'tw-inshade'; world.appendChild(inShade); }
   if (!inPlate) { inPlate = document.createElement('div'); inPlate.className = 'tw-room'; world.appendChild(inPlate); }
   // ⚠️ RE-DRESS THE PLATE. The box and the picture used to be set once, inside the `if (!inPlate)`
@@ -602,6 +606,7 @@ function exitRoom() {
   inRoom = '';
   if (room && room.roomShow) room.roomShow('');
   world.classList.remove('is-inside');
+  if (crowd) crowd.rooms();   // 👥 …and back
   if (inShade) inShade.hidden = true;
   if (inPlate) inPlate.hidden = true;
   weather.indoors(false);
@@ -851,9 +856,20 @@ assetsReady().then(() => {
       then: (fn) => { arriveThen = fn || null; },
       job: () => (work ? work.seam.job() : null),   // 💼 what the room may ask of you depends on who you work for
       outfit: () => ME_DRAW,   // ☕ the café draws YOUR banana in its window, in one locked pose
-      others: () => [],   // other players' bananas, the day the town gets its room (ghosts keep away from them)
+      others: () => (crowd ? crowd.others() : []),   // 👥 other players' bananas on the square (the ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
     if (window.__town) window.__town.room = room.seam;
+    // 👥 THE SQUARE IS SHARED (22 Sep 2026): the other players, on the park's rail, in their own chunk.
+    // ⚠️ a QA walk stays OUT of the live room unless it asks (?towntest&crowd=1): every other town walk
+    // would otherwise stand a headless banana in real players' squares for the length of the suite.
+    const qa = /[?&]towntest/.test(location.search);
+    if (!qa || /[?&]crowd=1/.test(location.search)) {
+      import('./town-crowd.js').then((m) => {
+        crowd = m.bootTownCrowd({ world, W, H, pct, hud, track, pos, outfit: () => ME_DRAW, inRoom: () => inRoom,
+          name: () => { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } } });
+        if (window.__town) window.__town.crowd = crowd.seam;
+      }).catch((e) => { console.warn('[town] the crowd did not load', e); });
+    }
     // 💼 the jobs, once the room can answer for the words. ⚠️ AFTER the room, never before: the
     // question on a boss's card is copy, and a half-built question is worse than none.
     import('./town-work.js').then((w) => {

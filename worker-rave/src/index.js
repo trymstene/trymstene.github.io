@@ -419,6 +419,19 @@ export default {
       }
       return env.PARK.get(env.PARK.idFromName('the-park')).fetch(request);
     }
+    // 🏘️ BANANA TOWN's square — its own room too (22 Sep 2026): presence + positions + outfits, and
+    // which building a banana is inside. The front door of the world could not read "solo" forever.
+    if (url.pathname === '/town') {
+      const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
+      if (!allowed.includes(request.headers.get('Origin') || '')) {
+        return new Response('forbidden', { status: 403 });
+      }
+      return env.SQUARE.get(env.SQUARE.idFromName('the-square')).fetch(request);
+    }
+    if (url.pathname === '/town-count') { // the HQ world desk's town headcount
+      const res = await env.SQUARE.get(env.SQUARE.idFromName('the-square')).fetch(new Request('https://room/count'));
+      return new Response(await res.text(), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    }
     // 🏖 BANANA BAY — same deal, its own room
     if (url.pathname === '/beach') {
       const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
@@ -449,7 +462,7 @@ export default {
       if (url.pathname === '/names' && res.ok) {
         try {
           const data = JSON.parse(payload);
-          for (const [ns, id] of [[env.PARK, 'the-park'], [env.BEACH, 'banana-bay']]) {
+          for (const [ns, id] of [[env.PARK, 'the-park'], [env.BEACH, 'banana-bay'], [env.SQUARE, 'the-square']]) {
             try {
               const rr = await ns.get(ns.idFromName(id)).fetch(new Request('https://room/rosternames'));
               const jj = await rr.json();
@@ -2951,6 +2964,139 @@ function ySlugBase(name) {
     .replace(/['’]s\s+homestead$/, '').replace(/\s+homestead$/, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'banana';
 }
+// ---------------------------------------------------------------------------
+// 🏘️👥 THE SQUARE (22 Sep 2026) — Banana Town's presence room. The park's protocol (hi / move /
+// outfit / leave, SUPERSEDE on the same sid or owner, the 120 s sweep, the names ledger), the wire in
+// PERCENT of the town plate, and one thing of its own: `room` — which building a banana is inside
+// ('' for the square, 'condo' the arcade, 'store' the shop), so a client draws on the square only what
+// is on the square. Nothing else lives here: the town's condition is the TownRoom's, the post is the
+// PostRoom's. Presence is cheap and it stays cheap.
+const SQUARE_CAP = 40;
+const SQUARE_ROOMS = ['', 'condo', 'store'];
+const sqClamp = (v, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n * 10) / 10)) : d; };
+const sqRoom = (v) => (SQUARE_ROOMS.includes(v) ? v : '');
+const sqStrip = (p) => ({ id: p.id, outfit: p.outfit, x: p.x, y: p.y, room: p.room || '', name: p.name || undefined });
+
+export class SquareRoom {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    this.state.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"t":"ping"}', '{"t":"pong"}'));
+  }
+  reapStale() {
+    const now = Date.now();
+    for (const ws of this.state.getWebSockets()) {
+      let last = 0;
+      try { const t = this.state.getWebSocketAutoResponseTimestamp(ws); if (t) last = t.getTime(); } catch (e) {}
+      let a = null;
+      try { a = ws.deserializeAttachment(); } catch (e) {}
+      if (a && a.joined > last) last = a.joined;
+      if (last && now - last > 120_000) {
+        if (a) { a.dead = true; try { ws.serializeAttachment(a); } catch (e) {} }
+        try { ws.close(1011, 'stale'); } catch (e) {}
+        if (a) this.broadcast({ t: 'leave', id: a.id }, ws);
+      }
+    }
+  }
+  roster() {
+    return this.state.getWebSockets()
+      .map((ws) => { try { return ws.deserializeAttachment(); } catch (e) { return null; } })
+      .filter((a) => a && !a.dead);
+  }
+  broadcast(msg, exceptWs) {
+    const s = JSON.stringify(msg);
+    for (const ws of this.state.getWebSockets()) {
+      if (ws === exceptWs) continue;
+      try { ws.send(s); } catch (e) {}
+    }
+  }
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === '/count') { this.reapStale(); return new Response(JSON.stringify({ count: this.roster().length })); }
+    if (url.pathname === '/rosternames') return new Response(JSON.stringify({ names: this.roster().filter((a) => a.name).map((a) => a.name) }));
+    if (request.headers.get('Upgrade') !== 'websocket') return new Response('expected websocket', { status: 426 });
+    this.reapStale();
+    if (this.roster().length >= SQUARE_CAP) return new Response('square full', { status: 503 });
+    const pair = new WebSocketPair();
+    this.state.acceptWebSocket(pair[1]);
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+  async webSocketMessage(ws, raw) {
+    let msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    if (!msg || typeof msg !== 'object') return;
+    const mrank = msg.mt ? await memberRankOf(this.env, msg.mt) : 0;
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && me.dead) return;
+    if (msg.t === 'hi' && !me) {
+      this.reapStale();
+      // SUPERSEDE — the same browser (or the same person on another device) rejoining kills its own
+      // ghost now, instead of standing twice in the square until the sweep
+      const sid = typeof msg.sid === 'string' ? msg.sid.slice(0, 24) : '';
+      const own = typeof msg.own === 'string' ? msg.own.slice(0, 24) : '';
+      if (sid) {
+        for (const other of this.state.getWebSockets()) {
+          if (other === ws) continue;
+          let a = null;
+          try { a = other.deserializeAttachment(); } catch (e) {}
+          if (a && !a.dead && (a.sid === sid || (own && a.own === own))) {
+            a.dead = true;
+            try { other.serializeAttachment(a); } catch (e) {}
+            try { other.close(1000, 'superseded'); } catch (e) {}
+            this.broadcast({ t: 'leave', id: a.id }, other);
+          }
+        }
+      }
+      const p = {
+        id: crypto.randomUUID().slice(0, 8), sid, own,
+        name: sanitizeName(msg.name, []),
+        outfit: sanitizeOutfit(msg.outfit, mrank),
+        x: sqClamp(msg.x, 50), y: sqClamp(msg.y, 94), room: sqRoom(msg.room),
+        joined: Date.now(),
+      };
+      // attach BEFORE the ledger fetch (the park's trap): the gate opens across a plain fetch, so a
+      // same-sid 'hi' must be able to find this socket and supersede it instead of joining beside it
+      ws.serializeAttachment(this.env && p.name ? { ...p, name: '' } : p);
+      if (this.env && p.name) {
+        try {
+          const r = await this.env.RAVE.get(this.env.RAVE.idFromName('main-floor'))
+            .fetch(new Request('https://room/ingest', { method: 'POST', body: JSON.stringify({ sid, name: p.name }) }));
+          const j = await r.json();
+          if (typeof j.name === 'string') p.name = j.name;   // a struck name comes back empty
+        } catch (e) {}
+        let cur = null;
+        try { cur = ws.deserializeAttachment(); } catch (e) {}
+        if (cur && cur.dead) return;
+        ws.serializeAttachment(p);
+      }
+      ws.send(JSON.stringify({ t: 'roster', you: p.id, all: this.roster().map(sqStrip) }));
+      this.broadcast({ t: 'join', p: sqStrip(p) }, ws);
+      return;
+    }
+    if (msg.t === 'move' && me) {
+      const now = Date.now();
+      if (now - (me.lastMove || 0) < 100) return;   // the client sends at 150 ms
+      me.lastMove = now;
+      me.x = sqClamp(msg.x, me.x); me.y = sqClamp(msg.y, me.y); me.room = sqRoom(msg.room);
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'move', id: me.id, x: me.x, y: me.y, room: me.room }, ws);
+      return;
+    }
+    if (msg.t === 'outfit' && me) {
+      me.outfit = sanitizeOutfit(msg.outfit, mrank);
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
+    }
+  }
+  async webSocketClose(ws) {
+    let me = null;
+    try { me = ws.deserializeAttachment(); } catch (e) {}
+    if (me && !me.dead) this.broadcast({ t: 'leave', id: me.id }, ws);
+  }
+  async webSocketError(ws) { return this.webSocketClose(ws); }
+}
+
 export class YardRoom {
   constructor(state, env) {
     this.state = state;

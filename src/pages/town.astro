@@ -68,6 +68,13 @@ const description = PAGE.description;
       transform: translateX(-50%); background: rgba(20, 30, 18, 0.34); border-radius: 50%; z-index: -1;
     }
     .tw-me canvas, .tw-npc canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    /* 👥 another player: a resident's body, a name over the head (the park's grammar), and a smoothed
+       step between the 150 ms positions the room relays — a banana that teleports six times a second
+       is not walking */
+    .tw-peer { transition: left 0.18s linear, top 0.18s linear; }
+    .tw-peer[hidden] { display: none !important; }
+    .tw-peer__name { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); font-size: 0.5rem; font-weight: 800; letter-spacing: 0.05em; color: #fffdf5; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
+    .tw-poof { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: #fffdf5; pointer-events: none; z-index: 2000; }
     /* the planks: the park's waypost idiom, one per door */
     .tw-plank {
       position: absolute; white-space: nowrap; transform: translate(-50%, -100%); cursor: pointer;
