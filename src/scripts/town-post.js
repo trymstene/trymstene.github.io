@@ -38,7 +38,14 @@ const FOLK_API = 'https://banana-rave.trymstene.workers.dev/yards/folk';
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function bootTownPost(ctx) {
-  const { openCard, card, closeCard, say, track, slug } = ctx;
+  // ✉️📮 TWO DOORS TO ONE MAILBOX (Trym, 21 Sep): "only letters in the mailbox at the homestead —
+  // the post office in town can send post cards". Same letters, same address book, same paper; what
+  // differs is WHERE YOU ARE STANDING, so that is what the module is told rather than a list of
+  // flags that happen to correlate with it.
+  //   'post' — the counter in town: postcards are made here, and the BUILDING has a line of its own
+  //   'home' — your own mailbox: letters only, and no building to describe (you live here)
+  const { openCard, card, closeCard, say, track, slug, at = 'post' } = ctx;
+  const cards = at === 'post';
   let box = null, open = null, writing = null, busy = false;
   let thread = null;      // whose letters we are looking through, or null for the mailbox itself
   let opening = false;    // one pass of the envelope coming open, then it is just a letter
@@ -182,7 +189,7 @@ export function bootTownPost(ctx) {
   // nobody owns. A button that cannot work is worse than no button, so a note carries neither.
   const replies = (w, note) => (note ? '' : '<div class="tw-post__two">'
     + '<button type="button" class="tw-btn--in" id="twPostReply">' + esc(w.reply || '') + '</button>'
-    + '<button type="button" class="tw-btn--in" id="twPostCard">' + esc((w.card || {}).make || '') + '</button>'
+    + (cards ? '<button type="button" class="tw-btn--in" id="twPostCard">' + esc((w.card || {}).make || '') + '</button>' : '')
     + '</div>');
   const backBtn = () => (COPY.back ? '<button type="button" class="tw-post__back" id="twPostBack">' + esc(COPY.back) + '</button>' : '');
 
@@ -216,7 +223,7 @@ export function bootTownPost(ctx) {
     // ⚠️ …and NOT in the address book. The building's own line (“the post office keeps your letters
     // in its mailbox”) is about the room you are standing in, and in a list of PEOPLE it is both the
     // wrong subject and the 38 px that pushed Go back below the fold on a 360×640 phone.
-    const front = (bare && !open && !writing && !thread && !folk && w.front) ? '<p class="tw-card__sub">' + esc(w.front) + '</p>' : '';
+    const front = (cards && bare && !open && !writing && !thread && !folk && w.front) ? '<p class="tw-card__sub">' + esc(w.front) + '</p>' : '';
 
     if (box && box.error === 'noaddress') {
       // ✉️⚠️ A DOOR, NOT A CLOSED COUNTER. A mailbox is keyed to the homestead's sign name, so a player

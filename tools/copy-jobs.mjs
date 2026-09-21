@@ -1208,8 +1208,9 @@ export const JOBS = {
     out: 'tools/copy-out/homestead-post.json',
     approved: 'src/data/copy/homestead-post.json',
     reads: 'src/scripts/banana-homestead.js',
-    top: ['title', 'empty', 'letters', 'wage'],
+    top: ['title', 'empty', 'letters', 'wage', 'open'],
     fields: {
+      'open': { kind: 'label', aim: 13, max: 17, note: '✉️ THE BUTTON AT THE FOOT OF THE MAILBOX CARD that opens the post other PLAYERS have sent you — a different thing from the notes above it, which are the world telling you something. A verb first, two or three words, ONE line inside a narrow card. ⚠️ it must not be confused with the mailbox itself (the card is already open) and must not name a mechanic: never “Inbox”, never “Messages”, never “Open mailbox”.' },
       'title': { kind: 'prose', aim: 12, max: 18, note: 'The card’s heading when the mailbox is opened. Two or three words.' },
       'empty': { kind: 'prose', aim: 50, max: 70, note: 'Shown when there is no post at all: the box is empty today. Warm, never sad, never a promise about when something will come.' },
       'wage.from': { kind: 'prose', aim: 14, max: 20, note: 'Who signs the pay letter: Nib, who keeps the town’s big book and is its payroll desk.' },
@@ -1226,7 +1227,8 @@ export const JOBS = {
       'letters.week.line': { kind: 'prose', aim: 110, max: 140, holds: ['{home}'], note: 'The letter itself, at most 140 characters, in their own voice, handwritten on paper: a week on the plot; the big book says so, and he thought you should know. Warm, plain, the questline’s voice bar (a 13-year-old and a 50-year-old read it without a stumble). It may use {name} for the player and {home} for their homestead’s name. Never a rate, never a time, never asks for anything back.' },
     },
     shape: () => [],
-    schema: { type: 'object', additionalProperties: false, required: ['title', 'empty', 'letters', 'wage'], properties: {
+    schema: { type: 'object', additionalProperties: false, required: ['title', 'empty', 'letters', 'wage', 'open'], properties: {
+      open: str('✉️ The button at the foot of the mailbox card that opens the post other PLAYERS have sent you — a different thing from the notes above it, which are the world telling you something. A verb first, two or three words, ONE line inside a narrow card. It must not name a mechanic: never “Inbox”, never “Messages”, never “Open mailbox”.'),
       title: { type: 'string', description: 'The card’s heading when the mailbox is opened.' },
       empty: { type: 'string', description: 'Shown when there is no post.' },
       wage: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Who signed the pay letter.' }, line: { type: 'string', description: 'The pay letter, holding {n} coins.' } } },

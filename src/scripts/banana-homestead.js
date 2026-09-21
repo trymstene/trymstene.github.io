@@ -2925,11 +2925,24 @@ function init(visitDoc, visitMiss) {
   function renderPost() {
     const list = document.getElementById('hsPostList');
     list.textContent = '';
+    // ✉️ the way through to the post other PLAYERS sent you. It sits at the foot of the card in
+    // BOTH states, because an empty mailbox is exactly where somebody needs a way onward — the post
+    // office's own empty box taught that one the hard way.
+    const doorway = () => {
+      if (!POSTCOPY.open) return;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'hs-post__door';
+      b.textContent = pFill(POSTCOPY.open);
+      b.addEventListener('click', () => { postEl.hidden = true; openLetters(); });
+      list.appendChild(b);
+    };
     if (!(state.mail || []).length) {
       const p = document.createElement('p');
       p.className = 'hs-post__none';
       p.textContent = pFill(POSTCOPY.empty);
       list.appendChild(p);
+      doorway();
       return;
     }
     const wrap = document.createElement('div');
@@ -2945,7 +2958,42 @@ function init(visitDoc, visitMiss) {
       wrap.appendChild(b);
     }
     list.appendChild(wrap);
+    doorway();
   }
+  // ✉️ YOUR LETTERS — the same card the post office opens, minus the postcards, on its own lazy
+  // chunk so a player who never opens it downloads none of it. Trym, 21 Sep: "only letters in the
+  // mailbox at the homestead — the post office in town can send post cards".
+  const lettersEl = document.getElementById('hsLetters');
+  const lettersBody = document.getElementById('hsLettersBody');
+  let lettersP = null, letters = null;
+  const shutLetters = () => { if (lettersEl) { lettersEl.hidden = true; syncLock(); } };
+  if (lettersEl) {
+    document.getElementById('hsLettersX').addEventListener('click', shutLetters);
+    // ⚠️ the veil closes on a tap OUTSIDE the card, the way every card in this world does — and the
+    // card itself stops the tap, or reading a letter would shut the letter.
+    lettersEl.addEventListener('click', (e) => { if (e.target === lettersEl) shutLetters(); });
+  }
+  function openLetters() {
+    if (!lettersEl) return;
+    if (!lettersP) {
+      lettersP = import('./town-post.js')
+        .then((m) => {
+          letters = m.bootTownPost({
+            openCard: (html) => { lettersBody.innerHTML = html; lettersEl.hidden = false; syncLock(); },
+            card: lettersBody,
+            closeCard: shutLetters,
+            say: (t) => toast(t, 3200),
+            track: (ev, p) => { try { window.gtag && window.gtag('event', ev, { ...(p || {}), at: 'homestead' }); } catch (e) {} },
+            slug: () => state.slug || '',
+            at: 'home',   // ✉️ your own mailbox: letters only, and no building to describe
+          });
+          return letters;
+        })
+        .catch((e) => { lettersP = null; console.warn('[homestead] the letters did not open', e); return null; });
+    }
+    lettersP.then((p) => { if (p) p.openBox(); });
+  }
+
   function openPost() {
     postDeliver();
     wageCheck();   // …and a look now, so a week that turned over while you stood here is not held back
@@ -5019,6 +5067,10 @@ function init(visitDoc, visitMiss) {
       pos, tgt, peers, birds: birdsLive,
       signGeo: () => ({ W, H, signAt: state.signAt, claimed: !!state.claimedAt }),   // the walk taps the sign where it really stands
       post: () => openPost(),
+      letters: () => openLetters(),   // ✉️ the walk opens the letters card without hunting the door
+      // 🪪 ⚠️ QA ONLY: a mailbox is keyed to the SERVER slug, and ?hstest scenarios claim a yard
+      // locally without one — so a walk would only ever see the “you have no address yet” card.
+      slug: (v) => { if (HS_TEST && v !== undefined) { state.slug = String(v); saveRaw(); } return state.slug || ''; },
       mailGeo: () => ({ W, H, at: state.mailAt, mail: (state.mail || []).length, unread: postUnread() }),
       wage: () => wageCheck(),   // 💼 the walk cannot hold a job for a week
       mailOf: () => (state.mail || []).map((m) => ({ id: m.id, read: m.read | 0, n: m.n | 0 })),   // 📬 the walk taps the mailbox where it really stands

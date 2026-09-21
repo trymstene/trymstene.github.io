@@ -1,0 +1,52 @@
+/* 🃏 THE WORLD'S CARD — the chrome every popup in Banana Town wears, lifted out of town.astro on
+ * 21 Sep 2026 so a second page can wear it too.
+ *
+ * ⭐ WHY IT MOVED. The homestead's mailbox is the letters surface (Trym, 21 Sep: "only letters in the
+ * mailbox at the homestead — the post office in town can send post cards"), and the letters card is
+ * the same object in both places: the same mailbox, the same paper, the same address book. Reusing
+ * it meant this chrome had to exist somewhere both pages can reach. The alternative — a second copy
+ * of the card styles on the homestead — is the thing the design library keeps telling us not to do
+ * (§18, where dialogue was lifted into /css/dialogue.css for exactly this reason).
+ *
+ * ⚠️ IT IS THE CHROME ONLY. Modifiers that belong to one page's own cards (.tw-card--npc,
+ * .tw-card--health, the wheel, the store) stay where they are. This is the box, its heading, its ✕,
+ * and the two buttons a card can carry.
+ *
+ * ⚠️ LOAD IT BEFORE THE PAGE'S OWN <style>. Both pages link it in the head above their inline block,
+ * so a page-specific override still wins on a tie.
+ */
+
+/* 📦 A CARD OWNS THE SCREEN WHILE IT IS OPEN, so it owns the top of the z-stack too. Below 2100 the
+   HUD and the action bar landed square across whatever the player had opened to read — measured on
+   three cards at 360×640, worst on the café's receipt where two yellow boxes overlapped by 17px and
+   read as one broken layout. Design library §8: floating UI is placed against the WHOLE surface. */
+.tw-panel { position: absolute; inset: 0; z-index: 2100; display: grid; place-items: center; background: rgba(0, 0, 0, 0.55); padding: 0.8rem; }
+.tw-card { background: #1a120c; color: #fffdf5; border: 4px solid #000; box-shadow: 6px 6px 0 #000; padding: 0.9rem 1rem; max-width: 380px; width: 100%; max-height: 100%; overflow: auto; }
+.tw-card h2 { font-family: "Archivo Black", sans-serif; color: #ffb347; font-size: 1rem; margin: 0 0 0.15rem; letter-spacing: 0.03em; }
+
+/* ✖️ THE CLOSE BUTTON IS PINNED TO THE CARD'S TOP RIGHT, and it has to be POSITIONED to stay there.
+   It was `float: right` — which works only while the card is block flow. The dressing room makes the
+   card a flex column so its mirror can stay pinned while the rails scroll, and a float on a flex
+   ITEM does nothing at all: the ✖ dropped to the start of the column, on the LEFT, above the
+   heading. Trym, 20 Sep: "why is the X for closing the window on the wrong side of the popup?"
+   ⚠️ THE FIX IS THE CLASS, NEVER THE CARD. `.tw-card--health` already carried a private copy of
+   this rule for the same reason; any future card that stops being block flow would have needed its
+   own. One absolutely-positioned ✖ works in block flow, flex and grid alike, and the heading keeps
+   its right padding clear so a long title cannot run under it. */
+.tw-card { position: relative; }
+.tw-cardx { position: absolute; right: 6px; top: 6px; z-index: 3; appearance: none; background: none; border: 0; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #fffdf5; font-size: 1.15rem; font-weight: 800; line-height: 1; cursor: pointer; opacity: 0.7; }
+.tw-card h2 { padding-right: 26px; }
+.tw-cardx:hover { opacity: 1; }
+.tw-card__sub { margin: 0 0 0.7rem; font-size: 0.8rem; opacity: 0.85; }
+
+/* the two buttons a card can carry: the big gold one that does the thing, and the plain one inside
+   a card's own body. ⚠️ both are `white-space: nowrap` on purpose — buttons in this world never
+   line-break, and a label behind an ellipsis is the same failure wearing a hat. */
+.tw-cta { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; width: 100%; padding: 0.7rem 0.8rem; cursor: pointer; border: 3px solid #000; color: #241c00; font-family: inherit; background: linear-gradient(#ffe14d, #f2c012); box-shadow: 3px 3px 0 #000; margin-top: 0.5rem; }
+.tw-cta:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+.tw-cta[disabled] { opacity: 0.55; cursor: default; }
+.tw-cta__verb { font-size: 1.05rem; font-weight: 800; white-space: nowrap; }
+.tw-cta__rew { padding: 4px 9px; border: 2px solid #000; border-radius: 999px; background: #3a2210; color: #ffd98a; white-space: nowrap; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.4px; }
+.tw-btn--in { display: block; width: 100%; box-sizing: border-box; margin-top: 0.7rem; font: inherit; font-weight: 800;
+  font-size: 0.82rem; padding: 0.45rem 0.6rem; border: 2px solid #000; background: #ffe135; color: #141208;
+  cursor: pointer; box-shadow: 2px 2px 0 #000; white-space: nowrap; }

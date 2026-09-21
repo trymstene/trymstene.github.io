@@ -16,6 +16,8 @@ const description = 'A clearing west of the park with your name on the sign: cla
   ogTitle="The Homestead 🏡"
   ogDescription="A clearing in Banana World with your name on the sign."
 >
+  <link rel="stylesheet" href="/css/world-card.css" slot="head" />
+  <link rel="stylesheet" href="/css/town-post.css" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />
   <link rel="stylesheet" href="/css/world-frame.css" slot="head" />
   <style is:inline slot="head">
@@ -938,6 +940,13 @@ const description = 'A clearing west of the park with your name on the sign: cla
        at all, so a boxful of letters simply grew the card and the PAGE took the gesture — while
        .hs-guestlist and .hs-list beside it have had the right rule for months. `overscroll-behavior:
        contain` is the half that actually stops the page moving once the list hits its end. */
+    /* ✉️ the way through to the post other players sent you — a full-width door at the foot of the
+       mailbox, in the cream card's own language rather than the town's gold. */
+    .hs-post__door { display: block; width: 100%; box-sizing: border-box; margin-top: 0.7rem;
+      font: inherit; font-weight: 800; font-size: 0.86rem; padding: 0.55rem 0.7rem; min-height: 44px;
+      border: 3px solid #000; background: #ffe135; color: #141208; cursor: pointer;
+      box-shadow: 3px 3px 0 #000; white-space: nowrap; }
+    .hs-post__door:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
     .hs-post { display: grid; gap: 0.7rem; max-height: min(52vh, 420px); overflow-y: auto;
       overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
       padding-right: 4px; }
@@ -1184,6 +1193,18 @@ const description = 'A clearing west of the park with your name on the sign: cla
         <button class="hs-shopx" id="hsPostClose" aria-label="Close">✕</button>
         <h2 id="hsPostTitle">📬 The mailbox</h2>
         <div id="hsPostList"></div>
+      </div>
+    </div>
+
+    <!-- ✉️ YOUR LETTERS, at your own mailbox (Trym, 21 Sep: "only letters in the mailbox at the
+         homestead — the post office in town can send post cards"). ⚠️ it wears the TOWN's card chrome
+         rather than .hs-card, because it is the SAME mailbox as the post office's: the same paper,
+         the same address book, the same letters. /css/world-card.css is that chrome, lifted out of
+         town.astro so this page can wear it too. -->
+    <div class="tw-panel" id="hsLetters" hidden>
+      <div class="tw-card tw-card--post">
+        <button class="tw-cardx" id="hsLettersX" type="button" aria-label="close">✕</button>
+        <div id="hsLettersBody"></div>
       </div>
     </div>
 
