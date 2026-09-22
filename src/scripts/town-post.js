@@ -332,9 +332,9 @@ export function bootTownPost(ctx) {
       // ✉️⚠️ A DOOR, NOT A CLOSED COUNTER. A mailbox is keyed to the homestead's sign name, so a player
       // who has never claimed a yard has nowhere for a letter to land — and this branch used to print
       // the kill switch's line, which told them the post office was shut. It is not; they have no door.
-      body = '<p class="tw-post__none">' + esc(w.noaddress || w.shut || '') + '</p>';
+      body = '<p class="tw-post__none">' + esc(w.noaddress || w.shut || '') + '</p>' + sortBtn();   // ✉️ the round is the counter's, not the mailbox's: staff can sort with no address
     } else if (roomDown && !letters.length) {
-      body = '<p class="tw-post__none">' + esc(w.shut || '') + '</p>';
+      body = '<p class="tw-post__none">' + esc(w.shut || '') + '</p>' + sortBtn();   // …or while the post room is down
     } else if (writing) {
       // ⚠️ maxlength is the SERVER's number, read from the one file that owns it, so the sheet cannot let
       // somebody write past what the rail will take and then refuse them for it.
@@ -708,9 +708,15 @@ export function bootTownPost(ctx) {
   // POST_OFF went to "0" the real (empty) box started landing a beat after every `set()`, and half the
   // post walk began photographing an empty mailbox. A pin, not a timing guess.
   let pinned = false;
+  // ⚠️ A CLOSED CARD STAYS CLOSED. The box's answer can land after the card is gone — Start sorting closes it and
+  // walks you to the counter; a quick ✕ does too — and render() goes through openCard, which popped the mailbox
+  // back open over the walk (and a popup freezes the banana). Found by the sorting walk the day the button
+  // started to appear before the box did.
+  let live = false;
   async function refresh() {
     if (pinned) return;
     const b = await ask('/box');
+    if (!live) return;
     // ⚠️ CHECKED AGAIN AFTER THE AWAIT. The first check is not enough: openBox() starts a refresh and
     // the walk sets its box a beat later, so the guard had already passed and the reply landed on top
     // of it anyway. A request in flight when the pin goes in is exactly the case this exists for.
@@ -721,6 +727,7 @@ export function bootTownPost(ctx) {
 
   return {
     async openBox() {
+      live = true;
       open = null; writing = null; thread = null; opening = false; making = null; drawer = '';
       box = null;
       render();                 // the closed line shows first: a card that appears at once beats a spinner
@@ -738,7 +745,7 @@ export function bootTownPost(ctx) {
       if (writing || making || folk || !card.getClientRects().length || !card.querySelector('.tw-post')) return;
       render();
     },
-    stop() { sleep(); open = null; writing = null; thread = null; opening = false; making = null; drawer = ''; },
+    stop() { live = false; sleep(); open = null; writing = null; thread = null; opening = false; making = null; drawer = ''; },
     seam: {
       state: () => ({
         letters: all(), open: open && open.id, writing: writing && writing.to,

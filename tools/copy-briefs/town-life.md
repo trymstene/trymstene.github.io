@@ -323,3 +323,33 @@ moment, and it answers two questions in plain words, in this order: **what is th
 and who runs it) and **what can I do here** (or that there is nothing to do here yet). No scenery,
 no metaphor, no weather, no riddle. Two plain sentences beat one pretty one. A gate now refuses a
 place line that names neither the place nor a thing a player can do (docs/voice.md).
+
+
+## 💼 The moment you are hired (22 Sep 2026)
+
+Trym: *"When i ask a boss / store owner if i can work there - the dialogue window should close and
+there should be some sort of salute or splash text saying something about the job i get. And the
+dialogue popup should close first, then splash."* So: the boss says yes in their own card (their
+`work.hired` line, unchanged), the card closes by itself, and THEN the world celebrates — big words
+over the square, the way the club puts a new title over the dance floor. This is the WORLD speaking,
+never the boss (a character only ever speaks in their own card).
+
+- `work.moment` — the big word over the square: capitals, one or two words, at most 10 characters,
+  the plain feeling of being hired.
+- `work.momentLine` — the small line under it: what the player is now, and where. It MUST contain
+  `{where}` (lowercase with its own article, e.g. "the Coffee Cup") inside a clause, never first.
+  The screen sets it in capitals. No number, no rate, no promise about pay. At most 52 characters.
+- `work.start.stand|cafe|condo|store|post` — straight after the moment, the world tells the new hire
+  where the work is: ONE plain sentence, what to do and where, naming only things on screen. The
+  stand: step up to the stand's counter to pour; the customers come to you. The café: the serving
+  hatch on the kiosk starts a shift. The arcade: inside, sweep the litter and wake a dark cabinet.
+  The store: inside, carry a crate from the stack to an empty shelf. The post office: open the
+  mailbox at the counter and start a round of sorting. Plain signposts, at most 80 characters.
+
+## 🎆 The firework
+
+A firework is a pocket item from Pip's shop; it bursts over the square for everyone there.
+- `fx.yours` — the world noting the player's own firework went up over the square. One short
+  sentence, plain and a little proud.
+- `fx.named` — the same with the launcher's name in it (the player's own, or another player's seen
+  from across the square). MUST contain `{name}` inside the sentence.

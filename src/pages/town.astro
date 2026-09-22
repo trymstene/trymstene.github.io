@@ -22,6 +22,7 @@ const description = PAGE.description;
        styled where it was being thumbed and completely unstyled in the actual town. -->
   <link rel="stylesheet" href="/css/town-cafe.css" slot="head" />
   <link rel="stylesheet" href="/css/world-card.css" slot="head" />
+  <link rel="stylesheet" href="/css/world-moment.css" slot="head" />
   <link rel="stylesheet" href="/css/town-dress.css" slot="head" />
   <link rel="stylesheet" href="/css/town-post.css" slot="head" />
   <link rel="stylesheet" href="/css/town-info.css" slot="head" />
@@ -41,6 +42,8 @@ const description = PAGE.description;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent; background: #1c2a14;
       /* one stacking context for everything on the map, so the travel veil on <body> outranks the toast (design library 8) */
       isolation: isolate;
+      /* 🎖 the big moment rises below the work note, which appears in the same beat as a hire (/css/world-moment.css) */
+      --wm-top: 36%;
     }
     .tw-world {
       position: absolute; left: 0; top: 0; will-change: transform;

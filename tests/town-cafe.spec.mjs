@@ -443,16 +443,37 @@ test('a served cup pays tips at clock-out, once, through the faucet the server k
   await page.evaluate(() => window.__town.room.cafe().clockOut());
   await page.waitForTimeout(400);
   const paid = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').map((e) => e.d); } catch (e) { return []; } });
-  expect(paid.length, 'paid ONCE, at the end').toBe(1);
-  expect(paid[0], 'and it is what the shift came to').toBe(took.tips);
-  // ⚠️ a nominal cup may never exceed 6: the stew buff DOUBLES a faucet and 6 × 2 = 12 = the max,
-  // and a faucet over its max is refused WHOLE, so the coins would evaporate at the next ack
-  expect(paid[0] / Math.max(1, took.served), 'no cup is worth more than the faucet allows').toBeLessThanOrEqual(6);
+  expect(paid.length, 'paid at the end').toBeGreaterThan(0);
+  expect(paid.reduce((a, b) => a + b, 0), 'and it is what the shift came to').toBe(took.tips);
+  // ⚠️ THE RULE IS PER EVENT: RULES.town.tips refuses any ONE event over 12, whole (the jobs audit, 22 Sep)
+  expect(Math.max(...paid), 'no one payment is over the faucet’s max').toBeLessThanOrEqual(12);
+  // ⚠️ a nominal cup may never exceed 6: the stew buff DOUBLES a faucet and 6 × 2 = 12 = the max
+  expect(took.tips / Math.max(1, took.served), 'no cup is worth more than the faucet allows').toBeLessThanOrEqual(6);
 
   const card = await page.evaluate(() => (document.getElementById('twCardBody') || {}).textContent || '');
   expect(card, 'the receipt names the take').toContain(String(took.tips));
   expect(errors).toEqual([]);
 });
+
+// 🪙 A LONG SHIFT'S TIPS LAND (the jobs audit, 22 Sep 2026). A shift used to be paid as ONE event, and the
+// server refuses any one tips event over 12 whole — so every shift worth more than 12 (6 with the stew buff)
+// was taken back at the next ack while the receipt said it was paid. It is paid in pieces now.
+for (const buffed of [false, true]) {
+  test(`a forty-coin shift is paid in pieces the server accepts${buffed ? ', with the stew buff' : ''}`, async ({ page }) => {
+    if (buffed) await page.addInitScript(() => { try { localStorage.setItem('hs-buff-v1', JSON.stringify({ fx: 'coins2', until: Date.now() + 36e5 })); } catch (e) {} });
+    const errors = await shift(page);
+    await page.evaluate(() => { const c = window.__town.room.cafe(); for (let i = 0; i < 10; i++) c.tip(4); });
+    await page.evaluate(() => window.__town.room.cafe().clockOut());
+    await page.waitForTimeout(400);
+    const paid = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').map((e) => e.d); } catch (e) { return []; } });
+    const want = buffed ? 80 : 40;
+    expect(Math.max(...paid), '⭐ no one event is over the server’s max of 12').toBeLessThanOrEqual(12);
+    expect(paid.reduce((a, b) => a + b, 0), 'and together they are the whole shift' + (buffed ? ', doubled' : '')).toBe(want);
+    const card = await page.evaluate(() => (document.getElementById('twCardBody') || {}).textContent || '');
+    expect(card, 'the receipt names what landed').toContain(String(want));
+    expect(errors).toEqual([]);
+  });
+}
 
 // ⚠️ THE EDGES OF A SHIFT, all four found by probing rather than by reading (20 Sep).
 test('a shift ends when you walk away, and cannot be started twice or behind a shut door', async ({ page }) => {

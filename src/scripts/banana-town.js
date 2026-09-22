@@ -14,6 +14,7 @@ import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES
 import { snapScale } from '../lib/world.js';   // 🔍 whole device pixels
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
+import { bigMoment } from '../lib/world-moment.js';   // 🎖 the rave's big moment, shared: the town's first is being hired
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 import FRONTS from '../data/copy/town-fronts.json';   // 🏘️ what the hall, the bank, the print shop, the wheel, the exchange and an old cabinet say (the rig's, 22 Sep 2026)
 
@@ -632,6 +633,8 @@ function enterRoom(key) {
   const rm = ROOMS[key]; if (!rm || inRoom) return;
   inRoom = key;
   world.classList.add('is-inside');
+  world.dataset.room = key;   // 💼 which room: the work note stays up inside your own workplace
+  if (duties) duties.render();
   if (crowd) crowd.rooms();   // 👥 the square's crowd is on another plate now
   if (!inShade) { inShade = document.createElement('div'); inShade.className = 'tw-inshade'; world.appendChild(inShade); }
   if (!inPlate) { inPlate = document.createElement('div'); inPlate.className = 'tw-room'; world.appendChild(inPlate); }
@@ -661,6 +664,8 @@ function exitRoom() {
   inRoom = '';
   if (room && room.roomShow) room.roomShow('');
   world.classList.remove('is-inside');
+  delete world.dataset.room;
+  if (duties) duties.render();
   if (crowd) crowd.rooms();   // 👥 …and back
   if (inShade) inShade.hidden = true;
   if (inPlate) inPlate.hidden = true;
@@ -892,15 +897,33 @@ function fxFrame(now) {
 function firework() {
   let name = ''; try { name = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
   burstAt(pos.x, pos.y, name, true);
-  say((name ? name + '’s' : 'Your') + ' firework went up over the square.');
+  const fx = lifeWords('fx');
+  const said = name ? (fx.named || '').replace('{name}', name) : (fx.yours || '');
+  if (said) say(said);
   if (crowd) crowd.burst();   // 👥 and out to everyone else on the square
 }
+// the town's world-voice words (town-life.json) live in the room chunk; before it lands there are none
+const lifeWords = (k) => (room && room.seam && room.seam.copyOf ? room.seam.copyOf(k) : null) || {};
 // 👥 somebody else's firework, where they stood. The toast is the same line the launcher's own names
 // them with, so a burst off the edge of your view is still news; a nameless one just bursts.
 function peerFirework(wx, wy, name) {
   if (inRoom) return;   // indoors, the square is not drawn
   burstAt(wx, wy, name, false);
-  if (name) say(name + '’s firework went up over the square.');
+  const fx = lifeWords('fx');
+  if (name && fx.named) say(fx.named.replace('{name}', name));
+}
+// 💼 THE MOMENT YOU ARE HIRED (22 Sep 2026, Trym: "When i ask a boss / store owner if i can work there - the dialogue
+// window should close and there should be some sort of salute or splash text saying something about the job i get.
+// And the dialogue popup should close first, then splash."). The boss has said yes in their own card and the card
+// has closed itself (world-dialogue.js `after`); now the world celebrates: a burst over your banana, the big
+// moment over the square, and once it has gone up, one plain line saying where the work is. All words the rig's.
+function hiredMoment(at) {
+  const w = lifeWords('work');
+  const where = (w.at || {})[at] || '';
+  burstAt(pos.x, pos.y, '', true);
+  if (w.moment) bigMoment(view, w.moment, (w.momentLine || '').replace('{where}', where));
+  const start = (w.start || {})[at];
+  if (start) setTimeout(() => say(start), 4400);
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk
@@ -959,6 +982,7 @@ assetsReady().then(() => {
       work = w.bootTownWork({
         pos, PROPS, say, track,
         copy: () => (room && room.seam.copyOf ? room.seam.copyOf('work') : null),
+        hired: (at) => hiredMoment(at),
       });
       if (window.__town) window.__town.work = work.seam;
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)

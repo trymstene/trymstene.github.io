@@ -96,7 +96,8 @@ test('the cheque: a letter that arrived while you were not looking', async ({ pa
 
   // …now this device has held a job, and a finished week owes something
   await page.evaluate(() => localStorage.setItem('tw-job-v1', JSON.stringify({ at: 'store', week: '2026-W38', days: 3 })));
-  answer = { ok: true, total: 39, paid: [{ week: '2026-W38', at: 'store', days: 3, coins: 39 }] };
+  // the server's own row shape: `pay` is the workplace's full rate — and a café week pays tips, never a cheque (rate 0)
+  answer = { ok: true, total: 39, paid: [{ week: '2026-W38', at: 'store', days: 3, coins: 39, pay: 90 }, { week: '2026-W38', at: 'cafe', days: 2, coins: 0, pay: 0 }] };
   await page.evaluate(() => window.__hs.wage());
   await page.waitForTimeout(600);
   const mail = await page.evaluate(() => window.__hs.mailOf());
@@ -105,6 +106,7 @@ test('the cheque: a letter that arrived while you were not looking', async ({ pa
   expect(cheque.id, 'and it is keyed by the week it paid for').toBe('wage:2026-W38:store');
   expect(cheque.n).toBe(39);
   expect(cheque.read, 'unread, so the dot is up').toBe(0);
+  expect(mail.filter((m) => m.id.startsWith('wage:')).length, 'a tips job’s week is not a payslip').toBe(1);
   expect(await page.locator('.hs-maildot').isVisible()).toBe(true);
 
   // ⚠️ the same answer twice must not become two letters

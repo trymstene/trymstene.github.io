@@ -800,3 +800,27 @@ label and lets go on the second tap (no labels toggle exists), the Visitors floo
 visits, the Business floor speaks the new words and none of the old, the World floor prints none of
 `qa` `deny` `src` `unruled` `faucet`, and Reported letters is drawn in all three states with a
 working clear.
+
+## §27 A BEAT THAT CHANGES WHAT YOU ARE GETS THE BIG MOMENT — AFTER THE CARD HAS CLOSED (22 Sep 2026)
+
+Trym: *"When i ask a boss / store owner if i can work there - the dialogue window should close and
+there should be some sort of salute or splash text saying something about the job i get. And the
+dialogue popup should close first, then splash."*
+
+- **One look for it: `/css/world-moment.css` + `src/lib/world-moment.js`** — `bigMoment(host, title,
+  sub)`: yellow Anton over the world with a ring of hard black shadows, a small caps line under it, in
+  over 0.3 s, held 3.8 s, up and out; `pointer-events: none`, so the world goes on under it. Lifted
+  verbatim from the rave's `.rv-bigmoment` (a new title over the dance floor since August). Its height
+  is the world's: `--wm-top` on the host (the rave's floor wants 26%; the town sets 36% so it rises
+  below the work note that appears in the same beat).
+  ⚠️ **Owed:** the rave's `.rv-bigmoment` and the park's one-size-down copy still run their own CSS; they
+  move onto this layer the next time either is touched.
+- **The order is the rule, and the dialogue template holds it.** A topic in `mountDialogue` may carry
+  `after`, read once its answer is chosen: a function handed back means the answer types as usual, the
+  card holds it 1.2 s, closes itself, and THEN the function runs — the world's moment happens on a clear
+  screen. A tap once the line is typed closes it at once; closing the card from outside still runs it
+  (the moment belongs to what happened, not to how the card was shut). A character still only ever
+  speaks in their card (§18): the boss says yes there, and the splash is the world's voice.
+- **Proven by** `tests/town-hired.spec.mjs`: the card closes before the moment appears (timed in the
+  page), the words are the rig's, the moment sits inside the view at 360 and 393, a burst went up, the
+  where-to-start line follows, a ✕ during the yes still gets the moment, and a "no" never sets it off.

@@ -831,6 +831,7 @@ export function bootTownLife(ctx) {
   // filled is on the shelf in front of you and on the till ten steps away, and that is the whole
   // wage. One device-local number per day, so tomorrow the shop is the town's again.
   const RESTOCK = 'tw-restock-v1';
+  const STAFF_FACES = 2;   // 📦 the faces the day's delivery always leaves for the store's own staff
   function restocked() {
     try { const r = JSON.parse(localStorage.getItem(RESTOCK) || 'null'); return r && r.d === dayNum() ? (r.n | 0) : 0; } catch (e) { return 0; }
   }
@@ -844,6 +845,12 @@ export function bootTownLife(ctx) {
     const s = SHELF[band]; if (!s) return null;
     const d = dayNum(), out = [];
     for (const [tier, n] of Object.entries(s)) pickN(POOLS[tier].filter((id) => DEX[id]), n, SALT_SHELF + d * 13 + tier.length).forEach((id) => out.push(id));
+    // 📦 THE DAY'S DELIVERY IS THE STAFF'S (22 Sep 2026, the jobs audit). The band fills 3, 5, 6 or 7 of the seven
+    // faces by itself, so a THRIVING town left no bare face and the restock duty could not be done at all — the
+    // store paid at most half its rate in exactly the town it is the reward for. On its own staff's screen the
+    // band's picks now leave two faces for them every day (the shelf is drawn per device: nobody else's changes).
+    const j = ctx.job && ctx.job();
+    if (j && j.at === 'store' && STORE && STORE.full && out.length > STORE.full.length - STAFF_FACES) out.length = Math.max(0, STORE.full.length - STAFF_FACES);
     // ⭐ and the rows YOU put out today, drawn from the same pools with a different salt so they are
     // never the band's own picks twice. This is why the till has the row on it before you leave.
     const mine = restocked();
@@ -925,13 +932,22 @@ export function bootTownLife(ctx) {
       // day per person, and a faucet over its cap is refused WHOLE — so a counter that just handed
       // over its total would watch the coins evaporate at the next ack. It pays what today still
       // allows, through coinsPaid() so a stew buff shows the doubled number it will actually get.
+      // ⚠️ AND THE RULE IS PER EVENT (the jobs audit, 22 Sep 2026): RULES.town.tips refuses any ONE event over 12,
+      // whole — and a shift was paid as one event, so every shift worth more than 12 (6 with the stew buff, which
+      // doubles after the check) was taken back at the next ack while the receipt still said it was paid. So the
+      // till pays in pieces the rule accepts, counts the day's room in the coins that will LAND (the buff
+      // included, which is what the tape and the server both count), and says what landed.
       pay: (n, how) => {
+        const x = coinsPaid(1) > 1 ? 2 : 1;          // what one coin becomes on its way in
         let room = 120;
         try { const u = ruleUsed('town:tips'); room = Math.max(0, 120 - (u.used | 0)); } catch (e) {}
-        const give = Math.min(n | 0, room);
-        if (give > 0) { passStat('coins_earned', give, 'tips'); float(ctx.pos.x, ctx.pos.y - 40, '+' + coinsPaid(give)); if (hud && hud.refresh) hud.refresh(); }
-        track('town_shift', { at, step: 'paid', n: give, cups: (how && how.cups) | 0 });
-        return give;
+        const give = Math.min(n | 0, Math.floor(room / x));
+        const each = Math.floor(12 / x);              // the most one event may carry once the buff has doubled it
+        for (let left = give; left > 0; left -= each) passStat('coins_earned', Math.min(each, left), 'tips');
+        const landed = give * x;
+        if (landed > 0) { float(ctx.pos.x, ctx.pos.y - 40, '+' + landed); if (hud && hud.refresh) hud.refresh(); }
+        track('town_shift', { at, step: 'paid', n: landed, cups: (how && how.cups) | 0 });
+        return landed;
       },
       // ⚠️ GETTERS, not values: this file reassigns every one of them
       band: () => band, life: () => L, problems: () => problems, curse: () => curse };

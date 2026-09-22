@@ -125,7 +125,16 @@
     "quitDone": "Of course. Leave the apron here; there will be one if you return.",
     "keep": "Keep this pass, and the work you do stays yours.",
     "keepCta": "Keep my pass",
-    "day": "Good to see you at your post."
+    "day": "Good to see you at your post.",
+    "moment": "HIRED",
+    "momentLine": "YOU WORK AT {where} NOW",
+    "start": {
+      "stand": "Tap the lemonade stand counter to pour. Customers come to you.",
+      "cafe": "Tap the Coffee Cup serving hatch to start your shift.",
+      "condo": "Inside the Arcade, sweep litter and wake dark cabinets.",
+      "store": "Inside Pip’s store, carry a crate to an empty shelf.",
+      "post": "Open the mailbox at the counter to start sorting."
+    }
   },
   "locks": {
     "store": "Pip’s General Store will have the last one of everything.",
@@ -192,6 +201,10 @@
     }
   ],
   "shutSign": "Closed",
+  "fx": {
+    "yours": "Your firework bursts over the square.",
+    "named": "{name} sends a firework over the square."
+  },
   "things": {
     "lamp": [
       "a dark lamp",

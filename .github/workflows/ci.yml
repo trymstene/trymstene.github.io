@@ -39,7 +39,7 @@ jobs:
       - name: Syntax gate — every script parses
         run: |
           set -e
-          for f in $(find src/scripts src/lib shared worker/src worker-contact/src worker-pulse/src worker-rave/src worker-share/src -name '*.js' -o -name '*.mjs' 2>/dev/null); do
+          for f in $(find src/scripts src/lib shared worker/src worker-contact/src worker-pass/src worker-pulse/src worker-rave/src worker-share/src -name '*.js' -o -name '*.mjs' 2>/dev/null); do
             node --check "$f" || { echo "❌ $f"; exit 1; }
           done
           echo "✅ all scripts parse"
@@ -57,3 +57,7 @@ jobs:
         run: node tools/check-copy.mjs
       - name: generated blocks in sync (worker allowlists, stand prices, stand ids)
         run: node tools/build-worker-allowlists.mjs --check
+      # 🧪 every worker's own in-process tests (22 Sep 2026): no workflow ran them, and jobs.test.mjs sat at five
+      # failing checks while the job it tests was erased by every sync. Judged by exit code AND printed fail count.
+      - name: Worker tests — every worker's own tests, against its fakes
+        run: node tools/run-worker-tests.mjs

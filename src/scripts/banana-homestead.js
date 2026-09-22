@@ -2,6 +2,7 @@
 import NOTES from '../data/copy/homestead-notes.json';   // the sign's line before the story gives you the place (the rig's)
 import POSTCOPY from '../data/copy/homestead-post.json';   // what the world writes to you (the rig's)
 import DUTYCOPY from '../data/copy/town-duties.json';      // 💼 the duty labels the payslip prints (the work note's own words)
+import { PAY_BACK } from '../data/town/jobs.js';           // 💼 how many whole weeks a cheque may still reach back
 import pxEdit from '../icons/pixelart/edit.svg?raw';
 import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
@@ -2925,17 +2926,19 @@ function init(visitDoc, visitMiss) {
     // 💼 a boss's letter: nudge:<week>:<at> or fired:<week>:<at> — the words by workplace (POSTCOPY.bosses)
     const bossKind = /^(nudge|fired):/.test(String(m.id || '')) ? String(m.id).split(':')[0] : '';
     const w = wage ? (POSTCOPY.wage || {}) : bossKind ? (((POSTCOPY.bosses || {})[bossKind] || {})[m.at || String(m.id).split(':')[2]] || {}) : ((POSTCOPY.letters || {})[m.id] || {});
-    return { wage, w };
+    // 📄 A WEEK THAT PAID NOTHING has its own line and its own stamp: "PAID" over nothing would be untrue
+    const nil = wage && !(m.n | 0);
+    return { wage, w, nil, line: nil ? (w.none || w.line) : w.line, stamp: nil ? (w.void || w.stamp) : w.stamp };
   }
   // 🏡 a world note as the mailbox's drawers see it: who signed it, a line to peek at, and a kraft
   // envelope for a payslip. The words are letterEl()'s own, so the peek and the paper never disagree.
   function worldRow(m) {
-    const { wage, w } = wordsOf(m);
+    const { wage, w, line } = wordsOf(m);
     return { id: 'w:' + String(m.id || ''), at: m.t || 0, read: !!m.read, name: w.from || '',
-      peek: pFill(w.line).replace('{n}', String(m.n | 0)), tone: wage ? 'wage' : '' };
+      peek: pFill(line).replace('{n}', String(m.n | 0)), tone: wage ? 'wage' : '' };
   }
   function letterEl(m) {
-    const { wage, w } = wordsOf(m);
+    const { wage, w, nil, line, stamp } = wordsOf(m);
     const p = document.createElement('div');
     p.className = 'bw-paper' + (wage ? ' bw-paper--wage' : '');
     // 📄 THE PAYSLIP (22 Sep 2026; docs/town-jobs-plan.md §11.3, Trym: "the paycheck should have a
@@ -2943,8 +2946,8 @@ function init(visitDoc, visitMiss) {
     // the figures printed under it — the workplace, the days at the rate, the total with its coin.
     // ⚠️ a slip delivered before today carries no figures (only `n`): it keeps the line and skips the
     // rows rather than printing zeros. The words are the rig's; only the numbers are the game's.
-    if (wage && w.stamp) { const st = document.createElement('b'); st.className = 'bw-slip__stamp'; st.textContent = w.stamp; p.appendChild(st); }
-    p.appendChild(document.createTextNode(pFill(w.line).replace('{n}', String(m.n | 0))));
+    if (wage && stamp) { const st = document.createElement('b'); st.className = 'bw-slip__stamp' + (nil ? ' is-nil' : ''); st.textContent = stamp; p.appendChild(st); }
+    p.appendChild(document.createTextNode(pFill(line).replace('{n}', String(m.n | 0))));
     // 💼 the week's counts, then the share of the rate they came to, then the total (docs/town-jobs-plan.md
     // §10): "floor swept 1/3 · machines fixed 0/3 — 17% of a full week at 60 — 10". A slip from before the
     // counts existed prints no rows it never had.
@@ -2981,7 +2984,7 @@ function init(visitDoc, visitMiss) {
   const lettersEl = document.getElementById('hsLetters');
   const lettersBody = document.getElementById('hsLettersBody');
   let lettersP = null, letters = null;
-  const shutLetters = () => { if (lettersEl) { lettersEl.hidden = true; syncLock(); peekPost(); } };
+  const shutLetters = () => { if (lettersEl) { lettersEl.hidden = true; if (letters) letters.stop(); syncLock(); peekPost(); } };   // stop(): a late answer may not reopen it
   if (lettersEl) {
     document.getElementById('hsLettersX').addEventListener('click', shutLetters);
     // ⚠️ the veil closes on a tap OUTSIDE the card, the way every card in this world does — and the
@@ -3054,12 +3057,21 @@ function init(visitDoc, visitMiss) {
     if (visiting || !state.claimedAt) return;
     let held = null;
     try { held = JSON.parse(localStorage.getItem('tw-job-v1') || 'null'); } catch (e) {}
-    if (!held || !held.at) return;
+    // 💼 PAYDAY ALWAYS ARRIVES (22 Sep 2026, the jobs audit). It used to ask only while this phone held a job
+    // RIGHT NOW, so quitting or being let go left the cheque you were owed unpaid — and it stopped at a zero
+    // total, before the boss's letters, so the nudge and the goodbye never came. Now it asks while a job is
+    // held or was left within the weeks a cheque can still reach back to; a player who never worked still
+    // never causes the request.
+    const recent = held && (held.at || (held.was && Date.now() - (+held.wasT || 0) < (PAY_BACK + 1) * 7 * 864e5));
+    if (!recent) return;
     let res = null;
     try { res = await passPost('/job/pay', {}); } catch (e) { return; }
-    if (!res || res.error || !res.total) return;
+    if (!res || res.error) return;
     let n = 0;
     for (const row of (res.paid || [])) {
+      // a tips job (the café, the stand) has no cheque to post — its rate is 0 — and a row with no workplace has
+      // nothing to print. (A row from before the rate rode along is a cheque if it paid anything.)
+      if (!row.at || !(row.pay > 0 || (row.pay == null && row.coins > 0))) continue;
       const id = 'wage:' + row.week + ':' + row.at;
       if ((state.mail || []).some((m) => m.id === id)) continue;
       (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, n: row.coins | 0, d: row.days | 0, at: String(row.at || ''), r: row.pay | 0,
@@ -3077,6 +3089,10 @@ function init(visitDoc, visitMiss) {
     if (jv.fired && jv.fired.at && jv.fired.week) {
       const id = 'fired:' + jv.fired.week + ':' + jv.fired.at;
       if (!(state.mail || []).some((m) => m.id === id)) { (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, at: jv.fired.at }); n++; }
+    }
+    // …and the phone's copy of the job lets go when the server says it is gone, so the town stops counting it
+    if (held.at && !jv.at && 'at' in jv) {
+      try { localStorage.setItem('tw-job-v1', JSON.stringify({ ...held, at: '', was: held.at, wasT: Date.now(), fired: jv.fired || null, up: '', duties: [], share: 0, sofar: 0, nudge: false })); } catch (e) {}
     }
     if (!n) return;
     state.mail = state.mail.slice(0, 40);

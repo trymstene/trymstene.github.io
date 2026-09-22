@@ -37,7 +37,7 @@ const CSS = `
 }
 .twd-chip.is-min { pointer-events:none; }
 .twd-chip[hidden] { display:none !important; }
-.tw-world.is-inside ~ .twd-chip { display:none !important; }
+.tw-world.is-inside ~ .twd-chip:not(.is-here) { display:none !important; }   /* 💼 but INSIDE your own workplace it stays: the arcade and the store are where the week's work is (the jobs audit, 22 Sep 2026) */
 .twd-chip.is-min { max-width:none; padding:0; width:0; height:0; background:none; border-color:transparent; box-shadow:none; animation:none; }
 .twd-chip.is-min > span { display:none; }
 .twd-chip__top { display:block; font-size:0.68rem; letter-spacing:0.02em; opacity:0.92; margin-bottom:3px; }
@@ -107,6 +107,8 @@ export function bootTownDuties({ view, work, track }) {
   const BADGE_ROOM = 18;   // our badge hangs 15 px above our top edge: room for it under whatever is above
   let watched = null, ro = null;
   function place() {
+    const wd = view.querySelector('.tw-world'), inAt = wd && wd.dataset.room;
+    el.classList.toggle('is-here', !!inAt && inAt === (work.seam.state().at || ''));
     const q = view.querySelector('.bwq-hint');
     if (q !== watched) {
       if (ro) { ro.disconnect(); ro = null; }

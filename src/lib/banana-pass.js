@@ -716,6 +716,21 @@ function sweepStandGear(ids) {
     return dirty;
   } catch (e) { return false; }
 }
+// 💼 THE JOB, FROM THE ACK (22 Sep 2026): a phone that never took the job learns it holds one, and a sack
+// reaches every phone. ⚠️ It only ADDS what the phone lacks: a take or a quit still in flight must never be
+// undone by an answer that left the server before it, so a job left in the last two minutes is not put back.
+// The town's own /job/view settles everything else. The mirror is town-work.js's (tw-job-v1).
+function jobHint(h) {
+  try {
+    const m = JSON.parse(localStorage.getItem('tw-job-v1') || 'null') || {};
+    const at = String(h.at || ''), f = h.fired && h.fired.at ? h.fired : null;
+    const justLeft = m.wasT && Date.now() - (+m.wasT || 0) < 120000;
+    let next = null;
+    if (!m.at && at && !justLeft) next = { ...m, at, up: '', duties: [], share: 0, sofar: 0, nudge: false, fired: null };
+    else if (m.at && !at && f && f.at === m.at) next = { ...m, at: '', was: m.at, wasT: Date.now(), fired: f, up: '', duties: [], share: 0, sofar: 0, nudge: false };
+    if (next) localStorage.setItem('tw-job-v1', JSON.stringify(next));
+  } catch (e) {}
+}
 export function walletKeep(d, force) {
   if (!d || typeof d !== 'object') return;
   try {
@@ -733,6 +748,7 @@ export function walletKeep(d, force) {
     // ids the tape already holds (a beacon push has no ack) leave the outbox now
     if (Array.isArray(d.seen) && d.seen.length) evAck(new Set(d.seen.map(String)));
     if (d.rules && typeof d.rules === 'object') localStorage.setItem(RULES_KEY, JSON.stringify(d.rules));   // 📏 the caps used
+    if (d.job && typeof d.job === 'object') jobHint(d.job);   // 💼 the job, as the server holds it
     // 🎩 after the seen-ack (so an answered purchase no longer counts as pending)
     const gone = reconcileOwn(d);
     // a duplicate buy refused as 'owned' is still owned — never take that one off

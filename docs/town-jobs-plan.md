@@ -989,3 +989,25 @@ drawers at 360 and 393, the knock let in and turned away with real taps), `tests
 ### 13.3 Still Trym's to call
 - Whether a knock should also raise the flag on the HQ Mail floor (today it is a Pulse count only).
 - Whether Kept should ever thin itself (it holds what the box holds: 60 letters, 30 days).
+
+## 14. The jobs audit, and the foundations fixed before any ladder (22 Sep 2026)
+
+Trym: *"if we havent finished on quality stuff for all jobs we should probably fix that first, just to land
+that the jobs work well gameplay-wise"*. A read-only audit of all five jobs (code + the built site + the pass
+worker in-process) found three problems under every job and several per workplace. What was fixed:
+
+| Found | Fixed |
+|---|---|
+| ⚠️ **Every sync push erased the job on the server** — it lived at `blob.pass.job` and `mergeBlob()` rebuilds `pass` from a fixed list. From 19 Sep no week was ever recorded and no cheque could be paid. | The job lives on the record beside the wallet (`jobRec`), an old blob's job moves over once; `jobs.test.mjs` §9–10 (fail on the old code, pass on the new). |
+| ⚠️ **A café/stand shift over 12 coins was refused whole** (the tips rule is per EVENT; the buff doubles after the check) while the receipt said it was paid. | The till pays in pieces the rule accepts and counts the day's room in coins that LAND; `tests/town-cafe.spec.mjs` proves a 40-coin shift, buffed and not. |
+| ⚠️ **Payday mostly could not arrive**: only while the phone held a job right now, and it stopped at a zero total before the boss's letters. A second phone never learned the job. | `wageCheck` asks while a job is held or was left within the payable weeks (`was`/`wasT`), posts zero weeks (their own words: `wage.none`, stamp `wage.void` = NIL) and the letters, skips tips jobs; every push ack carries `{job: {at, fired}}` and `banana-pass.js jobHint` fills a phone that lacked it. |
+| The work note was hidden inside every room. | It stays up inside YOUR workplace (`.is-here`), still hidden in others. |
+| At Thriving the store had no bare face — the restock duty was impossible in the town it rewards. | The staff's screen always leaves two faces for the day's delivery (`STAFF_FACES`). |
+| The sorting round hung off a mailbox that needs an address and a working post room. | The round's button is there for staff in every mailbox state; a late box answer can no longer reopen a closed card. |
+| A hire was a typed line in a card that stayed open. | §27 of the design library: the boss's yes, the card closes itself, THEN "HIRED" over the square, a burst, and one line on where the work is (`work.moment`, `work.momentLine`, `work.start.*`). |
+| No workflow ran any worker's tests (jobs.test.mjs had sat at 5 failures). | `tools/run-worker-tests.mjs` in CI (22 files, 612 checks) — it caught a real post-room race on its first run. |
+
+**Still open, and going into the ladder plan rather than being patched:** the arcade's sweep target is met on
+day one while fixing needs three days; the arcade and the store have no end-of-day moment; the stand and café
+are the only jobs with skill yet pay the most (up to 120 a day against 60–90 a week); a quit has no
+confirmation and does not name pay owed; the round's receipt says "on the sheet" at 3/3.

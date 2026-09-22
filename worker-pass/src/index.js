@@ -210,6 +210,9 @@ async function identityOf(env, R) {
     // push AND pull until the device that can act on it says it did.
     ...((R.home.log && R.home.log.nak && R.home.log.nak.length) ? { nak: R.home.log.nak } : {}),
     ...(R.home.rules ? { rules: R.home.rules } : {}),   // 📏 the caps this person has used
+    // 💼 the job rides every ack (22 Sep 2026): a second phone learns it holds one — and every phone learns of
+    // a sack — without a request of its own. Only for somebody who has ever been hired; the rest is /job/view's.
+    ...(R.home.job ? { job: { at: R.home.job.at || '', fired: R.home.job.fired || null } } : {}),
     own: OWN_IDS_W.filter((id) => statTotal((R.home.blob || {}).pass, 'own_' + id) > 0) };   // 🎩 the stand gear this pass holds
 }
 
@@ -1239,14 +1242,18 @@ const jobDay = (ms) => String((new Date(ms).getUTCDay() + 6) % 7);   // Monday =
 // hold only one job, so switching twice in an afternoon cannot buy two days' wages for one day.
 const jobDays = (w, at) => Object.keys(w || {}).filter((k) => !at || w[k] === at).length;
 
+// ⚠️ THE JOB LIVES ON THE RECORD, BESIDE THE WALLET — NEVER IN THE BLOB (22 Sep 2026). It was kept at
+// blob.pass.job, and mergeBlob() rebuilds `pass` from a fixed list of fields on EVERY /push — so the first
+// ordinary sync after any job write erased it. From 19 Sep no week was ever on the record and no cheque
+// could be paid (found by the jobs audit; jobs.test.mjs §9 is the proof it cannot happen again). The
+// record's own fields (wallet, rules, log) are never touched by a merge. A job still in an old blob moves
+// over the first time it is read.
 function jobRec(rec, make) {
-  const blob = rec.blob || (make ? (rec.blob = {}) : null);
-  if (!blob) return null;
-  const p = blob.pass || (make ? (blob.pass = { created: Date.now(), patches: {}, stats: {}, days: [] }) : null);
-  if (!p) return null;
-  if (!p.job && make) p.job = { at: '', since: 0, wk: {}, paid: {}, done: {}, zero: 0 };
-  if (p.job && !p.job.done) p.job.done = {};   // 💼 the week's chores, by week (22 Sep 2026)
-  return p.job || null;
+  const old = rec.blob && rec.blob.pass && rec.blob.pass.job;
+  if (old) { if (!rec.job) rec.job = old; delete rec.blob.pass.job; }
+  if (!rec.job && make) rec.job = { at: '', since: 0, wk: {}, paid: {}, done: {}, zero: 0 };
+  if (rec.job && !rec.job.done) rec.job.done = {};   // 💼 the week's chores, by week (22 Sep 2026)
+  return rec.job || null;
 }
 // only the weeks a cheque could still reach are worth keeping on the record
 function jobPrune(j, now) {
@@ -1403,7 +1410,8 @@ async function jobPay(request, env) {
       // device pushes its own slots and max-merges the scalar, so a wage written to the scalar
       // could be flattened by an older client's copy. `job` is the server's own slot and the
       // client never writes it, which is also why a max-merge of it is safe.
-      const p = R.home.blob.pass;
+      const blob = R.home.blob || (R.home.blob = {});
+      const p = blob.pass || (blob.pass = { created: now, patches: {}, stats: {}, days: [] });
       if (!p.base) p.base = { ...(p.stats || {}) };
       const led = p.led || (p.led = {});
       led.coins_earned = led.coins_earned || {};

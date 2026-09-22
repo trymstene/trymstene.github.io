@@ -1359,7 +1359,10 @@ test('rubbish is spread, never heaped, and never behind a building', async ({ pa
     return {
       onTopOfABag: R.litterRoom(bag.x, bag.y, 'pile'),
       besideABag: R.litterRoom(bag.x + 40, bag.y, 'pile'),
-      wellAwayFromABag: R.litterRoom(bag.x + 260, bag.y, 'pile'),
+      // ⚠️ SOMEWHERE well away, not one fixed point: bag.x + 260 lands on another bag or behind a shopfront on
+      // some days, and then the rule is right to refuse it — the check is that distance frees a spot at all
+      wellAwayFromABag: [[260, 0], [-260, 0], [0, 260], [0, -260], [260, 260], [-260, -260], [260, -260], [-260, 260]]
+        .some(([dx, dy]) => R.litterRoom(bag.x + dx, bag.y + dy, 'pile')),
       smallOnTop: R.litterRoom(bag.x, bag.y, 'trash1'),
       smallNearby: R.litterRoom(bag.x + 34, bag.y + 6, 'trash1'),
       behindAShopfront: R.litterRoom(window.__town.PROPS.post.x + 60, window.__town.PROPS.post.y + 120, 'trash1'),

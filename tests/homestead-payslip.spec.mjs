@@ -101,3 +101,34 @@ test('a cheque in the box is a payslip with the week’s counts and the share; t
   expect(nib && nib.n, 'the payroll desk’s slips are one row').toBeGreaterThanOrEqual(2);
   expect(errs, 'nothing threw').toEqual([]);
 });
+
+// 📄 A WEEK THAT PAID NOTHING ARRIVES TOO (22 Sep 2026, the jobs audit): the counts are the reason, on paper, before
+// the boss ever writes about letting you go. "PAID" over nothing would be untrue, so it has its own stamp and line.
+test('a week that paid nothing is a slip too: NIL, Nib’s line for it, and the counts that explain it', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"letters":[],"unread":0,"knocks":0}' }));
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/homestead/?hstest=claimed', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.mail, null, { timeout: 30000 });
+  await page.evaluate(() => window.__hs.slug('my-yard'));
+  await page.evaluate(() => window.__hs.mail({ id: 'wage:2026-W35:condo', n: 0, d: 0, at: 'condo', r: 60, share: 0, duties: [{ kind: 'sweep', done: 0, of: 3 }, { kind: 'fix', done: 0, of: 3 }] }));
+  await page.evaluate(() => window.__hs.post());
+  await page.waitForSelector('#hsLetters .tw-post__env[data-id="w:wage:2026-W35:condo"]', { timeout: 15000 });
+  await page.locator('#hsLetters .tw-post__env[data-id="w:wage:2026-W35:condo"]').click();
+  await page.waitForSelector('#hsLetters .tw-post__world .bw-paper--wage', { timeout: 5000 });
+  const slip = await page.evaluate(() => {
+    const p = document.querySelector('#hsLetters .tw-post__world .bw-paper--wage'), st = p.querySelector('.bw-slip__stamp');
+    return { stamp: st.textContent, nil: st.classList.contains('is-nil'), ink: getComputedStyle(st).color, text: p.textContent,
+      duties: [...p.querySelectorAll('.bw-slip__duty')].map((d) => d.textContent.replace(/\s+/g, ' ').trim()), total: (p.querySelector('.bw-slip__total b') || {}).textContent };
+  });
+  expect(slip.stamp, 'its own stamp, the rig’s word').toBe(COPY.wage.void);
+  expect(slip.nil, 'in its own ink').toBe(true);
+  expect(slip.ink, 'the clerk’s grey-blue, not the red of a paid slip').toBe('rgb(63, 84, 112)');
+  expect(slip.text, 'Nib’s line for a week that paid nothing').toContain(COPY.wage.none);
+  expect(slip.duties, 'and the counts that are the reason').toEqual([DUTY.kinds.sweep + ' 0/3', DUTY.kinds.fix + ' 0/3']);
+  expect(slip.total, 'the total is nothing').toBe('0');
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: 'test-results/homestead-payslip-nil.png' });
+  expect(errs, 'nothing threw').toEqual([]);
+});

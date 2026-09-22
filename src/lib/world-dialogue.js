@@ -21,7 +21,9 @@
 //   d.say('another line')                // replace the spoken line
 //
 // A topic may carry `a` (one answer), `seq` (several beats, ▼ walks them) or
-// `close: true` (the answer is a goodbye and the card shuts itself). Without
+// `close: true` (the answer is a goodbye and the card shuts itself), and `after` (read once the
+// answer is chosen: a function handed back runs after the card has closed itself — a boss's yes, then
+// the world's moment). Without
 // `topics` you get the plain variant: portrait, name, line, nothing to press.
 //
 // See docs/design-library.md §18.
@@ -99,12 +101,26 @@ export function mountDialogue(host, opts) {
 
   // ---- the question deck and the typing box
   let timer = null, text = '', at = 0, seq = null, seqAt = 0, closing = false;
+  // ⭐ A TOPIC MAY END THE TALK ITSELF (22 Sep 2026, Trym: "the dialogue window should close and there should be
+  // some sort of salute or splash text … the dialogue popup should close first, then splash"). A topic's
+  // `after`, read once its answer is chosen, may hand back a function: the answer types as usual, the card
+  // holds it a beat, closes by itself, and THEN the function runs — so what the world does next happens on a
+  // clear screen. A tap once the line is typed closes it at once.
+  let leave = null, leaveT = 0;
+  const LINGER = 1200;
+  function leaveNow() {
+    clearTimeout(leaveT); leaveT = 0;
+    const go = leave; leave = null;
+    if (typeof o.onClose === 'function') o.onClose();
+    if (go) setTimeout(go, 60);
+  }
 
   function done() {
     clearInterval(timer); timer = null;
     boxP.textContent = text;
     box.classList.remove('is-typing');
     box.classList.add('is-done');
+    if (leave) { clearTimeout(leaveT); leaveT = setTimeout(leaveNow, LINGER); }
   }
   function type(s) {
     clearInterval(timer);
@@ -122,6 +138,7 @@ export function mountDialogue(host, opts) {
   }
   function back() {
     cta.hidden = true;
+    leave = null; clearTimeout(leaveT); leaveT = 0;
     clearInterval(timer); timer = null;
     box.hidden = true;
     box.classList.remove('is-typing', 'is-done');
@@ -137,6 +154,9 @@ export function mountDialogue(host, opts) {
     const d = typeof t.cta === 'function' ? t.cta() : t.cta;
     cta.hidden = !(d && d.href && d.label);
     if (!cta.hidden) { cta.href = d.href; cta.textContent = d.label; }
+    // …and so is whether the talk ends itself (set BEFORE typing: a reduced-motion answer is done at once)
+    const next = typeof t.after === 'function' ? t.after() : null;
+    leave = typeof next === 'function' ? next : null;
     type(said);
   }
   for (const t of topics) {
@@ -150,6 +170,7 @@ export function mountDialogue(host, opts) {
   box.addEventListener('click', () => {
     if (timer) { done(); return; }
     if (!box.classList.contains('is-done')) return;
+    if (leave) { leaveNow(); return; }
     if (seq && seqAt < seq.length - 1) { seqAt += 1; type(seq[seqAt]); return; }
     if (closing && typeof o.onClose === 'function') { o.onClose(); return; }
     back();
@@ -160,6 +181,8 @@ export function mountDialogue(host, opts) {
     say: (s) => { say.textContent = s; back(); },
     ask,
     back,
-    stop: () => { clearInterval(timer); timer = null; },
+    // a card closed from outside (the ✕, the veil) while the talk was ending itself still gets what comes after:
+    // the boss said yes either way, and the moment belongs to the job, not to how the card was shut
+    stop: () => { clearInterval(timer); timer = null; clearTimeout(leaveT); leaveT = 0; const go = leave; leave = null; if (go) setTimeout(go, 60); },
   };
 }

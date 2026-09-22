@@ -90,3 +90,17 @@ postmaster, writes the same two letters Spinner and Pip do: `bosses.nudge.post` 
 when Thursday has come and nothing has been done that week (the pile on the counter is his
 subject); the goodbye comes with the last payslip after two finished weeks with nothing done. Warm,
 dry, never a number, at most 140 characters, and the door is open if they ask again.
+
+
+### The week that paid nothing (22 Sep 2026)
+
+A finished week in which nothing on the week's list was done now arrives too — a payslip for nothing,
+with the counts printed under it (0/3, 0/3) — so the reason is on paper before the boss ever writes
+about letting the player go. It needs its own two words, because the paid ones would be untrue on it:
+
+- `wage.none` — Nib's line on that slip: nothing was done, so nothing is filed; the counts under it say
+  why. Dry and warm, a clerk filing a thing that is already done. No number and no `{n}` at all; never a
+  scolding, never a threat, never a word about being let go (that is the boss's own letter), never a
+  promise about next week. At most 140 characters.
+- `wage.void` — the word on the rubber stamp across that slip, in capitals, one word, at most 8 letters:
+  the sibling of the paid stamp, and not the same word.

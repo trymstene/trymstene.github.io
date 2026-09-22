@@ -722,6 +722,7 @@ export function bootTownCafe(ctx, cfg0) {
       // every frame, so poking the rung directly is undone before the next paint.
       rung: (k) => { const n = performance.now(), f = [0, 0.65, 0.85][k | 0] || 0; line.forEach((q) => { if (q.at) q.at = n - PATIENCE * f; }); patienceTick(n); return line.length; },
       take: () => ({ served, tips, best }),
+      tip: (n) => { tips += n | 0; served++; return tips; },   // QA: a long shift's takings without forty real cups
       receipt: (n) => receipt(n | 0),
       gest: () => (tray ? tray.seam : null),   // the tray’s own thumb-door, so a walk can make a real cup
     },

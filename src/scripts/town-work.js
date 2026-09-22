@@ -53,6 +53,8 @@ export function bootTownWork(ctx) {
       job = { ...job, at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0, pay: res.job.pay | 0, sofar: res.job.sofar | 0, owed: res.job.owed | 0,
         duties: Array.isArray(res.job.duties) ? res.job.duties : [], share: +res.job.share || 0, nudge: !!res.job.nudge, fired: res.job.fired || null };
       if (was !== job.at) job.up = '';
+      // 💼 a job that is gone is REMEMBERED for a while: the homestead still asks for the payslip it owes
+      if (was && !job.at) { job.was = was; job.wasT = Date.now(); }
       writeJob(job);
     }
     notify();
@@ -90,6 +92,10 @@ export function bootTownWork(ctx) {
       // the phone down — so the answer that says no also opens the world's own save door, the same
       // /pass/?keep the HUD's "not saved" pill opens.
       cta: () => (asked === 'keep' && w.keepCta ? { href: KEEP_HREF, label: w.keepCta } : null),
+      // 💼 THE MOMENT YOU ARE HIRED (Trym, 22 Sep: "the dialogue window should close … then splash"): on a yes the
+      // boss's card closes itself after their line, and then the world celebrates — only if the job is still
+      // yours by then (a take the server refused has already been rolled back)
+      after: () => (asked === 'took' && typeof ctx.hired === 'function' ? () => { if (job.at === at) ctx.hired(at); } : null),
       a: () => {
         // ⭐ answered from what this device already knows, because the card types a string NOW.
         // The only answer the server could still overturn is `keep`, and that one the device can
@@ -105,6 +111,7 @@ export function bootTownWork(ctx) {
         if (job.at && job.at !== at) { track('town_job', { at, r: 'busy' }); return (w.busy || '').replace('{where}', nameOf(job.at)); }
         const before = job.at || '';   // what to put back if the server refuses the take
         const line = (w.hired || '').replace('{where}', nameOf(at));
+        asked = 'took';
         track('town_job', { at, r: 'took' });
         passPost('/job/take', { at }).then((res) => {
           land(res);
@@ -133,7 +140,7 @@ export function bootTownWork(ctx) {
         if (job.at !== at) return w.already ? '' : '';
         track('town_job', { at, r: 'quit' });
         passPost('/job/take', { at: '' }).then(land);
-        job = { ...job, at: '', up: '', duties: [], share: 0, sofar: 0, nudge: false };
+        job = { ...job, at: '', was: at, wasT: Date.now(), up: '', duties: [], share: 0, sofar: 0, nudge: false };
         writeJob(job);
         notify();
         return w.quitDone || '';

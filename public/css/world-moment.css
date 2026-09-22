@@ -1,0 +1,32 @@
+/* 🎖 THE BIG MOMENT — pixel type over the world for a beat that changes what you are (22 Sep 2026).
+ *
+ * Lifted verbatim from the rave, where a new title has gone up over the dance floor since August ("same
+ * register as the tour's THIS IS YOU"), because the town's first one — being hired — is the same kind of
+ * beat. One layer (design library §5, §27): the rave's .rv-bigmoment and the park's one-size-down copy are
+ * owed a move onto this. The words are always the caller's (the rig's); this owns the look and the timing.
+ *
+ * The LED-ad look (Anton, solid yellow): a stroke thins the glyphs from inside, so the outline is a ring
+ * of hard shadows instead and the fill stays FAT. It never takes a tap: the world goes on under it. */
+.wm-moment {
+  /* the height is the world's to set: the rave's floor wants 26%, the town's view has its work note up there */
+  position: absolute; left: 50%; top: var(--wm-top, 26%); transform: translateX(-50%); z-index: 650;
+  width: max-content; max-width: 94%; text-align: center; pointer-events: none;
+  animation: wmMomentIn 0.3s steps(3);
+}
+.wm-moment b {
+  display: block; font-family: "Anton", "Arial Black", sans-serif;
+  font-size: clamp(1.9rem, 7.5vw, 3.4rem); line-height: 0.92;
+  letter-spacing: 0.015em; text-transform: uppercase; color: #ffe135;
+  text-shadow:
+    -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+    -3px 0 0 #000, 3px 0 0 #000, 0 -3px 0 #000, 0 3px 0 #000,
+    5px 6px 0 #000;
+}
+.wm-moment small {
+  display: block; margin-top: 0.5rem; font-size: 0.82rem; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000;
+}
+.wm-moment--out { animation: wmMomentOut 0.5s steps(4) forwards; }
+@keyframes wmMomentIn { 0% { transform: translateX(-50%) scale(0.6); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+@keyframes wmMomentOut { 100% { transform: translateX(-50%) translateY(-24px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wm-moment, .wm-moment--out { animation: none; } }

@@ -4176,7 +4176,10 @@ export class PostRoom {
     const j = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
     let b = {};
     if (request.method === 'POST') { try { b = JSON.parse(await request.text() || '{}') || {}; } catch (e) { b = {}; } }
-    const now = Date.now();
+    // ⚠️ THE ROOM'S CLOCK ONLY MOVES FORWARD. Two letters in the same millisecond shared a stamp, and the trims
+    // (the box's ceiling, the twelve knocks) sort by it — so an older one could be kept over a newer. The
+    // worker-test gate caught it on its first run. A millisecond apart is still the same moment to a reader.
+    const now = this.lastAt = Math.max(Date.now(), (this.lastAt || 0) + 1);
     const day = new Date(now).toISOString().slice(0, 10);
 
     // ---- a letter arrives -------------------------------------------------------------------------

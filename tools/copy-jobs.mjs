@@ -431,6 +431,17 @@ const lifeFields = {
   'work.keep': { kind: 'prose', aim: 90, max: 110, note: 'Said when the player has no kept pass, so wages cannot be theirs yet. ⭐ AN INVITATION, NEVER A PUNISHMENT and never a rule quoted at them: work is something they can keep, and keeping the pass is how. No jargon — not “account”, not “anonymous”.' },
   'work.keepCta': { kind: 'label', aim: 22, max: 30, note: 'The ONE button under the `keep` answer on the boss’s card, which opens the page where a pass is kept. ⚠️ a “no” with nothing to tap is where a newcomer puts the phone down, and this is the whole of the fix: a verb first, two to four words, no full stop, and short enough that it can never wrap on a 360-wide phone. It is the player’s own next step, not an instruction from anybody.' },
   'work.day': { kind: 'prose', aim: 50, max: 70, note: 'The quiet line when turning up at your own workplace marks the day. Said once a day at most. It should feel noticed, not announced.' },
+  // 💼 THE MOMENT YOU ARE HIRED (22 Sep 2026, Trym: "the dialogue window should close and there should be some sort of salute or splash text saying something about the job i get")
+  'work.moment': { kind: 'label', aim: 6, max: 10, note: 'The BIG word the world puts over the square the moment a boss takes the player on, once the boss’s card has closed — the world celebrating with the player, never a character speaking. Capitals, one or two words, at most 10 characters: the plain feeling of being hired.' },
+  'work.momentLine': { kind: 'prose', aim: 36, max: 52, holds: ['{where}'], note: 'The small line under that big word: what the player is now, and where. MUST contain {where} (lowercase, carrying its own article, e.g. “the Coffee Cup”) inside a clause, never first. The screen sets it in capitals. No number, no rate, never a promise about pay. At most 52 characters.' },
+  'work.start.stand': { kind: 'prose', aim: 60, max: 80, note: 'Straight after the moment, the world tells a newly hired player where the work is: ONE plain sentence, what to do and where, naming only things on screen. THE LEMONADE STAND: step up to the stand’s counter to start pouring; the customers come to you.' },
+  'work.start.cafe': { kind: 'prose', aim: 60, max: 80, note: 'The same, for THE COFFEE CUP: the serving hatch on the kiosk is where a shift starts — tap it to open the counter.' },
+  'work.start.condo': { kind: 'prose', aim: 60, max: 80, note: 'The same, for THE ARCADE: inside, sweep up the litter on the floor and wake a cabinet that has gone dark.' },
+  'work.start.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for PIP’S GENERAL STORE: inside, carry a crate from the stack to an empty shelf.' },
+  'work.start.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for THE POST OFFICE: open the mailbox at the counter and start a round of sorting.' },
+  // 🎆 the firework toast (it was hand-written in the code; 22 Sep 2026)
+  'fx.yours': { kind: 'prose', aim: 40, max: 60, note: 'The world noting that the player’s own firework (a pocket item from Pip’s shop) just went up over the square. One short sentence, plain and a little proud.' },
+  'fx.named': { kind: 'prose', aim: 40, max: 60, holds: ['{name}'], note: 'The same when the firework carries the name of who launched it — the player’s own name, or another player’s seen from across the square. MUST contain {name}, inside the sentence.' },
   'locks.store': { kind: 'prose', aim: 70, max: 90, note: 'What the general store WILL be, said at a boarded front. Not what it is — it is a worksite. A shop worth waiting for, in one line.' },
   'locks.post': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the post office.' },
   'locks.cafe': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the Coffee Cup.' },
@@ -460,7 +471,7 @@ function lifeShape(data) {
   }
   // ⚠️ {where} IS LOWERCASE AND CARRIES ITS OWN ARTICLE. "Gladly. {where} could use your hands."
   // printed a sentence starting with a small letter for two of the three bosses.
-  for (const f of ['hired', 'moved', 'busy']) {
+  for (const f of ['hired', 'moved', 'busy', 'momentLine']) {
     const l = String(((data.work || {})[f]) || '');
     if (/(^|[.!?]\s+)\{where\}/.test(l)) say(`work.${f}`, '{where} sits at the start of a sentence — it is lowercase and carries its own article, so it must stay inside a clause', 'range');
   }
@@ -484,7 +495,7 @@ function lifeShape(data) {
   return bad;
 }
 const lifeSchema = {
-  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign'],
+  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx'],
   properties: {
     bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'brings'],
       properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), brings: str(lifeFields['bands[].brings'].note) } } },
@@ -505,7 +516,7 @@ const lifeSchema = {
       store: { type: 'array', description: lifeFields['closed.store[]'].note, items: { type: 'string' } },
     } },
     lowShut: { type: 'array', description: lifeFields['lowShut[]'].note, items: { type: 'string' } },
-    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'busy', 'quit', 'quitDone', 'keep', 'keepCta', 'day', 'crate', 'stocked', 'full'], properties: {
+    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'busy', 'quit', 'quitDone', 'keep', 'keepCta', 'day', 'crate', 'stocked', 'full', 'moment', 'momentLine', 'start'], properties: {
       crate: { type: 'string', description: lifeFields['work.crate'].note },
       stocked: { type: 'string', description: lifeFields['work.stocked'].note },
       full: { type: 'string', description: lifeFields['work.full'].note },
@@ -526,6 +537,15 @@ const lifeSchema = {
       keep: { type: 'string', description: lifeFields['work.keep'].note },
       keepCta: { type: 'string', description: lifeFields['work.keepCta'].note },
       day: { type: 'string', description: lifeFields['work.day'].note },
+      moment: { type: 'string', description: lifeFields['work.moment'].note },
+      momentLine: { type: 'string', description: lifeFields['work.momentLine'].note },
+      start: { type: 'object', additionalProperties: false, required: ['stand', 'cafe', 'condo', 'store', 'post'], properties: {
+        stand: { type: 'string', description: lifeFields['work.start.stand'].note },
+        cafe: { type: 'string', description: lifeFields['work.start.cafe'].note },
+        condo: { type: 'string', description: lifeFields['work.start.condo'].note },
+        store: { type: 'string', description: lifeFields['work.start.store'].note },
+        post: { type: 'string', description: lifeFields['work.start.post'].note },
+      } },
     } },
     locks: { type: 'object', additionalProperties: false, required: ['store', 'post', 'cafe', 'story', 'step'], properties: {
       store: { type: 'string', description: lifeFields['locks.store'].note },
@@ -542,6 +562,10 @@ const lifeSchema = {
     objects: { type: 'array', description: 'The ten cursed objects, ids fixed and in order.', items: { type: 'object', additionalProperties: false, required: ['id', 'name', 'desc'],
       properties: { id: str(lifeFields['objects[].id'].note), name: str(lifeFields['objects[].name'].note), desc: str(lifeFields['objects[].desc'].note) } } },
     shutSign: str(lifeFields['shutSign'].note),
+    fx: { type: 'object', additionalProperties: false, required: ['yours', 'named'], properties: {
+      yours: { type: 'string', description: lifeFields['fx.yours'].note },
+      named: { type: 'string', description: lifeFields['fx.named'].note },
+    } },
     things: { type: 'object', additionalProperties: false, description: 'What wants doing, in plain words: for each kind, [one, many].', required: ['lamp', 'litter', 'bin', 'dumpster', 'graffiti', 'fountain', 'shutter', 'crows', 'leaves'],
       properties: { lamp: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.lamp[]'].note }, litter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.litter[]'].note }, bin: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.bin[]'].note }, dumpster: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.dumpster[]'].note }, graffiti: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.graffiti[]'].note }, fountain: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.fountain[]'].note }, shutter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.shutter[]'].note }, crows: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.crows[]'].note }, leaves: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.leaves[]'].note } } },
   },
@@ -1442,7 +1466,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-life.json',
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
-    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign'],
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx'],
     // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',
@@ -1676,6 +1700,9 @@ export const JOBS = {
       // 📄 the payslip (22 Sep 2026): the stamp, the printed figures, the workplace names
       'wage.stamp': { kind: 'label', aim: 4, max: 8, note: 'The word on the rubber stamp across a settled payslip, in capitals, one word, at most 8 letters.' },
       'wage.slip': { kind: 'prose', aim: 34, max: 60, holds: ['{pct}', '{rate}'], note: 'The share line printed under the week\u2019s counts on the payslip. MUST contain {pct} (the share of the week\u2019s work done, a percentage the game prints) and {rate} (the wage for a full week) exactly once each; no other number; lower case; under 60 characters. The share first, then the rate it is a share of.' },
+      // \ud83d\udcc4 the week that paid nothing (22 Sep 2026): it arrives too now, so the reasoning is on paper before the sack is
+      'wage.none': { kind: 'prose', aim: 100, max: 140, note: 'Nib\u2019s line on the payslip for a finished week in which NOTHING on the week\u2019s list was done, so it pays nothing. Dry and warm, filing a thing that is already done: nothing was done, so nothing is filed \u2014 the counts printed under it show why. \u26a0\ufe0f no number and no {n} at all, never a scolding, never a threat, never a word about being let go (that is the boss\u2019s own letter), never a promise about next week. At most 140 characters.' },
+      'wage.void': { kind: 'label', aim: 4, max: 8, note: 'The word on the rubber stamp across a payslip that paid NOTHING, in capitals, one word, at most 8 letters \u2014 the sibling of the stamp on a paid one, and not the same word.' },
       'bosses.nudge.condo.from': { kind: 'prose', aim: 7, max: 20, note: 'Who signs it: Spinner, who runs the Arcade.' },
       'bosses.nudge.condo.line': { kind: 'prose', aim: 100, max: 140, note: 'Spinner\u2019s letter when Thursday has come and nothing has been done at the Arcade that week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number. It may use {home}.' },
       'bosses.nudge.store.from': { kind: 'prose', aim: 3, max: 20, note: 'Who signs it: Pip, of the General Store.' },
@@ -1710,6 +1737,13 @@ export const JOBS = {
       if (!stamp) say('wage.stamp', 'is empty');
       if (stamp && stamp !== stamp.toUpperCase()) say('wage.stamp', 'is not in capitals, and a rubber stamp is');
       if (/\s/.test(stamp)) say('wage.stamp', 'is more than one word');
+      // 📄 the week that paid nothing: its own stamp, and a line with no figure in it
+      const vd = String(w.void || '');
+      if (!vd) say('wage.void', 'is empty');
+      if (vd && vd !== vd.toUpperCase()) say('wage.void', 'is not in capitals, and a rubber stamp is');
+      if (/\s/.test(vd)) say('wage.void', 'is more than one word');
+      if (vd && vd === stamp) say('wage.void', 'is the paid stamp’s word, on a slip that paid nothing');
+      if (/\d|\{/.test(String(w.none || ''))) say('wage.none', 'carries a figure or a placeholder — a week that paid nothing names no number');
       const slip = String(w.slip || '');
       if ((slip.match(/\{pct\}/g) || []).length !== 1) say('wage.slip', 'must contain {pct} exactly once');
       if ((slip.match(/\{rate\}/g) || []).length !== 1) say('wage.slip', 'must contain {rate} exactly once');
@@ -1731,7 +1765,7 @@ export const JOBS = {
       }
       return bad;
     },
-    schema: { type: 'object', additionalProperties: false, required: ['title', 'empty', 'letters', 'wage', 'open', 'bosses'], properties: {
+    schema: { type: 'object', additionalProperties: false, required: ['letters', 'wage', 'bosses'], properties: {
       bosses: { type: 'object', additionalProperties: false, required: ['nudge', 'fired'], properties: {
         nudge: { type: 'object', additionalProperties: false, required: ['condo', 'store', 'post'], properties: {
           post: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Stamp.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the post office that week: is the player coming in? The pile on the counter is his subject. Warm, dry, a little pointed, never a threat, never a number, at most 140 characters. May use {home}.' } } },
@@ -1744,13 +1778,12 @@ export const JOBS = {
           store: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Pip.' }, line: { type: 'string', description: 'With the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' } } },
         } },
       } },
-      open: str('✉️ The button at the foot of the mailbox card that opens the post other PLAYERS have sent you — a different thing from the notes above it, which are the world telling you something. A verb first, two or three words, ONE line inside a narrow card. It must not name a mechanic: never “Inbox”, never “Messages”, never “Open mailbox”.'),
-      title: { type: 'string', description: 'The card’s heading when the mailbox is opened.' },
-      empty: { type: 'string', description: 'Shown when there is no post.' },
-      wage: { type: 'object', additionalProperties: false, required: ['from', 'line', 'stamp', 'slip', 'at'], properties: {
+      wage: { type: 'object', additionalProperties: false, required: ['from', 'line', 'stamp', 'slip', 'at', 'none', 'void'], properties: {
         from: { type: 'string', description: 'Who signed the pay letter.' }, line: { type: 'string', description: 'The pay letter, holding {n} coins.' },
         stamp: { type: 'string', description: 'The word on the rubber stamp across a settled payslip: capitals, one word, at most 8 letters.' },
         slip: { type: 'string', description: 'The share line under the week\u2019s counts: MUST contain {pct} and {rate} exactly once each, no other number, lower case, under 60 characters; the share first, then the rate it is a share of.' },
+        none: { type: 'string', description: 'Nib\u2019s line on the payslip for a finished week in which nothing on the list was done, so it pays nothing: nothing was done, so nothing is filed. No number, no {n}, never a scolding or a threat or a word about being let go, at most 140 characters.' },
+        void: { type: 'string', description: 'The rubber-stamp word across a payslip that paid nothing: capitals, one word, at most 8 letters, not the paid stamp\u2019s word.' },
         at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'post'], properties: {
           store: { type: 'string', description: 'The General Store as printed on a payslip: lower case, with its article.' },
           condo: { type: 'string', description: 'The Arcade as printed on a payslip: lower case, with its article.' },
