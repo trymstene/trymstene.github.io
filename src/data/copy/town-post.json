@@ -20,6 +20,8 @@
     "on": "A tray of post is on the counter, with the pigeonholes open behind it.",
     "off": "The tray is put away. The counter is clear again.",
     "far": "The counter is just there, waiting.",
+    "hint": "Each card belongs in the hole with its matching stamp.",
+    "stamp": "SORTED",
     "holes": {
       "park": "Park",
       "beach": "Banana Bay",

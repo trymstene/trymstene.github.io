@@ -94,6 +94,8 @@ test('the staff’s mailbox has the round; it starts when the banana reaches the
   expect(await page.evaluate(() => [...document.querySelectorAll('.tw-sort__hole')].every((b) => b.querySelector('svg') && b.getAttribute('aria-label'))), 'each with a pixel mark and a name read out').toBe(true);
   expect(await page.evaluate(() => [...document.querySelectorAll('.tw-sort__hole')].map((b) => b.getAttribute('aria-label'))), 'the rig’s names, in the holes’ order').toEqual(HOLES.map((m) => R.holes[m]));
   expect(await page.evaluate(() => !!document.querySelector('.tw-sort__card .tw-sort__stamp svg')), 'the card on the counter wears its postmark').toBe(true);
+  expect(await S(page, (s) => s.hint()), 'a first round carries its one-time notice under the holes').toBe(true);
+  expect(await S(page, (s) => s.note()), '…in the rig’s words').toBe(R.hint);
   await page.screenshot({ path: 'test-results/town-sort-tray.png' });
 
   // ── the three grades and the fourth outcome
@@ -109,8 +111,15 @@ test('the staff’s mailbox has the round; it starts when the banana reaches the
   expect(await S(page, (s) => s.pile()), 'eight sheets left').toBe(8);
 
   // ── the rest go right: the round ends on its own with a receipt, and it counts on the week's sheet
-  for (let n = 0; n < 8; n++) expect((await sortNext(page, 'right')).g).toBe(2);
+  for (let n = 0; n < 7; n++) expect((await sortNext(page, 'right')).g).toBe(2);
+  // the last card: the tally waves before the tray goes down, and the receipt comes after the wave
+  expect((await sortNext(page, 'right')).g).toBe(2);
+  expect(await page.evaluate(() => document.querySelector('.tw-sort__tally').classList.contains('is-done')), 'the tally waves').toBe(true);
+  expect(await page.evaluate(() => document.getElementById('twPanel').hidden), 'and the receipt waits for it').toBe(true);
   await page.waitForFunction(() => !document.getElementById('twPanel').hidden && !!document.querySelector('.tw-sort__till'), null, { timeout: 5000 });
+  expect(await page.locator('.tw-burst').count(), 'the counter throws the moment up').toBeGreaterThanOrEqual(1);
+  expect((await page.locator('.tw-sort__seal').textContent()).trim(), 'the counter’s stamp is slammed across a counted round').toBe(R.stamp);
+  expect(await S(page, (s) => s.hinted()), 'the notice has done its job').toBe(true);
   expect(await S(page, (s) => s.on()), 'the round is over').toBe(false);
   expect(await page.evaluate(() => document.querySelector('.tw-cup--sort').hidden), 'and the tray is down').toBe(true);
   const last = await S(page, (s) => s.last());
@@ -123,7 +132,7 @@ test('the staff’s mailbox has the round; it starts when the banana reaches the
   expect(till).not.toContain(R.receipt.short);
   expect(await page.locator('.tw-sort__till .tw-sort__mark').count(), 'the twelve marks on the paper').toBe(12);
   expect(await page.locator('.tw-sort__till .tw-sort__mark.is-g2').count()).toBe(9);
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1400);   // the marks arrive one by one and the seal slams at 720 ms: the picture is of the settled paper
   await page.screenshot({ path: 'test-results/town-sort-receipt.png' });
   const st = await page.evaluate(() => window.__town.work.state());
   expect(st.duties.find((d) => d.kind === 'sort').done, 'post sorted 1/3').toBe(1);
@@ -149,6 +158,7 @@ test('a round that goes wrong is not on the sheet; off the mark the tray folds a
   expect(await S(page, (s) => s.clockIn()), 'the round starts at the counter').toBe(true);
   await page.waitForTimeout(250);
   expect(await S(page, (s) => s.open()), 'the tray is up').toBe(true);
+  expect(await S(page, (s) => s.hint()), 'the first round on this device carries the notice').toBe(true);
 
   // ── step off the mark: the tray folds, and a card left on the counter still leaves it
   const m = await S(page, (s) => s.mark());
@@ -171,6 +181,7 @@ test('a round that goes wrong is not on the sheet; off the mark the tray folds a
   expect(last.wrong, 'the whole pile went wrong').toBe(12);
   expect(last.counted, 'not enough went where it was going').toBe(false);
   const till = await page.evaluate(() => document.querySelector('.tw-sort__till').textContent);
+  expect(await page.locator('.tw-sort__seal').count(), 'no stamp on a round that did not make the sheet').toBe(0);
   expect(till, 'the receipt says so, kindly').toContain(R.receipt.short);
   expect(till).not.toContain(R.receipt.counted);
   expect(till).toContain(R.receipt.take.replace('{n}', '0').replace('{of}', '12'));
@@ -192,10 +203,11 @@ test('a round that goes wrong is not on the sheet; off the mark the tray folds a
   expect(await S(page, (s) => s.on()), 'and no round began').toBe(false);
   expect(await page.evaluate(() => { const t = window.__town; return Math.hypot(t.tgt.x - t.pos.x, t.tgt.y - t.pos.y) <= 2; }), 'the walk stopped (a slide that goes nowhere is a stop)').toBe(true);
 
-  // ── back at the counter, a fresh round; walking far away ends it with the counter's own line
+  // ── back at the counter, a fresh round — wordless now, the notice was for the first — and walking far away ends it with the counter's own line
   await atCounter(page);
   expect(await S(page, (s) => s.clockIn())).toBe(true);
   await page.waitForTimeout(200);
+  expect(await S(page, (s) => s.hint()), 'the second round carries no notice').toBe(false);
   await stand(page, 1100, 1000);
   await page.waitForFunction(() => !window.__town.sort().on(), null, { timeout: 4000 });
   const said = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());

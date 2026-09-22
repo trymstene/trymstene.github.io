@@ -265,3 +265,33 @@
 /* the receipt's own row of marks, on the café's till card */
 .tw-sort__till .tw-sort__marks { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin: 0.1rem 0 0.5rem; }
 @media (prefers-reduced-motion: reduce) { .tw-sort__card.is-in { animation: none; } }
+
+/* ✉️ THE FINISH (Trym, 22 Sep: "something pleasing for finishing the sorting … it feels good to finish a day's
+ * job"). A mark pops as it lands, the hole answers in the grade's colour, the tally waves along its length when
+ * the last card goes, the receipt's marks arrive one by one and a counted round gets the counter's rubber stamp
+ * slammed across it. Transform and opacity only (design library §21.4). */
+.tw-sort__mark.is-new { animation: twMarkPop 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes twMarkPop { 0% { transform: scale(2.2); opacity: 0.4; } 100% { transform: scale(1); opacity: 1; } }
+.tw-sort__hole.is-g2 { background: #4f8a3a; }
+.tw-sort__hole.is-g1 { background: #9a7420; }
+.tw-sort__hole.is-g0 { background: #8a2e26; }
+.tw-sort__tally.is-done .tw-sort__mark { animation: twSortWave 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 34ms); }
+@keyframes twSortWave { 0% { transform: translateY(0); } 40% { transform: translateY(-7px) scale(1.25); } 100% { transform: translateY(0); } }
+/* the receipt: the marks come in one by one, the seal slams down after them */
+.tw-sort__till { position: relative; }
+.tw-sort__till .tw-sort__mark { animation: twMarkIn 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 120ms); }
+@keyframes twMarkIn { 0% { transform: translateY(8px) scale(0.6); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+.tw-sort__seal {
+  /* on the empty right half of the title row, clear of the card's close button, dipping a little into the result line — a stamp lands across the paper, but not across its figures */
+  position: absolute; right: 46px; top: 2px; z-index: 2; pointer-events: none;
+  font-family: "Archivo Black", sans-serif; font-weight: 900; font-size: 0.9rem; letter-spacing: 0.12em; line-height: 1.2;
+  color: #e8483a; border: 3px solid #e8483a; border-radius: 4px; padding: 1px 7px;
+  transform: rotate(-12deg); opacity: 0.92;
+  animation: twSealIn 460ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both; animation-delay: 720ms;
+}
+@keyframes twSealIn { 0% { transform: rotate(-12deg) scale(3); opacity: 0; } 70% { transform: rotate(-12deg) scale(0.92); opacity: 0.95; } 100% { transform: rotate(-12deg) scale(1); opacity: 0.92; } }
+/* the one-time notice under the holes: the note, but readable — it is the one line here that explains */
+.tw-cup--sort .tw-cup__note.is-hint { opacity: 1; color: #ffe135; font-size: 0.78rem; }
+@media (prefers-reduced-motion: reduce) {
+  .tw-sort__mark.is-new, .tw-sort__tally.is-done .tw-sort__mark, .tw-sort__till .tw-sort__mark, .tw-sort__seal { animation: none; opacity: 1; }
+}

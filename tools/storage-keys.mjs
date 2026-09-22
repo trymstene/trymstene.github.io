@@ -30,6 +30,7 @@ export const KEYS = {
   'bwq-c1': { travels: 'pass', why: 'the questline chapter — step level, forward only' },
   'tw-job-v1': { travels: 'no', why: 'a MIRROR of the job you hold, so a boss’s card can answer in the same beat as the tap — world-dialogue types a string, never a promise. It decides which approved line is said and nothing else; worker-pass is the authority on the job and on every coin' },
   'tw-arcade-v1': { travels: 'no', why: 'which pieces of arcade litter you swept and which cabinet you woke TODAY (docs/town-jobs-plan.md §12) — the week’s counts live on the pass worker; this only stops the same piece being drawn twice on one device before midnight' },
+  'tw-sort-v1': { travels: 'no', why: 'whether this device has played a round of sorting at the post office: the one-time notice under the pigeonholes shows through the first round only (Trym, 22 Sep) — nothing here is worth a byte on the pass' },
   'tw-restock-v1': { travels: 'no', why: 'how many faces you filled in the shop TODAY — the restock chore pays in the room, never in coins (docs/town-jobs-plan.md §4), so there is nothing here worth carrying to another device and nothing worth forging: the most it can do is put more rows on one shop’s shelf until midnight' },
   'bwq-c2': { travels: 'pass', why: 'chapter two — which town fronts the story has opened for you (docs/town-jobs-plan.md §2); read today by the town’s own lock, written when chapter two ships' },
 

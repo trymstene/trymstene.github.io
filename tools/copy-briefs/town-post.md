@@ -202,6 +202,14 @@ store. It never touches a real letter: delivery is instant, the sort is theatre.
   carry no number.
 - `far` — the toast when the round is asked for but the banana is not at the counter (the walk from
   the card stopped short): the counter is a step away and waits. Notices, never instructs, no number.
+- `hint` — ⭐ the ONE-TIME notice under the pigeonholes, shown through a player's first round only
+  (Trym, 22 Sep: *"a small one-time notice by the sorting buttons that says something about what to
+  do … Short and sweet is good"*). One short line saying what the round wants: the card on the
+  counter goes into the hole with the same stamp. It may explain, but it may not name a control —
+  no "tap", "click", "button", "press" — and no number.
+- `stamp` — the word on the rubber stamp slammed across the receipt of a round that made the week's
+  sheet (the payslip's stamp says PAID; this is the counter's own). Capitals, one word, at most 8
+  letters.
 - `holes.park` / `holes.beach` / `holes.home` / `holes.rave` — the four places' names as the post
   office writes them on a pigeonhole, read out to somebody who cannot see the stamp. One or two
   words, titled: the park, Banana Bay, the homesteads (everybody's own plot), the Banana Rave.

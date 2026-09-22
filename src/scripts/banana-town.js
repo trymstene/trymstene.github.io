@@ -409,7 +409,9 @@ function say(text) {
   toastEl.hidden = false;
   placeToast();
   clearTimeout(toastT);
-  toastT = setTimeout(() => { toastEl.hidden = true; }, 4200);
+  // ☕✉️ above a tray the toast stands at the TOP of the view while the eyes are at the bottom, and four seconds
+  // was gone before anyone looked up (Trym, 22 Sep: "it disappeared so quickly"). Seven there; four elsewhere.
+  toastT = setTimeout(() => { toastEl.hidden = true; }, toastEl.classList.contains('is-above-tray') ? 7000 : 4200);
 }
 // a float over the player — the park's .pk-float: one node, gone in 900 ms
 function float(x, y, node) {
@@ -545,7 +547,7 @@ let sort = null, sortP = null;
 function loadSort() {
   if (!sortP) {
     sortP = import('./town-sort.js')
-      .then((m) => { sort = m.bootTownSort({ host: view, PROPS, pos, say, track, openCard, closeCard, esc, inside: () => !!inRoom, chore: (k) => (work && work.seam.chore ? work.seam.chore(k) : null) }); return sort; })
+      .then((m) => { sort = m.bootTownSort({ host: view, PROPS, pos, say, track, openCard, closeCard, esc, world, W, H, inside: () => !!inRoom, chore: (k) => (work && work.seam.chore ? work.seam.chore(k) : null) }); return sort; })
       .catch((e) => { sortP = null; console.warn('[town] the sorting counter did not load', e); return null; });
   }
   return sortP;

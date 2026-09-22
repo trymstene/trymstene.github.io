@@ -695,6 +695,8 @@ const postFields = {
   'round.holes.beach': { kind: 'label', aim: 10, max: 16, note: 'The same for Banana Bay, whose stamp is a fish. Its own name, titled.' },
   'round.holes.home': { kind: 'label', aim: 10, max: 16, note: 'The same for the homesteads — everybody’s own plot, whose stamp is a house. One or two words, titled.' },
   'round.holes.rave': { kind: 'label', aim: 10, max: 16, note: 'The same for the Banana Rave, whose stamp is a note of music. Its own name, titled.' },
+  'round.hint': { kind: 'prose', aim: 40, max: 60, note: '⭐ THE ONE-TIME NOTICE under the pigeonholes, shown through a player’s FIRST round only (Trym, 22 Sep: “a small one-time notice by the sorting buttons that says something about what to do … Short and sweet”). One short line that says what the round wants: the card on the counter goes into the hole with the same stamp. It may explain, but it may not name a control — no “tap”, “click”, “button”, “press” — and no number.' },
+  'round.stamp': { kind: 'label', aim: 6, max: 8, note: 'The word on the rubber stamp slammed across the receipt of a round that made the week’s sheet — the payslip has PAID; this is the counter’s own. CAPITALS, one word, at most 8 letters.' },
   'round.far': { kind: 'prose', aim: 50, max: 70, note: 'The town’s toast when the round is asked for and the banana is not at the counter (the walk from the card stopped short): the counter is a step away and waits. It notices, it never instructs — no “walk”, “go”, “tap” — and no number.' },
   'round.receipt.title': { kind: 'prose', aim: 16, max: 24, note: 'The heading on the card the counter hands you at the end of a round: a NAME for that paper, two or three words, not a sentence.' },
   'round.receipt.take': { kind: 'prose', aim: 44, max: 64, holds: ['{n}', '{of}'], note: 'The one line with the round’s result. MUST contain {n} (how many cards went straight to the right hole) and {of} (the size of the pile) exactly once each, and no other number — something like: how many of the pile went where they were going.' },
@@ -732,7 +734,7 @@ function postShape(data) {
   }
   // ✉️ the round's own rules: the numbers are the round's, the labels are one line, nobody instructs
   const ro = data.round || {}, rc = ro.receipt || {}, rh = ro.holes || {};
-  for (const [p, v0] of [['round.start', ro.start], ['round.on', ro.on], ['round.off', ro.off], ['round.far', ro.far], ['round.receipt.title', rc.title], ['round.receipt.take', rc.take], ['round.receipt.counted', rc.counted], ['round.receipt.short', rc.short], ['round.receipt.back', rc.back], ['round.holes.park', rh.park], ['round.holes.beach', rh.beach], ['round.holes.home', rh.home], ['round.holes.rave', rh.rave]]) {
+  for (const [p, v0] of [['round.start', ro.start], ['round.on', ro.on], ['round.off', ro.off], ['round.far', ro.far], ['round.hint', ro.hint], ['round.receipt.title', rc.title], ['round.receipt.take', rc.take], ['round.receipt.counted', rc.counted], ['round.receipt.short', rc.short], ['round.receipt.back', rc.back], ['round.holes.park', rh.park], ['round.holes.beach', rh.beach], ['round.holes.home', rh.home], ['round.holes.rave', rh.rave]]) {
     const v = String(v0 || '');
     if (!v) { say(p, 'is empty'); continue; }
     if (/\d/.test(v.replace(/\{n\}|\{of\}/g, ''))) say(p, 'carries a number of its own — the game prints the round’s figures');
@@ -744,6 +746,11 @@ function postShape(data) {
   if ((String(rc.take || '').match(/\{of\}/g) || []).length !== 1) say('round.receipt.take', 'must contain {of} exactly once');
   for (const k of ['park', 'beach', 'home', 'rave']) if (String(rh[k] || '').split(/\s+/).length > 2) say('round.holes.' + k, 'is more than two words, and it is a name on a pigeonhole');
   if (String(ro.start || '').split(/\s+/).length > 3) say('round.start', 'is more than three words, and a button never wraps');
+  const stamp = String(ro.stamp || '');
+  if (!stamp) say('round.stamp', 'is empty');
+  if (stamp && stamp !== stamp.toUpperCase()) say('round.stamp', 'is not in capitals, and a rubber stamp is');
+  if (/\s/.test(stamp)) say('round.stamp', 'is more than one word');
+  if (/(press|hold)/i.test(String(ro.hint || ''))) say('round.hint', 'names a gesture; the notice says what the round wants, never which control');
   if (String(card.sent || '').trim().toLowerCase() === String(data.sent || '').trim().toLowerCase()) {
     say('card.sent', 'is the letter’s own line — a card and a letter are two different things happening');
   }
@@ -760,9 +767,9 @@ const postSchema = {
     ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.') && !k.startsWith('round.')).map(([k, v]) => [k, str(v.note)])),
     // ✉️ the sorting round (22 Sep 2026): the staff's button, two toasts, four pigeonhole names and the receipt
     round: {
-      type: 'object', additionalProperties: false, required: ['start', 'on', 'off', 'far', 'holes', 'receipt'],
+      type: 'object', additionalProperties: false, required: ['start', 'on', 'off', 'far', 'hint', 'stamp', 'holes', 'receipt'],
       properties: {
-        start: str(postFields['round.start'].note), on: str(postFields['round.on'].note), off: str(postFields['round.off'].note), far: str(postFields['round.far'].note),
+        start: str(postFields['round.start'].note), on: str(postFields['round.on'].note), off: str(postFields['round.off'].note), far: str(postFields['round.far'].note), hint: str(postFields['round.hint'].note), stamp: str(postFields['round.stamp'].note),
         holes: { type: 'object', additionalProperties: false, required: ['park', 'beach', 'home', 'rave'],
           properties: { park: str(postFields['round.holes.park'].note), beach: str(postFields['round.holes.beach'].note), home: str(postFields['round.holes.home'].note), rave: str(postFields['round.holes.rave'].note) } },
         receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'counted', 'short', 'back'],

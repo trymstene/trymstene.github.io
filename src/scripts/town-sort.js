@@ -17,7 +17,14 @@
 // ⚠️ THE THUMB IS JUDGED ON ITS OWN TIMESTAMP (the café's lesson): a tap carries an exact `now`, and a
 // card's freshness is measured from the instant it landed, never from the last painted frame.
 import { iconSvg } from '../lib/pixel-icons.js';
-import { seedRand } from '../lib/world.js';
+import { seedRand, burstInto } from '../lib/world.js';
+
+// ✉️ THE FIRST ROUND EXPLAINS ITSELF, ONCE (Trym, 22 Sep: "a small one-time notice by the sorting buttons that
+// says something about what to do … Short and sweet"). One line under the pigeonholes through a device's
+// first round, then never again — the flag lives here, the words are the rig's (`round.hint`).
+const HINT_KEY = 'tw-sort-v1';
+const hinted = () => { try { return !!(JSON.parse(localStorage.getItem(HINT_KEY) || 'null') || {}).hinted; } catch (e) { return false; } };
+const setHinted = () => { try { localStorage.setItem(HINT_KEY, JSON.stringify({ hinted: 1 })); } catch (e) {} };
 
 // ⭐ THE WORDS ARE GLOBBED HERE, in the round's own lazy chunk — town-post.json holds the post office's
 // words, and its `round` block is this deck's (the mailbox chunk reads the rest of the file).
@@ -77,6 +84,7 @@ export const counts = (r) => !!r && r.right + r.late >= Math.ceil(r.cards.length
 
 // ---- the tray: the one thing in here that knows about a screen ---------------------------------
 const el = (tag, cls, host) => { const e = document.createElement(tag); if (cls) e.className = cls; if (host) host.appendChild(e); return e; };
+const WAVE_MS = 700;   // the tally's wave at the end of a round, before the tray goes down (town-cafe.css twSortWave)
 
 // mountSorter(host, opts) — the tray with the deck on it. It owns no state but the round in front of
 // it: `opts.onLand(res, round)` on every card that lands, `opts.onDone(round, timeUp)` when the round ends.
@@ -140,7 +148,12 @@ export function mountSorter(host, opts = {}) {
   }
   function paintTally() {
     tallyEl.innerHTML = '';
-    for (let i = 0; i < r.cards.length; i++) { const m = el('i', 'tw-sort__mark', tallyEl); if (i < r.marks.length) m.className += ' is-g' + r.marks[i]; }
+    tallyEl.classList.remove('is-done');
+    for (let i = 0; i < r.cards.length; i++) {
+      const m = el('i', 'tw-sort__mark', tallyEl);
+      m.style.setProperty('--i', String(i));
+      if (i < r.marks.length) m.className += ' is-g' + r.marks[i] + (i === r.marks.length - 1 ? ' is-new' : '');   // the one that just landed pops
+    }
   }
   function paint() {
     raf = 0;
@@ -155,7 +168,15 @@ export function mountSorter(host, opts = {}) {
   function landed(res) {
     if (!res || !r) return;
     if (res.g >= 0) { paintTally(); if (opts.onLand) opts.onLand(res, r); }
-    if (res.done) { const done = r; sleep(); r = null; cardEl.hidden = true; pileEl.innerHTML = ''; if (opts.onDone) opts.onDone(done, !!res.timeUp); return; }
+    if (res.done) {
+      // ⭐ THE FINISH (Trym, 22 Sep: "some effect or animation or something pleasing for finishing the sorting … it
+      // feels good to finish a day's job"): the card leaves, the tally waves along its length, and only then does
+      // the tray go down and the receipt come up — the counter's own beat before the paperwork.
+      const done = r; sleep(); r = null; cardEl.hidden = true; pileEl.innerHTML = '';
+      tallyEl.classList.add('is-done');
+      setTimeout(() => { if (opts.onDone) opts.onDone(done, !!res.timeUp); }, WAVE_MS);
+      return;
+    }
     paintCard();
   }
   // step(now) — the round's clock, driven by the world's own tick so it keeps running while the tray is
@@ -164,7 +185,9 @@ export function mountSorter(host, opts = {}) {
   function hit(b) {
     if (!r) return;
     b.classList.add('is-hit'); setTimeout(() => b.classList.remove('is-hit'), 140);
-    landed(sortInto(r, b.dataset.mark, now()));
+    const res = sortInto(r, b.dataset.mark, now());
+    if (res) { const c = 'is-g' + res.g; b.classList.add(c); setTimeout(() => b.classList.remove(c), 320); }   // the hole answers in the grade's colour
+    landed(res);
   }
   holeEls.forEach((b) => b.addEventListener('pointerdown', (e) => { if (e.cancelable) e.preventDefault(); hit(b); }));
 
@@ -172,7 +195,7 @@ export function mountSorter(host, opts = {}) {
     el: box,
     deal(round) { r = round; note.textContent = ''; paintTally(); paintCard(); wake(); },
     step,
-    say(text) { note.textContent = text || ''; },
+    say(text, hint) { note.textContent = text || ''; note.classList.toggle('is-hint', !!(text && hint)); },
     show() { box.hidden = false; box.classList.remove('is-folded'); toast(true); wake(); },
     fold() { box.classList.add('is-folded'); toast(false); sleep(); },
     hide() { box.hidden = true; toast(false); sleep(); },
@@ -187,6 +210,8 @@ export function mountSorter(host, opts = {}) {
       at: () => (r ? r.at : 0),
       fuse: (t) => fuse(r, t == null ? now() : t),
       pile: () => pileEl.children.length,
+      note: () => note.textContent,
+      hint: () => note.classList.contains('is-hint') && !!note.textContent,
       tally: () => [...tallyEl.children].map((m) => (m.className.match(/is-g(\d)/) || [])[1] || ''),
     },
     destroy() { sleep(); toast(false); box.remove(); },
@@ -200,7 +225,7 @@ export function mountSorter(host, opts = {}) {
 const NEAR = 120, AWAY = 420, STAY = 8000;
 
 export function bootTownSort(ctx) {
-  const { host, PROPS, pos, say, track, openCard, closeCard, esc, inside, chore } = ctx;
+  const { host, PROPS, pos, say, track, openCard, closeCard, esc, inside, chore, world, W, H } = ctx;
   let tray = null, on = false, away = 0, held = false, rounds = 0, last = null;
   const mark = () => { const p = PROPS && PROPS.post; return p ? { x: p.x + p.w / 2, y: p.base } : null; };
   const seedNow = () => ((Math.floor(Date.now() / 60000) * 2654435761) ^ (rounds * 40503)) >>> 0;
@@ -217,6 +242,8 @@ export function bootTownSort(ctx) {
     const r = start(newRound(seedNow()), performance.now());
     rounds++;
     tray.deal(r);
+    // the first round on this device carries its notice under the holes; every later one runs wordless
+    if (!hinted() && COPY.hint) tray.say(COPY.hint, true); else tray.say('');
     if (!held) tray.show();
     if (COPY.on) say(COPY.on);
     track('town_shift', { at: 'post', step: 'in' });
@@ -230,6 +257,7 @@ export function bootTownSort(ctx) {
     last = r || (tray && tray.round()) || null;
     if (tray) tray.hide();
     const ok = counts(last);
+    if (last && last.marks.length) setHinted();   // a round has been played through: the notice has done its job
     // 💼 the round is on the week's sheet: the town says "sorted", the pass worker counts it (up to the target)
     if (ok && chore) chore('sort');
     if (ok) track('town_chore', { at: 'post', kind: 'sort' });   // 📡 Pulse reads the week's work by kind, as the arcade's chores do
@@ -250,15 +278,26 @@ export function bootTownSort(ctx) {
     const take = (w.take || '').replace('{n}', String(r.right)).replace('{of}', String(r.cards.length));
     const marks = r.marks.map((g) => '<i class="tw-sort__mark is-g' + g + '"></i>').join('')
       + r.cards.slice(r.marks.length).map(() => '<i class="tw-sort__mark"></i>').join('');
-    openCard('<div class="tw-cup__till tw-sort__till">'
+    const marksIn = r.marks.map((g, i) => '<i class="tw-sort__mark is-g' + g + '" style="--i:' + i + '"></i>').join('')
+      + r.cards.slice(r.marks.length).map((_, i) => '<i class="tw-sort__mark" style="--i:' + (r.marks.length + i) + '"></i>').join('');
+    void marks;
+    openCard('<div class="tw-cup__till tw-sort__till' + (ok ? ' is-counted' : '') + '">'
+      + (ok && COPY.stamp ? '<i class="tw-sort__seal" aria-hidden="true">' + esc(COPY.stamp) + '</i>' : '')
       + '<h2>' + esc(w.title) + '</h2>'
       + (take ? '<p class="tw-cup__take">' + esc(take) + '</p>' : '')
-      + '<div class="tw-sort__marks" aria-hidden="true">' + marks + '</div>'
+      + '<div class="tw-sort__marks" aria-hidden="true">' + marksIn + '</div>'
       + '<p class="' + (ok ? 'tw-cup__best' : 'tw-card__sub') + '">' + esc(ok ? (w.counted || '') : (w.short || '')) + '</p>'
       + (w.back ? '<button class="tw-cta" id="twSortX" type="button"><span class="tw-cta__verb">' + esc(w.back) + '</span></button>' : '')
       + '</div>');
     const b = document.getElementById('twSortX');
     if (b && closeCard) b.addEventListener('click', () => closeCard());
+    // ✨ and the counter itself throws the moment up, the way a fix or a find does — twice for a round that
+    // made the sheet, once for one that did not: the day's work happened either way
+    const m = mark();
+    if (world && W && H && m) {
+      burstInto(world, 'tw-burst', m.x / W * 100, (m.y - 64) / H * 100, ok ? 18 : 10);
+      if (ok) setTimeout(() => burstInto(world, 'tw-burst', (m.x + 40) / W * 100, (m.y - 96) / H * 100, 14), 260);
+    }
   }
   // a round that ends with the page ends with its receipt written up — a counted round still counts
   const onHide = () => { if (on) clockOut(); };
@@ -299,6 +338,7 @@ export function bootTownSort(ctx) {
       pile: () => (tray ? tray.seam.pile() : 0),
       mark, marks: () => MARKS.slice(),
       folded: () => !!(tray && tray.el.classList.contains('is-folded')),
+      hint: () => !!(tray && tray.seam.hint()), note: () => (tray ? tray.seam.note() : ''), hinted,
       open: () => !!(tray && tray.open()),
     },
   };

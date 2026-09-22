@@ -840,6 +840,15 @@ the three grades, the receipt).
   two minutes a round. Right / late / wrong per card go to Pulse as `town_sort`, the round as `town_shift`.
 - Machinery: `src/scripts/town-sort.js` (its own lazy chunk, 14 000 B budget) — the round form-blind above
   `mountSorter`, the deck on the café's `.tw-cup` box below it. Walk: `tests/town-sort.spec.mjs`.
+- **The finish and the notice (Trym, later the same day: "something pleasing for finishing the sorting … it feels
+  good to finish a day's job"; "a small one-time notice by the sorting buttons"):** a mark pops as it lands and
+  the hole answers in the grade's colour; the last card sets the tally waving along its length before the tray
+  goes down; the receipt's marks arrive one by one, the counter bursts (twice for a round that made the sheet),
+  and a counted receipt gets the counter's own rubber stamp slammed across it (`round.stamp`, SORTED — the
+  payslip's PAID has a sibling). The work note's counts line pops when a number moves. The first round on a
+  device carries `round.hint` under the holes ("Each card belongs in the hole with its matching stamp."), then
+  never again (`tw-sort-v1`). And a toast raised above a tray lives seven seconds instead of four: the eyes are
+  at the bottom while it stands at the top.
 
 ### 11.5 The lemonade stand — a tips job
 Fig Jr. hires you at the stand (a fourth boss). Same tray, a **lemonade deck**: squeeze (a hold),

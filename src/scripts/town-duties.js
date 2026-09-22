@@ -41,6 +41,9 @@ const CSS = `
 .twd-chip__top { display:block; font-size:0.68rem; letter-spacing:0.02em; opacity:0.92; margin-bottom:3px; }
 .twd-chip__top i { font-style:normal; text-transform:uppercase; letter-spacing:0.08em; font-size:0.6rem; }
 .twd-chip__top:empty { display:none; }
+.twd-chip__top.is-pop { animation: twdPop 420ms cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: 0 50%; }
+@keyframes twdPop { 0% { transform: scale(1); } 35% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .twd-chip__top.is-pop { animation: none; } }
 .twd-chip__line { display:block; }
 .twd-chip--nudge { background:linear-gradient(#ffe8c2,#f2c98a); }
 .twd-chip--fired { background:linear-gradient(#e8dcd2,#cdbcae); }
@@ -125,8 +128,10 @@ export function bootTownDuties({ view, work, track }) {
     if (!says || !says.line) { el.hidden = true; shown = ''; return; }
     const key = says.top + '|' + says.line;
     if (key !== shown) {
+      const moved = !!shown && !!top.innerHTML && says.top !== top.innerHTML;   // a count moved: the line pops once
       shown = key;
       top.innerHTML = says.top;
+      if (moved) { top.classList.remove('is-pop'); void top.offsetWidth; top.classList.add('is-pop'); }
       text.innerHTML = says.line;
       el.classList.toggle('twd-chip--nudge', says.kind === 'nudge');
       el.classList.toggle('twd-chip--fired', says.kind === 'fired');
