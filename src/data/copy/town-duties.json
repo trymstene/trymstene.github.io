@@ -7,7 +7,8 @@
     "sort": "post sorted"
   },
   "duty": {
-    "cafe": "clock in at the serving window and make cups; they lack initiative."
+    "cafe": "clock in at the serving window and make cups; they lack initiative.",
+    "stand": "step behind Fig Jr.’s stand and pour lemonade."
   },
   "wage": "the week’s wage is {coins}; payday is Monday, {days} days away.",
   "done": "the week’s work is done; the remaining days are yours to misplace.",
@@ -22,5 +23,6 @@
     "post": "Stamp let you go after empty weeks; ask again and his door is open."
   },
   "cafeDone": "tips gather on the tray as you pour; paid when you step away.",
+  "standDone": "pour lemonade; tray tips are paid when you step away.",
   "payslip": "go home and open the payslip waiting in your letterbox; it has news."
 }

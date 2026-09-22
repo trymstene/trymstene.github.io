@@ -1,0 +1,46 @@
+{
+  "on": "The lemonade table opens for the afternoon beneath its striped awning.",
+  "off": "The jug rests by the lane, and the striped awning keeps its shade.",
+  "idle": "The lemonade table is open; the lane is quiet.",
+  "front": "Fig Jr.’s lemonade table is open beneath the striped awning on Hall Street.",
+  "left": "Somebody turns from the table, leaving the awning to its shade.",
+  "receipt": {
+    "title": "Lemonade Tally",
+    "take": "Tips collected: {n} coins.",
+    "line": "The jug waits at the table while Hall Street keeps its sun.",
+    "none": "The jug kept cool company beneath the striped awning.",
+    "capped": "Glasses went down the lane; the day’s tips are already spent.",
+    "best": "A {drink} glass went down the lane with ice clicking.",
+    "back": "Close"
+  },
+  "go": {
+    "squeeze": "Squeezing",
+    "ice": "Icing",
+    "pour": "Pouring"
+  },
+  "cup": {
+    "perfect": [
+      "Ice ticks in a bright glass as it goes down the lane.",
+      "A lemon slice catches the sun above the glass.",
+      "The straw leaves with a glass cold enough for Hall Street.",
+      "Someone takes the glass before the ice can settle."
+    ],
+    "fine": [
+      "The glass goes out cool, with a lemon doing its best.",
+      "The ice reaches the lane before it can melt.",
+      "A straw leans cheerfully from the glass.",
+      "The glass heads down the lane with its ice still arguing."
+    ],
+    "wrong": [
+      "The glass stays on the table, lemon and ice in a muddle.",
+      "No glass goes down the lane; the lemons keep the secret.",
+      "The ice settles back into a glass nobody takes.",
+      "This glass remains at the table, bright but unclaimed."
+    ]
+  },
+  "drinks": {
+    "still": "Plain Squeeze",
+    "minty": "Mint Squeeze",
+    "pink": "Pink Squeeze"
+  }
+}

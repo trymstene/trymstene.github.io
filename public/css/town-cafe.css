@@ -295,3 +295,38 @@
 @media (prefers-reduced-motion: reduce) {
   .tw-sort__mark.is-new, .tw-sort__tally.is-done .tw-sort__mark, .tw-sort__till .tw-sort__mark, .tw-sort__seal { animation: none; opacity: 1; }
 }
+
+/* ---- 🍋 THE LEMONADE DECK (22 Sep 2026): the same tray and the same three gestures, dressed for a glass ----------
+ * town-lemon.js plays its deck on the café's tray; mountCounter stamps the deck's id on the box, so every rule
+ * below hangs off [data-deck="lemon"] and the café's own skins are untouched. Transform and opacity only. */
+.tw-cup__pip--lemon { background: #ffd23f; }
+.tw-cup__pip--mint { background: #3f9b4a; }
+.tw-cup__pip--pink { background: #ff8fb8; }
+.tw-cup__pip--ice { background: #dff4ff; border-radius: 3px; }
+/* squeeze — a hold: the glass fills with juice, and the stream is juice, not coffee */
+.tw-cup[data-deck="lemon"][data-st="squeeze"] .tw-cup__fill { background: linear-gradient(#fff6c2 0 7px, #ffd23f 7px); }
+.tw-cup[data-deck="lemon"][data-st="squeeze"] .tw-cup__bar::after { background: linear-gradient(#fff6c2, #f2c200); }
+.tw-cup[data-deck="lemon"][data-st="squeeze"] .tw-cup__go { background: linear-gradient(#ffe680, #ffd23f); color: #241c00; }
+/* ice — three taps on the pulse: cubes rise where the foam would, and a landed tap is a cube */
+.tw-cup[data-deck="lemon"][data-st="ice"] .tw-cup__bar { background: #1e3a4c; }
+.tw-cup[data-deck="lemon"][data-st="ice"] .tw-cup__bar::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    linear-gradient(#e8f6ff, #e8f6ff) 12% 80% / 9px 9px no-repeat,
+    linear-gradient(#dff4ff, #dff4ff) 32% 88% / 7px 7px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 52% 82% / 9px 9px no-repeat,
+    linear-gradient(#dff4ff, #dff4ff) 70% 90% / 7px 7px no-repeat,
+    linear-gradient(#e8f6ff, #e8f6ff) 88% 80% / 9px 9px no-repeat;
+  animation: twCupFoam 1.4s ease-out infinite;
+}
+.tw-cup[data-deck="lemon"][data-st="ice"] .tw-cup__tap { background: #dff4ff; border-radius: 2px; }
+.tw-cup[data-deck="lemon"][data-st="ice"] .tw-cup__go { background: linear-gradient(#eaf7ff, #bfe3ff); color: #102a3a; }
+/* pour — the needle sweeps the glass to its line: water, not a grinder */
+.tw-cup[data-deck="lemon"][data-st="pour"] .tw-cup__bar { background: #163b4e; }
+.tw-cup[data-deck="lemon"][data-st="pour"] .tw-cup__bar::before {
+  content: ''; position: absolute; inset: 0 -8px 0 0;
+  background: repeating-linear-gradient(90deg, #1d4a60 0 3px, #163b4e 3px 7px);
+  opacity: 0.85; animation: twCupGrind 420ms linear infinite;
+}
+.tw-cup[data-deck="lemon"][data-st="pour"] .tw-cup__go { background: linear-gradient(#9fd7ff, #5fb3ea); color: #102a3a; }
+@media (prefers-reduced-motion: reduce) { .tw-cup[data-deck="lemon"] .tw-cup__bar::before { animation: none; } }

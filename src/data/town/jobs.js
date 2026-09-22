@@ -14,7 +14,7 @@
 // payslip prints the counts so the reasoning is on the paper. `days` is a duty the worker counts by
 // itself (days you turned up); every other kind is a chore the town reports as it is done.
 
-export const JOB_PAY = { store: 90, condo: 60, post: 75, cafe: 0 };   // the café pays tips per cup instead of a cheque; the post office's 75 sits between the two (Trym's to move)
+export const JOB_PAY = { store: 90, condo: 60, post: 75, cafe: 0, stand: 0 };   // the café and the lemonade stand pay tips per glass instead of a cheque; the post office's 75 sits between the two (Trym's to move)
 export const PAY_BACK = 2;                                  // whole weeks a cheque may walk back
 
 // the week's work, per payslip job: [kind, target]. A job with no entry pays by tips (the café).

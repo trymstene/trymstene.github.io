@@ -921,7 +921,7 @@ export function bootTownLife(ctx) {
   // the kiosk. ⚠️ NOT town-work.js: that one is imported for every visitor to the square, so the
   // counter's weight would be downloaded by a banana who only ever restocks Pip's shelves.
   let cafe = null, cafeP = null;
-  function cafeCtx() {
+  function cafeCtx(at = 'cafe') {
     return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track, float,
       outfit: ctx.outfit || (() => ({})),
       folk: () => folk,   // ☕ the counter borrows its customers from the town's own visitors
@@ -938,7 +938,7 @@ export function bootTownLife(ctx) {
         try { const u = ruleUsed('town:tips'); room = Math.max(0, 120 - (u.used | 0)); } catch (e) {}
         const give = Math.min(n | 0, room);
         if (give > 0) { passStat('coins_earned', give, 'tips'); float(ctx.pos.x, ctx.pos.y - 40, '+' + coinsPaid(give)); if (hud && hud.refresh) hud.refresh(); }
-        track('town_shift', { at: 'cafe', step: 'paid', n: give, cups: (how && how.cups) | 0 });
+        track('town_shift', { at, step: 'paid', n: give, cups: (how && how.cups) | 0 });
         return give;
       },
       // ⚠️ GETTERS, not values: this file reassigns every one of them
@@ -951,6 +951,18 @@ export function bootTownLife(ctx) {
         .catch((e) => { cafeP = null; console.warn('[town] the counter did not load', e); return null; });
     }
     return cafeP;
+  }
+  // 🍋 THE LEMONADE STAND — the café's counter engine with Fig Jr.'s deck on it (22 Sep 2026): its own chunk, loaded the
+  // first time somebody taps the stand. The stand never shuts (it is not a front), and it has the town's own
+  // target so a step round the back of the table can take the banana's walk with it.
+  let lemon = null, lemonP = null;
+  function loadLemon() {
+    if (!lemonP) {
+      lemonP = import('./town-lemon.js')
+        .then((m) => { lemon = m.bootTownLemon({ ...cafeCtx('stand'), tgt: ctx.tgt, shutHere: () => false }); return lemon; })
+        .catch((e) => { lemonP = null; console.warn('[town] the stand did not load', e); return null; });
+    }
+    return lemonP;
   }
 
 
@@ -1039,6 +1051,13 @@ export function bootTownLife(ctx) {
       ctx.then(() => { loadCafe().then((c) => { if (c) (c.on() ? c.clockOut() : c.clockIn(view)); }); });
       return true;
     }
+    // 🍋 THE STAND: Fig Jr. hires on his own card; a tap here is turning up, and the deed waits for the walk
+    if (key === 'stand') {
+      const mine = ctx.job && ctx.job();
+      if (!mine || mine.at !== 'stand') { loadLemon().then((l) => { const t = l && l.front && l.front(); if (t) say(t); }); return true; }
+      ctx.then(() => { loadLemon().then((l) => { if (l) (l.on() ? l.clockOut() : l.clockIn(view)); }); });
+      return true;
+    }
     // 📦 THE RESTOCK, and it only exists for somebody who works here. ⚠️ it answers BEFORE the till
     // so that a tap on a shelf while you are holding a crate puts the crate down rather than opening a
     // card over your own hands. ⭐ and it only ANSWERS here — the deed waits until the banana has walked
@@ -1073,6 +1092,7 @@ export function bootTownLife(ctx) {
   // ⚠️ COMPOSED, never replaced: setOverride has one slot and the day's `oddspot` event already owns it,
   // so assigning a café-only function here would silently delete that event for the day.
   let shiftOn = false;
+  let standOn = false;   // 🍋 the lemonade stand's shift, polled like the café's
   // 🕯 …and the chapter's claim on Nib comes first (21 Sep 2026): at the fountain while chapter one's
   // first scene is open — whatever the hour, so `always` — then up to the town hall for the rest of
   // the beat it closed in, so "he walks up to his regular place" is what you see, not a lunch break.
@@ -1083,6 +1103,7 @@ export function bootTownLife(ctx) {
       if (nibHallBeat === beat && beat !== 5) return 'hall';
     }
     if (shiftOn && n2.key === 'bean' && beat !== 5) return 'terrace';
+    if (standOn && n2.key === 'figjr' && beat !== 5) return 'orchard';   // 🍋 the kid steps off his pitch while you work it, as Bean takes his terrace
     return oddKey && n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null;
   };
   function todayStage() {
@@ -1211,6 +1232,7 @@ export function bootTownLife(ctx) {
     carryTick();
     if (folk) folk.tick(now, dt);
     if (cafe) cafe.tick(now);
+    if (lemon) lemon.tick(now);
     workTick(now);
     autoPick(now);
     if (dusk) { dusk.stepMeCurse(now); dusk.stepGhosts(dt, now); }
@@ -1221,8 +1243,8 @@ export function bootTownLife(ctx) {
     secAt = now + 500;
     // ☕ every way a shift can start or end lands here: the kiosk tap, walking off the mark, stepping into
     // a shop, a front closing, or the page going away. One poll is cheaper than five call sites agreeing.
-    const onShift = !!(cafe && cafe.on());
-    if (onShift !== shiftOn) { shiftOn = onShift; life.setOverride(overrideFor); }
+    const onShift = !!(cafe && cafe.on()), onStand = !!(lemon && lemon.on());
+    if (onShift !== shiftOn || onStand !== standOn) { shiftOn = onShift; standOn = onStand; life.setOverride(overrideFor); }
     const c = curseNow(), cType = c === 'none' ? null : c;
     const om0 = !curse && !!omenNow();
     const beat = life.beat();
@@ -1330,6 +1352,8 @@ export function bootTownLife(ctx) {
     hints: () => hints.map((s2) => s2.key),
     // ☕ the counter, once its chunk is in: the walk cannot wait on an import it did not ask for
     cafe: () => (cafe ? cafe.seam : null),
+    lemon: () => (lemon ? lemon.seam : null),   // 🍋 the stand's counter, once its chunk is in
+    lemonReady: () => loadLemon().then((l) => !!l),
     folk: () => (folk ? folk.seam : null),
     folkReady: () => loadFolk().then((f) => !!f),
     cafeReady: () => loadCafe().then((c) => !!c),   // ⚠️ not `lit`: the lamps already own that word on this seam

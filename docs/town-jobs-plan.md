@@ -768,7 +768,7 @@ simple minigame."*
 | The store's restock chore | ✅ built (the crate, the till row) |
 | The arcade's chore | ✅ 22 Sep: three pieces of litter and one dark cabinet a day, for the arcade's own staff; sweeping and repairing count on the week's sheet (§12.2) |
 | The café | ✅ tips per cup, at clock-out; ✅ 21 Sep: the window is the tap target, `+n` per cup, the tray counts the shift |
-| The lemonade stand (Fig Jr.) | ❌ scenery |
+| The lemonade stand (Fig Jr.) | ✅ 22 Sep: a tips job on the café's tray with a lemonade deck (§11.5); Fig Jr. hires, the queue on Hall Street, a glass in the customer's hand |
 | The post office job (Stamp) | ✅ 22 Sep: a round of sorting at the counter, on the café's tray (§11.4); 75 a week by payslip, `sort 3 · days 3` (§12.1) |
 | Duty notifications | ✅ 22 Sep: the duties chip (`src/scripts/town-duties.js`, words `town-duties`) — the quest chip's sibling in the town's paper, under the quest chip when both are up |
 | Wage so far / payday countdown | ✅ 22 Sep: on the chip once you have turned up — `sofar` from the pass worker's `jobView` (the cheque's formula), payday counted to Monday; `owed` says "your payslip is in the letterbox" (`POST /job/view`, read-only) |
@@ -850,13 +850,26 @@ the three grades, the receipt).
   never again (`tw-sort-v1`). And a toast raised above a tray lives seven seconds instead of four: the eyes are
   at the bottom while it stands at the top.
 
-### 11.5 The lemonade stand — a tips job
+### 11.5 The lemonade stand — a tips job — ✅ BUILT 22 Sep 2026
 Fig Jr. hires you at the stand (a fourth boss). Same tray, a **lemonade deck**: squeeze (a hold),
 ice (taps), pour (the needle) — three gestures, no words. Visitors queue at the stand's front the way
 they queue at the café rope; a served visitor walks off with a **lemonade cup** in hand (one new held
 item, the jug's sibling in `townwear.js`). Tips per cup, `+n` as it pours, the shift's count on the
 tray, paid at clock-out through `town/tips`. Fig Jr. steps to the orchard while you work it, as Bean
 takes his terrace.
+
+**As built (22 Sep 2026):** the café's counter became a configurable engine (`bootTownCafe(ctx, cfg)`: the
+deck, the rope, the words, the held item, the mark, the way of standing behind the counter — the café's own
+are the defaults), and `src/scripts/town-lemon.js` is the configuration: `LEMON_DECK` = squeeze (a hold) · ice
+(three taps) · pour (a needle), the café's measured windows under new names, dressed by `[data-deck="lemon"]`
+in the tray's stylesheet; the rope on Hall Street in front of the table (`[890,598],[989,598]`); the vendor
+BEHIND the table at `890,518` (the stall's own pixels frame the banana — feet above the table's edge, the face
+in the gap under the awning; no clip, no second drawing) reached by one step round the back once the walk from
+a tap has stopped at the table's front; `lemoncup` (townwear.js, the jug's sibling, the mug's hand) in a served
+customer's hand; Fig Jr. steps to the orchard while the stand is worked (`standOn` → `overrideFor`). Tips through
+`town:tips` as the café; `JOB_PAY.stand = 0`, `BOSS.figjr`; the work note's tips branch is generic now
+(`duty.stand` / `standDone`). Words: the `town-lemon` copy job (the café's fields, re-noted for a stall and a
+glass, with a gate that refuses the café's words). Walk: `tests/town-lemon.spec.mjs`.
 
 ### 11.6 Build order, and why
 1. **The duties chip + wage/payday** (9.2, 9.3 chip half) — the smallest change that makes every

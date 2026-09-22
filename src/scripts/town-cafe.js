@@ -27,7 +27,8 @@
 const COPY_MODS = import.meta.glob('../data/copy/town-cafe.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
 // a deck line, picked by a number the caller already has, so the same cup never says two things
-export const deckLine = (deck, n) => { const d = (COPY.cup || {})[deck] || []; return d.length ? d[Math.abs(n | 0) % d.length] : ''; };
+export const deckLineOf = (copy, deck, n) => { const d = ((copy || {}).cup || {})[deck] || []; return d.length ? d[Math.abs(n | 0) % d.length] : ''; };
+export const deckLine = (deck, n) => deckLineOf(COPY, deck, n);
 
 // ---- the three gestures, and nothing about a screen -------------------------------------------
 export const GRADES = ['wrong', 'fine', 'perfect'];
@@ -36,8 +37,8 @@ export const ORDER = ['grind', 'pour', 'milk'];
 // ⚠️ MEASURED AGAINST A THUMB, NOT GUESSED. A 1400 ms sweep with a 0.30 band puts ~420 ms of zone
 // under the needle each pass, and a person taps inside ~150 ms of intent.
 export const STATIONS = {
-  grind: { span: 1400, band: 0.30, floor: 0.16 },
-  pour: { span: 1700, band: 0.28, floor: 0.15, at: 0.72 },   // the band sits high: the last of the water
+  grind: { kind: 'sweep', span: 1400, band: 0.30, floor: 0.16 },
+  pour: { kind: 'hold', span: 1700, band: 0.28, floor: 0.15, at: 0.72 },   // the band sits high: the last of the water
   // ⚠️ MEASURED AGAINST A THUMB A SECOND TIME, AND THE FIRST NUMBERS WERE WRONG. The swell used to
   // peak AT the bar's right edge (at: 1), so half of every band fell off the end of the gauge, and a
   // 640 ms up-and-down moved the needle so fast that the grade-2 window was ±18 ms — against ±75 ms
@@ -47,7 +48,7 @@ export const STATIONS = {
   // ⚠️ 0.74, NOT 0.78: at 0.78 the band's right border landed exactly ON the bar's inner edge on the
   // first cup of every shift (measured 0.0px of daylight at all four phone sizes) and was clipped away,
   // so the target read as open-ended — a zone with only one wall does not say "land inside me".
-  milk: { span: 1000, band: 0.44, floor: 0.24, at: 0.74, taps: 3 },
+  milk: { kind: 'taps', span: 1000, band: 0.44, floor: 0.24, at: 0.74, taps: 3 },
 };
 
 // ⭐ THE ZONES TIGHTEN THE LONGER YOU STAY ON (the plan). The band closes toward its floor on a
@@ -56,8 +57,8 @@ export const STATIONS = {
 const bandFor = (st, n) => st.floor + (st.band - st.floor) / (1 + (n | 0) / 7);
 
 export const zoneOf = (cup, key) => {
-  const st = STATIONS[key], w = bandFor(st, cup.n);
-  const at = key === 'pour' || key === 'milk' ? st.at : cup.at;
+  const st = stationDef(cup, key), w = bandFor(st, cup.n);
+  const at = st.kind === 'sweep' ? cup.at : st.at;
   return { at, half: w / 2, from: Math.max(0, at - w / 2), to: Math.min(1, at + w / 2) };
 };
 const offBy = (v, z) => Math.abs(v - z.at) / (z.half || 1e-6);
@@ -71,20 +72,29 @@ export const DRINKS = {
 };
 export const DRINK_IDS = Object.keys(DRINKS);
 
+// ⭐ A DECK is what the tray plays: the stations in their order (each of a KIND — a needle to stop, a hold to
+// let go of, taps on a pulse), their measured windows, and the drinks as pictures. The café's is the default
+// everywhere below, so the bench and every caller that knows nothing of decks reads exactly as it did; the
+// lemonade stand brings its own (town-lemon.js) and plays it on the same tray with the same thumb.
+export const CAFE_DECK = { id: 'cafe', order: ORDER, stations: STATIONS, drinks: DRINKS };
+const deckOf = (cup) => (cup && cup.deck) || CAFE_DECK;
+const stationDef = (cup, key) => deckOf(cup).stations[key] || STATIONS[key];
+
 // `at` is where this cup's grinder band sits, from the town's own seed: a reload never rerolls one
 // customer's order into an easier one, and two cups in a row are not the same tap.
-export function newCup(drink, n, seed) {
+export function newCup(drink, n, seed, deck = CAFE_DECK) {
+  const ids = Object.keys(deck.drinks);
   return {
-    drink: DRINKS[drink] ? drink : 'short', n: n | 0, at: 0.24 + ((seed >>> 0) % 50) / 100,
+    deck, drink: deck.drinks[drink] ? drink : ids[0], n: n | 0, at: 0.24 + ((seed >>> 0) % 50) / 100,
     i: 0, t0: 0, held: 0, v: 0, taps: [], marks: [], done: false, grade: 0,
   };
 }
-export const stationOf = (cup) => ORDER[cup.i] || '';
+export const stationOf = (cup) => deckOf(cup).order[cup.i] || '';
 
 function vAt(cup, key, now) {
-  const st = STATIONS[key], e = now - (cup.t0 || now);
-  if (key === 'grind') { const p = (e % (st.span * 2)) / st.span; return p <= 1 ? p : 2 - p; }
-  if (key === 'pour') return cup.held ? Math.min(1, (now - cup.held) / st.span) : 0;
+  const st = stationDef(cup, key), e = now - (cup.t0 || now);
+  if (st.kind === 'sweep') { const p = (e % (st.span * 2)) / st.span; return p <= 1 ? p : 2 - p; }
+  if (st.kind === 'hold') return cup.held ? Math.min(1, (now - cup.held) / st.span) : 0;
   const p = (e % st.span) / st.span; return p <= 0.5 ? p * 2 : 2 - p * 2;
 }
 
@@ -93,14 +103,14 @@ export function tick(cup, now) {
   const key = stationOf(cup); if (!key) return cup;
   if (!cup.t0) cup.t0 = now;
   cup.v = vAt(cup, key, now);                      // for the tray to draw, and for nothing else
-  if (key === 'pour' && cup.held && cup.v >= 1) return release(cup, now) && cup;   // held to the brim: it spills
+  if (stationDef(cup, key).kind === 'hold' && cup.held && cup.v >= 1) return release(cup, now) && cup;   // held to the brim: it spills
   return cup;
 }
 
 export function press(cup, now) {
   if (cup.done) return null;
   const key = stationOf(cup);
-  if (key === 'pour') { if (!cup.held) { cup.held = now; cup.t0 = now; cup.v = 0; } return null; }
+  if (stationDef(cup, key).kind === 'hold') { if (!cup.held) { cup.held = now; cup.t0 = now; cup.v = 0; } return null; }
   return land(cup, now, key);
 }
 // ⚠️ A TAP IS NOT A POUR, AND IT MAY NOT COST A CUP. The other two stations are taps and this one is
@@ -111,17 +121,18 @@ export function press(cup, now) {
 // gesture teaches itself. There is no line of copy anywhere in this — the brief forbids instructing.
 const POUR_MIN = 0.08;
 export function release(cup, now) {
-  if (cup.done || stationOf(cup) !== 'pour' || !cup.held) return null;
-  if (vAt(cup, 'pour', now) < POUR_MIN) { cup.held = 0; cup.t0 = 0; cup.v = 0; return null; }
-  return land(cup, now, 'pour');
+  const key = stationOf(cup);
+  if (cup.done || !key || stationDef(cup, key).kind !== 'hold' || !cup.held) return null;
+  if (vAt(cup, key, now) < POUR_MIN) { cup.held = 0; cup.t0 = 0; cup.v = 0; return null; }
+  return land(cup, now, key);
 }
 
 function land(cup, now, key) {
   const v = vAt(cup, key, now);                    // ⚠️ the thumb's own instant, not the last painted frame
-  const z = zoneOf(cup, key), g = gradeOf(offBy(v, z));
-  if (key === 'milk') {
+  const z = zoneOf(cup, key), g = gradeOf(offBy(v, z)), st = stationDef(cup, key);
+  if (st.kind === 'taps') {
     cup.taps.push({ v, g });
-    if (cup.taps.length < STATIONS.milk.taps) return { key, g, more: true };
+    if (cup.taps.length < (st.taps || 3)) return { key, g, more: true };
     // ⚠️ THE MEAN OF THE THREE, NOT THE WORST. The cup's own grade is still its worst STATION (the
     // plan's rule, §3) — but making the milk station itself the worst of three taps turned it into
     // three gates in a row, and three gates cube the chance of passing: one fumble in three killed
@@ -130,11 +141,11 @@ function land(cup, now, key) {
     cup.marks.push(Math.round(sum / cup.taps.length));
   } else {
     cup.marks.push(g);
-    if (key === 'pour') cup.held = 0;
+    if (st.kind === 'hold') cup.held = 0;
   }
   cup.i++; cup.t0 = 0; cup.v = 0;
   // ⭐ the grade of a cup is its WORST station (the plan's word): one fumbled gesture is the cup.
-  if (cup.i >= ORDER.length) { cup.done = true; cup.grade = Math.min(...cup.marks); }
+  if (cup.i >= deckOf(cup).order.length) { cup.done = true; cup.grade = Math.min(...cup.marks); }
   return { key, g, more: false, done: cup.done, grade: cup.grade };
 }
 
@@ -159,7 +170,9 @@ export function mountCounter(host, opts = {}) {
   const top = el('div', 'tw-cup__top', box);
   const tickEl = el('div', 'tw-cup__tick', top);
   const steps = el('div', 'tw-cup__steps', top);
-  const stepEls = ORDER.map(() => el('i', 'tw-cup__step', steps));
+  const deck = opts.deck || CAFE_DECK;
+  box.dataset.deck = deck.id;   // 🍋 the stylesheet dresses a deck's stations by name under this
+  const stepEls = deck.order.map(() => el('i', 'tw-cup__step', steps));
   const bar = el('div', 'tw-cup__bar', box);
   const zoneEl = el('i', 'tw-cup__zone', bar);
   const fillEl = el('i', 'tw-cup__fill', bar);
@@ -221,7 +234,7 @@ export function mountCounter(host, opts = {}) {
       const z = zoneOf(cup, key);
       zoneEl.style.left = (z.from * 100) + '%';
       zoneEl.style.width = ((z.to - z.from) * 100) + '%';
-      const pour = key === 'pour';
+      const pour = stationDef(cup, key).kind === 'hold';
       fillEl.hidden = !pour; needle.hidden = pour;
       // ⭐ and the bar carries a SEED at its left edge before the first press, so the pour reads as a
       // level that fills from there rather than as an empty box with nothing happening in it
@@ -229,7 +242,7 @@ export function mountCounter(host, opts = {}) {
       else needle.style.left = (cup.v * 100).toFixed(2) + '%';
       stepEls.forEach((s, i) => { s.className = 'tw-cup__step' + (i < cup.i ? ' is-done' : i === cup.i ? ' is-now' : ''); });
       tapEls.forEach((t, i) => {
-        const tap = key === 'milk' ? cup.taps[i] : null;
+        const tap = stationDef(cup, key).kind === 'taps' ? cup.taps[i] : null;
         t.hidden = !tap;
         if (tap) { t.style.left = (tap.v * 100).toFixed(2) + '%'; t.className = 'tw-cup__tap is-g' + tap.g; }
       });
@@ -289,7 +302,7 @@ export function mountCounter(host, opts = {}) {
       clearTaps();
       note.textContent = '';
       tickEl.textContent = '';
-      for (const k of (DRINKS[c.drink] || [])) el('i', 'tw-cup__pip' + (k === 'bean' ? '' : ' tw-cup__pip--' + k), tickEl);
+      for (const k of (deckOf(c).drinks[c.drink] || [])) el('i', 'tw-cup__pip' + (k === 'bean' ? '' : ' tw-cup__pip--' + k), tickEl);
       go.textContent = label || '';
       go.disabled = false;
       go.hidden = false;
@@ -328,11 +341,11 @@ export function mountCounter(host, opts = {}) {
       best: (t) => {
         if (!cup) return 0;
         const key = stationOf(cup); tick(cup, t);
-        const st = STATIONS[key], z = zoneOf(cup, key);
-        if (key === 'pour') return (cup.held || t) + z.at * st.span;
+        const st = stationDef(cup, key), z = zoneOf(cup, key);
+        if (st.kind === 'hold') return (cup.held || t) + z.at * st.span;
         // ⚠️ the swell's band no longer sits AT the top of the bar, so the perfect instant is where the
         // rising leg crosses it (v = 2p on the way up), not the peak — and it comes round every span
-        if (key === 'milk') { const c = cup.t0 + (z.at / 2) * st.span; return c >= t ? c : c + Math.ceil((t - c) / st.span) * st.span; }
+        if (st.kind === 'taps') { const c = cup.t0 + (z.at / 2) * st.span; return c >= t ? c : c + Math.ceil((t - c) / st.span) * st.span; }
         const c = cup.t0 + z.at * st.span;                       // the needle's first pass over the band
         return c >= t ? c : c + Math.ceil((t - c) / (st.span * 2)) * st.span * 2;
       },
@@ -411,8 +424,14 @@ const NEXT = [5200, 12000];      // the gap between arrivals, while you are behi
 // before it decides you meant to leave — and AWAY is far enough that it stops waiting and pays you.
 const NEAR = 120, AWAY = 420, STAY = 8000;
 
-export function bootTownCafe(ctx) {
+export function bootTownCafe(ctx, cfg0) {
   const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside, shutHere, pos, float } = ctx;
+  // ⭐ ONE COUNTER ENGINE, TWO COUNTERS (22 Sep 2026): the queue, the patience, the cup, the tips and the till are
+  // the same at the lemonade stand as here, so the stand CONFIGURES this rather than copying it — its own deck,
+  // rope, words, held item, mark and way of standing behind the counter (town-lemon.js). The café's own are the
+  // defaults, so everything below reads exactly as it did.
+  const cfg = { at: 'cafe', deck: CAFE_DECK, copy: COPY, rope: ROPE, item: 'mug', ...(cfg0 || {}) };
+  const WORDS = cfg.copy;
   let atWork = null, tray = null, on = false;
   // ☕ THE QUEUE. Each entry is a visitor the counter has borrowed from town-folk.js, its drink, and
   // the moment it arrived — which is its patience clock. ⚠️ the counter does NOT own the body: it
@@ -422,9 +441,9 @@ export function bootTownCafe(ctx) {
   let held = false;   // something else asked for the bottom of the screen (the pocket): the tray yields
   let lastBest = '';   // which drink the last right cup was, for the receipt to name
   // the mark is the workplace's own front, the same point town-work.js measures turning up against
-  const mark = () => { const p = PROPS && PROPS.cafe; return p ? { x: p.x + p.w / 2, y: p.base } : null; };
+  const mark = cfg.mark || (() => { const p = PROPS && PROPS.cafe; return p ? { x: p.x + p.w / 2, y: p.base } : null; });
 
-  function standIn() {
+  function cafeStandIn() {
     if (atWork || !CAFE_WIN) return;
     const [cx, , baristaH, , winTop] = CAFE_WIN;
     void baristaH;
@@ -466,26 +485,29 @@ export function bootTownCafe(ctx) {
     const me = world.querySelector('.tw-me');
     if (me) me.classList.add('is-serving');   // ⚠️ a CLASS, never [hidden]: authored display beats it
   }
-  function stepOut() {
+  function cafeStepOut() {
     world.classList.remove('is-shift');
     if (atWork) { atWork.remove(); atWork = null; }
     clearTimeout(rz);
     const me = world.querySelector('.tw-me');
     if (me) me.classList.remove('is-serving');
   }
+  // the café stands its banana in the kiosk's window; the stand steps its banana round the back of the table
+  const standIn = cfg.standIn || cafeStandIn, stepOut = cfg.stepOut || cafeStepOut;
 
   // ---- the queue ---------------------------------------------------------------------------------
   const seedAt = (n) => Math.abs(Math.floor(Date.now() / 60000) * 2654435761 + n * 40503) >>> 0;
   function callOne(now) {
-    if (line.length >= ROPE.length || !folk) return;
+    if (line.length >= cfg.rope.length || !folk) return;
     const f = folk();
     if (!f) return;
     const free = f.idle().filter((v) => !line.some((q) => q.v === v));
     if (!free.length) return;
     const seed = seedAt(served + line.length);
     const v = free[seed % free.length];
-    const spot = ROPE[line.length];
-    const row = { v, drink: DRINK_IDS[seed % DRINK_IDS.length], at: 0, seed };
+    const spot = cfg.rope[line.length];
+    const ids = Object.keys(cfg.deck.drinks);
+    const row = { v, drink: ids[seed % ids.length], at: 0, seed };
     line.push(row);
     f.take(v, { x: spot[0], y: spot[1] }, () => { row.at = performance.now(); });
     void now;
@@ -501,8 +523,8 @@ export function bootTownCafe(ctx) {
       if (left > 0) continue;
       // gone. The body does the acting: it turns its back and walks off, and the town says so once.
       drop(i, false);
-      if (COPY.left) say(COPY.left);
-      track('town_cup', { at: 'cafe', r: 'left' });
+      if (WORDS.left) say(WORDS.left);
+      track('town_cup', { at: cfg.at, r: 'left' });
     }
   }
   function drop(i, sit) {
@@ -511,20 +533,20 @@ export function bootTownCafe(ctx) {
     if (folk()) { folk().patience(row.v, null); folk().release(row.v, sit); }
     if (cup && cup.row === row) { cup = null; if (tray) tray.idle(''); }
     // everyone behind shuffles up
-    line.forEach((q, n) => { const spot = ROPE[n]; if (folk()) folk().take(q.v, { x: spot[0], y: spot[1] }, () => { if (!q.at) q.at = performance.now(); }); });
+    line.forEach((q, n) => { const spot = cfg.rope[n]; if (folk()) folk().take(q.v, { x: spot[0], y: spot[1] }, () => { if (!q.at) q.at = performance.now(); }); });
   }
   // the banana at the front puts its order on the tray, and nothing happens until it has
   function serveNext() {
     if (cup || !tray || !on) return;
     const row = line.find((q) => q.at);
     if (!row) return;
-    const c = newCup(row.drink, served, row.seed);
+    const c = newCup(row.drink, served, row.seed, cfg.deck);
     c.row = row;
     cup = c;
     // ⚠️ NOT THE DRINK'S NAME. The ticket on the tray is pictures and the names are for the
     // receipt — the button said "Little Wake" for a day, which is the shop's word for a small
     // coffee and tells a thumb nothing at all. It carries the STATION now, and follows it.
-    tray.serve(c, (COPY.go || {})[stationOf(c)] || '');
+    tray.serve(c, (WORDS.go || {})[stationOf(c)] || '');
   }
   function onCup(c) {
     const row = c.row, i = line.indexOf(row);
@@ -539,14 +561,14 @@ export function bootTownCafe(ctx) {
     if (float && m && n > 0) float(m.x, m.y - 96, '+' + n);
     if (tray && tray.tips) tray.tips(tips);
     if (c.grade === 2) { best++; lastBest = c.drink; }
-    const deck = deckLine(GRADES[c.grade], served);
+    const deck = deckLineOf(WORDS, GRADES[c.grade], served);
     if (deck) say(deck);
-    track('town_cup', { at: 'cafe', r: GRADES[c.grade] });
+    track('town_cup', { at: cfg.at, r: GRADES[c.grade] });
     cup = null;
     // ☕ THE CUP GOES WITH THEM, and it is the only thing on screen that says a coffee was made: the
     // toast is gone in four seconds and the terrace is across the square. `mug` is no longer carried by
     // random strangers, so one in the town now means exactly this (Trym, 20 Sep).
-    if (i >= 0) { const f = folk && folk(); if (f && f.hand) f.hand(row.v, 'mug'); drop(i, true); }   // served: they go and sit with it
+    if (i >= 0) { const f = folk && folk(); if (f && f.hand) f.hand(row.v, cfg.item); drop(i, true); }   // served: they go and sit with it
     tray.idle('');
   }
 
@@ -555,12 +577,12 @@ export function bootTownCafe(ctx) {
     on = true;
     served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0;
     standIn();
-    if (!tray) tray = mountCounter(host || world.parentElement, { onCup, label: (k) => (COPY.go || {})[k] || '', idle: () => COPY.idle || '' });
+    if (!tray) tray = mountCounter(host || world.parentElement, { onCup, deck: cfg.deck, label: (k) => (WORDS.go || {})[k] || '', idle: () => WORDS.idle || '' });
     if (tray.tips) tray.tips(0);
     tray.show();
     tray.idle('');
-    if (COPY.on) say(COPY.on);
-    track('town_shift', { at: 'cafe', step: 'in' });
+    if (WORDS.on) say(WORDS.on);
+    track('town_shift', { at: cfg.at, step: 'in' });
     return true;
   }
   function clockOut() {
@@ -570,8 +592,8 @@ export function bootTownCafe(ctx) {
     cup = null;
     stepOut();
     if (tray) { tray.idle(''); tray.hide(); }
-    if (COPY.off) say(COPY.off);
-    track('town_shift', { at: 'cafe', step: 'out', cups: served });
+    if (WORDS.off) say(WORDS.off);
+    track('town_shift', { at: cfg.at, step: 'out', cups: served });
     // ⭐ THE TILL. Paid ONCE, at the end, through the only faucet the server knows — and `pay` reads
     // what today's cap still allows BEFORE it hands anything over, so the counter stops paying rather
     // than paying coins that evaporate at the next ack.
@@ -583,7 +605,7 @@ export function bootTownCafe(ctx) {
   // so the square no longer has to be visible behind it. ⚠️ it shows WHAT THE CAP ALLOWED, not what the
   // grades came to — a receipt that promises coins the server refused would be a lie on a piece of paper.
   function receipt(paid) {
-    const w = COPY.receipt || {};
+    const w = WORDS.receipt || {};
     if (!openCard || !w.title) return;
     // ⚠️ THREE OUTCOMES, NOT TWO. paid === 0 meant `none` — "the cups stayed stacked and dry" — and a
     // player who had served a full queue after the day's 120-coin tip cap was spent read exactly that.
@@ -594,7 +616,7 @@ export function bootTownCafe(ctx) {
     // 🧾 AND IT CARRIES EVIDENCE THAT WORK HAPPENED. The card used to show a number and a mood and
     // nothing else: `served` and `best` were tracked, passed to pay() for Pulse, and never shown. One
     // cup made right names itself, which is also the only place the three drinks' names are ever read.
-    const drink = best > 0 ? (COPY.drinks || {})[lastBest] || '' : '';
+    const drink = best > 0 ? (WORDS.drinks || {})[lastBest] || '' : '';
     const good = drink && w.best ? w.best.replace('{drink}', drink) : '';
     openCard('<div class="tw-cup__till">'
       + '<h2>' + esc(w.title) + '</h2>'
@@ -671,7 +693,8 @@ export function bootTownCafe(ctx) {
     clockIn, clockOut, redraw, tick,
     // ☕ what the front says to somebody who does not work here — the rig's line, and the reason the
     // town loads this chunk on a tap from a stranger
-    front: () => COPY.front || '',
+    front: () => WORDS.front || '',
+    at: () => cfg.at,
     // ☕ THE BOTTOM OF THE SCREEN IS NOT OURS ALONE. The pocket opens there too and is drawn under us,
     // so it asks the counter to stand down; tick() honours it rather than fighting it back up.
     hold(v) { held = !!v; if (!tray || !on) return; if (held) tray.fold(); else if (!away) tray.show(); },
@@ -679,7 +702,7 @@ export function bootTownCafe(ctx) {
     tray: () => tray,
     take: () => ({ served, tips, best }),
     seam: {
-      on: () => on, clockIn, clockOut,
+      on: () => on, clockIn, clockOut, counter: () => cfg.at,   // which counter this is (`at` below is the café's window)
       at: () => (atWork ? { z: +atWork.style.zIndex, w: atWork.style.width, top: atWork.style.top, clip: atWork.style.clipPath } : null),
       // ⚠️ the walk must measure what is SEEN, not the element: the banana is deliberately bigger
       // than the window now, and getBoundingClientRect knows nothing about a clip-path
@@ -690,7 +713,7 @@ export function bootTownCafe(ctx) {
       arrive: () => { line.forEach((q) => { if (!q.at) { q.at = performance.now(); q.v.path = []; q.v.job = 'queue'; } }); return line.length; },
       cup: () => (tray ? tray.cup() : null),
       serve: () => { serveNext(); return !!(tray && tray.cup()); },
-      rope: () => ROPE.map((r) => ({ x: r[0], y: r[1] })),
+      rope: () => cfg.rope.map((r) => ({ x: r[0], y: r[1] })),
       // ☕ age every waiting body to a patience rung: the walk cannot stand at a counter for 34 real
       // seconds. ⚠️ it moves their ARRIVAL, not the rung — patienceTick recomputes the rung from `at`
       // every frame, so poking the rung directly is undone before the next paint.

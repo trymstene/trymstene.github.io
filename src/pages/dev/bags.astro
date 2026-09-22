@@ -9,7 +9,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 const title = 'The shopping-bag bench — Banana Town';
 const description = 'Internal bench for the town’s shopping bags. Not a public page.';
-const BAGS = ['shopbag_cream', 'shopbag_beige', 'shopbag_brown'];
+const BAGS = ['shopbag_cream', 'shopbag_beige', 'shopbag_brown', 'lemoncup'];   // 🍋 22 Sep: the stand's glass, previewed here as the bags were
 ---
 <BaseLayout title={title} description={description} robots="noindex,nofollow" showFooter={false}>
   <style is:inline>
@@ -85,7 +85,7 @@ const BAGS = ['shopbag_cream', 'shopbag_beige', 'shopbag_brown'];
       pairsit: () => 0,
       pairdance: (t) => Math.floor(t / 100) % NFRAMES,
     };
-    const NEXT = { shopbag_cream: 'shopbag_beige', shopbag_beige: 'shopbag_brown', shopbag_brown: 'shopbag_cream' };
+    const NEXT = { shopbag_cream: 'shopbag_beige', shopbag_beige: 'shopbag_brown', shopbag_brown: 'shopbag_cream', lemoncup: 'shopbag_cream' };   // a glass in the left hand rides beside a bag in the right
     const DRESS = { dressed: { hat: 'party', extras: { balloons: true } }, dressed2: { hat: 'backwardscap', extras: { lemonjug: true } } };
     const dressFor = (bag, pose) => pose.startsWith('pair') ? { extras: { [NEXT[bag]]: true } } : DRESS[pose];
     assetsReady().then(() => {

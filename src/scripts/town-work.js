@@ -19,7 +19,10 @@ import { rowsOf, payOf, shareOf } from '../data/town/jobs.js';   // 💼 the one
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
-const BOSS = { pip: 'store', spinner: 'condo', bean: 'cafe', stamp: 'post' };   // ✉️ Stamp hires at the post office since 22 Sep 2026
+const BOSS = { pip: 'store', spinner: 'condo', bean: 'cafe', stamp: 'post', figjr: 'stand' };   // ✉️ Stamp hires at the post office, 🍋 Fig Jr. at the lemonade stand (22 Sep 2026)
+// 🍋 a workplace with no PROPS entry (the stand is baked scenery with a spot): where turning up is measured from
+const MARKS = { stand: { x: 890, y: 545 } };
+const markOf = (PROPS, at) => { const p = PROPS && PROPS[at]; if (p) return { x: p.x + p.w / 2, y: p.base }; return MARKS[at] || null; };
 const NEAR = 120;   // how close to your own workplace counts as turning up, in world px
 
 const readJob = () => { try { return JSON.parse(localStorage.getItem(MIRROR) || 'null') || {}; } catch (e) { return {}; } };
@@ -125,10 +128,9 @@ export function bootTownWork(ctx) {
   let askAt = 0;
   function tick(now) {
     if (!job.at || now - askAt < 4000) return;
-    const p = PROPS[job.at];
-    if (!p) return;
-    const cx = p.x + p.w / 2;
-    if (Math.hypot(pos.x - cx, pos.y - p.base) > NEAR) return;
+    const m = markOf(PROPS, job.at);
+    if (!m) return;
+    if (Math.hypot(pos.x - m.x, pos.y - m.y) > NEAR) return;
     askAt = now;
     const day = new Date().toISOString().slice(0, 10);
     if (toldDay === day) return;
@@ -160,7 +162,7 @@ export function bootTownWork(ctx) {
       told: () => job.told || '', tell: (k) => { job.told = k; writeJob(job); },
       view,
       ask: (key) => { const t = topicFor(key); return t ? { q: t.q, a: t.a() } : null; },
-      near: () => { const p = job.at && PROPS[job.at]; return !!p && Math.hypot(pos.x - (p.x + p.w / 2), pos.y - p.base) <= NEAR; },
+      near: () => { const m = job.at && markOf(PROPS, job.at); return !!m && Math.hypot(pos.x - m.x, pos.y - m.y) <= NEAR; },
     },
   };
 }

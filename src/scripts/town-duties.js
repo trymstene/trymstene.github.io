@@ -69,6 +69,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 // Monday is payday: the days until the next one, by the UTC clock (a Monday reads as a week away —
 // the cheque for the week just gone is already on its way, and the new week starts from nothing)
 export const daysToPayday = (t) => { const d = (new Date(t == null ? Date.now() : t).getUTCDay() + 6) % 7; return (7 - d) % 7 || 7; };
+const TIPS = ['cafe', 'stand'];   // the jobs paid per glass, never by payslip (src/data/town/jobs.js JOB_PAY 0)
 const FIRED_SHOWN_MS = 3 * 86400000;   // the sack is on the note for three days, then the note is quiet
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // the numbers go in bold, so the eye finds them; the words stay the rig's
@@ -138,9 +139,11 @@ export function bootTownDuties({ view, work, track }) {
     const f = s.fired;
     if (f && f.at && COPY.fired && COPY.fired[f.at] && Date.now() - (f.t || 0) < FIRED_SHOWN_MS && !s.at) return { top: '', line: esc(COPY.fired[f.at]), kind: 'fired' };
     if (!s.at) return null;
-    if (s.at === 'cafe') {
-      if (!s.turnedUp) return COPY.duty && COPY.duty.cafe ? { top: '', line: esc(COPY.duty.cafe), kind: 'duty' } : null;
-      return COPY.cafeDone ? { top: '', line: esc(COPY.cafeDone), kind: 'wage' } : null;
+    // ☕🍋 a tips job has no counts: its duty until you have clocked in today, then its after-line
+    if (TIPS.includes(s.at)) {
+      const d = COPY.duty && COPY.duty[s.at], after = COPY[s.at + 'Done'];
+      if (!s.turnedUp) return d ? { top: '', line: esc(d), kind: 'duty' } : null;
+      return after ? { top: '', line: esc(after), kind: 'wage' } : null;
     }
     const top = countsFor(s);
     if (s.owed > 0 && COPY.payslip) return { top, line: esc(COPY.payslip), kind: 'payslip' };

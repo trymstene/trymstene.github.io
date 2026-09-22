@@ -69,4 +69,19 @@ const shopbag_cream = bag('#ffffff', '#fff3d9', '#e9dcc2');
 const shopbag_beige = bag('#f3e2c4', '#e3c99f', '#c8ab7d');
 const shopbag_brown = bag('#c69267', '#ab7648', '#8b5c36');
 
-export const TOWN_SVG = { letter, lemonjug, wateringcan, shopbag_cream, shopbag_beige, shopbag_brown };
+// 🍋 a glass of lemonade from Fig Jr.'s stand (22 Sep 2026): ice at the top, a straw, a lemon wheel on the rim —
+// what a served customer walks off with, the jug's sibling, sized like the mug
+const lemoncup = svg(80, 110,
+  B(50, 0, 10, 10, K) + B(60, 0, 10, 10, RED)
+  + B(50, 10, 10, 10, K) + B(60, 10, 10, 10, RED)
+  + B(0, 20, 80, 10, K)
+  + B(0, 30, 10, 10, K) + B(10, 30, 20, 10, GLASS) + B(30, 30, 10, 10, LEMON) + B(40, 30, 10, 10, GLASS) + B(50, 30, 10, 10, RED) + B(60, 30, 10, 10, GLASS) + B(70, 30, 10, 10, K)
+  + B(0, 40, 10, 10, K) + B(10, 40, 10, 10, GLASS) + B(20, 40, 10, 10, DROP) + B(30, 40, 10, 10, ADE) + B(40, 40, 10, 10, GLASS) + B(50, 40, 10, 10, ADE) + B(60, 40, 10, 10, GLASS) + B(70, 40, 10, 10, K)
+  + B(0, 50, 10, 10, K) + B(10, 50, 10, 10, GLASS) + B(20, 50, 40, 10, ADE) + B(60, 50, 10, 10, ADE2) + B(70, 50, 10, 10, K)
+  + B(0, 60, 10, 10, K) + B(10, 60, 10, 10, GLASS) + B(20, 60, 10, 10, ADE) + B(30, 60, 10, 10, DROP) + B(40, 60, 20, 10, ADE) + B(60, 60, 10, 10, ADE2) + B(70, 60, 10, 10, K)
+  + B(0, 70, 10, 10, K) + B(10, 70, 10, 10, GLASS) + B(20, 70, 30, 10, ADE) + B(50, 70, 20, 10, ADE2) + B(70, 70, 10, 10, K)
+  + B(0, 80, 10, 10, K) + B(10, 80, 10, 10, GLASS) + B(20, 80, 50, 10, ADE2) + B(70, 80, 10, 10, K)
+  + B(0, 90, 10, 10, K) + B(10, 90, 60, 10, ADE2) + B(70, 90, 10, 10, K)
+  + B(0, 100, 80, 10, K));
+
+export const TOWN_SVG = { letter, lemonjug, wateringcan, shopbag_cream, shopbag_beige, shopbag_brown, lemoncup };

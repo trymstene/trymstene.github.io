@@ -105,7 +105,8 @@ const ABOUT = {
   cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
   garden_e: ['', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
   garden_w: ['', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
-  stand: ['LEMONADE', 93, 'Lemonade, from a kid at the Bunch. One coin, one small good thing. Not built yet.'],
+  // 🍋 no third field: the stand answers for itself now, through the rig (town-room openFor + town-lemon.json `front`)
+  stand: ['LEMONADE', 93, ''],
 };
 for (const [key, spot] of Object.entries(SPOTS)) {
   const a = ABOUT[key];
@@ -804,7 +805,7 @@ const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid', bread:
 // so during a shift the pocket opened completely behind the counter's tray and a tap on the bag did
 // nothing a player could see. The counter yields while the bag is open and comes back when it closes —
 // the same courtesy the toast already does for the pocket, two lines down.
-const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} try { if (sort && sort.hold) sort.hold(v); } catch (e) {} };
+const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} try { const l = room && room.seam && room.seam.lemon && room.seam.lemon(); if (l && l.hold) l.hold(v); } catch (e) {} try { if (sort && sort.hold) sort.hold(v); } catch (e) {} };
 function toggleTray() {
   if (!tray.hidden) { tray.hidden = true; cafeYield(false); return; }
   cafeYield(true);
@@ -891,7 +892,7 @@ assetsReady().then(() => {
   track('town_open', { test: /[?&]towntest/.test(location.search) ? 1 : 0 });
   // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
   import('./town-room.js').then((m) => {
-    room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos,
+    room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
       hud, esc, track, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
       setSlow: (v) => { slow = +v > 0 ? +v : 1; },
       nibStation,   // 🕯 where chapter one wants Nib right now ('fountain' while its first scene is open)

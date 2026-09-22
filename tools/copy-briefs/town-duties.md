@@ -45,6 +45,9 @@ journal chip, in the town's brown-and-cream paper. It shows TWO lines:
    - For the Coffee Cup only: `duty.cafe` (clock in at the serving window and make cups) until you
      have clocked in today, then `cafeDone` (tips gather on the tray as you pour, paid when you
      step away).
+   - For the lemonade stand (22 Sep 2026), the same two the same way: `duty.stand` (step behind Fig
+     Jr.'s stand and pour lemonade) until you have clocked in today, then `standDone` (tips gather
+     on the tray glass by glass, paid when you step away). Not the café's words.
 
 ## Rules
 

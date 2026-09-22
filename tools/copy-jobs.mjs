@@ -417,6 +417,7 @@ const lifeFields = {
   'work.at.condo': { kind: 'prose', aim: 20, max: 30, note: 'The arcade’s name, the same way.' },
   'work.at.cafe': { kind: 'prose', aim: 20, max: 30, note: 'The Coffee Cup’s name, the same way.' },
   'work.at.post': { kind: 'prose', aim: 20, max: 30, note: 'The post office’s name, the same way — Stamp hires there since 22 Sep 2026.' },
+  'work.at.stand': { kind: 'prose', aim: 20, max: 30, note: 'The lemonade stand’s name, the same way — Fig Jr. hires there since 22 Sep 2026. Lower case with its article, inside a sentence.' },
   'work.crate': { kind: 'prose', aim: 60, max: 80, note: 'Said as you lift a crate off the stack in the shop you work in. The weight is the point — the banana walks slower while carrying — so let the line feel like picking something heavy up. No instruction, no arrow, no “now take it to…”: the shelf with nothing on it is the instruction.' },
   'work.stocked': { kind: 'prose', aim: 60, max: 80, note: 'Said as the crate goes onto a bare shelf and the face fills. ⭐ the reward IS the shelf and the row now on the till, so this line notices that rather than praising anybody. Never a number, never coins — the chore does not pay in money.' },
   'work.full': { kind: 'prose', aim: 60, max: 80, note: 'Said when every face the shop has is already filled, so there is nothing left to stock today. Contented, not a refusal — the work is DONE, which is a nice thing to be told.' },
@@ -499,8 +500,9 @@ const lifeSchema = {
       crate: { type: 'string', description: lifeFields['work.crate'].note },
       stocked: { type: 'string', description: lifeFields['work.stocked'].note },
       full: { type: 'string', description: lifeFields['work.full'].note },
-      at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'cafe', 'post'], properties: {
+      at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'cafe', 'post', 'stand'], properties: {
         post: { type: 'string', description: lifeFields['work.at.post'].note },
+        stand: { type: 'string', description: lifeFields['work.at.stand'].note },
         store: { type: 'string', description: lifeFields['work.at.store'].note },
         condo: { type: 'string', description: lifeFields['work.at.condo'].note },
         cafe: { type: 'string', description: lifeFields['work.at.cafe'].note },
@@ -566,6 +568,56 @@ const cafeFields = {
   'drinks.tall': { kind: 'label', aim: 10, max: 16, note: 'The middle drink’s name, same rules.' },
   'drinks.double': { kind: 'label', aim: 10, max: 16, note: 'The strongest drink’s name, same rules.' },
 };
+// 🍋 THE LEMONADE STAND (22 Sep 2026, docs/town-jobs-plan.md §11.5): the café's counter with a lemonade deck on
+// it, so the same fields — re-noted for a stall with a jug on it, a glass instead of a cup, and a kid behind it.
+const lemonFields = {
+  on: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as the banana steps round the back of the stand’s table and the tray rises: the stand opening for the afternoon. Not an instruction, not a greeting to anybody. Never the café’s words (no apron, no propeller).' },
+  off: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as they step away, a beat before the receipt card opens. The stand is quiet for now. Contented; never a summary and never a number.' },
+  'receipt.title': { kind: 'prose', aim: 16, max: 24, note: 'The receipt card’s heading. Two or three words, a NAME for the paper rather than a sentence — and not the café’s.' },
+  'receipt.take': { kind: 'prose', aim: 54, max: 72, holds: ['{n}'], note: 'The one measured line naming what the tips came to. MUST contain {n} — the game puts the coins there. A TOTAL is fine and a RATE is forbidden: no “per glass”, no “each”.' },
+  'receipt.line': { kind: 'prose', aim: 66, max: 88, note: 'The single line under the take: the stand as you left it — the jug, the lane, the sun on the awning. It notices the PLACE, never the player’s performance, and never a number.' },
+  'receipt.none': { kind: 'prose', aim: 62, max: 84, note: 'Shown INSTEAD of the take when the shift served nothing at all. Contented, never a telling-off — standing behind a lemonade stand on a slow afternoon is a perfectly good thing to have done.' },
+  'receipt.capped': { kind: 'prose', aim: 66, max: 88, note: 'Shown INSTEAD of the take when glasses WENT OUT but today’s tips are already spent — the work happened and the coins did not. Not a refusal, not a telling-off, never a number, never a cap, never “come back tomorrow” as an instruction.' },
+  'receipt.best': { kind: 'prose', aim: 58, max: 78, holds: ['{drink}'], note: 'One line under the take, shown only when at least one glass came out RIGHT, naming it: MUST contain {drink} — the game puts the drink’s own name there. It notices the glass, not the player; never the word perfect.' },
+  'receipt.back': { kind: 'label', aim: 12, max: 18, note: 'The button that closes the receipt. A VERB first, short enough that it can never wrap onto two lines.' },
+  'cup.perfect[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 town toasts for a glass that came out right, one picked per glass. Notice the GLASS, or the customer taking it — never praise the player, never say “perfect”. A glass, ice, a lemon, a straw, the sun: not a cup, not foam, not a propeller.' },
+  'cup.fine[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a glass that is good enough, and off it goes. One notch down from the perfect deck: approving, never a correction, never a hint.' },
+  'cup.wrong[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a glass that is not a good glass. It costs the sale and nothing else: no blame, no advice, no number, no “try again”. This world is fond of the people in it.' },
+  left: { kind: 'prose', aim: 58, max: 78, note: 'The town’s toast when somebody has waited too long at the front of the stand, turns their back and walks off. ⚠️ THEY HAVE NO NAME: strangers visiting the square. Write it about somebody unnamed, or the front of the stand going quiet. A small sadness, never how long they waited.' },
+  front: { kind: 'prose', aim: 90, max: 120, note: 'What the lemonade stand says when a player who does NOT work there taps it. ⚠️ it replaces a hand-written line ending “Not built yet.” which is false — the stand is open and Fig Jr. is behind it. What the place IS and whose it is; never an instruction, never a price, never how to get a job (Fig Jr.’s own card asks that).' },
+  idle: { kind: 'prose', aim: 40, max: 54, note: 'The small line ON THE TRAY when you are behind the counter and there is nobody at the front yet: the only thing on an otherwise empty tray, so it says the stand is open and simply quiet, never broken. Never a wait time, never “soon”, never an instruction.' },
+  'go.squeeze': { kind: 'label', aim: 8, max: 12, note: 'The word on the tray’s one button while the LEMON is held and let go: a single word for the THING BEING DONE, a label on a control, never “tap here”. Never wraps on a 360-wide phone.' },
+  'go.ice': { kind: 'label', aim: 8, max: 12, note: 'The same button at the ICE: three taps on a pulse. One word, the thing being done.' },
+  'go.pour': { kind: 'label', aim: 8, max: 12, note: 'The same button while the water is POURED to the line under a sweeping needle. One word, the thing being done.' },
+  'drinks.still': { kind: 'label', aim: 10, max: 16, note: 'The plain lemonade’s NAME — over ice, nothing else — one or two words, for the receipt only. It should sound like a kid’s stand in this town, not a menu.' },
+  'drinks.minty': { kind: 'label', aim: 10, max: 16, note: 'The one with a mint leaf in it, same rules.' },
+  'drinks.pink': { kind: 'label', aim: 10, max: 16, note: 'The pink one, same rules.' },
+};
+const LEMON_CAFE = /\b(propeller|apron|barista|coffee|espresso|foam|milk|grind|grinder|rope|cups?)\b/i;
+function lemonShape(data) {
+  const bad = cafeShape(data);   // the same mechanical rules: decks are decks, nobody is asked a question, {drink} is there
+  const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
+  const walk = (v, path) => {
+    if (Array.isArray(v)) v.forEach((x, i) => walk(x, path + '[' + i + ']'));
+    else if (v && typeof v === 'object') for (const k of Object.keys(v)) walk(v[k], path ? path + '.' + k : k);
+    else if (typeof v === 'string' && LEMON_CAFE.test(v)) say(path, 'is the café talking (' + String(v.match(LEMON_CAFE)[0]) + ') — this is a lemonade stand: a glass, a jug, a table, a lane');
+  };
+  walk(data, '');
+  return bad;
+}
+const lemonSchema = {
+  type: 'object', additionalProperties: false, required: ['on', 'off', 'receipt', 'idle', 'front', 'go', 'cup', 'left', 'drinks'],
+  properties: {
+    on: str(lemonFields.on.note), off: str(lemonFields.off.note), idle: str(lemonFields.idle.note), front: str(lemonFields.front.note), left: str(lemonFields.left.note),
+    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'back'],
+      properties: { title: str(lemonFields['receipt.title'].note), take: str(lemonFields['receipt.take'].note), line: str(lemonFields['receipt.line'].note), none: str(lemonFields['receipt.none'].note), capped: str(lemonFields['receipt.capped'].note), best: str(lemonFields['receipt.best'].note), back: str(lemonFields['receipt.back'].note) } },
+    go: { type: 'object', additionalProperties: false, required: ['squeeze', 'ice', 'pour'], properties: { squeeze: str(lemonFields['go.squeeze'].note), ice: str(lemonFields['go.ice'].note), pour: str(lemonFields['go.pour'].note) } },
+    cup: { type: 'object', additionalProperties: false, required: ['perfect', 'fine', 'wrong'],
+      properties: { perfect: { type: 'array', minItems: 3, maxItems: 4, items: str(lemonFields['cup.perfect[]'].note) }, fine: { type: 'array', minItems: 3, maxItems: 4, items: str(lemonFields['cup.fine[]'].note) }, wrong: { type: 'array', minItems: 3, maxItems: 4, items: str(lemonFields['cup.wrong[]'].note) } } },
+    drinks: { type: 'object', additionalProperties: false, required: ['still', 'minty', 'pink'], properties: { still: str(lemonFields['drinks.still'].note), minty: str(lemonFields['drinks.minty'].note), pink: str(lemonFields['drinks.pink'].note) } },
+  },
+};
+
 // 🤫 THE QUIET RULE HAS NO OTHER GUARD. Nothing in the client can stop a line that reads as a
 // banana speaking, so the mechanical half is here: nobody may be asked a question, and the decks
 // must be decks (one line repeated twice over a long shift is what a deck exists to prevent).
@@ -1192,6 +1244,7 @@ const dutyFields = {
   'kinds.days': { kind: 'label', aim: 9, max: 18, note: 'Days you turned up at the workplace — as done, one or two lower-case words, no number.' },
   'kinds.sort': { kind: 'label', aim: 11, max: 18, note: 'The post office\u2019s post sorted (a duty that comes later) — as done, two lower-case words, no number.' },
   'duty.cafe': { kind: 'prose', aim: 44, max: 70, note: 'The Coffee Cup\u2019s note until you have clocked in today: clock in at the serving window and make cups. Lower case first letter.' },
+  'duty.stand': { kind: 'prose', aim: 44, max: 70, note: 'The lemonade stand\u2019s note until you have clocked in today: step behind Fig Jr.\u2019s stand and pour glasses of lemonade for whoever comes to the front. Lower case first letter, no numbers, not the café\u2019s words.' },
   wage: { kind: 'prose', aim: 60, max: 80, holds: ['{coins}', '{days}'], note: 'Under the counts at a cheque job: how much the week has earned so far and how far away payday is. MUST contain {coins} and {days} exactly once each \u2014 the game prints the numbers. Payday is Monday. Lower case first letter.' },
   done: { kind: 'prose', aim: 46, max: 70, note: 'Under the counts when every target of the week is met: the week\u2019s work is done and the rest of it is yours. No numbers. Lower case first letter.' },
   'nudge.condo': { kind: 'prose', aim: 60, max: 80, note: 'Under the counts when Thursday has come and nothing at all has been done at the Arcade: Spinner has written to ask if you are coming in. Warm, dry, a little pointed, never a threat, no numbers. Lower case first letter.' },
@@ -1201,6 +1254,7 @@ const dutyFields = {
   'nudge.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the Post Office: Stamp, the postmaster, has written to ask if you are coming in — the pile is not sorting itself. No numbers. Lower case first letter.' },
   'fired.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the Post Office: Stamp let you go; ask again when you like. No numbers. Lower case first letter.' },
   cafeDone: { kind: 'prose', aim: 50, max: 70, note: 'The Coffee Cup once you have clocked in today: tips are counted on the tray as you pour and paid when you step away. No numbers. Lower case first letter.' },
+  standDone: { kind: 'prose', aim: 50, max: 70, note: 'The lemonade stand once you have clocked in today: the tips gather on the tray glass by glass and are paid when you step away. No numbers. Lower case first letter, not the café\u2019s words.' },
   payslip: { kind: 'prose', aim: 50, max: 70, note: 'A cheque has been paid and the payslip waits in the letterbox at your homestead: it sends you home to open it. No numbers \u2014 the payslip has them. Lower case first letter.' },
 };
 const DUTY_UI = new RegExp('\\b(tap|click|button|menu|screen|swipe)\\b', 'i');
@@ -1209,7 +1263,7 @@ function dutyShape(data) {
   const bad = [];
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
   const k = data.kinds || {}, d = data.duty || {}, nu = data.nudge || {}, fi = data.fired || {};
-  const all = [...DUTY_KINDS.map((x) => ['kinds.' + x, k[x]]), ['duty.cafe', d.cafe], ['wage', data.wage], ['done', data.done],
+  const all = [...DUTY_KINDS.map((x) => ['kinds.' + x, k[x]]), ['duty.cafe', d.cafe], ['duty.stand', d.stand], ['standDone', data.standDone], ['wage', data.wage], ['done', data.done],
     ...DUTY_BOSS.map((x) => ['nudge.' + x, nu[x]]), ...DUTY_BOSS.map((x) => ['fired.' + x, fi[x]]), ['cafeDone', data.cafeDone], ['payslip', data.payslip]];
   for (const [p, v0] of all) {
     const v = String(v0 || '');
@@ -1228,15 +1282,15 @@ function dutyShape(data) {
   return bad;
 }
 const dutySchema = {
-  type: 'object', additionalProperties: false, required: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'payslip'],
+  type: 'object', additionalProperties: false, required: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip'],
   properties: {
     kinds: { type: 'object', additionalProperties: false, required: DUTY_KINDS,
       properties: Object.fromEntries(DUTY_KINDS.map((x) => [x, str(dutyFields['kinds.' + x].note)])) },
-    duty: { type: 'object', additionalProperties: false, required: ['cafe'], properties: { cafe: str(dutyFields['duty.cafe'].note) } },
+    duty: { type: 'object', additionalProperties: false, required: ['cafe', 'stand'], properties: { cafe: str(dutyFields['duty.cafe'].note), stand: str(dutyFields['duty.stand'].note) } },
     wage: str(dutyFields.wage.note), done: str(dutyFields.done.note),
     nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['nudge.condo'].note), store: str(dutyFields['nudge.store'].note), post: str(dutyFields['nudge.post'].note) } },
     fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['fired.condo'].note), store: str(dutyFields['fired.store'].note), post: str(dutyFields['fired.post'].note) } },
-    cafeDone: str(dutyFields.cafeDone.note), payslip: str(dutyFields.payslip.note),
+    cafeDone: str(dutyFields.cafeDone.note), standDone: str(dutyFields.standDone.note), payslip: str(dutyFields.payslip.note),
   },
 };
 
@@ -1346,7 +1400,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-duties.json',
     approved: 'src/data/copy/town-duties.json',
     reads: 'src/scripts/town-duties.js (through a glob \u2014 no words, no chip)',
-    top: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'payslip'],
+    top: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip'],
     fields: dutyFields,
     shape: dutyShape,
     schema: dutySchema,
@@ -1363,6 +1417,20 @@ export const JOBS = {
     fields: dressFields,
     shape: dressShape,
     schema: dressSchema,
+  },
+  'town-lemon': {
+    id: 'town-lemon',
+    title: 'Banana Town — the lemonade stand',
+    what: 'Stepping behind Fig Jr.’s stand and stepping away, what the stand says to a stranger, the receipt, the three decks for a glass well or badly made, the one who gives up, and the three drinks’ names.',
+    brief: 'tools/copy-briefs/town-lemon.md',
+    out: 'tools/copy-out/town-lemon.json',
+    approved: 'src/data/copy/town-lemon.json',
+    reads: 'src/scripts/town-lemon.js (through a glob inside the stand’s own lazy chunk)',
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks'],
+    personas: 'town-personas',
+    fields: lemonFields,
+    shape: lemonShape,
+    schema: lemonSchema,
   },
   'town-cafe': {
     id: 'town-cafe',

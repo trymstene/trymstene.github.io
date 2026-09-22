@@ -894,8 +894,8 @@ test('your lock: shipped off, and when it is on it wins the display and hands ba
   expect(errors).toEqual([]);
 });
 
-// 💼 ASKING A BOSS FOR A JOB (19 Sep 2026, docs/town-jobs-plan.md §3). Four residents can hire
-// you (Stamp since 22 Sep), and the question sits on their own dialogue card beside the two they already answer — no new
+// 💼 ASKING A BOSS FOR A JOB (19 Sep 2026, docs/town-jobs-plan.md §3). Five residents can hire
+// you (Stamp and Fig Jr. since 22 Sep), and the question sits on their own dialogue card beside the two they already answer — no new
 // card and no new button, because the world already had a way to ask somebody something.
 //
 // ⚠️ THE CARD TYPES A STRING, NEVER A PROMISE (world-dialogue.js). So the answer is chosen from a
@@ -910,7 +910,7 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   // second import can arrive a beat later. Waiting for the thing being asserted, not for its module.
   await page.waitForFunction(() => window.__town && window.__town.work && window.__town.work.ask('pip'), null, { timeout: 20000 });
   const bosses = await seam(page, () => window.__town.work.bosses());
-  expect(bosses).toEqual({ pip: 'store', spinner: 'condo', bean: 'cafe', stamp: 'post' });   // ✉️ Stamp hires since 22 Sep 2026
+  expect(bosses).toEqual({ pip: 'store', spinner: 'condo', bean: 'cafe', stamp: 'post', figjr: 'stand' });   // ✉️🍋 Stamp and Fig Jr. hire since 22 Sep 2026
 
   // ⭐ the invitation, not a refusal: a browser with no kept pass cannot be paid, and the line must
   // read as something you could keep rather than something you did wrong
@@ -935,6 +935,9 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   const posted = await seam(page, () => window.__town.work.ask('stamp'));
   expect(posted.a, 'and Stamp names the post office as the rig writes it').toContain('Post Office');
   expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'post' });
+  const poured = await seam(page, () => window.__town.work.ask('figjr'));
+  expect(poured.a, 'and Fig Jr. names the lemonade stand as the rig writes it').toContain('lemonade stand');
+  expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'stand' });
 
   // ── and the question is really ON THE CARD, reached by walking up and tapping like a player
   await seam(page, () => window.__town.work.set({ at: '' }));
