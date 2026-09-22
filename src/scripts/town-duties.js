@@ -33,7 +33,7 @@ const CSS = `
   border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
   font-size:0.78rem; font-weight:800; padding:7px 11px 7px 22px; line-height:1.35;
   pointer-events:auto; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent;   /* 📎 the paper folds on a tap (Trym, 22 Sep); the badge brings it back */
-  animation:twdIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
+  animation:twdIn 0.32s cubic-bezier(0.34,1.56,0.64,1); transition:top 200ms ease-out;   /* the column re-stacks in one small move */
 }
 .twd-chip.is-min { pointer-events:none; }
 .twd-chip[hidden] { display:none !important; }
@@ -96,12 +96,33 @@ export function bootTownDuties({ view, work, track }) {
   el.addEventListener('pointerdown', (e) => { if (!el.classList.contains('is-min')) e.stopPropagation(); });
   el.addEventListener('click', (e) => { if (el.classList.contains('is-min') || e.target.closest('.twd-chip__badge')) return; e.stopPropagation(); work.seam.fold(true); fold(); });
 
-  // 📎 UNDER THE QUEST'S CHIP when both are up, never on top of it: the same corner, one card below
+  // 📎 ONE COLUMN, TWO NOTES (Trym, 22 Sep: "there needs to be some harmony between the main questline icon and
+  // notification, and the work-job-icon and notification - so they dont disturb or get in eachothers way").
+  // The quest note is first and the work note sits under it — under the NOTE while it is open, under its
+  // BADGE once it is folded, because a folded note is a 0×0 anchor with the badge hanging at its corner. So two
+  // folded notes are two badges stacked, never one on top of the other, and a fold above moves this note in the
+  // same beat (a ResizeObserver on the quest note; the interval only catches it arriving or leaving).
+  const REST = 48;         // the column's top: the quest note's own resting place (world-quest.js .bwq-hint)
+  const BADGE_ROOM = 18;   // our badge hangs 15 px above our top edge: room for it under whatever is above
+  let watched = null, ro = null;
   function place() {
     const q = view.querySelector('.bwq-hint');
-    if (q && !q.hidden && !q.classList.contains('is-min') && !q.classList.contains('bwq-hint--wait')) {
-      el.style.top = Math.round(q.offsetTop + q.offsetHeight + 14) + 'px';
-    } else el.style.top = '';
+    if (q !== watched) {
+      if (ro) { ro.disconnect(); ro = null; }
+      watched = q;
+      if (q && typeof ResizeObserver === 'function') { ro = new ResizeObserver(() => place()); ro.observe(q); }
+    }
+    let top = REST;
+    if (q && !q.hidden && !q.classList.contains('bwq-hint--wait') && getComputedStyle(q).display !== 'none') {
+      const vr = view.getBoundingClientRect();
+      if (q.classList.contains('is-min')) {
+        const b = q.querySelector('.bwq-hint__badge'), r = b && b.getBoundingClientRect();
+        top = r && r.height ? Math.round(r.bottom - vr.top) + BADGE_ROOM + 4 : REST + 44;
+      } else {
+        top = Math.round(q.getBoundingClientRect().bottom - vr.top) + BADGE_ROOM;
+      }
+    }
+    el.style.top = top + 'px';
   }
 
   // the counts line: the workplace as the payslip prints it, then each duty as done — "floor swept 1/3"
@@ -162,7 +183,7 @@ export function bootTownDuties({ view, work, track }) {
       kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : ''),
       folded: () => el.classList.contains('is-min'),
       offset: () => el.style.top,
-      stop: () => clearInterval(placer),
+      stop: () => { clearInterval(placer); if (ro) ro.disconnect(); },
     },
   };
 }

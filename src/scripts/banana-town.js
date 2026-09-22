@@ -393,7 +393,7 @@ function placeToast() {
   if (toastEl.classList.contains('is-above-tray')) {
     const v = view.getBoundingClientRect();
     let low = 0;
-    for (const el of document.querySelectorAll('.wh, .bwq-hint, .twd-chip')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); }
+    for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); }
     toastEl.style.setProperty('--tw-toast-top', Math.max(14, Math.round(low) + 10) + 'px');
   }
   if (toastEl.hidden || !panel || panel.hidden) return;

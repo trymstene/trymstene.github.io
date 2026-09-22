@@ -109,5 +109,27 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   await page.screenshot({ path: 'test-results/town-duties-under-the-quest.png' });
   const stack = await page.evaluate(() => { const q = document.querySelector('.bwq-hint').getBoundingClientRect(); const d = document.querySelector('.twd-chip').getBoundingClientRect(); return { qBottom: q.bottom, dTop: d.top }; });
   expect(stack.dTop, 'the work note sits below the quest note').toBeGreaterThan(stack.qBottom);
+  // ── ONE COLUMN (Trym, 22 Sep: "harmony between the main questline icon and notification, and the work-job-icon
+  // and notification - so they dont disturb or get in eachothers way"): fold the quest note and the work note
+  // moves up under its badge, never onto it; fold both and the two badges stand stacked, apart, in one column
+  const rect = (sel) => page.evaluate((s2) => { const r = document.querySelector(s2).getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: r.height }; }, sel);
+  await page.click('.bwq-hint > span');
+  await page.waitForTimeout(450);
+  let qb = await rect('.bwq-hint__badge'), db = await rect('.twd-chip__badge'), dn = await rect('.twd-chip');
+  expect(qb.h, 'the quest note folded to its badge').toBeGreaterThan(0);
+  expect(db.top, 'the work note’s badge sits under the quest badge, not on it').toBeGreaterThanOrEqual(qb.bottom);
+  expect(dn.top, 'and the note came up the column').toBeLessThan(stack.dTop);
+  await page.click('.twd-chip__line');
+  await page.waitForTimeout(450);
+  qb = await rect('.bwq-hint__badge'); db = await rect('.twd-chip__badge');
+  expect(db.top, 'two folded notes: two badges, stacked').toBeGreaterThanOrEqual(qb.bottom);
+  expect(Math.abs(db.left - qb.left), '…in one column').toBeLessThan(8);
+  await page.screenshot({ path: 'test-results/town-duties-two-badges.png' });   // the two badges, stacked in one column
+  await page.click('.twd-chip__badge');
+  await page.click('.bwq-hint__badge');
+  await page.waitForTimeout(450);
+  const again = await page.evaluate(() => { const q = document.querySelector('.bwq-hint').getBoundingClientRect(); const d = document.querySelector('.twd-chip').getBoundingClientRect(); return { qBottom: q.bottom, dTop: d.top }; });
+  expect(again.dTop, 'unfolded, the work note is back under the quest note').toBeGreaterThan(again.qBottom);
+  await page.screenshot({ path: 'test-results/town-duties-column.png' });
   expect(errs, 'nothing threw').toEqual([]);
 });

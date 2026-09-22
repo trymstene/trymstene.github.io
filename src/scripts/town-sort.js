@@ -122,7 +122,7 @@ export function mountSorter(host, opts = {}) {
     // this copy is what the strip's ResizeObserver fires first, so it has to agree.
     const vt = v.getBoundingClientRect().top;
     let low = 0;
-    for (const el of document.querySelectorAll('.wh, .bwq-hint, .twd-chip')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > vt) low = Math.max(low, r.bottom - vt); }
+    for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > vt) low = Math.max(low, r.bottom - vt); }
     t.style.setProperty('--tw-toast-top', Math.max(14, low ? Math.round(low) + 10 : 44) + 'px');
   };
   const toast = (up) => {
