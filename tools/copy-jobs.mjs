@@ -425,6 +425,10 @@ const lifeFields = {
   'work.hired': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'The boss saying yes. MUST contain {where} (the building). Warm and a little dry — a job in this town is a favour done gladly, never a contract. ⚠️ {where} IS LOWERCASE AND CARRIES ITS OWN ARTICLE (“the Arcade”), so it may never be the first thing after a full stop or start the line: “Gladly. {where} could use your hands.” printed a sentence beginning with a small letter for two of the three bosses. Keep it inside a clause.' },
   'work.moved': { kind: 'prose', aim: 80, max: 100, holds: ['{where}'], note: 'Said when a player who already works somewhere takes a job here instead. MUST contain {where}. One job at a time is the rule; this line makes leaving the old one feel like a decision, never a telling-off. ⚠️ {where} is lowercase and carries its own article, so it may never follow a full stop or open the line.' },
   'work.already': { kind: 'prose', aim: 70, max: 90, note: 'Said when you ask for a job you already hold. Fond, brief, no admin.' },
+  // 💼 ONE JOB AT A TIME, said out loud (Trym, 22 Sep: "there should be a message saying that i need to quit my job at <place> if i try to get a job somewhere else")
+  'work.busy': { kind: 'prose', aim: 76, max: 100, holds: ['{where}'], note: 'Said by a boss when a player who ALREADY works somewhere else asks for a job here: one job at a time, so they would have to leave {where} first (MUST contain {where} — the other workplace, lower case with its article, so it must sit inside a clause and never start a sentence). Kind and plain, a little dry — not a rule quoted, not a refusal with a slammed door; the boss would have them, but not while they are somebody else’s. Never “quit” as an order, never a number.' },
+  'work.quit': { kind: 'prose', aim: 24, max: 40, note: 'The question the PLAYER asks their OWN boss to stop working here — on the boss’s card beside the job question, only while they hold the job. The player’s voice, plain and polite, a question with a question mark.' },
+  'work.quitDone': { kind: 'prose', aim: 70, max: 100, note: 'The boss letting the player go at their own asking: warm, brief, the door stays open — no guilt, no admin, no number. It is the same door the sack leaves open, in a kinder key.' },
   'work.keep': { kind: 'prose', aim: 90, max: 110, note: 'Said when the player has no kept pass, so wages cannot be theirs yet. ⭐ AN INVITATION, NEVER A PUNISHMENT and never a rule quoted at them: work is something they can keep, and keeping the pass is how. No jargon — not “account”, not “anonymous”.' },
   'work.keepCta': { kind: 'label', aim: 22, max: 30, note: 'The ONE button under the `keep` answer on the boss’s card, which opens the page where a pass is kept. ⚠️ a “no” with nothing to tap is where a newcomer puts the phone down, and this is the whole of the fix: a verb first, two to four words, no full stop, and short enough that it can never wrap on a 360-wide phone. It is the player’s own next step, not an instruction from anybody.' },
   'work.day': { kind: 'prose', aim: 50, max: 70, note: 'The quiet line when turning up at your own workplace marks the day. Said once a day at most. It should feel noticed, not announced.' },
@@ -457,7 +461,7 @@ function lifeShape(data) {
   }
   // ⚠️ {where} IS LOWERCASE AND CARRIES ITS OWN ARTICLE. "Gladly. {where} could use your hands."
   // printed a sentence starting with a small letter for two of the three bosses.
-  for (const f of ['hired', 'moved']) {
+  for (const f of ['hired', 'moved', 'busy']) {
     const l = String(((data.work || {})[f]) || '');
     if (/(^|[.!?]\s+)\{where\}/.test(l)) say(`work.${f}`, '{where} sits at the start of a sentence — it is lowercase and carries its own article, so it must stay inside a clause', 'range');
   }
@@ -496,7 +500,7 @@ const lifeSchema = {
       store: { type: 'array', description: lifeFields['closed.store[]'].note, items: { type: 'string' } },
     } },
     lowShut: { type: 'array', description: lifeFields['lowShut[]'].note, items: { type: 'string' } },
-    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'keep', 'keepCta', 'day', 'crate', 'stocked', 'full'], properties: {
+    work: { type: 'object', additionalProperties: false, required: ['at', 'ask', 'hired', 'moved', 'already', 'busy', 'quit', 'quitDone', 'keep', 'keepCta', 'day', 'crate', 'stocked', 'full'], properties: {
       crate: { type: 'string', description: lifeFields['work.crate'].note },
       stocked: { type: 'string', description: lifeFields['work.stocked'].note },
       full: { type: 'string', description: lifeFields['work.full'].note },
@@ -511,6 +515,9 @@ const lifeSchema = {
       hired: { type: 'string', description: lifeFields['work.hired'].note },
       moved: { type: 'string', description: lifeFields['work.moved'].note },
       already: { type: 'string', description: lifeFields['work.already'].note },
+      busy: { type: 'string', description: lifeFields['work.busy'].note },
+      quit: { type: 'string', description: lifeFields['work.quit'].note },
+      quitDone: { type: 'string', description: lifeFields['work.quitDone'].note },
       keep: { type: 'string', description: lifeFields['work.keep'].note },
       keepCta: { type: 'string', description: lifeFields['work.keepCta'].note },
       day: { type: 'string', description: lifeFields['work.day'].note },

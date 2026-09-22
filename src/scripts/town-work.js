@@ -98,9 +98,14 @@ export function bootTownWork(ctx) {
         asked = '';
         if (job.at === at) { track('town_job', { at, r: 'already' }); return w.already || '';
         }
+        // 💼 ONE JOB AT A TIME, SAID OUT LOUD (Trym, 22 Sep: "there should be a message saying that i need to quit my
+        // job at <place> if i try to get a job somewhere else"). Asking a second boss used to move you with the
+        // `moved` line; now the boss says you are somebody else's, names the place, and nothing changes — the way
+        // out is your own boss's card (the quit topic below).
+        if (job.at && job.at !== at) { track('town_job', { at, r: 'busy' }); return (w.busy || '').replace('{where}', nameOf(job.at)); }
         const before = job.at || '';   // what to put back if the server refuses the take
-        const line = (job.at ? (w.moved || '') : (w.hired || '')).replace('{where}', nameOf(at));
-        track('town_job', { at, r: job.at ? 'moved' : 'took' });
+        const line = (w.hired || '').replace('{where}', nameOf(at));
+        track('town_job', { at, r: 'took' });
         passPost('/job/take', { at }).then((res) => {
           land(res);
           // the one case the device could not know: a link that is still an unkept pass
@@ -116,6 +121,27 @@ export function bootTownWork(ctx) {
       },
     };
   }
+  // 💼 LEAVING, at your own asking: a second topic on your OWN boss's card, only while you hold the job. The mirror
+  // lets go at once (the card types a string now), the server confirms with an empty take.
+  function quitFor(key) {
+    const at = BOSS[key];
+    const w = W();
+    if (!at || !w.quit || !w.quitDone || job.at !== at) return null;
+    return {
+      q: w.quit,
+      a: () => {
+        if (job.at !== at) return w.already ? '' : '';
+        track('town_job', { at, r: 'quit' });
+        passPost('/job/take', { at: '' }).then(land);
+        job = { ...job, at: '', up: '', duties: [], share: 0, sofar: 0, nudge: false };
+        writeJob(job);
+        notify();
+        return w.quitDone || '';
+      },
+    };
+  }
+  // every topic a boss's card carries for you: the job question, and the way out while the job is yours
+  const topicsFor = (key) => [topicFor(key), quitFor(key)].filter(Boolean);
   // ⚠️ the building's name comes from the RIG, not from the sign plank: the planks shout (“ARCADE”)
   // and two of the three are empty because the sprite carries its own sign. work.at holds the three
   // names written to sit inside a sentence, article and all.
@@ -146,7 +172,7 @@ export function bootTownWork(ctx) {
 
   return {
     tick,
-    topicFor,
+    topicFor, topicsFor,
     seam: {
       job: () => ({ ...job }),
       bosses: () => ({ ...BOSS }),
@@ -162,6 +188,7 @@ export function bootTownWork(ctx) {
       told: () => job.told || '', tell: (k) => { job.told = k; writeJob(job); },
       view,
       ask: (key) => { const t = topicFor(key); return t ? { q: t.q, a: t.a() } : null; },
+      quit: (key) => { const t = quitFor(key); return t ? { q: t.q, a: t.a() } : null; },
       near: () => { const m = job.at && markOf(PROPS, job.at); return !!m && Math.hypot(pos.x - m.x, pos.y - m.y) <= NEAR; },
     },
   };

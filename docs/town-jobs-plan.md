@@ -259,7 +259,12 @@ by name. `tools/check-quest-c2.mjs` fails if it changes without one.
 ## 3. The four jobs
 
 You take a job by walking up to a boss and asking. **One job at a time** — changing is a walk to
-another boss, which makes it a decision rather than an income stream. (**TRYM**: he asked "what
+another boss, which makes it a decision rather than an income stream. **(22 Sep 2026: the boss SAYS so.)** Asking a second
+boss while you hold a job no longer moves you — the boss answers that you would have to leave your place
+first (`work.busy`, naming it), and the way out is your own boss's card: `work.quit` is your question there
+while the job is yours, `work.quitDone` the goodbye with the door left open. Trym asked whether several jobs
+should be allowed instead; one at a time stands — the payslips and the work note would stack, and changing
+is meant to be a decision. (**TRYM**: he asked "what
 if you can work several places"; both judges resolved to one. Several at once with smaller sums
 is the alternative.)
 
@@ -863,9 +868,10 @@ deck, the rope, the words, the held item, the mark, the way of standing behind t
 are the defaults), and `src/scripts/town-lemon.js` is the configuration: `LEMON_DECK` = squeeze (a hold) · ice
 (three taps) · pour (a needle), the café's measured windows under new names, dressed by `[data-deck="lemon"]`
 in the tray's stylesheet; the rope on Hall Street in front of the table (`[890,598],[989,598]`); the vendor
-BEHIND the table at `890,518` (the stall's own pixels frame the banana — feet above the table's edge, the face
-in the gap under the awning; no clip, no second drawing) reached by one step round the back once the walk from
-a tap has stopped at the table's front; `lemoncup` (townwear.js, the jug's sibling, the mug's hand) in a served
+DRAWN in front of the stall and clipped at the table's top edge (the café's window recipe with the stall's own
+geometry: the board 453–483, a twelve-pixel gap, the table 496–542 — a banana merely walked behind the sprite
+showed a sliver; Trym: "anchored lower with at least half a banana") while your own banana on the cobbles is
+hidden; the mark is the table's front, where the walk from a tap stops; `lemoncup` (townwear.js, the jug's sibling, the mug's hand) in a served
 customer's hand; Fig Jr. steps to the orchard while the stand is worked (`standOn` → `overrideFor`). Tips through
 `town:tips` as the café; `JOB_PAY.stand = 0`, `BOSS.figjr`; the work note's tips branch is generic now
 (`duty.stand` / `standDone`). Words: the `town-lemon` copy job (the café's fields, re-noted for a stall and a

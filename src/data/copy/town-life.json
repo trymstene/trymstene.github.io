@@ -123,6 +123,9 @@
     "hired": "Gladly, {where} could use your hands.",
     "moved": "You chose {where}; your old place will manage.",
     "already": "You already have a spot here.",
+    "busy": "I would have you, but you would need to leave {where} first. One apron at a time.",
+    "quit": "May I stop working here?",
+    "quitDone": "Of course. Leave the apron here; there will be one if you return.",
     "keep": "Keep this pass, and the work you do stays yours.",
     "keepCta": "Keep my pass",
     "day": "Good to see you at your post."

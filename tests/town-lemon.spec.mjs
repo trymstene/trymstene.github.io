@@ -71,9 +71,18 @@ test('the stand answers a stranger in its own words, and its own staff step roun
   expect(await page.evaluate(() => window.__town.room.open('stand')), 'and the stand answers its own staff').toBe(true);
   await page.waitForFunction(() => window.__town.room.lemon() && window.__town.room.lemon().on(), null, { timeout: 30000 });
   await page.waitForTimeout(400);
-  const me = await page.evaluate(() => ({ x: window.__town.pos.x, y: window.__town.pos.y }));
-  expect(me.y, 'behind the table: feet above its edge (the table is 529–549)').toBeLessThan(529);
-  expect(Math.abs(me.x - 890), 'and on the stand’s own line').toBeLessThan(4);
+  // ⭐ THE VENDOR IS DRAWN, in front of the stall and clipped at the table's edge (Trym, 22 Sep: "anchored lower
+  // with at least half a banana"): a banana that merely walked behind the stall showed a sliver in the gap
+  const v = await lemon(page, (l) => l.vendor());
+  expect(v, 'a vendor stands at the counter').toBeTruthy();
+  expect(v.z, 'over the stall (its z is its base, 545)').toBeGreaterThan(100 + 545);
+  expect(v.clip, 'cut off at the counter’s edge, never floating over the table').toMatch(/^inset\(0(px)? 0(px)? [\d.]+%( 0(px)?)?\)$/);   // the browser folds the fourth value away
+  expect((v.floor - v.tableTop) / v.drawn, 'and less than half of it is under the counter').toBeLessThan(0.5);
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.tw-me')).display === 'none'), 'your banana on the cobbles is the one at the counter').toBe(true);
+  const drawn = await page.evaluate(() => { const e = document.querySelector('.tw-atwork--stand'), o = [...document.querySelectorAll('.tw-ov')].find((i) => /ov-50/.test(i.src)); const r = e.getBoundingClientRect(), k = o.getBoundingClientRect(); return { inside: r.left >= k.left - 30 && r.right <= k.right + 30, tall: r.height > k.height * 0.4, cvw: e.firstChild.width }; });
+  expect(drawn.inside, 'it stands within the stall’s width').toBe(true);
+  expect(drawn.tall, 'and it is a proper size — the counter crops it, the scale does not').toBe(true);
+  expect(drawn.cvw, 'drawn at the size it is shown').toBeGreaterThan(24);
   expect(await lemon(page, (l) => l.counter()), 'the counter knows where it is').toBe('stand');
   const tray = await page.evaluate(() => { const t = document.querySelector('.tw-cup'); return { deck: t && t.dataset.deck, hidden: !t || t.hidden, steps: document.querySelectorAll('.tw-cup__step').length }; });
   expect(tray.deck, 'the tray plays the lemonade deck').toBe('lemon');
@@ -107,6 +116,12 @@ test('the stand answers a stranger in its own words, and its own staff step roun
   expect((await page.locator('.tw-cup__go').textContent()).trim(), 'the button wears the rig’s word for it').toBe(COPY.go.squeeze);
   expect(await page.locator('.tw-cup__pip').count(), 'the order is pictures: a lemon, ice — maybe a leaf or a splash').toBeGreaterThanOrEqual(2);
   await page.screenshot({ path: 'test-results/town-lemon-tray.png' });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.waitForTimeout(500);
+  const ob = await page.locator('.tw-ov[src*="ov-50"]').boundingBox();
+  await page.screenshot({ path: 'test-results/town-lemon-vendor-desktop.png', clip: { x: Math.max(0, ob.x - 120), y: Math.max(0, ob.y - 60), width: ob.width + 240, height: ob.height + 140 } });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.waitForTimeout(400);
 
   // ── glasses, made right at the tray’s own instants: tips gather on the tray and a served customer takes the glass
   const before = await page.evaluate(() => (window.__town.room.folk().folk() || []).filter((v) => (v.held || []).includes('lemoncup')).length);

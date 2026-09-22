@@ -1,7 +1,7 @@
 // 🍋 THE LEMONADE STAND — Fig Jr.'s counter (22 Sep 2026, docs/town-jobs-plan.md §11.5).
 //
-// Fig Jr. hires you the way every boss does. You tap the stand, your banana walks up and steps round the
-// back of the table, townsbananas come to the front the way they come to the café's rope, and you make
+// Fig Jr. hires you the way every boss does. You tap the stand, your banana walks up and takes its place
+// behind the table, townsbananas come to the front the way they come to the café's rope, and you make
 // each glass with three one-thumb gestures: squeeze a lemon (a hold), drop the ice (three taps on a
 // pulse), pour to the line (a sweeping needle). Tips at clock-out, through the one faucet the server
 // knows — a tips job like the café, never a payslip.
@@ -35,31 +35,84 @@ export const LEMON_DECK = {
   },
 };
 
-// 🍋 WHERE THE STAND IS (tools/build-town-scene.py: the stall at 890,545, its table 854–926 × 529–549). It has
-// no PROPS entry — it is baked scenery with a spot — so its counter is these numbers, measured on the built
-// square: the vendor stands BEHIND the table at 518 (feet above the table's edge, the table drawn over the
-// legs, the face in the gap under the awning — the stall's own pixels frame the banana, no clip needed),
-// the walk from a tap stops at the table's front, and the customers queue on Hall Street south of it.
-export const STAND = { behind: { x: 890, y: 518 }, front: { x: 890, y: 556 } };
+// 🍋 WHERE THE STAND IS. It is ONE overlay sprite (town-geo.js OVERLAYS: ov-50.png at 853,444, 74×101, base 545)
+// with no PROPS entry, so its counter is these numbers, measured off the sprite: the board with the lemon on
+// it at 453–483, an open gap of twelve pixels at 484–495, the table at 496–542, the LEMONADE plank hung above
+// it all. The customers queue on Hall Street south of the table; the walk from a tap stops at its front.
+export const STAND = { x: 890, front: { x: 890, y: 556 }, sprite: { top: 444, boardTop: 453, gapTop: 484, tableTop: 496, base: 545 } };
 // ⚠️ INSIDE A LANE, OR THE ROUTER WILL NOT WALK THEM THERE (town-folk.js): Hall Street is 156,560 → 2020,660.
 // The first customer stands at the counter, the second one body-width (99 px) east of it, both with their
 // feet on the street and the table between them and the vendor.
 export const ROPE = [[890, 598], [989, 598]];
-const STEP = 70;   // a tap on the stand walks you to its front; from this close the shift begins with a step round the back
+
+// ---- the vendor behind the counter ---------------------------------------------------------------
+// ⭐ DRAWN IN FRONT OF THE STALL AND CLIPPED AT THE TABLE'S EDGE — the café's window recipe with the stall's own
+// geometry. Trym, 22 Sep, with a screenshot: "my banana stands behind the sign, my banana should be anchored
+// lower with at least half a banana". A banana simply walked behind the stall showed a sliver in the twelve-
+// pixel gap, because the stall is one sprite and draws over everything behind it. So the vendor is its own
+// canvas ABOVE the stall: feet below the counter's top edge, everything under that edge cut away, the upper
+// body over the board, the head just under the plank — a banana of nearly full size, more than half of it
+// in view, standing behind a table. Your own banana on the cobbles is hidden while it stands there.
+const DRAWN = 62;      // the banana's height at the counter (the café's window banana is 58)
+const FLOOR = 522;     // its feet: under the counter, so the clip at the table's edge takes the legs and no more
+const POSE = 2;        // frame 2: front-facing, both hands up — the pack's serving pose
+const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js — the drawn frame inside its square canvas
 
 export function bootTownLemon(ctx) {
-  const { pos, tgt } = ctx;
-  return bootTownCafe(ctx, {
+  const { world, W, H, pct, drawMe, outfit, pos } = ctx;
+  let atWork = null, rz = 0;
+  const w = DRAWN / FRAME_H_FRAC;                                    // the ELEMENT is bigger than the banana: hats live in the headroom
+  const bottom = FLOOR + (1 - FRAME_TOP_FRAC - FRAME_H_FRAC) * w;    // where translate(-50%, -100%) puts the element's bottom edge
+  const clipBelow = (bottom - STAND.sprite.tableTop) / w * 100;      // the share of the canvas under the counter's edge
+  function paint() {
+    if (!atWork) return;
+    const cv = atWork.firstChild;
+    // ⚠️ drawn at the size it is shown, device ratio and all (the café's rule: the smallest banana on screen has the least room to be sloppy)
+    const px = Math.max(24, Math.round(atWork.getBoundingClientRect().width * (window.devicePixelRatio || 1)));
+    if (cv.width !== px) { cv.width = cv.height = px; }
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, px, px);
+    try { drawMe(g, px, POSE, outfit ? outfit() : {}); } catch (e) {}
+  }
+  function standIn() {
+    if (atWork || !world) return;
+    const el = document.createElement('div');
+    el.className = 'tw-atwork tw-atwork--stand';
+    const cv = document.createElement('canvas');
+    el.appendChild(cv);
+    el.style.width = pct(w, W);
+    el.style.left = pct(STAND.x, W);
+    el.style.top = pct(bottom, H);
+    el.style.zIndex = String(100 + STAND.sprite.base + 1);   // over the stall, under the customers at the rope
+    el.style.clipPath = 'inset(0 0 ' + clipBelow.toFixed(2) + '% 0)';
+    world.appendChild(el);
+    atWork = el;
+    paint();   // only once it is IN the world, because the size it is drawn at is the size it lands at
+    const me = world.querySelector('.tw-me');
+    if (me) me.classList.add('is-serving');   // ⚠️ a CLASS, never [hidden]: authored display beats it
+  }
+  function stepOut() {
+    if (atWork) { atWork.remove(); atWork = null; }
+    clearTimeout(rz);
+    const me = world && world.querySelector('.tw-me');
+    if (me) me.classList.remove('is-serving');
+  }
+  const onResize = () => { clearTimeout(rz); rz = setTimeout(paint, 120); };
+  window.addEventListener('resize', onResize);
+
+  const c = bootTownCafe(ctx, {
     at: 'stand', deck: LEMON_DECK, copy: COPY, rope: ROPE, item: 'lemoncup',
-    mark: () => ({ x: STAND.behind.x, y: STAND.behind.y }),
-    // 🍋 STEPPING BEHIND THE COUNTER. The table is solid, so the walk from a tap stops in front of it; the shift
-    // begins with one step round the back — only from the front, never from across the square, so coming back
-    // on the mark after a wander is a walk and not a jump.
-    standIn: () => {
-      if (Math.hypot(pos.x - STAND.front.x, pos.y - STAND.front.y) > STEP) return;
-      pos.x = STAND.behind.x; pos.y = STAND.behind.y;
-      if (tgt) { tgt.x = pos.x; tgt.y = pos.y; }
-    },
-    stepOut: () => {},
+    mark: () => ({ x: STAND.front.x, y: STAND.front.y }),   // the counter is a distance from the table's front, where the walk stops
+    standIn, stepOut,
   });
+  void pos;
+  return {
+    ...c,
+    redraw: paint,
+    seam: {
+      ...c.seam,
+      // the vendor as drawn: where it stands, how much of it the counter's edge takes, and that it is over the stall
+      vendor: () => (atWork ? { z: +atWork.style.zIndex, top: atWork.style.top, w: atWork.style.width, clip: atWork.style.clipPath, floor: FLOOR, drawn: DRAWN, tableTop: STAND.sprite.tableTop } : null),
+    },
+  };
 }

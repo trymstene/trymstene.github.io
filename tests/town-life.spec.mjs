@@ -929,12 +929,23 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'store' });
 
   expect((await seam(page, () => window.__town.work.ask('pip'))).a, 'asking again is not a second job').toBe((await seam(page, () => window.__town.work.ask('pip'))).a);
-  const moved = await seam(page, () => window.__town.work.ask('spinner'));
-  expect(moved.a, 'one job at a time: taking another names the one you chose').toContain('Arcade');
-  expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'condo' });
+  // 💼 ONE JOB AT A TIME, SAID OUT LOUD (Trym, 22 Sep): a second boss names the place you already work at and
+  // nothing changes; the way out is your own boss's card, and only there
+  const busy = await seam(page, () => window.__town.work.ask('spinner'));
+  expect(busy.a, 'Spinner says you are the store’s').toContain('General Store');
+  expect(busy.a).not.toContain('{where}');
+  expect(await seam(page, () => window.__town.work.job()), 'and the job did not move').toMatchObject({ at: 'store' });
+  expect(await seam(page, () => window.__town.work.quit('spinner')), 'no way out on a boss who is not yours').toBeNull();
+  const gone = await seam(page, () => window.__town.work.quit('pip'));
+  expect(gone, 'your own boss carries the way out').toBeTruthy();
+  expect(gone.q, '…as a question in your voice').toMatch(/\?$/);
+  expect(gone.a.length, '…and lets you go in words').toBeGreaterThan(20);
+  expect(await seam(page, () => window.__town.work.job()), 'no job now').toMatchObject({ at: '' });
+  expect(await seam(page, () => window.__town.work.quit('pip')), 'and nothing to quit any more').toBeNull();
   const posted = await seam(page, () => window.__town.work.ask('stamp'));
-  expect(posted.a, 'and Stamp names the post office as the rig writes it').toContain('Post Office');
+  expect(posted.a, 'free again: Stamp names the post office as the rig writes it').toContain('Post Office');
   expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'post' });
+  await seam(page, () => window.__town.work.quit('stamp'));
   const poured = await seam(page, () => window.__town.work.ask('figjr'));
   expect(poured.a, 'and Fig Jr. names the lemonade stand as the rig writes it').toContain('lemonade stand');
   expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'stand' });

@@ -262,8 +262,12 @@ line. Not the sign planks, which shout, and not a key.
 sentence beginning with a small letter — “Gladly. the Arcade could use your hands.” Keep the
 holder inside a clause: a comma, a dash, anything but a full stop in front of it.
 
-**One job at a time.** Taking a second is leaving the first, which is why `moved` exists and why
-it must read as a decision the player made rather than a rule they broke.
+**One job at a time — and since 22 Sep 2026 the boss SAYS so.** Asking a second boss while you work
+for a first no longer moves you: the boss answers `work.busy` — one job at a time, you would have
+to leave {where} first (the other workplace, inside a clause). To leave, you ask your OWN boss:
+`work.quit` is the player's question on that card (only while they hold the job), `work.quitDone`
+the boss letting them go, warm, the door open. `moved` stays in the file for now but nothing reads
+it.
 
 **`keep` is the delicate one.** Wages need a kept pass, because a pass that can be minted again in
 one tap is not a person. The line must be an INVITATION — here is a thing you could keep — and

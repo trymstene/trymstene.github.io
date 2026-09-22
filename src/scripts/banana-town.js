@@ -518,9 +518,9 @@ function npcCard(key) {
   openCard('');
   card.classList.add('tw-card--npc');   // the portrait leans out past the corner: let it
   // 💼 a boss can be asked for a job, and the question sits with the two they already answer
-  const jobQ = work && work.topicFor ? work.topicFor(key) : null;
+  const jobQs = work && work.topicsFor ? work.topicsFor(key) : [];   // the job question, and the way out while the job is yours
   dialog = mountDialogue(cardBody, {
-    name: d.name, line: d.line, topics: jobQ ? [...d.topics, jobQ] : d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
+    name: d.name, line: d.line, topics: jobQs.length ? [...d.topics, ...jobQs] : d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
     // ⚠️ A PORTRAIT IS A FACE, NOT A FULL LENGTH. `extras` holds exactly the resident's HELD TOOL
     // (town-life.js builds it as { [r.tool]: true }), and a wide one paints straight over the name
     // beside it — Pip's rubber chicken covered the P in "Pip" entirely, on the very card you tap to
