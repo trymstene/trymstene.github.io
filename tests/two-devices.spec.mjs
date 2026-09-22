@@ -200,6 +200,29 @@ test('phone A plays and adds an email; phone B logs in and sees it all; B rename
       await A.page.screenshot({ path: `${OUT}/7-a-sees-b.png` });
     });
 
+    // 🔐 THE MAILBOX OPENS FOR ITS OWNER, ON THE REAL POST ROOM (22 Sep 2026). Until that day a mailbox was read by
+    // slug alone, and a slug is the sign on the fence the address book publishes. The router now asks the yard
+    // room whose proof this is — so the one thing only the real workers can show is that the OWNER still gets in:
+    // the same four fields the page sends (town-post.js ask()), from the phone's own storage.
+    await test.step('A opens its own mailbox; a stranger with the address cannot', async () => {
+      const r = await A.page.evaluate(async () => {
+        const y = JSON.parse(localStorage.getItem('hs-v1') || '{}');
+        const api = 'https://banana-rave.trymstene.workers.dev/post/box';
+        const send = (body) => fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const mine = await send({ slug: y.slug, wt: localStorage.getItem('world-wt') || '', pass: localStorage.getItem('world-gid') || '', alt: localStorage.getItem('park-sid') || '' });
+        const j = await mine.json().catch(() => ({}));
+        return { slug: y.slug, mine: mine.status, letters: Array.isArray(j.letters) ? j.letters.length : -1, notes: (j.letters || []).filter((l) => l.kind === 'note').length };
+      });
+      expect(r.mine, 'the owner is let into their own mailbox: ' + JSON.stringify(r)).toBe(200);
+      expect(r.notes, 'and a resident has written to a new box').toBeGreaterThan(0);
+      // ⚠️ the stranger knocks from HERE, not from the phone: a refused fetch in the page is a console error,
+      // and the phone's console is the thing this proof holds to zero
+      const stranger = await fetch('https://banana-rave.trymstene.workers.dev/post/box', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://trymstene.com' }, body: JSON.stringify({ slug: r.slug }),
+      });
+      expect(stranger.status, 'a stranger holding only the address is refused').toBe(401);
+    });
+
     const badA = realErrors(A.errs), badB = realErrors(B.errs);
     expect(badA, `phone A console:\n${badA.join('\n')}`).toHaveLength(0);
     expect(badB, `phone B console:\n${badB.join('\n')}`).toHaveLength(0);
