@@ -1132,15 +1132,24 @@ const pageSchema = {
 };
 
 // --- town-duties -----------------------------------------------------------------
-// 💼 THE DUTIES CHIP (22 Sep 2026; docs/town-jobs-plan.md §9.2): the quest chip's sibling in the
-// town's paper — one line at a time about the job you hold. The numbers are the pass worker's and
-// go into {coins} and {days}; the words never carry one.
-export const DUTY_AT = ['store', 'condo', 'cafe'];
+// 💼 THE WORK NOTE (22 Sep 2026; docs/town-jobs-plan.md §12): the quest chip's sibling in the town's
+// paper — the week's counts (composed by the game from the duty labels and the numbers) and one line
+// under them. The numbers are the pass worker's and go into {coins} and {days}; the words never carry one.
+export const DUTY_KINDS = ['sweep', 'fix', 'restock', 'days', 'sort'];
+export const DUTY_BOSS = ['condo', 'store'];
 const dutyFields = {
-  'duty.store': { kind: 'prose', aim: 44, max: 70, note: 'The note while today\u2019s work at the General Store is undone: the shelf wants restocking (the crate by the till, the faces on the shelf). Lower case first letter, a phrase or one plain sentence.' },
-  'duty.condo': { kind: 'prose', aim: 44, max: 70, note: 'The note for the Arcade. For now the arcade wants nothing but your company \u2014 being there is the day\u2019s work. Do not invent a chore. Lower case first letter.' },
-  'duty.cafe': { kind: 'prose', aim: 44, max: 70, note: 'The note for the Coffee Cup: clock in at the serving window and make cups. Lower case first letter.' },
-  wage: { kind: 'prose', aim: 60, max: 80, holds: ['{coins}', '{days}'], note: 'Once you have turned up today at a cheque job: how much the week has earned so far and how far away payday is. MUST contain {coins} and {days} exactly once each \u2014 the game prints the numbers. Payday is Monday. Lower case first letter.' },
+  'kinds.sweep': { kind: 'label', aim: 11, max: 18, note: 'The arcade floor, swept — the duty AS DONE, two or three lower-case words, no number: e.g. what goes before "1/3" in "floor swept 1/3".' },
+  'kinds.fix': { kind: 'label', aim: 14, max: 18, note: 'A dark arcade cabinet brought back — the duty as done, two or three lower-case words, no number.' },
+  'kinds.restock': { kind: 'label', aim: 15, max: 18, note: 'The General Store\u2019s shelf restocked from a crate — the duty as done, two or three lower-case words, no number.' },
+  'kinds.days': { kind: 'label', aim: 9, max: 18, note: 'Days you turned up at the workplace — as done, one or two lower-case words, no number.' },
+  'kinds.sort': { kind: 'label', aim: 11, max: 18, note: 'The post office\u2019s post sorted (a duty that comes later) — as done, two lower-case words, no number.' },
+  'duty.cafe': { kind: 'prose', aim: 44, max: 70, note: 'The Coffee Cup\u2019s note until you have clocked in today: clock in at the serving window and make cups. Lower case first letter.' },
+  wage: { kind: 'prose', aim: 60, max: 80, holds: ['{coins}', '{days}'], note: 'Under the counts at a cheque job: how much the week has earned so far and how far away payday is. MUST contain {coins} and {days} exactly once each \u2014 the game prints the numbers. Payday is Monday. Lower case first letter.' },
+  done: { kind: 'prose', aim: 46, max: 70, note: 'Under the counts when every target of the week is met: the week\u2019s work is done and the rest of it is yours. No numbers. Lower case first letter.' },
+  'nudge.condo': { kind: 'prose', aim: 60, max: 80, note: 'Under the counts when Thursday has come and nothing at all has been done at the Arcade: Spinner has written to ask if you are coming in. Warm, dry, a little pointed, never a threat, no numbers. Lower case first letter.' },
+  'nudge.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the General Store: Pip has written to ask if you are coming in. No numbers. Lower case first letter.' },
+  'fired.condo': { kind: 'prose', aim: 60, max: 80, note: 'Spinner let you go after two finished weeks with nothing done at the Arcade; his door is open if you ask again. Never cruel, never a lecture, no numbers. Lower case first letter.' },
+  'fired.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the General Store: Pip let you go; ask again when you like. No numbers. Lower case first letter.' },
   cafeDone: { kind: 'prose', aim: 50, max: 70, note: 'The Coffee Cup once you have clocked in today: tips are counted on the tray as you pour and paid when you step away. No numbers. Lower case first letter.' },
   payslip: { kind: 'prose', aim: 50, max: 70, note: 'A cheque has been paid and the payslip waits in the letterbox at your homestead: it sends you home to open it. No numbers \u2014 the payslip has them. Lower case first letter.' },
 };
@@ -1149,16 +1158,19 @@ const DUTY_PAY = new RegExp('\\b(reward|bonus|prize|jackpot)\\b', 'i');
 function dutyShape(data) {
   const bad = [];
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
-  const d = data.duty || {};
-  const all = [['duty.store', d.store], ['duty.condo', d.condo], ['duty.cafe', d.cafe], ['wage', data.wage], ['cafeDone', data.cafeDone], ['payslip', data.payslip]];
+  const k = data.kinds || {}, d = data.duty || {}, nu = data.nudge || {}, fi = data.fired || {};
+  const all = [...DUTY_KINDS.map((x) => ['kinds.' + x, k[x]]), ['duty.cafe', d.cafe], ['wage', data.wage], ['done', data.done],
+    ...DUTY_BOSS.map((x) => ['nudge.' + x, nu[x]]), ...DUTY_BOSS.map((x) => ['fired.' + x, fi[x]]), ['cafeDone', data.cafeDone], ['payslip', data.payslip]];
   for (const [p, v0] of all) {
     const v = String(v0 || '');
     if (!v) { say(p, 'is empty'); continue; }
-    if (/^[A-Z]/.test(v)) say(p, 'starts with a capital, and a note to yourself starts small');
+    // a note to yourself starts small — unless it starts with somebody's name (Spinner's letter…)
+    if (/^[A-Z]/.test(v) && !/^(Spinner|Pip|Bean|Nib|Stamp)/.test(v)) say(p, 'starts with a capital, and a note to yourself starts small');
     if (DUTY_UI.test(v)) say(p, 'names a control; a chip says what the place wants, never which button');
     if (DUTY_PAY.test(v)) say(p, 'calls a wage or a tip a reward');
     if (/\d/.test(v.replace(/\{coins\}|\{days\}/g, ''))) say(p, 'carries a number of its own \u2014 the game prints the numbers');
     if (p !== 'wage' && /\{(coins|days)\}/.test(v)) say(p, 'has a placeholder, and only the wage line carries the numbers');
+    if (p.startsWith('kinds.') && v.split(/\s+/).length > 3) say(p, 'is more than three words, and it sits before a count');
   }
   const w = String(data.wage || '');
   if ((w.match(/\{coins\}/g) || []).length !== 1) say('wage', 'must contain {coins} exactly once');
@@ -1166,11 +1178,15 @@ function dutyShape(data) {
   return bad;
 }
 const dutySchema = {
-  type: 'object', additionalProperties: false, required: ['duty', 'wage', 'cafeDone', 'payslip'],
+  type: 'object', additionalProperties: false, required: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'payslip'],
   properties: {
-    duty: { type: 'object', additionalProperties: false, required: DUTY_AT,
-      properties: { store: str(dutyFields['duty.store'].note), condo: str(dutyFields['duty.condo'].note), cafe: str(dutyFields['duty.cafe'].note) } },
-    wage: str(dutyFields.wage.note), cafeDone: str(dutyFields.cafeDone.note), payslip: str(dutyFields.payslip.note),
+    kinds: { type: 'object', additionalProperties: false, required: DUTY_KINDS,
+      properties: Object.fromEntries(DUTY_KINDS.map((x) => [x, str(dutyFields['kinds.' + x].note)])) },
+    duty: { type: 'object', additionalProperties: false, required: ['cafe'], properties: { cafe: str(dutyFields['duty.cafe'].note) } },
+    wage: str(dutyFields.wage.note), done: str(dutyFields.done.note),
+    nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['nudge.condo'].note), store: str(dutyFields['nudge.store'].note) } },
+    fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['fired.condo'].note), store: str(dutyFields['fired.store'].note) } },
+    cafeDone: str(dutyFields.cafeDone.note), payslip: str(dutyFields.payslip.note),
   },
 };
 
@@ -1280,7 +1296,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-duties.json',
     approved: 'src/data/copy/town-duties.json',
     reads: 'src/scripts/town-duties.js (through a glob \u2014 no words, no chip)',
-    top: ['duty', 'wage', 'cafeDone', 'payslip'],
+    top: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'payslip'],
     fields: dutyFields,
     shape: dutyShape,
     schema: dutySchema,
@@ -1396,7 +1412,7 @@ export const JOBS = {
     out: 'tools/copy-out/homestead-post.json',
     approved: 'src/data/copy/homestead-post.json',
     reads: 'src/scripts/banana-homestead.js',
-    top: ['title', 'empty', 'letters', 'wage', 'open'],
+    top: ['title', 'empty', 'letters', 'wage', 'open', 'bosses'],
     fields: {
       'open': { kind: 'label', aim: 13, max: 17, note: '✉️ THE BUTTON AT THE FOOT OF THE MAILBOX CARD that opens the post other PLAYERS have sent you — a different thing from the notes above it, which are the world telling you something. A verb first, two or three words, ONE line inside a narrow card. ⚠️ it must not be confused with the mailbox itself (the card is already open) and must not name a mechanic: never “Inbox”, never “Messages”, never “Open mailbox”.' },
       'title': { kind: 'prose', aim: 12, max: 18, note: 'The card’s heading when the mailbox is opened. Two or three words.' },
@@ -1405,7 +1421,15 @@ export const JOBS = {
       'wage.line': { kind: 'prose', aim: 110, max: 140, holds: ['{n}'], note: '⭐ THE CHEQUE, and the first thing in this world that ever ARRIVES WHILE THE PLAYER WAS NOT LOOKING. It is for a week of work that has finished, and MUST contain {n}, the coins. Say it as a clerk filing a thing that is already done — warm, dry, done. ⚠️ never a rate, never a day of the week, never “per” anything, and never a promise about next week: the town does not publish a timetable. At most 140 characters.' },
       // 📄 the payslip (22 Sep 2026): the stamp, the printed figures, the workplace names
       'wage.stamp': { kind: 'label', aim: 4, max: 8, note: 'The word on the rubber stamp across a settled payslip, in capitals, one word, at most 8 letters.' },
-      'wage.slip': { kind: 'prose', aim: 30, max: 60, holds: ['{days}', '{rate}'], note: 'The one printed line of figures under the letter. MUST contain {days} (the days worked that week) and {rate} (the wage for a full week) exactly once each; no other number; lower case; under 60 characters. Days first, then the rate.' },
+      'wage.slip': { kind: 'prose', aim: 34, max: 60, holds: ['{pct}', '{rate}'], note: 'The share line printed under the week\u2019s counts on the payslip. MUST contain {pct} (the share of the week\u2019s work done, a percentage the game prints) and {rate} (the wage for a full week) exactly once each; no other number; lower case; under 60 characters. The share first, then the rate it is a share of.' },
+      'bosses.nudge.condo.from': { kind: 'prose', aim: 7, max: 20, note: 'Who signs it: Spinner, who runs the Arcade.' },
+      'bosses.nudge.condo.line': { kind: 'prose', aim: 100, max: 140, note: 'Spinner\u2019s letter when Thursday has come and nothing has been done at the Arcade that week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number. It may use {home}.' },
+      'bosses.nudge.store.from': { kind: 'prose', aim: 3, max: 20, note: 'Who signs it: Pip, of the General Store.' },
+      'bosses.nudge.store.line': { kind: 'prose', aim: 100, max: 140, note: 'Pip\u2019s letter when Thursday has come and nothing has been done at the store that week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number. It may use {home}.' },
+      'bosses.fired.condo.from': { kind: 'prose', aim: 7, max: 20, note: 'Who signs it: Spinner.' },
+      'bosses.fired.condo.line': { kind: 'prose', aim: 100, max: 140, note: 'Spinner\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number.' },
+      'bosses.fired.store.from': { kind: 'prose', aim: 3, max: 20, note: 'Who signs it: Pip.' },
+      'bosses.fired.store.line': { kind: 'prose', aim: 100, max: 140, note: 'Pip\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number.' },
       'wage.at.store': { kind: 'prose', aim: 17, max: 24, note: 'The General Store as it is printed on a payslip: lower case, with its article.' },
       'wage.at.condo': { kind: 'prose', aim: 10, max: 24, note: 'The Arcade as it is printed on a payslip: lower case, with its article.' },
       'wage.at.post': { kind: 'prose', aim: 15, max: 24, note: 'The Post Office as it is printed on a payslip: lower case, with its article.' },
@@ -1429,8 +1453,16 @@ export const JOBS = {
       if (stamp && stamp !== stamp.toUpperCase()) say('wage.stamp', 'is not in capitals, and a rubber stamp is');
       if (/\s/.test(stamp)) say('wage.stamp', 'is more than one word');
       const slip = String(w.slip || '');
-      if ((slip.match(/\{days\}/g) || []).length !== 1) say('wage.slip', 'must contain {days} exactly once');
+      if ((slip.match(/\{pct\}/g) || []).length !== 1) say('wage.slip', 'must contain {pct} exactly once');
       if ((slip.match(/\{rate\}/g) || []).length !== 1) say('wage.slip', 'must contain {rate} exactly once');
+      const bo = data.bosses || {};
+      for (const kind of ['nudge', 'fired']) for (const k of ['condo', 'store']) {
+        const b = (bo[kind] || {})[k] || {};
+        if (!String(b.from || '')) say('bosses.' + kind + '.' + k + '.from', 'is empty');
+        const l = String(b.line || '');
+        if (!l) say('bosses.' + kind + '.' + k + '.line', 'is empty');
+        if (/\d/.test(l)) say('bosses.' + kind + '.' + k + '.line', 'carries a number, and a boss\u2019s letter never does');
+      }
       if (/\d/.test(slip)) say('wage.slip', 'carries a number of its own — the game prints the figures');
       if (slip && /^[A-Z]/.test(slip)) say('wage.slip', 'starts with a capital, and the printed line is lower case');
       if (/\d|\{/.test(String(w.line || '').replace(/\{n\}/g, ''))) say('wage.line', 'carries a figure of its own; the slip line prints the figures');
@@ -1441,14 +1473,24 @@ export const JOBS = {
       }
       return bad;
     },
-    schema: { type: 'object', additionalProperties: false, required: ['title', 'empty', 'letters', 'wage', 'open'], properties: {
+    schema: { type: 'object', additionalProperties: false, required: ['title', 'empty', 'letters', 'wage', 'open', 'bosses'], properties: {
+      bosses: { type: 'object', additionalProperties: false, required: ['nudge', 'fired'], properties: {
+        nudge: { type: 'object', additionalProperties: false, required: ['condo', 'store'], properties: {
+          condo: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Spinner.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the Arcade this week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number, at most 140 characters.' } } },
+          store: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Pip.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the store this week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number, at most 140 characters.' } } },
+        } },
+        fired: { type: 'object', additionalProperties: false, required: ['condo', 'store'], properties: {
+          condo: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Spinner.' }, line: { type: 'string', description: 'With the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' } } },
+          store: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Pip.' }, line: { type: 'string', description: 'With the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' } } },
+        } },
+      } },
       open: str('✉️ The button at the foot of the mailbox card that opens the post other PLAYERS have sent you — a different thing from the notes above it, which are the world telling you something. A verb first, two or three words, ONE line inside a narrow card. It must not name a mechanic: never “Inbox”, never “Messages”, never “Open mailbox”.'),
       title: { type: 'string', description: 'The card’s heading when the mailbox is opened.' },
       empty: { type: 'string', description: 'Shown when there is no post.' },
       wage: { type: 'object', additionalProperties: false, required: ['from', 'line', 'stamp', 'slip', 'at'], properties: {
         from: { type: 'string', description: 'Who signed the pay letter.' }, line: { type: 'string', description: 'The pay letter, holding {n} coins.' },
         stamp: { type: 'string', description: 'The word on the rubber stamp across a settled payslip: capitals, one word, at most 8 letters.' },
-        slip: { type: 'string', description: 'The one printed line of figures: MUST contain {days} and {rate} exactly once each, no other number, lower case, under 60 characters; days first, then the rate.' },
+        slip: { type: 'string', description: 'The share line under the week\u2019s counts: MUST contain {pct} and {rate} exactly once each, no other number, lower case, under 60 characters; the share first, then the rate it is a share of.' },
         at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'post'], properties: {
           store: { type: 'string', description: 'The General Store as printed on a payslip: lower case, with its article.' },
           condo: { type: 'string', description: 'The Arcade as printed on a payslip: lower case, with its article.' },

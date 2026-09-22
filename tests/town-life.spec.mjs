@@ -1239,7 +1239,7 @@ test('a shutter you fixed today is still open after a reload', async ({ page }) 
   page.on('pageerror', (e) => errors.push(String(e)));
   await town(page);
   await setBand(page, 85);
-  await page.evaluate(() => window.__town.room.shutShop('cafe'));
+  await page.evaluate(() => window.__town.room.today(['closed'], 'cafe'));   // today's event shuts the café — a front shut by TODAY is always one of your jobs (town-room.js)
   await page.waitForTimeout(500);
   expect(await room(page, 'shut'), 'the café is shut').toContain('cafe');
   expect((await room(page, 'problems')).map((j) => j.id), 'and that is one of your jobs').toEqual(expect.arrayContaining([expect.stringContaining('shutter:cafe')]));
@@ -1250,6 +1250,8 @@ test('a shutter you fixed today is still open after a reload', async ({ page }) 
 
   await town(page);
   await setBand(page, 85);
+  await page.evaluate(() => window.__town.room.today(['closed'], 'cafe'));   // the same day again: today's event shuts the café, and your fix must still hold
+  await page.waitForTimeout(500);
   const after = await room(page, 'shut');
   const jobs = await room(page, 'problems');
   const owed = jobs.some((j) => String(j.id).includes('shutter:cafe'));

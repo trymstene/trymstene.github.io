@@ -1,4 +1,26 @@
 {
+  "bosses": {
+    "nudge": {
+      "condo": {
+        "from": "Spinner",
+        "line": "The arcade floor and machines are waiting. Come in when you can; neither has improved itself."
+      },
+      "store": {
+        "from": "Pip",
+        "line": "The store shelf needs restocking. Come in when you can; the empty spaces have become very confident."
+      }
+    },
+    "fired": {
+      "condo": {
+        "from": "Spinner",
+        "line": "I have taken your name off the arcade book. If you want work again, come ask me; the door is still open."
+      },
+      "store": {
+        "from": "Pip",
+        "line": "I have taken your name off the store book. If you want work again, come ask me; the bell is still there."
+      }
+    }
+  },
   "open": "Read Letters",
   "title": "Mailbox Notes",
   "empty": "The mailbox is empty today. It is sitting up straight.",
@@ -6,7 +28,7 @@
     "from": "Nib",
     "line": "I have filed {n} coins for the work you finished. They waited in the folder, as folders do.",
     "stamp": "PAID",
-    "slip": "{days} days worked at {rate} a week",
+    "slip": "{pct} of the full week at {rate}",
     "at": {
       "store": "the general store",
       "condo": "the arcade",

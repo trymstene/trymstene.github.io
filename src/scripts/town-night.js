@@ -253,10 +253,21 @@ export function bootTownNight(ctx) {
   }
   function spawnObject(seed, day, at, forced, born) {
     const def = forced || weighted(OBJECTS, (o) => RARITY_W[o.rarity], seed);   // a chapter names its object; a night draws one
-    // its place by seed, then a spot in it nothing else stands on (two on one spot hid each other, 15 Sep)
-    const spots = WHERE[def.where[Math.floor(h(seed, 3) * def.where.length)]] || [[1100, 1000]];
-    let spot = at;
-    if (!spot) { const j = Math.floor(h(seed, 5) * spots.length); for (let q = 0; q < spots.length && !spot; q++) { const c = spots[(j + q) % spots.length]; if (!objects.some((o) => Math.hypot(o.x - c[0], o.y - c[1]) < 60)) spot = c; } spot = spot || spots[j]; }
+    // its place by seed, then a spot in it nothing else stands on (two on one spot hid each other, 15 Sep). A
+    // spot handed in (a ghost's, a chapter's) is checked the same way; a full area hands over to the object's
+    // other areas, then any; a town with no free spot gets no object at all — never a stack (22 Sep).
+    const taken = (c) => objects.some((o) => Math.hypot(o.x - c[0], o.y - c[1]) < 60);
+    let spot = at && !taken(at) ? at : null;
+    if (!spot) {
+      const keys = [...new Set([...def.where, ...Object.keys(WHERE)])];
+      const first = Math.floor(h(seed, 3) * def.where.length);
+      for (const k of [keys[first], ...keys.filter((_, q) => q !== first)]) {
+        const list = WHERE[k] || [], j = Math.floor(h(seed, 5) * list.length);
+        for (let q = 0; q < list.length && !spot; q++) { const c = list[(j + q) % list.length]; if (!taken(c)) spot = c; }
+        if (spot) break;
+      }
+      if (!spot) return null;
+    }
     const d = DEX[def.decor]; if (!d) return null;
     // an ordinary decor sprite, on the ground, with its small wrongness
     const el = document.createElement('div');

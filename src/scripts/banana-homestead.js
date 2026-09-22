@@ -1,6 +1,7 @@
 // ✏️ one bundled pixel icon (the full pack is gitignored — never a pack URL)
 import NOTES from '../data/copy/homestead-notes.json';   // the sign's line before the story gives you the place (the rig's)
 import POSTCOPY from '../data/copy/homestead-post.json';   // what the world writes to you (the rig's)
+import DUTYCOPY from '../data/copy/town-duties.json';      // 💼 the duty labels the payslip prints (the work note's own words)
 import pxEdit from '../icons/pixelart/edit.svg?raw';
 import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
@@ -2917,24 +2918,36 @@ function init(visitDoc, visitMiss) {
     // 💼 a cheque is keyed by the WEEK it paid for, so its words cannot live under a fixed id the
     // way the five occasion letters do — they come from POSTCOPY.wage and carry the amount.
     const wage = String(m.id || '').indexOf('wage:') === 0;
-    const w = wage ? (POSTCOPY.wage || {}) : ((POSTCOPY.letters || {})[m.id] || {});
+    // 💼 a boss's letter: nudge:<week>:<at> or fired:<week>:<at> — the words by workplace (POSTCOPY.bosses)
+    const bossKind = /^(nudge|fired):/.test(String(m.id || '')) ? String(m.id).split(':')[0] : '';
+    const w = wage ? (POSTCOPY.wage || {}) : bossKind ? (((POSTCOPY.bosses || {})[bossKind] || {})[m.at || String(m.id).split(':')[2]] || {}) : ((POSTCOPY.letters || {})[m.id] || {});
     const p = document.createElement('div');
     p.className = 'bw-paper' + (wage ? ' bw-paper--wage' : '');
-    // 📄 THE PAYSLIP (22 Sep 2026; docs/town-jobs-plan.md §9.3, Trym: "the paycheck should have a
+    // 📄 THE PAYSLIP (22 Sep 2026; docs/town-jobs-plan.md §11.3, Trym: "the paycheck should have a
     // different color paper or look or envelope style"): kraft paper, a rubber stamp, Nib's line, and
     // the figures printed under it — the workplace, the days at the rate, the total with its coin.
     // ⚠️ a slip delivered before today carries no figures (only `n`): it keeps the line and skips the
     // rows rather than printing zeros. The words are the rig's; only the numbers are the game's.
     if (wage && w.stamp) { const st = document.createElement('b'); st.className = 'bw-slip__stamp'; st.textContent = w.stamp; p.appendChild(st); }
     p.appendChild(document.createTextNode(pFill(w.line).replace('{n}', String(m.n | 0))));
-    if (wage && m.d && w.slip && w.at) {
+    // 💼 the week's counts, then the share of the rate they came to, then the total (docs/town-jobs-plan.md
+    // §10): "floor swept 1/3 · machines fixed 0/3 — 17% of a full week at 60 — 10". A slip from before the
+    // counts existed prints no rows it never had.
+    if (wage && Array.isArray(m.duties) && m.duties.length && w.slip && w.at) {
       const rows = document.createElement('div');
       rows.className = 'bw-slip__rows';
       const at = document.createElement('span'); at.className = 'bw-slip__at'; at.textContent = w.at[m.at] || ''; rows.appendChild(at);
+      const kinds = (DUTYCOPY && DUTYCOPY.kinds) || {};
+      for (const q of m.duties) {
+        const d = document.createElement('span'); d.className = 'bw-slip__duty';
+        d.appendChild(document.createTextNode((kinds[q.kind] || q.kind) + ' '));
+        const b = document.createElement('b'); b.textContent = (q.done | 0) + '/' + (q.of | 0); d.appendChild(b);
+        rows.appendChild(d);
+      }
       const terms = document.createElement('span'); terms.className = 'bw-slip__terms';
-      const parts = String(w.slip).split(/(\{days\}|\{rate\})/);
+      const parts = String(w.slip).split(/(\{pct\}|\{rate\})/);
       for (const part of parts) {
-        if (part === '{days}' || part === '{rate}') { const b = document.createElement('b'); b.textContent = String(part === '{days}' ? (m.d | 0) : (m.r | 0)); terms.appendChild(b); }
+        if (part === '{pct}' || part === '{rate}') { const b = document.createElement('b'); b.textContent = part === '{pct}' ? Math.round((+m.share || 0) * 100) + '%' : String(m.r | 0); terms.appendChild(b); }
         else if (part) terms.appendChild(document.createTextNode(part));
       }
       rows.appendChild(terms);
@@ -3052,8 +3065,21 @@ function init(visitDoc, visitMiss) {
     for (const row of (res.paid || [])) {
       const id = 'wage:' + row.week + ':' + row.at;
       if ((state.mail || []).some((m) => m.id === id)) continue;
-      (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, n: row.coins | 0, d: row.days | 0, at: String(row.at || ''), r: row.pay | 0 });   // 📄 the slip's figures
+      (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, n: row.coins | 0, d: row.days | 0, at: String(row.at || ''), r: row.pay | 0,
+        duties: Array.isArray(row.duties) ? row.duties.map((q) => ({ kind: String(q.kind || ''), done: q.done | 0, of: q.of | 0 })) : [], share: +row.share || 0 });   // 📄 the slip's figures and the week's counts
       n++;
+    }
+    // 💼 THE BOSS'S LETTERS (docs/town-jobs-plan.md §12): Thursday with nothing done and he asks if you
+    // are coming in; two empty weeks and the last payslip comes with his goodbye. Each once, keyed by
+    // the week, from the job view every /job/pay carries.
+    const jv = res.job || {};
+    if (jv.nudge && jv.at && jv.week) {
+      const id = 'nudge:' + jv.week + ':' + jv.at;
+      if (!(state.mail || []).some((m) => m.id === id)) { (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, at: jv.at }); n++; }
+    }
+    if (jv.fired && jv.fired.at && jv.fired.week) {
+      const id = 'fired:' + jv.fired.week + ':' + jv.fired.at;
+      if (!(state.mail || []).some((m) => m.id === id)) { (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, at: jv.fired.at }); n++; }
     }
     if (!n) return;
     state.mail = state.mail.slice(0, 40);

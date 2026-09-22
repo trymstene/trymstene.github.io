@@ -344,7 +344,8 @@ view.addEventListener('pointerdown', (e) => {
     if (inRoom === 'condo' && CABINET[hit[1]]) {   // walk to the machine's front; the card opens when you get there
       const r2 = ROOMS.condo.spots.find((q) => q[0] === hit[1]);
       if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; }
-      const key = hit[1]; arriveThen = () => gameCard(key);
+      // 🕹 a cabinet gone dark is the arcade's own staff's to wake: the tap is a repair, not a game
+      const key = hit[1]; arriveThen = () => ((room && room.cabinetDead && room.cabinetDead(key)) ? room.cabinetRepair(key) : gameCard(key));
       return;
     }
     if (hit[0] === 'room') { room.tap(hit[1], (x, y, then) => { tgt.x = x; tgt.y = y; arriveThen = then; }); return; }   // 🏘️ walk to it, then it happens
@@ -460,6 +461,7 @@ function tick(now) {
   if (crowd) crowd.tick(now);   // 👥 the other players' frames, and my own position out to them
   weather.tick(now);
   if (room) room.tick(now, dt);
+  if (room && inRoom === 'condo' && room.sweepAt) room.sweepAt(pos.x, pos.y);   // 🕹 walking onto arcade litter sweeps it (staff only)
   if (work) work.tick(now);
   { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
   if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
@@ -856,6 +858,7 @@ assetsReady().then(() => {
       // the thing's own front by the time this runs, so all the room has to hand over is the deed.
       then: (fn) => { arriveThen = fn || null; },
       job: () => (work ? work.seam.job() : null),   // 💼 what the room may ask of you depends on who you work for
+      chore: (k) => (work && work.seam.chore ? work.seam.chore(k) : null),   // 💼 …and what you did there counts on the week's sheet
       outfit: () => ME_DRAW,   // ☕ the café draws YOUR banana in its window, in one locked pose
       others: () => (crowd ? crowd.others() : []),   // 👥 other players' bananas on the square (the ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
@@ -879,7 +882,7 @@ assetsReady().then(() => {
         copy: () => (room && room.seam.copyOf ? room.seam.copyOf('work') : null),
       });
       if (window.__town) window.__town.work = work.seam;
-      // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §9.2)
+      // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)
       import('./town-duties.js').then((d) => {
         duties = d.bootTownDuties({ view, work, track });
         if (window.__town) window.__town.duties = duties ? duties.seam : null;

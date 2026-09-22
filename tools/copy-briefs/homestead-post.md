@@ -58,3 +58,25 @@ and the figures printed under Nib's line. Three more things in `wage`, none of t
   payslip; Nib's `line` above it still never mentions one.
 - `at` — the three workplaces as they are printed on a payslip, lower case, with their article, at
   most 24 characters each: `store` (the General Store), `condo` (the Arcade), `post` (the Post Office).
+
+### The week's work on the slip, and the boss's letters (22 Sep 2026)
+
+A payslip job has **the week's work** — duties with weekly targets (the arcade: the floor swept, machines
+fixed; the store: the shelf restocked, turning up). The cheque is the full rate scaled by how much of it
+got done, and the slip prints the counts so the reason is on the paper.
+
+- `wage.slip` is now the **share line** under the counts: it MUST contain `{pct}` (the share of the
+  week's work done, as a percentage the game prints, e.g. 50) and `{rate}` (the wage for a full week)
+  exactly once each, and no other number. Lower case, under 60 characters. Something like: the share
+  first, then the rate it is a share of. (The days are no longer on this line; the counts above it say
+  what was done.)
+- `bosses.nudge.condo` / `bosses.nudge.store` — a letter from the boss (Spinner at the arcade, Pip at
+  the store) when Thursday has come and nothing has been done that week: is the player coming in?
+  Warm, dry, a little pointed, never a threat, never a number, at most 140 characters. It may use
+  `{home}`.
+- `bosses.fired.condo` / `bosses.fired.store` — the letter that comes with the last payslip when two
+  finished weeks had nothing done: the boss has taken the player off the book; the door is open if they
+  ask again. Never cruel, never a lecture, never a number, at most 140 characters.
+
+Each boss letter has `from` (their name as they sign it: Spinner, Pip) and `line`.
+

@@ -306,6 +306,7 @@ Adding a shop, a problem, a ghost or an object is a row. Adding a chapter is a c
   (`set(v)`, `curse('deep'|'none')`, `fix(id)`, `problems()`, `lamps()`, `shelf()`, `rich()`…).
   `tests/town-life.spec.mjs` walks four scenes and writes whole-town overviews to
   `test-results/town-*-all.png`.
+- **QA, the day** (22 Sep 2026): `?towntest` walks a PLAIN day — none of the date's own draw (a closed front, the merchant, an odd spot, crows, a day ghost), because four walks fell over the morning the draw shut the store. A walk that wants the day's events pins them: `window.__town.room.today(['closed'], 'cafe')` re-stages the day (the second argument names the shut front); without arguments it only reads.
 - **Deploy order** (Trym runs wrangler): worker-rave, then worker-pass, then worker-pulse.
   Until worker-rave is live the town reads no life and stands as it always did.
 - **Garbage (15 Sep):** the two dumpsters (`dump0` the works yard, open and empty by nature;

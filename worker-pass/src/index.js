@@ -32,6 +32,9 @@ import { levelFor } from '../../src/lib/pass-defs.js';
 // 🔤 ONE RULE FOR A NAME A PLAYER CHOSE — see src/lib/player-name.js. The pass is where a name is
 // BORN, so this is the first place it has to be foldable into something the fonts can draw.
 import { cleanName } from '../../src/lib/player-name.js';
+// 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
+// their targets, the share arithmetic the cheque and the duties chip both print.
+import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf } from '../../src/data/town/jobs.js';
 
 const MAX_BLOB = 2 * 1024 * 1024;   // 🚨 6 Sep 2026: 256 KB refused every veteran phone (a big shelf) silently, forever — see the mint
 const MAX_TOKENS = 10;
@@ -1225,8 +1228,7 @@ async function adminArcade(request, env, url) {
 // the client claims, so there is no faucet to forge and RULES needs no `wage` entry. The café's
 // TIPS are different: they are earned a cup at a time while you stand there, so they come through
 // the ordinary tape as town/tips, and that faucet IS in RULES above.
-const JOB_PAY = { store: 90, condo: 60, cafe: 0 };   // the café pays tips per cup instead of a cheque
-const PAY_BACK = 2;                                  // whole weeks a cheque may walk back
+// (JOB_PAY, PAY_BACK and the duties live in src/data/town/jobs.js since 22 Sep 2026 — imported above)
 const JOB_AT = Object.keys(JOB_PAY);
 
 const jobWeek = (ms) => weekOf(ms).id;
@@ -1242,7 +1244,8 @@ function jobRec(rec, make) {
   if (!blob) return null;
   const p = blob.pass || (make ? (blob.pass = { created: Date.now(), patches: {}, stats: {}, days: [] }) : null);
   if (!p) return null;
-  if (!p.job && make) p.job = { at: '', since: 0, wk: {}, paid: {} };
+  if (!p.job && make) p.job = { at: '', since: 0, wk: {}, paid: {}, done: {}, zero: 0 };
+  if (p.job && !p.job.done) p.job.done = {};   // 💼 the week's chores, by week (22 Sep 2026)
   return p.job || null;
 }
 // only the weeks a cheque could still reach are worth keeping on the record
@@ -1251,23 +1254,38 @@ function jobPrune(j, now) {
   for (let i = 0; i <= PAY_BACK; i++) live.add(jobWeek(now - i * 7 * DAY));
   for (const k in j.wk) if (!live.has(k)) delete j.wk[k];
   for (const k in j.paid) if (!live.has(k)) delete j.paid[k];
+  for (const k in (j.done || {})) if (!live.has(k)) delete j.done[k];
+}
+// 💼 THE WEEK'S COUNTS, with `days` counted here from attendance (the one duty the client never reports).
+// The week remembers which job its counts belong to (`at`): a mid-week move starts a fresh sheet, so a
+// Tuesday at the store never pays under the arcade's targets.
+function doneOf(j, wk) {
+  const d = (j.done && j.done[wk]) || {};
+  const at = d.at || j.at || '';
+  return { ...d, at, days: jobDays(j.wk && j.wk[wk], at) };
 }
 function jobView(j, now) {
   const wk = jobWeek(now);
-  const days = jobDays(j.wk && j.wk[wk], j.at);
-  // 💼 what the duties chip prints (docs/town-jobs-plan.md §9.3): the wage so far is the cheque's own
-  // formula on this week's days, and `owed` is what /job/pay would hand over right now — the same walk,
-  // without marking anything paid, so the town can say "your payslip is in the letterbox" honestly.
+  const dn = doneOf(j, wk);
+  // 💼 what the duties chip prints (docs/town-jobs-plan.md §12): the week's counts against their
+  // targets, the share, the wage so far by the cheque's own formula, `owed` = what /job/pay would hand
+  // over right now (the same walk, marking nothing), the boss's nudge (Thursday on and nothing done),
+  // and whether the last cheque came with the sack.
   let owed = 0;
   for (let i = 1; i <= PAY_BACK; i++) {
-    const w0 = jobWeek(now - i * 7 * DAY), w = j.wk && j.wk[w0];
-    if (!w || (j.paid && j.paid[w0] != null)) continue;
-    const byJob = {};
-    for (const d in w) byJob[w[d]] = (byJob[w[d]] || 0) + 1;
-    for (const at in byJob) owed += Math.round((JOB_PAY[at] || 0) * Math.min(7, byJob[at]) / 7);
+    const w0 = jobWeek(now - i * 7 * DAY);
+    if (!(j.wk && j.wk[w0]) && !(j.done && j.done[w0])) continue;
+    if (j.paid && j.paid[w0] != null) continue;
+    const d0 = doneOf(j, w0);
+    owed += payOf(d0.at, d0);
   }
-  return { at: j.at || '', since: j.since || 0, week: wk, days, pay: JOB_PAY[j.at] || 0,
-    sofar: Math.round((JOB_PAY[j.at] || 0) * Math.min(7, days) / 7), owed };
+  const at = j.at || '';
+  const share = shareOf(at, dn);
+  const dow = (new Date(now).getUTCDay() + 6) % 7;
+  return { at, since: j.since || 0, week: wk, days: dn.days | 0, pay: JOB_PAY[at] || 0,
+    duties: rowsOf(at, dn), share, sofar: payOf(at, dn), owed,
+    nudge: !!(at && DUTIES[at] && dow >= NUDGE_DAY && share === 0),
+    fired: j.fired || null };
 }
 // ---------- POST /job/view — the job as it stands, marking nothing (the duties chip's read) ----------
 async function jobViewRoute(request, env) {
@@ -1300,6 +1318,7 @@ async function jobTake(request, env) {
     // ⭐ ONE AT A TIME. Taking a second job is leaving the first, and the weeks already worked stay
     // on the record with the job that earned them, so a change never eats a cheque you are owed.
     if (j.at !== at) { j.at = at; j.since = at ? now : 0; }
+    j.fired = null; j.zero = 0;   // 💼 asked again: the sack is history, the count starts afresh
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
     return json({ ok: true, job: jobView(j, now) }, 200, cors(env, request));
@@ -1324,9 +1343,18 @@ async function jobChore(request, env) {
     // day rather than buying a second one.
     const w = j.wk[wk] || (j.wk[wk] = {});
     w[jobDay(now)] = j.at;
+    // 💼 A CHORE BY KIND (22 Sep 2026): the town says "swept", "fixed", "restocked" as it happens, and the
+    // week counts it up to the duty's target and no further — so the ceiling a forged client can reach is
+    // still one full week's rate. `days` is never reported; the worker counts attendance itself.
+    const kind = typeof b.kind === 'string' ? b.kind.slice(0, 12) : '';
+    const duty = kind && kind !== 'days' ? (DUTIES[j.at] || []).find(([k]) => k === kind) : null;
+    if (!j.done) j.done = {};
+    let dn = j.done[wk];
+    if (!dn || dn.at !== j.at) dn = j.done[wk] = { at: j.at };   // a fresh sheet for this job's week
+    if (duty) dn[kind] = Math.min(duty[1], ((dn[kind] | 0) + 1));
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
-    return json({ ok: true, job: jobView(j, now) }, 200, cors(env, request));
+    return json({ ok: true, job: jobView(j, now), counted: !!duty }, 200, cors(env, request));
   });
 }
 
@@ -1346,18 +1374,27 @@ async function jobPay(request, env) {
     let total = 0;
     // ⚠️ WHOLE WEEKS ONLY, and never this one: a cheque is for a week that has finished, so the
     // current week is skipped and becomes payable next Monday. i starts at 1 for that reason.
-    for (let i = 1; i <= PAY_BACK; i++) {
-      const wk = jobWeek(now - i * 7 * DAY), w = j.wk && j.wk[wk];
-      if (!w || j.paid[wk] != null) continue;
-      // ⭐ EACH DAY PAYS AT THE JOB IT WAS WORKED AT. A week split between two bosses is two part
-      // cheques, which is the only honest answer: you did those days there.
-      let coins = 0;
-      const byJob = {};
-      for (const d in w) byJob[w[d]] = (byJob[w[d]] || 0) + 1;
-      for (const at in byJob) {
-        const n = Math.round((JOB_PAY[at] || 0) * Math.min(7, byJob[at]) / 7);
-        if (n > 0) { paid.push({ week: wk, at, days: byJob[at], coins: n, pay: JOB_PAY[at] || 0 }); coins += n; }   // 📄 `pay`: the slip prints the rate
+    // 💼 oldest first, so the zero-week count runs in order and the sack lands on the right week
+    for (let i = PAY_BACK; i >= 1; i--) {
+      const wk = jobWeek(now - i * 7 * DAY);
+      const worked = !!(j.wk && j.wk[wk]) || !!(j.done && j.done[wk]);
+      if (!worked || j.paid[wk] != null) continue;
+      const dn = doneOf(j, wk), at = dn.at;
+      // ⭐ THE CHEQUE IS THE RATE SCALED BY THE WEEK'S WORK (docs/town-jobs-plan.md §12): the counts
+      // ride the row, so the payslip prints the reasoning — "floor swept 1/3, machines fixed 0/3".
+      const coins = payOf(at, dn);
+      const row = { week: wk, at, days: dn.days | 0, coins, pay: JOB_PAY[at] || 0, duties: rowsOf(at, dn), share: shareOf(at, dn) };
+      // 🪓 TWO EMPTY WEEKS AND THE BOSS LETS YOU GO — only while you still hold that job, and only for
+      // a job that has duties to neglect. Asking again rehires you (/job/take clears the count).
+      if (DUTIES[at] && DUTIES[at].length) {
+        if (coins === 0) j.zero = (j.zero | 0) + 1; else j.zero = 0;
+        if (coins === 0 && j.at === at && j.zero >= FIRE_WEEKS) {
+          j.fired = { at, week: wk, t: now };
+          j.at = ''; j.since = 0; j.zero = 0;
+          row.fired = true;
+        }
       }
+      paid.push(row);
       j.paid[wk] = coins;                       // marked even at zero, so a quiet week is never re-walked
       total += coins;
     }

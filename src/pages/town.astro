@@ -158,6 +158,8 @@ const description = PAGE.description;
        props, people and planks stop painting while indoors, the banana rides above the shade */
     .tw-inshade { position: absolute; inset: 0; z-index: 2000; background: #0d0b14; pointer-events: none; }
     .tw-room { position: absolute; z-index: 2010; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
+    /* 🕹 a cabinet gone dark, for the arcade's own staff: the screen off, until it is woken (a repair) */
+    .tw-dead { position: absolute; pointer-events: none; background: rgba(8, 6, 18, 0.66); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.5); }
     /* ⚠️ :not(.is-in) OR NOTHING INSIDE A ROOM IS EVER SEEN. The town hides while you are indoors, and
        these lists name the very classes a room's own fittings are drawn with — a stocked shelf drawn
        over the store's plate would render invisible with nothing at all on screen to say why. A sprite

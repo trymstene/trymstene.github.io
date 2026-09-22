@@ -29,7 +29,7 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, INFO_WIN, OVERLAYS } from './town-geo.js';
+import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, INFO_WIN, OVERLAYS, ARCADE } from './town-geo.js';
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
@@ -796,6 +796,7 @@ export function bootTownLife(ctx) {
     p.glow = g || null;   // kept so the walk can ask which problem has no glow
   }
   async function fix(id) {
+    if (String(id).indexOf('cab:') === 0) { cabinetFixed(String(id).slice(4)); return true; }   // 🕹 a dark cabinet woken (the arcade's week)
     const i = problems.findIndex((p) => p.id === id); if (i < 0) return false;
     const p = problems.splice(i, 1)[0];
     if (p.el) p.el.remove();
@@ -844,6 +845,7 @@ export function bootTownLife(ctx) {
   function restockAdd() {
     const n = restocked() + 1;
     try { localStorage.setItem(RESTOCK, JSON.stringify({ d: dayNum(), n })); } catch (e) {}
+    if (ctx.chore) ctx.chore('restock');   // 💼 a crate to the till is the store's week's work (docs/town-jobs-plan.md §12)
     return n;
   }
   function shelfFor() {
@@ -1055,7 +1057,7 @@ export function bootTownLife(ctx) {
   }
 
   // ════════════════════════════════════ today ════════════════════════════════════════
-  let today = [], parked = null;
+  let today = [], parked = null, todayPin = TEST ? [] : null, todayFront = null;   // ?towntest walks a PLAIN day unless the walk pins its own (room.today([...])): the date's own draw made the walks date-flaky (22 Sep: the day's closed event shut the store)
   const todayShut = new Set();
   // the day's picks, for any day: today's, or tomorrow's for the parked cart
   function picksFor(d) {
@@ -1085,9 +1087,9 @@ export function bootTownLife(ctx) {
   };
   function todayStage() {
     const d = dayNum();
-    today = picksFor(d);
+    today = todayPin || picksFor(d);
     todayShut.clear();
-    if (todayHas('closed')) todayShut.add(CLOSABLE[Math.floor(h(d, 21) * CLOSABLE.length)]);
+    if (todayHas('closed')) todayShut.add(todayFront || CLOSABLE[Math.floor(h(d, 21) * CLOSABLE.length)]);   // a walk may name the front
     cond.shut = new Set([...LOOK[band].shut, ...todayShut]);
     shutters();
     // the odd spot: one resident, one beat, somewhere they never stand
@@ -1258,15 +1260,15 @@ export function bootTownLife(ctx) {
   // progress bar … so its not instant like the garbage pickups"). WORK names the types that take
   // time; anything not named here still lands at once. Walk off and the job simply stops: nothing is
   // spent, nothing is lost, and the lamp is still there to come back to.
-  const WORK = { lamp: 4500 };
+  const WORK = { lamp: 4500, cabinet: 3200 };
   let work = null;
   function workStop() { if (work) { work.el.remove(); work = null; } }
   function workStart(p) {
     workStop();
     const el = document.createElement('i');
-    el.className = 'tw-work';
+    el.className = 'tw-work' + (p.inRoom ? ' is-in' : '');   // 🕹 a repair inside a room rides above the room's plate
     el.style.left = pct(p.x, W); el.style.top = pct((p.foot || p.y) - 100, H);   // under the icon, clear of the banana's own head
-    el.style.zIndex = String(100 + Math.round(p.foot || p.y) + 4);
+    el.style.zIndex = String((p.inRoom ? 2000 : 100) + Math.round(p.foot || p.y) + 4);
     el.innerHTML = '<b></b>';
     world.appendChild(el);
     work = { id: p.id, x: p.x, y: p.foot || p.y, el, bar: el.firstChild, t0: 0, ms: WORK[p.type] || 0 };
@@ -1385,7 +1387,7 @@ export function bootTownLife(ctx) {
     objects: () => objectsNow().map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objectsNow().find((q) => q.def.id === id); if (o) dusk.takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,
-    shelf: () => shelfFor(), today: () => today.slice(), odd: () => oddKey,
+    shelf: () => shelfFor(), today: (list, front) => { if (TEST && Array.isArray(list)) { todayPin = list.slice(); todayFront = front || null; todayStage(); condition(); reseedProblems(); } return today.slice(); }, odd: () => oddKey,
     merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
     full: () => [...cond.full], fountain: () => (cond.fountainDry ? 'dry' : 'on'),
     // the four that moved out answer with a PROMISE so a walk can await the render either way
@@ -1464,6 +1466,7 @@ export function bootTownLife(ctx) {
   }
   function roomShow(key) {
     roomAt = key || '';
+    if (roomAt === 'condo') arcadeShow(); else arcadeClear();   // 🕹 the arcade's week: litter and a dark cabinet, for its own staff
     if (roomAt !== 'store') carryOn(false);   // a crate belongs to the shop it came from
     stocked.forEach(kill); stocked = [];
     if (roomAt !== 'store' || !STORE || !STORE.full) { hintShow(); return; }
@@ -1475,5 +1478,76 @@ export function bootTownLife(ctx) {
     hintShow();
   }
 
-  return { tick, at, tap, openFor, seam, story, roomShow };
+  // ═══════════════════════════ 🕹 THE ARCADE'S WEEK (22 Sep 2026; docs/town-jobs-plan.md §12) ═══════════
+  // Spinner's job had nothing to do behind its 60 a week. Now its staff find the floor littered and one
+  // cabinet dark each day: walking onto a piece sweeps it, a tap on the dark cabinet is a repair (the
+  // streetlight's hold, on the room's own plate), and each counts on the week's sheet at the pass worker
+  // (town-work.js chore). Per player, per day, remembered on this device (tw-arcade-v1); nobody who does
+  // not work here sees any of it — an arcade that looks broken to a customer is a different feature.
+  const ARC_KEY = 'tw-arcade-v1';
+  const ARC_LITTER = [[430, 470], [590, 404], [700, 500]];   // floor spots inside the arcade, off every collider
+  const ARC_CABS = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'g9'];
+  const arcRead = () => { try { const a = JSON.parse(localStorage.getItem(ARC_KEY) || 'null'); return a && a.d === dayNum() && Array.isArray(a.swept) && Array.isArray(a.fixed) ? a : { d: dayNum(), swept: [], fixed: [] }; } catch (e) { return { d: dayNum(), swept: [], fixed: [] }; } };
+  const arcWrite = (a) => { try { localStorage.setItem(ARC_KEY, JSON.stringify(a)); } catch (e) {} };
+  let arcLitter = [], arcDead = null;
+  const arcStaff = () => { const j = ctx.job && ctx.job(); return !!(j && j.at === 'condo'); };
+  const arcDeadKey = () => ARC_CABS[Math.floor(h(dayNum(), 77, 1) * ARC_CABS.length) % ARC_CABS.length];
+  function arcadeClear() {
+    arcLitter.forEach((l) => kill(l.s)); arcLitter = [];
+    if (arcDead) { arcDead.el.remove(); arcDead.m.remove(); arcDead = null; }
+  }
+  function arcadeShow() {
+    arcadeClear();
+    if (!arcStaff() || !ARCADE || !ARCADE.spots) return;
+    const a = arcRead();
+    ARC_LITTER.forEach(([x, y], i) => {
+      if (a.swept.includes(i)) return;
+      const s = sprite(['trash1', 'trash2', 'trash3'][i % 3], x, y, { z: 2000 + y, cls: 'is-in' });
+      if (s) arcLitter.push({ i, s, x, y });
+    });
+    const key = arcDeadKey();
+    if (a.fixed.includes(key)) return;
+    const sp = ARCADE.spots.find((q) => q[0] === key);
+    if (!sp) return;
+    const [, x0, y0, x1, y1] = sp;
+    const el = document.createElement('i');
+    el.className = 'tw-dead is-in';
+    el.style.left = pct(x0, W); el.style.top = pct(y0, H); el.style.width = pct(x1 - x0, W); el.style.height = pct(y1 - y0, H);
+    el.style.zIndex = String(2000 + y1 + 1);
+    world.appendChild(el);
+    const m = mark((x0 + x1) / 2, y1, 60, 2000 + y1 + 2, true);
+    m.classList.add('is-in');
+    arcDead = { key, el, m, x: (x0 + x1) / 2, y: y1 };
+  }
+  // walking onto a piece of litter on the arcade floor sweeps it up
+  function sweepAt(x, y) {
+    if (!arcLitter.length) return false;
+    const i = arcLitter.findIndex((l) => Math.hypot(l.x - x, l.y - y) < 40);
+    if (i < 0) return false;
+    const l = arcLitter.splice(i, 1)[0];
+    kill(l.s); burst(l.x, l.y - 6);
+    const a = arcRead(); a.swept.push(l.i); arcWrite(a);
+    if (ctx.chore) ctx.chore('sweep');
+    track('town_chore', { at: 'condo', kind: 'sweep' });
+    return true;
+  }
+  const cabinetDead = (key) => !!(arcDead && arcDead.key === key);
+  function cabinetRepair(key) {
+    if (!cabinetDead(key)) return false;
+    workStart({ id: 'cab:' + key, type: 'cabinet', x: arcDead.x, y: arcDead.y, foot: arcDead.y, inRoom: true });
+    return true;
+  }
+  function cabinetFixed(key) {
+    if (!arcDead || arcDead.key !== key) return;
+    burst(arcDead.x, arcDead.y - 40);
+    arcDead.el.remove(); arcDead.m.remove(); arcDead = null;
+    const a = arcRead(); a.fixed.push(key); arcWrite(a);
+    if (ctx.chore) ctx.chore('fix');
+    track('town_chore', { at: 'condo', kind: 'fix' });
+  }
+  seam.arcade = () => ({ staff: arcStaff(), litter: arcLitter.map((l) => ({ i: l.i, x: l.x, y: l.y })), dead: arcDead ? arcDead.key : null, working: !!(work && String(work.id).indexOf('cab:') === 0) });
+  seam.arcadeReset = () => { if (!TEST) return false; arcWrite({ d: dayNum(), swept: [], fixed: [] }); if (roomAt === 'condo') arcadeShow(); return true; };
+  seam.cabinetDead = cabinetDead; seam.cabinetRepair = cabinetRepair; seam.sweepAt = sweepAt;   // the walk's doors to the same three
+
+  return { tick, at, tap, openFor, seam, story, roomShow, sweepAt, cabinetDead, cabinetRepair };
 }

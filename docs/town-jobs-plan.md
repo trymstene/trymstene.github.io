@@ -748,7 +748,7 @@ deployed by Trym):
 
 ---
 
-## 9. Jobs 2.0 — duties, payslips, tips, the lemonade stand and the post office job (21 Sep 2026)
+## 11. Jobs 2.0 — duties, payslips, tips, the lemonade stand and the post office job (21 Sep 2026)
 
 Trym, late on the 21st, after the town became the front door: *"there should also be notifications
 similar to the quest notifications … if you have duties regarding your job … the post office or your
@@ -759,21 +759,21 @@ and lemonade stand is for tips."* And: *"The lemonade stand should also have som
 work selling lemonade - and also, the post office job - we need a plan for that aswell, some sort of
 simple minigame."*
 
-### 9.0 What is what, today
+### 11.0 What is what, today
 | Thing | State |
 |---|---|
 | Taking a job (Bean, Pip, Spinner) | ✅ built — one job at a time, kept pass required (§3) |
 | Turning up counts a day | ✅ built — `/job/chore` on the client's proximity tick, a quiet line once a day |
-| The weekly cheque | ✅ built — derived on the pass worker (`JOB_PAY × days ÷ 7`, walks back 2 weeks), lands as a letter in the homestead mailbox; ✅ 22 Sep: drawn as a PAYSLIP — kraft paper, a red stamp, the workplace, the days at the rate, the total (§9.3) |
+| The weekly cheque | ✅ built — derived on the pass worker (`JOB_PAY × share` of the week's work since 22 Sep — §12.1; walks back 2 weeks), lands as a letter in the homestead mailbox; ✅ 22 Sep: drawn as a PAYSLIP — kraft paper, a red stamp, the workplace, the days at the rate, the total (§11.3) |
 | The store's restock chore | ✅ built (the crate, the till row) |
-| The arcade's chore | ❌ nothing to do yet — Spinner hires, 60 a week, no duty |
+| The arcade's chore | ✅ 22 Sep: three pieces of litter and one dark cabinet a day, for the arcade's own staff; sweeping and repairing count on the week's sheet (§12.2) |
 | The café | ✅ tips per cup, at clock-out; ✅ 21 Sep: the window is the tap target, `+n` per cup, the tray counts the shift |
 | The lemonade stand (Fig Jr.) | ❌ scenery |
 | The post office job (Stamp) | ❌ never resolved (§3: "under review") |
 | Duty notifications | ✅ 22 Sep: the duties chip (`src/scripts/town-duties.js`, words `town-duties`) — the quest chip's sibling in the town's paper, under the quest chip when both are up |
 | Wage so far / payday countdown | ✅ 22 Sep: on the chip once you have turned up — `sofar` from the pass worker's `jobView` (the cheque's formula), payday counted to Monday; `owed` says "your payslip is in the letterbox" (`POST /job/view`, read-only) |
 
-### 9.1 The two kinds of work — Trym's split, written down
+### 11.1 The two kinds of work — Trym's split, written down
 - **Payslip jobs**: the General Store, the Arcade, the Post Office. Passive attendance + one daily
   duty each. Paid **once a week, Monday, by payslip in the mailbox**. Between paydays the player
   sees **wage so far** and **days to payday**.
@@ -781,7 +781,7 @@ simple minigame."*
   shows its tip the moment it is poured. No payslip, no payday, no accrual.
 - One job at a time still (§3). Changing is a walk to another boss.
 
-### 9.2 The duties chip — the quest chip's sibling, in the job's colour
+### 11.2 The duties chip — the quest chip's sibling, in the job's colour
 A second journal chip, mounted exactly where the quest's `.bwq-hint` sits (design library: one
 grammar, one template), **in a work colour** (the town's brown-and-cream paper instead of the quest's
 yellow, a briefcase pixel icon instead of the `!`). It shows ONE line: today's duty at your workplace,
@@ -798,7 +798,7 @@ or, once done, the wage line. It folds like the quest chip and remembers folding
 - The same chip is the **compass** when you are not in the town: *your shift at the General Store*.
 - Pulse: `town_duty` (job, done) beside `town_chore`.
 
-### 9.3 Wage so far, payday, the payslip
+### 11.3 Wage so far, payday, the payslip
 - **Wage so far** = `round(JOB_PAY × days_this_week ÷ 7)` — the cheque's own formula, so the chip
   never promises a coin the worker will not pay. **Payday** = Monday 00:00 UTC; the chip counts days.
   Both come back on the existing `/job/*` answers (`jobView` gains `sofar` and `payday`).
@@ -811,7 +811,7 @@ or, once done, the wage line. It folds like the quest chip and remembers folding
   this world that ever happened while you were away, and the first one that pays.
 - The HUD's coin chip is unchanged: wages land as coins only when the payslip is opened (as today).
 
-### 9.4 The post office job — sorting the post (a payslip job)
+### 11.4 The post office job — sorting the post (a payslip job)
 Stamp hires you at his counter, the way the others do. The duty is a **round of sorting**: cards
 slide onto the counter one at a time, each with one of the world's four postmarks (the Park's leaf,
 the Bay's shell, the Homestead's gate, the Town's fountain — pixel stamps, no words), and four
@@ -823,7 +823,7 @@ already exists (`mountCounter`, written form-blind — §8 of the café plan); a
 deck on the same tray, not a second tray. Words: `town-post` gains the round's lines (hired, clock-in,
 the three grades, the receipt).
 
-### 9.5 The lemonade stand — a tips job
+### 11.5 The lemonade stand — a tips job
 Fig Jr. hires you at the stand (a fourth boss). Same tray, a **lemonade deck**: squeeze (a hold),
 ice (taps), pour (the needle) — three gestures, no words. Visitors queue at the stand's front the way
 they queue at the café rope; a served visitor walks off with a **lemonade cup** in hand (one new held
@@ -831,7 +831,7 @@ item, the jug's sibling in `townwear.js`). Tips per cup, `+n` as it pours, the s
 tray, paid at clock-out through `town/tips`. Fig Jr. steps to the orchard while you work it, as Bean
 takes his terrace.
 
-### 9.6 Build order, and why
+### 11.6 Build order, and why
 1. **The duties chip + wage/payday** (9.2, 9.3 chip half) — the smallest change that makes every
    payslip job legible; needs `jobView` on the worker, one copy job, one chip.
 2. **The payslip envelope and paper** (9.3) — cosmetic on an existing rail; a day.
@@ -839,8 +839,56 @@ takes his terrace.
 4. **The post office round** (9.4) — a deck on the tray + `JOB_PAY.post` + the postmark art.
 5. **The lemonade stand** (9.5) — a deck on the tray + a boss + a cup.
 
-### 9.7 Still Trym's to call
+### 11.7 Still Trym's to call
 - The post office's weekly rate (the store's 90, the arcade's 60 — the post office's 75?).
 - Whether a tip job's clock-out toast should name the total (words) or just show the coins (numbers).
 - The arcade's chore pay: nothing beyond the cheque (§3's rule), or a small per-chore coin.
 - Whether the duties chip may sit on screen in the other areas as the compass, or only in the town.
+
+
+---
+
+## 12. The week's work — duties, the scaled cheque, the boss's letters, the sack (22 Sep 2026)
+
+Trym, 22 Sep: *"it should probably have some variance in pay depending of how often the user has swept
+floors and fixed broken machines … the user gets the reasoning in the payslip why the pay is lower this
+time if they havent done much. after a while they should get fired if they fail to do anything in a week
+or something … optional quest-notifications in a different color letting users know that they have
+work-stuff to forfill and a time-span they have to fix it … Arcade: Swept floor 0/3, fixed Arcade machine
+0/3 … maybe even letters from the boss asking if they are coming for work … this system can probably be
+replicated for all places with payslip-jobs."*
+
+### 12.1 The system, in one table
+| | |
+|---|---|
+| **The week's work** | per payslip job, a short list of duties with weekly targets — `src/data/town/jobs.js` `DUTIES`: the Arcade `sweep 3 · fix 3`, the General Store `restock 3 · days 3` (the post office, later, `sort`). ONE source for the pass worker and the town. |
+| **The cheque** | `payOf(at, done) = round(JOB_PAY[at] × share)`, `share` = targets met ÷ targets, each duty capped at its target. Nothing done, nothing paid. The old "days ÷ 7" is gone. |
+| **The reasoning on the slip** | the paid row carries the counts (`duties`) and `share`; the payslip prints them under Nib's line — *floor swept 1/3 · machines fixed 0/3 · 17% of the full week at 60 · 10*. |
+| **The work note** | the quest chip's sibling in the town's paper: the counts line (*the arcade · floor swept 1/3 · machines fixed 0/3*) and under it the wage so far + days to payday, or *done*, or the boss's nudge (amber), or the sack (grey), or *your payslip is in the letterbox*. Folds; sits under the quest chip. |
+| **The boss writes** | Thursday on (`NUDGE_DAY = 3`, Monday = 0) with nothing done → `nudge` on the job view → a letter in the homestead mailbox (`nudge:<week>:<at>`, Spinner or Pip) and the amber line on the note. |
+| **The sack** | `FIRE_WEEKS = 2` finished weeks with nothing done, while still holding the job → `/job/pay` sets `fired`, clears the job; the last payslip's row says `fired`; a letter (`fired:<week>:<at>`) and the grey line on the note for three days. Asking the boss again rehires (`/job/take` clears it). |
+| **Counting a chore** | `POST /job/chore { kind }` — the town says *swept* / *fixed* / *restocked* as it happens; the week counts up to the target and no further (the ceiling a forged client can reach is still one week's rate). `days` is counted server-side from attendance. The mirror (`tw-job-v1`) moves in the same beat; the server's count replaces it. |
+| **Reading it** | `POST /job/view` (read-only) on town entry; `/job/chore` and `/job/take` answer with the same view; `/job/pay` carries it too, so the homestead can write the boss's letters. |
+
+### 12.2 The arcade's chores (the first job with real work)
+- **The floor:** three pieces of litter a day on the arcade floor (`ARC_LITTER` spots, off every collider),
+  drawn for the arcade's own staff only (`tw-arcade-v1` remembers today's swept pieces on this device).
+  Walking onto one sweeps it — the square's litter rule — and counts `sweep`.
+- **A dark cabinet:** one of the nine a day (seeded by the day), drawn dark (`.tw-dead`) with the repair
+  icon. Tapping it is a **repair** (the streetlight's hold, 3.2 s, on the room's own plate), not a game;
+  woken, it counts `fix`. A customer never sees a dark cabinet: an arcade that looks broken to a customer
+  is a different feature.
+- The store's `restock` counts each crate that lands on the till (`restockAdd`), `days` counts itself.
+
+### 12.3 From the player's side
+Hired at the arcade, you see the note: *the arcade · floor swept 0/3 · machines fixed 0/3* / *the week's
+wage is 0; payday is Monday, 5 days away*. You step in: three bits of rubbish, one dead cabinet. Each
+one you clear moves the note the same second. Do the lot and the note says the week's work is done; do
+nothing until Thursday and it turns amber with Spinner's line, and his letter is in your letterbox. Payday:
+the slip prints exactly what you did and what it came to. Two dead weeks and the slip comes with his
+goodbye — and the arcade door still opens when you ask.
+
+### 12.4 Still Trym's to call
+- The targets (three and three) and whether `days` should count at the arcade too.
+- Whether a boss's nudge should also toast in the square the first time it is seen.
+- The store's second duty: `days` (as built) or a second chore (the till?).

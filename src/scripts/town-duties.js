@@ -1,15 +1,20 @@
-// 💼 THE DUTIES CHIP — what your job wants from you today (22 Sep 2026; docs/town-jobs-plan.md §9.2).
+// 💼 THE WORK NOTE — what your job wants from you this week (22 Sep 2026; docs/town-jobs-plan.md §12).
 //
-// Trym: "there should also be notifications similar to the quest notifications, maybe a different
-// color or something if you have duties regarding your job … a collected amount of pay so far with a
-// counter until payday". The quest's journal chip's sibling, in the town's brown-and-cream paper:
-// ONE line — today's duty, or the wage so far and the days to payday once you have turned up, or
-// "your payslip is in the letterbox" when a cheque has been paid. It folds like the quest chip.
+// Trym: "we should have optional quest-notifications in a different color letting users know that they
+// have work-stuff to forfill and a time-span they have to fix it, and if not they will get deducted on
+// the salary … say what they need to do like Arcade: Swept floor 0/3, fixed Arcade machine 0/3".
 //
-// ⚠️ THE WORDS ARE THE RIG'S (src/data/copy/town-duties.json). No words, no chip — the town-life rule.
-// ⚠️ THE NUMBERS ARE THE PASS WORKER'S: `sofar` is the cheque's own formula (JOB_PAY × days ÷ 7), and
-// payday is Monday, counted here from the UTC clock. The chip never promises a coin the cheque will
-// not pay.
+// The quest's journal chip's sibling, in the town's brown-and-cream paper. Two lines: the week's counts
+// against their targets (the workplace, then each duty as done, e.g. "floor swept 1/3"), and under them
+// ONE line — the wage so far and the days to payday, the week's work done, the boss asking if you're
+// coming in, the boss letting you go, or "your payslip is in the letterbox". A tips job (the café) keeps
+// its own two lines. It folds like the quest chip and sits under it when both are up.
+//
+// ⚠️ THE WORDS ARE THE RIG'S (src/data/copy/town-duties.json; the workplace names are the payslip's,
+// src/data/copy/homestead-post.json). No words, no chip. ⚠️ THE NUMBERS ARE THE PASS WORKER'S: the counts
+// and the wage come from its job view (src/data/town/jobs.js is the one arithmetic); payday is Monday,
+// counted here from the UTC clock. The chip never promises a coin the cheque will not pay.
+import POST from '../data/copy/homestead-post.json';
 const COPY_MODS = import.meta.glob('../data/copy/town-duties.json', { eager: true, import: 'default' });
 const COPY = Object.values(COPY_MODS)[0] || null;
 
@@ -33,6 +38,12 @@ const CSS = `
 .tw-world.is-inside ~ .twd-chip { display:none !important; }
 .twd-chip.is-min { max-width:none; padding:0; width:0; height:0; background:none; border-color:transparent; box-shadow:none; animation:none; }
 .twd-chip.is-min > span { display:none; }
+.twd-chip__top { display:block; font-size:0.68rem; letter-spacing:0.02em; opacity:0.92; margin-bottom:3px; }
+.twd-chip__top i { font-style:normal; text-transform:uppercase; letter-spacing:0.08em; font-size:0.6rem; }
+.twd-chip__top:empty { display:none; }
+.twd-chip__line { display:block; }
+.twd-chip--nudge { background:linear-gradient(#ffe8c2,#f2c98a); }
+.twd-chip--fired { background:linear-gradient(#e8dcd2,#cdbcae); }
 .twd-chip__badge {
   position:absolute; left:-13px; top:-15px; line-height:0;
   background:#111; border-radius:999px; padding:6px 7px;
@@ -53,19 +64,20 @@ const today = () => new Date().toISOString().slice(0, 10);
 // Monday is payday: the days until the next one, by the UTC clock (a Monday reads as a week away —
 // the cheque for the week just gone is already on its way, and the new week starts from nothing)
 export const daysToPayday = (t) => { const d = (new Date(t == null ? Date.now() : t).getUTCDay() + 6) % 7; return (7 - d) % 7 || 7; };
+const FIRED_SHOWN_MS = 3 * 86400000;   // the sack is on the note for three days, then the note is quiet
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // the numbers go in bold, so the eye finds them; the words stay the rig's
 const fill = (line, vals) => esc(line).replace(/\{(coins|days)\}/g, (m, k) => '<b>' + (vals[k] | 0) + '</b>');
 
 export function bootTownDuties({ view, work, track }) {
-  if (!COPY || !COPY.duty) return null;   // the words are not approved yet: the square has no chip, not a broken one
+  if (!COPY || !COPY.kinds) return null;   // the words are not approved yet: the square has no chip, not a broken one
   injectCss();
   const el = document.createElement('div');
   el.className = 'twd-chip';
   el.hidden = true;
-  el.innerHTML = '<button type="button" class="twd-chip__badge" aria-label="fold the work note"></button><span></span>';
+  el.innerHTML = '<button type="button" class="twd-chip__badge" aria-label="fold the work note"></button><span class="twd-chip__top"></span><span class="twd-chip__line"></span>';
   el.querySelector('button').innerHTML = CASE_SVG;
-  const badge = el.querySelector('button'), text = el.querySelector('span');
+  const badge = el.querySelector('button'), top = el.querySelector('.twd-chip__top'), text = el.querySelector('.twd-chip__line');
   view.appendChild(el);
   let shown = '';   // what the chip last said, so a re-render is free and Pulse hears each line once
 
@@ -84,24 +96,44 @@ export function bootTownDuties({ view, work, track }) {
     } else el.style.top = '';
   }
 
-  function lineFor(s) {
-    if (!s || !s.at) return '';
-    if (s.owed > 0 && COPY.payslip) return esc(COPY.payslip);
-    if (!s.turnedUp) return esc(COPY.duty[s.at] || '');
-    if (s.at === 'cafe') return esc(COPY.cafeDone || '');
-    return COPY.wage ? fill(COPY.wage, { coins: s.sofar, days: daysToPayday() }) : '';
+  // the counts line: the workplace as the payslip prints it, then each duty as done — "floor swept 1/3"
+  function countsFor(s) {
+    const names = (POST.wage && POST.wage.at) || {};
+    const rows = (s.duties || []).map((r) => esc(COPY.kinds[r.kind] || r.kind) + ' <b>' + (r.done | 0) + '/' + (r.of | 0) + '</b>');
+    if (!rows.length) return '';
+    return (names[s.at] ? '<i>' + esc(names[s.at]) + '</i> · ' : '') + rows.join(' · ');
+  }
+  function saysFor(s) {
+    if (!s) return null;
+    // 🪓 the sack: the note says so for a few days after, whatever job you hold now (none, usually)
+    const f = s.fired;
+    if (f && f.at && COPY.fired && COPY.fired[f.at] && Date.now() - (f.t || 0) < FIRED_SHOWN_MS && !s.at) return { top: '', line: esc(COPY.fired[f.at]), kind: 'fired' };
+    if (!s.at) return null;
+    if (s.at === 'cafe') {
+      if (!s.turnedUp) return COPY.duty && COPY.duty.cafe ? { top: '', line: esc(COPY.duty.cafe), kind: 'duty' } : null;
+      return COPY.cafeDone ? { top: '', line: esc(COPY.cafeDone), kind: 'wage' } : null;
+    }
+    const top = countsFor(s);
+    if (s.owed > 0 && COPY.payslip) return { top, line: esc(COPY.payslip), kind: 'payslip' };
+    if (s.nudge && COPY.nudge && COPY.nudge[s.at]) return { top, line: esc(COPY.nudge[s.at]), kind: 'nudge' };
+    if (s.share >= 1 && COPY.done) return { top, line: esc(COPY.done), kind: 'done' };
+    return COPY.wage ? { top, line: fill(COPY.wage, { coins: s.sofar, days: daysToPayday() }), kind: 'wage' } : null;
   }
   function render() {
     const s = work.seam.state();
-    const html = lineFor(s);
-    if (!html) { el.hidden = true; shown = ''; return; }
-    if (html !== shown) {
-      shown = html;
-      text.innerHTML = html;
-      // 📡 Pulse hears the chip once per line per day: a duty shown, a wage shown, a payslip announced
-      const kind = s.owed > 0 ? 'payslip' : (!s.turnedUp ? 'duty' : 'wage');
-      const key = today() + ':' + s.at + ':' + kind;
-      if (work.seam.told() !== key) { work.seam.tell(key); track('town_duty', { at: s.at, kind }); }
+    const says = saysFor(s);
+    if (!says || !says.line) { el.hidden = true; shown = ''; return; }
+    const key = says.top + '|' + says.line;
+    if (key !== shown) {
+      shown = key;
+      top.innerHTML = says.top;
+      text.innerHTML = says.line;
+      el.classList.toggle('twd-chip--nudge', says.kind === 'nudge');
+      el.classList.toggle('twd-chip--fired', says.kind === 'fired');
+      // 📡 Pulse hears the chip once per line per day: a duty shown, a wage shown, a nudge, the sack, a payslip announced
+      const at = s.at || (s.fired && s.fired.at) || '';
+      const pk = today() + ':' + at + ':' + says.kind;
+      if (work.seam.told() !== pk) { work.seam.tell(pk); track('town_duty', { at, kind: says.kind }); }
     }
     el.hidden = false;
     fold();
@@ -114,10 +146,12 @@ export function bootTownDuties({ view, work, track }) {
     render,
     seam: {
       hidden: () => el.hidden,
+      top: () => top.textContent,
       line: () => text.textContent,
       html: () => text.innerHTML,
+      kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : ''),
       folded: () => el.classList.contains('is-min'),
-      top: () => el.style.top,
+      offset: () => el.style.top,
       stop: () => clearInterval(placer),
     },
   };

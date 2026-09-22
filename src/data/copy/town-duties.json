@@ -1,10 +1,24 @@
 {
+  "kinds": {
+    "sweep": "floor swept",
+    "fix": "machines fixed",
+    "restock": "shelf restocked",
+    "days": "turned up",
+    "sort": "post sorted"
+  },
   "duty": {
-    "store": "restock the shelf from the crate by the till; faces forward.",
-    "condo": "be at the arcade; it needs company more than anything.",
     "cafe": "clock in at the serving window and make cups; they lack initiative."
   },
   "wage": "the week’s wage is {coins}; payday is Monday, {days} days away.",
+  "done": "the week’s work is done; the remaining days are yours to misplace.",
+  "nudge": {
+    "condo": "Spinner’s letter asks you to come to the arcade; the floor is not self-sweeping.",
+    "store": "Pip’s letter asks you to come to the store; the crate remains deeply patient."
+  },
+  "fired": {
+    "condo": "Spinner has let you go; ask at the arcade again, and his door is open.",
+    "store": "Pip has let you go; ask at the store again, and his door is open."
+  },
   "cafeDone": "tips gather on the tray as you pour; paid when you step away.",
   "payslip": "go home and open the payslip waiting in your letterbox; it has news."
 }

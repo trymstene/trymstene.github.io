@@ -15,6 +15,7 @@
 // the server's answer corrects the mirror. The mirror never decides money — it only decides which
 // of four already-approved lines the boss says.
 import { passPost } from '../lib/banana-pass.js';
+import { rowsOf, payOf, shareOf } from '../data/town/jobs.js';   // 💼 the one arithmetic the cheque uses (22 Sep 2026)
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
@@ -45,16 +46,31 @@ export function bootTownWork(ctx) {
   function land(res) {
     if (!res || res.error) return res;
     if (res.job) {
-      job = { ...job, at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0, pay: res.job.pay | 0, sofar: res.job.sofar | 0, owed: res.job.owed | 0 };
-      if (job.at !== (res.job.at || '')) job.up = '';
+      const was = job.at || '';
+      job = { ...job, at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0, pay: res.job.pay | 0, sofar: res.job.sofar | 0, owed: res.job.owed | 0,
+        duties: Array.isArray(res.job.duties) ? res.job.duties : [], share: +res.job.share || 0, nudge: !!res.job.nudge, fired: res.job.fired || null };
+      if (was !== job.at) job.up = '';
       writeJob(job);
     }
     notify();
     return res;
   }
   // the job as it stands, marking nothing — on boot, so the chip can speak before you turn up
-  function view() { if (!job.at) return; passPost('/job/view', {}).then(land); }
+  // (and once a day for a job you no longer hold, so the sack still reaches the note)
+  function view() { if (!job.at && !job.fired) return; passPost('/job/view', {}).then(land); }
   view();
+  // 💼 A CHORE, BY KIND (docs/town-jobs-plan.md §12): the town says "swept", "fixed", "restocked" as it
+  // happens. The mirror moves at once (the chip must answer the broom in the same beat), the server's
+  // count replaces it when the answer lands — the same optimism a take has, corrected the same way.
+  function chore(kind) {
+    if (!job.at) return Promise.resolve(null);
+    const rows = Array.isArray(job.duties) && job.duties.length ? job.duties : rowsOf(job.at, {});
+    const done = {}; for (const r of rows) done[r.kind] = r.done | 0;
+    if (kind in done) done[kind] = done[kind] + 1;
+    job = { ...job, duties: rowsOf(job.at, done), share: shareOf(job.at, done), sofar: payOf(job.at, done), up: todayKey() };
+    writeJob(job); notify();
+    return passPost('/job/chore', { kind }).then(land);
+  }
 
   // ---- the question on a boss's card ------------------------------------------------------
   // ⚠️ returns a plain {q, a} or null — the shape world-dialogue.js already takes, so the card that
@@ -133,10 +149,12 @@ export function bootTownWork(ctx) {
       job: () => ({ ...job }),
       bosses: () => ({ ...BOSS }),
       // ⚠️ the walk's door: it cannot keep a pass, so it drives the module rather than the server
-      set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', ...(j || {}) }; writeJob(job); notify(); },
-      // 💼 for the duties chip: the mirror as one plain object, plus whether you have turned up today
-      state: () => ({ at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey() }),
-      turnUp: () => { job.up = todayKey(); job.days = (job.days | 0) + 1; job.sofar = Math.round((job.pay | 0) * Math.min(7, job.days) / 7); writeJob(job); notify(); },   // QA: the chore landed
+      set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', duties: [], share: 0, nudge: false, fired: null, ...(j || {}) }; if (job.at && !(job.duties || []).length) job.duties = rowsOf(job.at, {}); writeJob(job); notify(); },
+      // 💼 for the work note: the mirror as one plain object, plus whether you have turned up today
+      state: () => ({ at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey(),
+        duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null }),
+      turnUp: () => { job.up = todayKey(); job.days = (job.days | 0) + 1; writeJob(job); notify(); },   // QA: the day counted
+      chore,
       onChange: (fn) => { if (typeof fn === 'function') listeners.push(fn); },
       folded: () => !!job.hm, fold: (v) => { job.hm = v ? 1 : 0; writeJob(job); },
       told: () => job.told || '', tell: (k) => { job.told = k; writeJob(job); },
