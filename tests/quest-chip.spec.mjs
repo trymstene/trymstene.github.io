@@ -57,3 +57,24 @@ test('the quest chip hides inside a shop', async ({ page }) => {
   const inside = await atChip(page);
   expect(inside.shown, 'the chip is still showing while you are inside a shop').toBe(false);
 });
+
+// 📎 THE PAPER FOLDS ON A TAP (Trym, 22 Sep 2026: "important that it's possible to contract the
+// work-quest-notification"). The badge was the only fold control and nobody found it; a tap on the note
+// itself folds it now, the badge brings it back, and a tap on the paper never walks the banana under it.
+test('a tap on the quest note folds it, the badge brings it back, and the banana stays put', async ({ page }) => {
+  await page.goto('/town/?towntest&questreset', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.pos && document.querySelector('.bwq-hint') && !document.querySelector('.bwq-hint').classList.contains('bwq-hint--wait'), null, { timeout: 30000 });
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'the note is open').toBe(false);
+  const before = await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y }));
+  await page.click('.bwq-hint > span');
+  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'a tap on the paper folds it').toBe(true);
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y }));
+  expect(after, '…and the banana was not sent walking').toEqual(before);
+  await page.click('.bwq-hint__badge');
+  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'the badge brings it back').toBe(false);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('.bwq-hint'), null, { timeout: 30000 });
+  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'and the fold is remembered either way').toBe(false);
+});

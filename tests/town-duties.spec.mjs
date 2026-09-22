@@ -82,11 +82,20 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   await waitLine(page, COPY.cafeDone);
   expect((await chip(page)).html, 'no number anywhere on a tips job').not.toMatch(/<b>\d/);
 
-  // ── it folds like the quest chip
+  // ── it folds like the quest chip: the badge, and the paper itself (Trym, 22 Sep: "important that it's possible
+  // to contract the work-quest-notification") — and a tap on the paper never walks the banana
   await page.click('.twd-chip__badge');
   expect((await chip(page)).folded, 'folded to its badge').toBe(true);
   await page.click('.twd-chip__badge');
   expect((await chip(page)).folded, '…and open again').toBe(false);
+  const before = await page.evaluate(() => ({ x: window.__town.pos.x, y: window.__town.pos.y, tx: window.__town.tgt.x, ty: window.__town.tgt.y }));
+  await page.click('.twd-chip__line');
+  expect((await chip(page)).folded, 'a tap on the paper folds it').toBe(true);
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => ({ x: window.__town.pos.x, y: window.__town.pos.y, tx: window.__town.tgt.x, ty: window.__town.tgt.y }));
+  expect([after.tx, after.ty], '…and the banana was not sent walking').toEqual([before.tx, before.ty]);
+  await page.click('.twd-chip__badge');
+  expect((await chip(page)).folded, 'the badge brings it back').toBe(false);
 
   // ── Pulse heard each kind of line once per day
   const ev = await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_duty').map((e) => e[1].kind));

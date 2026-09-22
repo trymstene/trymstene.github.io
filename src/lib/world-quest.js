@@ -588,8 +588,13 @@ function ensureCss() {
   background:linear-gradient(#ffe14d,#f2c012); color:#241c00;
   border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
   font-size:0.78rem; font-weight:800; padding:7px 11px 7px 22px; line-height:1.35;
-  pointer-events:none; animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
+  /* 📎 the paper itself is a FOLD CONTROL (Trym, 22 Sep: "important that it's possible to contract the
+     notification") — a tap on the note folds it to its badge, and the badge is the way back. Folded it is
+     a 0×0 anchor that takes no taps, so the world under it walks again. */
+  pointer-events:auto; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  animation:bwqCardIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
+.bwq-hint.is-min { pointer-events:none; }
 .bwq-hint[hidden] { display:none !important; }
 /* 🏠 INSIDE IS NOT THE WORLD. A shop, a room or a house is appended inside the area's
    panning world element, which is its own stacking context and therefore cannot paint over
@@ -1559,6 +1564,10 @@ export async function bootQuest() {
         S.hm = S.hm ? 0 : 1; save();
         fold();
       });
+      // 📎 and the paper folds on a tap of its own (the badge unfolds it). ⚠️ pointerdown is stopped HERE so the
+      // area's own tap handler, which listens on the view above, never reads a note tap as a walk.
+      h.addEventListener('pointerdown', (e) => { if (!h.classList.contains('is-min')) e.stopPropagation(); });
+      h.addEventListener('click', (e) => { if (h.classList.contains('is-min') || e.target.closest('.bwq-hint__badge')) return; e.stopPropagation(); S.hm = 1; save(); fold(); });
       if (!chipDelayed) {   // let the world land first, then pop the journal in
         chipDelayed = true;
         h.classList.add('bwq-hint--wait');

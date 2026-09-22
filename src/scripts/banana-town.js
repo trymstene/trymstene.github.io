@@ -335,7 +335,7 @@ let crowd = null;        // 👥 src/scripts/town-crowd.js — the other players
 let duties = null;       // 💼 src/scripts/town-duties.js — the work note, once the jobs are up (22 Sep 2026)
 view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
-  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup')) return;   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
+  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup, .bwq-hint, .twd-chip')) return;   // 📎 the two notes fold on a tap; they never walk   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
   arriveThen = null;   // a new tap cancels a pending cabinet
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;

@@ -32,8 +32,10 @@ const CSS = `
   background:linear-gradient(#f7ecd2,#e8d7b3); color:#3a2a1c;
   border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:2px;
   font-size:0.78rem; font-weight:800; padding:7px 11px 7px 22px; line-height:1.35;
-  pointer-events:none; animation:twdIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events:auto; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent;   /* 📎 the paper folds on a tap (Trym, 22 Sep); the badge brings it back */
+  animation:twdIn 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
+.twd-chip.is-min { pointer-events:none; }
 .twd-chip[hidden] { display:none !important; }
 .tw-world.is-inside ~ .twd-chip { display:none !important; }
 .twd-chip.is-min { max-width:none; padding:0; width:0; height:0; background:none; border-color:transparent; box-shadow:none; animation:none; }
@@ -90,6 +92,9 @@ export function bootTownDuties({ view, work, track }) {
     badge.setAttribute('aria-expanded', min ? 'false' : 'true');
   };
   badge.addEventListener('click', (e) => { e.stopPropagation(); work.seam.fold(!work.seam.folded()); fold(); });
+  // 📎 a tap on the note itself folds it, and never walks the banana: pointerdown is stopped before the view sees it
+  el.addEventListener('pointerdown', (e) => { if (!el.classList.contains('is-min')) e.stopPropagation(); });
+  el.addEventListener('click', (e) => { if (el.classList.contains('is-min') || e.target.closest('.twd-chip__badge')) return; e.stopPropagation(); work.seam.fold(true); fold(); });
 
   // 📎 UNDER THE QUEST'S CHIP when both are up, never on top of it: the same corner, one card below
   function place() {
