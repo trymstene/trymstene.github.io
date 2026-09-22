@@ -2911,6 +2911,8 @@ function init(visitDoc, visitMiss) {
   function refreshMail() {
     if (mailDot) mailDot.hidden = !postUnread();
   }
+  // 🪙 the coin on the slip's total — the café tray's coin, the same eight pixels
+  const SLIP_COIN = '<svg viewBox="0 0 8 8" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true"><path fill="#111" d="M2 0h4v1h-4zM1 1h1v1h-1zM6 1h1v1h-1zM0 2h1v4h-1zM7 2h1v4h-1zM1 6h1v1h-1zM6 6h1v1h-1zM2 7h4v1h-4z"/><path fill="#f2c012" d="M2 1h4v1h-4zM1 2h6v4h-6zM2 6h4v1h-4z"/><path fill="#ffe97a" d="M2 2h2v1h-2zM2 3h1v1h-1z"/><path fill="#b8860b" d="M4 4h2v1h-2zM5 3h1v1h-1z"/></svg>';
   function letterEl(m) {
     // 💼 a cheque is keyed by the WEEK it paid for, so its words cannot live under a fixed id the
     // way the five occasion letters do — they come from POSTCOPY.wage and carry the amount.
@@ -2918,7 +2920,27 @@ function init(visitDoc, visitMiss) {
     const w = wage ? (POSTCOPY.wage || {}) : ((POSTCOPY.letters || {})[m.id] || {});
     const p = document.createElement('div');
     p.className = 'bw-paper' + (wage ? ' bw-paper--wage' : '');
-    p.textContent = pFill(w.line).replace('{n}', String(m.n | 0));
+    // 📄 THE PAYSLIP (22 Sep 2026; docs/town-jobs-plan.md §9.3, Trym: "the paycheck should have a
+    // different color paper or look or envelope style"): kraft paper, a rubber stamp, Nib's line, and
+    // the figures printed under it — the workplace, the days at the rate, the total with its coin.
+    // ⚠️ a slip delivered before today carries no figures (only `n`): it keeps the line and skips the
+    // rows rather than printing zeros. The words are the rig's; only the numbers are the game's.
+    if (wage && w.stamp) { const st = document.createElement('b'); st.className = 'bw-slip__stamp'; st.textContent = w.stamp; p.appendChild(st); }
+    p.appendChild(document.createTextNode(pFill(w.line).replace('{n}', String(m.n | 0))));
+    if (wage && m.d && w.slip && w.at) {
+      const rows = document.createElement('div');
+      rows.className = 'bw-slip__rows';
+      const at = document.createElement('span'); at.className = 'bw-slip__at'; at.textContent = w.at[m.at] || ''; rows.appendChild(at);
+      const terms = document.createElement('span'); terms.className = 'bw-slip__terms';
+      const parts = String(w.slip).split(/(\{days\}|\{rate\})/);
+      for (const part of parts) {
+        if (part === '{days}' || part === '{rate}') { const b = document.createElement('b'); b.textContent = String(part === '{days}' ? (m.d | 0) : (m.r | 0)); terms.appendChild(b); }
+        else if (part) terms.appendChild(document.createTextNode(part));
+      }
+      rows.appendChild(terms);
+      const total = document.createElement('span'); total.className = 'bw-slip__total'; total.innerHTML = SLIP_COIN + '<b>' + (m.n | 0) + '</b>'; rows.appendChild(total);
+      p.appendChild(rows);
+    }
     const from = document.createElement('i');
     from.className = 'bw-paper__from';
     from.textContent = w.from || '';
@@ -3030,7 +3052,7 @@ function init(visitDoc, visitMiss) {
     for (const row of (res.paid || [])) {
       const id = 'wage:' + row.week + ':' + row.at;
       if ((state.mail || []).some((m) => m.id === id)) continue;
-      (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, n: row.coins | 0 });
+      (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, n: row.coins | 0, d: row.days | 0, at: String(row.at || ''), r: row.pay | 0 });   // 📄 the slip's figures
       n++;
     }
     if (!n) return;
@@ -5077,6 +5099,7 @@ function init(visitDoc, visitMiss) {
       mailGeo: () => ({ W, H, at: state.mailAt, mail: (state.mail || []).length, unread: postUnread() }),
       wage: () => wageCheck(),   // 💼 the walk cannot hold a job for a week
       mailOf: () => (state.mail || []).map((m) => ({ id: m.id, read: m.read | 0, n: m.n | 0 })),   // 📬 the walk taps the mailbox where it really stands
+      mail: (row) => { (state.mail || (state.mail = [])).unshift({ t: Date.now(), read: 0, ...(row || {}) }); save(); refreshMail(); renderPost(); return (state.mail || []).length; },   // 📄 QA: a letter lands, as /job/pay would drop it
       // 🌦 force a tier — the clock rains a few % of the time, so waiting for real
       // weather is not a test plan. null hands the sky back to the clock.
       wx: (k) => hsWx.setKind(k),

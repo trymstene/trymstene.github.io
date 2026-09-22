@@ -4,7 +4,14 @@
   "empty": "The mailbox is empty today. It is sitting up straight.",
   "wage": {
     "from": "Nib",
-    "line": "I have filed {n} coins for the work you finished. They waited in the folder, as folders do."
+    "line": "I have filed {n} coins for the work you finished. They waited in the folder, as folders do.",
+    "stamp": "PAID",
+    "slip": "{days} days worked at {rate} a week",
+    "at": {
+      "store": "the general store",
+      "condo": "the arcade",
+      "post": "the post office"
+    }
   },
   "letters": {
     "welcome": {

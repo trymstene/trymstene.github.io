@@ -1356,7 +1356,7 @@ async function jobPay(request, env) {
       for (const d in w) byJob[w[d]] = (byJob[w[d]] || 0) + 1;
       for (const at in byJob) {
         const n = Math.round((JOB_PAY[at] || 0) * Math.min(7, byJob[at]) / 7);
-        if (n > 0) { paid.push({ week: wk, at, days: byJob[at], coins: n }); coins += n; }
+        if (n > 0) { paid.push({ week: wk, at, days: byJob[at], coins: n, pay: JOB_PAY[at] || 0 }); coins += n; }   // 📄 `pay`: the slip prints the rate
       }
       j.paid[wk] = coins;                       // marked even at zero, so a quiet week is never re-walked
       total += coins;

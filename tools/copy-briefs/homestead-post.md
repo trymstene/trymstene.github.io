@@ -43,3 +43,18 @@ It MUST contain `{n}`, the coins.
 
 ⚠️ Never a rate, never a day of the week, never “per” anything, and never a promise about next
 week. The town has never published a timetable and this letter is not where it starts.
+
+### The payslip (22 Sep 2026)
+
+The cheque letter now looks like what it is: a **payslip** on kraft-brown paper with a rubber stamp
+and the figures printed under Nib's line. Three more things in `wage`, none of them prose:
+
+- `stamp` — the word on the rubber stamp, in capitals, one word, at most 8 letters: what a clerk
+  stamps on a slip that has been settled (the plain English word for it).
+- `slip` — the one printed line of figures, under the letter: it MUST contain `{days}` (the days
+  worked that week) and `{rate}` (the wage for a full week) exactly once each, and nothing else that
+  is a number. Something like the days first, then the rate. Under 60 characters, lower case.
+  ⚠️ This is the ONE place the world prints a rate, because a payslip that hides its rate is not a
+  payslip; Nib's `line` above it still never mentions one.
+- `at` — the three workplaces as they are printed on a payslip, lower case, with their article, at
+  most 24 characters each: `store` (the General Store), `condo` (the Arcade), `post` (the Post Office).

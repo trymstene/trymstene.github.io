@@ -1403,6 +1403,12 @@ export const JOBS = {
       'empty': { kind: 'prose', aim: 50, max: 70, note: 'Shown when there is no post at all: the box is empty today. Warm, never sad, never a promise about when something will come.' },
       'wage.from': { kind: 'prose', aim: 14, max: 20, note: 'Who signs the pay letter: Nib, who keeps the town’s big book and is its payroll desk.' },
       'wage.line': { kind: 'prose', aim: 110, max: 140, holds: ['{n}'], note: '⭐ THE CHEQUE, and the first thing in this world that ever ARRIVES WHILE THE PLAYER WAS NOT LOOKING. It is for a week of work that has finished, and MUST contain {n}, the coins. Say it as a clerk filing a thing that is already done — warm, dry, done. ⚠️ never a rate, never a day of the week, never “per” anything, and never a promise about next week: the town does not publish a timetable. At most 140 characters.' },
+      // 📄 the payslip (22 Sep 2026): the stamp, the printed figures, the workplace names
+      'wage.stamp': { kind: 'label', aim: 4, max: 8, note: 'The word on the rubber stamp across a settled payslip, in capitals, one word, at most 8 letters.' },
+      'wage.slip': { kind: 'prose', aim: 30, max: 60, holds: ['{days}', '{rate}'], note: 'The one printed line of figures under the letter. MUST contain {days} (the days worked that week) and {rate} (the wage for a full week) exactly once each; no other number; lower case; under 60 characters. Days first, then the rate.' },
+      'wage.at.store': { kind: 'prose', aim: 17, max: 24, note: 'The General Store as it is printed on a payslip: lower case, with its article.' },
+      'wage.at.condo': { kind: 'prose', aim: 10, max: 24, note: 'The Arcade as it is printed on a payslip: lower case, with its article.' },
+      'wage.at.post': { kind: 'prose', aim: 15, max: 24, note: 'The Post Office as it is printed on a payslip: lower case, with its article.' },
       'letters.welcome.from': { kind: 'prose', aim: 14, max: 20, note: 'Who signed it: Nib, the Town Hall clerk. Their name as they would sign a letter.' },
       'letters.welcome.line': { kind: 'prose', aim: 110, max: 140, holds: ['{home}'], note: 'The letter itself, at most 140 characters, in their own voice, handwritten on paper: the plot is registered and the place is yours; he is pleased the paperwork is finally in order. Warm, plain, the questline’s voice bar (a 13-year-old and a 50-year-old read it without a stumble). It may use {name} for the player and {home} for their homestead’s name. Never a rate, never a time, never asks for anything back.' },
       'letters.movedin.from': { kind: 'prose', aim: 14, max: 20, note: 'Who signed it: Moss, the street sweeper. Their name as they would sign a letter.' },
@@ -1414,12 +1420,40 @@ export const JOBS = {
       'letters.week.from': { kind: 'prose', aim: 14, max: 20, note: 'Who signed it: Nib, the Town Hall clerk. Their name as they would sign a letter.' },
       'letters.week.line': { kind: 'prose', aim: 110, max: 140, holds: ['{home}'], note: 'The letter itself, at most 140 characters, in their own voice, handwritten on paper: a week on the plot; the big book says so, and he thought you should know. Warm, plain, the questline’s voice bar (a 13-year-old and a 50-year-old read it without a stumble). It may use {name} for the player and {home} for their homestead’s name. Never a rate, never a time, never asks for anything back.' },
     },
-    shape: () => [],
+    shape: (data) => {
+      const bad = [];
+      const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
+      const w = data.wage || {};
+      const stamp = String(w.stamp || '');
+      if (!stamp) say('wage.stamp', 'is empty');
+      if (stamp && stamp !== stamp.toUpperCase()) say('wage.stamp', 'is not in capitals, and a rubber stamp is');
+      if (/\s/.test(stamp)) say('wage.stamp', 'is more than one word');
+      const slip = String(w.slip || '');
+      if ((slip.match(/\{days\}/g) || []).length !== 1) say('wage.slip', 'must contain {days} exactly once');
+      if ((slip.match(/\{rate\}/g) || []).length !== 1) say('wage.slip', 'must contain {rate} exactly once');
+      if (/\d/.test(slip)) say('wage.slip', 'carries a number of its own — the game prints the figures');
+      if (slip && /^[A-Z]/.test(slip)) say('wage.slip', 'starts with a capital, and the printed line is lower case');
+      if (/\d|\{/.test(String(w.line || '').replace(/\{n\}/g, ''))) say('wage.line', 'carries a figure of its own; the slip line prints the figures');
+      for (const k of ['store', 'condo', 'post']) {
+        const v = String((w.at || {})[k] || '');
+        if (!v) say('wage.at.' + k, 'is empty');
+        if (/^[A-Z]/.test(v)) say('wage.at.' + k, 'starts with a capital, and a workplace on a payslip is lower case with its article');
+      }
+      return bad;
+    },
     schema: { type: 'object', additionalProperties: false, required: ['title', 'empty', 'letters', 'wage', 'open'], properties: {
       open: str('✉️ The button at the foot of the mailbox card that opens the post other PLAYERS have sent you — a different thing from the notes above it, which are the world telling you something. A verb first, two or three words, ONE line inside a narrow card. It must not name a mechanic: never “Inbox”, never “Messages”, never “Open mailbox”.'),
       title: { type: 'string', description: 'The card’s heading when the mailbox is opened.' },
       empty: { type: 'string', description: 'Shown when there is no post.' },
-      wage: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Who signed the pay letter.' }, line: { type: 'string', description: 'The pay letter, holding {n} coins.' } } },
+      wage: { type: 'object', additionalProperties: false, required: ['from', 'line', 'stamp', 'slip', 'at'], properties: {
+        from: { type: 'string', description: 'Who signed the pay letter.' }, line: { type: 'string', description: 'The pay letter, holding {n} coins.' },
+        stamp: { type: 'string', description: 'The word on the rubber stamp across a settled payslip: capitals, one word, at most 8 letters.' },
+        slip: { type: 'string', description: 'The one printed line of figures: MUST contain {days} and {rate} exactly once each, no other number, lower case, under 60 characters; days first, then the rate.' },
+        at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'post'], properties: {
+          store: { type: 'string', description: 'The General Store as printed on a payslip: lower case, with its article.' },
+          condo: { type: 'string', description: 'The Arcade as printed on a payslip: lower case, with its article.' },
+          post: { type: 'string', description: 'The Post Office as printed on a payslip: lower case, with its article.' } } },
+      } },
       letters: { type: 'object', additionalProperties: false, required: ['welcome', 'movedin', 'firstbeast', 'shed', 'week'], properties: {
         welcome: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Who signed it: Nib, the Town Hall clerk.' }, line: { type: 'string', description: 'The letter, at most 140 characters: the plot is registered and the place is yours; he is pleased the paperwork is finally in order.' } } },
         movedin: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Who signed it: Moss, the street sweeper.' }, line: { type: 'string', description: 'The letter, at most 140 characters: he walked past and saw the tent up; the place looks lived in.' } } },
