@@ -45,7 +45,7 @@ export function bootTownPost(ctx) {
   // flags that happen to correlate with it.
   //   'post' — the counter in town: postcards are made here, and the BUILDING has a line of its own
   //   'home' — your own mailbox: letters only, and no building to describe (you live here)
-  const { openCard, card, closeCard, say, track, slug, at = 'post' } = ctx;
+  const { openCard, card, closeCard, say, track, slug, at = 'post', staff, sort } = ctx;
   const cards = at === 'post';
   let box = null, open = null, writing = null, busy = false;
   let thread = null;      // whose letters we are looking through, or null for the mailbox itself
@@ -206,6 +206,10 @@ export function bootTownPost(ctx) {
   // fix: before this, writing to somebody required already having heard from them.
   const writeBtn = () => '<button type="button" class="tw-cta tw-post__write" id="twPostNew">'
     + '<span class="tw-cta__verb">' + esc(((COPY.folk || {}).write) || '') + '</span></button>';
+  // ✉️ THE ROUND, for the post office's own staff (22 Sep 2026): one more button at the foot of the mailbox,
+  // and only here — a stranger's mailbox has no counter behind it. The words are the rig's (`round.start`).
+  const sortBtn = () => (cards && staff && staff() && (COPY.round || {}).start
+    ? '<button type="button" class="tw-cta tw-post__sort" id="twPostSort"><span class="tw-cta__verb">' + esc(COPY.round.start) + '</span></button>' : '');
 
   // ✉️ the state is in the ART, not in a badge: the pack ships two envelopes, one with a red wax seal
   // and one without. You can see which post is new from across a room, which is what a mailbox is for.
@@ -359,7 +363,7 @@ export function bootTownPost(ctx) {
           : '<p class="tw-post__none">' + esc((folk.asked ? (folk.q ? f.none : f.empty) : f.wait) || '') + '</p>')
         + '</div>' + backBtn();
     } else if (!letters.length) {
-      body = '<p class="tw-post__none">' + esc(w.empty || '') + '</p>' + writeBtn();
+      body = '<p class="tw-post__none">' + esc(w.empty || '') + '</p>' + writeBtn() + sortBtn();
     } else {
       const fresh = letters.filter((l) => !l.read).sort((a, b) => b.at - a.at);
       // ⚠️ A KEPT POSTCARD IS NOT A THREAD ROW. threadsOf() groups by sender and previews the last
@@ -370,7 +374,7 @@ export function bootTownPost(ctx) {
       body = (fresh.length ? '<div class="tw-post__new">' + fresh.map(sealed).join('') + '</div>' : '')
         + (keptCards.length ? '<div class="tw-post__new">' + keptCards.map(cardRow).join('') + '</div>' : '')
         + (kept.length ? '<b class="tw-post__of">' + esc(w.threads || '') + '</b><div class="tw-post__stack">' + kept.map(rowOf).join('') + '</div>' : '')
-        + writeBtn();
+        + writeBtn() + sortBtn();
     }
     // ⚠️ THE HEADING NAMES THE ROOM YOU ARE IN. Every state wore the mailbox's own title, so
     // tapping “Write a letter” landed you on a page headed “Your Mailbox” — the wrong name over the
@@ -456,6 +460,8 @@ export function bootTownPost(ctx) {
     if (reply) reply.addEventListener('click', () => { writing = { to: open.from, name: open.name || '' }; render(); focusSheet(); });
 
     // ── 📇 THE ADDRESS BOOK ───────────────────────────────────────────────────────────────────
+    const sortB = card.querySelector('#twPostSort');
+    if (sortB) sortB.addEventListener('click', () => { if (typeof sort === 'function') sort(); });
     const fresh = card.querySelector('#twPostNew');
     if (fresh) fresh.addEventListener('click', async () => {
       folk = { q: '', rows: [], asked: false };

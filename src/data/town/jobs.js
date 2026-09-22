@@ -14,13 +14,14 @@
 // payslip prints the counts so the reasoning is on the paper. `days` is a duty the worker counts by
 // itself (days you turned up); every other kind is a chore the town reports as it is done.
 
-export const JOB_PAY = { store: 90, condo: 60, cafe: 0 };   // the café pays tips per cup instead of a cheque
+export const JOB_PAY = { store: 90, condo: 60, post: 75, cafe: 0 };   // the café pays tips per cup instead of a cheque; the post office's 75 sits between the two (Trym's to move)
 export const PAY_BACK = 2;                                  // whole weeks a cheque may walk back
 
 // the week's work, per payslip job: [kind, target]. A job with no entry pays by tips (the café).
 export const DUTIES = {
   condo: [['sweep', 3], ['fix', 3]],      // the arcade: litter on the floor, a cabinet gone dark
   store: [['restock', 3], ['days', 3]],   // the general store: crates to the till, and being there
+  post: [['sort', 3], ['days', 3]],       // the post office: rounds of sorting at the counter, and being there (22 Sep 2026)
 };
 export const NUDGE_DAY = 3;    // Thursday (Monday = 0): nothing done by then, and the boss writes
 export const FIRE_WEEKS = 2;   // two finished weeks with nothing done, and the boss lets you go

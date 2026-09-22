@@ -80,3 +80,13 @@ got done, and the slip prints the counts so the reason is on the paper.
 
 Each boss letter has `from` (their name as they sign it: Spinner, Pip) and `line`.
 
+
+
+### Stamp's letters (22 Sep 2026)
+
+The post office is a payslip job now — a round of sorting at the counter is its duty — so Stamp, the
+postmaster, writes the same two letters Spinner and Pip do: `bosses.nudge.post` and
+`bosses.fired.post`, each with `from` (Stamp) and `line`, under the same rules. The nudge comes
+when Thursday has come and nothing has been done that week (the pile on the counter is his
+subject); the goodbye comes with the last payslip after two finished weeks with nothing done. Warm,
+dry, never a number, at most 140 characters, and the door is open if they ask again.

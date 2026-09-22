@@ -1,6 +1,10 @@
 {
   "bosses": {
     "nudge": {
+      "post": {
+        "from": "Stamp",
+        "line": "The sorting pile is still on the counter. Come sort it before it learns the alphabet."
+      },
       "condo": {
         "from": "Spinner",
         "line": "The arcade floor and machines are waiting. Come in when you can; neither has improved itself."
@@ -11,6 +15,10 @@
       }
     },
     "fired": {
+      "post": {
+        "from": "Stamp",
+        "line": "I have taken you off the book. The post office door stays open if you want work again."
+      },
       "condo": {
         "from": "Spinner",
         "line": "I have taken your name off the arcade book. If you want work again, come ask me; the door is still open."

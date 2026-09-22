@@ -55,3 +55,15 @@ journal chip, in the town's brown-and-cream paper. It shows TWO lines:
 - **No numbers** in the prose, ever. `{coins}` and `{days}` are the only numbers, and only in `wage`.
 - Never name the money as a reward, a bonus or a prize. A wage is a wage; a tip is a tip.
 - Warm, dry, plain. A 13-year-old and a 50-year-old both read it without a stumble.
+
+
+## The post office (22 Sep 2026)
+
+Stamp hires now, and the post office is a payslip job like the store: its counts are `kinds.sort`
+(rounds of sorting at the counter) and `kinds.days`. Two more boss lines, in exactly the grammar of
+Spinner's and Pip's:
+
+- `nudge.post` — Stamp, the postmaster, has written to ask if you're coming in; the pile on the
+  counter is his subject. Warm, dry, a little pointed, never a threat. No numbers.
+- `fired.post` — Stamp let you go after two empty weeks; his door is open if you ask again. Never
+  cruel, never a lecture. No numbers.

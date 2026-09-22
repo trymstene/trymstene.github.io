@@ -248,12 +248,12 @@ Five lines:
 
 ## `work` — asking a boss for a job
 
-Three residents can hire you: Pip at the general store, Spinner at the arcade, Bean at the Coffee
-Cup. You ask the way you ask them anything else — you walk up, you tap, and the question is on
+Four residents can hire you: Pip at the general store, Spinner at the arcade, Bean at the Coffee
+Cup, and since 22 Sep 2026 Stamp at the post office. You ask the way you ask them anything else — you walk up, you tap, and the question is on
 their card beside the two they already answer. `work.ask` is that question, and it is in the
 PLAYER'S voice.
 
-`work.at` is the three buildings' names as they fit INSIDE a sentence — they are dropped into
+`work.at` is the four buildings' names as they fit INSIDE a sentence — they are dropped into
 `{where}` in `hired` and `moved`, so “Gladly, {where} could use your hands” has to read as one
 line. Not the sign planks, which shout, and not a key.
 

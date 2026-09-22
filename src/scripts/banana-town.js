@@ -386,6 +386,16 @@ let toastT = 0;
 // while a toast is up (the café's "off" line lands a beat before its receipt does).
 function placeToast() {
   toastEl.style.top = ''; toastEl.style.bottom = '';
+  // ☕✉️ A COUNTER'S TRAY IS UP: the toast stands at the top of the view — under the HUD strip, AND under the
+  // journal chips (the quest note, the work note), which is exactly where it used to land: the café's own
+  // recipe measured the strip alone, and the notes were added later (seen on the post office's walk, 22 Sep).
+  // Measured on every toast, so a note that unfolds or folds between two lines moves the next one.
+  if (toastEl.classList.contains('is-above-tray')) {
+    const v = view.getBoundingClientRect();
+    let low = 0;
+    for (const el of document.querySelectorAll('.wh, .bwq-hint, .twd-chip')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); }
+    toastEl.style.setProperty('--tw-toast-top', Math.max(14, Math.round(low) + 10) + 'px');
+  }
   if (toastEl.hidden || !panel || panel.hidden) return;
   const card = panel.querySelector('.tw-card');
   const v = view.getBoundingClientRect(), c = card ? card.getBoundingClientRect() : null, t = toastEl.getBoundingClientRect();
@@ -446,9 +456,13 @@ function tick(now) {
   if (dx || dy) {
     const step = SPEED * dt * slow;
     const nx = pos.x + dx * step, ny = pos.y + dy * step;
+    // ⚠️ A SLIDE THAT GOES NOWHERE IS A STOP. Blocked head-on, the banana slides along the wall by its
+    // sideways component — and straight below a planter that component was 0.005, so it crept 0.01 px a
+    // frame for ever, never "arrived, or stuck", and a round waiting on the walk never began (22 Sep).
+    // Under a twelfth of the speed the slide is invisible anyway; it stops, and the pending deed fires.
     if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
-    else if (!blocked(nx, pos.y)) pos.x = nx;
-    else if (!blocked(pos.x, ny)) pos.y = ny;
+    else if (Math.abs(dx) > 0.12 && !blocked(nx, pos.y)) pos.x = nx;
+    else if (Math.abs(dy) > 0.12 && !blocked(pos.x, ny)) pos.y = ny;
     else { tgt.x = pos.x; tgt.y = pos.y; }
   }
   // ⚠️ and a pending arrival does NOT fire while a card is up: freezing the target would otherwise read
@@ -463,6 +477,7 @@ function tick(now) {
   if (room) room.tick(now, dt);
   if (room && inRoom === 'condo' && room.sweepAt) room.sweepAt(pos.x, pos.y);   // 🕹 walking onto arcade litter sweeps it (staff only)
   if (work) work.tick(now);
+  if (sort) sort.tick(now);   // ✉️ the sorting round's clock and its mark
   { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
   if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -523,10 +538,35 @@ function npcCard(key) {
 // line before the rail is turned on; it is not the same thing as the counter being closed.
 const mySlug = () => { try { return (JSON.parse(localStorage.getItem('hs-v1') || '{}') || {}).slug || ''; } catch (e) { return ''; } };
 let postP = null;
+// ✉️ THE SORTING ROUND — the post office's counter, for its own staff (22 Sep 2026): its own lazy chunk on the
+// café's tray. The mailbox card carries the button; the round starts when the banana REACHES the counter
+// (the cabinets' rule), so a tray never rises over a walk.
+let sort = null, sortP = null;
+function loadSort() {
+  if (!sortP) {
+    sortP = import('./town-sort.js')
+      .then((m) => { sort = m.bootTownSort({ host: view, PROPS, pos, say, track, openCard, closeCard, esc, inside: () => !!inRoom, chore: (k) => (work && work.seam.chore ? work.seam.chore(k) : null) }); return sort; })
+      .catch((e) => { sortP = null; console.warn('[town] the sorting counter did not load', e); return null; });
+  }
+  return sortP;
+}
+const isStaff = (at) => !!(work && work.seam && work.seam.job().at === at);
+function startSort() {
+  const p = PROPS.post;
+  if (!p || !isStaff('post')) return false;
+  closeCard();
+  const mx = p.x + p.w / 2, my = p.base + 30;   // the counter's mark: the front's foot, on the street
+  // already at the counter: the round starts now. Otherwise the walk, and the round on arrival — or where
+  // the walk stops, in which case the counter says it is a step away (town-sort.js clockIn's own guard)
+  if (Math.hypot(pos.x - mx, pos.y - my) <= 120) { loadSort().then((s) => { if (s) s.clockIn(); }); return true; }
+  tgt.x = mx; tgt.y = my;
+  arriveThen = () => { loadSort().then((s) => { if (s) s.clockIn(); }); };
+  return true;
+}
 function postCard() {
   if (!postP) {
     postP = import('./town-post.js')
-      .then((m) => { post = m.bootTownPost({ openCard, closeCard, card, say, track, slug: mySlug }); return post; })
+      .then((m) => { post = m.bootTownPost({ openCard, closeCard, card, say, track, slug: mySlug, staff: () => isStaff('post'), sort: startSort }); return post; })
       .catch((e) => { postP = null; console.warn('[town] the mailbox did not open', e); return null; });
   }
   postP.then((p) => { if (p) p.openBox(); });
@@ -762,7 +802,7 @@ const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid', bread:
 // so during a shift the pocket opened completely behind the counter's tray and a tap on the bag did
 // nothing a player could see. The counter yields while the bag is open and comes back when it closes —
 // the same courtesy the toast already does for the pocket, two lines down.
-const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} };
+const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} try { if (sort && sort.hold) sort.hold(v); } catch (e) {} };
 function toggleTray() {
   if (!tray.hidden) { tray.hidden = true; cafeYield(false); return; }
   cafeYield(true);
@@ -904,6 +944,6 @@ assetsReady().then(() => {
   window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
-  open: (k) => openFor(k), dress: () => dress && dress.seam, post: () => post && post.seam, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => openFor(k), dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

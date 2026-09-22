@@ -15,6 +15,25 @@
   "sent": "The letter is sent.",
   "nopass": "The counter cannot find your house name yet. Your letter waits in the writing tray.",
   "refused": "This letter stays in the writing tray.",
+  "round": {
+    "start": "Start sorting",
+    "on": "A tray of post is on the counter, with the pigeonholes open behind it.",
+    "off": "The tray is put away. The counter is clear again.",
+    "far": "The counter is just there, waiting.",
+    "holes": {
+      "park": "Park",
+      "beach": "Banana Bay",
+      "home": "Homesteads",
+      "rave": "Banana Rave"
+    },
+    "receipt": {
+      "title": "Sorting Receipt",
+      "take": "{n} of {of} cards went straight to their holes.",
+      "counted": "Stamp has this round on the week’s sheet.",
+      "short": "This round is not on the sheet. The counter will be ready again.",
+      "back": "Put away"
+    }
+  },
   "card": {
     "title": "Picture Postcard",
     "make": "Send a card",

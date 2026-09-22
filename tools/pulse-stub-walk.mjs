@@ -56,7 +56,7 @@ const RANGE = {
     // 🕹 the Arcade (12 Sep): cabinets opened -> runs -> scores posted -> prizes
     { name: 'arcade_board', v: 14, u: 9 }, { name: 'arcade_run', v: 41, u: 9 }, { name: 'arcade_score', v: 37, u: 8 }, { name: 'arcade_prize', v: 2, u: 2 },
     // 🏘️ Town Life (14 Sep): the door -> fixes -> a buy, a night, a ghost, a find
-    { name: 'town_open', v: 11, u: 7 }, { name: 'town_fix', v: 38, u: 6 }, { name: 'town_buy', v: 3, u: 3 }, { name: 'town_curse', v: 4, u: 4 }, { name: 'town_dark', v: 5, u: 3 }, { name: 'town_multiplayer', v: 4, u: 3 }, { name: 'town_job', v: 5, u: 4 }, { name: 'town_chore', v: 12, u: 4 }, { name: 'town_duty', v: 9, u: 4 }, { name: 'town_ghost', v: 2, u: 2 }, { name: 'town_object', v: 3, u: 2 }, { name: 'town_merchant', v: 1, u: 1 },
+    { name: 'town_open', v: 11, u: 7 }, { name: 'town_fix', v: 38, u: 6 }, { name: 'town_buy', v: 3, u: 3 }, { name: 'town_curse', v: 4, u: 4 }, { name: 'town_dark', v: 5, u: 3 }, { name: 'town_multiplayer', v: 4, u: 3 }, { name: 'town_job', v: 5, u: 4 }, { name: 'town_chore', v: 12, u: 4 }, { name: 'town_sort', v: 24, u: 2 }, { name: 'town_duty', v: 9, u: 4 }, { name: 'town_ghost', v: 2, u: 2 }, { name: 'town_object', v: 3, u: 2 }, { name: 'town_merchant', v: 1, u: 1 },
     // ✉️ the post office (20 Sep): the mailbox opened -> a letter read -> a letter written back, and
     // the two that only exist here (a refusal's reason, and the review queue's own length)
     { name: 'post_open', v: 22, u: 14 }, { name: 'post_read', v: 17, u: 11 }, { name: 'post_send', v: 6, u: 5 }, { name: 'post_refused', v: 3, u: 3 }, { name: 'post_report', v: 1, u: 1 },

@@ -769,7 +769,7 @@ simple minigame."*
 | The arcade's chore | ✅ 22 Sep: three pieces of litter and one dark cabinet a day, for the arcade's own staff; sweeping and repairing count on the week's sheet (§12.2) |
 | The café | ✅ tips per cup, at clock-out; ✅ 21 Sep: the window is the tap target, `+n` per cup, the tray counts the shift |
 | The lemonade stand (Fig Jr.) | ❌ scenery |
-| The post office job (Stamp) | ❌ never resolved (§3: "under review") |
+| The post office job (Stamp) | ✅ 22 Sep: a round of sorting at the counter, on the café's tray (§11.4); 75 a week by payslip, `sort 3 · days 3` (§12.1) |
 | Duty notifications | ✅ 22 Sep: the duties chip (`src/scripts/town-duties.js`, words `town-duties`) — the quest chip's sibling in the town's paper, under the quest chip when both are up |
 | Wage so far / payday countdown | ✅ 22 Sep: on the chip once you have turned up — `sofar` from the pass worker's `jobView` (the cheque's formula), payday counted to Monday; `owed` says "your payslip is in the letterbox" (`POST /job/view`, read-only) |
 
@@ -811,7 +811,7 @@ or, once done, the wage line. It folds like the quest chip and remembers folding
   this world that ever happened while you were away, and the first one that pays.
 - The HUD's coin chip is unchanged: wages land as coins only when the payslip is opened (as today).
 
-### 11.4 The post office job — sorting the post (a payslip job)
+### 11.4 The post office job — sorting the post (a payslip job) — ✅ BUILT 22 Sep 2026
 Stamp hires you at his counter, the way the others do. The duty is a **round of sorting**: cards
 slide onto the counter one at a time, each with one of the world's four postmarks (the Park's leaf,
 the Bay's shell, the Homestead's gate, the Town's fountain — pixel stamps, no words), and four
@@ -822,6 +822,24 @@ sort is theatre), and it pays on the weekly payslip like the store. Machinery: t
 already exists (`mountCounter`, written form-blind — §8 of the café plan); a sort round is a second
 deck on the same tray, not a second tray. Words: `town-post` gains the round's lines (hired, clock-in,
 the three grades, the receipt).
+
+**As built (22 Sep 2026), and where it differs from the paragraph above:**
+- Stamp hires on his card like the other three (`BOSS.stamp = 'post'`), and the round is reached from the
+  **mailbox card**: the post office has no serving hatch, so its own staff find one more button at the foot of
+  the mailbox (`round.start`), the card closes, the banana walks to the counter's mark and the tray rises on
+  ARRIVAL — the cabinets' rule, never over a walk. A stranger's mailbox has no button.
+- The round counts as the duty `sort` on the week's sheet (`DUTIES.post = sort 3 · days 3`, §12), not as
+  attendance: turning up is counted by the same mark as everywhere else. A round counts when at least
+  **half the pile** went to its own hole, late or not; the receipt says which it was (`round.receipt.counted`
+  / `.short`). The rate is **75** a week (`JOB_PAY.post`), between the arcade's 60 and the store's 90.
+- The four postmarks are the bundled pixel icons the world already owns — a flower for the park, a fish
+  for the bay, a house for the homesteads, a note of music for the rave — because the pack has no leaf,
+  shell, gate or fountain stamp and nothing is hand-drawn (pack fidelity). The post goes OUT to the four
+  other places; the town is where you are standing.
+- The numbers: a pile of 12 (three of each mark), 4.2 s fresh, 9 s and an unsorted card leaves as wrong,
+  two minutes a round. Right / late / wrong per card go to Pulse as `town_sort`, the round as `town_shift`.
+- Machinery: `src/scripts/town-sort.js` (its own lazy chunk, 14 000 B budget) — the round form-blind above
+  `mountSorter`, the deck on the café's `.tw-cup` box below it. Walk: `tests/town-sort.spec.mjs`.
 
 ### 11.5 The lemonade stand — a tips job
 Fig Jr. hires you at the stand (a fourth boss). Same tray, a **lemonade deck**: squeeze (a hold),
@@ -840,7 +858,7 @@ takes his terrace.
 5. **The lemonade stand** (9.5) — a deck on the tray + a boss + a cup.
 
 ### 11.7 Still Trym's to call
-- The post office's weekly rate (the store's 90, the arcade's 60 — the post office's 75?).
+- The post office's weekly rate — built at 75 (the store's 90, the arcade's 60); one number in `jobs.js` to move.
 - Whether a tip job's clock-out toast should name the total (words) or just show the coins (numbers).
 - The arcade's chore pay: nothing beyond the cheque (§3's rule), or a small per-chore coin.
 - Whether the duties chip may sit on screen in the other areas as the compass, or only in the town.
@@ -861,7 +879,7 @@ replicated for all places with payslip-jobs."*
 ### 12.1 The system, in one table
 | | |
 |---|---|
-| **The week's work** | per payslip job, a short list of duties with weekly targets — `src/data/town/jobs.js` `DUTIES`: the Arcade `sweep 3 · fix 3`, the General Store `restock 3 · days 3` (the post office, later, `sort`). ONE source for the pass worker and the town. |
+| **The week's work** | per payslip job, a short list of duties with weekly targets — `src/data/town/jobs.js` `DUTIES`: the Arcade `sweep 3 · fix 3`, the General Store `restock 3 · days 3`, the Post Office `sort 3 · days 3` (a round of sorting, §11.4). ONE source for the pass worker and the town. |
 | **The cheque** | `payOf(at, done) = round(JOB_PAY[at] × share)`, `share` = targets met ÷ targets, each duty capped at its target. Nothing done, nothing paid. The old "days ÷ 7" is gone. |
 | **The reasoning on the slip** | the paid row carries the counts (`duties`) and `share`; the payslip prints them under Nib's line — *floor swept 1/3 · machines fixed 0/3 · 17% of the full week at 60 · 10*. |
 | **The work note** | the quest chip's sibling in the town's paper: the counts line (*the arcade · floor swept 1/3 · machines fixed 0/3*) and under it the wage so far + days to payday, or *done*, or the boss's nudge (amber), or the sack (grey), or *your payslip is in the letterbox*. Folds; sits under the quest chip. |

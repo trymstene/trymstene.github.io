@@ -416,6 +416,7 @@ const lifeFields = {
   'work.at.store': { kind: 'prose', aim: 20, max: 30, note: 'The general store’s name AS IT FITS INSIDE A SENTENCE — it is dropped into {where} in `hired` and `moved`, so it must read naturally mid-line and carry its own article if it needs one. Not the sign plank, which shouts.' },
   'work.at.condo': { kind: 'prose', aim: 20, max: 30, note: 'The arcade’s name, the same way.' },
   'work.at.cafe': { kind: 'prose', aim: 20, max: 30, note: 'The Coffee Cup’s name, the same way.' },
+  'work.at.post': { kind: 'prose', aim: 20, max: 30, note: 'The post office’s name, the same way — Stamp hires there since 22 Sep 2026.' },
   'work.crate': { kind: 'prose', aim: 60, max: 80, note: 'Said as you lift a crate off the stack in the shop you work in. The weight is the point — the banana walks slower while carrying — so let the line feel like picking something heavy up. No instruction, no arrow, no “now take it to…”: the shelf with nothing on it is the instruction.' },
   'work.stocked': { kind: 'prose', aim: 60, max: 80, note: 'Said as the crate goes onto a bare shelf and the face fills. ⭐ the reward IS the shelf and the row now on the till, so this line notices that rather than praising anybody. Never a number, never coins — the chore does not pay in money.' },
   'work.full': { kind: 'prose', aim: 60, max: 80, note: 'Said when every face the shop has is already filled, so there is nothing left to stock today. Contented, not a refusal — the work is DONE, which is a nice thing to be told.' },
@@ -498,7 +499,8 @@ const lifeSchema = {
       crate: { type: 'string', description: lifeFields['work.crate'].note },
       stocked: { type: 'string', description: lifeFields['work.stocked'].note },
       full: { type: 'string', description: lifeFields['work.full'].note },
-      at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'cafe'], properties: {
+      at: { type: 'object', additionalProperties: false, required: ['store', 'condo', 'cafe', 'post'], properties: {
+        post: { type: 'string', description: lifeFields['work.at.post'].note },
         store: { type: 'string', description: lifeFields['work.at.store'].note },
         condo: { type: 'string', description: lifeFields['work.at.condo'].note },
         cafe: { type: 'string', description: lifeFields['work.at.cafe'].note },
@@ -685,6 +687,20 @@ const postFields = {
   'folk.empty': { kind: 'prose', aim: 74, max: 100, note: 'The whole of the list when there is genuinely NOBODY to write to — a world this small will hit it. ⚠️ it must not read as a fault and must not read as sad: the people are simply not about. It may not explain the rule (a Pass and a Homestead), may not name a number, and may not tell anybody to come back later.' },
   'folk.none': { kind: 'prose', aim: 56, max: 78, note: 'The same place, when a SEARCH found nobody. It is about the word they typed, not about the world being empty — the two states are different and must not share a line. Never an apology, never “try again”.' },
   nopass: { kind: 'prose', aim: 74, max: 100, note: '⚠️ WHAT THE COUNTER SAYS WHEN IT CANNOT TELL WHOSE THE LETTER IS. Post is signed by the house it came from, and this device has not shown the counter who it is — which happens to somebody coming back after a long time away, before anything has caught up. ⭐ IT MUST NOT BLAME THE LETTER: the words are fine, the writer is simply not known yet, and telling them their ordinary letter was rejected is the one lie this card must never tell. Not technical (never “pass”, “token”, “sync”, “device”, “signed in”), not an error, and it does not instruct — it is the clerk not finding your name behind the counter yet. Calm and brief, and it leaves the letter still there to send.' },
+  // ✉️ THE SORTING ROUND (22 Sep 2026, docs/town-jobs-plan.md §11.4): the post office's own job, on the café's tray
+  'round.start': { kind: 'label', aim: 12, max: 16, note: '⭐ THE BUTTON AT THE FOOT OF THE MAILBOX CARD that only the post office’s own staff ever see: it starts a round of sorting at the counter. A verb first, two or three words, ONE line, never wraps on a phone.' },
+  'round.on': { kind: 'prose', aim: 60, max: 78, note: 'The town’s toast as a round begins: the pile is on the counter, the four pigeonholes behind it. It NOTICES, the way the café’s clock-in line does — it must not instruct (no “tap”, no “match”, no “sort the…”), and it names no number.' },
+  'round.off': { kind: 'prose', aim: 58, max: 76, note: 'The toast when a round ends because you walked away from the counter or stepped into a shop. Plain and unbothered: the counter is there again whenever. No numbers.' },
+  'round.holes.park': { kind: 'label', aim: 8, max: 16, note: 'The park’s name as the post office writes it on a pigeonhole — read out to somebody who cannot see the flower stamped on it. Its own name, one or two words, titled.' },
+  'round.holes.beach': { kind: 'label', aim: 10, max: 16, note: 'The same for Banana Bay, whose stamp is a fish. Its own name, titled.' },
+  'round.holes.home': { kind: 'label', aim: 10, max: 16, note: 'The same for the homesteads — everybody’s own plot, whose stamp is a house. One or two words, titled.' },
+  'round.holes.rave': { kind: 'label', aim: 10, max: 16, note: 'The same for the Banana Rave, whose stamp is a note of music. Its own name, titled.' },
+  'round.far': { kind: 'prose', aim: 50, max: 70, note: 'The town’s toast when the round is asked for and the banana is not at the counter (the walk from the card stopped short): the counter is a step away and waits. It notices, it never instructs — no “walk”, “go”, “tap” — and no number.' },
+  'round.receipt.title': { kind: 'prose', aim: 16, max: 24, note: 'The heading on the card the counter hands you at the end of a round: a NAME for that paper, two or three words, not a sentence.' },
+  'round.receipt.take': { kind: 'prose', aim: 44, max: 64, holds: ['{n}', '{of}'], note: 'The one line with the round’s result. MUST contain {n} (how many cards went straight to the right hole) and {of} (the size of the pile) exactly once each, and no other number — something like: how many of the pile went where they were going.' },
+  'round.receipt.counted': { kind: 'prose', aim: 50, max: 72, note: 'Under the result when enough of the pile went to the right hole: this round is on the week’s sheet, Stamp has it down. No numbers, never “reward”, never “bonus”.' },
+  'round.receipt.short': { kind: 'prose', aim: 56, max: 80, note: 'Under the result when too little of the pile went to the right hole: this round is NOT on the week’s sheet, and the counter is there again in a moment. Never cruel, never a lecture, no numbers.' },
+  'round.receipt.back': { kind: 'label', aim: 8, max: 14, note: 'The one button under the receipt that puts it away. A verb first, one or two words.' },
   refused: { kind: 'prose', aim: 78, max: 105, note: '⭐ THE HARDEST LINE IN THE JOB. What the writer sees when the filter stops their letter. It must be KIND, FINAL and COMPLETELY UNINFORMATIVE: it names no rule, no word and no reason, and it does not suggest what to change — a precise reason is a lesson in getting round the filter next time. It must also not sound like an accusation, because most people who ever see this typed something perfectly ordinary and were caught by a shop’s name or a phone number.' },
 };
 // 🤐 THE REFUSAL MAY NOT TEACH. A machine cannot judge kindness, but it can judge whether a line has
@@ -714,6 +730,20 @@ function postShape(data) {
       say('card.lines[' + i + ']', 'names one of the three pictures — every line has to work under all of them');
     }
   }
+  // ✉️ the round's own rules: the numbers are the round's, the labels are one line, nobody instructs
+  const ro = data.round || {}, rc = ro.receipt || {}, rh = ro.holes || {};
+  for (const [p, v0] of [['round.start', ro.start], ['round.on', ro.on], ['round.off', ro.off], ['round.far', ro.far], ['round.receipt.title', rc.title], ['round.receipt.take', rc.take], ['round.receipt.counted', rc.counted], ['round.receipt.short', rc.short], ['round.receipt.back', rc.back], ['round.holes.park', rh.park], ['round.holes.beach', rh.beach], ['round.holes.home', rh.home], ['round.holes.rave', rh.rave]]) {
+    const v = String(v0 || '');
+    if (!v) { say(p, 'is empty'); continue; }
+    if (/\d/.test(v.replace(/\{n\}|\{of\}/g, ''))) say(p, 'carries a number of its own — the game prints the round’s figures');
+    if (/\?\s*$/.test(v)) say(p, 'ends in a question — nobody may ask the player one');
+    if (/\b(tap|click|button|swipe|drag|match)\b/i.test(v)) say(p, 'names a control or instructs; the counter shows, it never tells');
+    if (/\b(reward|bonus|prize)\b/i.test(v)) say(p, 'calls the week’s work a reward');
+  }
+  if ((String(rc.take || '').match(/\{n\}/g) || []).length !== 1) say('round.receipt.take', 'must contain {n} exactly once');
+  if ((String(rc.take || '').match(/\{of\}/g) || []).length !== 1) say('round.receipt.take', 'must contain {of} exactly once');
+  for (const k of ['park', 'beach', 'home', 'rave']) if (String(rh[k] || '').split(/\s+/).length > 2) say('round.holes.' + k, 'is more than two words, and it is a name on a pigeonhole');
+  if (String(ro.start || '').split(/\s+/).length > 3) say('round.start', 'is more than three words, and a button never wraps');
   if (String(card.sent || '').trim().toLowerCase() === String(data.sent || '').trim().toLowerCase()) {
     say('card.sent', 'is the letter’s own line — a card and a letter are two different things happening');
   }
@@ -725,9 +755,20 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk'],
+  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round'],
   properties: {
-    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.')).map(([k, v]) => [k, str(v.note)])),
+    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.') && !k.startsWith('round.')).map(([k, v]) => [k, str(v.note)])),
+    // ✉️ the sorting round (22 Sep 2026): the staff's button, two toasts, four pigeonhole names and the receipt
+    round: {
+      type: 'object', additionalProperties: false, required: ['start', 'on', 'off', 'far', 'holes', 'receipt'],
+      properties: {
+        start: str(postFields['round.start'].note), on: str(postFields['round.on'].note), off: str(postFields['round.off'].note), far: str(postFields['round.far'].note),
+        holes: { type: 'object', additionalProperties: false, required: ['park', 'beach', 'home', 'rave'],
+          properties: { park: str(postFields['round.holes.park'].note), beach: str(postFields['round.holes.beach'].note), home: str(postFields['round.holes.home'].note), rave: str(postFields['round.holes.rave'].note) } },
+        receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'counted', 'short', 'back'],
+          properties: { title: str(postFields['round.receipt.title'].note), take: str(postFields['round.receipt.take'].note), counted: str(postFields['round.receipt.counted'].note), short: str(postFields['round.receipt.short'].note), back: str(postFields['round.receipt.back'].note) } },
+      },
+    },
     // 📮 the postcard: a heading, the three place names, the deck of eight, and the two words
     // that carry a send. ⚠️ EXACTLY EIGHT LINES — src/lib/letter-gate.js CARD.lines is the number a
     // card's index is judged against, so a ninth would be a line nobody can ever pick and a seventh
@@ -1136,7 +1177,7 @@ const pageSchema = {
 // paper — the week's counts (composed by the game from the duty labels and the numbers) and one line
 // under them. The numbers are the pass worker's and go into {coins} and {days}; the words never carry one.
 export const DUTY_KINDS = ['sweep', 'fix', 'restock', 'days', 'sort'];
-export const DUTY_BOSS = ['condo', 'store'];
+export const DUTY_BOSS = ['condo', 'store', 'post'];
 const dutyFields = {
   'kinds.sweep': { kind: 'label', aim: 11, max: 18, note: 'The arcade floor, swept — the duty AS DONE, two or three lower-case words, no number: e.g. what goes before "1/3" in "floor swept 1/3".' },
   'kinds.fix': { kind: 'label', aim: 14, max: 18, note: 'A dark arcade cabinet brought back — the duty as done, two or three lower-case words, no number.' },
@@ -1150,6 +1191,8 @@ const dutyFields = {
   'nudge.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the General Store: Pip has written to ask if you are coming in. No numbers. Lower case first letter.' },
   'fired.condo': { kind: 'prose', aim: 60, max: 80, note: 'Spinner let you go after two finished weeks with nothing done at the Arcade; his door is open if you ask again. Never cruel, never a lecture, no numbers. Lower case first letter.' },
   'fired.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the General Store: Pip let you go; ask again when you like. No numbers. Lower case first letter.' },
+  'nudge.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the Post Office: Stamp, the postmaster, has written to ask if you are coming in — the pile is not sorting itself. No numbers. Lower case first letter.' },
+  'fired.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the Post Office: Stamp let you go; ask again when you like. No numbers. Lower case first letter.' },
   cafeDone: { kind: 'prose', aim: 50, max: 70, note: 'The Coffee Cup once you have clocked in today: tips are counted on the tray as you pour and paid when you step away. No numbers. Lower case first letter.' },
   payslip: { kind: 'prose', aim: 50, max: 70, note: 'A cheque has been paid and the payslip waits in the letterbox at your homestead: it sends you home to open it. No numbers \u2014 the payslip has them. Lower case first letter.' },
 };
@@ -1184,8 +1227,8 @@ const dutySchema = {
       properties: Object.fromEntries(DUTY_KINDS.map((x) => [x, str(dutyFields['kinds.' + x].note)])) },
     duty: { type: 'object', additionalProperties: false, required: ['cafe'], properties: { cafe: str(dutyFields['duty.cafe'].note) } },
     wage: str(dutyFields.wage.note), done: str(dutyFields.done.note),
-    nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['nudge.condo'].note), store: str(dutyFields['nudge.store'].note) } },
-    fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['fired.condo'].note), store: str(dutyFields['fired.store'].note) } },
+    nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['nudge.condo'].note), store: str(dutyFields['nudge.store'].note), post: str(dutyFields['nudge.post'].note) } },
+    fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['fired.condo'].note), store: str(dutyFields['fired.store'].note), post: str(dutyFields['fired.post'].note) } },
     cafeDone: str(dutyFields.cafeDone.note), payslip: str(dutyFields.payslip.note),
   },
 };
@@ -1223,12 +1266,12 @@ export const JOBS = {
   'town-post': {
     id: 'town-post',
     title: 'Banana Town — the post office',
-    what: 'What the building says, the mailbox card, an open letter, writing back, and the refusal that may not say why.',
+    what: 'What the building says, the mailbox card, an open letter, writing back, the refusal that may not say why — and the sorting round for the post office’s own staff.',
     brief: 'tools/copy-briefs/town-post.md',
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk'],
+    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,
@@ -1429,6 +1472,10 @@ export const JOBS = {
       'bosses.fired.condo.from': { kind: 'prose', aim: 7, max: 20, note: 'Who signs it: Spinner.' },
       'bosses.fired.condo.line': { kind: 'prose', aim: 100, max: 140, note: 'Spinner\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number.' },
       'bosses.fired.store.from': { kind: 'prose', aim: 3, max: 20, note: 'Who signs it: Pip.' },
+      'bosses.nudge.post.from': { kind: 'prose', aim: 5, max: 20, note: 'Who signs it: Stamp, the postmaster.' },
+      'bosses.nudge.post.line': { kind: 'prose', aim: 100, max: 140, note: 'Stamp\u2019s letter when Thursday has come and nothing has been done at the post office that week: is the player coming in? The pile on the counter is his subject. Warm, dry, a little pointed, never a threat, never a number, at most 140 characters. May use {home}.' },
+      'bosses.fired.post.from': { kind: 'prose', aim: 5, max: 20, note: 'Who signs it: Stamp.' },
+      'bosses.fired.post.line': { kind: 'prose', aim: 100, max: 140, note: 'Stamp\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' },
       'bosses.fired.store.line': { kind: 'prose', aim: 100, max: 140, note: 'Pip\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number.' },
       'wage.at.store': { kind: 'prose', aim: 17, max: 24, note: 'The General Store as it is printed on a payslip: lower case, with its article.' },
       'wage.at.condo': { kind: 'prose', aim: 10, max: 24, note: 'The Arcade as it is printed on a payslip: lower case, with its article.' },
@@ -1456,7 +1503,7 @@ export const JOBS = {
       if ((slip.match(/\{pct\}/g) || []).length !== 1) say('wage.slip', 'must contain {pct} exactly once');
       if ((slip.match(/\{rate\}/g) || []).length !== 1) say('wage.slip', 'must contain {rate} exactly once');
       const bo = data.bosses || {};
-      for (const kind of ['nudge', 'fired']) for (const k of ['condo', 'store']) {
+      for (const kind of ['nudge', 'fired']) for (const k of ['condo', 'store', 'post']) {
         const b = (bo[kind] || {})[k] || {};
         if (!String(b.from || '')) say('bosses.' + kind + '.' + k + '.from', 'is empty');
         const l = String(b.line || '');
@@ -1475,11 +1522,13 @@ export const JOBS = {
     },
     schema: { type: 'object', additionalProperties: false, required: ['title', 'empty', 'letters', 'wage', 'open', 'bosses'], properties: {
       bosses: { type: 'object', additionalProperties: false, required: ['nudge', 'fired'], properties: {
-        nudge: { type: 'object', additionalProperties: false, required: ['condo', 'store'], properties: {
+        nudge: { type: 'object', additionalProperties: false, required: ['condo', 'store', 'post'], properties: {
+          post: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Stamp.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the post office that week: is the player coming in? The pile on the counter is his subject. Warm, dry, a little pointed, never a threat, never a number, at most 140 characters. May use {home}.' } } },
           condo: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Spinner.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the Arcade this week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number, at most 140 characters.' } } },
           store: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Pip.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the store this week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number, at most 140 characters.' } } },
         } },
-        fired: { type: 'object', additionalProperties: false, required: ['condo', 'store'], properties: {
+        fired: { type: 'object', additionalProperties: false, required: ['condo', 'store', 'post'], properties: {
+          post: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Stamp.' }, line: { type: 'string', description: 'With the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' } } },
           condo: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Spinner.' }, line: { type: 'string', description: 'With the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' } } },
           store: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Pip.' }, line: { type: 'string', description: 'With the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' } } },
         } },

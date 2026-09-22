@@ -19,6 +19,12 @@ test('a week of work pays by its share, duty by duty, and prints its own reasoni
   expect(dutiesOf('store').map((d) => d[0]), 'the store counts crates and days').toEqual(['restock', 'days']);
   expect(payOf('store', { restock: 3, days: 3 }), 'a full week at the store').toBe(JOB_PAY.store);
   expect(payOf('store', { restock: 0, days: 3 }), 'only turning up is half the store’s week').toBe(Math.round(JOB_PAY.store / 2));
+  // the post office: rounds of sorting at the counter, and being there (22 Sep 2026)
+  expect(dutiesOf('post').map((d) => d[0]), 'the post office counts rounds and days').toEqual(['sort', 'days']);
+  expect(payOf('post', { sort: 3, days: 3 }), 'a full week at the post office').toBe(JOB_PAY.post);
+  expect(payOf('post', { sort: 1, days: 0 }), 'one round of six things is a sixth').toBe(Math.round(JOB_PAY.post / 6));
+  expect(JOB_PAY.post, 'the post office’s rate sits between the arcade’s and the store’s').toBeGreaterThan(JOB_PAY.condo);
+  expect(JOB_PAY.post).toBeLessThan(JOB_PAY.store);
   // the café is tips: no duties, no cheque
   expect(dutiesOf('cafe'), 'the café has no week’s work to meet').toEqual([]);
   expect(payOf('cafe', { days: 7 }), 'and pays no cheque').toBe(0);

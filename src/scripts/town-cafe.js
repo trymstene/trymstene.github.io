@@ -189,9 +189,13 @@ export function mountCounter(host, opts = {}) {
   const placeToast = () => {
     const t = document.getElementById('twToast'), v = t && t.parentElement;
     if (!t || !v) return;
-    const wh = document.querySelector('.wh');
-    const top = wh ? Math.round(wh.getBoundingClientRect().bottom - v.getBoundingClientRect().top) + 10 : 44;
-    t.style.setProperty('--tw-toast-top', Math.max(14, top) + 'px');
+    // under the HUD strip AND under the journal chips (the quest note, the work note): the strip alone put
+    // the toast square on the notes (22 Sep). banana-town.js placeToast measures the same three on every say;
+    // this copy is what the strip's ResizeObserver fires first, so it has to agree.
+    const vt = v.getBoundingClientRect().top;
+    let low = 0;
+    for (const el of document.querySelectorAll('.wh, .bwq-hint, .twd-chip')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > vt) low = Math.max(low, r.bottom - vt); }
+    t.style.setProperty('--tw-toast-top', Math.max(14, low ? Math.round(low) + 10 : 44) + 'px');
   };
   const toast = (up) => {
     const t = document.getElementById('twToast'); if (!t) return;

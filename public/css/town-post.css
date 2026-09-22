@@ -246,3 +246,5 @@
 }
 /* the way out of the mailbox: a full-width action under the post, never a chip beside it */
 .tw-post__write { margin-top: 0.2rem; }
+/* ✉️ the sorting round’s button, for the post office’s own staff (22 Sep 2026): under the write button */
+.tw-post__sort { margin-top: 0.3rem; }

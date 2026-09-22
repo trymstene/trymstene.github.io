@@ -177,3 +177,40 @@ opens addressed to them.
    found nobody*, which is about the word they typed. They may not share a sentence.
 4. **Nothing is owed and nobody is waiting.** No line may suggest that somebody wants post, that
    writing is a kindness the player ought to perform, or that anyone will reply.
+
+---
+
+## ✉️ The sorting round — the post office's own job (22 Sep 2026)
+
+Stamp hires now, the way Pip, Spinner and Bean do (`town-life` `work.ask`). The duty is **a round
+of sorting** at the counter. The mailbox card carries one more button for the post office's own
+staff; your banana walks to the counter, and a tray rises from the bottom of the screen — the
+café's tray, with a different deck on it. Cards slide onto the counter one at a time, each with one
+of four postmarks (a flower for the park, a fish for Banana Bay, a house for the homesteads, a note
+of music for the Banana Rave — pixel stamps, no words), and four pigeonholes behind the counter
+wear the same marks. You tap the right hole. Sorted fresh, a card is right; the right hole after a
+while is late; the wrong hole, or nobody at all, is wrong. Twelve cards or two minutes, then the
+counter hands you a receipt — and a round where enough of the pile went where it was going is on
+the week's sheet (the work note says *post sorted 1/3*), paid on the weekly payslip like the
+store. It never touches a real letter: delivery is instant, the sort is theatre.
+
+**The fields** (`round.*`):
+
+- `start` — the button on the mailbox card, staff only. A verb first, two or three words, one line.
+- `on` / `off` — the town's toast as a round begins, and when one ends because you walked away or
+  stepped into a shop. They notice; they never instruct (no "tap", "match", "sort the…") and
+  carry no number.
+- `far` — the toast when the round is asked for but the banana is not at the counter (the walk from
+  the card stopped short): the counter is a step away and waits. Notices, never instructs, no number.
+- `holes.park` / `holes.beach` / `holes.home` / `holes.rave` — the four places' names as the post
+  office writes them on a pigeonhole, read out to somebody who cannot see the stamp. One or two
+  words, titled: the park, Banana Bay, the homesteads (everybody's own plot), the Banana Rave.
+- `receipt.title` — a name for the paper the counter hands you. `receipt.take` — the result line:
+  MUST contain `{n}` (cards that went straight to the right hole) and `{of}` (the pile) exactly
+  once each, and no other number. `receipt.counted` — enough went right: this round is on the
+  week's sheet, Stamp has it down. `receipt.short` — too little went right: this round is not on
+  the sheet, and the counter is there again in a moment; never cruel. `receipt.back` — the one
+  button that puts it away.
+
+**The rules the round lives under:** no numbers in the prose (the game prints the round's figures);
+never a question; never a control named; never "reward", "bonus" or "prize" — a wage is a wage.

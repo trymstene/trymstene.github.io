@@ -19,7 +19,7 @@ import { rowsOf, payOf, shareOf } from '../data/town/jobs.js';   // 💼 the one
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
-const BOSS = { pip: 'store', spinner: 'condo', bean: 'cafe' };
+const BOSS = { pip: 'store', spinner: 'condo', bean: 'cafe', stamp: 'post' };   // ✉️ Stamp hires at the post office since 22 Sep 2026
 const NEAR = 120;   // how close to your own workplace counts as turning up, in world px
 
 const readJob = () => { try { return JSON.parse(localStorage.getItem(MIRROR) || 'null') || {}; } catch (e) { return {}; } };

@@ -113,6 +113,7 @@
     "stocked": "There it is: a full shelf, and the till knows what it is.",
     "full": "Every shelf is full. Leave them looking pleased.",
     "at": {
+      "post": "the Post Office",
       "store": "Pip’s General Store",
       "condo": "the Arcade",
       "cafe": "the Coffee Cup"

@@ -219,3 +219,49 @@
 /* the one cup that came out right, named. The only place the three drinks' names are ever read. */
 .tw-cup__best { margin: 0 0 0.4rem; font-size: 0.86rem; font-weight: 700; color: #a8e08a; }
 
+
+/* ---- ✉️ THE SORTING DECK — the post office's round, on the same tray (22 Sep 2026) ------------------
+ * A second deck on the café's tray, never a second tray: `.tw-cup` is the box, `.tw-cup--sort` is what
+ * this deck puts inside it. The pile and the tally ride the top strip where the ticket and the steps
+ * would; under it, one card with its postmark and the four pigeonholes, each wearing a mark.
+ * ⚠️ TRANSFORM AND OPACITY ONLY (design library §21.4): the fuse is a scaleX, the card slides in on a
+ * translate, the hole's press is a translate. Nothing here animates a box metric or a filter.
+ * ⚠️ NO VERTICAL ROOM EITHER: the strip, one 46px row and the note fit under the tray's 150px ceiling.
+ */
+.tw-cup--sort { touch-action: manipulation; }
+.tw-cup--sort .tw-cup__note:empty { display: none; }
+/* the pile: one small sheet per card still to sort */
+.tw-sort__pile { display: flex; gap: 3px; flex-wrap: wrap; }
+.tw-sort__pip { width: 9px; height: 12px; border: 2px solid #000; background: #f3e6cf; box-shadow: 1px 1px 0 #000; }
+/* the tally: one mark per card of the pile, coloured as it lands — green right, amber late, red wrong */
+.tw-sort__tally { display: flex; gap: 3px; margin-left: auto; }
+.tw-sort__mark { width: 9px; height: 9px; border: 2px solid #000; background: #3a2a1c; }
+.tw-sort__mark.is-g2 { background: #7bc35e; }
+.tw-sort__mark.is-g1 { background: #f0b428; }
+.tw-sort__mark.is-g0 { background: #d64030; }
+/* the row: the card on the left, the four holes filling the rest */
+.tw-sort__row { display: grid; grid-template-columns: 62px 1fr; gap: 0.6rem; align-items: center; }
+.tw-sort__card {
+  position: relative; box-sizing: border-box; width: 62px; height: 46px; border: 3px solid #000;
+  background: #fffdf5; color: #1a120c; display: grid; place-items: center; box-shadow: 2px 2px 0 #000;
+  transform: translateX(0); opacity: 1;
+}
+.tw-sort__card[hidden] { display: none; }
+.tw-sort__card.is-in { animation: twSortIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes twSortIn { from { transform: translateX(-140%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+/* past its fresh window the paper yellows: the right hole is still right, only late */
+.tw-sort__card.is-late { background: #f5d98a; }
+.tw-sort__stamp svg { display: block; }
+.tw-sort__fuse { position: absolute; left: 3px; right: 3px; bottom: 3px; height: 4px; background: #7bc35e; transform-origin: 0 50%; transform: scaleX(1); }
+.tw-sort__card.is-late .tw-sort__fuse { background: #f0b428; }
+.tw-sort__holes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; min-width: 0; }
+.tw-sort__hole {
+  box-sizing: border-box; height: 46px; min-width: 0; padding: 0; border: 3px solid #000; border-radius: 0;
+  background: #3a2a1c; color: #ffe135; box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.5), 2px 2px 0 #000;
+  display: grid; place-items: center; cursor: pointer; transform: translateY(0); transition: transform 80ms ease-out;
+}
+.tw-sort__hole:active, .tw-sort__hole.is-hit { transform: translateY(2px); }
+.tw-sort__hole svg { display: block; }
+/* the receipt's own row of marks, on the café's till card */
+.tw-sort__till .tw-sort__marks { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin: 0.1rem 0 0.5rem; }
+@media (prefers-reduced-motion: reduce) { .tw-sort__card.is-in { animation: none; } }
