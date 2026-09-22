@@ -764,7 +764,7 @@ simple minigame."*
 |---|---|
 | Taking a job (Bean, Pip, Spinner) | ✅ built — one job at a time, kept pass required (§3) |
 | Turning up counts a day | ✅ built — `/job/chore` on the client's proximity tick, a quiet line once a day |
-| The weekly cheque | ✅ built — derived on the pass worker (`JOB_PAY × days ÷ 7`, walks back 2 weeks), lands as a letter in the homestead mailbox with the `bw-paper--wage` paper |
+| The weekly cheque | ✅ built — derived on the pass worker (`JOB_PAY × days ÷ 7`, walks back 2 weeks), lands as a letter in the homestead mailbox; ✅ 22 Sep: drawn as a PAYSLIP — kraft paper, a red stamp, the workplace, the days at the rate, the total (§9.3) |
 | The store's restock chore | ✅ built (the crate, the till row) |
 | The arcade's chore | ❌ nothing to do yet — Spinner hires, 60 a week, no duty |
 | The café | ✅ tips per cup, at clock-out; ✅ 21 Sep: the window is the tap target, `+n` per cup, the tray counts the shift |

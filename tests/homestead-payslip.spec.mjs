@@ -52,6 +52,8 @@ test('a cheque in the box is a payslip: kraft, a stamp, the figures — and an o
   expect(old.text, '…and its line').toContain('26');
   expect(old.rows, '…but no figures it never had').toBe(false);
   await page.waitForTimeout(700);   // the papers unfold for 0.4 s; the picture is of the settled box
+  await page.evaluate(() => { const r = document.querySelector('.bw-slip__rows'); if (r) r.scrollIntoView({ block: 'center' }); });   // …with the figures in frame
+  await page.waitForTimeout(250);
   await page.screenshot({ path: 'test-results/homestead-payslip.png' });
   expect(errs, 'nothing threw').toEqual([]);
 });
