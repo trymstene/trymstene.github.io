@@ -112,6 +112,7 @@ const ST = {
   cart: [[1405, 1034], [1478, 1034]], info: [[1012, 1210]],   // ❌ `board` went with the notice board (20 Sep 2026)
   terrace: [[1705, 1242], [1835, 1242]], orchard: [[792, 322]], stand: [[890, 576], [962, 576]], bus: [[1962, 352]],
   garden_w: [[485, 704], [556, 704]], garden_e: [[1730, 698]],
+  booth: [[770, 604]],   // 🍋 beside the phone box on Hall Street: Fig Jr.'s aside while you work his stand, off the queue's line
   // the lunch pairs stand just behind their bench (feet above its top edge: nothing overlaps), each pair framed by its own
   square: [[1100, 990], [1000, 950], [1200, 950]], bench_w: [[935, 992], [995, 992]], bench_e: [[1215, 992], [1275, 992]],
   condo: [[480, 592], [562, 592]], wheel: [[1400, 802]], exchange: [[800, 802]],

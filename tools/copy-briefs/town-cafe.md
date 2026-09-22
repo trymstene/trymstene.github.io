@@ -128,3 +128,15 @@ They should sound like this town rather than like a chain — nobody here says "
 (Two fields were CUT from this job on 20 Sep: a question for Bean’s card and Bean’s answer to it.
 Nothing in the game ever showed them, and Bean already answers a job question on that card through
 the `town-life` job’s `work.ask`. Words nobody reads are not copy, they are ballast.)
+
+
+## ⭐ A place answers plainly (22 Sep 2026)
+
+Trym, tapping the lemonade stand and reading "Fig Jr.'s lemonade table is open beneath the striped
+awning on Hall Street": *"i dont understand any of this text, i dont understand what its trying to
+say? clear and concrete messages like this please."* So every line that a PLACE answers with — a
+front's line, a card's first line, a room's line, a shut front's reason — is a signpost, not a
+moment, and it answers two questions in plain words, in this order: **what is this** (name the place
+and who runs it) and **what can I do here** (or that there is nothing to do here yet). No scenery,
+no metaphor, no weather, no riddle. Two plain sentences beat one pretty one. A gate now refuses a
+place line that names neither the place nor a thing a player can do (docs/voice.md).

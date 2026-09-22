@@ -373,7 +373,7 @@ const lifeFields = {
   'bands[].key': { kind: 'key', max: 12, note: 'FIXED: abandoned, struggling, recovering, lively, thriving, in that order.' },
   'bands[].name': { kind: 'prose', aim: 10, max: 12, note: 'The PLAIN word for the state, capitalised, exactly these five in order: Abandoned, Struggling, Recovering, Lively, Thriving. (The evocative names were bad copy — a newcomer must read the state at once; Trym, 15 Sep.)' },
   'bands[].brings': { kind: 'prose', aim: 50, max: 64, note: 'What this state BRINGS, as the promise on the board for the state above the town’s: the things it opens or lights or fills. A fragment, not a sentence; no number.' },
-  'store.greet': { kind: 'prose', aim: 80, max: 100, note: 'The line at the top of Pip’s shelf, in Pip’s voice. One breath.' },
+  'store.greet': { kind: 'prose', aim: 80, max: 120, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is Pip’s general store; buy things for your homestead from the shelf, which is different tomorrow. In Pip’s voice, but plain. Then the old note: The line at the top of Pip’s shelf, in Pip’s voice. One breath.' },
   'store.shut': { kind: 'prose', aim: 90, max: 110, note: 'Shown instead of the shelf when the store is shut and Pip is indoors. Not an apology; it should make a player want to fix things.' },
   'store.needs': { kind: 'prose', aim: 24, max: 34, note: 'A row the player cannot buy yet: their house is too small for it. Four or five words.' },
   'store.van': { kind: 'prose', aim: 18, max: 26, note: 'A row that arrives by van rather than at once. Three or four words.' },
@@ -410,9 +410,9 @@ const lifeFields = {
   'vendor.bought': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said when the vendor buys a cursed object from the player. MUST contain {item}.' },
   'vendor.lines[]': { kind: 'prose', aim: 70, max: 90, holds: ['{item}'], note: 'Said on a sale at the night vendor.' },
   'ghosts[]': { kind: 'prose', aim: 80, max: 100, note: 'What a ghost on the bench says when tapped. Small, odd, a little sad or funny; never a threat, never a riddle, never a question.' },
-  'closed.cafe[]': { kind: 'prose', aim: 70, max: 90, note: 'Why THE COFFEE CUP is shut today, the way a note taped to its own door reads — a small fault in a coffee kiosk that somebody will see to. ⚠️ THREE FRONTS CAN SHUT AND NO OTHERS (the café, the info point, the general store), and a line only ever hangs on the one it is written for: naming any other building here is a lie on a door. Never the arcade and never the post office, which can never shut.' },
-  'closed.info[]': { kind: 'prose', aim: 70, max: 90, note: 'The same, for THE INFO POINT — the little map-and-noticeboard kiosk Dot keeps. Its faults are its own: the map, the glass, the leaflets, the light inside it.' },
-  'closed.store[]': { kind: 'prose', aim: 70, max: 90, note: 'The same, for THE GENERAL STORE — Pip’s shop, which sells fireworks, lures and duck bread. Its faults are its own: a delivery, the till, a shelf, the cellar.' },
+  'closed.cafe[]': { kind: 'prose', aim: 70, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: say plainly that the Coffee Cup is shut today, name the small fault in one concrete phrase, and say that fixing it opens the door again. Then the old note: Why THE COFFEE CUP is shut today, the way a note taped to its own door reads — a small fault in a coffee kiosk that somebody will see to. ⚠️ THREE FRONTS CAN SHUT AND NO OTHERS (the café, the info point, the general store), and a line only ever hangs on the one it is written for: naming any other building here is a lie on a door. Never the arcade and never the post office, which can never shut.' },
+  'closed.info[]': { kind: 'prose', aim: 70, max: 110, note: 'The same, plainly: the map kiosk is shut today, the fault in one concrete phrase, and that fixing it opens it again. Then the old note: The same, for THE INFO POINT — the little map-and-noticeboard kiosk Dot keeps. Its faults are its own: the map, the glass, the leaflets, the light inside it.' },
+  'closed.store[]': { kind: 'prose', aim: 70, max: 110, note: 'The same, plainly: the general store is shut today, the fault in one concrete phrase, and that fixing it opens it again. Then the old note: The same, for THE GENERAL STORE — Pip’s shop, which sells fireworks, lures and duck bread. Its faults are its own: a delivery, the till, a shelf, the cellar.' },
   'work.at.store': { kind: 'prose', aim: 20, max: 30, note: 'The general store’s name AS IT FITS INSIDE A SENTENCE — it is dropped into {where} in `hired` and `moved`, so it must read naturally mid-line and carry its own article if it needs one. Not the sign plank, which shouts.' },
   'work.at.condo': { kind: 'prose', aim: 20, max: 30, note: 'The arcade’s name, the same way.' },
   'work.at.cafe': { kind: 'prose', aim: 20, max: 30, note: 'The Coffee Cup’s name, the same way.' },
@@ -437,10 +437,10 @@ const lifeFields = {
   'locks.cafe': { kind: 'prose', aim: 70, max: 90, note: 'The same, for the Coffee Cup.' },
   'locks.story': { kind: 'prose', aim: 70, max: 90, note: 'The one line that says the STORY opens this door, not the town’s health and not money. It must read as a hook — something is coming — never as a refusal. Never a date, never a rate.' },
   'locks.step': { kind: 'prose', aim: 40, max: 60, holds: ['{n}', '{of}'], note: 'How far along the player is, MUST contain {n} and {of} (as in 2 and 4). A sign that only says no is a dead end; this is the half that makes it a quest hook.' },
-  'rooms.condo': { kind: 'prose', aim: 60, max: 80, note: 'Said once, as a player steps into the Arcade: cabinets along one wall, a prize board, coins going in. ⚠️ IT IS THE PLACE TALKING, NOT A HELP STRING. The two room lines used to end with the same seven-word instruction about walking back onto the doorway, which made them the only tutorial voice left in the town — and the doorway is a LIT FLOOR TILE that already says it. So: what it is like to be standing in there. No instruction, and nothing about leaving.' },
-  'rooms.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for stepping into the general store: Pip’s counter, shelves bare or full depending on the town. The place talking, in its own way — it must not share a clause, a rhythm or an ending with the arcade’s line, and it must not tell anybody how to leave.' },
+  'rooms.condo': { kind: 'prose', aim: 60, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the arcade — tap a cabinet to play; scores go on the board and the prizes are things to wear. Then the old note: Said once, as a player steps into the Arcade: cabinets along one wall, a prize board, coins going in. ⚠️ IT IS THE PLACE TALKING, NOT A HELP STRING. The two room lines used to end with the same seven-word instruction about walking back onto the doorway, which made them the only tutorial voice left in the town — and the doorway is a LIT FLOOR TILE that already says it. So: what it is like to be standing in there. No instruction, and nothing about leaving.' },
+  'rooms.store': { kind: 'prose', aim: 60, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the inside of Pip’s store — the shelves show what he has today, and the counter sells it. Then the old note: The same, for stepping into the general store: Pip’s counter, shelves bare or full depending on the town. The place talking, in its own way — it must not share a clause, a rhythm or an ending with the arcade’s line, and it must not tell anybody how to leave.' },
   'rooms.in': { kind: 'prose', aim: 12, max: 16, note: 'The control on Pip’s shelf card that takes you into the shop. A BUTTON: a verb first, two or three words, no full stop. It must never wrap on a phone.' },
-  'lowShut[]': { kind: 'prose', aim: 70, max: 90, note: 'Said when a player taps a shopfront THE TOWN has shut — not a one-day fault but a town too low to keep its doors open. It must point at the shared repair: hands in the square lift it and the doors come back. Never a number, never a rate, never a timetable, never a question.' },
+  'lowShut[]': { kind: 'prose', aim: 70, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: this shop is shut because the town is run down; fix broken things in the square and it opens again. Then the old note: Said when a player taps a shopfront THE TOWN has shut — not a one-day fault but a town too low to keep its doors open. It must point at the shared repair: hands in the square lift it and the doors come back. Never a number, never a rate, never a timetable, never a question.' },
   'objects[].id': { kind: 'key', max: 14, note: 'FIXED. The ten ids from the brief, in order.' },
   'objects[].name': { kind: 'prose', aim: 20, max: 28, note: 'Two or three words: the name it has in a collection. More than the ordinary thing’s plain name.' },
   'objects[].desc': { kind: 'prose', aim: 80, max: 100, note: 'One line a player reads in their collection: what this thing DOES that no ordinary one does, said OUTRIGHT and exaggerated — plainly cursed, clear at first read, no hint, no half-said mood (Trym, 15 Sep: “what does this copy even mean?”). Specific and a little funny; never harmful.' },
@@ -471,6 +471,12 @@ function lifeShape(data) {
   if ((data.rooms || {}).condo && tail((data.rooms || {}).condo) === tail((data.rooms || {}).store)) {
     say('rooms.store', 'ends with the same four words as rooms.condo — two rooms saying one sentence is a help string, not a place', 'range');
   }
+  // ⭐ the places answer plainly: Pip's shelf, the two rooms, every shut front
+  plainPlace(bad, 'store.greet', (data.store || {}).greet, ['store', 'shop', 'shelf'], ['buy', 'coins', 'sell']);
+  plainPlace(bad, 'rooms.condo', (data.rooms || {}).condo, ['arcade', 'cabinet'], ['play', 'score', 'prize']);
+  plainPlace(bad, 'rooms.store', (data.rooms || {}).store, ['store', 'shop', 'shelves', 'shelf'], ['buy', 'sell', 'counter']);
+  for (const k of ['cafe', 'info', 'store']) ((data.closed || {})[k] || []).forEach((l, i) => plainPlace(bad, 'closed.' + k + '[' + i + ']', l, ['shut', 'closed'], ['fix', 'mend', 'repair', 'open']));
+  (data.lowShut || []).forEach((l, i) => plainPlace(bad, 'lowShut[' + i + ']', l, ['shut', 'closed', 'shop', 'door'], ['fix', 'mend', 'repair', 'open', 'hands']));
   const objs = data.objects;
   if (!Array.isArray(objs) || objs.length !== CURSED_IDS.length) say('objects', `ten objects: ${CURSED_IDS.join(', ')}`);
   else objs.forEach((o, i) => { if (!o || o.id !== CURSED_IDS[i]) say(`objects[${i}].id`, `object ${i} must be "${CURSED_IDS[i]}" — the ids are fixed and in order`); });
@@ -566,8 +572,9 @@ const cafeFields = {
   'cup.fine[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a cup that is good enough, and out it goes. One notch down from the perfect deck: approving, never a correction, and never a hint about what would have been better.' },
   'cup.wrong[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a cup that is not a good cup. It costs the sale and nothing else, so: no blame, no advice, no number, no “try again”. This world is fond of the people in it.' },
   left: { kind: 'prose', aim: 58, max: 78, note: 'The town’s toast when somebody has waited too long, turns their back and walks off. ⚠️ THEY HAVE NO NAME: the customers are bananas visiting the square from the rest of the town, strangers who came in off the road, so the line cannot name them and must not pretend to — “somebody”, “the one at the back”, the rope itself. A small sadness, not a failure notice; never how long they waited and never what it cost.' },
-  front: { kind: 'prose', aim: 90, max: 120, note: 'What the Coffee Cup says when a player who does NOT work there taps it. ⚠️ it replaces a hand-written “Not built yet.” that shipped in code and was false — the café is open, Bean is behind it, and the counter is simply Bean’s until Bean hands it over. So: what the place IS, and that the counter belongs to somebody. It must not instruct and must not name a price or a condition — Bean’s own card is where a job is asked for.' },
+  front: { kind: 'prose', aim: 90, max: 130, note: 'What the Coffee Cup says when a player who does NOT work there taps it. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is Bean’s coffee kiosk; ask Bean for a job and you can serve coffee here for tips. ⚠️ it replaces a hand-written “Not built yet.” that shipped in code and was false — the café is open, Bean is behind it, and the counter is simply Bean’s until Bean hands it over. So: what the place IS, and that the counter belongs to somebody. It must not instruct and must not name a price or a condition — Bean’s own card is where a job is asked for.' },
   idle: { kind: 'prose', aim: 40, max: 54, note: 'The small line ON THE TRAY when you are behind the counter and there is nobody at the rope yet. ⚠️ it is the only thing on an otherwise empty tray, so it has a job: it tells the player the counter is working and simply quiet, rather than broken. Never a wait time and never “soon” — the mystery rule. Never an instruction either: not “wait for a customer”.' },
+  leave: { kind: 'label', aim: 10, max: 12, note: '⭐ THE WAY OUT OF A SHIFT (Trym, 22 Sep: "better to lock it and have a button for leave work"): while you work, your banana is held at the counter and this is the ONE button that ends the shift, on the tray’s strip. A VERB first, two words at most, at most 12 characters, never wraps: the plain thing it does — leave work, step away.' },
   'go.grind': { kind: 'label', aim: 8, max: 12, note: 'The word on the tray’s one button while the GRINDER is running: a needle sweeps a bar and the thumb stops it. A single word for the THING BEING DONE — it is a label on a control, not an instruction, so no “tap” and no “now”. Short enough that it can never wrap.' },
   'go.pour': { kind: 'label', aim: 8, max: 12, note: 'The same button while the POUR is running: hold it down and the cup fills, let go at the right moment. One word, the thing being done.' },
   'go.milk': { kind: 'label', aim: 8, max: 12, note: 'The same button at the MILK: three taps on a swelling pulse. One word, the thing being done.' },
@@ -591,8 +598,9 @@ const lemonFields = {
   'cup.fine[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a glass that is good enough, and off it goes. One notch down from the perfect deck: approving, never a correction, never a hint.' },
   'cup.wrong[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 for a glass that is not a good glass. It costs the sale and nothing else: no blame, no advice, no number, no “try again”. This world is fond of the people in it.' },
   left: { kind: 'prose', aim: 58, max: 78, note: 'The town’s toast when somebody has waited too long at the front of the stand, turns their back and walks off. ⚠️ THEY HAVE NO NAME: strangers visiting the square. Write it about somebody unnamed, or the front of the stand going quiet. A small sadness, never how long they waited.' },
-  front: { kind: 'prose', aim: 90, max: 120, note: 'What the lemonade stand says when a player who does NOT work there taps it. ⚠️ it replaces a hand-written line ending “Not built yet.” which is false — the stand is open and Fig Jr. is behind it. What the place IS and whose it is; never an instruction, never a price, never how to get a job (Fig Jr.’s own card asks that).' },
+  front: { kind: 'prose', aim: 90, max: 130, note: 'What the lemonade stand says when a player who does NOT work there taps it. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is Fig Jr.’s lemonade stand; ask Fig Jr. for a job and you can pour lemonade here for tips. ⚠️ it replaces a hand-written line ending “Not built yet.” which is false — the stand is open and Fig Jr. is behind it. What the place IS and whose it is; never an instruction, never a price, never how to get a job (Fig Jr.’s own card asks that).' },
   idle: { kind: 'prose', aim: 40, max: 54, note: 'The small line ON THE TRAY when you are behind the counter and there is nobody at the front yet: the only thing on an otherwise empty tray, so it says the stand is open and simply quiet, never broken. Never a wait time, never “soon”, never an instruction.' },
+  leave: { kind: 'label', aim: 10, max: 12, note: '⭐ THE WAY OUT OF A SHIFT (Trym, 22 Sep: "better to lock it and have a button for leave work"): while you work, your banana is held at the counter and this is the ONE button that ends the shift, on the tray’s strip. A VERB first, two words at most, at most 12 characters, never wraps: the plain thing it does — leave work, step away.' },
   'go.squeeze': { kind: 'label', aim: 8, max: 12, note: 'The word on the tray’s one button while the LEMON is held and let go: a single word for the THING BEING DONE, a label on a control, never “tap here”. Never wraps on a 360-wide phone.' },
   'go.ice': { kind: 'label', aim: 8, max: 12, note: 'The same button at the ICE: three taps on a pulse. One word, the thing being done.' },
   'go.pour': { kind: 'label', aim: 8, max: 12, note: 'The same button while the water is POURED to the line under a sweeping needle. One word, the thing being done.' },
@@ -602,7 +610,7 @@ const lemonFields = {
 };
 const LEMON_CAFE = /\b(propeller|apron|barista|coffee|espresso|foam|milk|grind|grinder|rope|cups?)\b/i;
 function lemonShape(data) {
-  const bad = cafeShape(data);   // the same mechanical rules: decks are decks, nobody is asked a question, {drink} is there
+  const bad = cafeRules(data);   // the same mechanical rules: decks are decks, nobody is asked a question, {drink} is there
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
   const walk = (v, path) => {
     if (Array.isArray(v)) v.forEach((x, i) => walk(x, path + '[' + i + ']'));
@@ -610,11 +618,13 @@ function lemonShape(data) {
     else if (typeof v === 'string' && LEMON_CAFE.test(v)) say(path, 'is the café talking (' + String(v.match(LEMON_CAFE)[0]) + ') — this is a lemonade stand: a glass, a jug, a table, a lane');
   };
   walk(data, '');
+  plainPlace(bad, 'front', data.front, ['lemonade stand', 'lemonade'], ['job', 'work', 'sell', 'pour', 'tips']);
   return bad;
 }
 const lemonSchema = {
-  type: 'object', additionalProperties: false, required: ['on', 'off', 'receipt', 'idle', 'front', 'go', 'cup', 'left', 'drinks'],
+  type: 'object', additionalProperties: false, required: ['on', 'off', 'receipt', 'idle', 'front', 'go', 'cup', 'left', 'drinks', 'leave'],
   properties: {
+    leave: str(lemonFields.leave.note),
     on: str(lemonFields.on.note), off: str(lemonFields.off.note), idle: str(lemonFields.idle.note), front: str(lemonFields.front.note), left: str(lemonFields.left.note),
     receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'back'],
       properties: { title: str(lemonFields['receipt.title'].note), take: str(lemonFields['receipt.take'].note), line: str(lemonFields['receipt.line'].note), none: str(lemonFields['receipt.none'].note), capped: str(lemonFields['receipt.capped'].note), best: str(lemonFields['receipt.best'].note), back: str(lemonFields['receipt.back'].note) } },
@@ -625,10 +635,20 @@ const lemonSchema = {
   },
 };
 
+// ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026). The rule cannot be judged by a machine, but its two
+// answers leave marks a machine can read: the line names the place, and it names something a player can DO
+// there. A line with neither is the poetry Trym could not read (“the striped awning on Hall Street”).
+export function plainPlace(bad, path, v0, names, doings) {
+  const v = String(v0 || '').toLowerCase();
+  if (!v) return;
+  if (!names.some((w) => v.includes(w))) bad.push({ path, msg: 'does not name the place (one of: ' + names.join(', ') + ') — a tap on a place says what it is', rule: 'plain' });
+  if (doings && !doings.some((w) => v.includes(w))) bad.push({ path, msg: 'does not say what a player can do here (one of: ' + doings.join(', ') + ')', rule: 'plain' });
+}
+
 // 🤫 THE QUIET RULE HAS NO OTHER GUARD. Nothing in the client can stop a line that reads as a
 // banana speaking, so the mechanical half is here: nobody may be asked a question, and the decks
 // must be decks (one line repeated twice over a long shift is what a deck exists to prevent).
-function cafeShape(data) {
+function cafeRules(data) {
   const bad = [];
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
   for (const k of ['perfect', 'fine', 'wrong']) {
@@ -644,9 +664,16 @@ function cafeShape(data) {
   if (!String((data.receipt || {}).best || '').includes('{drink}')) say('receipt.best', 'must contain {drink} — the game puts the drink’s own name there');
   return bad;
 }
+// the café's own shape: the shared rules, then its front names the Coffee Cup (the stand shares the rules, not the name)
+function cafeShape(data) {
+  const bad = cafeRules(data);
+  plainPlace(bad, 'front', data.front, ['coffee cup', 'kiosk', 'café', 'cafe'], ['job', 'work', 'serve', 'tips']);
+  return bad;
+}
 const cafeSchema = {
-  type: 'object', additionalProperties: false, required: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks'],
+  type: 'object', additionalProperties: false, required: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave'],
   properties: {
+    leave: str(cafeFields.leave.note),
     on: str(cafeFields.on.note),
     off: str(cafeFields.off.note),
     receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'back'],
@@ -673,7 +700,7 @@ const cafeSchema = {
 // tooltip. The shop runs wordless until this is approved, like every surface in this world.
 const dressFields = {
   title: { kind: 'prose', aim: 18, max: 26, note: 'The heading at the top of the card: a NAME for the little room with the mirrors in it, two or three words, not a sentence. ⚠️ not the word on the plank outside — that already says CLOTHES.' },
-  line: { kind: 'prose', aim: 64, max: 86, note: 'The one small line under the rails, and the only prose on the card. It notices the ROOM or the moment — the lamp, the mirrors, the quiet, nobody waiting — and never the player’s taste, never their outfit, never what to do next. ⚠️ nobody works here, so it may not welcome anybody, and nothing is sold here, so no word may smell of a till.' },
+  line: { kind: 'prose', aim: 64, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the clothes shop — try on and change your banana’s hat and glasses here; what you have not earned is shown where to find it. Then the old note: The one small line under the rails, and the only prose on the card. It notices the ROOM or the moment — the lamp, the mirrors, the quiet, nobody waiting — and never the player’s taste, never their outfit, never what to do next. ⚠️ nobody works here, so it may not welcome anybody, and nothing is sold here, so no word may smell of a till.' },
   alt: { kind: 'label', aim: 60, max: 90, note: 'Read out to somebody who cannot see the mirror: one plain sentence describing what is drawn — a banana standing in a lit changing room between two tall mirrors. A label, not atmosphere: plain and useful.' },
   // ❌ THE RAIL NAMES ARE NOT IN THIS JOB ANY MORE, and that is the honest answer rather than a lock.
   // Trym, 20 Sep 2026: "why isnt it Shades, Hats, Body, Shoes, Extras like in the original Make A
@@ -716,7 +743,7 @@ const dressSchema = {
 // town: a refusal that must be kind, final and completely uninformative, because a precise reason is
 // a lesson in how to get round the filter next time.
 const postFields = {
-  front: { kind: 'prose', aim: 84, max: 110, note: 'What the post office says when a player taps it. ⚠️ it replaces a hand-written line ending “Not built yet.”, which is no longer true — there is a mailbox in there with post in it. What the building IS, and that your post is inside. No instruction, no promise of anything that is not there, and no mention of postcards (not built).' },
+  front: { kind: 'prose', aim: 84, max: 130, note: 'What the post office says when a player taps it. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the post office; your mailbox is here — read letters from other players and write back; ask Stamp for a job to sort the post. ⚠️ it replaces a hand-written line ending “Not built yet.”, which is no longer true — there is a mailbox in there with post in it. What the building IS, and that your post is inside. No instruction, no promise of anything that is not there, and no mention of postcards (not built).' },
   title: { kind: 'prose', aim: 16, max: 24, note: 'The heading on the mailbox card: a NAME for the place your letters sit, two or three words, not a sentence.' },
   empty: { kind: 'prose', aim: 78, max: 105, note: 'The whole of the card when there is no post at all. ⭐ THIS IS THE MOST-READ STRING IN THE JOB — an empty box is what most players will find for a long time, so it has to be a pleasant place to land rather than a failure. One or two short lines. It may not promise post is coming and may not tell anybody to go and write one.' },
   noaddress: { kind: 'prose', aim: 92, max: 120, note: 'The whole of the card for a player with NO ADDRESS YET. A mailbox is keyed to the homestead’s sign name, so somebody who has never claimed a yard has nowhere for a letter to land. ⚠️ NOT the same as the counter being closed — it used to print that line, which is a lie: the post office is fine and the player has no door. ⭐ A DOOR, NOT A REFUSAL, the same rule as a locked garment on the dressing-room rail: post goes to a house, this player has not put a name on one, and the HOMESTEAD is where that is fixed. No instruction ("go and claim one"), no promise that post is waiting, and nothing that suggests they did something wrong.' },
@@ -761,6 +788,7 @@ const postFields = {
   'round.receipt.take': { kind: 'prose', aim: 44, max: 64, holds: ['{n}', '{of}'], note: 'The one line with the round’s result. MUST contain {n} (how many cards went straight to the right hole) and {of} (the size of the pile) exactly once each, and no other number — something like: how many of the pile went where they were going.' },
   'round.receipt.counted': { kind: 'prose', aim: 50, max: 72, note: 'Under the result when enough of the pile went to the right hole: this round is on the week’s sheet, Stamp has it down. No numbers, never “reward”, never “bonus”.' },
   'round.receipt.short': { kind: 'prose', aim: 56, max: 80, note: 'Under the result when too little of the pile went to the right hole: this round is NOT on the week’s sheet, and the counter is there again in a moment. Never cruel, never a lecture, no numbers.' },
+  'round.leave': { kind: 'label', aim: 10, max: 12, note: '⭐ THE WAY OUT OF A SHIFT (Trym, 22 Sep: "better to lock it and have a button for leave work"): while you work, your banana is held at the counter and this is the ONE button that ends the shift, on the tray’s strip. A VERB first, two words at most, at most 12 characters, never wraps: the plain thing it does — leave work, step away. Here it ends the sorting round; the receipt follows.' },
   'round.receipt.back': { kind: 'label', aim: 8, max: 14, note: 'The one button under the receipt that puts it away. A verb first, one or two words.' },
   refused: { kind: 'prose', aim: 78, max: 105, note: '⭐ THE HARDEST LINE IN THE JOB. What the writer sees when the filter stops their letter. It must be KIND, FINAL and COMPLETELY UNINFORMATIVE: it names no rule, no word and no reason, and it does not suggest what to change — a precise reason is a lesson in getting round the filter next time. It must also not sound like an accusation, because most people who ever see this typed something perfectly ordinary and were caught by a shop’s name or a phone number.' },
 };
@@ -813,6 +841,7 @@ function postShape(data) {
   if (String(card.sent || '').trim().toLowerCase() === String(data.sent || '').trim().toLowerCase()) {
     say('card.sent', 'is the letter’s own line — a card and a letter are two different things happening');
   }
+  plainPlace(bad, 'front', data.front, ['post office'], ['letter', 'write', 'read', 'mailbox']);
   // ⚠️ the mystery rule: this world never publishes its own timetables or its caps
   for (const [f, v] of Object.entries(data)) {
     if (typeof v === 'string' && /\b\d+\s*(letters?|a day|per day|days?|hours?|minutes?)\b/i.test(v)) say(f, 'publishes a cap or a timetable — this world does not');
@@ -826,9 +855,9 @@ const postSchema = {
     ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.') && !k.startsWith('round.')).map(([k, v]) => [k, str(v.note)])),
     // ✉️ the sorting round (22 Sep 2026): the staff's button, two toasts, four pigeonhole names and the receipt
     round: {
-      type: 'object', additionalProperties: false, required: ['start', 'on', 'off', 'far', 'hint', 'stamp', 'holes', 'receipt'],
+      type: 'object', additionalProperties: false, required: ['start', 'on', 'off', 'far', 'hint', 'stamp', 'leave', 'holes', 'receipt'],
       properties: {
-        start: str(postFields['round.start'].note), on: str(postFields['round.on'].note), off: str(postFields['round.off'].note), far: str(postFields['round.far'].note), hint: str(postFields['round.hint'].note), stamp: str(postFields['round.stamp'].note),
+        leave: str(postFields['round.leave'].note), start: str(postFields['round.start'].note), on: str(postFields['round.on'].note), off: str(postFields['round.off'].note), far: str(postFields['round.far'].note), hint: str(postFields['round.hint'].note), stamp: str(postFields['round.stamp'].note),
         holes: { type: 'object', additionalProperties: false, required: ['park', 'beach', 'home', 'rave'],
           properties: { park: str(postFields['round.holes.park'].note), beach: str(postFields['round.holes.beach'].note), home: str(postFields['round.holes.home'].note), rave: str(postFields['round.holes.rave'].note) } },
         receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'counted', 'short', 'back'],
@@ -888,7 +917,7 @@ const AREA_KEYS = ['town', 'park', 'bay', 'homestead'];
 const AREA_WORD = { town: /banana town/i, park: /\bpark\b/i, bay: /banana bay|\bbay\b/i, homestead: /homestead|smallholding|your land/i };
 const infoFields = {
   title: { kind: 'prose', aim: 16, max: 24, note: 'The heading on the kiosk’s card: a NAME for the rack of maps, two or three words, not a sentence. What you would CALL the thing, not what it does.' },
-  line: { kind: 'prose', aim: 62, max: 84, note: 'The one small line under the tiles, and the only prose on the first screen. It notices the kiosk or the PAPER — the rack, the fold marks, the pin holes, the counter. ⚠️ it may not instruct (no “tap”, no “zoom”, no “drag”) and may not list what the maps are, because the tiles are pictures of the places and already say.' },
+  line: { kind: 'prose', aim: 62, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is Dot’s map counter — pick up a map of any area of Banana World here. Then the old note: The one small line under the tiles, and the only prose on the first screen. It notices the kiosk or the PAPER — the rack, the fold marks, the pin holes, the counter. ⚠️ it may not instruct (no “tap”, no “zoom”, no “drag”) and may not list what the maps are, because the tiles are pictures of the places and already say.' },
   back: { kind: 'label', aim: 8, max: 14, note: 'The button from an open map back to the rack. A verb first, one or two words, ONE line — buttons in this world never wrap.' },
   shut: { kind: 'prose', aim: 64, max: 88, note: 'What stands in for the maps when the kiosk is closed, which happens only when the town is at its lowest. Ordinary and temporary — the shutter is down. Not an error, not an apology, and it may NOT blame the player for the state of the town.' },
   'areas.town.name': { kind: 'label', aim: 12, max: 20, note: 'The title printed under the town’s map. MUST be the place’s own name — Banana Town — titled, never renamed.' },
@@ -1301,7 +1330,47 @@ const dutySchema = {
   },
 };
 
+// 🏘️ THE PLACES THAT STILL ANSWERED FROM CODE (22 Sep 2026): the town hall, the bank and the print shop toasted a
+// hand-written line ending “Not built yet.”; the Wheel and the Exchange described themselves in HTML; an old
+// arcade cabinet said “out of order” from a table in banana-town.js. Prose in code is the rule broken; now the rig
+// writes them, plainly, and the town reads them (src/data/copy/town-fronts.json).
+const frontFields = {
+  hall: { kind: 'prose', aim: 80, max: 120, note: 'What the Town Hall says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the Town Hall, where Nib keeps the big book of every resident; there is nothing to do inside yet — chapter two of the story will open it. Never a date.' },
+  bank: { kind: 'prose', aim: 70, max: 110, note: 'What the bank says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the bank — a cash machine; nothing to do here yet.' },
+  print: { kind: 'prose', aim: 80, max: 120, note: 'What the print shop says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the print shop with the sticker packs in its window; nothing to do inside yet — the packs are in the site’s shop. Never a price.' },
+  wheel: { kind: 'prose', aim: 90, max: 130, note: 'The line under the Wheel of Peel’s heading on its card. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: Spinner’s wheel — one free spin a day, then a few coins a spin; every paid spin feeds the pot and one wedge takes it all. No rate beyond “a few coins”, no odds.' },
+  exchange: { kind: 'prose', aim: 90, max: 130, note: 'The line under the Exchange’s heading on its card. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: Fig Jr. buys what your homestead made (eggs, milk, wool) at today’s price, which moves from day to day — sell now or hold. No number.' },
+  oldCabinet: { kind: 'prose', aim: 50, max: 80, note: 'What an old arcade cabinet says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: this cabinet is out of order; nothing to play on it yet.' },
+};
+function frontShape(data) {
+  const bad = [];
+  plainPlace(bad, 'hall', data.hall, ['town hall', 'hall'], ['nothing', 'story', 'chapter', 'book']);
+  plainPlace(bad, 'bank', data.bank, ['bank', 'cash machine'], ['nothing', 'yet']);
+  plainPlace(bad, 'print', data.print, ['print shop', 'sticker'], ['nothing', 'yet', 'shop']);
+  plainPlace(bad, 'wheel', data.wheel, ['wheel'], ['spin']);
+  plainPlace(bad, 'exchange', data.exchange, ['exchange', 'fig jr'], ['sell', 'buys', 'price']);
+  plainPlace(bad, 'oldCabinet', data.oldCabinet, ['cabinet'], ['out of order', 'nothing', 'yet']);
+  for (const [f, v] of Object.entries(data)) if (typeof v === 'string' && /\d/.test(v)) bad.push({ path: f, msg: 'carries a number — no price, no odds, no date', rule: 'shape' });
+  for (const [f, v] of Object.entries(data)) if (typeof v === 'string' && /\?\s*$/.test(v)) bad.push({ path: f, msg: 'ends in a question — nobody may ask the player one', rule: 'shape' });
+  return bad;
+}
+const frontSchema = { type: 'object', additionalProperties: false, required: ['hall', 'bank', 'print', 'wheel', 'exchange', 'oldCabinet'],
+  properties: Object.fromEntries(Object.entries(frontFields).map(([k, v]) => [k, str(v.note)])) };
+
 export const JOBS = {
+  'town-fronts': {
+    id: 'town-fronts',
+    title: 'Banana Town — what the other places say when tapped',
+    what: 'The Town Hall, the bank, the print shop and an old arcade cabinet when tapped; the line under the Wheel of Peel’s and the Exchange’s headings.',
+    brief: 'tools/copy-briefs/town-fronts.md',
+    out: 'tools/copy-out/town-fronts.json',
+    approved: 'src/data/copy/town-fronts.json',
+    reads: 'src/scripts/banana-town.js (a static import: six short lines, read on every visit)',
+    top: ['hall', 'bank', 'print', 'wheel', 'exchange', 'oldCabinet'],
+    fields: frontFields,
+    shape: frontShape,
+    schema: frontSchema,
+  },
   'town-life': {
     id: 'town-life',
     title: 'Banana Town — the town’s life',
@@ -1433,7 +1502,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-lemon.json',
     approved: 'src/data/copy/town-lemon.json',
     reads: 'src/scripts/town-lemon.js (through a glob inside the stand’s own lazy chunk)',
-    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks'],
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave'],
     personas: 'town-personas',
     fields: lemonFields,
     shape: lemonShape,
@@ -1447,7 +1516,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-cafe.json',
     approved: 'src/data/copy/town-cafe.json',
     reads: 'src/scripts/town-cafe.js (through a glob inside the café’s own lazy chunk, so town-room never carries these bytes)',
-    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks'],
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave'],
     // 🧍 Bean speaks here, so the writer gets the bible
     personas: 'town-personas',
     fields: cafeFields,

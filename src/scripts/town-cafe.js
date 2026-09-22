@@ -190,6 +190,13 @@ export function mountCounter(host, opts = {}) {
   // 🪙 the shift's tips so far: a coin and a number in the tray's corner, nothing to read
   const tipsEl = el('i', 'tw-cup__tips', top);
   tipsEl.hidden = true;
+  // 🚪 THE WAY OUT (Trym, 22 Sep: "better to lock it and have a button for leave work"): while a shift is on the banana
+  // is held at its counter, so this is the one door out — on the strip, the rig's word on it, and it ends the shift.
+  const leaveBtn = el('button', 'tw-cup__leave', top);
+  leaveBtn.type = 'button';
+  leaveBtn.textContent = opts.leave || '';
+  leaveBtn.hidden = !opts.leave;
+  leaveBtn.addEventListener('click', (e) => { e.stopPropagation(); if (opts.onLeave) opts.onLeave(); });
   const COIN = '<svg viewBox="0 0 8 8" width="12" height="12" shape-rendering="crispEdges" aria-hidden="true"><path fill="#111" d="M2 0h4v1h-4zM1 1h1v1h-1zM6 1h1v1h-1zM0 2h1v4h-1zM7 2h1v4h-1zM1 6h1v1h-1zM6 6h1v1h-1zM2 7h4v1h-4z"/><path fill="#f2c012" d="M2 1h4v1h-4zM1 2h6v4h-6zM2 6h4v1h-4z"/><path fill="#ffe97a" d="M2 2h2v1h-2zM2 3h1v1h-1z"/><path fill="#b8860b" d="M4 4h2v1h-2zM5 3h1v1h-1z"/></svg>';
 
   let cup = null, raf = 0, holding = false, cx = 0, cy = 0;
@@ -577,7 +584,7 @@ export function bootTownCafe(ctx, cfg0) {
     on = true;
     served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0;
     standIn();
-    if (!tray) tray = mountCounter(host || world.parentElement, { onCup, deck: cfg.deck, label: (k) => (WORDS.go || {})[k] || '', idle: () => WORDS.idle || '' });
+    if (!tray) tray = mountCounter(host || world.parentElement, { onCup, deck: cfg.deck, label: (k) => (WORDS.go || {})[k] || '', idle: () => WORDS.idle || '', leave: WORDS.leave || '', onLeave: () => clockOut() });
     if (tray.tips) tray.tips(0);
     tray.show();
     tray.idle('');

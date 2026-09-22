@@ -94,6 +94,14 @@ test('the staff’s mailbox has the round; it starts when the banana reaches the
   expect(await page.evaluate(() => [...document.querySelectorAll('.tw-sort__hole')].every((b) => b.querySelector('svg') && b.getAttribute('aria-label'))), 'each with a pixel mark and a name read out').toBe(true);
   expect(await page.evaluate(() => [...document.querySelectorAll('.tw-sort__hole')].map((b) => b.getAttribute('aria-label'))), 'the rig’s names, in the holes’ order').toEqual(HOLES.map((m) => R.holes[m]));
   expect(await page.evaluate(() => !!document.querySelector('.tw-sort__card .tw-sort__stamp svg')), 'the card on the counter wears its postmark').toBe(true);
+  expect((await page.locator('.tw-cup--sort .tw-cup__leave').textContent()).trim(), 'the strip carries the way out, in the rig’s word').toBe(R.leave);
+  // 🔒 held at the counter: a tap on the square does not walk, a key does not move
+  const held0 = await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y }));
+  const vb = await page.evaluate(() => { const v = document.getElementById('twView').getBoundingClientRect(); return { x: v.left + v.width * 0.5, y: v.top + v.height * 0.4 }; });
+  await page.mouse.click(vb.x, vb.y);
+  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(250);
+  expect(await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y })), 'a tap and the keys moved nothing while the round was on').toEqual(held0);
   expect(await S(page, (s) => s.hint()), 'a first round carries its one-time notice under the holes').toBe(true);
   expect(await S(page, (s) => s.note()), '…in the rig’s words').toBe(R.hint);
   await page.screenshot({ path: 'test-results/town-sort-tray.png' });
@@ -203,12 +211,12 @@ test('a round that goes wrong is not on the sheet; off the mark the tray folds a
   expect(await S(page, (s) => s.on()), 'and no round began').toBe(false);
   expect(await page.evaluate(() => { const t = window.__town; return Math.hypot(t.tgt.x - t.pos.x, t.tgt.y - t.pos.y) <= 2; }), 'the walk stopped (a slide that goes nowhere is a stop)').toBe(true);
 
-  // ── back at the counter, a fresh round — wordless now, the notice was for the first — and walking far away ends it with the counter's own line
+  // ── back at the counter, a fresh round — wordless now, the notice was for the first — and the Leave button ends it with the counter's own line
   await atCounter(page);
   expect(await S(page, (s) => s.clockIn())).toBe(true);
   await page.waitForTimeout(200);
   expect(await S(page, (s) => s.hint()), 'the second round carries no notice').toBe(false);
-  await stand(page, 1100, 1000);
+  await page.click('.tw-cup--sort .tw-cup__leave');
   await page.waitForFunction(() => !window.__town.sort().on(), null, { timeout: 4000 });
   const said = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
   expect(said, 'the town says the round ended').toBe(R.off);

@@ -27,7 +27,7 @@
     }
   ],
   "store": {
-    "greet": "Take a good look. By tomorrow, every last thing will be gone.",
+    "greet": "Pip’s general store. Buy homestead things from today’s shelf; tomorrow’s last ones are different.",
     "shut": "The bell is quiet, the shutters are down, and Pip has taken the shelf indoors.",
     "needs": "House needs another room",
     "van": "Sent by morning van",
@@ -85,28 +85,25 @@
   ],
   "closed": {
     "cafe": [
-      "The coffee machine has swallowed a spoon. Fetch it before it learns foam.",
-      "The propeller bolt is loose. Tighten it before the roof gets ideas.",
-      "The water hose has split by the hatch. A patch will settle it.",
-      "Beans spilled into the grinder. Sweep them out; it sounds hungry."
+      "The Coffee Cup is Bean’s coffee kiosk and is shut today. Fix the stuck coffee machine to open the door again.",
+      "The Coffee Cup is Bean’s coffee kiosk and is shut today. Fix the loose propeller bolt to open the door again.",
+      "The Coffee Cup is Bean’s coffee kiosk and is shut today. Fix the split water hose to open the door again."
     ],
     "info": [
-      "Map glass has a crack across the north road. It needs replacing.",
-      "Leaflets blew behind the counter. Gather them before they become a new district.",
-      "Map pins have fallen out. Put the square back where it belongs.",
-      "The light inside has gone dark. A new bulb will do."
+      "The info point is Dot’s map kiosk and is shut today. Fix the cracked map glass to open it again.",
+      "The info point is Dot’s map kiosk and is shut today. Fix the scattered leaflets to open it again.",
+      "The info point is Dot’s map kiosk and is shut today. Fix the dead inside light to open it again."
     ],
     "store": [
-      "The till drawer is jammed on a firework receipt. Ease it free.",
-      "A delivery crate is blocking the bell. Shift it before Pip calls it display.",
-      "A shelf bracket has slipped. Set it straight before the duck bread votes.",
-      "The cellar hatch will not shut. Its hinge needs a turn."
+      "The general store is Pip’s shop and is shut today. Fix the jammed till to open it again.",
+      "The general store is Pip’s shop and is shut today. Fix the fallen shelf to open it again.",
+      "The general store is Pip’s shop and is shut today. Fix the blocked cellar hatch to open it again."
     ]
   },
   "lowShut": [
-    "Nothing failed here. Fix what is broken in the square, and this door opens again.",
-    "Hands in the square lift the town. When it rises, this shopfront comes back.",
-    "The square needs hands, not blame. Put things right outside and the doors return."
+    "This shop is shut because the town is run down. Fix broken things in the square and it opens again.",
+    "This shop is shut with the rest of the square. Fix broken things outside and it opens again.",
+    "This shop cannot open while the square is broken. Fix things in the square and it opens again."
   ],
   "work": {
     "crate": "That crate is heavier than it looks, which is saying something.",
@@ -138,8 +135,8 @@
     "step": "Story steps: {n} of {of}"
   },
   "rooms": {
-    "condo": "Cabinets chatter along the wall while coins clink beneath the prize board.",
-    "store": "Pip’s counter waits beneath shelves, each one either bare or proudly full.",
+    "condo": "Spinner’s Arcade. Tap a cabinet to play; scores earn prizes to wear.",
+    "store": "Pip’s general store. Today’s shelves and counter sell homestead things.",
     "in": "Step inside"
   },
   "objects": [

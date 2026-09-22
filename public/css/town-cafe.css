@@ -330,3 +330,14 @@
 }
 .tw-cup[data-deck="lemon"][data-st="pour"] .tw-cup__go { background: linear-gradient(#9fd7ff, #5fb3ea); color: #102a3a; }
 @media (prefers-reduced-motion: reduce) { .tw-cup[data-deck="lemon"] .tw-cup__bar::before { animation: none; } }
+
+/* 🚪 THE WAY OUT (22 Sep 2026): the one button that ends a shift or a round, on the tray's strip. It sits in the
+   row the strip already has — the tray has no vertical room for another — dark, small, the rig's word on it. */
+.tw-cup__leave {
+  appearance: none; margin-left: 0.5rem; padding: 3px 8px; border: 2px solid #000; border-radius: 0;
+  background: #3a2a1c; color: #fffdf5; box-shadow: 2px 2px 0 #000; cursor: pointer;
+  font: inherit; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1.2; white-space: nowrap;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.tw-cup__leave:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
+.tw-cup__leave[hidden] { display: none; }

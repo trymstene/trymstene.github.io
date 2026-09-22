@@ -1,4 +1,5 @@
 {
+  "leave": "Leave work",
   "on": "Apron on, tray up; the counter has its banana.",
   "off": "The counter goes quiet, with warm cups still on the shelf.",
   "receipt": {
@@ -11,7 +12,7 @@
     "back": "Return"
   },
   "idle": "The rope is clear; the counter is open.",
-  "front": "The Coffee Cup is Bean’s kiosk, with her counter beneath the propeller.",
+  "front": "Bean’s coffee kiosk. Ask Bean for a job to serve coffee here for tips.",
   "go": {
     "grind": "Grinding",
     "pour": "Pouring",

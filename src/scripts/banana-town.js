@@ -15,6 +15,7 @@ import { snapScale } from '../lib/world.js';   // 🔍 whole device pixels
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
+import FRONTS from '../data/copy/town-fronts.json';   // 🏘️ what the hall, the bank, the print shop, the wheel, the exchange and an old cabinet say (the rig's, 22 Sep 2026)
 
 const track = (n, p) => { try { if (window.gtag) window.gtag('event', n, p || {}); } catch (e) {} };
 const view = document.getElementById('twView');
@@ -65,34 +66,36 @@ for (const [key, fx, fbase, fw, fh, n, period] of ANIM_ALL) {
 
 // ---- what each door is (the plan's words) and the plank that names it
 const ABOUT = {
-  hall: ['TOWN HALL', 96, 'Town Hall. Nib’s desk and the big book, inside the clock tower. Chapter two starts here. Not built yet.'],
+  // ⭐ the third field is a place's own line when tapped, and every one of them is the rig's now (docs/voice.md:
+  // a place answers plainly). The planks' words stay here: a sign is a name, not prose.
+  hall: ['TOWN HALL', 96, FRONTS.hall || ''],
   // ✉️ no third field: the post office answers for itself now, through the rig (town-post.json `front`)
   post: ['', 0, ''],
-  store: ['', 104, 'General Store. Pip sells fireworks, lures and duck bread. Not built yet.'],
-  bank: ['', 118, 'The bank. It is an ATM. Not built yet.'],
+  store: ['', 104, ''],   // the store answers with Pip's shelf card (town-room openFor)
+  bank: ['', 118, FRONTS.bank || ''],
   // the print shop's plank is an OVERLAY on the sprite's own STORE sign (measured: the sign band is 64×22 world px
   // centred at 1585,932): grey metal, a bit bigger, its bottom-centre 2 px under the sign (Trym, 15 Sep)
-  print: ['STICKERS', 93, 'The print shop. The real sticker packs in the window. Not built yet.', -35],
+  print: ['STICKERS', 93, FRONTS.print || '', -35],
   // ☕ no third field: the café answers for itself now, through the rig (town-room openFor + town-cafe.json `front`)
   cafe: ['', 220, ''],
-  exchange: ['THE EXCHANGE', 134, 'The Exchange. Fig Jr. buys eggs, milk and wool at today’s price. Not built yet.'],   // 134: on the awning, not above it
-  wheel: ['WHEEL OF PEEL', 134, 'The Wheel of Peel. One free spin a day, then a few coins a spin. Not built yet.'],
+  exchange: ['THE EXCHANGE', 134, ''],   // 134: on the awning, not above it; the Exchange answers with its card
+  wheel: ['WHEEL OF PEEL', 134, ''],   // the Wheel answers with its card
   // 👕 the clothes shop: a DRESSING ROOM and nothing else, so it has no room, no job and no boss.
   // The pack has no clothes front, so it wears a plank the way the print shop does — 93 and -35 are the
   // print shop's own numbers, and they transfer because this sprite is the same 279 px tall.
   // ⚠️ no third field: the shop answers for itself through the rig (town-dress.json `front`).
   clothes: ['CLOTHES', 93, '', -35],
-  condo: ['ARCADE', 100, 'The Arcade. Classics in banana wrapping, inside. Tap the door.'],
+  condo: ['ARCADE', 100, ''],   // the arcade's door is a room: town-life.json rooms.condo speaks inside
   // 🕹 the machines inside — names to be argued over; every one says what it will be
-  g1: ['', 0, 'PEEL OUT. One thumb, one banana, a jelly vat to miss.'],
-  g2: ['', 0, 'BANANA SNAKE. It grows, and it must not bite itself.'],
-  g3: ['', 0, 'BANANA INVADERS. The flies come down in rows.'],
-  g4: ['', 0, 'BANANA PONG. Your peel against Spinner’s.'],
-  g5: ['', 0, 'BANANA STACK. Crates on crates, until they topple.'],
-  g6: ['', 0, 'An older cabinet. Out of order, for now.'],
-  g7: ['', 0, 'An older cabinet. Out of order, for now.'],
-  g8: ['', 0, 'An older cabinet. Out of order, for now.'],
-  g9: ['', 0, 'An older cabinet. Out of order, for now.'],
+  g1: ['', 0, 'PEEL OUT'],
+  g2: ['', 0, 'BANANA SNAKE'],
+  g3: ['', 0, 'BANANA INVADERS'],
+  g4: ['', 0, 'BANANA PONG'],
+  g5: ['', 0, 'BANANA STACK'],
+  g6: ['', 0, FRONTS.oldCabinet || ''],
+  g7: ['', 0, FRONTS.oldCabinet || ''],
+  g8: ['', 0, FRONTS.oldCabinet || ''],
+  g9: ['', 0, FRONTS.oldCabinet || ''],
   counter: ['', 0, 'The counter. Tokens and the high-score book, later.'],
   cart: ['', 0, 'The fruit cart. Duck bread, later.'],
   fountain: ['', 0, 'The fountain. It works.'],
@@ -337,6 +340,7 @@ let duties = null;       // 💼 src/scripts/town-duties.js — the work note, o
 view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
   if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup, .bwq-hint, .twd-chip')) return;   // 📎 the two notes fold on a tap; they never walk   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
+  if (working()) return;   // 🔒 held at the counter: the tray's Leave button is the way out
   arriveThen = null;   // a new tap cancels a pending cabinet
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
@@ -449,7 +453,7 @@ function tick(now) {
   const frozen = !panel.hidden;
   if (frozen) { tgt.x = pos.x; tgt.y = pos.y; }
   let dx = 0, dy = 0;
-  const kb = !frozen;   // 🃏 an open card owns the keyboard too (Snake's arrows must not walk the town banana)
+  const kb = !frozen && !working();   // 🃏 an open card owns the keyboard too (Snake's arrows must not walk the town banana); 🔒 and so does a shift
   if (kb && (keys.arrowleft || keys.a)) dx -= 1;
   if (kb && (keys.arrowright || keys.d)) dx += 1;
   if (kb && (keys.arrowup || keys.w)) dy -= 1;
@@ -545,6 +549,11 @@ let postP = null;
 // café's tray. The mailbox card carries the button; the round starts when the banana REACHES the counter
 // (the cabinets' rule), so a tray never rises over a walk.
 let sort = null, sortP = null;
+// 🔒 WORKING HOLDS THE BANANA (Trym, 22 Sep: "i can still move in the background while pressing the work-tasks … movement
+// should be locked … better to lock it and have a button for leave work"). While a shift or a round is on, a tap on
+// the world does not walk and a key does not move: the tray's own Leave button is the way out (the geography rule —
+// off the mark it folds, far away it ends — stays underneath as the safety net for a banana that is moved anyway).
+const working = () => !!(room && room.seam && room.seam.working && room.seam.working()) || !!(sort && sort.on());
 function loadSort() {
   if (!sortP) {
     sortP = import('./town-sort.js')
@@ -691,7 +700,7 @@ function exchangeCard() {
   });
   const up = priceOf(today + 1, 0) > priceOf(today, 0), honest = mix32(today * 3 + 9)() < 0.7;
   const rumour = (up === honest) ? 'eggs go up tomorrow' : 'eggs drop tomorrow';
-  openCard('<h2>The Exchange</h2><p class="tw-card__sub">Fig Jr. buys what your farm made, at today’s price. The price moves every day. Sell now, or hold.</p>'
+  openCard('<h2>The Exchange</h2><p class="tw-card__sub">' + esc(FRONTS.exchange || '') + '</p>'
     + '<div class="tw-rows">' + rows + '</div>'
     + '<p class="tw-result">Everything, today: <b>' + Math.round(total) + ' coins</b></p>'
     + '<p class="tw-fine">Bean at the café says “' + rumour + '.” He is right seven times in ten.</p>'
@@ -732,7 +741,7 @@ function drawWheel(cv, mini) {
 stallWheel();
 
 function wheelCard() {
-  openCard('<h2>The Wheel of Peel</h2><p class="tw-card__sub">One free spin a day. After that a few coins a spin, and every paid spin feeds the pot until one wedge takes it all.</p>'
+  openCard('<h2>The Wheel of Peel</h2><p class="tw-card__sub">' + esc(FRONTS.wheel || '') + '</p>'
     + '<p class="tw-pot">THE POT · <span id="twPot">' + pot + '</span> COINS</p>'
     + '<div class="tw-wheelwrap"><div class="tw-wheel__pin"></div><canvas class="tw-wheel" id="twWheel" width="440" height="440"></canvas></div>'
     + '<p class="tw-result" id="twSpinRes"></p>'
@@ -901,6 +910,7 @@ assetsReady().then(() => {
       // the thing's own front by the time this runs, so all the room has to hand over is the deed.
       then: (fn) => { arriveThen = fn || null; },
       job: () => (work ? work.seam.job() : null),   // 💼 what the room may ask of you depends on who you work for
+      sortOn: () => !!(sort && sort.on()),   // ✉️ the sorting round is on: Stamp steps aside
       chore: (k) => (work && work.seam.chore ? work.seam.chore(k) : null),   // 💼 …and what you did there counts on the week's sheet
       outfit: () => ME_DRAW,   // ☕ the café draws YOUR banana in its window, in one locked pose
       others: () => (crowd ? crowd.others() : []),   // 👥 other players' bananas on the square (the ghosts keep away from them)
@@ -947,6 +957,7 @@ assetsReady().then(() => {
   window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
-  open: (k) => openFor(k), dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)
+  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

@@ -222,3 +222,15 @@ store. It never touches a real letter: delivery is instant, the sort is theatre.
 
 **The rules the round lives under:** no numbers in the prose (the game prints the round's figures);
 never a question; never a control named; never "reward", "bonus" or "prize" — a wage is a wage.
+
+
+## ⭐ A place answers plainly (22 Sep 2026)
+
+Trym, tapping the lemonade stand and reading "Fig Jr.'s lemonade table is open beneath the striped
+awning on Hall Street": *"i dont understand any of this text, i dont understand what its trying to
+say? clear and concrete messages like this please."* So every line that a PLACE answers with — a
+front's line, a card's first line, a room's line, a shut front's reason — is a signpost, not a
+moment, and it answers two questions in plain words, in this order: **what is this** (name the place
+and who runs it) and **what can I do here** (or that there is nothing to do here yet). No scenery,
+no metaphor, no weather, no riddle. Two plain sentences beat one pretty one. A gate now refuses a
+place line that names neither the place nor a thing a player can do (docs/voice.md).

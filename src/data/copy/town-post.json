@@ -1,5 +1,5 @@
 {
-  "front": "The post office keeps your letters in its mailbox. The scale looks busy regardless.",
+  "front": "This is Stamp’s post office. Your mailbox is here, with letters to read, replies to write, and sorting work from Stamp.",
   "title": "Your Mailbox",
   "empty": "No letters in your mailbox. Its corners are very orderly.",
   "noaddress": "Post goes to a house with a sign name. Your homestead fence has no name on it yet.",
@@ -16,6 +16,7 @@
   "nopass": "The counter cannot find your house name yet. Your letter waits in the writing tray.",
   "refused": "This letter stays in the writing tray.",
   "round": {
+    "leave": "Leave work",
     "start": "Start sorting",
     "on": "A tray of post is on the counter, with the pigeonholes open behind it.",
     "off": "The tray is put away. The counter is clear again.",

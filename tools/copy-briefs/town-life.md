@@ -311,3 +311,15 @@ spoken line; never an emoji; a curly apostrophe. Nothing here asks the player a 
 
 `bands` (five, in the order above), `store`, `board`, `merchant`, `vendor`, `ghosts`,
 `closed`, `lowShut`, `rooms`, `locks`, `work`, `objects` (ten, ids as above, in that order).
+
+
+## ⭐ A place answers plainly (22 Sep 2026)
+
+Trym, tapping the lemonade stand and reading "Fig Jr.'s lemonade table is open beneath the striped
+awning on Hall Street": *"i dont understand any of this text, i dont understand what its trying to
+say? clear and concrete messages like this please."* So every line that a PLACE answers with — a
+front's line, a card's first line, a room's line, a shut front's reason — is a signpost, not a
+moment, and it answers two questions in plain words, in this order: **what is this** (name the place
+and who runs it) and **what can I do here** (or that there is nothing to do here yet). No scenery,
+no metaphor, no weather, no riddle. Two plain sentences beat one pretty one. A gate now refuses a
+place line that names neither the place nor a thing a player can do (docs/voice.md).

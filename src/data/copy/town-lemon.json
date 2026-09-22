@@ -1,8 +1,9 @@
 {
+  "leave": "Leave work",
   "on": "The lemonade table opens for the afternoon beneath its striped awning.",
   "off": "The jug rests by the lane, and the striped awning keeps its shade.",
   "idle": "The lemonade table is open; the lane is quiet.",
-  "front": "Fig Jr.’s lemonade table is open beneath the striped awning on Hall Street.",
+  "front": "Fig Jr.’s lemonade stand. Ask Fig Jr. for a job and you can pour lemonade here for tips.",
   "left": "Somebody turns from the table, leaving the awning to its shade.",
   "receipt": {
     "title": "Lemonade Tally",

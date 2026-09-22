@@ -1093,6 +1093,7 @@ export function bootTownLife(ctx) {
   // so assigning a café-only function here would silently delete that event for the day.
   let shiftOn = false;
   let standOn = false;   // 🍋 the lemonade stand's shift, polled like the café's
+  let workingWas = '';   // 🧍 which workplace of yours was being worked at the last poll
   // 🕯 …and the chapter's claim on Nib comes first (21 Sep 2026): at the fountain while chapter one's
   // first scene is open — whatever the hour, so `always` — then up to the town hall for the rest of
   // the beat it closed in, so "he walks up to his regular place" is what you see, not a lunch break.
@@ -1102,9 +1103,24 @@ export function bootTownLife(ctx) {
       if (nibSt) return { place: nibSt, always: true };
       if (nibHallBeat === beat && beat !== 5) return 'hall';
     }
-    if (shiftOn && n2.key === 'bean' && beat !== 5) return 'terrace';
-    if (standOn && n2.key === 'figjr' && beat !== 5) return 'orchard';   // 🍋 the kid steps off his pitch while you work it, as Bean takes his terrace
+    // 🧍 A BOSS STEPS ASIDE WHILE YOU WORK THEIR PLACE (Trym, 22 Sep: "their default position while you work at their
+    // workplace should be a bit away from the workplace so they dont distort the queue that lines up or is in the way
+    // visually"): Bean to the terrace, Fig Jr. to the phone box, Stamp to the monument lane, Pip to the bank's step,
+    // Spinner to the fruit cart — for as long as the shift, the round, or your time in their room lasts. They still
+    // potter about their aside as they would about any station; only the station moved.
+    const wa = workingAt();
+    if (wa && n2.key === ASIDE_BOSS[wa] && beat !== 5) return ASIDE[n2.key];
     return oddKey && n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null;
+  };
+  const ASIDE = { bean: 'terrace', figjr: 'booth', stamp: 'monument', pip: 'bank', spinner: 'cart' };
+  const ASIDE_BOSS = { cafe: 'bean', stand: 'figjr', post: 'stamp', store: 'pip', condo: 'spinner' };
+  // which workplace of yours is being worked right now: a counter's shift, the post office's round, or your own boss's room
+  const workingAt = () => {
+    if (shiftOn) return 'cafe';
+    if (standOn) return 'stand';
+    if (ctx.sortOn && ctx.sortOn()) return 'post';
+    const mine = ctx.job && ctx.job();
+    return roomAt && mine && mine.at === roomAt ? roomAt : '';
   };
   function todayStage() {
     const d = dayNum();
@@ -1243,8 +1259,9 @@ export function bootTownLife(ctx) {
     secAt = now + 500;
     // ☕ every way a shift can start or end lands here: the kiosk tap, walking off the mark, stepping into
     // a shop, a front closing, or the page going away. One poll is cheaper than five call sites agreeing.
-    const onShift = !!(cafe && cafe.on()), onStand = !!(lemon && lemon.on());
-    if (onShift !== shiftOn || onStand !== standOn) { shiftOn = onShift; standOn = onStand; life.setOverride(overrideFor); }
+    shiftOn = !!(cafe && cafe.on()); standOn = !!(lemon && lemon.on());
+    const wa = workingAt();
+    if (wa !== workingWas) { workingWas = wa; life.setOverride(overrideFor); }   // 🧍 the boss steps aside, or comes back
     const c = curseNow(), cType = c === 'none' ? null : c;
     const om0 = !curse && !!omenNow();
     const beat = life.beat();
@@ -1353,6 +1370,7 @@ export function bootTownLife(ctx) {
     // ☕ the counter, once its chunk is in: the walk cannot wait on an import it did not ask for
     cafe: () => (cafe ? cafe.seam : null),
     lemon: () => (lemon ? lemon.seam : null),   // 🍋 the stand's counter, once its chunk is in
+    working: () => !!((cafe && cafe.on()) || (lemon && lemon.on())),   // 🔒 a counter's shift is on: the banana is held there
     lemonReady: () => loadLemon().then((l) => !!l),
     folk: () => (folk ? folk.seam : null),
     folkReady: () => loadFolk().then((f) => !!f),

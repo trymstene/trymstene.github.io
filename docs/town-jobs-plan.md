@@ -877,6 +877,29 @@ customer's hand; Fig Jr. steps to the orchard while the stand is worked (`standO
 (`duty.stand` / `standDone`). Words: the `town-lemon` copy job (the café's fields, re-noted for a stall and a
 glass, with a gate that refuses the café's words). Walk: `tests/town-lemon.spec.mjs`.
 
+### 11.5b Working holds the banana; the boss steps aside; a place answers plainly (22 Sep 2026, evening)
+
+Three of Trym's calls after playing the stand, each now a rule:
+
+- **🔒 Working holds the banana.** "i can still move in the background while pressing the work-tasks … movement
+  should be locked … better to lock it and have a button for leave work." While a shift (café, stand) or a
+  sorting round is on, a tap on the world does not walk and a key does not move (`working()` in banana-town.js);
+  the tray's strip carries the one way out, a **Leave work** button (`leave` in town-cafe / town-lemon,
+  `round.leave` in town-post — the rig's word), which clocks out and opens the receipt. The geography rule
+  (off the mark it folds, far away it ends) stays underneath as the safety net for a banana moved by other means.
+- **🧍 The boss steps aside.** "their default position while you work at their workplace should be a bit away
+  from the workplace so they dont distort the queue that lines up or is in the way visually" — `ASIDE` in
+  town-room.js: Bean → the terrace, Fig Jr. → the phone box (a new `booth` station on Hall Street), Stamp → the
+  monument lane, Pip → the bank's step, Spinner → the fruit cart, for as long as the shift, the round or your
+  time in their room lasts (`workingAt()`), and back to their own day after.
+- **The vendor at the stand is chest-up**, like the café's window banana ("anchor my banana a little lower, you
+  can see that the banana is cut in half"): FLOOR 536, DRAWN 66.
+- **📣 A place answers plainly** (docs/voice.md): every line a place answers with is a signpost — what this is,
+  what you can do here. Rewritten through the rig for the café, the stand, the post office, the map counter,
+  the clothes shop, Pip's shelf, the two rooms, every shut front, and the places that still answered from code
+  (the hall, the bank, the print shop, the Wheel's and the Exchange's cards, an old cabinet — the new `town-fronts`
+  job). A gate (`plainPlace`) refuses a place line that names neither the place nor a thing a player can do.
+
 ### 11.6 Build order, and why
 1. **The duties chip + wage/payday** (9.2, 9.3 chip half) — the smallest change that makes every
    payslip job legible; needs `jobView` on the worker, one copy job, one chip.

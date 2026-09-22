@@ -77,7 +77,9 @@ test('the stand answers a stranger in its own words, and its own staff step roun
   expect(v, 'a vendor stands at the counter').toBeTruthy();
   expect(v.z, 'over the stall (its z is its base, 545)').toBeGreaterThan(100 + 545);
   expect(v.clip, 'cut off at the counter’s edge, never floating over the table').toMatch(/^inset\(0(px)? 0(px)? [\d.]+%( 0(px)?)?\)$/);   // the browser folds the fourth value away
-  expect((v.floor - v.tableTop) / v.drawn, 'and less than half of it is under the counter').toBeLessThan(0.5);
+  const under = (v.floor - v.tableTop) / v.drawn;
+  expect(under, 'chest-up: the counter takes the body and leaves the head, the shoulders and the hands').toBeGreaterThan(0.5);
+  expect(under, '…but never the face').toBeLessThan(0.72);
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.tw-me')).display === 'none'), 'your banana on the cobbles is the one at the counter').toBe(true);
   const drawn = await page.evaluate(() => { const e = document.querySelector('.tw-atwork--stand'), o = [...document.querySelectorAll('.tw-ov')].find((i) => /ov-50/.test(i.src)); const r = e.getBoundingClientRect(), k = o.getBoundingClientRect(); return { inside: r.left >= k.left - 30 && r.right <= k.right + 30, tall: r.height > k.height * 0.4, cvw: e.firstChild.width }; });
   expect(drawn.inside, 'it stands within the stall’s width').toBe(true);
@@ -137,10 +139,22 @@ test('the stand answers a stranger in its own words, and its own staff step roun
   expect(carried, 'a glass in a hand for every glass that went out').toBe(took.served);
   expect((await events(page, 'town_cup')).every((p) => p.at === 'stand'), 'Pulse hears the glasses at the stand').toBe(true);
 
+  // ── 🔒 held at the counter (Trym, 22 Sep: "movement should be locked"): a tap on the square does not walk, a key
+  // does not move, and the tray's Leave button is the way out
+  const held0 = await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y, px: window.__town.pos.x, py: window.__town.pos.y }));
+  const vb = await page.evaluate(() => { const v = document.getElementById('twView').getBoundingClientRect(); return { x: v.left + v.width * 0.5, y: v.top + v.height * 0.45 }; });
+  await page.mouse.click(vb.x, vb.y);
+  await page.waitForTimeout(250);
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft');
+  await page.keyboard.down('a'); await page.waitForTimeout(300); await page.keyboard.up('a');
+  const held1 = await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y, px: window.__town.pos.x, py: window.__town.pos.y }));
+  expect(held1, 'a tap and the keys moved nothing while the shift was on').toEqual(held0);
+  expect(await lemon(page, (l) => l.on()), 'and the shift is still on').toBe(true);
+  expect((await page.locator('.tw-cup__leave').textContent()).trim(), 'the strip carries the way out, in the rig’s word').toBe(COPY.leave);
   // ── nothing is paid until you step away; then once, through the faucet the server knows, and the receipt says the take
   const paidBefore = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').length; } catch (e) { return -1; } });
   expect(paidBefore, 'not a coin has moved yet').toBe(0);
-  await lemon(page, (l) => l.clockOut());
+  await page.click('.tw-cup__leave');
   await page.waitForTimeout(500);
   const paid = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').map((e) => e.d); } catch (e) { return []; } });
   expect(paid.length, 'paid ONCE, at the end').toBe(1);
@@ -169,12 +183,15 @@ test('Fig Jr. steps to the orchard while his stand is worked, and the work note 
   await stand(page, 890, 556);
   expect(await page.evaluate(() => window.__town.room.lemonReady())).toBe(true);
   expect(await lemon(page, (l) => l.clockIn())).toBe(true);
-  await page.waitForFunction(() => { const r = (window.__town.life.residents() || []).find((q) => q.key === 'figjr'); return !!r && r.place === 'orchard'; }, null, { timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => { const r = (window.__town.life.residents() || []).find((q) => q.key === 'figjr'); return !!r && r.place === 'booth'; }, null, { timeout: 8000 }).catch(() => {});
   const fig = await page.evaluate(() => { const r = (window.__town.life.residents() || []).find((q) => q.key === 'figjr'); return r ? { place: r.place, x: Math.round(r.x), y: Math.round(r.y) } : null; });
   expect(fig, 'Fig Jr. is in the square').toBeTruthy();
-  expect(fig.place, 'and his place is the orchard while the stand is yours').toBe('orchard');
-  await lemon(page, (l) => l.clockOut());
+  expect(fig.place, 'and his place is beside the phone box while the stand is yours — off the queue’s line').toBe('booth');
+  // …and when you leave by the button, he comes back to his own day
+  await page.click('.tw-cup__leave');
   await page.waitForTimeout(300);
   expect(await lemon(page, (l) => l.on())).toBe(false);
+  await page.evaluate(() => { const x = document.getElementById('twCardX'); if (x) x.click(); });
+  await page.waitForFunction(() => { const r = (window.__town.life.residents() || []).find((q) => q.key === 'figjr'); return !!r && r.place !== 'booth'; }, null, { timeout: 8000 });
   expect(errors).toEqual([]);
 });

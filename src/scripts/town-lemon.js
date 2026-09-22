@@ -53,8 +53,12 @@ export const ROPE = [[890, 598], [989, 598]];
 // canvas ABOVE the stall: feet below the counter's top edge, everything under that edge cut away, the upper
 // body over the board, the head just under the plank — a banana of nearly full size, more than half of it
 // in view, standing behind a table. Your own banana on the cobbles is hidden while it stands there.
-const DRAWN = 62;      // the banana's height at the counter (the café's window banana is 58)
-const FLOOR = 522;     // its feet: under the counter, so the clip at the table's edge takes the legs and no more
+const DRAWN = 66;      // the banana's height at the counter (the café's window banana is 58)
+// ⚠️ CHEST-UP, LIKE THE CAFÉ'S WINDOW. At 522 the counter's edge cut the banana across the middle and it read as
+// sawn in half (Trym, with a screenshot: "anchor my banana a little lower, you can see that the banana is cut in
+// half"). Lower, the edge takes the body and leaves the head, the shoulders and the raised hands — the half of a
+// banana that has a face in it, which is what standing behind a counter looks like.
+const FLOOR = 536;     // its feet: well under the counter, so the edge leaves the head, the shoulders and the hands
 const POSE = 2;        // frame 2: front-facing, both hands up — the pack's serving pose
 const FRAME_H_FRAC = 0.66, FRAME_TOP_FRAC = 0.20;   // src/lib/banana-geo.js — the drawn frame inside its square canvas
 

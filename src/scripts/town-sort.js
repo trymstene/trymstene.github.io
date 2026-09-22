@@ -96,6 +96,12 @@ export function mountSorter(host, opts = {}) {
   const top = el('div', 'tw-cup__top', box);
   const pileEl = el('div', 'tw-sort__pile', top);     // the cards still to sort, as small sheets
   const tallyEl = el('div', 'tw-sort__tally', top);   // one mark per card of the pile, coloured as it lands
+  // 🚪 the way out (Trym, 22 Sep): the round holds the banana at the counter, so the strip carries the one door out
+  const leaveBtn = el('button', 'tw-cup__leave', top);
+  leaveBtn.type = 'button';
+  leaveBtn.textContent = opts.leave || '';
+  leaveBtn.hidden = !opts.leave;
+  leaveBtn.addEventListener('click', (e) => { e.stopPropagation(); if (opts.onLeave) opts.onLeave(); });
   const row = el('div', 'tw-sort__row', box);
   const cardEl = el('div', 'tw-sort__card', row);
   const stampEl = el('i', 'tw-sort__stamp', cardEl);
@@ -238,7 +244,7 @@ export function bootTownSort(ctx) {
     const m = mark();
     if (m && pos && Math.hypot(pos.x - m.x, pos.y - m.y) > NEAR) { if (COPY.far) say(COPY.far); return false; }
     on = true; away = 0;
-    if (!tray) tray = mountSorter(host, { onLand, onDone, holes: () => COPY.holes || {} });
+    if (!tray) tray = mountSorter(host, { onLand, onDone, holes: () => COPY.holes || {}, leave: COPY.leave || '', onLeave: () => clockOut() });
     const r = start(newRound(seedNow()), performance.now());
     rounds++;
     tray.deal(r);

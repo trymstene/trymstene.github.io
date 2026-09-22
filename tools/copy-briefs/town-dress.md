@@ -70,3 +70,15 @@ where the game puts the place it is caught — "the rave", "the pier", "the park
 INVITATION, never a refusal: the thing is on the rail precisely so you learn it exists and where it
 lives. So it is about the PLACE and what happens there, never about not being allowed. Short — it
 sits in a tooltip on a 44-pixel chip. No "locked", no "unlock", no "you can't".
+
+
+## ⭐ A place answers plainly (22 Sep 2026)
+
+Trym, tapping the lemonade stand and reading "Fig Jr.'s lemonade table is open beneath the striped
+awning on Hall Street": *"i dont understand any of this text, i dont understand what its trying to
+say? clear and concrete messages like this please."* So every line that a PLACE answers with — a
+front's line, a card's first line, a room's line, a shut front's reason — is a signpost, not a
+moment, and it answers two questions in plain words, in this order: **what is this** (name the place
+and who runs it) and **what can I do here** (or that there is nothing to do here yet). No scenery,
+no metaphor, no weather, no riddle. Two plain sentences beat one pretty one. A gate now refuses a
+place line that names neither the place nor a thing a player can do (docs/voice.md).

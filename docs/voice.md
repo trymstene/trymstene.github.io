@@ -36,3 +36,23 @@ thing they were doing a second ago. Specific is funny; general is wallpaper.
 - Nobody has met the Mayor.
 - The player types nothing, ever, so nobody may ask them a question expecting an answer.
 - A line is only the spoken words. The game prints the name above it, so never start with "Moss:".
+
+## A place answers plainly (22 Sep 2026)
+
+Trym, tapping the lemonade stand and reading "Fig Jr.'s lemonade table is open beneath the striped
+awning on Hall Street": *"i dont understand any of this text, i dont understand what its trying to
+say? clear and concrete messages like this please."*
+
+A resident speaks in character. A PLACE does not: when a player taps a shop front, a stand, a
+kiosk, a door, or opens a card whose first line describes where they are, that line is a signpost,
+not a moment. It answers two questions in plain words, in this order:
+
+1. **What is this?** Name the place and the banana who runs it. "Fig Jr.'s lemonade stand."
+2. **What can I do here?** The one or two things a player can actually do — buy, work, read
+   letters, play, spin — or that there is nothing to do here yet. "Ask Fig Jr. for a job and you
+   can pour lemonade here for tips."
+
+No scenery, no metaphor, no riddle, no weather on the awning. A newcomer reads it once on a phone
+and knows what the building is for. Warmth is welcome in the choice of words, never at the cost of
+the two answers. This rule outranks "six words when six will do": two plain sentences beat one
+pretty one.
