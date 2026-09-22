@@ -747,7 +747,18 @@ const postFields = {
   noaddress: { kind: 'prose', aim: 92, max: 120, note: 'The whole of the card for a player with NO ADDRESS YET. A mailbox is keyed to the homestead’s sign name, so somebody who has never claimed a yard has nowhere for a letter to land. ⚠️ NOT the same as the counter being closed — it used to print that line, which is a lie: the post office is fine and the player has no door. ⭐ A DOOR, NOT A REFUSAL, the same rule as a locked garment on the dressing-room rail: post goes to a house, this player has not put a name on one, and the HOMESTEAD is where that is fixed. No instruction ("go and claim one"), no promise that post is waiting, and nothing that suggests they did something wrong.' },
   shut: { kind: 'prose', aim: 66, max: 90, note: 'Replaces the letters when the post is not running at all. An ordinary, temporary thing — the counter is closed. Not an error and not an apology. Never “server”, never “down”, never “error”, never a time.' },
   from: { kind: 'label', aim: 10, max: 18, holds: ['{who}'], note: 'The small label over who a letter came from. One or two words, MUST contain {who} — the game puts the sender’s name there.' },
-  threads: { kind: 'label', aim: 10, max: 16, note: 'The small heading over the older post, under the new envelopes. Under it is one row per PERSON you have letters from, not one row per letter — sixty letters from eight people is eight rows. One or two words, the way you would label a drawer of kept correspondence. Set in capitals by the stylesheet.' },
+  // 📬 THE TWO DRAWERS (22 Sep 2026, Trym: "make sure it looks great visually in the mailbox when you have lots of
+  // letters so its not all in a long list, maybe a 'read' or 'archive' minitab for old letters, so you always see
+  // the fresh letters youve received from anyone, users and residents")
+  'drawers.fresh': { kind: 'label', aim: 5, max: 9, note: '📬 THE TAB OVER THE POST YOU HAVE NOT OPENED YET. The mailbox has two drawers now, so new post is always the first thing you see and older post never buries it. ONE word, titled, the way a tray or a drawer is labelled. The game puts a small count beside it.' },
+  'drawers.kept': { kind: 'label', aim: 5, max: 9, note: 'THE OTHER TAB: the post you have already opened — one row per person who wrote, and the postcards you kept. ONE word, titled. ⚠️ never “Archive”, “Inbox”, “Folder”, “Old” or “Read”: it is a drawer of letters worth keeping, not a mail program’s folder.' },
+  'drawers.none': { kind: 'prose', aim: 58, max: 84, note: 'The whole of the new-post drawer when nothing new has come but older post IS kept in the other drawer. It may point to the other drawer by its name, calmly. ⚠️ Not the same as `empty` (a box with nothing in it at all): this box has post, just nothing new. It may not promise post is coming and may not tell anybody to go and write one.' },
+  // 🚪 THE KNOCK (22 Sep 2026) — the rail that actually holds (docs/town-jobs-plan.md §6)
+  'knock.line': { kind: 'label', aim: 14, max: 22, holds: ['{who}'], note: '🚪 THE LINE ON A KNOCK. Post from a house the reader has never had post from waits at the door instead of coming straight in: the reader sees WHO, never what they wrote, until they let them in. MUST contain {who} (the game puts the sender’s name there). Two to four words, one line: somebody is at the door, not a warning.' },
+  'knock.about': { kind: 'prose', aim: 84, max: 116, note: 'The one line above the knocks, saying what they are in plain words: post from a house that has not written to you before waits at the door; let them in and you can read it, and whatever they send after comes straight in. ⚠️ It may not frighten (never “stranger”, “danger”, “unknown”, “blocked”), may not name a rule or a filter, and it is not a list of instructions. One or two short sentences.' },
+  'knock.in': { kind: 'label', aim: 7, max: 11, note: 'The button that lets the house in: the letter comes in to be opened, and everything they send after comes straight in. A verb first, one or two words, ONE line in half of a 261-pixel row.' },
+  'knock.away': { kind: 'label', aim: 8, max: 11, note: 'The button beside it that turns the house away: this post goes, and that house does not knock again. A verb first, one or two words, ONE line in the other half of the row. Plain and never cruel — never “block” or “report”.' },
+  'knock.gone': { kind: 'prose', aim: 52, max: 74, note: 'The toast after turning a house away: the knock is gone and that house will not knock again. Matter-of-fact. ⚠️ It may not say what the sender is told (they are told nothing), and it may not thank or praise.' },
   back: { kind: 'label', aim: 8, max: 14, note: 'The button that goes back up a level — from an open letter to the list, and from one person’s letters to the mailbox. A verb first, one or two words, one line, and it must make sense in BOTH of those places.' },
   report: { kind: 'label', aim: 14, max: 20, note: 'The button under an open letter that reports it. A verb first, two or three words, plain — this is a normal thing a person might do, not an accusation. One line, always.' },
   reported: { kind: 'prose', aim: 66, max: 88, note: 'The one line after they tap it: the letter is gone from their box and somebody will read it. Matter-of-fact and brief. It must not thank them, must not praise them, and must not say what happens to the sender, because nobody knows yet.' },
@@ -800,6 +811,24 @@ function postShape(data) {
   for (const f of ['empty', 'noaddress', 'shut', 'reported', 'sent', 'refused', 'front']) {
     if (/\?\s*$/.test(String(data[f] || ''))) say(f, 'ends in a question — nobody may ask the player one');
   }
+  // 📬 the drawers and 🚪 the knock
+  const dr = data.drawers || {}, kn = data.knock || {};
+  for (const [p, v] of [['drawers.fresh', dr.fresh], ['drawers.kept', dr.kept]]) {
+    if (!String(v || '').trim()) say(p, 'is empty');
+    else if (String(v).trim().split(/\s+/).length > 1) say(p, 'is more than one word, and it is a label on a drawer');
+  }
+  if (/\b(archive|inbox|folder|old|read)\b/i.test(String(dr.kept || ''))) say('drawers.kept', 'names a mail program’s folder — it is a drawer of kept letters');
+  if (!String(kn.line || '').includes('{who}')) say('knock.line', 'must contain {who}');
+  for (const [p, v] of [['knock.in', kn.in], ['knock.away', kn.away]]) {
+    if (!String(v || '').trim()) say(p, 'is empty');
+    else if (String(v).trim().split(/\s+/).length > 2) say(p, 'is more than two words, and a button never wraps');
+  }
+  if (/\b(stranger|danger|unknown|blocked?|filter|rules?|spam)\b/i.test(String(kn.about || ''))) say('knock.about', 'frightens or names a rule — a knock is somebody at the door');
+  if (/\b(block|blocked|report|ban|banned)\b/i.test(String(kn.away || ''))) say('knock.away', 'calls turning a house away a block or a report');
+  if (/\b(block|blocked|report|ban|banned|told)\b/i.test(String(kn.gone || ''))) say('knock.gone', 'calls it a block, or says what the sender is told');
+  for (const [p, v] of [['drawers.none', dr.none], ['knock.about', kn.about], ['knock.gone', kn.gone]]) {
+    if (/\?\s*$/.test(String(v || ''))) say(p, 'ends in a question — nobody may ask the player one');
+  }
   for (const [f, hold] of [['from', '{who}'], ['sheet', '{who}']]) {
     if (!String(data[f] || '').includes(hold)) say(f, 'must contain ' + hold);
   }
@@ -848,9 +877,22 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round'],
+  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round', 'drawers', 'knock'],
   properties: {
-    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.') && !k.startsWith('round.')).map(([k, v]) => [k, str(v.note)])),
+    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.') && !k.startsWith('round.') && !k.startsWith('drawers.') && !k.startsWith('knock.')).map(([k, v]) => [k, str(v.note)])),
+    // 📬 the two drawers (22 Sep 2026): the tab for new post, the tab for kept post, and new post with none
+    drawers: {
+      type: 'object', additionalProperties: false, required: ['fresh', 'kept', 'none'],
+      properties: { fresh: str(postFields['drawers.fresh'].note), kept: str(postFields['drawers.kept'].note), none: str(postFields['drawers.none'].note) },
+    },
+    // 🚪 the knock (22 Sep 2026): who is at the door, what a knock is, the two buttons, and the toast after one
+    knock: {
+      type: 'object', additionalProperties: false, required: ['line', 'about', 'in', 'away', 'gone'],
+      properties: {
+        line: str(postFields['knock.line'].note), about: str(postFields['knock.about'].note),
+        in: str(postFields['knock.in'].note), away: str(postFields['knock.away'].note), gone: str(postFields['knock.gone'].note),
+      },
+    },
     // ✉️ the sorting round (22 Sep 2026): the staff's button, two toasts, four pigeonhole names and the receipt
     round: {
       type: 'object', additionalProperties: false, required: ['start', 'on', 'off', 'far', 'hint', 'stamp', 'leave', 'holes', 'receipt'],
@@ -1105,11 +1147,26 @@ const questSchema = {
 // by the server — the alternative is letting a page claim to be Nib, which is exactly the forgery
 // the rail was just closed against.
 export const NOTE_FOLK = [['nib', 'Nib'], ['stamp', 'Stamp'], ['moss', 'Moss'], ['bean', 'Bean']];
-export const NOTE_KINDS = ['welcome', 'quiet'];
+export const NOTE_KINDS = ['welcome', 'quiet', 'first', 'cabin', 'house', 'fixed', 'curse'];
+// ⭐ each fact-keyed letter has to NAME its fact, or it is a hello with a reason nobody can see
+const NOTE_NAMES_FACT = { first: /\b(letters?|cards?|postcards?|post)\b/i, cabin: /\bcabin\b/i, house: /\bhouse\b/i, fixed: /\bsquare\b/i, curse: /\bnight\b/i };
 const noteFields = {
   'welcome[].key': { kind: 'key', max: 8 },
   'welcome[].text': { kind: 'prose', aim: 150, max: 260, note: '⭐ THE FIRST THING ANYBODY EVER READS IN THEIR MAILBOX — there has never been a letter in it. A neighbour noticed the new sign on the fence and wrote. ⚠️ IT MAY NOT BE A TUTORIAL: it does not explain the mailbox, does not ask them to write back, and names no part of the game. Two or three short sentences in this resident’s own voice, on paper, in handwriting.' },
   'quiet[].key': { kind: 'key', max: 8 },
+  // ⭐ THE FACT-KEYED LETTERS (22 Sep 2026, docs/town-jobs-plan.md §6: "a card that names what you DID is worth
+  // ten that say hello — and it needs no typing, because the fact comes from the server"). Each names ONE
+  // thing the world saw, and nothing else about the reader.
+  'first[].key': { kind: 'key', max: 8 },
+  'first[].text': { kind: 'prose', aim: 150, max: 260, note: '✉️ THE READER’S FIRST LETTER OR POSTCARD HAS GONE OUT to a neighbour: post has left their house for the first time, and the resident noticed. MUST mention the letter, the card or the post. ⚠️ It may not say who it went to, may not quote or guess what it said, and may not ask whether they will write again. Warm and small — a house that sends post is a house that has joined the street.' },
+  'cabin[].key': { kind: 'key', max: 8 },
+  'cabin[].text': { kind: 'prose', aim: 150, max: 260, note: '🏡 THE READER’S HOMESTEAD HAS GROWN FROM A TENT INTO A CABIN, and the resident heard or walked past and saw it. MUST name the cabin. ⚠️ No numbers, no prices, nothing about what it cost or how it was built, and no advice about what to do next.' },
+  'house[].key': { kind: 'key', max: 8 },
+  'house[].text': { kind: 'prose', aim: 150, max: 260, note: '🏠 THE READER’S HOMESTEAD HAS GROWN FROM A CABIN INTO A HOUSE — a proper house on the road now, the last step. MUST name the house. ⚠️ No numbers, no prices, no advice, and it may not say the reader is done or finished.' },
+  'fixed[].key': { kind: 'key', max: 8 },
+  'fixed[].text': { kind: 'prose', aim: 150, max: 260, note: '🔧 THE READER PUT THE SQUARE RIGHT: in one day they mended several things in Banana Town’s square (a lamp relit, litter cleared, a wall scrubbed, a bin set upright). The resident noticed the square looking better and knows it was them. MUST name the square. ⚠️ It may not say how many, may not call it a job or a task, and may not ask for more.' },
+  'curse[].key': { kind: 'key', max: 8 },
+  'curse[].text': { kind: 'prose', aim: 150, max: 260, note: '🌑 THE MORNING AFTER A CURSE NIGHT in Banana Town: the lamps went out, the ghosts were about, and the square took a knock. The resident writes about what the night left behind. MUST mention the night. ⚠️ It may not claim the reader was there or saw it, may not frighten, may not explain the curse, may not name a time, a date or how often it comes, and may not ask the reader to help.' },
   'quiet[].text': { kind: 'prose', aim: 150, max: 260, note: 'A letter for no reason at all, when nothing has arrived for days — which is the reason: people who like you write when nothing is happening. ⚠️ it must NEVER mention that the box was empty, never suggest anybody was forgotten or lonely, and never ask why they have not written. Something small the writer noticed: the light over the square, the queue at their counter, what the night left behind.' },
 };
 // 🤐 what a letter from a neighbour may not sound like
@@ -1130,6 +1187,9 @@ function noteShape(data) {
       if (NOTE_APP.test(t)) say(at, 'sounds like an app rather than a person — no part of the game is ever named in a letter');
       if (NOTE_OWED.test(t)) say(at, 'asks for a reply, and nothing in this world is ever owed');
       if (kind === 'quiet' && NOTE_PITY.test(t)) say(at, 'notices that the box was empty — the whole point is that the letter has no reason');
+      if (NOTE_NAMES_FACT[kind] && !NOTE_NAMES_FACT[kind].test(t)) say(at, 'does not name what happened, so it reads as a hello with a reason nobody can see');
+      if (kind === 'curse' && /\b(you (were|saw|heard)|your help|help us|scared|terrif|horror|blood|dead)\b/i.test(t)) say(at, 'claims the reader was there, frightens, or asks for help — the morning after is only what the night left behind');
+      if (kind === 'house' && /\b(done|finished|complete|the end)\b/i.test(t)) say(at, 'tells the reader they are finished');
       if (/\d/.test(t)) say(at, 'carries a number, and the world never publishes its own');
     }
     // ⭐ four people, not one voice with four signatures
@@ -1157,6 +1217,11 @@ const noteSchema = {
   properties: {
     welcome: { type: 'array', minItems: 4, maxItems: 4, description: 'One per resident, in order: ' + NOTE_FOLK.map((f) => f[0]).join(', ') + '. ' + noteFields['welcome[].text'].note, items: noteRow },
     quiet: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['quiet[].text'].note, items: noteRow },
+    first: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['first[].text'].note, items: noteRow },
+    cabin: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['cabin[].text'].note, items: noteRow },
+    house: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['house[].text'].note, items: noteRow },
+    fixed: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['fixed[].text'].note, items: noteRow },
+    curse: { type: 'array', minItems: 4, maxItems: 4, description: 'The same four, in the same order. ' + noteFields['curse[].text'].note, items: noteRow },
   },
 };
 
@@ -1401,12 +1466,12 @@ export const JOBS = {
   'town-post': {
     id: 'town-post',
     title: 'Banana Town — the post office',
-    what: 'What the building says, the mailbox card, an open letter, writing back, the refusal that may not say why — and the sorting round for the post office’s own staff.',
+    what: 'What the building says, the mailbox card and its two drawers, the knock at the door, an open letter, writing back, the refusal that may not say why — and the sorting round for the post office’s own staff.',
     brief: 'tools/copy-briefs/town-post.md',
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'threads', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round'],
+    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round', 'drawers', 'knock'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,
@@ -1428,12 +1493,12 @@ export const JOBS = {
   'town-notes': {
     id: 'town-notes',
     title: 'Banana Town — the letters the residents write to you',
-    what: 'Eight letters: a welcome from each of the four residents for somebody who has never had post, and a note for no reason at all when nothing has arrived for days.',
+    what: 'Twenty-eight letters: a welcome from each of the four residents for somebody who has never had post, a note for no reason at all when nothing has arrived for days, and five letters keyed to something the world saw the reader do — their first post out, a cabin, a house, the square put right, and the morning after a Curse Night.',
     brief: 'tools/copy-briefs/town-notes.md',
     out: 'tools/copy-out/town-notes.json',
     approved: 'src/data/copy/town-notes.json',
     reads: 'worker-rave/src/index.js — the SERVER writes these, because a page that could claim to be Nib is the forgery the rail was closed against',
-    top: ['welcome', 'quiet'],
+    top: NOTE_KINDS,
     // 🧍 four residents speak here, so the writer gets the bible
     personas: 'town-personas',
     fields: noteFields,
@@ -1599,16 +1664,13 @@ export const JOBS = {
   'homestead-post': {
     id: 'homestead-post',
     title: 'The homestead — the world’s post',
-    what: 'The letters the town’s residents send to a player’s mailbox, and the two lines on the card.',
+    what: 'The letters the town’s residents send to a player’s mailbox — the occasion notes, the payslip and the bosses’ letters. (Since 22 Sep 2026 the mailbox is the post office’s own two-drawer card, so its heading and its empty line are town-post’s.)',
     brief: 'tools/copy-briefs/homestead-post.md',
     out: 'tools/copy-out/homestead-post.json',
     approved: 'src/data/copy/homestead-post.json',
     reads: 'src/scripts/banana-homestead.js',
-    top: ['title', 'empty', 'letters', 'wage', 'open', 'bosses'],
+    top: ['letters', 'wage', 'bosses'],
     fields: {
-      'open': { kind: 'label', aim: 13, max: 17, note: '✉️ THE BUTTON AT THE FOOT OF THE MAILBOX CARD that opens the post other PLAYERS have sent you — a different thing from the notes above it, which are the world telling you something. A verb first, two or three words, ONE line inside a narrow card. ⚠️ it must not be confused with the mailbox itself (the card is already open) and must not name a mechanic: never “Inbox”, never “Messages”, never “Open mailbox”.' },
-      'title': { kind: 'prose', aim: 12, max: 18, note: 'The card’s heading when the mailbox is opened. Two or three words.' },
-      'empty': { kind: 'prose', aim: 50, max: 70, note: 'Shown when there is no post at all: the box is empty today. Warm, never sad, never a promise about when something will come.' },
       'wage.from': { kind: 'prose', aim: 14, max: 20, note: 'Who signs the pay letter: Nib, who keeps the town’s big book and is its payroll desk.' },
       'wage.line': { kind: 'prose', aim: 110, max: 140, holds: ['{n}'], note: '⭐ THE CHEQUE, and the first thing in this world that ever ARRIVES WHILE THE PLAYER WAS NOT LOOKING. It is for a week of work that has finished, and MUST contain {n}, the coins. Say it as a clerk filing a thing that is already done — warm, dry, done. ⚠️ never a rate, never a day of the week, never “per” anything, and never a promise about next week: the town does not publish a timetable. At most 140 characters.' },
       // 📄 the payslip (22 Sep 2026): the stamp, the printed figures, the workplace names

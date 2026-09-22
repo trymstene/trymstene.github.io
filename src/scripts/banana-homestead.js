@@ -831,6 +831,10 @@ function init(visitDoc, visitMiss) {
   world.appendChild(mailEl);
   // 🔴 the unread dot: the pack's mailbox has no flag-up frame, and a flag would not read anyway —
   // a small dot on top of it is what a player already understands (Trym, 19 Sep)
+  // 📬 what the post room has waiting — letters, a resident's note, a knock — from a light peek, so the flag
+  // rises for those too and not only for the world's own notes. ⚠️ declared HERE, above the first
+  // refreshMail(): refreshFixtures() calls it during boot and a later `let` would be a TDZ throw.
+  let postPeek = { unread: 0, knocks: 0 };
   const mailDot = document.createElement('i');
   mailDot.className = 'hs-maildot';
   mailDot.hidden = true;
@@ -2825,7 +2829,7 @@ function init(visitDoc, visitMiss) {
   const confirmEl = document.getElementById('hsConfirm');
   const seedEl = document.getElementById('hsSeed');
   const petEl = document.getElementById('hsPet');
-  const panelOpen = () => !document.getElementById('hsPost').hidden || !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden || !tailorEl.hidden
+  const panelOpen = () => !document.getElementById('hsLetters').hidden || !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden || !tailorEl.hidden
     || !seedEl.hidden || !petEl.hidden;
   // while any popup is open the PAGE must not scroll under it (Trym)
   const syncLock = () => document.body.classList.toggle('hs-lock', panelOpen());
@@ -2880,7 +2884,6 @@ function init(visitDoc, visitMiss) {
   // (/css/paper.css). The words are the rig's (src/data/copy/homestead-post.json) and a row
   // keeps only its KEY, never prose — so an approved rewrite reaches letters already delivered.
   // Player-to-player post comes later and brings its own room (docs/town-jobs-plan.md §6).
-  const postEl = document.getElementById('hsPost');
   const pFill = (t) => String(t || '').replace(/\{name\}/g, myName || 'friend').replace(/\{home\}/g, state.name || 'the homestead');
   const POST_WHEN = [
     { id: 'welcome', when: (s2) => !!s2.claimedAt },
@@ -2910,17 +2913,29 @@ function init(visitDoc, visitMiss) {
   // initialised, and a TDZ ReferenceError there kills the whole homestead. A visited yard carries no
   // mail anyway (it is not in yardBody's allow-list), so there is nothing to hide.
   function refreshMail() {
-    if (mailDot) mailDot.hidden = !postUnread();
+    if (mailDot) mailDot.hidden = !(postUnread() || postPeek.unread || postPeek.knocks);
   }
   // 🪙 the coin on the slip's total — the café tray's coin, the same eight pixels
   const SLIP_COIN = '<svg viewBox="0 0 8 8" width="14" height="14" shape-rendering="crispEdges" aria-hidden="true"><path fill="#111" d="M2 0h4v1h-4zM1 1h1v1h-1zM6 1h1v1h-1zM0 2h1v4h-1zM7 2h1v4h-1zM1 6h1v1h-1zM6 6h1v1h-1zM2 7h4v1h-4z"/><path fill="#f2c012" d="M2 1h4v1h-4zM1 2h6v4h-6zM2 6h4v1h-4z"/><path fill="#ffe97a" d="M2 2h2v1h-2zM2 3h1v1h-1z"/><path fill="#b8860b" d="M4 4h2v1h-2zM5 3h1v1h-1z"/></svg>';
-  function letterEl(m) {
+  // the words a world note is written in, whichever kind it is
+  function wordsOf(m) {
     // 💼 a cheque is keyed by the WEEK it paid for, so its words cannot live under a fixed id the
     // way the five occasion letters do — they come from POSTCOPY.wage and carry the amount.
     const wage = String(m.id || '').indexOf('wage:') === 0;
     // 💼 a boss's letter: nudge:<week>:<at> or fired:<week>:<at> — the words by workplace (POSTCOPY.bosses)
     const bossKind = /^(nudge|fired):/.test(String(m.id || '')) ? String(m.id).split(':')[0] : '';
     const w = wage ? (POSTCOPY.wage || {}) : bossKind ? (((POSTCOPY.bosses || {})[bossKind] || {})[m.at || String(m.id).split(':')[2]] || {}) : ((POSTCOPY.letters || {})[m.id] || {});
+    return { wage, w };
+  }
+  // 🏡 a world note as the mailbox's drawers see it: who signed it, a line to peek at, and a kraft
+  // envelope for a payslip. The words are letterEl()'s own, so the peek and the paper never disagree.
+  function worldRow(m) {
+    const { wage, w } = wordsOf(m);
+    return { id: 'w:' + String(m.id || ''), at: m.t || 0, read: !!m.read, name: w.from || '',
+      peek: pFill(w.line).replace('{n}', String(m.n | 0)), tone: wage ? 'wage' : '' };
+  }
+  function letterEl(m) {
+    const { wage, w } = wordsOf(m);
     const p = document.createElement('div');
     p.className = 'bw-paper' + (wage ? ' bw-paper--wage' : '');
     // 📄 THE PAYSLIP (22 Sep 2026; docs/town-jobs-plan.md §11.3, Trym: "the paycheck should have a
@@ -2960,51 +2975,13 @@ function init(visitDoc, visitMiss) {
     p.appendChild(from);
     return p;
   }
-  function renderPost() {
-    const list = document.getElementById('hsPostList');
-    list.textContent = '';
-    // ✉️ the way through to the post other PLAYERS sent you. It sits at the foot of the card in
-    // BOTH states, because an empty mailbox is exactly where somebody needs a way onward — the post
-    // office's own empty box taught that one the hard way.
-    const doorway = () => {
-      if (!POSTCOPY.open) return;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'hs-post__door';
-      b.textContent = pFill(POSTCOPY.open);
-      b.addEventListener('click', () => { postEl.hidden = true; openLetters(); });
-      list.appendChild(b);
-    };
-    if (!(state.mail || []).length) {
-      const p = document.createElement('p');
-      p.className = 'hs-post__none';
-      p.textContent = pFill(POSTCOPY.empty);
-      list.appendChild(p);
-      doorway();
-      return;
-    }
-    const wrap = document.createElement('div');
-    wrap.className = 'hs-post';
-    for (const m of (state.mail || [])) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'hs-post__it' + (m.read ? '' : ' is-new');
-      b.appendChild(letterEl(m));
-      b.addEventListener('click', () => {
-        if (!m.read) { m.read = 1; save(); refreshMail(); b.classList.remove('is-new'); }
-      });
-      wrap.appendChild(b);
-    }
-    list.appendChild(wrap);
-    doorway();
-  }
   // ✉️ YOUR LETTERS — the same card the post office opens, minus the postcards, on its own lazy
   // chunk so a player who never opens it downloads none of it. Trym, 21 Sep: "only letters in the
   // mailbox at the homestead — the post office in town can send post cards".
   const lettersEl = document.getElementById('hsLetters');
   const lettersBody = document.getElementById('hsLettersBody');
   let lettersP = null, letters = null;
-  const shutLetters = () => { if (lettersEl) { lettersEl.hidden = true; syncLock(); } };
+  const shutLetters = () => { if (lettersEl) { lettersEl.hidden = true; syncLock(); peekPost(); } };
   if (lettersEl) {
     document.getElementById('hsLettersX').addEventListener('click', shutLetters);
     // ⚠️ the veil closes on a tap OUTSIDE the card, the way every card in this world does — and the
@@ -3024,6 +3001,14 @@ function init(visitDoc, visitMiss) {
             track: (ev, p) => { try { window.gtag && window.gtag('event', ev, { ...(p || {}), at: 'homestead' }); } catch (e) {} },
             slug: () => state.slug || '',
             at: 'home',   // ✉️ your own mailbox: letters only, and no building to describe
+            // 🏡 THE WORLD'S OWN NOTES, IN THE SAME DRAWERS (22 Sep 2026, Trym: "so you always see the fresh
+            // letters youve received from anyone, users and residents"). They stay in the yard and are
+            // saved here; the card only shows them, opens them on their own paper, and says they were read.
+            local: {
+              list: () => (state.mail || []).map(worldRow),
+              el: (id) => { const m = (state.mail || []).find((x) => 'w:' + x.id === id); return m ? letterEl(m) : null; },
+              read: (id) => { const m = (state.mail || []).find((x) => 'w:' + x.id === id); if (m && !m.read) { m.read = 1; save(); refreshMail(); } },
+            },
           });
           return letters;
         })
@@ -3032,17 +3017,29 @@ function init(visitDoc, visitMiss) {
     lettersP.then((p) => { if (p) p.openBox(); });
   }
 
+  // 📬 THE MAILBOX IS ONE CARD NOW: the post office's two drawers, with the world's own notes in them.
+  // It used to be a cream card of notes with a door at its foot to the post other players sent, so a
+  // neighbour's letter was one tap further away than Nib's — the opposite of "always see the fresh".
   function openPost() {
     postDeliver();
     wageCheck();   // …and a look now, so a week that turned over while you stood here is not held back
-    document.getElementById('hsPostTitle').textContent = '📬 ' + pFill(POSTCOPY.title);
-    renderPost();
-    postEl.hidden = false;
-    syncLock();
+    openLetters();
   }
-  document.getElementById('hsPostClose').addEventListener('click', () => {
-    postEl.hidden = true; syncLock(); refreshMail();
-  });
+  // 📬 is anything waiting at the post room? One light POST, so the flag rises for a neighbour's letter,
+  // a resident's note or a knock as well as for the world's own notes. ⚠️ the room only opens for the
+  // house's own proof, and a peek that is refused simply leaves the flag as it was.
+  const POST_API = 'https://banana-rave.trymstene.workers.dev/post';
+  async function peekPost() {
+    if (visiting || !state.slug || !state.claimedAt) return;
+    try {
+      const r = await fetch(POST_API + '/box', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: state.slug, peek: 1, wt: worldToken(), pass: worldOwner(), alt: worldSid() }) });
+      if (!r.ok) return;
+      const j = await r.json();
+      postPeek = { unread: j.unread | 0, knocks: j.knocks | 0 };
+      refreshMail();
+    } catch (e) { /* the flag keeps what it had */ }
+  }
   // 💼 THE CHEQUE (docs/town-jobs-plan.md §3) — and the first thing in this world that ever
   // ARRIVES WHILE YOU WERE NOT LOOKING. /job/pay works out what the finished weeks owe, pays them
   // into the pass, and answers with what it paid; that answer becomes a letter, and the letter is
@@ -3085,13 +3082,15 @@ function init(visitDoc, visitMiss) {
     state.mail = state.mail.slice(0, 40);
     save();
     refreshMail();
+    if (letters) letters.redraw();
   }
 
   // the world writes while you are here: a look shortly after boot and once a minute, the way the
   // van's arrivals are checked. Cheap — five predicates over the yard's own state.
-  function postTick() { if (postDeliver()) refreshMail(); wageCheck(); }
-  setTimeout(postTick, 1600);
+  function postTick() { if (postDeliver()) { refreshMail(); if (letters) letters.redraw(); } wageCheck(); }
+  setTimeout(() => { postTick(); peekPost(); }, 1600);
   setInterval(postTick, 60000);
+  setInterval(peekPost, 300000);   // the post room, every five minutes while you are home
 
   async function openGuest() {
     document.getElementById('hsGuestTitle').textContent = '🪧 ' + (state.name || 'The sign');
@@ -5119,13 +5118,14 @@ function init(visitDoc, visitMiss) {
       signGeo: () => ({ W, H, signAt: state.signAt, claimed: !!state.claimedAt }),   // the walk taps the sign where it really stands
       post: () => openPost(),
       letters: () => openLetters(),   // ✉️ the walk opens the letters card without hunting the door
+      card: () => (letters ? letters.seam : null),   // 📬 …and reads its drawers, the same seam the town's walk uses
       // 🪪 ⚠️ QA ONLY: a mailbox is keyed to the SERVER slug, and ?hstest scenarios claim a yard
       // locally without one — so a walk would only ever see the “you have no address yet” card.
       slug: (v) => { if (HS_TEST && v !== undefined) { state.slug = String(v); saveRaw(); } return state.slug || ''; },
       mailGeo: () => ({ W, H, at: state.mailAt, mail: (state.mail || []).length, unread: postUnread() }),
       wage: () => wageCheck(),   // 💼 the walk cannot hold a job for a week
       mailOf: () => (state.mail || []).map((m) => ({ id: m.id, read: m.read | 0, n: m.n | 0 })),   // 📬 the walk taps the mailbox where it really stands
-      mail: (row) => { (state.mail || (state.mail = [])).unshift({ t: Date.now(), read: 0, ...(row || {}) }); save(); refreshMail(); renderPost(); return (state.mail || []).length; },   // 📄 QA: a letter lands, as /job/pay would drop it
+      mail: (row) => { (state.mail || (state.mail = [])).unshift({ t: Date.now(), read: 0, ...(row || {}) }); save(); refreshMail(); if (letters) letters.redraw(); return (state.mail || []).length; },   // 📄 QA: a letter lands, as /job/pay would drop it
       // 🌦 force a tier — the clock rains a few % of the time, so waiting for real
       // weather is not a test plan. null hands the sky back to the clock.
       wx: (k) => hsWx.setKind(k),

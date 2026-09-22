@@ -17,7 +17,7 @@ const AREAS = [
   { name: 'the town', url: '/town/?towntest', seam: '__town', panel: '.tw-panel', far: { x: 1100, y: 1100 } },
   { name: 'the park', url: '/park/?parktest', seam: '__park', panel: '.pk-panel', far: null },
   { name: 'the bay', url: '/beach/?beachtest', seam: '__bay', panel: '.bh-panel', far: null },
-  { name: 'the homestead', url: '/homestead/?hstest=full', seam: '__hs', panel: '.hs-panel,#hsShop,#hsPost,#hsSeed', far: null },
+  { name: 'the homestead', url: '/homestead/?hstest=full', seam: '__hs', panel: '.hs-panel,#hsShop,#hsLetters,#hsSeed', far: null },
 ];
 
 for (const a of AREAS) {

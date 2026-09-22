@@ -19,9 +19,9 @@ One letter per occasion, ever, and the occasion is decided by the game, never by
 
 Each letter has `from` (their name as they would sign it) and `line` (the letter).
 
-Also two lines for the card itself: `title` (the heading when the mailbox is opened) and
-`empty` (shown when there is no post — warm, never sad, and never a promise about when
-something will come).
+Since 22 Sep 2026 these notes sit in the same mailbox card as the post other players send — the
+post office's card, with a Fresh drawer and a Kept drawer — so the card's heading and its empty
+line are written in the post office's job, not here. This job writes only the letters.
 
 The voice bar from the questline holds: a 13-year-old and a 50-year-old read it without a
 stumble. Plain words, storyteller warmth, no bureaucrat jargon. The letter may use `{name}` for

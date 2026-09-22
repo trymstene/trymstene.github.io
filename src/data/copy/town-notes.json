@@ -34,5 +34,95 @@
       "key": "bean",
       "text": "The queue reaches the fountain today. The last cup in line stays warm."
     }
+  ],
+  "first": [
+    {
+      "key": "nib",
+      "text": "Your post has left the road out of town. I filed it in my big book. Proper correspondence begins somewhere."
+    },
+    {
+      "key": "stamp",
+      "text": "I weighed your post as it passed the scale. It had the useful weight of a parcel with no parcel."
+    },
+    {
+      "key": "moss",
+      "text": "On my sweeping round, I saw your post leave the road out of town. The square keeps such things moving."
+    },
+    {
+      "key": "bean",
+      "text": "Over the counter, I heard your post had gone out. The cups are expecting a little more traffic."
+    }
+  ],
+  "cabin": [
+    {
+      "key": "nib",
+      "text": "A cabin now stands on the road out of town. I filed the cabin in my big book. The entry sits properly."
+    },
+    {
+      "key": "stamp",
+      "text": "That cabin on the road out of town looks sound. I judged it against the scale. It outweighs a tent."
+    },
+    {
+      "key": "moss",
+      "text": "Past the orchard, I saw the cabin on my sweeping round. It has settled onto the road out of town."
+    },
+    {
+      "key": "bean",
+      "text": "From the counter, I heard about the cabin on the road out of town. Cups travel faster than feet."
+    }
+  ],
+  "house": [
+    {
+      "key": "nib",
+      "text": "A house now stands on the road out of town. I filed the house in my big book. Properly entered."
+    },
+    {
+      "key": "stamp",
+      "text": "The house on the road out of town has some weight to it. The scale would approve, if it could see."
+    },
+    {
+      "key": "moss",
+      "text": "Along the road out of town, I saw the house on my sweeping round. It holds the edge of town nicely."
+    },
+    {
+      "key": "bean",
+      "text": "At the counter, I heard the house is on the road out of town. A cup says the road looks fuller."
+    }
+  ],
+  "fixed": [
+    {
+      "key": "nib",
+      "text": "The square is in order again. I filed the change in my big book. The fountain has fewer complaints."
+    },
+    {
+      "key": "stamp",
+      "text": "The square looks lighter on the scale today. You set it right. Noted."
+    },
+    {
+      "key": "moss",
+      "text": "On my sweeping round, the square looked put right. The cobbles show it plainly."
+    },
+    {
+      "key": "bean",
+      "text": "Over the counter, I heard you put the square right. The queue has stopped looking at the bin."
+    }
+  ],
+  "curse": [
+    {
+      "key": "nib",
+      "text": "Last night left the square in a poor state. I filed the night in my big book. The lamps have resumed their duties."
+    },
+    {
+      "key": "stamp",
+      "text": "The night left the square looking like a parcel dropped in a puddle. I checked it against the scale. Uneven."
+    },
+    {
+      "key": "moss",
+      "text": "After the night, I swept the square on my round. The ghosts left litter where leaves usually gather."
+    },
+    {
+      "key": "bean",
+      "text": "From the counter, I heard about the night in the square. The cups are rattling less now."
+    }
   ]
 }

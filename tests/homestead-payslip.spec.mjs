@@ -2,11 +2,11 @@
 // color paper or look or envelope style visual for when you get paid … the user gets the reasoning in the
 // payslip why the pay is lower this time if they havent done much."*
 //
-// The wage letter in the homestead mailbox is a payslip: kraft paper, a rubber stamp, Nib's line, and the
-// figures printed under it — the workplace, the week's counts duty by duty, the share of the rate they came
-// to, the total with its coin. All words are the rig's; the numbers are what /job/pay dropped in the row.
-// A slip delivered before the counts existed keeps its line and prints no figures. And the boss's own
-// letters land in the same box: the Thursday nudge, and the goodbye.
+// The wage letter in the homestead mailbox is a payslip: a kraft envelope in the Fresh drawer, and inside it
+// kraft paper, a rubber stamp, Nib's line, and the figures printed under it — the workplace, the week's counts
+// duty by duty, the share of the rate they came to, the total with its coin. All words are the rig's; the
+// numbers are what /job/pay dropped in the row. A slip delivered before the counts existed keeps its line and
+// prints no figures. And the boss's own letters land in the same box: the Thursday nudge, and the goodbye.
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +19,8 @@ const DUTY = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-dut
 test('a cheque in the box is a payslip with the week’s counts and the share; the boss writes too', async ({ page }) => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
+  // the post room is empty: this walk is about the world's own notes
+  await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"letters":[],"unread":0,"knocks":0}' }));
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/homestead/?hstest=claimed', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__hs && window.__hs.mail, null, { timeout: 30000 });
@@ -31,19 +33,41 @@ test('a cheque in the box is a payslip with the week’s counts and the share; t
     window.__hs.mail({ id: 'fired:2026-W38:store', at: 'store' });
   });
   await page.evaluate(() => window.__hs.post());
-  await page.waitForSelector('.bw-paper--wage', { timeout: 10000 });
-  const papers = await page.evaluate(() => [...document.querySelectorAll('.bw-paper')].map((p) => ({
-    wage: p.classList.contains('bw-paper--wage'),
-    stamp: (p.querySelector('.bw-slip__stamp') || {}).textContent || '',
-    at: (p.querySelector('.bw-slip__at') || {}).textContent || '',
-    duties: [...p.querySelectorAll('.bw-slip__duty')].map((d) => d.textContent.replace(/\s+/g, ' ').trim()),
-    terms: (p.querySelector('.bw-slip__terms') || {}).textContent || '',
-    total: (p.querySelector('.bw-slip__total b') || {}).textContent || '',
-    rows: !!p.querySelector('.bw-slip__rows'),
-    text: p.textContent,
-    kraft: getComputedStyle(p).backgroundColor,
-    from: (p.querySelector('.bw-paper__from') || {}).textContent || '',
-  })));
+  await page.waitForSelector('#hsLetters .tw-post__env.is-wage', { timeout: 15000 });
+  // 💼 the envelope already says it is pay: kraft, in the same Fresh drawer as everything else
+  const envs = await page.evaluate(() => [...document.querySelectorAll('#hsLetters .tw-post__env.is-wage')].map((e) => ({ id: e.dataset.id, bg: getComputedStyle(e).backgroundColor })));
+  expect(envs.map((e) => e.id).sort(), 'both slips arrive in kraft envelopes').toEqual(['w:wage:2026-W36:store', 'w:wage:2026-W37:condo']);
+  await page.screenshot({ path: 'test-results/homestead-payslip-fresh.png' });
+
+  // open each of the four the way a player does, and read the paper that comes out
+  const papers = [];
+  for (const id of ['w:wage:2026-W37:condo', 'w:wage:2026-W36:store', 'w:nudge:2026-W38:condo', 'w:fired:2026-W38:store']) {
+    await page.locator(`#hsLetters .tw-post__env[data-id="${id}"]`).click();
+    await page.waitForSelector('#hsLetters .tw-post__world .bw-paper', { timeout: 5000 });
+    papers.push(await page.evaluate(() => {
+      const p = document.querySelector('#hsLetters .tw-post__world .bw-paper');
+      return {
+        wage: p.classList.contains('bw-paper--wage'),
+        stamp: (p.querySelector('.bw-slip__stamp') || {}).textContent || '',
+        at: (p.querySelector('.bw-slip__at') || {}).textContent || '',
+        duties: [...p.querySelectorAll('.bw-slip__duty')].map((d) => d.textContent.replace(/\s+/g, ' ').trim()),
+        terms: (p.querySelector('.bw-slip__terms') || {}).textContent || '',
+        total: (p.querySelector('.bw-slip__total b') || {}).textContent || '',
+        rows: !!p.querySelector('.bw-slip__rows'),
+        text: p.textContent,
+        kraft: getComputedStyle(p).backgroundColor,
+        from: (p.querySelector('.bw-paper__from') || {}).textContent || '',
+      };
+    }));
+    if (id === 'w:wage:2026-W37:condo') {
+      await page.waitForTimeout(700);   // the envelope comes open for half a second; the picture is of the settled slip
+      await page.evaluate(() => { const r = document.querySelector('.bw-slip__rows'); if (r) r.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: 'test-results/homestead-payslip.png' });
+    }
+    await page.click('#twPostBack');
+    await page.waitForTimeout(250);
+  }
   const slips = papers.filter((p) => p.wage);
   expect(slips.length, 'both slips are in the box').toBe(2);
   const today = slips.find((s) => s.rows), old = slips.find((s) => !s.rows);
@@ -69,9 +93,11 @@ test('a cheque in the box is a payslip with the week’s counts and the share; t
   const fired = papers.find((p) => !p.wage && p.text.includes(COPY.bosses.fired.store.line.split('{home}')[0].trim().slice(0, 24)));
   expect(fired, 'Pip’s goodbye is in the box').toBeTruthy();
   expect(fired.from, 'signed by Pip').toBe(COPY.bosses.fired.store.from);
-  await page.waitForTimeout(700);   // the papers unfold for 0.4 s; the picture is of the settled box
-  await page.evaluate(() => { const r = document.querySelector('.bw-slip__rows'); if (r) r.scrollIntoView({ block: 'center' }); });   // …with the figures in frame
-  await page.waitForTimeout(250);
-  await page.screenshot({ path: 'test-results/homestead-payslip.png' });
+  // ⭐ read, all four are filed under who wrote them: Nib's two slips are one row, not two
+  await page.locator('#hsLetters .tw-post__tab[data-drawer="kept"]').click();
+  await page.waitForTimeout(200);
+  const kept = await page.evaluate(() => window.__hs.card().state().threads.filter((t) => t.key.startsWith('r:')));
+  const nib = kept.find((t) => t.name === COPY.wage.from);
+  expect(nib && nib.n, 'the payroll desk’s slips are one row').toBeGreaterThanOrEqual(2);
   expect(errs, 'nothing threw').toEqual([]);
 });

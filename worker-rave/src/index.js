@@ -609,44 +609,52 @@ export default {
       // wrong the day it was written. An allow-list, so the next path added to the room is closed until
       // somebody says otherwise.
       const path = url.pathname.replace('/post', '') || '/';
-      if (!['/send', '/box', '/read', '/report'].includes(path)) return new Response('{"error":"nope"}', { status: 404, headers: cors });
-      // ⚠️ AND THE ROOM IS TOLD WHOSE IT IS, by the router rather than by the caller. A report has to be
-      // filed in the review queue under the box it came out of, and the room is addressed by name — it
-      // cannot read its own. `__box` is injected here, where `to` has already been through box().
-      //
-      // ⭐⭐ AND SO IS WHO IT IS FROM, for the same reason and a worse one. `from` was read straight off
-      // the request body and never checked, so ANY caller could post a letter into ANY mailbox signed
-      // with ANY house's name. That was survivable only while nobody could find out another player's
-      // address; the town's address book (21 Sep) made every house findable by design, which turned a
-      // theoretical hole into a usable one — and a note that looks like it came from a neighbour is
-      // exactly the shape of thing worth forging.
-      //
-      // So the sender is resolved from the world token the same way the yard resolves ownership, and
-      // the room is handed `__from`. The caller's own `from` is never read again.
-      // ⚠️ NOT SOFT. The letter rail is four days old, the town is unlisted, and there is no install
-      // base worth protecting against a refusal — an unproven send is turned away rather than
-      // delivered under somebody else's name.
-      let sender = '';
-      if (path === '/send') {
-        const tok = await worldTokenOf(env, String(body.wt || '').slice(0, 200));
-        if (tok) {
-          try {
-            const r = await env.YARDS.get(env.YARDS.idFromName('the-neighbourhood')).fetch(new Request('https://room/whoami', {
-              method: 'POST',
-              body: JSON.stringify({ pass: tok.gid, alt: tok.gid, wt: body.wt }),
-            }));
-            const j = await r.json();
-            sender = box(j && j.slug);
-          } catch (e) { sender = ''; }
-        }
-        // ⚠️ a proof that resolves to no yard is not a sender either: post comes FROM a house.
-        if (!sender) return new Response('{"error":"whose"}', { status: 401, headers: cors });
+      if (!['/send', '/box', '/read', '/report', '/accept', '/away'].includes(path)) return new Response('{"error":"nope"}', { status: 404, headers: cors });
+      // 🪪 WHO IS ASKING, resolved from the world token and never from anything the body claims. ⭐⭐ A
+      // letter comes FROM somebody who proved it: `from` was read straight off the body and never checked,
+      // so any caller could post into any mailbox signed with any house's name — survivable only while
+      // nobody could find another player's address, which the address book (21 Sep) publishes by design.
+      // The yard room is asked /whoami (read-only: no claim, no rename, no mint), and the answer carries
+      // the house's name and its banana's, so a letter and a knock can say who they are from.
+      let me = null;
+      const tok = await worldTokenOf(env, String(body.wt || '').slice(0, 200));
+      if (tok) {
+        try {
+          const r = await env.YARDS.get(env.YARDS.idFromName('the-neighbourhood')).fetch(new Request('https://room/whoami', {
+            method: 'POST',
+            body: JSON.stringify({ pass: tok.gid, alt: tok.gid, wt: body.wt }),
+          }));
+          const j = await r.json();
+          me = { slug: box(j && j.slug), n: String((j && j.n) || '').slice(0, 24), house: String((j && j.house) || '').slice(0, 40) };
+        } catch (e) { me = null; }
       }
-      const res = await env.POST.get(env.POST.idFromName('box:' + to)).fetch(new Request('https://room' + path + url.search, {
-        method: request.method,
-        body: request.method === 'POST' ? JSON.stringify({ ...body, __box: to, ...(sender ? { __from: sender } : {}) }) : undefined,
+      const sender = (me && me.slug) || '';
+      // ⚠️ NOT SOFT. An unproven send is turned away rather than delivered under somebody else's name, and
+      // a proof that resolves to no yard is not a sender either: post comes FROM a house.
+      if (path === '/send' && !sender) return new Response('{"error":"whose"}', { status: 401, headers: cors });
+      // ⭐ A MAILBOX OPENS FOR ITS OWNER AND FOR NOBODY ELSE (22 Sep 2026). Reading, marking, reporting,
+      // letting a house in and turning one away were addressed by slug alone — and a slug is the sign on
+      // the fence, published by the address book — so anybody could read anybody's letters with one
+      // request. Every path but a send now needs the caller's own house to BE this box.
+      if (path !== '/send' && (!sender || sender !== to)) return new Response('{"error":"whose"}', { status: 401, headers: cors });
+      // ⚠️ AND THE ROOM IS TOLD WHOSE IT IS, by the router rather than by the caller: `__box` is the box
+      // (a report is filed in the review queue under it), `__from` the proven sender.
+      const res = await env.POST.get(env.POST.idFromName('box:' + to)).fetch(new Request('https://room' + path, {
+        method: 'POST',
+        body: JSON.stringify({ ...body, __box: to, ...(path === '/send' ? { __from: sender, __name: me.n, __house: me.house } : {}) }),
       }));
-      return new Response(await res.text(), { status: res.status, headers: cors });
+      const out = await res.text();
+      // ✉️ WRITING TO A HOUSE LETS THAT HOUSE IN. The sender's own room hears where its post went, so an
+      // answer never arrives as a knock — and the first post that ever leaves a house is a fact a
+      // resident can write about. ⚠️ it cannot fail the send: the letter has already landed.
+      if (path === '/send' && res.ok) {
+        try {
+          await env.POST.get(env.POST.idFromName('box:' + sender)).fetch(new Request('https://room/sent', {
+            method: 'POST', body: JSON.stringify({ to, kind: body.card ? 'card' : 'letter' }),
+          }));
+        } catch (e) { /* the post went; the note about it can wait for the next one */ }
+      }
+      return new Response(out, { status: res.status, headers: cors });
     }
     // ✉️⚠️ THE REVIEW DESK (Banana HQ → Inbox). Read-only over the letters somebody REPORTED, plus the
     // ones the filter let through and flagged. Key-gated by POST_ADMIN_KEY and FAILS CLOSED — 404,
@@ -1469,6 +1477,15 @@ export class TownRoom {
     if (url.pathname === '/life' && request.method !== 'POST') {
       if (dirty) await persist();
       return json(payload());
+    }
+    // 📬 FOR THE POST ROOM ONLY (22 Sep 2026): how much of the square one person put right on the last day
+    // they put any of it right, so a resident can thank them. ⚠️ the public /town router always asks for
+    // https://room/…, so post.internal can only be the worker itself.
+    if (url.hostname === 'post.internal' && url.pathname === '/fixes') {
+      if (dirty) await persist();
+      const sh = String(url.searchParams.get('short') || '').slice(0, 8);
+      const r = sh && fday[sh];
+      return json({ d: r ? r.d : '', n: r ? (r.n | 0) : 0 });
     }
     if (!b || typeof b !== 'object') return json(payload({ err: 'bad body' }), 400);
     // 🔧 an admin door for a launch or a story beat Trym runs by hand: LAUNCH_KEY
@@ -3920,7 +3937,22 @@ export class YardRoom {
     if (path === '/whoami' && request.method === 'POST') {
       if (!proven) return json({ err: 'token' }, 401);
       const slug = await this.state.storage.get('own:' + pass);
-      return json({ slug: slug || '' });
+      // ✉️ and whose it is, for the letter's own heading: the banana's name and the sign's, both already
+      // through the family filter on the way in, folded on the way out like the address book does
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      const n = doc && doc.who && doc.who.n ? cleanName(doc.who.n) : '';
+      const house = doc && doc.name ? (cleanName(doc.name) || doc.name) : '';
+      return json({ slug: slug || '', n, house });
+    }
+    // 📬 FOR THE POST ROOM ONLY (22 Sep 2026): a house's stage and its owner's short id, so a resident can
+    // write about a cabin going up or a square put right. ⚠️ the owner id never leaves the worker: the
+    // public /yards router always asks for https://room/…, so a request addressed to post.internal can
+    // only have come from inside.
+    if (url.hostname === 'post.internal' && path === '/card' && request.method === 'GET') {
+      const slug = await this.canon((url.searchParams.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40));
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc || doc.alias) return json({ err: 'no such yard' }, 404);
+      return json({ stage: (doc.state && doc.state.stage) || 0, owner8: String(doc.pass || '').slice(0, 8) });
     }
 
     if (path === '/who' && request.method === 'POST') {
@@ -3971,8 +4003,10 @@ export class YardRoom {
 // ✉️ THE POST ROOM — one player's mailbox, keyed by slug (docs/town-jobs-plan.md §6).
 //
 // ⭐ TRYM'S THREE CALLS, 20 Sep 2026, and every one of them is a line in here:
-//   1. ANYONE MAY WRITE TO ANYONE. There is no accept-a-house step and no consent gate, so the filter
-//      and the report are the whole defence rather than a second line behind one.
+//   1. ANYONE MAY WRITE TO ANYONE — and since 22 Sep 2026 (Trym: "go ahead with the knock rail") post from
+//      a house the reader has never had post from arrives as a KNOCK: who, never what, until the reader
+//      lets that house in once (docs/town-jobs-plan.md §6, "the rail that actually holds"). Writing to a
+//      house lets it in; turning one away means it never knocks again. The filter and the report stay.
 //   2. A REFUSAL NEVER SAYS WHICH RULE IT HIT. The reason is kept for our logs; the sender is told only
 //      that it did not go. A precise reason is a tutorial for the next attempt.
 //   3. A REPORTED LETTER IS HELD FOR REVIEW — and held means held for TRYM: it leaves the reader's box
@@ -3980,8 +4014,76 @@ export class YardRoom {
 //      they have just reported while they wait for one person with a phone.
 //
 // ⚠️ EVERY WRITE IS CAPPED BEFORE IT IS STORED. A DO with no cap is a disk somebody else fills.
+const KNOCK_MAX = 12;             // 🚪 knocks kept at once — a door is not a queue; the oldest goes first
+const FIXED_NOTE = 3;             // 🔧 fixes in the square on one day before a resident notices
+const FACT_EVERY = 3600000;       // the yard and the town are asked about a box at most once an hour
+// a map of slug → when, kept to its newest n
+const capMap = (m, n) => Object.fromEntries(Object.entries(m || {}).sort((a, b) => b[1] - a[1]).slice(0, n));
+
 export class PostRoom {
   constructor(state, env) { this.state = state; this.env = env; }
+
+  // 🚪 has this box ever had post from this house that it let in? An explicit let-in, a letter to them,
+  // or a letter from them that came straight in before the knock existed — all three are "known".
+  async knows(from) {
+    const acc = (await this.state.storage.get('acc')) || {};
+    if (acc[from]) return true;
+    return (await this.list('L:')).some((x) => x.from === from && !x.knock && x.kind !== 'note');
+  }
+  async trimKnocks() {
+    const knocks = (await this.list('L:')).filter((x) => x.knock).sort((a, b) => b.at - a.at);
+    for (const dead of knocks.slice(KNOCK_MAX)) await this.state.storage.delete('L:' + dead.id);
+  }
+  // 🏡 the house behind this box: its stage, and its owner's short id — asked from INSIDE the worker only
+  async yardCard(box) {
+    if (!box || !this.env || !this.env.YARDS) return null;
+    try {
+      const r = await this.env.YARDS.get(this.env.YARDS.idFromName('the-neighbourhood'))
+        .fetch(new Request('https://post.internal/card?slug=' + encodeURIComponent(box)));
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  }
+  // 🔧 how much of the square this owner put right on the last day they put any of it right
+  async fixesOf(short) {
+    if (!short || !this.env || !this.env.TOWN) return null;
+    try {
+      const r = await this.env.TOWN.get(this.env.TOWN.idFromName('the-town'))
+        .fetch(new Request('https://post.internal/fixes?short=' + encodeURIComponent(short)));
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  }
+  // ⭐ A LETTER ABOUT SOMETHING THE READER DID (22 Sep 2026; docs/town-jobs-plan.md §6: "a card that names
+  // what you did is worth ten that say hello — and it needs no typing, because the fact comes from the
+  // server"). Five occasions, each a fact this worker saw for itself, never one a page told it. At most one
+  // letter per open; the rest wait their turn. ⚠️ a first look is a BASELINE, never a letter about the past.
+  async factNote(now, box, sent) {
+    // ✉️ your first post went out — only for a box opened after this shipped (`fresh`), because an older
+    // box's first post happened before anybody was counting
+    if (sent.fresh && sent.firstOut && !sent.firstNoted) { sent.firstNoted = now; return 'first'; }
+    if (now - (sent.factAt || 0) > FACT_EVERY) {
+      sent.factAt = now;
+      const c = await this.yardCard(box);
+      if (c) {
+        const stage = c.stage | 0;
+        // 🏡 a cabin, then a house (a tent is the homestead's own letter, "movedin")
+        if (sent.grown == null) sent.grown = stage;
+        else if (stage >= 2 && stage > sent.grown) { sent.grown = stage; return stage >= 3 ? 'house' : 'cabin'; }
+        // 🔧 the square put right, once per day it was
+        if (c.owner8) {
+          const f = await this.fixesOf(c.owner8);
+          if (sent.fixed == null) sent.fixed = (f && f.d) || '';
+          // ⚠️ today or yesterday only: the town room remembers a person’s LAST day of fixes, which can be old
+          else if (f && f.d !== '' && (f.d === dayOf(now) || f.d === dayOf(now - 86400000)) && (f.n | 0) >= FIXED_NOTE && f.d !== sent.fixed) { sent.fixed = f.d; return 'fixed'; }
+        }
+      }
+    }
+    // 🌑 the morning after a Curse Night — a pure function of time, so it needs nobody's word. A hush is
+    // cosmetic and writes nothing; the night has to be over.
+    const nights = curseBetween(Math.max(sent.curse || 0, now - 36 * 3600000), now)
+      .filter((e) => e.type !== 'hush' && e.at + e.ms < now);
+    if (nights.length) { sent.curse = nights[nights.length - 1].at; return 'curse'; }
+    return '';
+  }
 
   async list(prefix) {
     const m = await this.state.storage.list({ prefix });
@@ -4019,6 +4121,7 @@ export class PostRoom {
   async townNote(now, box) {
     const NOTE_QUIET = 6 * 86400000;
     const sent = (await this.state.storage.get('notes')) || {};
+    const was = JSON.stringify(sent);
     const all = await this.list('L:');
     const newest = all.reduce((m, l) => Math.max(m, l.at || 0), 0);
     let kind = '';
@@ -4027,11 +4130,16 @@ export class PostRoom {
     // my own diagnostic, which queried four resident names and made four of them. The yard room is
     // asked once, on the one read where it can matter: after this the stamp is set and it never runs
     // again. A box with no house behind it simply stays empty, which is the truth about it.
-    if (!sent.welcome && !all.length) kind = (await this.realHouse(box)) ? 'welcome' : '';
-    else if (sent.welcome && now - Math.max(newest, sent.quiet || 0) > NOTE_QUIET) kind = 'quiet';
-    if (!kind) return;
+    if (!sent.welcome && !all.length) {
+      kind = (await this.realHouse(box)) ? 'welcome' : '';
+      if (kind) sent.fresh = 1;   // a box opened after the fact-keyed letters shipped
+    } else if (sent.welcome) {
+      kind = await this.factNote(now, box, sent);
+      if (!kind && now - Math.max(newest, sent.quiet || 0) > NOTE_QUIET) kind = 'quiet';
+    }
+    if (!kind) { if (JSON.stringify(sent) !== was) await this.state.storage.put('notes', sent); return; }
     const deck = (TOWN_NOTES && TOWN_NOTES[kind]) || [];
-    if (!deck.length) return;
+    if (!deck.length) { if (JSON.stringify(sent) !== was) await this.state.storage.put('notes', sent); return; }
     // ⚠️ SEEDED BY THE BOX AND THE DAY, so one player does not hear from the same resident every
     // time and two players on the same morning do not get the same letter.
     const seed = (box || '') + ':' + Math.floor(now / 86400000) + ':' + kind;
@@ -4041,9 +4149,9 @@ export class PostRoom {
     const id = now.toString(36) + Math.random().toString(36).slice(2, 8);
     await this.state.storage.put('L:' + id, {
       id, from: String(pick.key || 'town'), name: NOTE_NAMES[pick.key] || '',
-      at: now, read: false, flag: '', kind: 'note', text: String(pick.text || ''),
+      at: now, read: false, flag: '', kind: 'note', note: kind, text: String(pick.text || ''),
     });
-    sent[kind] = now;
+    if (kind === 'welcome' || kind === 'quiet') sent[kind] = now;
     await this.state.storage.put('notes', sent);
     await this.trim();
   }
@@ -4084,6 +4192,17 @@ export class PostRoom {
       // this one stops a single mailbox being buried by a single person, which is the case that hurts.
       const mine = await this.sentToday(from);
       if (mine >= CAPS.sendTo) return j({ error: 'refused', why: 'cap' }, 429);
+      // 🚪 A HOUSE THAT WAS TURNED AWAY is told what everybody is told — it went — and nothing lands. The
+      // cap still counts, so a turned-away house cannot learn anything by sending faster.
+      const away = (await this.state.storage.get('away')) || {};
+      if (away[from]) {
+        await this.state.storage.put('cap:' + day + ':' + from, mine + 1);
+        return j({ ok: true, id: now.toString(36) });
+      }
+      // 🚪 …and a house this box has never had post from KNOCKS: the post is kept whole, the reader is
+      // shown who and never what until they let the house in.
+      const knock = (await this.knows(from)) ? 0 : 1;
+      const who = { name: String(b.__name || '').slice(0, 24), house: String(b.__house || '').slice(0, 40) };
 
       // 📮 A POSTCARD TAKES THE SAME RAIL AND THE SAME CAP, and only the judging is different: a
       // card has no text to judge, so it is checked for SHAPE instead — a known template, an index
@@ -4099,9 +4218,10 @@ export class PostRoom {
           return j({ error: 'refused' }, 422);
         }
         const cid = now.toString(36) + Math.random().toString(36).slice(2, 8);
-        await this.state.storage.put('L:' + cid, { id: cid, from, at: now, read: false, flag: '', kind: 'card', card: c.card });
+        await this.state.storage.put('L:' + cid, { id: cid, from, at: now, read: false, flag: '', kind: 'card', card: c.card, ...who, ...(knock ? { knock } : {}) });
         await this.state.storage.put('cap:' + day + ':' + from, mine + 1);
         await this.trim();
+        if (knock) await this.trimKnocks();
         return j({ ok: true, id: cid });
       }
       // ⚠️ free text, and the second switch stops it without stopping the cards above
@@ -4118,7 +4238,7 @@ export class PostRoom {
 
       const id = now.toString(36) + Math.random().toString(36).slice(2, 8);
       await this.state.storage.put('L:' + id, {
-        id, from, at: now, text: v.text, read: false,
+        id, from, at: now, text: v.text, read: false, ...who, ...(knock ? { knock } : {}),
         // a letter naming a platform with no way to reach anybody is delivered AND flagged: the plan is
         // explicit that refusing the word "discord" refuses innocent letters while we link our own
         flag: v.flag ? 'platform' : '',
@@ -4137,6 +4257,7 @@ export class PostRoom {
       }
 
       await this.trim();
+      if (knock) await this.trimKnocks();
       return j({ ok: true, id });
     }
 
@@ -4144,23 +4265,33 @@ export class PostRoom {
     if (url.pathname === '/box') {
       // ✉️ …and before the box is read, the town may have written to you. Checked HERE because it is
       // the one moment somebody is definitely looking: no cron, no queue, nothing to keep running.
-      // ⚠️ the box's own name comes off the QUERY here: /box is a GET, so there is no body and no
-      // __box to read. It is only used to seed which resident writes, never to address anything.
-      await this.townNote(now, String(url.searchParams.get('slug') || ''));
+      await this.townNote(now, String(b.__box || url.searchParams.get('slug') || ''));
       const cut = now - CAPS.keepDays * 86400000;
       const all = (await this.list('L:')).sort((x, y) => y.at - x.at);
       // a letter expires quietly: no notice, no tombstone, it is simply not there any more
       for (const old of all.filter((x) => x.at < cut)) await this.state.storage.delete('L:' + old.id);
       const live = all.filter((x) => x.at >= cut);
-      // ⚠️ `name` rides along for a resident's note: their address is a key, not a house, and a
-      // mailbox that said "from nib" in lower case would be the one place in this world a person is
-      // shown as an id. The page prefers it and falls back to the address for everybody else.
-      return j({ letters: live.map((x) => ({ id: x.id, from: x.from, at: x.at, text: x.text, read: !!x.read, kind: x.kind || '', name: x.name || '', card: x.card || null })), unread: live.filter((x) => !x.read).length });
+      const unread = live.filter((x) => !x.read && !x.knock).length;
+      const knocks = live.filter((x) => x.knock).length;
+      // 📬 the homestead's flag asks only whether anything is waiting
+      if (b.peek) return j({ unread, knocks });
+      // ⚠️ `name` rides along for a resident's note and, since 22 Sep, for a player's post too (the proven
+      // sender's banana, and `house` its homestead's sign): a mailbox is the one place in this world a
+      // person must never be shown as a lower-case id.
+      // 🚪 ⚠️ A KNOCK CARRIES WHO, NEVER WHAT. The text and the card stay in the room until the reader lets
+      // the house in — the page is never handed words it has not been allowed to show.
+      return j({
+        letters: live.map((x) => (x.knock
+          ? { id: x.id, from: x.from, at: x.at, kind: 'knock', read: false, name: x.name || '', house: x.house || '' }
+          : { id: x.id, from: x.from, at: x.at, text: x.text, read: !!x.read, kind: x.kind || '', note: x.note || '', name: x.name || '', house: x.house || '', card: x.card || null })),
+        unread, knocks,
+      });
     }
 
     if (url.pathname === '/read') {
       const L = await this.state.storage.get('L:' + String(b.id || ''));
       if (!L) return j({ error: 'gone' }, 404);
+      if (L.knock) return j({ error: 'knock' }, 409);   // a knock is opened by letting the house in
       if (!L.read) { L.read = true; await this.state.storage.put('L:' + L.id, L); }
       return j({ ok: true });
     }
@@ -4171,6 +4302,7 @@ export class PostRoom {
     if (url.pathname === '/report') {
       const L = await this.state.storage.get('L:' + String(b.id || ''));
       if (!L) return j({ error: 'gone' }, 404);
+      if (L.knock) return j({ error: 'knock' }, 409);   // nothing on a knock was shown; turning away is its answer
       await this.state.storage.delete('L:' + L.id);
       const row = { ...L, to: String(b.__box || ''), reportedAt: now, by: String(b.by || '').slice(0, 40) };
       await this.state.storage.put('R:' + L.id, row);
@@ -4184,6 +4316,49 @@ export class PostRoom {
           method: 'POST', body: JSON.stringify({ ...row, kind: 'reported' }),
         }));
       } catch (e) { /* the report stands whatever the queue does */ }
+      return j({ ok: true });
+    }
+
+    // ---- 🚪 the knock's two answers ----------------------------------------------------------------
+    // ⭐ LET IN: this house is known from now on, and everything it has knocked with comes in to be opened.
+    if (url.pathname === '/accept') {
+      const L = await this.state.storage.get('L:' + String(b.id || ''));
+      if (!L || !L.knock) return j({ error: 'gone' }, 404);
+      const acc = (await this.state.storage.get('acc')) || {};
+      acc[L.from] = now;
+      await this.state.storage.put('acc', capMap(acc, 400));
+      let n = 0;
+      for (const x of await this.list('L:')) {
+        if (x.from !== L.from || !x.knock) continue;
+        const { k, knock, ...row } = x;
+        await this.state.storage.put('L:' + row.id, row);
+        n++;
+      }
+      return j({ ok: true, from: L.from, n });
+    }
+    // ⭐ TURN AWAY: this knock goes, and so does every other from the same house, and it never knocks again.
+    // ⚠️ nothing is told to the sender — every later send from them answers "it went", like any other.
+    if (url.pathname === '/away') {
+      const L = await this.state.storage.get('L:' + String(b.id || ''));
+      if (!L || !L.knock) return j({ error: 'gone' }, 404);
+      const away = (await this.state.storage.get('away')) || {};
+      away[L.from] = now;
+      await this.state.storage.put('away', capMap(away, 400));
+      for (const x of await this.list('L:')) if (x.from === L.from && x.knock) await this.state.storage.delete('L:' + x.id);
+      return j({ ok: true, from: L.from });
+    }
+    // ✉️ THE SENDER'S OWN ROOM HEARS WHERE ITS POST WENT (router-only, never on the public rail). Writing
+    // to a house lets it in — its answer never knocks — and lets back in a house once turned away.
+    if (url.pathname === '/sent') {
+      const to = String(b.to || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+      if (!to) return j({ error: 'nobody' }, 400);
+      const acc = (await this.state.storage.get('acc')) || {};
+      acc[to] = now;
+      await this.state.storage.put('acc', capMap(acc, 400));
+      const away = (await this.state.storage.get('away')) || {};
+      if (away[to]) { delete away[to]; await this.state.storage.put('away', away); }
+      const sent = (await this.state.storage.get('notes')) || {};
+      if (!sent.firstOut) { sent.firstOut = now; await this.state.storage.put('notes', sent); }
       return j({ ok: true });
     }
 

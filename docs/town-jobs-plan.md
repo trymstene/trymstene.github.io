@@ -962,3 +962,30 @@ goodbye — and the arcade door still opens when you ask.
 - The targets (three and three) and whether `days` should count at the arcade too.
 - Whether a boss's nudge should also toast in the square the first time it is seen.
 - ~~The store's second duty~~ ✅ **Settled as built, Trym 22 Sep:** the restock chore and `days`.
+
+## 13. The mailbox: two drawers, the knock, the owner's key, the residents who notice (22 Sep 2026)
+
+Trym: *"go ahead with the knock rail and the residents' letters. But make sure it looks great visually in
+the mailbox when you have lots of letters so its not all in a long list, maybe a 'read' or 'archive' minitab
+for old letters, so you always see the fresh letters youve received from anyone, users and residents"*.
+
+### 13.1 What is what
+| Piece | What it does | Where |
+|---|---|---|
+| **Two drawers** | **Fresh**: the knocks, then every unopened thing as a tile (envelopes, kraft payslips, postcard pictures). **Kept**: opened postcards as a strip, opened letters as one row per person with a count. The box always opens on Fresh; the drawer is the one scroller, so the card never outgrows a phone and *Write a letter* stays put. | `src/scripts/town-post.js`, `public/css/town-post.css` |
+| **One mailbox at home** | The homestead's cream card is gone. Its mailbox opens the same card, and the world's own notes (Nib's book, the payslips, the bosses) ride in as `local` rows beside other players' letters. They stay in the yard and never wait on the post room — offline they still show; only the write door waits. | `src/scripts/banana-homestead.js` (`worldRow`, `local`) |
+| **The flag** | The mailbox flag rises for the world's notes AND for the post room: one light `POST /post/box {peek:1}` on arrival, on closing the card and every five minutes → `{unread, knocks}`. | `peekPost()` |
+| **⭐ The knock** | A house the box has never had post from knocks: `/box` shows who and when, never a word of what (`knock:1`, text withheld server-side). *Let in* (`/accept`) turns every knock from that house into letters and lets later post straight in. *Turn away* (`/away`) drops its knocks, and what it sends later is quietly dropped while the sender is told it went. Writing TO a house lets it in (`/sent`, router-only) and un-turns it away. Twelve knocks at most, one row per house. Senders with earlier letters count as known. | `worker-rave` PostRoom |
+| **⭐ The owner's key** | Every mailbox path but a send now proves that the caller's own house IS the box (world token → YardRoom `/whoami` → slug must equal the box). Before this, `/post/box?slug=` read anybody's letters — a slug is the sign on the fence and the address book publishes it. | `worker-rave` router, `tools/check-post-rail.mjs` §7 |
+| **The residents notice** | Beside the welcome: a first letter out (`first`, new boxes only), a cabin and a house going up (`cabin`/`house`, baselined on the first look so nobody is written to about the past), the square put right today (`fixed`, from TownRoom `/fixes`), the morning after a Curse Night (`curse`, from the pure curse clock). One an hour at most. Nib, Stamp, Moss and Bean write them; the words are the rig's. | `factNote()`, `src/data/copy/town-notes.json` |
+| **Pulse** | `post_note` (at, note), `post_knock` (n), `post_accept`, `post_away`, `post_folk` (open/pick), labelled and explained; the post office card reads them by prefix. | `src/data/pulse-events.js` |
+
+### 13.2 Proven by
+`worker-rave/test/post-room.test.mjs` (knock, accept, away, cap, facts — 58 checks), `tools/check-post-rail.mjs`
+(the owner line, knock rows reduced to who/when), and the walks: `tests/town-post.spec.mjs` (a boxful in two
+drawers at 360 and 393, the knock let in and turned away with real taps), `tests/homestead-letters.spec.mjs`
+(residents and the world in one Fresh drawer; offline the notes still show), `homestead-post`, `homestead-payslip`.
+
+### 13.3 Still Trym's to call
+- Whether a knock should also raise the flag on the HQ Mail floor (today it is a Pulse count only).
+- Whether Kept should ever thin itself (it holds what the box holds: 60 letters, 30 days).

@@ -5,7 +5,6 @@
   "noaddress": "Post goes to a house with a sign name. Your homestead fence has no name on it yet.",
   "shut": "The post counter is closed. The scale is having a quiet moment.",
   "from": "From {who}",
-  "threads": "Kept Letters",
   "back": "Go back",
   "report": "Report this letter",
   "reported": "The letter has left your mailbox. It will be read.",
@@ -15,6 +14,18 @@
   "sent": "The letter is sent.",
   "nopass": "The counter cannot find your house name yet. Your letter waits in the writing tray.",
   "refused": "This letter stays in the writing tray.",
+  "drawers": {
+    "fresh": "Fresh",
+    "kept": "Kept",
+    "none": "Nothing new has come in. Opened post waits in Kept."
+  },
+  "knock": {
+    "line": "A knock from {who}",
+    "about": "Post from a new house waits at the door. Let them in to read it; later post comes straight in.",
+    "in": "Let in",
+    "away": "Turn away",
+    "gone": "The knock is gone. That house will not knock again."
+  },
   "round": {
     "leave": "Leave work",
     "start": "Start sorting",

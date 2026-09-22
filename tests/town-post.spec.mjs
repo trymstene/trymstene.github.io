@@ -51,10 +51,16 @@ test('a letter opens, and reporting it takes it out of the box on the tap', asyn
   await put(page, LETTERS);
   await page.waitForTimeout(200);
   expect(await page.locator('.tw-post__env').count(), 'the unread one is a sealed envelope').toBe(1);
-  expect(await page.locator('.tw-post__thread').count(), 'and the read one is filed under who wrote it').toBe(1);
+  // 📬 the read one is not under it any more: Fresh is what is new, and Kept is where opened post goes
+  expect(await page.locator('.tw-post__thread').count(), 'the read one is not in Fresh').toBe(0);
+  await page.evaluate(() => window.__town.post().tap('.tw-post__tab[data-drawer="kept"]'));
+  await page.waitForTimeout(150);
+  expect(await page.locator('.tw-post__thread').count(), 'it is in Kept, filed under who wrote it').toBe(1);
   // ⚠️ the peek is one clipped line: three unread letters three lines deep turn a mailbox into a scroller
   const wraps = await page.evaluate(() => [...document.querySelectorAll('.tw-post__peek')].map((e) => e.getBoundingClientRect().height));
   for (const h of wraps) expect(h, 'a row’s peek is one line').toBeLessThan(26);
+  await page.evaluate(() => window.__town.post().tap('.tw-post__tab[data-drawer="fresh"]'));
+  await page.waitForTimeout(150);
 
   await page.evaluate(() => window.__town.post().tap('.tw-post__env'));
   await page.waitForTimeout(200);
@@ -113,7 +119,7 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
 
     // ⚠️ AN UNBROKEN 400-CHARACTER WORD IS A LETTER A PLAYER CAN SEND. Without break-anywhere it runs
     // straight off the side of the card and turns it into a horizontal scroller.
-    await page.evaluate(() => { const els = [...document.querySelectorAll('.tw-post__env')]; els[els.length - 1].click(); });
+    await page.evaluate(() => document.querySelector('.tw-post__env[data-id="a3"]').click());
     await page.waitForTimeout(200);
     const opened = await page.evaluate(() => {
       const b = document.getElementById('twCardBody');
@@ -142,13 +148,15 @@ test('sixty letters from eight people is eight rows, and the new post stays on t
   await put(page, many);
   await page.waitForTimeout(300);
 
+  expect(await page.locator('.tw-post__env').count(), 'the unopened letter is an envelope, and it is what the mailbox opens on').toBe(1);
+  expect(await page.locator('.tw-post__thread').count(), '…with none of the old post over it').toBe(0);
+  await page.evaluate(() => window.__town.post().tap('.tw-post__tab[data-drawer="kept"]'));
+  await page.waitForTimeout(200);
   const m = await page.evaluate(() => ({
-    envelopes: document.querySelectorAll('.tw-post__env').length,
     rows: document.querySelectorAll('.tw-post__thread').length,
     cardScroll: (() => { const c = document.querySelector('.tw-card'); return c.scrollHeight - c.clientHeight; })(),
     threads: window.__town.post().state().threads,
   }));
-  expect(m.envelopes, 'the unopened letter is an envelope on top').toBe(1);
   expect(m.rows, '⭐ sixty letters become eight rows, one per person').toBe(8);
   expect(m.threads.reduce((a, t) => a + t.n, 0), 'and every letter is still in there').toBe(60);
   // ⚠️ 8 rows + 1 envelope in a 440px card still scrolls a little, and that is fine — what must never
@@ -252,13 +260,13 @@ test('a postcard arrives as a picture, and is not an envelope', async ({ page })
   await put(page, [LETTERS[0], CARD_IN]);
   await page.waitForTimeout(300);
 
-  // in the stack: one envelope and one card, and they do not look alike
+  // in Fresh: one envelope and one card, and they do not look alike
   expect(await page.locator('.tw-post__env').count(), 'the letter is an envelope').toBe(1);
-  expect(await page.locator('.tw-post__pcrow').count(), 'the card is a card').toBe(1);
-  expect(await page.locator('.tw-post__pcrow img').getAttribute('src'), 'wearing its own picture').toContain('pc-rave');
+  expect(await page.locator('.tw-post__pctile').count(), 'the card is a card').toBe(1);
+  expect(await page.locator('.tw-post__pctile img').getAttribute('src'), 'wearing its own picture').toContain('pc-rave');
 
   // opened, it is the picture with the SENDER's banana drawn in it
-  await page.evaluate(() => document.querySelector('.tw-post__pcrow').click());
+  await page.evaluate(() => document.querySelector('.tw-post__pctile').click());
   await page.waitForTimeout(700);
   const got = await page.evaluate(() => {
     const pc = document.querySelector('.tw-pc'), cv = pc && pc.querySelector('.tw-pc__me');
@@ -405,7 +413,7 @@ for (const [w, h] of [[360, 640], [375, 667], [390, 844], [393, 852]]) {
     // ── a postcard opens, and one can be made end to end
     await page.evaluate((ls) => window.__town.post().set({ letters: ls, unread: 2 }), [LETTERS[0], CARD_IN]);
     await page.waitForTimeout(250);
-    await thumb(page, '.tw-post__pcrow', 'the postcard in the box');
+    await thumb(page, '.tw-post__pctile', 'the postcard in the box');
     await thumb(page, '#twPostCard', 'Send a card');
     await thumb(page, '.tw-pc__pick:nth-child(3)', 'the third place');
     await thumb(page, '.tw-pc__say:last-child', 'the last line of the deck');
@@ -420,3 +428,146 @@ for (const [w, h] of [[360, 640], [375, 667], [390, 844], [393, 852]]) {
     expect(errs).toEqual([]);
   });
 }
+
+// 📬 THE TWO DRAWERS (22 Sep 2026, Trym: "make sure it looks great visually in the mailbox when you have lots
+// of letters so its not all in a long list, maybe a 'read' or 'archive' minitab for old letters, so you always
+// see the fresh letters youve received from anyone, users and residents").
+//
+// ⭐ Fresh is everything not yet opened, as tiles that wrap and scroll inside themselves — so a boxful never
+// pushes the card off the phone — and Kept is the opened post, the postcards as a strip of pictures and the
+// letters as one row per person. What is new can never be under what is old.
+const LOTS = (() => {
+  const out = [], now = Date.now();
+  for (let i = 0; i < 14; i++) out.push({ id: 'f' + i, from: 'house-' + i, name: 'Neighbour ' + i, at: now - i * 60000, read: false, text: 'a letter not yet opened, number ' + i });
+  out.push({ id: 'nib1', from: 'nib', name: 'Nib', kind: 'note', note: 'fixed', at: now - 30000, read: false, text: 'The square is in order again.' });
+  for (let i = 0; i < 2; i++) out.push({ id: 'fc' + i, from: 'card-' + i, at: now - i * 90000, read: false, kind: 'card', card: { tpl: ['park', 'rave'][i], line: i, look: {} } });
+  for (let i = 0; i < 30; i++) out.push({ id: 'k' + i, from: 'old-' + (i % 6), at: now - 864e5 - i * 60000, read: true, text: 'an old letter, number ' + i });
+  for (let i = 0; i < 3; i++) out.push({ id: 'kc' + i, from: 'old-' + i, at: now - 2 * 864e5 - i, read: true, kind: 'card', card: { tpl: 'home', line: i, look: {} } });
+  return out;
+})();
+for (const [w, h] of [[360, 640], [393, 852]]) {
+  test(`a boxful is two drawers, not a long list, at ${w}×${h}`, async ({ page }) => {
+    const errs = await box(page, w, h);
+    await put(page, LOTS);
+    await page.waitForTimeout(300);
+    const fresh = await page.evaluate(() => {
+      const c = document.querySelector('.tw-card'), g = document.querySelector('.tw-post__grid'), d = document.querySelector('.tw-post__drawer');
+      const tiles = [...g.children].map((e) => e.getBoundingClientRect());
+      const tabs = [...document.querySelectorAll('.tw-post__tab')].map((t) => ({ k: t.dataset.drawer, on: t.getAttribute('aria-selected'), n: (t.querySelector('b') || {}).textContent || '' }));
+      const write = document.getElementById('twPostNew').getBoundingClientRect(), cr = c.getBoundingClientRect();
+      return {
+        drawer: window.__town.post().state().drawer, tabs,
+        env: document.querySelectorAll('.tw-post__grid .tw-post__env').length,
+        cards: document.querySelectorAll('.tw-post__grid .tw-post__pctile').length,
+        rows: document.querySelectorAll('.tw-post__thread').length,
+        perRow: tiles.filter((r) => Math.abs(r.top - tiles[0].top) < 2).length,
+        drawerScrolls: d.scrollHeight > d.clientHeight + 4,
+        names: [...g.querySelectorAll('.tw-post__who')].map((e) => ({ t: e.textContent, cut: e.scrollHeight > e.clientHeight + 1 })),
+        cardScroll: c.scrollHeight - c.clientHeight,
+        writeOnCard: write.bottom <= cr.bottom + 1 && write.top >= cr.top,
+        sideways: document.getElementById('twCardBody').scrollWidth - document.getElementById('twCardBody').clientWidth,
+      };
+    });
+    expect(fresh.drawer, '⭐ the mailbox opens on Fresh').toBe('fresh');
+    expect(fresh.tabs.map((t) => t.k), 'two drawers').toEqual(['fresh', 'kept']);
+    expect(fresh.tabs[0].n, 'Fresh counts what is new').toBe('17');
+    expect(fresh.tabs[1].n, 'Kept counts what is kept').toBe('33');
+    expect(fresh.env, 'every unopened letter, the neighbours’ and the resident’s alike').toBe(15);
+    expect(fresh.cards, 'and the new postcards, as pictures').toBe(2);
+    expect(fresh.rows, 'nothing old in here').toBe(0);
+    expect(fresh.perRow, 'tiles, not a list: at least three to a row').toBeGreaterThanOrEqual(3);
+    expect(fresh.drawerScrolls, 'a boxful scrolls inside the drawer').toBe(true);
+    expect(fresh.names.filter((n) => n.cut).map((n) => n.t), '⭐ every tile says who, whole — “From Ne…” said nobody').toEqual([]);
+    expect(fresh.names.some((n) => n.t === 'Neighbour 0'), 'the bare name, the envelope says the rest').toBe(true);
+    expect(fresh.cardScroll, '…so the card itself stays about one screen').toBeLessThan(60);
+    expect(fresh.writeOnCard, 'and the way to write one is still on the card').toBe(true);
+    expect(fresh.sideways, 'nothing runs off the side').toBeLessThanOrEqual(0);
+    await page.screenshot({ path: `test-results/post-drawers-fresh-${w}.png` });
+
+    await thumb(page, '.tw-post__tab[data-drawer="kept"]', 'the Kept drawer');
+    const kept = await page.evaluate(() => ({
+      drawer: window.__town.post().state().drawer,
+      strip: document.querySelectorAll('.tw-post__cards .tw-post__pctile').length,
+      rows: document.querySelectorAll('.tw-post__stack.is-kept .tw-post__thread').length,
+      counts: [...document.querySelectorAll('.tw-post__thread .tw-post__n')].map((e) => e.textContent),
+      env: document.querySelectorAll('.tw-post__env').length,
+      write: (() => { const w = document.getElementById('twPostNew').getBoundingClientRect(), c = document.querySelector('.tw-card').getBoundingClientRect(); return w.bottom <= c.bottom + 1 && w.top >= c.top; })(),
+      cardScroll: (() => { const c = document.querySelector('.tw-card'); return c.scrollHeight - c.clientHeight; })(),
+    }));
+    expect(kept.drawer).toBe('kept');
+    expect(kept.write, 'Kept keeps the write button on the card too').toBe(true);
+    expect(kept.cardScroll, '…because the drawer scrolls, not the card').toBeLessThan(60);
+    expect(kept.strip, 'the kept postcards are a strip of pictures').toBe(3);
+    expect(kept.rows, 'and thirty letters from six people are six rows').toBe(6);
+    expect(kept.counts.every((n) => Number(n) === 5), 'each row says how many are in it').toBe(true);
+    expect(kept.env, 'nothing sealed in Kept').toBe(0);
+    await page.screenshot({ path: `test-results/post-drawers-kept-${w}.png` });
+
+    // ⭐ open one from Fresh and it moves to Kept — new post is never filed under old
+    await thumb(page, '.tw-post__tab[data-drawer="fresh"]', 'the Fresh drawer');
+    await thumb(page, '.tw-post__env[data-id="f0"]', 'a sealed letter');
+    await page.waitForTimeout(600);
+    await thumb(page, '#twPostBack', 'Back');
+    const after = await page.evaluate(() => ({
+      env: document.querySelectorAll('.tw-post__grid .tw-post__env').length,
+      fresh: (document.querySelector('.tw-post__tab[data-drawer="fresh"] b') || {}).textContent,
+      kept: (document.querySelector('.tw-post__tab[data-drawer="kept"] b') || {}).textContent,
+    }));
+    expect(after.env, 'one fewer sealed letter').toBe(14);
+    expect([after.fresh, after.kept], 'and the counts move with it').toEqual(['16', '34']);
+    expect(errs).toEqual([]);
+  });
+}
+
+// 🚪 THE KNOCK (22 Sep 2026). A house you have never had post from knocks: you see who, never what, until you
+// let it in. Letting in and turning away are side by side and the same weight — both are ordinary.
+test('a new house knocks: who and never what, let in or turned away', async ({ page }) => {
+  const now = Date.now();
+  const knock = (id, from, name, house, at) => ({ id, from, at, kind: 'knock', read: false, name, house });
+  const LETTER = { id: 'a1', from: 'pip-yard', name: 'Pip', at: now - 5000, read: false, text: 'The hens are laying again.' };
+  let letIn = false;
+  const calls = { accept: [], away: [] };
+  await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(letIn
+    ? { letters: [LETTER, { id: 'kit1', from: 'kit-farm', name: 'Kit', at: now, read: false, text: 'Hello from the next plot over.' },
+      { id: 'kit2', from: 'kit-farm', name: 'Kit', at: now - 9000, read: false, text: 'And a second one.' }, knock('rue1', 'rue-yard', 'Rue', 'Rue', now - 20000)], unread: 3, knocks: 1 }
+    : { letters: [LETTER, knock('kit1', 'kit-farm', 'Kit', 'Kit’s Farm', now), knock('kit2', 'kit-farm', 'Kit', 'Kit’s Farm', now - 9000), knock('rue1', 'rue-yard', 'Rue', 'Rue', now - 20000)], unread: 1, knocks: 3 }) }));
+  await page.route('**/post/accept', async (r) => { calls.accept.push(JSON.parse(r.request().postData() || '{}')); letIn = true; await r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"n":2}' }); });
+  await page.route('**/post/away', async (r) => { calls.away.push(JSON.parse(r.request().postData() || '{}')); await r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+  const errs = await box(page, 360, 640);
+  await page.waitForFunction(() => document.querySelectorAll('.tw-knock').length > 0, null, { timeout: 15000 });
+
+  const door = await page.evaluate(() => ({
+    knocks: [...document.querySelectorAll('.tw-knock')].map((k) => k.textContent),
+    about: (document.querySelector('.tw-post__about') || {}).textContent || '',
+    env: document.querySelectorAll('.tw-post__env').length,
+    fresh: (document.querySelector('.tw-post__tab[data-drawer="fresh"] b') || {}).textContent,
+    cut: [...document.querySelectorAll('.tw-knock__two button')].some((b) => b.scrollWidth > b.clientWidth + 1),
+  }));
+  expect(door.knocks.length, '⭐ one knock per house, however many times it knocked').toBe(2);
+  expect(door.knocks[0], 'who is knocking').toContain('Kit');
+  expect(door.knocks[0], 'and from which house, when it adds something').toContain('Kit’s Farm');
+  expect(door.knocks[1], 'a house named for its owner is said once').not.toMatch(/Rue.*Rue/);
+  expect(door.about, 'the door says what a knock is').toBe(COPY.knock.about);
+  expect(door.env, 'the letter from a house you know is not held at the door').toBe(1);
+  expect(door.fresh, 'Fresh counts the knocks with the post').toBe('3');
+  expect(door.cut, 'neither answer is cut short').toBe(false);
+  await page.screenshot({ path: 'test-results/post-knock-360.png' });
+
+  // ── let Kit in: both letters come in to be opened, and the door answers the next time from the room
+  await thumb(page, '.tw-knock[data-id="kit1"] [data-in]', 'Let in');
+  // ⚠️ every path proves who is asking first, and a test page may wait out the proof's poll: wait on the door, not a clock
+  await page.waitForFunction(() => document.querySelectorAll('.tw-knock').length === 1, null, { timeout: 20000 });
+  expect(calls.accept.map((b) => b.id), 'the room is asked to let that house in').toEqual(['kit1']);
+  expect(calls.accept[0].slug, '…by the box’s owner').toBe('ada-yard');
+  const inside = await page.evaluate(() => ({ knocks: document.querySelectorAll('.tw-knock').length, env: document.querySelectorAll('.tw-post__env').length }));
+  expect(inside.knocks, 'Kit is no longer at the door').toBe(1);
+  expect(inside.env, 'Kit’s two letters are post now').toBe(3);
+
+  // ── turn Rue away: gone on the tap, and said so
+  await thumb(page, '.tw-knock[data-id="rue1"] [data-away]', 'Turn away');
+  expect(await page.locator('.tw-knock').count(), 'the knock is gone at once').toBe(0);
+  const said = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
+  expect(said, 'the world says the knock is gone').toBe(COPY.knock.gone);
+  await expect.poll(() => calls.away.map((b) => b.id), { message: 'and the room is told', timeout: 15000 }).toEqual(['rue1']);
+  expect(errs).toEqual([]);
+});

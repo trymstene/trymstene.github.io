@@ -1,4 +1,4 @@
-// ✉️🔒 THE PUBLIC POST RAIL REACHES FOUR PATHS, AND THE REVIEW QUEUE IS NOT ONE OF THEM.
+// ✉️🔒 THE PUBLIC POST RAIL REACHES SIX PATHS, AND THE REVIEW QUEUE IS NOT ONE OF THEM.
 //
 // worker-rave's /post route forwards whatever comes after /post straight into the recipient's room —
 // and the room also answers /review, the list of letters somebody REPORTED, kept whole. A yard slug
@@ -22,7 +22,7 @@ if (!m) {
   fail.push('the /post route no longer allow-lists its sub-paths — anything the room answers is public again');
 } else {
   const allowed = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
-  const want = ['/box', '/read', '/report', '/send'];
+  const want = ['/accept', '/away', '/box', '/read', '/report', '/send'];   // 🚪 22 Sep: the knock's two answers
   if (allowed.join(',') !== want.join(',')) {
     fail.push(`the rail allows ${allowed.join(', ')} — it must allow exactly ${want.join(', ')}`);
   }
@@ -33,8 +33,8 @@ if (!m) {
 // to PostRoom and nobody thinking about the rail. Each new one has to be named here deliberately.
 const room = src.slice(src.indexOf('export class PostRoom'));
 const paths = [...room.matchAll(/url\.pathname === '([^']+)'/g)].map((x) => x[1]);
-const PUBLIC = ['/send', '/box', '/read', '/report'];
-const ADMIN = ['/review', '/queue', '/queue-put', '/queue-drop'];   // reached by the router alone, never by an origin
+const PUBLIC = ['/send', '/box', '/read', '/report', '/accept', '/away'];
+const ADMIN = ['/review', '/queue', '/queue-put', '/queue-drop', '/sent'];   // reached by the router alone, never by an origin (/sent: the sender's own room hears where its post went)
 for (const p of paths) {
   if (!PUBLIC.includes(p) && !ADMIN.includes(p)) {
     fail.push(`PostRoom answers ${p} and tools/check-post-rail.mjs has never heard of it — say whether the rail may reach it`);
@@ -98,9 +98,26 @@ else if (originCheck > -1 && off > originCheck) fail.push('POST_OFF is checked A
   }
 }
 
+// ── 7. ⭐ A MAILBOX OPENS FOR ITS OWNER (22 Sep 2026) ────────────────────────────────────
+// Reading, marking, reporting, letting in and turning away were addressed by slug alone — and a slug is the
+// sign on the fence, which the address book publishes — so anybody could read anybody's letters. Every path
+// but a send must now prove that the caller's own house IS the box. Plain substring checks: a regex written
+// through a patch script has crashed this gate before.
+{
+  const route = src.slice(src.indexOf("url.pathname === '/post'"), src.indexOf('export class PostRoom'));
+  const ownerLine = "if (path !== '/send' && (!sender || sender !== to)) return new Response('{\"error\":\"whose\"}', { status: 401";
+  if (!route.includes(ownerLine)) {
+    fail.push('a mailbox path other than /send does not demand that the caller owns the box — anybody could read anybody’s letters again');
+  }
+  const boxPart = room2.slice(room2.indexOf("url.pathname === '/box'"), room2.indexOf("url.pathname === '/read'"));
+  if (!boxPart.includes("? { id: x.id, from: x.from, at: x.at, kind: 'knock', read: false, name: x.name || '', house: x.house || '' }")) {
+    fail.push('a knock in /box is not reduced to who and when — the page could be handed words the reader has not let in');
+  }
+}
+
 if (fail.length) {
   console.error('❌ the post rail:\n' + fail.map((f) => '   · ' + f).join('\n'));
   process.exit(1);
 }
-console.log('✅ post rail: 4 public paths, the review queue behind POST_ADMIN_KEY, the kill switch'
+console.log('✅ post rail: 6 public paths, every mailbox path owner-only, a knock carries no words, the review queue behind POST_ADMIN_KEY, the kill switch'
   + ' first,\n   and a postcard that outlives a letters shutdown');

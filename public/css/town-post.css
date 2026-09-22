@@ -19,7 +19,6 @@
 /* ---- the new post: SEALED ENVELOPES, and the seal is the art rather than a badge ---------------- */
 /* the pack ships two envelopes, one with a red wax seal and one without, so "new" is a thing you can
    see from across a room instead of a dot you have to read. 52px each, side by side, wrapping. */
-.tw-post__new { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .tw-post__env {
   appearance: none; font: inherit; cursor: pointer;
   display: grid; justify-items: center; gap: 2px; padding: 0.4rem 0.45rem 0.35rem;
@@ -27,7 +26,14 @@
   min-width: 78px; max-width: 118px;
 }
 .tw-post__env:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
-.tw-post__env .tw-post__who { font-size: 0.64rem; text-align: center; overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+/* a name on a tile wraps to two lines, at a space first, before it is cut: the tile's whole job is to say
+   who. The card's body face, bold, because the display face is too wide to fit a name in 60 px. */
+.tw-post__env .tw-post__who, .tw-post__pctile .tw-post__who {
+  font-family: inherit; font-weight: 800; letter-spacing: 0;
+  font-size: 0.68rem; line-height: 1.2; text-align: center; max-width: 100%;
+  white-space: normal; overflow-wrap: break-word; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
 .tw-post__stamp {
   width: 52px; height: 52px; image-rendering: pixelated;
   background: center/contain no-repeat url('/assets/town/s-letterseal-0.png');
@@ -181,13 +187,7 @@
 .tw-post__two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
 .tw-post__two .tw-btn--in { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ---- a postcard in the box --------------------------------------------------------------------- */
-.tw-post__pcrow {
-  appearance: none; display: flex; align-items: center; gap: 0.5rem; width: 100%;
-  padding: 0.3rem; border: 2px solid #3a2718; background: #1f150e; color: #fffdf5; cursor: pointer;
-  text-align: left;
-}
-.tw-post__pcrow.is-new { border-color: #ffb347; }
+/* ---- a postcard in the box: its own picture, at tile size (the tile itself is with the drawers) ---- */
 .tw-post__pcthumb { flex: none; width: 62px; aspect-ratio: 3 / 2; object-fit: cover; border: 2px solid #000; image-rendering: pixelated; }
 
 /* ---- 📇 THE ADDRESS BOOK -------------------------------------------------------------------- */
@@ -248,3 +248,111 @@
 .tw-post__write { margin-top: 0.2rem; }
 /* ✉️ the sorting round’s button, for the post office’s own staff (22 Sep 2026): under the write button */
 .tw-post__sort { margin-top: 0.3rem; }
+
+/* ---- 📬 THE TWO DRAWERS (22 Sep 2026) ----------------------------------------------------------
+ * Trym: "make sure it looks great visually in the mailbox when you have lots of letters so its not all
+ * in a long list, maybe a 'read' or 'archive' minitab for old letters, so you always see the fresh
+ * letters". Two tabs, the box always opening on the first: Fresh holds the knocks and every unopened
+ * thing as a TILE, Kept holds the postcards as a strip of pictures and one row per person. Both scroll
+ * inside themselves, never the card, so the write button stays where a thumb expects it. */
+.tw-post__tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-top: 0.15rem; }
+.tw-post__tab {
+  appearance: none; font: inherit; cursor: pointer; min-height: 40px; min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.3rem 0.5rem; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+  background: #2a2119; color: #fffdf5;
+  font-family: "Archivo Black", sans-serif; font-size: 0.74rem; letter-spacing: 0.04em; white-space: nowrap;
+}
+.tw-post__tab span { overflow: hidden; text-overflow: ellipsis; }
+.tw-post__tab[aria-selected="true"] { background: #fbf3dd; color: #241c0e; }
+.tw-post__tab:not([aria-selected="true"]):not(:disabled):active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+.tw-post__tab:disabled { opacity: 0.42; cursor: default; box-shadow: none; }
+/* the count: quiet on both tabs, and wax-red ONLY on Fresh while you are looking at Kept — the one count that
+   means something new is waiting. Kept's count is a size, never an alarm. */
+.tw-post__tab b {
+  flex: none; min-width: 1.5em; padding: 0 0.35em; border-radius: 999px; line-height: 1.55;
+  background: #4a3a28; color: #fffdf5; font-size: 0.64rem; text-align: center; font-variant-numeric: tabular-nums;
+}
+.tw-post__tab[aria-selected="true"] b { background: #241c0e; color: #ffe135; }
+.tw-post__tab[data-drawer="fresh"]:not([aria-selected="true"]) b { background: #e2342a; color: #fff; }
+/* ⭐ THE DRAWER IS THE ONE SCROLLER, in both tabs: knocks, tiles, the postcard strip and the rows all move
+   together inside it, so the card never grows past the phone and Write a letter stays where it was. */
+.tw-post__drawer {
+  display: grid; gap: 0.5rem; min-width: 0; align-content: start;
+  max-height: min(36vh, 256px); overflow-y: auto; padding: 2px 6px 6px 2px;
+  /* ⚠️ every row as tall as what is in it: a scroll container's minimum height is zero, so without this the
+     postcard strip was squeezed to a sliver the moment the rows below it filled the drawer */
+  grid-auto-rows: max-content;
+}
+
+/* the fresh drawer: tiles wrap three to a row on a 261-px card and scroll inside themselves */
+.tw-post__drawer, .tw-post__cards {
+  overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; scrollbar-color: #ffd21f rgba(0, 0, 0, 0.34);
+}
+.tw-post__drawer::-webkit-scrollbar, .tw-post__cards::-webkit-scrollbar { width: 8px; height: 8px; }
+.tw-post__drawer::-webkit-scrollbar-track, .tw-post__cards::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.34); border-radius: 999px; }
+.tw-post__drawer::-webkit-scrollbar-thumb, .tw-post__cards::-webkit-scrollbar-thumb { background: #ffd21f; border: 1px solid #1a1408; border-radius: 999px; }
+.tw-post__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 0.45rem; }
+.tw-post__grid .tw-post__env { min-width: 0; max-width: none; width: 100%; padding-inline: 0.25rem; }
+/* 💼 a payslip is a kraft envelope, as its paper is kraft when it opens */
+.tw-post__env.is-wage { background: #b88a4c; color: #241c0e; }
+.tw-post__pctile {
+  appearance: none; font: inherit; cursor: pointer; min-width: 0;
+  display: grid; justify-items: center; gap: 3px; padding: 0.3rem;
+  background: #1f150e; color: #fffdf5; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+}
+.tw-post__pctile.is-new { border-color: #ffb347; }
+.tw-post__pctile:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+.tw-post__pctile .tw-post__pcthumb { width: 100%; }
+/* the kept drawer: postcards as a strip of pictures, then one row per person */
+.tw-post__cards { display: grid; grid-auto-flow: column; grid-auto-columns: 96px; gap: 0.45rem; overflow-x: auto; padding: 2px 2px 8px; }
+.tw-post__thread { grid-template-columns: auto minmax(0, 1fr) auto; }
+.tw-post__n {
+  min-width: 1.6em; padding: 0 0.4em; border-radius: 999px; line-height: 1.6; text-align: center;
+  background: #241c0e; color: #ffe135; font-size: 0.64rem; font-variant-numeric: tabular-nums;
+}
+
+/* ---- 🚪 THE KNOCK (22 Sep 2026) ----------------------------------------------------------------
+ * Post from a house the reader has never had post from waits at the door: who, never what. The
+ * envelope knocks twice when the drawer opens — once, transform only — and then it is still. */
+.tw-post__about { margin: 0; font-size: 0.76rem; line-height: 1.45; opacity: 0.86; }
+.tw-post__knocks { display: grid; gap: 0.4rem; }
+.tw-knock {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.35rem 0.5rem;
+  padding: 0.45rem 0.5rem; background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+}
+.tw-post__stamp.is-knock { width: 40px; height: 40px; transform-origin: 50% 90%; animation: twKnock 700ms ease-in-out 250ms 1 both; }
+@keyframes twKnock {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(-9deg); }
+  30% { transform: rotate(5deg); }
+  50% { transform: rotate(0); }
+  65% { transform: rotate(-9deg); }
+  80% { transform: rotate(5deg); }
+}
+.tw-knock__who { display: grid; gap: 1px; min-width: 0; }
+.tw-knock__who b { font-family: "Archivo Black", sans-serif; font-size: 0.74rem; letter-spacing: 0.02em; unicode-bidi: isolate; }
+.tw-knock__who small { font-size: 0.68rem; opacity: 0.72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: isolate; }
+/* ⚠️ buttons never line-break: two equal halves, and the longer label ellipses rather than wraps */
+.tw-knock__two { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
+.tw-knock__two button {
+  min-height: 40px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* ⚠️ ONE BOX FOR BOTH: the shared .tw-btn--in carries a top margin and a thinner border, which sat Let in
+     lower than Turn away — two answers of the same weight have to look it */
+  margin: 0; font-size: 0.78rem; font-weight: 800; border: 3px solid #000; box-shadow: 2px 2px 0 #000; padding: 0.3rem 0.5rem;
+}
+.tw-post__away {
+  appearance: none; font: inherit; cursor: pointer; font-size: 0.78rem; font-weight: 700;
+  background: #2a2119; color: #fffdf5; border: 3px solid #000; box-shadow: 2px 2px 0 #000; padding: 0.3rem 0.5rem;
+}
+.tw-post__away:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
+
+/* 🏡 a world note opens on its own paper, which brings its own look */
+.tw-post__open.is-world { background: none; border: 0; box-shadow: none; padding: 0; color: inherit; }
+.tw-post__world .bw-paper { margin: 0.1rem 0 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-post__stamp.is-knock { animation: none; }
+  .tw-post__tab:active, .tw-post__pctile:active, .tw-post__away:active { transform: none; }
+}

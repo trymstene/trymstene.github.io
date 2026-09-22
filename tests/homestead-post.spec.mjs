@@ -1,6 +1,7 @@
 // 📬 THE WORLD'S OWN POST (19 Sep 2026): the mailbox is a mailbox — a dot when something is in it, the
 // letters on the world's paper, no orders in there (they live on the phone) and no move button (that is
 // build mode's job). The letters are device-local by design: they never ride the public yard read.
+// Since 22 Sep 2026 they are sealed envelopes in the same two-drawer card as everybody else's post.
 import { test, expect } from '@playwright/test';
 
 async function mailbox(page) {
@@ -10,7 +11,7 @@ async function mailbox(page) {
   for (let i = 0; i < 6; i++) {
     await page.mouse.click(r.x + g.at.x / g.W * r.width, r.y + (g.at.y - 20) / g.H * r.height);
     await page.waitForTimeout(500);
-    if (await page.locator('#hsPost').isVisible()) return true;
+    if (await page.locator('#hsLetters').isVisible()) return true;
   }
   return false;
 }
@@ -33,21 +34,28 @@ test('the mailbox holds the world’s post, shows a dot, and nothing else', asyn
   }
 
   expect(await mailbox(page), 'the mailbox opened its post').toBe(true);
-  // the letters are on the world's paper, in the world's hand
-  const papers = page.locator('#hsPostList .bw-paper');
-  expect(await papers.count()).toBeGreaterThan(0);
-  expect(await papers.first().evaluate((e) => getComputedStyle(e).fontFamily)).toContain('Caveat');
-  expect(await papers.first().textContent()).not.toContain('{');   // the placeholders are filled
-  await page.locator('#hsPost .hs-card').screenshot({ path: 'test-results/homestead-post.png' });
+  // ⭐ the world's notes are sealed envelopes in the Fresh drawer, signed by whoever wrote them
+  const env = page.locator('#hsLetters .tw-post__env[data-id^="w:"]');
+  await env.first().waitFor({ timeout: 10000 });
+  const names = await env.evaluateAll((els) => els.map((e) => e.textContent.trim()));
+  expect(names.length).toBeGreaterThan(0);
+  expect(names.every((n) => n.length > 1 && !n.includes('{')), 'every envelope is signed: ' + names.join(' | ')).toBe(true);
+  await page.locator('#hsLetters .tw-card').screenshot({ path: 'test-results/homestead-post.png' });
 
   // …and nothing that is not post: no orders, no move button
-  const card = (await page.locator('#hsPost').textContent()) || '';
+  const card = (await page.locator('#hsLetters').textContent()) || '';
   expect(card).not.toMatch(/on the way|move it|✥/);
 
+  // opened, a note is on the world's paper, in the world's hand
+  await env.first().click();
+  const paper = page.locator('#hsLetters .tw-post__world .bw-paper').first();
+  await paper.waitFor({ timeout: 5000 });
+  expect(await paper.evaluate((e) => getComputedStyle(e).fontFamily)).toContain('Caveat');
+  expect(await paper.textContent()).not.toContain('{');   // the placeholders are filled
+
   // reading it clears the dot
-  await page.locator('.hs-post__it').first().click();
   await page.waitForTimeout(400);
-  await page.click('#hsPostClose');
+  await page.click('#hsLettersX');
   await page.waitForTimeout(500);
   const left = await page.evaluate(() => window.__hs.mailGeo().unread);
   expect(await page.locator('.hs-maildot').isVisible()).toBe(left > 0);
@@ -105,9 +113,14 @@ test('the cheque: a letter that arrived while you were not looking', async ({ pa
   await page.waitForTimeout(400);
   expect((await page.evaluate(() => window.__hs.mailOf())).length, 'a week is delivered once').toBe(before);
 
-  // …and it reads as a letter, on the world's own paper, with the amount in it
+  // …and it reads as a letter, on the world's own paper, with the amount in it — a kraft envelope first
   expect(await mailbox(page), 'the mailbox opens').toBe(true);
-  const gold = page.locator('.bw-paper--wage');
+  const kraft = page.locator('#hsLetters .tw-post__env.is-wage');
+  await kraft.first().waitFor({ timeout: 10000 });
+  expect(await kraft.count(), 'the cheque is a kraft envelope in Fresh').toBe(1);
+  await kraft.first().click();
+  const gold = page.locator('#hsLetters .bw-paper--wage');
+  await gold.first().waitFor({ timeout: 5000 });
   expect(await gold.count(), 'the cheque is on the same paper, with its own seam').toBe(1);
   const text = await gold.first().textContent();
   expect(text).toContain('39');

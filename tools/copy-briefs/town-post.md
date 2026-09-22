@@ -72,10 +72,23 @@ the counter is closed, come back — and it is not an error and not an apology. 
 `from` is the small label over who a letter came from. One or two words, and it MUST contain
 `{who}` — the game puts the sender's name there.
 
-`threads` is the small heading over the older post, under the new envelopes. Under it sits one row
-per person you have letters from — not one row per letter — so a mailbox with sixty letters from
-eight people is eight rows rather than sixty. One or two words, the way you would label a drawer of
-kept correspondence. It is set in capitals by the stylesheet.
+### The two drawers (22 Sep 2026)
+
+Trym: *"make sure it looks great visually in the mailbox when you have lots of letters so its not
+all in a long list, maybe a 'read' or 'archive' minitab for old letters, so you always see the fresh
+letters youve received from anyone, users and residents."* So the mailbox is two drawers under two
+small tabs, and the older post can never bury the new. (This replaces the old `threads` heading:
+the second drawer's tab does that job now.)
+
+- `drawers.fresh` — the tab over the post you have not opened yet: letters from neighbours, letters
+  from the residents, postcards, and anybody knocking. ONE word, titled, the way a tray or a drawer
+  is labelled. The game puts a small count beside it.
+- `drawers.kept` — the other tab: everything already opened, one row per person who wrote, and the
+  postcards kept as pictures. ONE word, titled. ⚠️ Never "Archive", "Inbox", "Folder", "Old" or
+  "Read" — this is a drawer of letters worth keeping, not a mail program.
+- `drawers.none` — the whole of the first drawer when nothing new has come but older post is kept.
+  It may point at the other drawer by its name, calmly. Different from `empty`, which is a box with
+  nothing in it at all. No promise that post is coming, no instruction to go and write.
 
 `back` is the button that goes back up a level — from an open letter to the list, or from one
 person's letters to the mailbox. A verb first, one or two words, one line, and it has to make sense
@@ -234,3 +247,25 @@ moment, and it answers two questions in plain words, in this order: **what is th
 and who runs it) and **what can I do here** (or that there is nothing to do here yet). No scenery,
 no metaphor, no weather, no riddle. Two plain sentences beat one pretty one. A gate now refuses a
 place line that names neither the place nor a thing a player can do (docs/voice.md).
+
+
+## 🚪 The knock — post from a house that has not written before (22 Sep 2026)
+
+The plan's rail that actually holds (`docs/town-jobs-plan.md` §6): post from a house the reader has
+never had post from does not come straight in. It waits at the door as a **knock** — the reader sees
+who, never what they wrote — and the reader lets that house in once. After that, whatever the house
+sends comes straight in. Turning a house away means this post goes and that house does not knock
+again. Writing to somebody lets them in without a knock.
+
+- `knock.line` — the line on a knock. MUST contain `{who}` (the sender's name). Two to four words:
+  somebody is at the door. Not a warning.
+- `knock.about` — the one line above the knocks, in plain words: post from a house that has not
+  written before waits at the door; let them in to read it, and what they send after comes straight
+  in. ⚠️ It may not frighten — never "stranger", "danger", "unknown", "blocked" — and it names no rule
+  and no filter. One or two short sentences, not a list of instructions.
+- `knock.in` — the button that lets the house in. A verb first, one or two words, one line in half a
+  261-pixel row.
+- `knock.away` — the button beside it that turns the house away. A verb first, one or two words.
+  Plain and never cruel: never "block", never "report".
+- `knock.gone` — the toast after turning a house away: the knock is gone and that house will not
+  knock again. Matter-of-fact. It may not say what the sender is told (nothing), and it may not thank.

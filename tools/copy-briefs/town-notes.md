@@ -8,8 +8,9 @@ quietly dies. The plan is blunt about the fix (`docs/town-jobs-plan.md` §6):
 > a note after a Curse Night. The mailbox is never dead, even on a Tuesday when nobody else is on.
 > **This is the load-bearing beam, not a flourish.**
 
-This job is those letters. Four residents, two occasions, and the whole point is that the mailbox
-has something real in it on a quiet day.
+This job is those letters. Four residents, seven occasions, and the whole point is that the mailbox
+has something real in it on a quiet day — and, since 22 Sep 2026, that some of it is about the
+reader: a card that names what you *did* is worth ten that say hello.
 
 ## The two occasions
 
@@ -28,6 +29,32 @@ who like you write when nothing is happening. It must never mention that the box
 never suggest anybody has been forgotten or is lonely, and must never ask why they have not written.
 It is a note about something small the writer noticed — the weather over the square, a thing that
 happened at their counter, the state of the fountain. Warm and unimportant.
+
+## The five occasions the world saw (22 Sep 2026)
+
+The plan (`docs/town-jobs-plan.md` §6): *"It is recognition, not small talk. The deck's lines are
+keyed to things the world already knows and can verify: you fixed the square, your yard looks good,
+you worked the counter, the curse took your lamps last night."* The server writes these the moment
+the fact is true, so each letter may name **exactly its one fact** — and nothing else about the
+reader: not their name, not a number, not a time.
+
+- `first` — **the reader's first letter or postcard has gone out** to a neighbour. Post left their
+  house for the first time and the resident noticed. Must mention the letter, the card or the post.
+  Never who it went to, never what it said, never whether they will write again.
+- `cabin` — **their homestead has grown from a tent into a cabin.** The resident heard, or walked
+  past and saw it. Must name the cabin. No prices, nothing about how it was built, no advice.
+- `house` — **their homestead has grown from a cabin into a house**, a proper house on the road now,
+  the last step. Must name the house. No prices, no advice, and never that they are "done".
+- `fixed` — **they put the square right**: in one day they mended several things in Banana Town's
+  square — a lamp relit, litter cleared, a wall scrubbed, a bin set upright. The resident noticed the
+  square looking better and knows it was them. Must name the square. Never how many, never a "job".
+- `curse` — **the morning after a Curse Night** in Banana Town: the lamps went out, the ghosts were
+  about, and the square took a knock. The resident writes about what the night left behind. Must
+  mention the night. It may not claim the reader was there, may not frighten, may not explain the
+  curse, may not name a time or how often it comes, and may not ask them to help.
+
+Each occasion is written by all four residents, one letter each, in their own voice — the world picks
+one, so the same news reads differently in different mailboxes on the same morning.
 
 ## The four who write
 
@@ -53,8 +80,8 @@ Their voices come from the character bible, which you are given. In short:
 4. **Short.** These sit on a torn paper slip in a card 261 pixels wide. Two or three sentences at
    most — a hundred and forty characters is the spirit of it, and the ceiling is generous rather
    than a target.
-5. **They do not know what the reader has done.** These two occasions carry no facts about the
-   player — not their name, not their yard, not their doings. A later slice will add letters keyed
-   to things the world can verify; these two must read perfectly to a total stranger.
+5. **Only the facts the occasion names.** `welcome` and `quiet` carry no facts about the player at
+   all and must read perfectly to a total stranger. The five occasions above each name their ONE
+   fact and nothing else — never the reader's name, never a number, never a time or a date.
 6. **Four distinct people.** Read the four side by side: if you could swap two signatures without
    noticing, they are not written yet.
