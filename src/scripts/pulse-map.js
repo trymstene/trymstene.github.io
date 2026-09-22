@@ -9,10 +9,17 @@
 // PURE RENDERER: no imports, no fetching. Hand it the map data and the
 // payloads; it owns one canvas.
 //
-//   buildEarth(host, MAP, opts) -> { push, setMode, setLens, setLabels, zoom, stop }
+//   buildEarth(host, MAP, opts) -> { push, setMode, setLens, zoom, stop, pins, pin, clearPins }
 //     MAP  = { MAP_W, MAP_H, LAND_HEX, CENTROIDS }
 //     push({ live, range, mode, lens })
-//     opts = { onTip(html|null) }
+//     opts = { onTip(lines|null), onPins(codes) }
+//
+// 📌 A TAPPED DOT KEEPS ITS LABEL (22 Sep 2026, Trym: "i should be able to just
+// click on a dot on the map and it sticks until i toggle it off"). A tap pins
+// the nearest dot; the label — name, count, what they are reading, how close
+// to buying — is painted on the canvas until the same dot is tapped again.
+// A mouse hovering shows the same label without pinning it. The old 🏷 toggle
+// that pinned every label at once is gone.
 //
 // ⚠️ THE CONTRACT THAT CANNOT DRIFT (all of it is load-bearing):
 //   · 6px cells, land drawn at 5px — the 1px gutter IS the pixel-earth look
@@ -32,7 +39,7 @@
 let PX = 6;
 const MAXDPR = 2;
 // as many labels as a phone can hold before the map is all label
-const MAXLABELS = 10;
+const MAXLABELS = 12;
 const SEA = '#151129';
 const LAND = '#453a75';
 const COL = { live: '255,225,53', range: '255,93,143', event: '94,224,138' };
@@ -97,13 +104,9 @@ export function buildEarth(host, MAP, opts) {
   // its metrics are scaled by the measured canvas-per-CSS-pixel ratio
   let CSS2CV = DPR;
   function layout() {
-    // ⚠️ A ZERO-WIDTH BOX IS NOT A REASON TO DRAW NOTHING. This returned early
-    // when the container had no width — which is the NORMAL state when the map
-    // is built inside a pane that is still `hidden`, or before first layout. The
-    // canvas then kept width 0 and the earth was blank until something resized
-    // the window, which is the "sometimes the world map doesnt load" Trym saw.
-    // Fall back to a real size, and let the observer below correct it the moment
-    // the box is measurable.
+    // ⚠️ A ZERO-WIDTH BOX IS NOT A REASON TO DRAW NOTHING. The map is often
+    // built inside a pane that is still `hidden`; fall back to a real size and
+    // let the observer below correct it the moment the box is measurable.
     const box = wrap.clientWidth || host.clientWidth || 960;
     const px = Math.max(1.2, (box * DPR) / W);
     CSS2CV = (W * px) / box;
@@ -119,8 +122,7 @@ export function buildEarth(host, MAP, opts) {
   layout();
   addEventListener('resize', layout);
   // ⚠️ RESIZE ALONE IS NOT ENOUGH: a pane that becomes visible fires no resize
-  // event, so a map built while hidden would keep its fallback size forever.
-  // The observer catches the box the instant it has one.
+  // event. The observer catches the box the instant it has one.
   if (typeof ResizeObserver !== 'undefined') {
     try { new ResizeObserver(() => layout()).observe(wrap); } catch (e) {}
   }
@@ -132,7 +134,7 @@ export function buildEarth(host, MAP, opts) {
     view.oy = Math.max(0, Math.min(H - H / view.s, view.oy));
   };
 
-  let state = { live: null, range: null, mode: 'live', lens: '', labels: false };
+  const state = { live: null, range: null, mode: 'live', lens: '', pins: new Set(), hover: '' };
   let dots = [];
   let flakes = [];
   let confettiUntil = 0;
@@ -211,6 +213,12 @@ export function buildEarth(host, MAP, opts) {
       ctx.fillRect(cx - body / 2, cy - body / 2, body, body);
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
       ctx.fillRect(cx - body / 2, cy - body / 2, Math.max(2, body * 0.28), Math.max(2, body * 0.28));
+      // 📌 a pinned dot wears a ring, so the label can be told from a hover
+      if (state.pins.has(d.cc)) {
+        ctx.strokeStyle = 'rgba(244,238,255,0.85)';
+        ctx.lineWidth = Math.max(1, 1.2 * k);
+        ctx.strokeRect(cx - body / 2 - 2.5, cy - body / 2 - 2.5, body + 5, body + 5);
+      }
       // ── close to buying: brackets that breathe
       if (stage >= 2) {
         const br = 0.4 + 0.3 * (1 + Math.sin(t * 2.6));
@@ -242,7 +250,7 @@ export function buildEarth(host, MAP, opts) {
           cc, name: cc, v: 0, stage: +st || 1, ghost: true });
       }
     }
-    if (state.labels) paintLabels(cw, ch);
+    paintLabels(cw, ch);
     // ── and the eight seconds that say somebody actually paid. Drawn in
     //    SCREEN space so it does not zoom with the map.
     if (now < confettiUntil) {
@@ -256,30 +264,32 @@ export function buildEarth(host, MAP, opts) {
     }
   }
 
-  // ── THE LABELS — the tooltip's answer for every pin at once. A 6px dot is
-  //    not a touch target, so on a phone the only way to read the map was to
-  //    hunt for one; with this on, the map says who is on and what they are
-  //    reading without a single tap.
-  //
-  //    Loudest pin first, and a label that would land on one already placed is
-  //    dropped rather than stacked — an unreadable pile says less than nothing.
+  // ── THE LABELS — one per pinned dot, plus the dot a mouse is over. Pinned
+  //    first, loudest first, and a label that would land on one already placed
+  //    is dropped rather than stacked — an unreadable pile says less than nothing.
   const cut = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  const labelLines = (d) => {
+    const lines = [cut(d.name || d.cc, 16) + (d.v ? '  ' + d.v : '')];
+    if (d.stage >= 2) lines.push(HOTTXT[d.stage] + (d.ghost ? ' — left' : ''));
+    const pages = (state.mode === 'live' && state.live && state.live.countryPages) || null;
+    const p = pages && pages[d.cc] && pages[d.cc][0];
+    if (p) lines.push(cut(String(p.page || p), 22));
+    return lines;
+  };
   function paintLabels(cw, ch) {
+    const want = dots.filter((d) => state.pins.has(d.cc) || (d.cc === state.hover && !state.pins.has(d.cc)));
+    if (!want.length) return;
     const F = Math.max(9, Math.round(9.5 * CSS2CV));
     const PAD = Math.round(F * 0.45), LH = Math.round(F * 1.3), GAP = Math.round(F * 0.55);
     ctx.font = '600 ' + F + 'px system-ui, -apple-system, sans-serif';
     ctx.textBaseline = 'top';
-    const pages = (state.mode === 'live' && state.live && state.live.countryPages) || null;
     const placed = [];
     const hits = (b) => placed.some((p) => b.x < p.x + p.w && b.x + b.w > p.x && b.y < p.y + p.h && b.y + b.h > p.y);
-    const ranked = dots.slice().sort((a, b) => (b.stage - a.stage) || (b.v - a.v));
+    const ranked = want.sort((a, b) => (state.pins.has(b.cc) - state.pins.has(a.cc)) || (b.stage - a.stage) || (b.v - a.v));
     for (const d of ranked) {
       if (placed.length >= MAXLABELS) break;
       if (d.cx < 0 || d.cy < 0 || d.cx > cw || d.cy > ch) continue;
-      const lines = [cut(d.name || d.cc, 16) + (d.v ? '  ' + d.v : '')];
-      if (d.stage >= 2) lines.push(HOTTXT[d.stage] + (d.ghost ? ' — left' : ''));
-      const p = pages && pages[d.cc] && pages[d.cc][0];
-      if (p) lines.push(cut(String(p.page || p), 22));
+      const lines = labelLines(d);
       const w = Math.round(Math.max(...lines.map((l) => ctx.measureText(l).width))) + PAD * 2;
       const h = lines.length * LH + PAD * 2;
       const body = Math.max(PX, (2 * d.r - 1) * PX) * view.s;
@@ -321,45 +331,72 @@ export function buildEarth(host, MAP, opts) {
     lastPurchases = n;
   }
 
-  const at = (ev) => {
+  // the dot under a pointer, if one is close enough to mean it
+  const nearest = (ev) => {
     const r = cv.getBoundingClientRect();
-    const mx = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * (cv.width / r.width);
-    const my = ((ev.touches ? ev.touches[0].clientY : ev.clientY) - r.top) * (cv.height / r.height);
+    const mx = (ev.clientX - r.left) * (cv.width / r.width);
+    const my = (ev.clientY - r.top) * (cv.height / r.height);
     let best = null, bd = 26 * view.s;
     for (const d of dots) {
       const dist = Math.hypot(mx - d.cx, my - d.cy);
       if (dist < bd) { bd = dist; best = d; }
     }
-    if (!best) { tip.hidden = true; if (o.onTip) o.onTip(null); return; }
+    return best;
+  };
+  // the transient tip: a mouse peeking at a dot it has not pinned
+  const showTip = (best) => {
     const bits = [(best.name || best.cc) + (best.v ? ' · ' + best.v : '')];
     if (best.stage) bits.push(HOTTXT[best.stage] + (best.ghost ? ' — left already' : ''));
-    // in LIVE mode the tooltip also says what they are looking at
     if (state.mode === 'live' && state.live && state.live.countryPages) {
       const ps = state.live.countryPages[best.cc] || [];
       ps.slice(0, 3).forEach((p) => bits.push('· ' + (p.page || p)));
     }
+    bits.push('tap to keep');
     tip.hidden = false;
     tip.textContent = bits.join('\n');
     // ⚠️ the card clips its overflow (rounded corners), so a tip drawn above a
-    // pin near the top edge — Norway, Canada, Greenland — lost its first lines
-    // (Trym, 5 Sep). Measure the tip, flip it below the pin when there is no
-    // room above, and keep it inside the card sideways. Pixels, not
-    // percentages: the clamp needs the tip's own size.
+    // pin near the top edge — Norway, Canada, Greenland — lost its first lines.
+    // Measure the tip, flip it below the pin when there is no room above, and
+    // keep it inside the card sideways.
     const bw = wrap.clientWidth, bh = wrap.clientHeight;
     const px = (best.cx / cv.width) * bw, py = (best.cy / cv.height) * bh;
     const tw = tip.offsetWidth, th = tip.offsetHeight, GAP = 14;
     const above = py - GAP - th >= 4;
     tip.style.left = Math.round(Math.max(6, Math.min(bw - tw - 6, px - tw / 2))) + 'px';
     tip.style.top = Math.round(above ? py - GAP - th : Math.min(bh - th - 4, py + GAP)) + 'px';
-    if (o.onTip) o.onTip(bits);
+    return bits;
   };
-  cv.addEventListener('pointermove', at);
-  cv.addEventListener('pointerdown', at);
-  cv.addEventListener('pointerleave', () => { tip.hidden = true; });
+  const tellPins = () => { if (o.onPins) o.onPins([...state.pins]); };
+  const toggle = (cc) => {
+    if (state.pins.has(cc)) state.pins.delete(cc); else state.pins.add(cc);
+    tip.hidden = true;
+    tellPins();
+  };
+  cv.addEventListener('pointermove', (ev) => {
+    if (ev.pointerType === 'touch') return;           // a finger cannot hover; its tap pins
+    const best = nearest(ev);
+    state.hover = best ? best.cc : '';
+    if (best && !state.pins.has(best.cc)) { if (o.onTip) o.onTip(showTip(best)); }
+    else { tip.hidden = true; if (o.onTip) o.onTip(null); }
+  });
+  cv.addEventListener('pointerleave', () => { state.hover = ''; tip.hidden = true; if (o.onTip) o.onTip(null); });
 
-  // drag to pan, in cell units so it feels the same at every zoom
-  let drag = null;
-  cv.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy }; });
+  // a press that does not travel is a tap, and a tap pins; a press that
+  // travels is a drag, and a drag pans (only when zoomed, in cell units so it
+  // feels the same at every zoom)
+  let drag = null, down = null;
+  cv.addEventListener('pointerdown', (e) => {
+    down = { x: e.clientX, y: e.clientY };
+    drag = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy };
+  });
+  cv.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    down = null;
+    if (moved > 6) return;
+    const best = nearest(e);
+    if (best) toggle(best.cc);
+  });
   addEventListener('pointerup', () => { drag = null; });
   addEventListener('pointermove', (e) => {
     if (!drag || view.s === 1) return;
@@ -375,7 +412,6 @@ export function buildEarth(host, MAP, opts) {
     push,
     setMode(m) { state.mode = m; },
     setLens(l) { state.lens = l; },
-    setLabels(on) { state.labels = !!on; },
     zoom(dir) {
       const cx = view.ox + W / view.s / 2, cy = view.oy + H / view.s / 2;
       view.s = Math.max(1, Math.min(5, view.s + dir));
@@ -384,6 +420,9 @@ export function buildEarth(host, MAP, opts) {
       clampView();
       return view.s;
     },
+    pins() { return [...state.pins]; },
+    pin(cc) { if (cc) toggle(String(cc).toUpperCase()); },
+    clearPins() { state.pins.clear(); tellPins(); },
     stop() { cancelAnimationFrame(raf); },
   };
 }

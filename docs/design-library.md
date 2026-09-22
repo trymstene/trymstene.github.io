@@ -771,3 +771,32 @@ counter, so tapping the bag did nothing a player could see.
   the strip and watched with a `ResizeObserver`, because the strip grows a line when the save pill
   appears. `tests/town-cafe.spec.mjs` asserts the toast overlaps neither the tray, the strip, nor
   `.tw-atwork`.
+
+## §26 BANANA HQ: ONE QUESTION PER FLOOR, ONE CLOCK PER CARD (22 Sep 2026)
+
+Trym, after a month of desks growing one at a time: *"theres alot of tabs and sub-tabs and it
+feels very messy … Realtime is mixed with GA4 historic running data … 'qa' is at the top of the
+list - i dont understand what that is … make in general the HQ more pedagogic"*. The rebuild
+(`src/pages/inbox.astro` + `src/scripts/pulse-shell.js`, the plan at
+https://claude.ai/artifact/VV4qniZaLfEQwcAMmVtaGH) is held to four rules:
+
+- **A floor is a question, and it is one scrolling page.** Now · Visitors · Business · Players ·
+  World · Mail · Reviews · Dev. No rooms inside floors; the open floor's sections are a jump list
+  in the rail (desk) or a strip under the tabs (phone).
+- **Every section wears a chip** — `section(host, title, note, { src, when })` in
+  `hq-pulse.js` — that says where the number comes from (LIVE · GOOGLE · SERVER · INBOX · SHOPIFY
+  · GITHUB) and what time it measures ("last 30 min", "7 days", "2026-09-21 · the rollup", "right
+  now"). A floor may mix clocks; **a card never does.** The Now floor is live only; the Google
+  floors read the window; the window's map lives on Visitors, never on the live map.
+- **No worker code reaches the screen.** Coin sources, places and refusal reasons go through
+  `src/data/hq-words.js` (`faucet()`, `area()`, `refusal()`); an unknown key is humanised and
+  marked "no name yet". Test coins (`qa`) are dropped in the rollup fold and never drawn.
+- **One visible sentence under every title** (`.hqp-deck`), the rest behind "more". The old 22 px
+  (i) hid the best sentences on the desk.
+
+**Enforced by** `tools/pulse-stub-walk.mjs` (run after a build): every floor at 1440 and 393 with
+every worker stubbed, no page error, the phone never scrolls sideways, a tapped map dot keeps its
+label and lets go on the second tap (no labels toggle exists), the Visitors floor lists pages with
+visits, the Business floor speaks the new words and none of the old, the World floor prints none of
+`qa` `deny` `src` `unruled` `faucet`, and Reported letters is drawn in all three states with a
+working clear.

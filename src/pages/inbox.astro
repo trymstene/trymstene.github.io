@@ -41,14 +41,12 @@ const description = 'Authorized banana personnel only.';
     .bm-wrap input, .bm-wrap select, .bm-wrap textarea {
       border-width: 1px !important; border-color: rgba(244, 238, 255, 0.1) !important; border-radius: 14px; }
 
-    /* 📈 THE WORLD DESK. One column on a phone, two where there is room.
-       Colour does one job at a time: identity for areas and faucets, ink for a
-       lone series, and the status hues are reserved for state. */
-    /* ⚠️ THE SCALE HANGS ON .bm-wrap, NOT ON THE PANE'S ID. Tokens declared on
-       #bmPanePulse are invisible to anything that renders the desk outside that
-       one element — the analyst overlay and the bench page both do — and a
-       margin of var(--sp5) with no --sp5 is a DROPPED DECLARATION, not a
-       fallback. Every spacing fix silently did nothing there. */
+    /* 📈 THE NUMBERS. Colour does one job at a time: identity for places and
+       coin sources, ink for a lone series, and the status hues are reserved for state. */
+    /* ⚠️ THE SCALE HANGS ON .bm-wrap, NOT ON A PANE'S ID. Tokens declared on one
+       floor's id are invisible to anything that renders outside that element —
+       the analyst overlay does — and a margin of var(--sp5) with no --sp5 is a
+       DROPPED DECLARATION, not a fallback. Every spacing fix silently did nothing there. */
     .bm-wrap {
       /* ONE SPACING SCALE. Everything on the desk steps through these, so a
          header can never sit closer to its own table than to the panel above
@@ -62,14 +60,13 @@ const description = 'Authorized banana personnel only.';
          on this desk may print a number quieter than the words around it. */
       --num-xl: 1.55rem; --num-lg: 1.15rem; --num-md: 0.88rem;
     }
-    #bmPanePulse { --acc: var(--nana); }
     /* ⚠️ Space Grotesk's default figures are PROPORTIONAL — its "1" is much
        narrower than its "0" — so a column of numbers does not line up and the
        eye cannot run down it. Every figure on the desk is tabular. Scoped to
        .bm-wrap, NOT the pane id: the overlay and the bench render outside it. */
     .bm-wrap .hqp-tv, .bm-wrap .hqp-gv, .bm-wrap .hqp-tval, .bm-wrap .hqp-rval,
     .bm-wrap .hqp-bval, .bm-wrap .hqp-fnum, .bm-wrap .hqp-abigv, .bm-wrap .hqp-tip,
-    .bm-wrap .ps-stat b, .bm-wrap .ps-devv, .bm-wrap .ps-rbadge, .bm-wrap .hqp-fdrop,
+    .bm-wrap .ps-stat b, .bm-wrap .ps-devv, .bm-wrap .hqp-fdrop,
     .bm-wrap .hqp-cap, .bm-wrap .ps-rline, .bm-wrap .hqp-tsub, .bm-wrap .hqp-rsub {
       font-variant-numeric: tabular-nums;
     }
@@ -142,7 +139,6 @@ const description = 'Authorized banana personnel only.';
     /* 📊 PULSE 2.0 — the shell. Not the site's content grid: this is a
        control room, so it goes wide, dark and dense, and it stacks on a
        phone instead of shrinking. */
-    #bmPanePulse { --acc: var(--nana); }
     .ps-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 0.9rem;
       flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
       padding: 0.6rem 0.8rem; margin: 0 0 0.8rem; border-radius: 18px;
@@ -160,16 +156,6 @@ const description = 'Authorized banana personnel only.';
     .ps-chip { border: 1px solid rgba(244, 238, 255, 0.1); background: var(--hcard); color: var(--hink);
       border-radius: 999px; padding: 0.3rem 0.75rem; font: inherit; font-size: 0.74rem; cursor: pointer; }
     .ps-chip[aria-pressed="true"] { background: var(--acc, var(--nana)); border-color: transparent; color: #14101f; font-weight: 700; }
-    .ps-rooms { display: flex; gap: 0.4rem; overflow-x: auto; scrollbar-width: none; margin: 0 0 1rem; padding-bottom: 0.2rem;
-      -webkit-mask-image: linear-gradient(90deg, #000 0, #000 88%, transparent 100%);
-      mask-image: linear-gradient(90deg, #000 0, #000 88%, transparent 100%); }
-    @media (min-width: 760px) { .ps-rooms { -webkit-mask-image: none; mask-image: none; } }
-    .ps-rooms::-webkit-scrollbar { display: none; }
-    .ps-room { flex: none; border: 1px solid rgba(244, 238, 255, 0.1); background: var(--hcard); color: var(--hdim);
-      border-radius: 999px; padding: 0.4rem 0.9rem; font: inherit; font-size: 0.76rem; letter-spacing: 0.05em;
-      cursor: pointer; position: relative; }
-    .ps-room[aria-pressed="true"] { color: #14101f; background: var(--racc); border-color: transparent; font-weight: 700; }
-    .ps-rbadge { margin-left: 0.35rem; font-size: 0.68rem; opacity: 0.8; }
     .ps-body { min-height: 40vh; }
     .ps-mapcard { position: relative; border-radius: 18px; overflow: hidden;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
@@ -370,7 +356,7 @@ const description = 'Authorized banana personnel only.';
        targets in the twenties, and a lens dropdown wider than the viewport. */
     @media (max-width: 620px) {
       /* 44px is the floor for anything a thumb has to hit */
-      .ps-chip, .ps-room { min-height: 44px; display: inline-flex; align-items: center;
+      .ps-chip { min-height: 44px; display: inline-flex; align-items: center;
         padding: 0.5rem 0.9rem; }
       .ps-lens { min-height: 44px; width: 100%; max-width: 100%; }
       .ps-mchips { width: 100%; }
@@ -393,14 +379,6 @@ const description = 'Authorized banana personnel only.';
 
     /* form controls never below 16px → iOS won't zoom-jump on focus */
     .bm-wrap input, .bm-wrap select, .bm-wrap textarea { font-size: 16px; }
-    /* each department carries its own colour temperature (the Pulse-room trick) */
-    #bmPaneMail { --acc: var(--cool); }
-    #bmPaneGal { --acc: var(--purp); }
-    #bmPaneRave { --acc: var(--org); }
-    #bmPaneItems { --acc: var(--hot2); }
-    #bmPaneUsers { --acc: var(--ok); }
-    #bmPaneWorld { --acc: var(--nana); }
-    #bmPaneDev { --acc: #8fb6ff; }
     .bm-letterhead {
       background: var(--hpanel); color: var(--hink); border: 2px solid var(--hline);
       border-top: 4px solid var(--nana); box-shadow: 0 10px 26px rgba(0,0,0,0.35);
@@ -497,9 +475,6 @@ const description = 'Authorized banana personnel only.';
       font-family: inherit; font-weight: 800; font-size: 0.82rem; letter-spacing: 0.01em;
       cursor: pointer; border-radius: 999px; color: var(--hink);
     }
-    #bmTabMail { --tacc: var(--cool); } #bmTabGal { --tacc: var(--purp); }
-    #bmTabRave { --tacc: var(--org); } #bmTabItems { --tacc: var(--hot2); }
-    #bmTabUsers { --tacc: var(--ok); } #bmTabWorld { --tacc: var(--nana); }
     .bm-tab:hover { border-color: var(--tacc, var(--nana)); }
     .bm-tab[aria-selected="true"] { background: var(--tacc, var(--nana)); border-color: var(--tacc, var(--nana)); color: #14101f; }
     .bm-tab .bm-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.35em; height: 1.35em; padding: 0 0.3em; border-radius: 999px; background: var(--hot2); color: #fff; font-size: 0.66rem; margin-left: 0.15rem; font-variant-numeric: tabular-nums; }
@@ -705,6 +680,98 @@ const description = 'Authorized banana personnel only.';
     .bm-devfile textarea { min-height: 56px; resize: vertical; }
     @media (max-width: 560px) { .bm-devcards { grid-template-columns: 1fr 1fr; } .bm-devcards .bm-worldcard:first-child { grid-column: 1 / -1; } }
     .bm-worldcard span { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hdim); }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       🏢 THE FLOORS (22 Sep 2026) — Trym: "theres alot of tabs and sub-tabs and it feels very messy …
+       for desktop where im using the HQ the most you can use a different width breakpoint to use more
+       of the screenspace on the sides to show for example a bigger world map - but it must work nice
+       through mobile aswell". One question per floor, a rail on the desktop, the strip on a phone.
+       ═══════════════════════════════════════════════════════════════════════ */
+    .bm-letterhead { flex-wrap: wrap; }
+    .bm-letterhead__acts { margin-left: auto; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .bm-letterhead__acts .ps-rpt { margin-left: 0; min-height: 40px; }
+    .bm-floorq { margin: 0.9rem 0 1rem; font-family: "Archivo Black", sans-serif; font-size: 1.15rem; line-height: 1.3; }
+    .bm-legend { display: block; font-family: inherit; font-weight: 400; font-size: 0.78rem; color: var(--hdim); margin-top: 0.35rem; line-height: 1.7; }
+    .bm-legend .hqp-chip { vertical-align: 1px; }
+    /* the chip: one word for the source, then the time the number measures */
+    .hqp-chip { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; border-radius: 999px; padding: 0.15rem 0.55rem; white-space: nowrap; font-variant-numeric: tabular-nums;
+      background: rgba(244, 238, 255, 0.08); color: var(--hdim); }
+    .hqp-chip.is-live { background: rgba(94, 224, 138, 0.16); color: var(--ok); }
+    .hqp-chip.is-goog { background: rgba(94, 200, 224, 0.16); color: var(--cool); }
+    .hqp-chip.is-serv { background: rgba(201, 156, 255, 0.16); color: var(--purp); }
+    .hqp-chip.is-mail { background: rgba(255, 180, 94, 0.16); color: var(--org); }
+    .hqp-chip.is-shop { background: rgba(255, 93, 143, 0.16); color: var(--hot2); }
+    .hqp-chip.is-git { background: rgba(143, 182, 255, 0.16); color: #8fb6ff; }
+    .hqp-h { flex-wrap: wrap; gap: 0.5rem; }
+    .hqp-h .hqp-chip { margin-left: 0.1rem; }
+    /* the one visible sentence under every title, and the "more" that opens the rest */
+    .hqp-deck { margin: -0.2rem 0 var(--sp2); color: var(--hdim); font-size: 0.84rem; line-height: 1.5; max-width: 72ch; }
+    .hqp-more { border: 0; background: none; color: var(--nana); font: inherit; font-size: 0.8rem; cursor: pointer; padding: 0 0.1rem;
+      text-decoration: underline dotted rgba(255, 225, 53, 0.5); }
+    .hqp-more:hover { text-decoration-style: solid; }
+    .hqp-sec > .hqp-note { margin-bottom: var(--sp2); }
+    /* plain-word bar labels are longer than the codes they replace */
+    .hqp-bar { grid-template-columns: minmax(6rem, 12rem) 1fr 3rem; }
+    .hqp-gsub { display: block; color: var(--hdim); font-size: 0.68rem; margin-top: 0.1rem; }
+    /* the world's cards go three across on a desk, one on a phone */
+    .hqp-areas, .hqp-shops { display: grid; grid-template-columns: 1fr; gap: 0.7rem; }
+    .hqp-areas .hqp-area, .hqp-shops .hqp-area { margin: 0; }
+    .hqp-alive { display: flex; align-items: center; gap: 0.5rem; margin: 0.35rem 0 0.45rem; }
+    .hqp-alivev { font-size: 0.8rem; color: var(--ok); font-weight: 700; font-variant-numeric: tabular-nums; }
+    /* the Now floor: the live strip, then the map at full width, then two columns */
+    .ps-bar { flex-wrap: wrap; row-gap: 0.5rem; }
+    .ps-sparkwrap { margin-left: auto; display: grid; gap: 0.15rem; justify-items: end; }
+    .ps-sparklab { color: var(--hdim); font-size: 0.6rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .ps-bar .hqp-chip { flex: none; }
+    .ps-zbtn--wide { width: auto; padding: 0 0.7rem; font-size: 0.72rem; white-space: nowrap; }
+    .ps-range { align-items: center; }
+    .ps-rnote { flex-basis: 100%; color: var(--hdim); font-size: 0.74rem; line-height: 1.45; margin-top: 0.1rem; }
+    .ps-lens { margin-top: var(--sp2); }
+    .hq-now2 { display: grid; grid-template-columns: 1fr; gap: 1.2rem; margin-top: var(--sp4); }
+    .bm-keyrow { margin: 0 0 var(--sp4); display: grid; gap: 0.5rem; }
+    .bm-keyrow .bm-gate__row { max-width: 460px; }
+    .bm-keynote { margin: 0; color: var(--hdim); font-size: 0.78rem; line-height: 1.5; max-width: 62ch; }
+    .bm-chip--mini { min-height: 28px; padding: 0.1rem 0.55rem; font-size: 0.72rem; margin-left: auto; }
+    /* the section list of the open floor: a strip on a phone, a column in the rail on a desk */
+    .bm-secnav { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; padding: 0.1rem 0.9rem 0.6rem; margin: 0 -0.9rem 0.4rem; }
+    .bm-secnav::-webkit-scrollbar { display: none; }
+    .bm-secnav:empty { display: none; }
+    .bm-secnav button { flex: none; border: 1px solid rgba(244, 238, 255, 0.1); background: var(--hcard); color: var(--hdim);
+      border-radius: 999px; padding: 0.35rem 0.75rem; font: inherit; font-size: 0.72rem; cursor: pointer; white-space: nowrap; }
+    .bm-secnav button:hover { color: var(--hink); border-color: var(--acc, var(--nana)); }
+    /* floor accents: the tab lights in its own colour, and every chip inside inherits it */
+    #bmTabNow { --tacc: var(--ok); } #bmTabVisitors { --tacc: var(--cool); } #bmTabBusiness { --tacc: var(--hot2); }
+    #bmTabPlayers { --tacc: var(--purp); } #bmTabWorld { --tacc: var(--nana); } #bmTabMail { --tacc: var(--org); }
+    #bmTabReviews { --tacc: var(--purp); } #bmTabDev { --tacc: #8fb6ff; }
+    #bmPaneNow { --acc: var(--ok); } #bmPaneVisitors { --acc: var(--cool); } #bmPaneBusiness { --acc: var(--hot2); }
+    #bmPanePlayers { --acc: var(--purp); } #bmPaneWorld { --acc: var(--nana); } #bmPaneMail { --acc: var(--org); }
+    #bmPaneReviews { --acc: var(--purp); } #bmPaneDev { --acc: #8fb6ff; }
+    .bm-floor { min-height: 40vh; }
+    @media (max-width: 620px) {
+      .bm-secnav button { min-height: 40px; }
+      .bm-letterhead__acts { width: 100%; margin-left: 0; }
+    }
+    /* ── THE DESK, FROM 1100px: a rail down the left, the floor beside it, the map at the floor's full width ── */
+    @media (min-width: 1100px) {
+      .bm-wrap { max-width: 1520px; padding-inline: 1.4rem; }
+      .bm-app { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 1.6rem; align-items: start; }
+      .bm-rail { position: sticky; top: 0.8rem; }
+      .bm-tabs { flex-direction: column; margin: 1.2rem 0 0.6rem; padding: 0 0 0.8rem; overflow: visible; border-bottom: 1px solid var(--hline); }
+      .bm-tab { width: 100%; justify-content: flex-start; }
+      .bm-secnav { flex-direction: column; overflow: visible; padding: 0.2rem 0 0; margin: 0; gap: 0.25rem; }
+      .bm-secnav button { text-align: left; white-space: normal; border-color: transparent; background: transparent; padding: 0.3rem 0.6rem; }
+      .bm-secnav button::before { content: '↓ '; opacity: 0.5; }
+      .bm-stage { min-width: 0; }
+      .bm-floorq { margin-top: 1.4rem; font-size: 1.35rem; }
+      .bm-legend { display: inline; margin-left: 0.6rem; }
+      .hqp-tiles > * { flex-basis: 15%; max-width: calc((100% - 3rem) / 6); }
+      .hqp-areas { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .hqp-shops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hq-now2 { grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); }
+      .hqp-rates { max-width: 720px; }
+      .ps-rcard { width: min(760px, 100%); }
+    }
   </style>
 
   <div class="bm-wrap">
@@ -713,7 +780,10 @@ const description = 'Authorized banana personnel only.';
       <div class="bm-letterhead__txt">
         <h1>Banana HQ</h1>
         <p class="bm-sub">Head office · Banana World</p>
-        <p class="bm-est">First-class potassium post · est. 1999</p>
+      </div>
+      <div class="bm-letterhead__acts" id="bmHeadActs" hidden>
+        <button class="ps-rpt" id="bmAnalyst" type="button">🍌📊 Yesterday's report</button>
+        <button class="bm-chip bm-chip--ghost" id="bmLogout" type="button">🚪 clock out</button>
       </div>
     </header>
 
@@ -726,228 +796,290 @@ const description = 'Authorized banana personnel only.';
       <p class="bm-wrong" id="bmWrong" hidden>❌ Credentials rejected. The bouncer remembers faces.</p>
     </div>
 
-    <div id="bmApp" hidden>
-      <div class="bm-tabs" role="tablist" aria-label="Departments">
-        <!-- 📈 PULSE LEADS AND OPENS FIRST (Trym, 4 Sep). It is the thing he
-             comes here for; the mail is a place he goes when there is mail. -->
-        <button class="bm-tab" id="bmTabPulse" role="tab" aria-selected="true" type="button">📈 Pulse</button>
-        <button class="bm-tab" id="bmTabMail" role="tab" aria-selected="false" type="button">📥 Mail</button>
-        <button class="bm-tab" id="bmTabGal" role="tab" aria-selected="false" type="button">🖼 Gallery<span class="bm-badge" id="bmGalBadge" hidden></span></button>
-        <button class="bm-tab" id="bmTabRave" role="tab" aria-selected="false" type="button">📇 Names</button>
-        <button class="bm-tab" id="bmTabItems" role="tab" aria-selected="false" type="button">🎁 Items<span class="bm-badge" id="bmItemsBadge" hidden></span></button>
-        <button class="bm-tab" id="bmTabUsers" role="tab" aria-selected="false" type="button">👤 Users</button>
-        <button class="bm-tab" id="bmTabWorld" role="tab" aria-selected="false" type="button">🌍 World</button>
-        <button class="bm-tab" id="bmTabDev" role="tab" aria-selected="false" type="button">🛠 Dev<span class="bm-badge" id="bmDevBadge" hidden></span></button>
-      </div>
-
-      <div id="bmPaneMail" hidden>
-        <div class="bm-bar">
-          <span class="bm-count" id="bmCount"></span>
-          <span id="bmChips"></span>
-          <button class="bm-chip bm-chip--ghost" id="bmReadAll" type="button">✓ mark all read</button>
+    <div id="bmApp" class="bm-app" hidden>
+      <!-- 🏢 THE FLOORS (22 Sep 2026). One question per floor, one scrolling page each, no rooms inside
+           floors. On a desktop this is a rail down the left with the open floor's sections under it;
+           on a phone it is the strip it always was, with the sections as a second strip. -->
+      <nav class="bm-rail" aria-label="Floors">
+        <div class="bm-tabs" role="tablist" aria-label="Floors">
+          <button class="bm-tab" id="bmTabNow" data-floor="now" role="tab" aria-selected="true" type="button">🟢 Now</button>
+          <button class="bm-tab" id="bmTabVisitors" data-floor="visitors" role="tab" aria-selected="false" type="button">📊 Visitors</button>
+          <button class="bm-tab" id="bmTabBusiness" data-floor="business" role="tab" aria-selected="false" type="button">💰 Business</button>
+          <button class="bm-tab" id="bmTabPlayers" data-floor="players" role="tab" aria-selected="false" type="button">🎫 Players</button>
+          <button class="bm-tab" id="bmTabWorld" data-floor="world" role="tab" aria-selected="false" type="button">🌍 World</button>
+          <button class="bm-tab" id="bmTabMail" data-floor="mail" role="tab" aria-selected="false" type="button">📬 Mail<span class="bm-badge" id="bmMailBadge" hidden></span></button>
+          <button class="bm-tab" id="bmTabReviews" data-floor="reviews" role="tab" aria-selected="false" type="button">🖼 Reviews<span class="bm-badge" id="bmRevBadge" hidden></span></button>
+          <button class="bm-tab" id="bmTabDev" data-floor="dev" role="tab" aria-selected="false" type="button">🛠 Dev<span class="bm-badge" id="bmDevBadge" hidden></span></button>
         </div>
-        <div id="bmList"></div>
-        <!-- 🗑 the spam quarantine — raw data for the once-in-a-while inspect,
-             never part of the daily mail. Lazy-loaded on first open. -->
-        <div style="margin-top:1.2rem;">
-          <button class="bm-chip bm-chip--ghost" id="bmSpamToggle" type="button">🗑 spam quarantine</button>
-          <div id="bmSpamPane" hidden>
-            <p class="bm-livenote">Messages the gates caught (fake “✓ sent” shown to the sender, raw data held here
-              30 days, newest 300). The tag says which trap fired — <b>honeypot</b> with a real-looking name/email
-              usually means a human’s autofill tripped it.</p>
-            <div id="bmSpamList"></div>
+        <div class="bm-secnav" id="bmSecNav" aria-label="On this floor"></div>
+      </nav>
+
+      <main class="bm-stage">
+        <!-- 🟢 NOW — who is here this minute. Live only: Google's realtime feed and the rooms' own counts. -->
+        <section id="bmPaneNow" class="bm-floor" data-floor="now">
+          <p class="bm-floorq">Who is here this minute?
+            <span class="bm-legend"><span class="hqp-chip is-live">LIVE</span> Google's realtime feed, the last 30 minutes · <span class="hqp-chip is-serv">SERVER</span> the rooms' own headcounts, this second</span></p>
+          <div id="bmNow"></div>
+          <div class="hq-now2">
+            <div id="bmNowLists"></div>
+            <div>
+              <div class="hqp-sec" id="hq-in-banana-world-now" data-title="In Banana World now">
+                <div class="hqp-h"><div class="hqp-htitle">In Banana World now</div><span class="hqp-chip is-serv">SERVER · this second</span>
+                  <button class="bm-chip bm-chip--ghost bm-chip--mini" id="bmWorldRefresh" type="button">↻</button></div>
+                <p class="hqp-deck">Headcounts straight from the rooms, refreshed every 30 seconds while this floor is open.</p>
+                <div class="bm-worldcards">
+                  <div class="bm-worldcard"><b id="bmWorldClub">–</b><span>🪩 in the rave</span></div>
+                  <div class="bm-worldcard"><b id="bmWorldPark">–</b><span>🌳 in the park</span></div>
+                  <div class="bm-worldcard"><b id="bmWorldBeach">–</b><span>🏖 at the bay</span></div>
+                  <div class="bm-worldcard"><b id="bmWorldTown">–</b><span>🏘️ in the town</span></div>
+                </div>
+              </div>
+              <div class="hqp-sec" id="hq-status-board" data-title="Status board">
+                <div class="hqp-h"><div class="hqp-htitle">Status board</div></div>
+                <p class="hqp-deck">Four things that may need a look, each from its own place: a real cart test of the shop, the review queues, unread mail, and the world's reported letters.</p>
+                <div class="bm-worldcards">
+                  <div class="bm-worldcard"><b id="bmWorldShop">–</b><span>🛒 checkout works? · Shopify</span></div>
+                  <div class="bm-worldcard"><b id="bmWorldReviews">–</b><span>🖼🎁 reviews waiting</span></div>
+                  <div class="bm-worldcard"><b id="bmWorldUnread">–</b><span>📥 unread mail</span></div>
+                  <div class="bm-worldcard"><b id="bmWorldLetters">–</b><span>✉️ reported letters</span></div>
+                </div>
+              </div>
+              <div class="hqp-sec" id="hq-doors" data-title="Doors">
+                <div class="hqp-h"><div class="hqp-htitle">Doors</div></div>
+                <div class="bm-bar" style="margin-top:0;">
+                  <a class="bm-chip" href="/town/">🏘️ the town</a>
+                  <a class="bm-chip" href="/homestead/">🏡 the homestead</a>
+                  <a class="bm-chip" href="/rave/">🪩 the rave</a>
+                  <a class="bm-chip" href="/park/">🌳 the park</a>
+                  <a class="bm-chip" href="/beach/">🏖 the bay</a>
+                  <a class="bm-chip" href="/forge/">🎨 the forge</a>
+                  <a class="bm-chip" href="/banana-memes/">🖼 the gallery</a>
+                  <a class="bm-chip" href="/pass/">🎫 the pass</a>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div id="bmPaneGal" hidden>
-        <div class="bm-gkey" id="bmGkeyGate" hidden>
-          <p><b>🖼 CURATION DESK</b><br>The gallery inbox needs its own key (it lives in tools/gallery.local.json).</p>
-          <div class="bm-gate__row">
-            <input id="bmGkey" type="password" placeholder="gallery key" autocomplete="off" aria-label="Gallery key" />
-            <button class="bm-btn" id="bmGkeySave" type="button">Unlock →</button>
+        <!-- 📊 VISITORS — Google's report for the picked window -->
+        <section id="bmPaneVisitors" class="bm-floor" data-floor="visitors" hidden>
+          <p class="bm-floorq">Who came, from where, and what did they read?
+            <span class="bm-legend"><span class="hqp-chip is-goog">GOOGLE</span> Google's report for the window you pick — client-fired and consent-gated, and today lags by hours</span></p>
+          <div id="bmVisitors"></div>
+        </section>
+
+        <!-- 💰 BUSINESS — did a free file turn into a sale? -->
+        <section id="bmPaneBusiness" class="bm-floor" data-floor="business" hidden>
+          <p class="bm-floorq">Did a free file turn into a sale?
+            <span class="bm-legend"><span class="hqp-chip is-goog">GOOGLE</span> the window · <span class="hqp-chip is-shop">SHOPIFY</span> a real cart test, right now</span></p>
+          <div id="bmBusiness"></div>
+        </section>
+
+        <!-- 🎫 PLAYERS — the pass worker's own records, and every pass as a row -->
+        <section id="bmPanePlayers" class="bm-floor" data-floor="players" hidden>
+          <p class="bm-floorq">Who is playing, and do they stay?
+            <span class="bm-legend"><span class="hqp-chip is-serv">SERVER</span> the pass worker's own records — misses nobody · <span class="hqp-chip is-goog">GOOGLE</span> only for the "not saved" pill</span></p>
+          <div class="bm-keyrow" id="bmUGate">
+            <div class="bm-gate__row">
+              <input id="bmLedgerKey" type="password" placeholder="pass admin key" autocomplete="off" aria-label="Pass admin key" />
+              <button class="bm-btn" id="bmLedgerLoad" type="button">Open →</button>
+            </div>
+            <p class="bm-keynote">The pass admin key opens this floor, the economy on World, the ledger checks on Dev and the reported letters on Mail. It is remembered on this device.</p>
           </div>
-        </div>
+          <div id="bmPlayers"></div>
 
-        <div class="bm-bar" id="bmGalModes" hidden>
-          <button class="bm-chip" id="bmModePending" aria-pressed="true" type="button">📥 pending</button>
-          <button class="bm-chip" id="bmModeLive" aria-pressed="false" type="button">🖼 live</button>
-        </div>
-
-        <div id="bmGalPending">
-          <div class="bm-bar"><span class="bm-count" id="bmGalCount"></span></div>
-          <div id="bmGalList"></div>
-        </div>
-
-        <div id="bmGalLive" hidden>
-          <div class="bm-bar bm-livetools">
-            <input class="bm-livesearch" id="bmLiveQ" type="search" placeholder="🔍 search title / creator / tag / slug…" aria-label="Search submissions" />
-            <span id="bmLiveChips"></span>
-            <select class="bm-livesort" id="bmLiveSort" aria-label="Sort">
-              <option value="new">newest first</option>
-              <option value="old">oldest first</option>
-              <option value="az">title A–Z</option>
-            </select>
+          <div class="hqp-sec" id="hq-every-pass" data-title="Every pass">
+            <div class="hqp-h"><div class="hqp-htitle">Every pass</div><span class="hqp-chip is-serv">SERVER · the people index</span></div>
+            <p class="hqp-deck">One row per synced pass, in three kinds: an email on the pass means they can get back in from any device; device-only means a lost phone is a lost pass; a guest has nothing on the pass yet. A visitor who never synced has no row here.</p>
+            <div class="bm-bar">
+              <span class="bm-count" id="bmUCount">👤 the people of Banana World</span>
+              <button class="bm-chip" id="bmURefresh" type="button">↻ refresh</button>
+            </div>
+            <div id="bmUTiles" class="hq-tiles" hidden></div>
+            <div class="hq-tools" id="bmUTools" hidden>
+              <input id="bmUSearch" type="search" placeholder="search a name or id…" autocomplete="off" aria-label="Search passes" />
+              <select id="bmUSort" aria-label="Sort passes">
+                <option value="recent">last seen</option>
+                <option value="coins">most coins</option>
+                <option value="rep">most rep</option>
+                <option value="badges">most badges</option>
+                <option value="new">newest</option>
+                <option value="risk">can't recover</option>
+              </select>
+            </div>
+            <div id="bmLedgerList"></div>
           </div>
-          <p class="bm-livenote">Edits save instantly to the index — the live pages pick them up on the next site build (any push, or tonight's cron).</p>
-          <div id="bmLiveList"></div>
-        </div>
-      </div>
 
-      <!-- 📇 NAMES — the strike desk: moderate the display names people pick
-           (a person's banana keeps the same name wherever they go in the world) -->
-      <div id="bmPaneRave" hidden>
-        <div class="bm-bar">
-          <button class="bm-chip" id="bmRaveRefresh" type="button">↻ refresh</button>
-          <input class="bm-livesearch" id="bmStrikeInput" type="search" placeholder="strike a word/fragment manually…" style="max-width:280px;" aria-label="Word or fragment to strike" />
-          <button class="bm-chip" id="bmStrikeAdd" type="button">🔨 strike</button>
-        </div>
-        <p class="bm-livenote">The names people give their banana — the same handle follows them wherever they go in the world.
-          They pass a family filter at sign-up; this desk is the backstop for the clever ones. Striking hides the name INSTANTLY
-          (the banana falls back to its outfit-name) and blocks it going forward.</p>
-        <div id="bmRaveList"><p class="bm-livenote">Press refresh to load the ledger.</p></div>
-      </div>
+          <div class="hqp-sec" id="hq-find-a-pass-by-email" data-title="Find a pass by email">
+            <div class="hqp-h"><div class="hqp-htitle">Find a pass by email</div><span class="hqp-chip is-serv">SERVER</span></div>
+            <p class="hqp-deck">The site stores no addresses, but it can still go from an address to a pass — which is exactly what honours a deletion request from someone who logged in by email.</p>
+            <div class="bm-gate__row" style="max-width:420px;">
+              <input id="bmUMail" type="email" placeholder="them@example.com" autocomplete="off" aria-label="Email to look up" />
+              <button class="bm-btn" id="bmUMailGo" type="button">Find →</button>
+            </div>
+            <p class="hq-said" id="bmUMailOut"></p>
+          </div>
 
-      <!-- 🎁 ITEM DROPS — the ownership-stack curation desk: forge-made
-           wearables submitted to the club. Approve = it enters the catalog and
-           goes on sale (gear at the Banana Stand, furniture at the homestead). -->
-      <div id="bmPaneItems" hidden>
-        <div class="bm-bar"><span class="bm-count" id="bmItemsCount"></span>
-          <button class="bm-chip" id="bmItemsRefresh" type="button">↻ refresh</button></div>
-        <p class="bm-livenote">Submitted items previewed ON the banana. Approve = into the catalog → gear goes on sale at the Banana Stand, furniture in the homestead phone store,
-          the maker's name rides it. The catalog list below shows what's live — retire anything that's run its course.</p>
-        <div id="bmItemsList"><p class="bm-livenote">Loading…</p></div>
-        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">📦 In the catalog</h3>
-        <div id="bmCatList"><p class="bm-livenote">Loading…</p></div>
-      </div>
+          <div class="hqp-sec" id="hq-what-this-desk-has-done" data-title="What this desk has done">
+            <div class="hqp-h"><div class="hqp-htitle">What this desk has done</div><span class="hqp-chip is-serv">SERVER · the admin log</span></div>
+            <p class="hqp-deck">Every grant and every erase made from here, newest first.</p>
+            <div class="bm-bar" style="margin-top:0;"><button class="bm-chip" id="bmULogRefresh" type="button">↻ load the log</button></div>
+            <div id="bmULog"></div>
+          </div>
 
-      <!-- 🌍 WORLD — the head-office window: live room headcounts + doors.
-           Deep analytics stay on Banana Pulse (Trym's token bookmark). -->
-      <div id="bmPaneWorld" hidden>
-        <div class="bm-bar">
-          <span class="bm-count">🌍 the world right now</span>
-          <button class="bm-chip" id="bmWorldRefresh" type="button">↻ refresh</button>
-        </div>
-        <div class="bm-worldcards">
-          <div class="bm-worldcard"><b id="bmWorldClub">–</b><span>🪩 on the floor</span></div>
-          <div class="bm-worldcard"><b id="bmWorldPark">–</b><span>🌳 in the park</span></div>
-          <div class="bm-worldcard"><b id="bmWorldBeach">–</b><span>🏖 on the beach</span></div>
-          <div class="bm-worldcard"><b id="bmWorldTown">–</b><span>🏘️ in the town</span></div>
-        </div>
-        <p class="bm-livenote">Live headcounts straight from the rooms (auto-refreshes while this desk is open).
-          Traffic, funnels and money live on <b>Banana Pulse</b> — your bookmark.</p>
+          <!-- 📇 NAMES ON THE FLOOR — the strike desk. A session's display name, not a pass. -->
+          <div class="hqp-sec" id="hq-names-on-the-floor" data-title="Names on the floor">
+            <div class="hqp-h"><div class="hqp-htitle">Names on the floor</div><span class="hqp-chip is-serv">SERVER · the rooms</span></div>
+            <p class="hqp-deck">The display names players gave their banana, as the rooms saw them, by session — not by pass, so a row here cannot be opened as a pass above. Names pass a family filter at sign-up; this is the backstop. Striking a name hides it at once (the banana falls back to its outfit-name) and blocks it from then on.</p>
+            <div class="bm-bar">
+              <button class="bm-chip" id="bmNamesRefresh" type="button">↻ refresh</button>
+              <input class="bm-livesearch" id="bmStrikeInput" type="search" placeholder="strike a word or fragment…" style="max-width:280px;" aria-label="Word or fragment to strike" />
+              <button class="bm-chip" id="bmStrikeAdd" type="button">🔨 strike</button>
+            </div>
+            <div id="bmNamesList"><p class="bm-livenote">Press refresh to load the names.</p></div>
+          </div>
+        </section>
 
-        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🏡 the homesteads</h3>
-        <div class="bm-worldcards">
-          <div class="bm-worldcard"><b id="bmWorldYards">–</b><span>🏡 claimed (real)</span></div>
-          <div class="bm-worldcard"><b id="bmWorldYardsDay">–</b><span>🔨 built on today</span></div>
-          <div class="bm-worldcard"><b id="bmWorldYardsWeek">–</b><span>📅 built on this week</span></div>
-        </div>
-        <!-- 👥 the neighbourhood census: every claimed yard, newest activity
-             first, QA claims (the ?hstest "Testy" scenario) dimmed and out of
-             the headline numbers -->
-        <div id="bmYardList"></div>
+        <!-- 🌍 WORLD — what is happening in each place -->
+        <section id="bmPaneWorld" class="bm-floor" data-floor="world" hidden>
+          <p class="bm-floorq">What is happening in each place?
+            <span class="bm-legend"><span class="hqp-chip is-serv">SERVER</span> live headcounts, the yard census and the coin rollup · <span class="hqp-chip is-goog">GOOGLE</span> the window's doors and events</span></p>
+          <div id="bmWorld"></div>
+          <div class="hqp-sec" id="hq-every-homestead" data-title="Every homestead">
+            <div class="hqp-h"><div class="hqp-htitle">Every homestead</div><span class="hqp-chip is-serv">SERVER · right now</span></div>
+            <p class="hqp-deck">Every claimed yard, newest change first. Test yards are dimmed and kept out of the numbers.</p>
+            <div class="bm-worldcards">
+              <div class="bm-worldcard"><b id="bmWorldYards">–</b><span>🏡 homesteads claimed</span></div>
+              <div class="bm-worldcard"><b id="bmWorldYardsDay">–</b><span>🔨 changed today</span></div>
+              <div class="bm-worldcard"><b id="bmWorldYardsWeek">–</b><span>📅 changed this week</span></div>
+            </div>
+            <div id="bmYardList"></div>
+          </div>
+        </section>
 
-        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🚦 status board</h3>
-        <div class="bm-worldcards">
-          <!-- 🛒 the silent-unbuyable-day lesson: a whole product line refused
-               to sell for a day and nothing said so — now HQ says so -->
-          <div class="bm-worldcard"><b id="bmWorldShop">–</b><span>🛒 shop checkout</span></div>
-          <div class="bm-worldcard"><b id="bmWorldReviews">–</b><span>🖼🎁 reviews waiting</span></div>
-          <div class="bm-worldcard"><b id="bmWorldUnread">–</b><span>📥 unread mail</span></div>
-        </div>
+        <!-- 📬 MAIL — what has someone written that needs me -->
+        <section id="bmPaneMail" class="bm-floor" data-floor="mail" hidden>
+          <p class="bm-floorq">What has someone written that needs me?
+            <span class="bm-legend"><span class="hqp-chip is-mail">INBOX</span> the contact form · <span class="hqp-chip is-serv">SERVER</span> the world's post, reported or flagged</span></p>
+          <div class="hqp-sec" id="hq-letters-to-hq" data-title="Letters to HQ">
+            <div class="hqp-h"><div class="hqp-htitle">Letters to HQ</div><span class="hqp-chip is-mail">INBOX · the contact form</span></div>
+            <p class="hqp-deck">Everything sent through the contact form. Reply by email when they left one, or straight to their pass — it lands on their My Pass as a message from Trym.</p>
+            <div class="bm-bar">
+              <span class="bm-count" id="bmCount"></span>
+              <span id="bmChips"></span>
+              <button class="bm-chip bm-chip--ghost" id="bmReadAll" type="button">✓ mark all read</button>
+            </div>
+            <div id="bmList"></div>
+            <!-- 🗑 the spam quarantine — raw data for the once-in-a-while inspect, never part of the daily mail -->
+            <div style="margin-top:1.2rem;">
+              <button class="bm-chip bm-chip--ghost" id="bmSpamToggle" type="button">🗑 caught by the gates</button>
+              <div id="bmSpamPane" hidden>
+                <p class="bm-livenote">Messages the gates caught (the sender saw a fake “✓ sent”; raw data held here
+                  30 days, newest 300). The tag says which trap fired — <b>honeypot</b> with a real-looking name and email
+                  usually means a human’s autofill tripped it.</p>
+                <div id="bmSpamList"></div>
+              </div>
+            </div>
+          </div>
+          <div id="bmLetters"></div>
+        </section>
 
-        <h3 style="margin:1.4rem 0 0.5rem;font-size:0.95rem;">🚪 doors</h3>
-        <div class="bm-bar" style="margin-top:0;">
-          <a class="bm-chip" href="/homestead/">🏡 the homestead</a>
-          <a class="bm-chip" href="/rave/">🪩 the club</a>
-          <a class="bm-chip" href="/park/">🌳 the park</a>
-          <a class="bm-chip" href="/beach/">🏖 the bay</a>
-          <a class="bm-chip" href="/forge/">🎨 the forge</a>
-          <a class="bm-chip" href="/banana-memes/">🖼 the gallery</a>
-          <a class="bm-chip" href="/pass/">🎫 the pass</a>
-        </div>
-      </div>
+        <!-- 🖼 REVIEWS — what players made that needs a yes: the gallery queue and the item queue under one roof -->
+        <section id="bmPaneReviews" class="bm-floor" data-floor="reviews" hidden>
+          <p class="bm-floorq">What did players make that needs a yes?
+            <span class="bm-legend"><span class="hqp-chip is-serv">SERVER</span> the gallery worker's queues and its catalog</span></p>
+          <div class="bm-gkey" id="bmGkeyGate" hidden>
+            <p><b>🖼 THE REVIEW DESK</b><br>This floor needs the gallery key (it lives in tools/gallery.local.json). Remembered on this device.</p>
+            <div class="bm-gate__row">
+              <input id="bmGkey" type="password" placeholder="gallery key" autocomplete="off" aria-label="Gallery key" />
+              <button class="bm-btn" id="bmGkeySave" type="button">Unlock →</button>
+            </div>
+          </div>
 
-      <!-- 🛠 THE DEV DESK — the rig's mission control. Reads ride GitHub's
-           public API (public repo, no secrets); approve/comment/dismiss proxy
-           through worker-contact with the inbox token. No PAT on the worker =
-           read-only, and the desk says so honestly. -->
-      <div id="bmPanePulse">
-        <div id="bmPulse"></div>
-      </div>
-      <div id="bmPaneDev" hidden>
-        <div class="bm-bar">
-          <span class="bm-count">🛠 the dev desk</span>
-          <button class="bm-chip" id="bmDevRefresh" type="button">↻ refresh</button>
-        </div>
-        <p class="bm-devnote" id="bmDevMode" hidden>🔒 read-only — set the GitHub key on worker-contact to approve from here</p>
-        <div class="bm-worldcards bm-devcards">
-          <div class="bm-worldcard"><b id="bmDevDeploy">–</b><span>🚀 last deploy</span></div>
-          <div class="bm-worldcard"><b id="bmDevProof">–</b><span>📱📱 two-device proof</span></div>
-          <div class="bm-worldcard"><b id="bmDevQueueN">–</b><span>📋 on the desk</span></div>
-          <div class="bm-worldcard"><b id="bmDevPrN">–</b><span>🔧 in flight</span></div>
-        </div>
-        <h3 class="bm-devh">📝 file something</h3>
-        <div class="bm-devcard bm-devfile">
-          <input id="bmDevNewTitle" type="text" maxlength="200" placeholder="what needs doing? (one line)" aria-label="New item title" />
-          <textarea id="bmDevNewBody" placeholder="details, if any… (optional)"></textarea>
-          <div class="bm-devacts"><button type="button" class="bm-devok" id="bmDevFileBtn">📝 put it on the desk</button></div>
-        </div>
-        <h3 class="bm-devh">📋 on the desk</h3>
-        <div id="bmDevQueue" class="bm-devlist"><p class="bm-devempty">…</p></div>
-        <h3 class="bm-devh">🔧 in flight</h3>
-        <div id="bmDevPrs" class="bm-devlist"><p class="bm-devempty">…</p></div>
-      </div>
+          <div class="hqp-sec" id="hq-gifs-for-the-gallery" data-title="GIFs for the gallery">
+            <div class="hqp-h"><div class="hqp-htitle">GIFs for the gallery</div><span class="hqp-chip is-serv">SERVER · the queue</span></div>
+            <p class="hqp-deck">Community bananas waiting to be hung on the gallery. Give one a title and tags, then hang it — the site rebuilds and its page exists within minutes.</p>
+            <div id="bmGalPending">
+              <div class="bm-bar"><span class="bm-count" id="bmGalCount"></span></div>
+              <div id="bmGalList"></div>
+            </div>
+          </div>
 
-      <!-- 👤 USERS — the pass ledger grew up: one row per pass, searchable and
-           sortable, and every row opens onto the controls that can actually
-           change something. Was buried at the bottom of the World pane. -->
-      <div id="bmPaneUsers" hidden>
-        <div class="bm-bar">
-          <span class="bm-count" id="bmUCount">👤 the people of Banana World</span>
-          <button class="bm-chip" id="bmURefresh" type="button">↻ refresh</button>
-        </div>
-        <div class="bm-gate__row" id="bmUGate" style="max-width:420px;">
-          <input id="bmLedgerKey" type="password" placeholder="pass admin key" autocomplete="off" aria-label="Pass admin key" />
-          <button class="bm-btn" id="bmLedgerLoad" type="button">Open →</button>
-        </div>
-        <p class="bm-livenote">Synced passes only — a visitor who never logged in lives in their own browser
-          and has no record here. Gated by <b>PASS_ADMIN_KEY</b> on the pass worker.</p>
-        <div id="bmUTiles" class="hq-tiles" hidden></div>
-        <div class="hq-tools" id="bmUTools" hidden>
-          <input id="bmUSearch" type="search" placeholder="search a name or id…" autocomplete="off" aria-label="Search users" />
-          <select id="bmUSort" aria-label="Sort users">
-            <option value="recent">last seen</option>
-            <option value="coins">most coins</option>
-            <option value="rep">most rep</option>
-            <option value="badges">most badges</option>
-            <option value="new">newest</option>
-            <option value="risk">can't recover</option>
-          </select>
-        </div>
-        <div id="bmLedgerList"></div>
+          <div class="hqp-sec" id="hq-items-for-the-catalog" data-title="Items for the catalog">
+            <div class="hqp-h"><div class="hqp-htitle">Items for the catalog</div><span class="hqp-chip is-serv">SERVER · the queue</span></div>
+            <p class="hqp-deck">Forge-made items waiting for the catalog, previewed on a dancing banana. Approving puts gear on sale at the Banana Stand and furniture in the homestead phone store, with the maker's name on it. A yellow edge is a change to something already live.</p>
+            <div class="bm-bar"><span class="bm-count" id="bmItemsCount"></span>
+              <button class="bm-chip" id="bmItemsRefresh" type="button">↻ refresh</button></div>
+            <div id="bmItemsList"><p class="bm-livenote">Loading…</p></div>
+          </div>
 
-        <h3 style="margin:1.6rem 0 0.5rem;font-size:0.95rem;">✉️ find a pass by email</h3>
-        <p class="bm-livenote">The site stores no addresses — but it can still go address → pass, which is exactly
-          what honours a deletion request from someone who logged in by email.</p>
-        <div class="bm-gate__row" style="max-width:420px;">
-          <input id="bmUMail" type="email" placeholder="them@example.com" autocomplete="off" aria-label="Email to look up" />
-          <button class="bm-btn" id="bmUMailGo" type="button">Find →</button>
-        </div>
-        <p class="hq-said" id="bmUMailOut"></p>
+          <div class="hqp-sec" id="hq-the-live-gallery" data-title="The live gallery">
+            <div class="hqp-h"><div class="hqp-htitle">The live gallery</div><span class="hqp-chip is-serv">SERVER · the index</span></div>
+            <p class="hqp-deck">Everything hanging in the gallery, both lanes: yours and the community's. Edits save at once; the pages pick them up on the next site build.</p>
+            <div class="bm-bar"><button class="bm-chip" id="bmModeLive" type="button" aria-pressed="false">🖼 open the live gallery</button></div>
+            <div id="bmGalLive" hidden>
+              <div class="bm-bar bm-livetools">
+                <input class="bm-livesearch" id="bmLiveQ" type="search" placeholder="🔍 search title / creator / tag / slug…" aria-label="Search the gallery" />
+                <span id="bmLiveChips"></span>
+                <select class="bm-livesort" id="bmLiveSort" aria-label="Sort">
+                  <option value="new">newest first</option>
+                  <option value="old">oldest first</option>
+                  <option value="az">title A–Z</option>
+                </select>
+              </div>
+              <div id="bmLiveList"></div>
+            </div>
+          </div>
 
-        <h3 style="margin:1.6rem 0 0.5rem;font-size:0.95rem;">🧾 what this desk has done</h3>
-        <div class="bm-bar" style="margin-top:0;"><button class="bm-chip" id="bmULogRefresh" type="button">↻ load the log</button></div>
-        <div id="bmULog"></div>
-      </div>
+          <div class="hqp-sec" id="hq-the-catalog" data-title="The catalog">
+            <div class="hqp-h"><div class="hqp-htitle">The catalog</div><span class="hqp-chip is-serv">SERVER · the catalog</span></div>
+            <p class="hqp-deck">What is on sale in the world now, on sale first. Retire takes a piece off sale and leaves every copy people own where it is; put back on sale undoes it.</p>
+            <div id="bmCatList"><p class="bm-livenote">Loading…</p></div>
+          </div>
+        </section>
 
-      <p class="bm-fine">
-        Banana HQ — head office of the Banana World.<br>
-        Unauthorized peeling is prohibited and punishable by dance-off.<br>
-        <button class="bm-chip bm-chip--ghost" id="bmLogout" type="button" style="margin-top:0.5rem;">🚪 clock out</button>
-      </p>
+        <!-- 🛠 DEV — is the rig healthy. GitHub's public API for reads; worker-contact holds the PAT for writes. -->
+        <section id="bmPaneDev" class="bm-floor" data-floor="dev" hidden>
+          <p class="bm-floorq">Is the rig healthy?
+            <span class="bm-legend"><span class="hqp-chip is-git">GITHUB</span> deploys, issues, pull requests · <span class="hqp-chip is-serv">SERVER</span> the ledger's own checks · <span class="hqp-chip is-goog">GOOGLE</span> phones that could not save</span></p>
+          <div class="hqp-sec" id="hq-the-rig" data-title="The rig">
+            <div class="hqp-h"><div class="hqp-htitle">The rig</div><span class="hqp-chip is-git">GITHUB · now</span>
+              <button class="bm-chip bm-chip--ghost bm-chip--mini" id="bmDevRefresh" type="button">↻</button></div>
+            <p class="hqp-deck">The last site deploy, the nightly two-device proof, and what is open on GitHub.</p>
+            <p class="bm-devnote" id="bmDevMode" hidden>🔒 read-only — set the GitHub key on worker-contact to approve from here</p>
+            <div class="bm-worldcards bm-devcards">
+              <div class="bm-worldcard"><b id="bmDevDeploy">–</b><span>🚀 last deploy</span></div>
+              <div class="bm-worldcard"><b id="bmDevProof">–</b><span>📱📱 two-device proof</span></div>
+              <div class="bm-worldcard"><b id="bmDevQueueN">–</b><span>📋 open issues</span></div>
+              <div class="bm-worldcard"><b id="bmDevPrN">–</b><span>🔧 open pull requests</span></div>
+            </div>
+          </div>
+          <div class="hqp-sec" id="hq-file-something" data-title="File something">
+            <div class="hqp-h"><div class="hqp-htitle">File something</div><span class="hqp-chip is-git">GITHUB</span></div>
+            <p class="hqp-deck">A new issue on the repo, from here.</p>
+            <div class="bm-devcard bm-devfile">
+              <input id="bmDevNewTitle" type="text" maxlength="200" placeholder="what needs doing? (one line)" aria-label="New item title" />
+              <textarea id="bmDevNewBody" placeholder="details, if any… (optional)"></textarea>
+              <div class="bm-devacts"><button type="button" class="bm-devok" id="bmDevFileBtn">📝 file it</button></div>
+            </div>
+          </div>
+          <div class="hqp-sec" id="hq-open-issues" data-title="Open issues">
+            <div class="hqp-h"><div class="hqp-htitle">Open issues</div><span class="hqp-chip is-git">GITHUB · now</span></div>
+            <div id="bmDevQueue" class="bm-devlist"><p class="bm-devempty">…</p></div>
+          </div>
+          <div class="hqp-sec" id="hq-open-pull-requests" data-title="Open pull requests">
+            <div class="hqp-h"><div class="hqp-htitle">Open pull requests</div><span class="hqp-chip is-git">GITHUB · now</span></div>
+            <div id="bmDevPrs" class="bm-devlist"><p class="bm-devempty">…</p></div>
+          </div>
+          <div id="bmHealth"></div>
+        </section>
+      </main>
     </div>
+
+    <p class="bm-fine">
+      Banana HQ — head office of the Banana World.<br>
+      Unauthorized peeling is prohibited and punishable by dance-off.
+    </p>
   </div>
 
   <script>
@@ -1020,7 +1152,8 @@ const description = 'Authorized banana personnel only.';
       list.textContent = '';
       const shown = mails.filter((m) => topic === 'all' || m.topic === topic);
       const unread = mails.filter((m) => !read.has(m.key)).length;
-      el('bmCount').textContent = '📥 ' + mails.length + ' item' + (mails.length === 1 ? '' : 's') + ' of official correspondence' + (unread ? ' · ' + unread + ' unread' : '');
+      el('bmCount').textContent = '📥 ' + mails.length + ' letter' + (mails.length === 1 ? '' : 's') + (unread ? ' · ' + unread + ' unread' : '');
+      mailBadge();
 
       // topic chips, built from the data
       const topics = ['all', ...new Set(mails.map((m) => m.topic || 'general'))];
@@ -1065,7 +1198,7 @@ const description = 'Authorized banana personnel only.';
           ps.textContent = '🎫 ' + (m.passName || 'pass-holder');
           top.appendChild(ps);
         }
-        top.appendChild(document.createTextNode(' stamped ' + fmtDate(m.ts) + ' · agent ' + String(m.sender || '?').slice(0, 8)));
+        top.appendChild(document.createTextNode(' stamped ' + fmtDate(m.ts)));
         const from = document.createElement('p');
         from.className = 'bm-mail__from';
         if (!isRead) { const dot = document.createElement('span'); dot.className = 'bm-dot'; from.appendChild(dot); }
@@ -1192,7 +1325,8 @@ const description = 'Authorized banana personnel only.';
       function render0nly() { // refresh just the counter without collapsing open mails
         const rd = readSet();
         const un = mails.filter((x) => !rd.has(x.key)).length;
-        el('bmCount').textContent = '📥 ' + mails.length + ' item' + (mails.length === 1 ? '' : 's') + ' of official correspondence' + (un ? ' · ' + un + ' unread' : '');
+        el('bmCount').textContent = '📥 ' + mails.length + ' letter' + (mails.length === 1 ? '' : 's') + (un ? ' · ' + un + ' unread' : '');
+        mailBadge();
       }
     }
 
@@ -1292,12 +1426,20 @@ const description = 'Authorized banana personnel only.';
       if (frag.get('gkey') && !frag.get('token')) history.replaceState(null, '', location.pathname);
       if (token && await load().catch(() => false)) {
         try { localStorage.setItem('inbox-token', token); } catch (e) {}
-        el('bmApp').hidden = false;
-        render();
+        openDesk();
         return;
       }
       token = '';
       el('bmGate').hidden = false;
+    }
+    function openDesk() {
+      el('bmApp').hidden = false;
+      el('bmHeadActs').hidden = false;
+      render();
+      hqLoad();
+      let f = 'now';
+      try { f = localStorage.getItem('hq-floor-v1') || 'now'; } catch (e) {}
+      setTab(f);
     }
 
     el('bmClockIn').onclick = async () => {
@@ -1306,8 +1448,7 @@ const description = 'Authorized banana personnel only.';
       if (token && await load().catch(() => false)) {
         try { localStorage.setItem('inbox-token', token); } catch (e) {}
         el('bmGate').hidden = true;
-        el('bmApp').hidden = false;
-        render();
+        openDesk();
       } else {
         token = '';
         el('bmWrong').hidden = false;
@@ -1333,123 +1474,135 @@ const description = 'Authorized banana personnel only.';
     try { gkey = localStorage.getItem('gallery-key') || ''; } catch (e) {}
     let galItems = null; // null = not loaded yet
 
-    function setTab(which) { // 'mail' | 'gal' | 'rave' | 'items' | 'users' | 'world'
-      el('bmTabUsers').setAttribute('aria-selected', String(which === 'users'));
-      el('bmPaneUsers').hidden = which !== 'users';
-      if (which === 'users') usersBoot();
-      el('bmTabMail').setAttribute('aria-selected', String(which === 'mail'));
-      el('bmTabGal').setAttribute('aria-selected', String(which === 'gal'));
-      el('bmTabRave').setAttribute('aria-selected', String(which === 'rave'));
-      el('bmTabItems').setAttribute('aria-selected', String(which === 'items'));
-      el('bmTabWorld').setAttribute('aria-selected', String(which === 'world'));
-      el('bmPaneMail').hidden = which !== 'mail';
-      el('bmPaneGal').hidden = which !== 'gal';
-      el('bmPaneRave').hidden = which !== 'rave';
-      el('bmPaneItems').hidden = which !== 'items';
-      el('bmPaneWorld').hidden = which !== 'world';
-      el('bmTabPulse').setAttribute('aria-selected', String(which === 'pulse'));
-      el('bmPanePulse').hidden = which !== 'pulse';
-      if (which === 'pulse') pulseLoad();
-      el('bmTabDev').setAttribute('aria-selected', String(which === 'dev'));
-      el('bmPaneDev').hidden = which !== 'dev';
+    // 🏢 THE FLOORS. One function knows every floor; a floor's loaders run when it opens. The core
+    // (hq) paints the worker-fed parts; the desks below paint their own. The last floor opened is
+    // remembered on this device.
+    const FLOORS = ['now', 'visitors', 'business', 'players', 'world', 'mail', 'reviews', 'dev'];
+    const cap = (f) => f.charAt(0).toUpperCase() + f.slice(1);
+    let floorNow = '';
+    function setTab(which) {
+      if (!FLOORS.includes(which)) which = 'now';
+      floorNow = which;
+      FLOORS.forEach((f) => {
+        el('bmTab' + cap(f)).setAttribute('aria-selected', String(f === which));
+        el('bmPane' + cap(f)).hidden = f !== which;
+      });
+      try { localStorage.setItem('hq-floor-v1', which); } catch (e) {}
+      if (which === 'players') { usersBoot(); if (gkey) namesLoad(); }
       if (which === 'dev') devLoad();
-      if (which === 'gal') galBoot();
-      if (which === 'rave') raveLoad();
-      if (which === 'items') itemsLoad();
-      if (which === 'world') worldLoad();
+      if (which === 'reviews') { galBoot(); itemsLoad(); }
+      if (which === 'now') worldLoad(false);
+      if (which === 'world') worldLoad(false);
+      if (hq) hq.show(which); else hqWanted = which;
+      secNav();
+      window.scrollTo({ top: 0 });
     }
-    el('bmTabMail').onclick = () => setTab('mail');
-    el('bmTabGal').onclick = () => setTab('gal');
-    el('bmTabRave').onclick = () => setTab('rave');
-    el('bmTabItems').onclick = () => setTab('items');
-    el('bmTabUsers').onclick = () => setTab('users');
-    el('bmTabWorld').onclick = () => setTab('world');
-    el('bmTabPulse').onclick = () => setTab('pulse');
-    el('bmTabDev').onclick = () => setTab('dev');
-    // ⚠️ the markup can show a pane but it cannot RUN one. Pulse opens first, so
-    // it needs the same setTab that every other tab gets from a click — without
-    // this the desk renders an empty pane and waits for a tab press.
-    // ⚠️⭐ BUT NOT HERE. The call is at the BOTTOM of this module, and moving it
-    // back up breaks the whole desk. setTab('pulse') runs pulseLoad(), which
-    // reads `pulseAt` — declared seven lines BELOW this comment. Reading a `let`
-    // before its declaration throws, and the throw does not stop at Pulse: it
-    // aborts the rest of the module, so the items desk, the rave desk and the
-    // dev desk were never wired at all. The page still LOOKED like Banana HQ.
+    FLOORS.forEach((f) => { el('bmTab' + cap(f)).onclick = () => setTab(f); });
+    // the open floor's sections, as a list to jump by — rebuilt whenever a floor repaints
+    let secTimer = 0;
+    function secNav() {
+      clearTimeout(secTimer);
+      secTimer = setTimeout(() => {
+        const nav = el('bmSecNav');
+        nav.textContent = '';
+        if (!floorNow) return;
+        el('bmPane' + cap(floorNow)).querySelectorAll('.hqp-sec[data-title]').forEach((sec) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = sec.dataset.title;
+          b.onclick = () => sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          nav.appendChild(b);
+        });
+      }, 120);
+    }
+    try { new MutationObserver(() => secNav()).observe(document.querySelector('.bm-stage'), { childList: true, subtree: true }); } catch (e) {}
+    // ⚠️⭐ NOTHING OPENS A FLOOR FROM UP HERE. Opening one runs its loaders, and a `let`
+    // declared further down (hq, the desks' state) read before its declaration throws — and the
+    // throw does not stop at that floor: it aborts the rest of the module, so every desk after it
+    // is never wired while the page still LOOKS like Banana HQ. boot() runs last, on purpose.
 
-    // ── 📈 THE WORLD DESK ──
-    // Two reads, both server truth: the pass rollup (one file a day, written
-    // by a cron that pages the whole bucket) and the yard census (arithmetic
-    // inside a loop the stats route already runs). Nothing here is GA4, so
-    // nothing here is lost to a consent banner or an adblocker.
-    let pulseMod = null, pulseApp = null, pulseAt = 0;
-    async function pulseLoad(force) {
-      const host = el('bmPulse');
-      if (!force && Date.now() - pulseAt < 60000 && host.childElementCount) return;
-      const key = (localStorage.getItem('pass-admin-key-v1') || '').trim();
-      if (!key) {
-        host.innerHTML = '';
-        const p = document.createElement('div');
-        p.className = 'hqp-empty';
-        p.textContent = 'The world desk reads the pass ledger. Open the Users tab and paste the pass admin key once — it is remembered on this device.';
-        host.appendChild(p);
-        return;
-      }
-      if (!host.childElementCount) {
-        const p = document.createElement('div');
-        p.className = 'hqp-empty';
-        p.textContent = 'reading the world…';
-        host.appendChild(p);
-      }
+    // ── 🍌 THE CORE — every number that comes from a worker ──
+    // Google comes THROUGH worker-contact — the dashboard token lives there as a secret, so no GA4
+    // credential reaches this browser and there is one door. The workers' own numbers come straight.
+    // The key rides a header or a body, never a URL that ends up in history and screenshots.
+    let hq = null, hqWanted = '';
+    const passKey = () => { try { return (localStorage.getItem('pass-admin-key-v1') || '').trim(); } catch (e) { return ''; } };
+    async function hqLoad() {
+      if (hq) return;
+      const px = (r, q) => fetch(API + '/pulse?r=' + r + (q || ''), { headers: { 'X-Inbox-Token': token || '' } })
+        .then(async (x) => {
+          if (x.ok) return x.json();
+          let why = 'the dashboard answered ' + x.status;
+          try { const j = await x.json(); if (j && j.err) why = j.err; } catch (e) {}
+          return { __err: why };
+        })
+        .catch((e) => ({ __err: 'could not reach the dashboard (' + String(e.message || e).slice(0, 80) + ')' }));
       try {
-        if (!pulseMod) pulseMod = await import('../scripts/pulse-shell.js');
-        // 📡 Google comes THROUGH worker-contact — the dashboard token lives
-        // there as a secret, so no GA4 credential reaches this browser and
-        // there is one door. The workers' own numbers come straight.
-        // the key rides a HEADER now — a token in a URL ends up in history,
-        // in the console and in screenshots of the console
-        // a failed read comes back as { __err } so a room can SAY what happened
-        // instead of sitting on a loading line forever
-        const px = (r, q) => fetch(API + '/pulse?r=' + r + (q || ''), { headers: { 'X-Inbox-Token': token || '' } })
-          .then(async (x) => {
-            if (x.ok) return x.json();
-            let why = 'the dashboard answered ' + x.status;
-            try { const j = await x.json(); if (j && j.err) why = j.err; } catch (e) {}
-            return { __err: why };
-          })
-          .catch((e) => ({ __err: 'could not reach the dashboard (' + String(e.message || e).slice(0, 80) + ')' }));
-        if (pulseApp) pulseApp.destroy();
-        pulseApp = pulseMod.mountPulse(host, {
+        const mod = await import('../scripts/pulse-shell.js');
+        hq = mod.mountHQ({
+          now: el('bmNow'), nowLists: el('bmNowLists'), visitors: el('bmVisitors'), business: el('bmBusiness'),
+          world: el('bmWorld'), players: el('bmPlayers'), letters: el('bmLetters'), health: el('bmHealth'),
+          analystBtn: el('bmAnalyst'),
+        }, {
+          key: passKey,
           live: () => px('live'),
           range: (from, to) => px('range', '&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to)),
           analyst: () => px('analyst'),
           report: () => px('report'),
-          ledger: () => Promise.all([
-            fetch(PASS_ADMIN_API + '/admin/rollup?days=30&key=' + encodeURIComponent(key))
-              .then((r) => (r.ok ? r.json() : null)).catch(() => null),
-            fetch(WORLD_API + '/yards/stats').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-            // 🕹 the Arcade boards (12 Sep): one per cabinet, kept by the pass worker
-            fetch(PASS_ADMIN_API + '/admin/arcade?key=' + encodeURIComponent(key))
-              .then((r) => (r.ok ? r.json() : null)).catch(() => null),
-            // ✉️ the review queue (20 Sep): reported and flagged letters, one place, key-gated on the
-            // rave worker and 404 until POST_ADMIN_KEY is set — so an un-deployed secret reads as
-            // "nothing to review", which is also true
-            fetch(WORLD_API + '/post-review?key=' + encodeURIComponent(key))
-              .then((r) => (r.ok ? r.json() : null)).catch(() => null),
-          ]).then(([roll, world, arcade, letters]) => ({ roll, world, arcade, letters })),
-          letterDrop: (keys) => fetch(WORLD_API + '/post-review?key=' + encodeURIComponent(key), {
+          roll: () => {
+            const key = passKey();
+            if (!key) return Promise.resolve(null);
+            return Promise.all([
+              fetch(PASS_ADMIN_API + '/admin/rollup?days=30&key=' + encodeURIComponent(key)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+              fetch(PASS_ADMIN_API + '/admin/arcade?key=' + encodeURIComponent(key)).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+            ]).then(([roll, arcade]) => (roll ? { roll, arcade } : null));
+          },
+          world: () => fetch(WORLD_API + '/yards/stats').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          // ✉️ the review queue: the rave worker answers 404 for a wrong key AND for no key, so the
+          // desk tells the two apart itself — "did not open" is not "nothing reported"
+          letters: async () => {
+            const key = passKey();
+            if (!key) return { state: 'nokey', rows: [] };
+            try {
+              const r = await fetch(WORLD_API + '/post-review?key=' + encodeURIComponent(key));
+              if (r.status === 404 || r.status === 403) return { state: 'closed', rows: [] };
+              if (!r.ok) return { state: 'error', rows: [] };
+              const j = await r.json();
+              return { state: 'ok', rows: Array.isArray(j.rows) ? j.rows : [] };
+            } catch (e) { return { state: 'error', rows: [] }; }
+          },
+          letterDrop: (keys) => fetch(WORLD_API + '/post-review?key=' + encodeURIComponent(passKey()), {
             method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ keys }),
           }).then((r) => r.ok).catch(() => false),
           arcadeWipe: (game) => fetch(PASS_ADMIN_API + '/admin/arcade', { method: 'POST', headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ key, game, wipe: true }) }).then((r) => r.ok).catch(() => false),
+            body: JSON.stringify({ key: passKey(), game, wipe: true }) }).then((r) => r.ok).catch(() => false),
+          onLetters: (L) => {
+            lettersN = L && L.state === 'ok' ? L.rows.length : 0;
+            el('bmWorldLetters').textContent = L.state === 'ok' ? String(lettersN) : L.state === 'nokey' ? 'no key' : L.state === 'closed' ? 'locked' : '?';
+            mailBadge();
+          },
         });
-        pulseAt = Date.now();
+        window.__hq = hq;   // the QA seam: the walk pins a dot and reads the state through it
+        if (hqWanted) hq.show(hqWanted);
       } catch (e) {
-        host.innerHTML = '';
-        const p = document.createElement('div');
-        p.className = 'hqp-empty';
-        p.textContent = 'the world desk could not be read — try again in a moment';
-        host.appendChild(p);
+        el('bmNow').textContent = 'the desk could not be read — reload in a moment';
       }
+    }
+    // the two badges that add up: unread mail + reported letters on Mail, gallery + items on Reviews
+    let lettersN = 0, galN = 0, itemsN = 0;
+    function mailBadge() {
+      const rd = readSet();
+      const un = mails.filter((x) => !rd.has(x.key)).length;
+      const n = un + lettersN;
+      const b = el('bmMailBadge');
+      b.hidden = !n; b.textContent = n;
+      el('bmWorldUnread').textContent = un;
+    }
+    function revBadge() {
+      const n = galN + itemsN;
+      const b = el('bmRevBadge');
+      b.hidden = !n; b.textContent = n;
+      el('bmWorldReviews').textContent = n;
     }
 
     // ── 🛠 THE DEV DESK — the rig's mission control ──
@@ -1673,22 +1826,14 @@ const description = 'Authorized banana personnel only.';
     // ride an interval
     async function worldLoad(light) {
       const put = (id, v) => { el(id).textContent = v; };
-      try {
-        const r = await fetch(WORLD_API + '/count').then((x) => x.json());
-        put('bmWorldClub', r.count ?? '?');
-      } catch (e) { put('bmWorldClub', '?'); }
-      try {
-        const p = await fetch(WORLD_API + '/park-count').then((x) => x.json());
-        put('bmWorldPark', p.count ?? '?');
-      } catch (e) { put('bmWorldPark', '?'); }
-      try {
-        const b = await fetch(WORLD_API + '/beach-count').then((x) => x.json());
-        put('bmWorldBeach', b.count ?? '?');
-      } catch (e) { put('bmWorldBeach', '?'); }
-      try {
-        const t = await fetch(WORLD_API + '/town-count').then((x) => x.json());
-        put('bmWorldTown', t.count ?? '?');
-      } catch (e) { put('bmWorldTown', '?'); }
+      const counts = {};
+      const head = async (path, id, k) => {
+        try { const r = await fetch(WORLD_API + path).then((x) => x.json()); put(id, r.count ?? '?'); counts[k] = +r.count || 0; }
+        catch (e) { put(id, '?'); }
+      };
+      await Promise.all([head('/count', 'bmWorldClub', 'rave'), head('/park-count', 'bmWorldPark', 'park'),
+        head('/beach-count', 'bmWorldBeach', 'beach'), head('/town-count', 'bmWorldTown', 'town')]);
+      if (hq) hq.counts(counts);
       if (light) return;
       try {
         const y = await fetch(WORLD_API + '/yards/stats').then((x) => x.json());
@@ -1710,7 +1855,7 @@ const description = 'Authorized banana personnel only.';
           const when = document.createElement('span');
           when.className = 'hq-yard__when';
           const d2 = Math.floor((Date.now() - (e2.updated || 0)) / 86400000);
-          when.textContent = (e2.qa ? 'QA · ' : '') + (d2 === 0 ? 'built on today' : d2 === 1 ? 'yesterday' : d2 + ' days ago');
+          when.textContent = (e2.qa ? 'test yard · ' : '') + (d2 === 0 ? 'changed today' : d2 === 1 ? 'changed yesterday' : 'changed ' + d2 + ' days ago');
           row.append(nm, st, when);
           box.appendChild(row);
         });
@@ -1721,22 +1866,15 @@ const description = 'Authorized banana personnel only.';
         const entries = h.buyable && typeof h.buyable === 'object' ? Object.values(h.buyable) : null;
         const bad = entries ? entries.some((p2) => ['verdict', 'published', 'channels']
           .some((k) => String((p2 || {})[k] || '').includes('❌'))) : null;
-        el('bmWorldShop').textContent = bad === null ? '?' : bad ? '✗ CHECK IT' : '✓ buyable';
+        el('bmWorldShop').textContent = bad === null ? '?' : bad ? '✗ CHECK IT' : '✓ yes';
         el('bmWorldShop').style.color = bad ? 'var(--hot2)' : '';
-      } catch (e) { put('bmWorldShop', '?'); }
-      // review + mail counts ride data other desks already fetched
-      try {
-        const g = parseInt(el('bmGalBadge').textContent || '0', 10) || 0;
-        const it = parseInt(el('bmItemsBadge').textContent || '0', 10) || 0;
-        put('bmWorldReviews', g + it);
-      } catch (e) { put('bmWorldReviews', '?'); }
-      try {
-        const rd = readSet();
-        put('bmWorldUnread', mails.filter((x) => !rd.has(x.key)).length);
-      } catch (e) { put('bmWorldUnread', '?'); }
+        if (hq) hq.probe(bad === null ? '?' : bad ? 'bad' : 'ok');
+      } catch (e) { put('bmWorldShop', '?'); if (hq) hq.probe('?'); }
+      mailBadge();
+      revBadge();
     }
     el('bmWorldRefresh').onclick = () => worldLoad(false);
-    setInterval(() => { if (!el('bmPaneWorld').hidden && !document.hidden) worldLoad(true); }, 30000);
+    setInterval(() => { if ((!el('bmPaneNow').hidden || !el('bmPaneWorld').hidden) && !document.hidden) worldLoad(true); }, 30000);
 
     // ── 👤 THE USERS DESK ────────────────────────────────────────────────
     // Was a read-only ledger that printed seven emoji facts per person in one
@@ -2093,7 +2231,7 @@ const description = 'Authorized banana personnel only.';
       note.style.margin = '0.6rem 0 0';
       note.textContent = 'Only gives, and coins back. Taking rep, revoking gear or wiping a name would be '
         + 'undone by the player’s next sync (blobs merge by MAX), so those are not offered rather than '
-        + 'pretending. Bad names get struck on the 📇 Names desk.';
+        + 'pretending. A bad name is struck under Names on the floor, below.';
       wrap.appendChild(note);
 
       // 🗑 erase — two clicks here, and the worker still demands the id back
@@ -2135,7 +2273,7 @@ const description = 'Authorized banana personnel only.';
       return wrap;
     }
 
-    el('bmLedgerLoad').onclick = ledgerLoad;
+    el('bmLedgerLoad').onclick = () => { ledgerLoad(); if (hq) hq.keyChanged(); };
     el('bmURefresh').onclick = ledgerLoad;
     el('bmLedgerKey').addEventListener('keydown', (e) => { if (e.key === 'Enter') ledgerLoad(); });
     el('bmUSearch').addEventListener('input', usersRender);
@@ -2403,12 +2541,12 @@ const description = 'Authorized banana personnel only.';
     function itemsCount() {
       const n = el('bmItemsList').querySelectorAll('article').length;
       el('bmItemsCount').textContent = '🎁 ' + n + ' item' + (n === 1 ? '' : 's') + ' awaiting review';
-      const b = el('bmItemsBadge');
-      if (b) { b.hidden = n === 0; b.textContent = n; }
+      itemsN = n;
+      revBadge();
     }
     async function itemsLoad() {
       if (!gkey) {
-        el('bmItemsList').innerHTML = '<p class="bm-livenote">Unlock the gallery desk first — this desk shares its key.</p>';
+        el('bmItemsList').innerHTML = '<p class="bm-livenote">Needs the gallery key — unlock it above.</p>';
         el('bmCatList').innerHTML = '';
         return;
       }
@@ -2451,34 +2589,34 @@ const description = 'Authorized banana personnel only.';
     // to the gallery.local.json key). Fails closed until the secret exists.
     const RAVE_API = 'https://banana-rave.trymstene.workers.dev';
     const rEsc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    async function raveLoad() {
-      if (!gkey) { el('bmRaveList').innerHTML = '<p class="bm-livenote">Unlock the gallery desk first — this desk shares its key.</p>'; return; }
+    async function namesLoad() {
+      if (!gkey) { el('bmNamesList').innerHTML = '<p class="bm-livenote">Needs the gallery key — unlock the Reviews floor once and the names load here.</p>'; return; }
       let d;
       try {
         const r = await fetch(RAVE_API + '/names?key=' + encodeURIComponent(gkey));
-        if (r.status === 403) { el('bmRaveList').innerHTML = '<p class="bm-livenote">403 — set the RAVE_KEY secret on worker-rave (same value as the gallery key).</p>'; return; }
+        if (r.status === 403) { el('bmNamesList').innerHTML = '<p class="bm-livenote">403 — set the RAVE_KEY secret on worker-rave (same value as the gallery key).</p>'; return; }
         if (!r.ok) throw new Error(r.status);
         d = await r.json();
-      } catch (e) { el('bmRaveList').innerHTML = '<p class="bm-livenote">Could not reach the floor — try again.</p>'; return; }
+      } catch (e) { el('bmNamesList').innerHTML = '<p class="bm-livenote">Could not reach the floor — try again.</p>'; return; }
       const fmt = (t) => new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       const live = new Set(d.live || []);
-      el('bmRaveList').innerHTML =
+      el('bmNamesList').innerHTML =
         '<p class="bm-count">' + (d.live || []).length + ' named right now · ' + (d.names || []).length + ' seen recently · ' + (d.strikes || []).length + ' struck</p>'
         + ((d.strikes || []).length
           ? '<p class="bm-livenote">🔨 struck: ' + d.strikes.map((s) => rEsc(s) + ' <button class="bm-chip bm-chip--ghost" data-unstrike="' + rEsc(s) + '">undo</button>').join(' · ') + '</p>'
           : '')
-        // ONE ROW PER VISITOR (keyed by sid on the worker) — a renamer no longer
-        // spams the list; ×N flags a name-cycler, and their past names still show
+        // ONE ROW PER VISITOR (keyed by session on the worker) — a renamer no longer
+        // spams the list; "renamed N times" flags a name-cycler, and their past names still show
         + (d.names || []).map((x) => '<div class="bm-bar" style="justify-content:space-between;align-items:flex-start;">'
           + '<span>' + (live.has(x.n) ? '🟢 ' : '') + '<b>' + rEsc(x.n) + '</b> '
-          + (x.count > 1 ? '<span style="background:#ffe135;color:#111;font-weight:800;font-size:0.6rem;padding:1px 5px;border-radius:2px;vertical-align:middle;">×' + x.count + ' names</span> ' : '')
+          + (x.count > 1 ? '<span style="background:#ffe135;color:#111;font-weight:800;font-size:0.6rem;padding:1px 5px;border-radius:2px;vertical-align:middle;">renamed ' + x.count + ' times</span> ' : '')
           + '<span style="opacity:0.55;font-size:0.75rem;">' + fmt(x.at) + '</span>'
           + ((x.vars && x.vars.length) ? '<br><span style="opacity:0.5;font-size:0.72rem;">also tried: ' + x.vars.map(rEsc).join(' · ') + '</span>' : '')
           + '</span>'
           + '<button class="bm-chip" data-strike="' + rEsc(x.n) + '">🔨 strike</button></div>').join('')
         || '<p class="bm-livenote">No names seen yet — the floor is all outfit-names so far.</p>';
-      el('bmRaveList').querySelectorAll('[data-strike]').forEach((b) => { b.onclick = () => raveStrike(b.dataset.strike, false); });
-      el('bmRaveList').querySelectorAll('[data-unstrike]').forEach((b) => { b.onclick = () => raveStrike(b.dataset.unstrike, true); });
+      el('bmNamesList').querySelectorAll('[data-strike]').forEach((b) => { b.onclick = () => raveStrike(b.dataset.strike, false); });
+      el('bmNamesList').querySelectorAll('[data-unstrike]').forEach((b) => { b.onclick = () => raveStrike(b.dataset.unstrike, true); });
     }
     async function raveStrike(t, remove) {
       try {
@@ -2488,21 +2626,19 @@ const description = 'Authorized banana personnel only.';
         });
         if (!r.ok) { alert('strike failed (' + r.status + ')'); return; }
       } catch (e) { alert('strike failed'); return; }
-      raveLoad();
+      namesLoad();
     }
-    el('bmRaveRefresh').onclick = raveLoad;
+    el('bmNamesRefresh').onclick = namesLoad;
     el('bmStrikeAdd').onclick = () => { const v = el('bmStrikeInput').value.trim(); if (v) { raveStrike(v, false); el('bmStrikeInput').value = ''; } };
 
-    // pending ↔ live sub-desks
-    function setGalMode(live) {
-      el('bmModePending').setAttribute('aria-pressed', String(!live));
-      el('bmModeLive').setAttribute('aria-pressed', String(live));
-      el('bmGalPending').hidden = live;
-      el('bmGalLive').hidden = !live;
-      if (live) liveBoot();
-    }
-    el('bmModePending').onclick = () => setGalMode(false);
-    el('bmModeLive').onclick = () => setGalMode(true);
+    // the live gallery opens in place, under its own section, and loads on first open
+    el('bmModeLive').onclick = () => {
+      const pane = el('bmGalLive');
+      pane.hidden = !pane.hidden;
+      el('bmModeLive').setAttribute('aria-pressed', String(!pane.hidden));
+      el('bmModeLive').textContent = pane.hidden ? '🖼 open the live gallery' : '🖼 close the live gallery';
+      if (!pane.hidden) liveBoot();
+    };
 
     async function galLoad() {
       const r = await fetch(GAL + '/gallery/pending-list?key=' + encodeURIComponent(gkey));
@@ -2512,11 +2648,10 @@ const description = 'Authorized banana personnel only.';
     }
     async function galBoot() {
       if (gkey && galItems === null) {
-        if (await galLoad().catch(() => false)) { el('bmGalModes').hidden = false; galRender(); return; }
+        if (await galLoad().catch(() => false)) { galRender(); return; }
         gkey = '';
       }
       if (!gkey) { el('bmGkeyGate').hidden = false; el('bmGalCount').textContent = ''; return; }
-      el('bmGalModes').hidden = false;
       galRender();
     }
     el('bmGkeySave').onclick = async () => {
@@ -2524,17 +2659,16 @@ const description = 'Authorized banana personnel only.';
       if (gkey && await galLoad().catch(() => false)) {
         try { localStorage.setItem('gallery-key', gkey); } catch (e) {}
         el('bmGkeyGate').hidden = true;
-        el('bmGalModes').hidden = false;
         galRender();
+        itemsLoad();
+        if (!el('bmPanePlayers').hidden) namesLoad();
       } else { gkey = ''; el('bmGkey').value = ''; el('bmGkey').placeholder = '❌ wrong key — try again'; }
     };
     el('bmGkey').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('bmGkeySave').click(); });
 
     function galBadge() {
-      const b = el('bmGalBadge');
-      const n = galItems ? galItems.length : 0;
-      b.hidden = !n;
-      b.textContent = n;
+      galN = galItems ? galItems.length : 0;
+      revBadge();
     }
     function galRender() {
       const list = el('bmGalList');
@@ -2800,15 +2934,13 @@ const description = 'Authorized banana personnel only.';
     if (gkey) { // 🎁 badge: pending item submissions at a glance
       fetch(CAT_API + '/catalog/inbox?key=' + encodeURIComponent(gkey))
         .then((r) => (r.ok ? r.json() : []))
-        .then((items) => { const b = el('bmItemsBadge'); if (b && items.length) { b.hidden = false; b.textContent = items.length; } })
+        .then((items) => { itemsN = Array.isArray(items) ? items.length : 0; revBadge(); })
         .catch(() => {});
     }
 
-    // ⚠️ LAST, ON PURPOSE — see the note beside the tab wiring above. Opening a
-    // tab runs that tab's loader, so nothing may open one until every desk in
-    // this module has been declared.
-    setTab('pulse');
-
+    // ⚠️ LAST, ON PURPOSE. Opening a floor runs that floor's loaders, so boot() — which opens one —
+    // may not run until every desk in this module has been declared. A module-scope throw above
+    // would still kill everything after it; the walk watches for page errors.
     boot();
   </script>
 </BaseLayout>

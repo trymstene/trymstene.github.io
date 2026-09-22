@@ -1,8 +1,5 @@
-// 📊 PULSE 2.0 — the rooms that read a WINDOW rather than the last half hour.
-//
-// One file, one room per export, all of them handed the same two payloads by
-// the shell. They share the chart primitives with the ledger room instead of
-// growing a second chart engine.
+// 📊 GOOGLE'S FLOORS — the renderers that read a WINDOW (Visitors, Business,
+// the World's area cards) and the live lists on the Now floor.
 //
 // ⚠️ THINGS THAT LOOK LIKE DETAILS AND ARE NOT:
 //   · `daily` is NOT zero-filled — a dead day is MISSING from the array, so a
@@ -12,14 +9,19 @@
 //   · a rate needs 20 behind it before it is printed at all
 //   · every ▲▼ comes from a SECOND range call for the previous window; the
 //     payload carries no comparison of its own
-import { section, tile, lineChart, barsH, grid, div, nfmt, pct } from './hq-pulse.js';
+//   · every section wears a chip: GOOGLE · <the window> — and never a live
+//     number beside a window number (22 Sep 2026)
+import { section, tile, lineChart, barsH, grid, div, nfmt, pct, chip } from './hq-pulse.js';
 import { headText, CARD_LIST } from '../data/pack-heads.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
 import { flag, place, FUNNELS, DL_NAMES, AREAS, SHOPS } from '../data/pulse-dicts.js';
+import { windowWord } from '../data/hq-words.js';
 
 const MIN_N = 20;
 const DEV_ICON = { desktop: '🖥', mobile: '📱', tablet: '📟' };
 const SKIP_EV = new Set(['session_start', 'first_visit']);
+export const WINDOWS = [['today', 'today', 'TODAY'], ['yesterday', 'yesterday', 'YESTERDAY'],
+  ['6daysAgo', 'today', '7 DAYS'], ['27daysAgo', 'today', '28 DAYS']];
 
 // ── the previous window of equal length, so every number can carry a delta ──
 export function prevWindow(from, to) {
@@ -39,6 +41,24 @@ const delta = (now, was) => {
   if (!isFinite(d) || Math.abs(d) < 1) return null;
   return (d > 0 ? '▲ ' : '▼ ') + Math.abs(d) + '%';
 };
+const fmtDur = (n) => (n < 90 ? Math.round(n) + 's' : Math.floor(n / 60) + 'm ' + Math.round(n % 60) + 's');
+
+// ── the window chips, drawn at the top of every Google floor ───────────────
+export function windowBar(host, S, pick) {
+  const bar = div('ps-range', null, host);
+  div('ps-rlab', '📅 window', bar);
+  WINDOWS.forEach(([f, t, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ps-chip';
+    b.textContent = label;
+    b.setAttribute('aria-pressed', String(S.from === f && S.to === t));
+    b.addEventListener('click', () => pick(f, t));
+    bar.appendChild(b);
+  });
+  div('ps-rnote', 'Google’s report for the window. Client-fired and consent-gated: an adblocker or a declined banner hides a visit, and today lags by hours.', bar);
+  return bar;
+}
 
 // ── the daily series, with the missing days put back ────────────────────────
 function fillDaily(daily, key) {
@@ -58,64 +78,85 @@ function fillDaily(daily, key) {
   return out;
 }
 
-export function renderOverview(into, S) {
+// a page path → the name a reader knows; longest prefix wins
+export function pageName(page) {
+  const p = String(page || '');
+  let best = null;
+  for (const [pre, name] of DL_NAMES) if (p.indexOf(pre) === 0 && (!best || pre.length > best[0].length)) best = [pre, name];
+  if (!best) return p === '/' ? 'The front page' : p;
+  const rest = p.slice(best[0].length).replace(/\/$/, '');
+  return rest ? best[1] + ' · ' + rest.split('/').pop().replace(/-/g, ' ') : best[1];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 📊 VISITORS — who came, from where, what they read and did
+// ═══════════════════════════════════════════════════════════════════════════
+export function renderVisitors(into, S, mapCard) {
   const R = S.range, P = S.prev;
-  if (!R) { div('hqp-empty', 'reading the window…', into); return; }
+  const W = windowWord(S.from, S.to);
+  if (!R) { div('hqp-empty', 'reading Google’s report…', into); return; }
   const k = R.kpis || {};
   const pk = (P && P.kpis) || {};
 
-  let s = section(into, 'The window', 'Sessions are visits, visitors are deduplicated people across the whole window, and engaged is session-weighted rather than an average of daily rates. Every arrow compares this window with the one immediately before it, of the same length.');
+  let s = section(into, 'Visits in this window', 'A visit is one session on the site; a visitor is a person, counted once for the whole window. An engaged visit stayed ten seconds, saw two pages or did something. Every arrow compares this window with the one just before it, of the same length.', { src: 'goog', when: W });
   const g = div('hqp-tiles', null, s);
-  tile(g, 'sessions', nfmt(k.sessions), delta(k.sessions, pk.sessions) || 'visits');
-  tile(g, 'visitors', nfmt(k.users), delta(k.users, pk.users) || 'deduplicated');
-  tile(g, 'new', nfmt(k.newUsers), delta(k.newUsers, pk.newUsers) || 'first time here');
-  tile(g, 'engaged', Math.round((k.engagementRate || 0) * 100) + '%', delta(k.engagementRate, pk.engagementRate) || 'of sessions');
-  tile(g, 'revenue', Math.round(k.revenue || 0) + ' kr', nfmt(k.transactions) + ' purchases');
-  // ⚠️ the big slot is for a NUMBER — an emoji in it reads as a broken tile
+  tile(g, 'visits', nfmt(k.sessions), delta(k.sessions, pk.sessions) || 'sessions, in Google’s words');
+  tile(g, 'visitors', nfmt(k.users), delta(k.users, pk.users) || 'people, counted once');
+  tile(g, 'first-time visitors', nfmt(k.newUsers), delta(k.newUsers, pk.newUsers) || 'never seen before');
+  tile(g, 'engaged visits', Math.round((k.engagementRate || 0) * 100) + '%', delta(k.engagementRate, pk.engagementRate) || 'of all visits');
   const dv = (R.devices || []).slice().sort((x, y) => y.sessions - x.sessions);
   const top = dv[0];
   tile(g, top ? 'on ' + (top.dev === 'desktop' ? 'desktop' : top.dev + 's') : 'devices',
     top ? pct(top.sessions, k.sessions) + '%' : '—',
     dv.map((d) => (DEV_ICON[d.dev] || d.dev) + ' ' + pct(d.sessions, k.sessions) + '%').join(' · ') || 'no device data');
-
-  // ⏳ GA4's own intraday lag, said out loud so a zero day never reads as a crash
   if (S.to === 'today' && !k.sessions) {
-    div('hqp-note', 'GA4 has not produced today’s report data yet — Google-side intraday lag, sometimes 12h+. The live map and the ticker are unaffected, and today’s numbers backfill on their own.', s).hidden = false;
+    div('hqp-note', 'Google has not produced today’s report yet — its own lag, sometimes 12 hours. The Now floor is unaffected, and today’s numbers fill in on their own.', s).hidden = false;
   }
-
   const daily = fillDaily(R.daily, 'sessions');
   if (daily.length > 1) {
-    lineChart(s, daily, { label: 'sessions per day' });
-    div('hqp-cap', 'sessions per day', s);
-    // 📈 HOW MANY PEOPLE THE SITE HAS, day by day. Google computes these
-    // rolling windows itself, so this chart is full from the first day it is
-    // switched on — our own pass rollup can only ever show days since its cron
-    // started. ⚠️ These count VISITORS to the site; the world desk's monthly
-    // number counts people who hold a banana pass. Both are true and they are
-    // not the same number, so they live on separate screens.
-    // ⚠️ fillDaily carries ONE value per point, so the two windows are filled
-    // separately and zipped. Both span the same dates, so the indices line up.
+    lineChart(s, daily, { label: 'visits per day' });
+    div('hqp-cap', 'visits per day · a day with nothing is a real zero, not a gap', s);
     const mau = fillDaily(R.daily, 'a28');
     const wau = fillDaily(R.daily, 'a7');
     if (mau.some((x) => x.v > 0)) {
       lineChart(s, mau.map((x, i) => ({ d: x.d, v: x.v, w: (wau[i] && wau[i].v) || 0 })), {
-        label: 'monthly and weekly visitors', color: '#ffd83d', label1: 'monthly',
-        second: { key: 'w', label: 'weekly', color: '#5ec8e0' },
+        label: 'people on the site, 28-day and 7-day', color: '#ffd83d', label1: '28-day',
+        second: { key: 'w', label: '7-day', color: '#5ec8e0' },
       });
-      div('hqp-cap', 'people on the site in the last 28 days (yellow) and the last 7 (blue) — ⚠️ the monthly line is a trailing window, so a campaign stays in it for four weeks after the spend stops', s);
+      div('hqp-cap', 'people on the site in the last 28 days (yellow) and the last 7 (blue) — Google’s own rolling windows, so a campaign stays in the yellow line for four weeks after it stops', s);
     }
-    div('hqp-cap', 'sessions per day · a day with nothing is a real zero, not a gap', s);
+  }
+
+  // ── which pages they read (22 Sep 2026) ──────────────────────────────────
+  s = section(into, 'Which pages they read', 'Every page with a visit in the window, biggest first: how many visits touched it, how many times it was viewed, how many people, and the time they spent on it on average.', { src: 'goog', when: W });
+  if (R.pages === undefined) div('hqp-empty', 'the page report needs the newer pulse worker — deploy worker-pulse', s);
+  else if (R.pages === null) div('hqp-empty', 'Google did not answer the page report — try another window', s);
+  else if (!R.pages.length) div('hqp-empty', 'no pages in this window', s);
+  else {
+    const hasSess = R.pages.some((p) => p.sessions != null);
+    grid(s, [
+      { h: 'page', w: 'minmax(12rem, 1fr)' },
+      ...(hasSess ? [{ h: 'visits', w: '4.6rem', num: true }] : []),
+      { h: 'views', w: '4.6rem', num: true },
+      { h: 'people', w: '4.8rem', num: true },
+      { h: 'time on it', w: '5.4rem', num: true },
+    ], R.pages.map((p) => {
+      const kcell = div('', pageName(p.page), null);
+      if (pageName(p.page) !== p.page) div('hqp-gsub', p.page, kcell);
+      return [kcell, ...(hasSess ? [nfmt(p.sessions)] : []), nfmt(p.views), nfmt(p.users),
+        p.views ? fmtDur(p.secs / p.views) : null];
+    }));
   }
 
   // ── where they came from ────────────────────────────────────────────────
-  s = section(into, 'Where they came from', 'Sessions by source and medium, with how engaged each one was and how many pages it read. A campaign panel appears only when a real utm campaign lands.');
+  s = section(into, 'Where they came from', 'Visits by source and medium, with how engaged each one was and how many pages it read. Campaigns get their own table only when a real utm campaign lands.', { src: 'goog', when: W });
   barsH(s, (R.sources || []).slice(0, 8).map((x) => ({ k: x.source || '(direct)', v: x.sessions })), { mono: '#2F7BD6' });
   const srcRows = (R.sources || []).slice(0, 8);
   if (srcRows.length) {
     grid(s, [
       { h: 'source', w: 'minmax(9rem, 1fr)' },
       { h: 'medium', w: 'minmax(5rem, auto)' },
-      { h: 'sessions', w: '5.2rem', num: true },
+      { h: 'visits', w: '5.2rem', num: true },
       { h: 'engaged', w: '4.8rem', num: true },
       { h: 'pages each', w: '5.6rem', num: true },
     ], srcRows.map((x) => [x.source || '(direct)', x.medium || '—', nfmt(x.sessions),
@@ -124,60 +165,54 @@ export function renderOverview(into, S) {
   }
   const camps = (R.camps || []).filter((c) => c.name && c.name !== '(not set)');
   if (camps.length) {
-    const cs = section(into, 'Campaigns', 'utm_campaign by utm_content. It stays hidden until a real campaign lands, so an empty panel never implies a dead ad.');
+    const cs = section(into, 'Campaigns', 'utm_campaign by utm_content. Shown only when a real campaign lands, so an empty table never implies a dead ad.', { src: 'goog', when: W });
     grid(cs, [
       { h: 'campaign', w: 'minmax(9rem, 1fr)' },
       { h: 'content', w: 'minmax(6rem, auto)' },
-      { h: 'sessions', w: '5.2rem', num: true },
+      { h: 'visits', w: '5.2rem', num: true },
       { h: 'engaged', w: '4.8rem', num: true },
-    ], camps.map((c) => [c.name, c.content || '—', nfmt(c.sessions),
-      pct(c.engaged, c.sessions) + '%']));
+    ], camps.map((c) => [c.name, c.content || '—', nfmt(c.sessions), pct(c.engaged, c.sessions) + '%']));
+  }
+
+  // ── the window's map ──────────────────────────────────────────────────────
+  if (typeof mapCard === 'function') {
+    s = section(into, 'Where visitors were', 'Every visit in the window, by country. Pick one thing people did to see where that happened instead. Tap a dot to keep its label.', { src: 'goog', when: W });
+    mapCard(s);
   }
 
   // ── what they did ───────────────────────────────────────────────────────
-  s = section(into, 'What they did', 'Every event in the window, biggest first. Tap one to read what it means — that explainer is the only written record of what these events measure and where they mislead.');
-  const evs = (R.events || []).filter((e) => !SKIP_EV.has(e.name)).slice(0, 20);
+  s = section(into, 'What they did', 'Every event in the window, biggest first. Tap a row to read what it means — that explainer is the only written record of what these events measure and where they mislead.', { src: 'goog', when: W });
+  const evs = (R.events || []).filter((e) => !SKIP_EV.has(e.name)).slice(0, 25);
   const note = div('hqp-note', '', s);
   note.hidden = true;
-  // ⚠️ twenty rows of "260  ·  210 people" under no header at all: two
-  // different measures run together in one cell, and nothing saying which is
-  // which. Events and PEOPLE are different numbers and get different columns.
+  if (!evs.length) { div('hqp-empty', 'no events in this window', s); return; }
   const evTable = grid(s, [
     { h: 'what they did', w: 'minmax(11rem, 1fr)' },
     { h: 'times', w: '5rem', num: true },
     { h: 'people', w: '5rem', num: true },
-  ], evs.map((e) => {
-    const k = div('', EV_LABEL[e.name] || e.name, null);
-    return [k, nfmt(e.v), e.u ? nfmt(e.u) : null];
-  }));
-  // the explainer is the only written record of what these events measure
+  ], evs.map((e) => [div('', EV_LABEL[e.name] || e.name, null), nfmt(e.v), e.u ? nfmt(e.u) : null]));
   [...evTable.querySelectorAll('.hqp-grow')].slice(1).forEach((row, i) => {
     const e = evs[i];
     if (!e) return;
     row.style.cursor = 'pointer';
-    row.addEventListener('click', () => {
-      note.hidden = false;
-      note.textContent = e.name + ' — ' + explain(e.name).why;
-    });
+    row.addEventListener('click', () => { note.hidden = false; note.textContent = e.name + ' — ' + explain(e.name).why; });
   });
-  if (!evs.length) div('hqp-empty', 'no events in this window', t);
 }
 
-// ── who is on screen right this second ──────────────────────────────────────
+// ── who is on screen right now (the Now floor's lists) ─────────────────────
 const DEVI = { mobile: '📱', desktop: '💻', tablet: '📲', smart_tv: '📺' };
-
-export function renderNow(into, S) {
+export function renderNowLists(into, S) {
   const L = S.live;
   if (!L) { div('hqp-empty', 'waiting for the live read…', into); return; }
-  let s = section(into, 'On screen right now', 'The pages people have open this minute, and where they are reading from.');
+  let s = section(into, 'Pages open now', 'The pages people have open, from Google’s realtime feed: everyone active in the last 30 minutes.', { src: 'live', when: 'last 30 min' });
   const t = div('hqp-tbl', null, s);
   (L.pages || []).slice(0, 10).forEach((p) => {
     const row = div('hqp-trow', null, t);
     div('hqp-tk', String(p.page || '').replace(' | Trym Stene', ''), row);
     div('hqp-tv', nfmt(p.v), row);
   });
-  if (!(L.pages || []).length) div('hqp-empty', 'nobody is reading anything this minute', t);
-  s = section(into, 'Cities visiting right now', null);
+  if (!(L.pages || []).length) div('hqp-empty', 'nobody is reading anything right now', t);
+  s = section(into, 'Cities', 'Where the people on the site now are reading from.', { src: 'live', when: 'last 30 min' });
   const t2 = div('hqp-tbl', null, s);
   (L.cities || []).slice(0, 12).forEach((c) => {
     const row = div('hqp-trow', null, t2);
@@ -185,12 +220,10 @@ export function renderNow(into, S) {
     div('hqp-tv', nfmt(c.v), row);
   });
   if (!(L.cities || []).length) div('hqp-empty', 'no cities on the board', t2);
-  // 📱 what they are holding. GA4 sends this as a plain object, and it is the
-  // one live number that settles a layout argument.
   const dev = Object.entries(L.devices || {}).sort((x, y) => y[1] - x[1]);
   if (dev.length) {
     const tot = dev.reduce((a2, d) => a2 + (+d[1] || 0), 0) || 1;
-    const s3 = section(into, 'On what', null);
+    const s3 = section(into, 'Devices', 'What the people on the site now are holding.', { src: 'live', when: 'last 30 min' });
     const strip = div('ps-devs', null, s3);
     dev.forEach(([name, v]) => {
       const c = div('ps-dev', null, strip);
@@ -201,23 +234,12 @@ export function renderNow(into, S) {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// 📥 DOWNLOADS — giving files away IS the product here, so this is the volume
-// side of the site. TOOK = files handed over. SAW = the card appeared, which
-// since 12 Aug rides EVERY download, so it counts cards and not people.
-// ════════════════════════════════════════════════════════════════════════════
-
-// longest prefix wins; a deeper path keeps the surface and adds its own slug
-function dlName(page) {
-  const p = String(page || '');
-  let best = null;
-  for (const [pre, name] of DL_NAMES) if (p.indexOf(pre) === 0 && (!best || pre.length > best[0].length)) best = [pre, name];
-  if (!best) return p === '/' ? 'The front page' : p;
-  const rest = p.slice(best[0].length).replace(/\/$/, '');
-  return rest ? best[1] + ' · ' + rest.split('/').pop().replace(/-/g, ' ') : best[1];
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// 💰 BUSINESS — did a free file turn into a sale?
+// ═══════════════════════════════════════════════════════════════════════════
 const DLSET = new Set(['gif_download', 'png_download', 'wallpaper_download', 'offer_shown',
   'offer_click', 'offer_skip', 'offer_world', 'offer_discord', 'offer_support', 'offer_pack', 'offer_swap']);
+export { DLSET };
 
 // GA4's item_list_name → the place a person would recognise. The shop grid
 // sends no list name, so GA4 files it under "(not set)".
@@ -235,112 +257,6 @@ function listName(l) {
   return k || 'The shop grid';
 }
 
-export function renderDownloads(into, S) {
-  const R = S.range;
-  if (!R) { div('hqp-empty', 'reading the window…', into); return; }
-  const rows = R.downloads || [];
-  let s = section(into, 'The download business', 'TOOK is files handed over. SAW is the card appearing — since 12 Aug it rides every download, so it counts cards, not people. Since 5 Sep the card shows a sticker pack, and TAKE RATE is pack taps over cards shown. A rate needs twenty cards behind it before it is printed: three out of five is three taps, not sixty per cent.');
-  if (!rows.length) { div('hqp-empty', 'no downloads in this window', s); return; }
-  const sum = (k) => rows.reduce((a, r) => a + (+r[k] || 0), 0);
-  const tf = sum('files'), ts = sum('shown'), tc = sum('click'), tk = sum('skip');
-  const tw = sum('world'), td = sum('disc'), tcof = sum('coffee');
-  const tp = sum('pack'), tsw = sum('swap');
-  // the card's earlier lives (merch link, world/Discord, coffee) so an old
-  // window still adds up; a fresh window has none of them and hides the tile
-  const oldAsks = tw + td + tc + tcof;
-  const sessions = (R.kpis && R.kpis.sessions) || 0;
-  const g = div('hqp-tiles', null, s);
-  tile(g, 'files taken', nfmt(tf));
-  tile(g, 'per 100 visits', sessions ? (tf / sessions * 100).toFixed(1) : '–');
-  tile(g, 'cards shown', nfmt(ts));
-  tile(g, 'pack taps', nfmt(tp), '🎟 the ask');
-  tile(g, 'take rate', ts >= MIN_N ? (tp / ts * 100).toFixed(1) + '%' : '–', ts >= MIN_N ? 'of cards shown' : 'needs 20 cards');
-  tile(g, 'browsed packs', nfmt(tsw), 'flipped the minis');
-  tile(g, 'no-thanks', nfmt(tk));
-  if (oldAsks) tile(g, 'old asks', nfmt(oldAsks), 'world · Discord · coffee');
-  div('hqp-cap', ts >= MIN_N
-    ? 'Of every 100 people shown the card, ' + (tp / ts * 100).toFixed(1) + ' tapped through to a sticker pack. Sales land in Shopify, not here.'
-    : 'Not enough cards yet to judge the ask — come back when a few hundred have been shown.', s);
-
-  // ── files, day by day ──────────────────────────────────────────────────
-  const dl = (R.dlDaily || []).slice().sort((a, b) => (a.d < b.d ? -1 : 1));
-  if (dl.length) {
-    const s2 = section(into, 'Files taken, day by day', null);
-    const wrap = div('hqp-bars2', null, s2);
-    const dmax = Math.max(1, ...dl.map((r) => +r.files || 0));
-    dl.forEach((r) => {
-      const col = div('hqp-b2', null, wrap);
-      const fill = div('hqp-b2f', null, col);
-      fill.style.height = (+r.files ? Math.max(2, Math.round((+r.files || 0) / dmax * 100)) : 0) + '%';
-      const d = r.d.slice(6, 8) + '.' + r.d.slice(4, 6);
-      col.addEventListener('click', () => {
-        note2.hidden = false;
-        const was = (r.world || 0) + (r.disc || 0) + (r.click || 0) + (r.coffee || 0);
-        note2.textContent = d + ' — ' + (r.files || 0) + ' files, ' + (r.shown || 0) + ' cards shown, '
-          + (r.pack || 0) + ' pack taps' + (was ? ', ' + was + ' on old asks' : '');
-      });
-    });
-    var note2 = div('hqp-note', '', s2);
-    note2.hidden = true;
-    div('hqp-cap', dl[0].d.slice(6, 8) + '.' + dl[0].d.slice(4, 6) + ' → '
-      + dl[dl.length - 1].d.slice(6, 8) + '.' + dl[dl.length - 1].d.slice(4, 6)
-      + ' · peak ' + dmax + ' in a day · tap a bar for the detail', s2);
-  }
-
-  // ── who is taking them, free off the event map ─────────────────────────
-  const em = R.eventMap || {};
-  const geo = {};
-  ['gif_download', 'png_download', 'wallpaper_download'].forEach((k) => {
-    Object.entries(em[k] || {}).forEach(([cc, v]) => { geo[cc] = (geo[cc] || 0) + (+v || 0); });
-  });
-  const geoRows = Object.entries(geo).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const s3 = section(into, 'Who is taking them', null);
-  const t3 = div('hqp-tbl', null, s3);
-  geoRows.forEach(([cc, v]) => {
-    const row = div('hqp-trow', null, t3);
-    div('hqp-tk', place(cc), row);
-    div('hqp-tv', nfmt(v), row);
-  });
-  if (!geoRows.length) div('hqp-empty', 'no country data in this window', t3);
-
-  // ── the last five minutes ──────────────────────────────────────────────
-  const s4 = section(into, 'Just downloaded', 'The last five minutes, straight off the realtime feed.');
-  const t4 = div('hqp-tbl', null, s4);
-  const recent = ((S.live && S.live.recent) || []).filter((r) => DLSET.has(r.name));
-  recent.forEach((r) => {
-    const row = div('hqp-trow', null, t4);
-    div('hqp-tk', flag(r.cc) + ' ' + (EV_LABEL[r.name] || r.name) + (r.v > 1 ? ' ×' + r.v : ''), row);
-    div('hqp-tv', '', row);
-  });
-  if (!recent.length) div('hqp-empty', 'nothing in the last five minutes', t4);
-
-  // ── every surface that hands a file over ───────────────────────────────
-  const s5 = section(into, 'Every surface that hands a file over', 'Since 12 Aug the card rides every download, so in a fresh window SAW should track TOOK closely. A big gap means the wiring; in an old window it is just the retired once-per-visit cap.');
-  grid(s5, [
-    { h: 'surface', w: 'minmax(11rem, 1fr)' },
-    { h: 'took', w: '4.2rem', num: true },
-    { h: 'saw the card', w: '6.4rem', num: true },
-    { h: '🎟 packs', w: '5.4rem', num: true },
-    { h: 'no thanks', w: '5.4rem', num: true },
-    { h: 'take', w: '4.6rem', num: true },
-  ], rows.slice().sort((a, b) => (+b.files || 0) - (+a.files || 0)).map((r) => {
-    const k = div('', null, null);
-    k.textContent = dlName(r.page);
-    // ⚠️ files went out here but the offer never appeared — that is wiring
-    if ((+r.files || 0) >= MIN_N && !(+r.shown || 0)) div('hqp-warn', ' ⚠ no offer', k);
-    // (the ranking bar that used to sit here is gone: the rows are sorted by
-    // TOOK and TOOK is now its own right-aligned column, so a 2px stub under
-    // the name said nothing the column did not say better)
-    return [k, nfmt(r.files), nfmt(r.shown), nfmt(r.pack || 0), nfmt(r.skip),
-      (+r.shown || 0) >= MIN_N ? ((+r.pack || 0) / r.shown * 100).toFixed(1) + '%' : null];
-  }));
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// 🏷️ SHOP — two funnels, told apart purely by which events they name. There
-// is no product-type dimension anywhere in GA4 for this site.
-// ════════════════════════════════════════════════════════════════════════════
-
 // ⚠️ steps count PEOPLE (totalUsers), never raw events: six shop views from
 // two visitors must read as two, or every step flatters itself
 function stepVal(R, key) {
@@ -349,10 +265,9 @@ function stepVal(R, key) {
   const e = (R.events || []).find((x) => x.name === key);
   return e ? (e.u != null ? +e.u : +e.v) || 0 : 0;
 }
-const fmtDur = (n) => (n < 90 ? n + 's' : Math.floor(n / 60) + 'm ' + (n % 60) + 's');
 
-function renderFunnel(host, R, steps, title, sub, explainNote) {
-  const s = section(host, title, sub);
+function renderFunnel(host, R, steps, title, sub, explainNote, W) {
+  const s = section(host, title, sub, { src: 'goog', when: W });
   const vals = steps.map(([k]) => stepVal(R, k));
   // ⚠️ THE HOTSPOT marks the step people STALL ON — the page to fix — not the
   // step they fail to reach. Pass one needs 20 behind the source; if nothing
@@ -376,7 +291,6 @@ function renderFunnel(host, R, steps, title, sub, explainNote) {
   steps.forEach(([key, label, why], i) => {
     const row = div('hqp-fstep' + (i === worst - 1 ? ' is-work' : ''), null, wrap);
     const bar = div('hqp-fbar', null, row);
-    // clamped: a later step can legitimately exceed step 0 (GA4 counts events)
     bar.style.width = (vals[i] && vals[0] ? Math.min(100, Math.max(1.2, vals[i] / vals[0] * 100)) : 0) + '%';
     bar.style.background = i === worst - 1 ? '#ff5d8f' : '#6E45E0';
     const lab = div('hqp-flab', null, row);
@@ -398,42 +312,110 @@ function renderFunnel(host, R, steps, title, sub, explainNote) {
   if (explainNote) div('hqp-cap', explainNote, s);
 }
 
-export function renderShop(into, S) {
+export function renderBusiness(into, S, probe) {
   const R = S.range;
-  if (!R) { div('hqp-empty', 'reading the window…', into); return; }
-  if (S.to === 'today' && !((R.kpis || {}).sessions)) {
-    div('hqp-note', '⏳ waiting for GA4’s intraday data — today’s visits land here when Google catches up.', into).hidden = false;
+  const W = windowWord(S.from, S.to);
+  // ── checkout works? a real cart test, its own card because it is Shopify's clock, not Google's
+  let s = section(into, 'Checkout works?', 'A real cart test against the shop, run when this floor opens. The silent-unbuyable day: a whole product line once refused to sell for a day and nothing said so.', { src: 'shop', when: 'right now' });
+  const gp = div('hqp-tiles', null, s);
+  tile(gp, 'checkout', probe === null || probe === undefined ? '…' : probe === 'ok' ? '✓ yes' : probe === 'bad' ? '✗ CHECK IT' : '?',
+    probe === 'bad' ? 'a product refuses to sell' : 'the cart accepts every product', probe === 'ok' ? 'ok' : probe === 'bad' ? 'warn' : '');
+  if (!R) { div('hqp-empty', 'reading Google’s report…', into); return; }
+  const k = R.kpis || {};
+
+  s = section(into, 'Money, as Google counts it', 'Google’s revenue and purchase count for the window. It reads 0 while the Shopify → GA4 purchase link is broken, so Shopify’s own orders are the truth; this card exists so the day it starts counting is noticed.', { src: 'goog', when: W });
+  const gm = div('hqp-tiles', null, s);
+  tile(gm, 'revenue', Math.round(k.revenue || 0) + ' kr', 'Google · the link is broken');
+  tile(gm, 'purchases', nfmt(k.transactions), 'Google · Shopify has the truth');
+  if (S.to === 'today' && !k.sessions) {
+    div('hqp-note', '⏳ waiting for Google’s intraday data — today’s visits land here when Google catches up.', s).hidden = false;
   }
-  renderFunnel(into, R, FUNNELS[0], 'Custom banana funnel',
-    'make-a-banana → tee, sticker or magnet. Every step counts people, not events. The last two steps are store-wide, because Shopify fires them for the official line too. Tap a step to read what it measures.',
-    'the highlighted step is the one people stall on — the page to fix, not the one they fail to reach');
-  renderFunnel(into, R, FUNNELS[1], 'Official merch funnel', 'The /shop/ line.', null);
-  // 🎟 which door sends people to a product: the shop grid, a shop strip on a
-  // content page, the GIF page's pack carousel. GA4's item list name, one row
-  // per list. `lists` is null when the worker's report failed — then the
-  // section stays away rather than printing a zero that means nothing.
-  const lists = R.lists;
-  if (lists) {
-    const s1 = section(into, 'Where product clicks come from',
-      'Every product tile click, by the list it sat in. The pack carousel (5 Sep) rides the GIF page twice: under the free buttons and in the download hub.');
-    if (!lists.length) div('hqp-empty', 'no product clicks in this window', s1);
-    else {
-      const t1 = div('hqp-tbl', null, s1);
-      lists.slice().sort((a, b) => (+b.clicks || 0) - (+a.clicks || 0)).forEach((l) => {
-        const row = div('hqp-trow', null, t1);
-        div('hqp-tk', listName(l.list), row);
-        div('hqp-tv', nfmt(l.clicks || 0), row);
+
+  // ── free files ────────────────────────────────────────────────────────────
+  const rows = R.downloads || [];
+  s = section(into, 'Free files', 'Giving files away is the product here. Files is what was handed over; pack cards shown is the sticker-pack card that opens before every download; tap rate is pack taps over cards shown. A rate needs twenty cards behind it before it is printed: three out of five is three taps, not sixty per cent.', { src: 'goog', when: W });
+  if (!rows.length) div('hqp-empty', 'no downloads in this window', s);
+  else {
+    const sum = (key) => rows.reduce((a, r) => a + (+r[key] || 0), 0);
+    const tf = sum('files'), ts = sum('shown'), tc = sum('click'), tk = sum('skip');
+    const tw = sum('world'), td = sum('disc'), tcof = sum('coffee');
+    const tp = sum('pack'), tsw = sum('swap');
+    const oldAsks = tw + td + tc + tcof;
+    const sessions = k.sessions || 0;
+    const g = div('hqp-tiles', null, s);
+    tile(g, 'files taken', nfmt(tf));
+    tile(g, 'per 100 visits', sessions ? (tf / sessions * 100).toFixed(1) : '–');
+    tile(g, 'pack cards shown', nfmt(ts));
+    tile(g, 'pack taps', nfmt(tp), 'tapped through to a pack');
+    tile(g, 'tap rate', ts >= MIN_N ? (tp / ts * 100).toFixed(1) + '%' : '–', ts >= MIN_N ? 'of cards shown' : 'needs 20 cards');
+    tile(g, 'browsed packs', nfmt(tsw), 'flipped through the minis');
+    tile(g, 'took the file instead', nfmt(tk), 'the no-thanks button');
+    if (oldAsks) tile(g, 'retired card buttons', nfmt(oldAsks), 'world · Discord · coffee · merch');
+    div('hqp-cap', ts >= MIN_N
+      ? 'Of every 100 people shown the card, ' + (tp / ts * 100).toFixed(1) + ' tapped through to a sticker pack. Sales land in Shopify, not here.'
+      : 'Not enough cards yet to judge the ask — come back when a few hundred have been shown.', s);
+
+    const dl = (R.dlDaily || []).slice().sort((a, b) => (a.d < b.d ? -1 : 1));
+    if (dl.length) {
+      const s2 = section(into, 'Files per day', 'One bar per day of the window. Tap a bar for that day’s files, cards and pack taps.', { src: 'goog', when: W });
+      const wrap = div('hqp-bars2', null, s2);
+      const dmax = Math.max(1, ...dl.map((r) => +r.files || 0));
+      const note2 = div('hqp-note', '', null);
+      dl.forEach((r) => {
+        const col = div('hqp-b2', null, wrap);
+        const fill = div('hqp-b2f', null, col);
+        fill.style.height = (+r.files ? Math.max(2, Math.round((+r.files || 0) / dmax * 100)) : 0) + '%';
+        const d = r.d.slice(6, 8) + '.' + r.d.slice(4, 6);
+        col.addEventListener('click', () => {
+          note2.hidden = false;
+          const was = (r.world || 0) + (r.disc || 0) + (r.click || 0) + (r.coffee || 0);
+          note2.textContent = d + ' — ' + (r.files || 0) + ' files, ' + (r.shown || 0) + ' cards shown, '
+            + (r.pack || 0) + ' pack taps' + (was ? ', ' + was + ' on retired buttons' : '');
+        });
       });
+      s2.appendChild(note2);
+      note2.hidden = true;
+      div('hqp-cap', dl[0].d.slice(6, 8) + '.' + dl[0].d.slice(4, 6) + ' → '
+        + dl[dl.length - 1].d.slice(6, 8) + '.' + dl[dl.length - 1].d.slice(4, 6)
+        + ' · peak ' + dmax + ' in a day · tap a bar for the detail', s2);
     }
+
+    const s5 = section(into, 'Downloads by page', 'Which page handed the file over, and what the pack card did there. The card rides every download, so cards shown should track files closely; a big gap on a page is wiring.', { src: 'goog', when: W });
+    grid(s5, [
+      { h: 'page', w: 'minmax(11rem, 1fr)' },
+      { h: 'files', w: '4.2rem', num: true },
+      { h: 'cards shown', w: '6.2rem', num: true },
+      { h: 'pack taps', w: '5.4rem', num: true },
+      { h: 'took the file', w: '6rem', num: true },
+      { h: 'tap rate', w: '4.8rem', num: true },
+    ], rows.slice().sort((a, b) => (+b.files || 0) - (+a.files || 0)).map((r) => {
+      const kcell = div('', null, null);
+      kcell.textContent = pageName(r.page);
+      if ((+r.files || 0) >= MIN_N && !(+r.shown || 0)) div('hqp-warn', ' ⚠ no card shown', kcell);
+      return [kcell, nfmt(r.files), nfmt(r.shown), nfmt(r.pack || 0), nfmt(r.skip),
+        (+r.shown || 0) >= MIN_N ? ((+r.pack || 0) / r.shown * 100).toFixed(1) + '%' : null];
+    }));
+
+    const em = R.eventMap || {};
+    const geo = {};
+    ['gif_download', 'png_download', 'wallpaper_download'].forEach((key) => {
+      Object.entries(em[key] || {}).forEach(([cc, v]) => { geo[cc] = (geo[cc] || 0) + (+v || 0); });
+    });
+    const geoRows = Object.entries(geo).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const s3 = section(into, 'Downloads by country', 'The ten countries that took the most files in the window.', { src: 'goog', when: W });
+    const t3 = div('hqp-tbl', null, s3);
+    geoRows.forEach(([cc, v]) => {
+      const row = div('hqp-trow', null, t3);
+      div('hqp-tk', place(cc), row);
+      div('hqp-tv', nfmt(v), row);
+    });
+    if (!geoRows.length) div('hqp-empty', 'no country data in this window', t3);
   }
-  // ⚠️ NOT A FUNNEL. The old page defined these three and never drew them,
-  // and now I know why: taking the file is a SIBLING of clicking the ask, not
-  // a step after it. Chained, it printed "1800% make it from" — so it is drawn
-  // as what it is, one question with two answers.
+
+  // ── the pack card: one question, two answers ─────────────────────────────
   const ask = FUNNELS[2];
   const shown = stepVal(R, ask[0][0]);
-  const s2 = section(into, 'The pack card',
-    'The download card opens before any file moves and shows a sticker pack. The two lines below are answers to it, not steps after it — the file is the no-thanks button. Counted in people.');
+  const s2 = section(into, 'The pack card', 'The download card opens before any file moves and shows a sticker pack. The two lines under it are answers, not steps after it — taking the file is the no-thanks button. Counted in people.', { src: 'goog', when: W });
   const card = div('hqp-funnel', null, s2);
   const note2 = div('hqp-note', '', s2);
   note2.hidden = true;
@@ -457,13 +439,10 @@ export function renderShop(into, S) {
     div('hqp-fdrop', shown >= MIN_N ? pct(v, shown) + '% of the cards shown' : 'needs 20 cards before a rate means anything', row);
     row.addEventListener('click', () => { note2.hidden = false; note2.textContent = st[2]; });
   });
-
-  // 🎟 WHICH HEADLINE WORKS (6 Sep 2026) — the card draws one of PACK_HEADS
-  // per show and files it as a GA4 item list (`card_<key>`), so shown and
-  // tapped come back per headline. Twenty shown before a rate, like the funnel.
+  const lists = R.lists;
   const heads = (lists || []).filter((l) => String(l.list || '').indexOf(CARD_LIST) === 0);
   if (lists && heads.length) {
-    const s3 = section(into, 'Which headline works', 'Each download card shows one headline at random. A row is a headline: tapped / shown, and the rate once twenty cards have carried it. The words live in src/data/pack-heads.js — add a line there and it appears here.');
+    const s3 = section(into, 'Which headline works', 'Each download card shows one headline at random. A row is a headline: tapped / shown, and the rate once twenty cards have carried it. The words live in src/data/pack-heads.js — add a line there and it appears here.', { src: 'goog', when: W });
     const t3 = div('hqp-tbl', null, s3);
     heads.slice().sort((a, b) => (+b.views || 0) - (+a.views || 0)).forEach((l) => {
       const row = div('hqp-trow', null, t3);
@@ -472,31 +451,56 @@ export function renderShop(into, S) {
       div('hqp-tv', nfmt(c) + ' / ' + nfmt(v) + (v >= MIN_N ? ' · ' + (c / v * 100).toFixed(1) + '%' : ' · needs 20'), row);
     });
   }
+
+  // ── the two funnels ───────────────────────────────────────────────────────
+  renderFunnel(into, R, FUNNELS[0], 'From a custom banana to an order',
+    'The make-a-banana line: a tee, a sticker or a magnet with their banana on it. Every step counts people, not events. The last two steps are store-wide, because Shopify fires them for the official line too. Tap a step to read what it measures.',
+    'the highlighted step is the one people stall on — the page to fix, not the one they fail to reach', W);
+  renderFunnel(into, R, FUNNELS[1], 'From the shop to a purchase', 'The official merch line, from the /shop/ grid to a paid order. Purchases read 0 while the purchase link is broken.', null, W);
+  if (lists) {
+    const s1 = section(into, 'Where product clicks come from', 'Every product tile click, by the list it sat in: the shop grid, a shop strip on a content page, the GIF page’s pack carousel.', { src: 'goog', when: W });
+    if (!lists.length) div('hqp-empty', 'no product clicks in this window', s1);
+    else {
+      const t1 = div('hqp-tbl', null, s1);
+      lists.slice().sort((a, b) => (+b.clicks || 0) - (+a.clicks || 0)).forEach((l) => {
+        const row = div('hqp-trow', null, t1);
+        div('hqp-tk', listName(l.list), row);
+        div('hqp-tv', nfmt(l.clicks || 0), row);
+      });
+    }
+  }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// 🎠 THE WORLD — the areas are different products, so they get different
-// questions. Each card carries its own.
-// ════════════════════════════════════════════════════════════════════════════
-export function renderWorld(into, S) {
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌍 THE WORLD — one card per place, and each card asks its own question
+// ═══════════════════════════════════════════════════════════════════════════
+const LIVE_KEY = { rave: 'rave', park: 'park', beach: 'beach', town: 'town' };
+export function renderWorldCards(into, S) {
   const R = S.range;
-  if (!R) { div('hqp-empty', 'reading the window…', into); return; }
-  const evs = R.events || [];
+  const W = windowWord(S.from, S.to);
+  const counts = S.counts || {};
+  const evs = (R && R.events) || [];
   const cnt = (n) => { const e = evs.find((x) => x.name === n); return e ? +e.v || 0 : 0; };
 
-  let s = section(into, 'The world — one question per area', 'Each area is a different product, so each is asked a different thing. The card shows its headline door number and everything that happened inside it in this window.');
+  let s = section(into, 'Each place, one question', 'Every place in Banana World is a different product, so each card asks its own question. The big number is the door: how many came in during the window. Where a room keeps a live count, it is written on the card too.', { src: 'goog', when: W });
+  const wrap = div('hqp-areas', null, s);
   AREAS.forEach((A) => {
     const mine = evs.filter((e) => e.name.indexOf(A.key + '_') === 0 || e.name === A.door);
     const total = mine.reduce((a, e) => a + (+e.v || 0), 0);
-    const card = div('hqp-area' + (total ? '' : ' is-dead'), null, s);
+    const card = div('hqp-area' + (total ? '' : ' is-dead'), null, wrap);
     div('hqp-aname', A.icon + ' ' + A.name, card);
+    const lk = LIVE_KEY[A.key];
+    if (lk && counts[lk] != null) {
+      const live = div('hqp-alive', null, card);
+      chip('live', 'now', live);
+      div('hqp-alivev', nfmt(counts[lk]) + (counts[lk] === 1 ? ' banana here now' : ' bananas here now'), live);
+    }
+    if (!R) { div('hqp-empty', 'reading Google’s report…', card); return; }
     if (!total) { div('hqp-empty', 'nobody came in this window', card); return; }
     div('hqp-aq', A.q, card);
     const door = cnt(A.door);
     if (!A.door) div('hqp-warn', '⚠ no arrival event — this area cannot answer “how many came” until one is added', card);
     else {
-      // ⚠️ the value and its label were ONE node, so the label wore Archivo
-      // Black at the headline size — a stat and its name shouting equally.
       const big = div('hqp-abig', null, card);
       div('hqp-abigv', nfmt(door), big);
       div('hqp-abigl', EV_LABEL[A.door] || A.door, big);
@@ -514,55 +518,22 @@ export function renderWorld(into, S) {
       row.addEventListener('click', () => { note.hidden = false; note.textContent = e.name + ' — ' + explain(e.name).why; });
     });
   });
-  div('hqp-cap', 'the rave, the park, the bay and the forge share one room until one of them is busy enough to fill its own — an empty room reads worse than a short one', s);
 
-  // ── 🚨 sync health ────────────────────────────────────────────────────
-  // Before 6 Sep 2026 every refused save vanished into a catch on the phone;
-  // a player farmed for weeks into a yard nobody could see. Four events are
-  // the alarm now; the two heals say the phone fixed it by itself.
-  const ppl = (n) => { const e = evs.find((x) => x.name === n); return e ? (+e.u || +e.v || 0) : 0; };
-  const refused = ppl('homestead_save_refused'), reatt = ppl('homestead_reattach');
-  const prefused = ppl('pass_sync_refused'), reminted = ppl('pass_reminted');
-  s = section(into, 'Sync health', 'Every time a phone could not save its homestead or its pass it now says so on screen and sends one of these. Zero is the only good number. A re-addressed homestead or a re-minted pass is a heal that worked — the phone kept everything.');
-  const gs = div('hqp-tiles', null, s);
-  tile(gs, 'homestead saves refused', nfmt(refused), refused ? 'people' : 'none');
-  tile(gs, 'homesteads re-addressed', nfmt(reatt), 'healed');
-  tile(gs, 'pass syncs refused', nfmt(prefused), prefused ? 'people' : 'none');
-  tile(gs, 'passes re-minted', nfmt(reminted), 'healed');
-  if (refused || prefused) div('hqp-warn', '⚠ ' + nfmt(refused + prefused) + ' phones hit a wall in this window — the why rides the event (token · unclaimed · offline)', s);
-
-  // ── 🎫 the ask ────────────────────────────────────────────────────────
-  // 6 Sep 2026: the HUD's crowd chip turns amber and blinks "not saved" once
-  // an anonymous player has something to lose; a tap lands on the pass page's
-  // email row. Shown → tapped → asked for a link → logged in: the funnel from
-  // a blinking pill to a pass that survives a lost phone, in PEOPLE.
-  const askShown = ppl('pass_ask_shown'), askTap = ppl('pass_ask_tap');
-  const askLink = ppl('pass_mail_signin'), askIn = ppl('pass_mail_login') + ppl('pass_mail_attached');
-  s = section(into, 'The ask', 'The blinking "not saved" pill in the world HUD — only for anonymous players with something to lose, never at spawn. Each step counts people. The step to watch is shown → tapped; the pass page owns the rest.');
-  const ga = div('hqp-tiles', null, s);
-  tile(ga, 'saw the pill', nfmt(askShown), askShown ? 'people' : 'nobody yet');
-  tile(ga, 'tapped it', nfmt(askTap), askShown >= MIN_N ? (askTap / askShown * 100).toFixed(1) + '% of them' : 'needs 20 shown');
-  tile(ga, 'asked for a link', nfmt(askLink), 'typed an email');
-  tile(ga, 'logged in', nfmt(askIn), 'kept for good');
-  // 🏆 the citizens' wall (6 Sep): the other door to a kept pass
-  const wall = ppl('park_citizens'), wallKeep = ppl('citizens_keep');
-  tile(ga, 'citizens\' wall opened', nfmt(wall), wall ? 'people' : 'nobody yet');
-  tile(ga, 'keep-my-pass from the wall', nfmt(wallKeep), wall >= MIN_N ? (wallKeep / wall * 100).toFixed(1) + '% of them' : 'needs 20 opens');
-
-  // ── the shops inside the world ─────────────────────────────────────────
-  s = section(into, 'The shops inside the world', 'Every storefront a banana can walk into. Some sell for coins and some take real money — the row says which.');
+  if (!R) return;
+  s = section(into, 'The shops inside', 'Every storefront a banana can walk into. Some sell for coins and some take real money — the card says which.', { src: 'goog', when: W });
+  const shops = div('hqp-shops', null, s);
   SHOPS.forEach((sh) => {
-    const vals = sh.steps.map(([k]) => cnt(k));
+    const vals = sh.steps.map(([key]) => cnt(key));
     const top = vals[0] || 0;
     const vmax = Math.max(1, ...vals);   // ⚠️ scale to the BIGGEST step: a till can predate its own door
-    const card = div('hqp-area' + (vals.some((v) => v) ? '' : ' is-dead'), null, s);
+    const card = div('hqp-area' + (vals.some((v) => v) ? '' : ' is-dead'), null, shops);
     const head = div('hqp-aname', null, card);
     head.textContent = sh.icon + ' ' + sh.name + ' · ' + sh.where;
     if (sh.real) div('hqp-real', ' · real money', head);
     if (!vals.some((v) => v)) { div('hqp-empty', 'nobody walked in during this window', card); return; }
-    const wrap = div('hqp-funnel', null, card);
+    const fw = div('hqp-funnel', null, card);
     sh.steps.forEach(([key, label], i) => {
-      const row = div('hqp-fstep', null, wrap);
+      const row = div('hqp-fstep', null, fw);
       const bar = div('hqp-fbar', null, row);
       bar.style.width = (vals[i] ? Math.max(2, (vals[i] / vmax) * 100) : 0) + '%';
       bar.style.background = sh.real ? '#C85A1E' : '#1F8A70';
@@ -579,4 +550,42 @@ export function renderWorld(into, S) {
       div('hqp-warn', '⚠ ' + nfmt(top) + ' came in and nobody reached the last step — that is the shop to work on', card);
     }
   });
+}
+
+// ── 🎫 the ask: from the blinking pill to a kept pass (the Players floor) ──
+export function renderAsk(into, S) {
+  const R = S.range;
+  const W = windowWord(S.from, S.to);
+  const s = section(into, 'From the “not saved” pill to a kept pass', 'The amber pill in the world HUD blinks only for anonymous players with something to lose. Each step counts people: saw it, tapped it, asked for a login link, logged in. The step to watch is saw → tapped; the pass page owns the rest.', { src: 'goog', when: W });
+  if (!R) { div('hqp-empty', 'reading Google’s report…', s); return; }
+  const evs = R.events || [];
+  const ppl = (n) => { const e = evs.find((x) => x.name === n); return e ? (+e.u || +e.v || 0) : 0; };
+  const askShown = ppl('pass_ask_shown'), askTap = ppl('pass_ask_tap');
+  const askLink = ppl('pass_mail_signin'), askIn = ppl('pass_mail_login') + ppl('pass_mail_attached');
+  const ga = div('hqp-tiles', null, s);
+  tile(ga, 'saw the pill', nfmt(askShown), askShown ? 'people' : 'nobody yet');
+  tile(ga, 'tapped the pill', nfmt(askTap), askShown >= MIN_N ? (askTap / askShown * 100).toFixed(1) + '% of them' : 'needs 20 shown');
+  tile(ga, 'asked for a link', nfmt(askLink), 'typed an email');
+  tile(ga, 'logged in', nfmt(askIn), 'kept for good');
+  const wall = ppl('park_citizens'), wallKeep = ppl('citizens_keep');
+  tile(ga, 'citizens’ wall opened', nfmt(wall), wall ? 'people' : 'nobody yet');
+  tile(ga, 'keep-my-pass from the wall', nfmt(wallKeep), wall >= MIN_N ? (wallKeep / wall * 100).toFixed(1) + '% of them' : 'needs 20 opens');
+}
+
+// ── 🚨 phones that could not save (the Dev floor) ─────────────────────────
+export function renderSync(into, S) {
+  const R = S.range;
+  const W = windowWord(S.from, S.to);
+  const s = section(into, 'Phones that could not save', 'Every time a phone could not save its homestead or its pass it says so on screen and sends one of these. Zero is the only good number. A re-addressed homestead or a re-minted pass is a heal that worked — the phone kept everything.', { src: 'goog', when: W });
+  if (!R) { div('hqp-empty', 'reading Google’s report…', s); return; }
+  const evs = R.events || [];
+  const ppl = (n) => { const e = evs.find((x) => x.name === n); return e ? (+e.u || +e.v || 0) : 0; };
+  const refused = ppl('homestead_save_refused'), reatt = ppl('homestead_reattach');
+  const prefused = ppl('pass_sync_refused'), reminted = ppl('pass_reminted');
+  const gs = div('hqp-tiles', null, s);
+  tile(gs, 'homestead saves refused', nfmt(refused), refused ? 'people' : 'none', refused ? 'warn' : 'ok');
+  tile(gs, 'homesteads re-addressed', nfmt(reatt), 'healed');
+  tile(gs, 'pass syncs refused', nfmt(prefused), prefused ? 'people' : 'none', prefused ? 'warn' : 'ok');
+  tile(gs, 'passes re-minted', nfmt(reminted), 'healed');
+  if (refused || prefused) div('hqp-warn', '⚠ ' + nfmt(refused + prefused) + ' phones hit a wall in this window — the why rides the event (token · unclaimed · offline)', s);
 }

@@ -1549,6 +1549,12 @@ function foldRoll(acc, rec, today) {
   (log.ev || []).forEach((e) => {
     acc.events++;
     if (e.k !== 'coins_earned') return;
+    // 🧪 TEST COINS ARE NOT COINS (Trym, 22 Sep: "something called qa is at the top of the list - i dont understand what
+    // that is"). The QA doors pay themselves through the `qa` faucet, which the wallet refuses — but the tape kept the
+    // rows and this fold counted them, so Trym's own test sessions topped every coin tile. Nor does the nightly
+    // proof's person (rec.qa) count. Neither is a player.
+    if (e.s === 'qa' || e.a === 'qa' || rec.qa) return;
+    if (e.x) return;   // a refused grant never reached a wallet, so it is not a coin anyone earned
     const a = e.a || 'unknown', f = e.s || 'unnamed';
     acc.area[a] = (acc.area[a] || 0) + (+e.d || 0);
     acc.faucet[f] = (acc.faucet[f] || 0) + (+e.d || 0);

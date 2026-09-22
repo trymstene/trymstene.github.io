@@ -337,6 +337,21 @@ async function apiRange(env, from, to) {
     limit: 40, orderBys: [{ metric: { metricName: 'itemsClickedInList' }, desc: true }],
   }).catch(() => null);
 
+  // 📄 WHICH PAGES THEY READ (22 Sep 2026, Trym: "i cant see just regular sessions per page"). One row
+  // per page path: visits that touched it, views, people, and the engagement time to average. Its own
+  // call (the batch is at GA4's cap of five). ⚠️ sessions with pagePath is a session metric on an
+  // event dimension; if Google ever refuses the pairing the fallback drops sessions rather than the
+  // whole table, and the desk prints views instead.
+  const pageMetrics = (withSessions) => [...(withSessions ? [{ name: 'sessions' }] : []),
+    { name: 'screenPageViews' }, { name: 'totalUsers' }, { name: 'userEngagementDuration' }];
+  const pagesP = gaPost(env, 'runReport', {
+    dateRanges, dimensions: [{ name: 'pagePath' }], metrics: pageMetrics(true),
+    limit: 40, orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+  }).then((r) => ({ r, sess: true })).catch(() => gaPost(env, 'runReport', {
+    dateRanges, dimensions: [{ name: 'pagePath' }], metrics: pageMetrics(false),
+    limit: 40, orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+  }).then((r) => ({ r, sess: false })).catch(() => null));
+
   const stepTimes = {};
   try {
     const st = await gaPost(env, 'runReport', {
@@ -375,6 +390,7 @@ async function apiRange(env, from, to) {
   const dls = await dlsP;
   const campRes = await campP;
   const listsRes = await listsP;
+  const pagesRes = await pagesP;
   const dlMap = {};
   const dayMap = {};
   const DL_KEY = { gif_download: 'gif', png_download: 'png', wallpaper_download: 'wall',
@@ -443,6 +459,10 @@ async function apiRange(env, from, to) {
     events: rows(events).map((r) => ({ name: dim(r, 0), v: met(r, 0), u: met(r, 1) })),
     eventMap: evmapObj,
     stepTimes,
+    // null = the page report failed (the desk says so); rows carry sessions only when Google accepted the pairing
+    pages: pagesRes ? rows(pagesRes.r).map((r) => (pagesRes.sess
+      ? { page: dim(r, 0), sessions: met(r, 0), views: met(r, 1), users: met(r, 2), secs: met(r, 3) }
+      : { page: dim(r, 0), sessions: null, views: met(r, 0), users: met(r, 1), secs: met(r, 2) })) : null,
   };
   rspCache.set(key, { t: Date.now(), data });
   return data;

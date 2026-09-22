@@ -1,24 +1,32 @@
-// 📈 THE WORLD DESK — Banana World's own numbers, from the workers rather
-// than from Google. Everything here is server truth: no consent gate, no
-// adblock loss, no sampling, no zero-row omission.
+// 📈 SERVER TRUTH — Banana World's own numbers, from the workers rather than
+// from Google, plus the chart primitives every floor of Banana HQ draws with.
 //
-// PURE RENDERER: no imports. It is handed two payloads and paints into an
-// element. Charts are hand-rolled SVG — no library, no CDN, no CSP argument.
+// Everything rendered by the render* functions here is server truth: no
+// consent gate, no adblock loss, no sampling, no zero-row omission. Charts are
+// hand-rolled SVG — no library, no CDN, no CSP argument.
 //
-//   renderPulse(el, { roll, world })
-//     roll  = worker-pass /admin/rollup  → { days: [...], today }
-//     world = worker-rave /yards/stats   → { yards, day, week, census, wt }
+//   renderPlayersRoll(el, { roll })            passes, activity, growth, retention, the kept-pass funnel, login links
+//   renderEconomy(el, { roll })                coins by place and by source, refusals — all in plain words
+//   renderHomesteads(el, { world })            the yard census and the neighbours
+//   renderArcade(el, { arcade, arcadeWipe })   the five boards
+//   renderHealth(el, { roll, world })          the ledger's own checks
+//   renderLetters(el, letters, drop)           the post review queue, in one of three honest states
+//
+// ⚠️ EVERY SECTION WEARS A CHIP (22 Sep 2026). A card says where its number
+// comes from and what time it measures, or the reader cannot tell a rollup
+// from a census from Google. section() takes { src, when } and draws it.
 //
 // ⚠️ Colour does one job at a time. Areas and faucets carry IDENTITY, so they
 // use the fixed categorical order below (validated for CVD separation against
 // this desk's own dark surface — re-run tools before changing a hex). Single
 // series wear ink, never a category colour. Status is reserved for state.
+import { faucet, area as areaName, refusal, SOURCE } from '../data/hq-words.js';
 
 // the categorical theme, in fixed order and never cycled
 const CAT = ['#6E45E0', '#1F8A70', '#C85A1E', '#2F7BD6', '#A8447C'];
 const AREA_C = { rave: CAT[0], park: CAT[1], homestead: CAT[2], beach: CAT[3], pass: CAT[4] };
 const INK = '#f4eeff', DIM = '#9a90b8', GRID = 'rgba(244,238,255,.10)', LINE = '#ffe135';
-const OK = '#5ee08a', WARN = '#ffb45e', BAD = '#ff5d8f';
+const BAD = '#ff5d8f';
 const catOf = (name, i) => AREA_C[name] || CAT[i % CAT.length];
 const svgNS = 'http://www.w3.org/2000/svg';
 
@@ -37,38 +45,55 @@ export const div = (cls, txt, parent) => {
 };
 export const nfmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n || 0)));
 export const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
+const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-// ── a section, and the (i) that carries anything needing more than a label ──
-export function section(host, title, note) {
+// ── the chip: one word for the source, then the time it measures ───────────
+export function chip(src, when, parent) {
+  const c = document.createElement('span');
+  c.className = 'hqp-chip is-' + (src || 'serv');
+  c.textContent = (SOURCE[src] || SOURCE.serv) + (when ? ' · ' + when : '');
+  if (parent) parent.appendChild(c);
+  return c;
+}
+
+// ── a section: a title, its chip, and ONE VISIBLE SENTENCE saying what it
+//    counts. The rest of the explainer opens with "more". The old (i) button
+//    hid the best sentences on the desk behind a 22px circle.
+//    meta = { src, when, deck }; with no deck the note's first sentence is it.
+export function section(host, title, note, meta) {
+  const m = meta || {};
   const s = div('hqp-sec', null, host);
+  s.id = 'hq-' + slug(title);
+  s.dataset.title = title;
   const h = div('hqp-h', null, s);
   div('hqp-htitle', title, h);
-  if (note) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'hqp-i';
-    b.textContent = 'i';
-    b.setAttribute('aria-label', 'what this means');
-    const p = div('hqp-note', note, s);
-    p.hidden = true;
-    b.addEventListener('click', () => { p.hidden = !p.hidden; });
-    h.appendChild(b);
+  if (m.src) chip(m.src, m.when, h);
+  let deck = m.deck || '', rest = note || '';
+  if (!deck && rest) {
+    const cut = rest.search(/[.!?]\s/);
+    if (cut > 0 && cut < rest.length - 2) { deck = rest.slice(0, cut + 1); rest = rest.slice(cut + 2).trim(); }
+    else { deck = rest; rest = ''; }
+  }
+  if (deck) {
+    const p = div('hqp-deck', deck, s);
+    if (rest) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'hqp-more';
+      b.textContent = 'more';
+      b.setAttribute('aria-expanded', 'false');
+      const note2 = div('hqp-note', rest, s);
+      note2.hidden = true;
+      b.addEventListener('click', () => { note2.hidden = !note2.hidden; b.textContent = note2.hidden ? 'more' : 'less'; b.setAttribute('aria-expanded', String(!note2.hidden)); });
+      p.appendChild(document.createTextNode(' '));
+      p.appendChild(b);
+    }
   }
   return s;
 }
 
-// ── a headline number. A stat with no plot needs no chart, but it does need
-//    an object to sit on and a second line saying what it is measured against.
 // 📊 A REAL TABLE — one column per number, each under its own header.
-//
-// ⚠️ WHY THIS EXISTS. Three panels used to concatenate every value of a row
-// into ONE cell — the downloads surfaces printed "180 · 170 · 9 · 140 · 5.3%"
-// beneath a header reading "took · saw · ☕ · no-thx · willing", and Trym
-// circled it in red: you cannot tell which number is which without counting
-// separators. Columns align, so the eye reads DOWN a column instead.
-//
-//   cols = [{ h: 'surface', w: 'minmax(9rem, 1fr)' },
-//           { h: 'took', w: '4.4rem', num: true }, ...]
+//   cols = [{ h: 'page', w: 'minmax(9rem, 1fr)' }, { h: 'visits', w: '4.4rem', num: true }, ...]
 //   rows = [[keyNodeOrString, v1, v2, ...], ...]
 // A value of null prints an em dash; a 0 prints quiet, because a zero is not
 // a finding and should not shout like one.
@@ -106,37 +131,27 @@ export function tile(host, label, value, sub, tone) {
 // ── change over time: one series, so it wears ink and needs no legend ──────
 export function lineChart(host, pts, opts) {
   const o = opts || {};
-  // ⚠️ SVG text scales with the viewBox. At a fixed W of 640 stretched to a
-  // 345px phone, the 12px axis labels render at 6.6px — the only text on the
-  // desk that shrinks with the viewport. Sizing the viewBox to the real box
-  // keeps the scale near 1 and the labels at the size they say they are.
+  // ⚠️ SVG text scales with the viewBox. Sizing the viewBox to the real box
+  // keeps the scale near 1 and the labels at the size they say they are. On a
+  // wide desk the chart may grow to 1120px, flatter, so it does not become a wall.
   const box = Math.round(host.clientWidth || 640);
-  const W = Math.max(320, Math.min(760, box || 640));
-  const H = Math.round(W * 0.4) + 60, L = 40, R = 12, T = 16, B = 28;
+  const W = Math.max(320, Math.min(1120, box || 640));
+  const H = Math.round(W * (W > 760 ? 0.26 : 0.4)) + 60, L = 40, R = 12, T = 16, B = 28;
   const wrap = div('hqp-chart', null, host);
   const svg = mk('svg', { viewBox: `0 0 ${W} ${H}`, class: 'hqp-svg', role: 'img',
     'aria-label': o.label || 'trend' }, wrap);
   if (!pts.length) { div('hqp-empty', 'no days rolled up yet', wrap); return; }
-  // ⚠️ A SECOND SERIES SHARES THE SCALE, or the comparison lies. `o.second`
-  // = { key, label, color } and every point carries that key. Used for weekly
-  // against monthly actives, where the GAP between the lines is the thing
-  // worth looking at — two charts side by side cannot show a gap.
+  // ⚠️ A SECOND SERIES SHARES THE SCALE, or the comparison lies.
   const k2 = o.second && o.second.key;
   const max = Math.max(1, ...pts.map((p) => p.v), ...(k2 ? pts.map((p) => +p[k2] || 0) : []));
   const x = (i) => L + (i * (W - L - R)) / Math.max(1, pts.length - 1);
   const y = (v) => T + (H - T - B) * (1 - v / max);
-  // a recessive grid: three lines, labelled at the ends only
   [0, 0.5, 1].forEach((f) => {
     const yy = y(max * f);
     mk('line', { x1: L, x2: W - R, y1: yy, y2: yy, stroke: GRID, 'stroke-width': 1 }, svg);
     mk('text', { x: 6, y: yy + 4, fill: DIM, 'font-size': 12 }, svg).textContent = nfmt(max * f);
   });
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
-  // ⚠️ a flat 13%-alpha yellow over the panel reads as MUD. The fill has to
-  // fade out downward so the ink stays at the line, where the data is.
-  // ⚠️ NO FILL WHEN THERE ARE TWO LINES. The lower series would sit inside the
-  // upper one's wash and both would read as mud — the same reason the fill
-  // fades downward on a single line.
   if (!k2) {
     const gid = 'hqpg' + (host.childElementCount + 1) + '-' + Math.round(max);
     const grad = mk('linearGradient', { id: gid, x1: 0, y1: 0, x2: 0, y2: 1 }, mk('defs', {}, svg));
@@ -149,7 +164,6 @@ export function lineChart(host, pts, opts) {
     const d2 = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(+p[k2] || 0).toFixed(1)}`).join(' ');
     mk('path', { d: d2, fill: 'none', stroke: o.second.color || '#5ec8e0', 'stroke-width': 2,
       'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
-    // direct-labelled at the line's own end, not a legend box off to one side
     const l2 = pts[pts.length - 1][k2] || 0;
     mk('circle', { cx: x(pts.length - 1), cy: y(l2), r: 4, fill: o.second.color || '#5ec8e0',
       stroke: '#171326', 'stroke-width': 2 }, svg);
@@ -157,7 +171,6 @@ export function lineChart(host, pts, opts) {
       'font-size': 12, 'font-weight': 700, 'text-anchor': 'end' }, svg);
     t2.textContent = nfmt(l2) + ' ' + (o.second.label || '');
   }
-  // the last point is the one that gets a label — never a number on every point
   const last = pts[pts.length - 1];
   mk('circle', { cx: x(pts.length - 1), cy: y(last.v), r: 4, fill: o.color || LINE, stroke: '#171326', 'stroke-width': 2 }, svg);
   const lx = x(pts.length - 1);
@@ -171,7 +184,6 @@ export function lineChart(host, pts, opts) {
     const lab = String(pts[i].d || '');
     tx.textContent = /^\d{4}-\d{2}-\d{2}$/.test(lab) ? lab.slice(5) : lab;
   });
-  // the hover layer: an HTML chart is interactive, so it reads on touch too
   const tip = div('hqp-tip', null, wrap);
   tip.hidden = true;
   const cross = mk('line', { y1: T, y2: H - B, stroke: GRID, 'stroke-width': 1, opacity: 0 }, svg);
@@ -199,23 +211,23 @@ export function barsH(host, rows, opts) {
   const max = Math.max(1, ...rows.map((r) => r.v));
   rows.forEach((r, i) => {
     const row = div('hqp-bar', null, wrap);
-    div('hqp-blab', r.k, row);
+    const lab = div('hqp-blab', r.k, row);
+    if (r.raw && r.raw !== r.k) lab.title = r.raw;
     const track = div('hqp-btrack', null, row);
     const fill = div('hqp-bfill', null, track);
     fill.style.width = (r.v ? Math.max(2, (r.v / max) * 100) : 0) + '%';
-    fill.style.background = o.mono || catOf(r.k, i);
+    fill.style.background = o.mono || catOf(r.raw || r.k, i);
     div('hqp-bval', nfmt(r.v), row);
   });
 }
 
 // ── a rate needs its denominator, and refuses to print under a sample gate ──
-export function rate(host, label, hits, cohort, note) {
+export function rate(host, label, hits, cohort) {
   const t = div('hqp-rate', null, host);
   const enough = cohort >= 20;
   div('hqp-rval', enough ? pct(hits, cohort) + '%' : '—', t);
   div('hqp-rlab', label, t);
   div('hqp-rsub', enough ? hits + ' of ' + cohort : 'needs 20 · has ' + cohort, t);
-  if (note) t.title = '';
   return t;
 }
 
@@ -234,234 +246,207 @@ export function funnel(host, steps) {
   });
 }
 
-// ── 📡 what Google saw. A DIFFERENT KIND OF NUMBER from everything below
-// it, and the note says so: these are client-fired and consent-gated, so an
-// adblocker or a declined banner makes a visit invisible. The two will
-// disagree. Neither is correcting the other.
-function googleBlock(el, an, live) {
-  if (!an && !live) return;
-  const s = section(el, 'What Google saw', 'Client-fired and consent-gated: an adblocker or a declined cookie banner makes a visit invisible here, and Google drops rows it considers empty. Everything below this section comes from the workers instead and misses nobody. Expect the two to disagree — neither is a correction of the other.');
-  if (live) {
-    const g = div('hqp-tiles', null, s);
-    tile(g, 'on the site now', nfmt(live.total || 0), (live.countries || []).length + ' countries');
-    const top = (live.pages || [])[0];
-    if (top) tile(g, 'busiest page', nfmt(top.v), String(top.page) || '/');
-    const ev = (live.events || [])[0];
-    if (ev) tile(g, 'top event now', nfmt(ev.v), ev.name);
-    if (live.spark && live.spark.length) {
-      const pts = live.spark.map((v, i) => ({ d: (29 - i) + ' min ago', v }));
-      lineChart(s, pts, { label: 'people on the site, last half hour', color: '#5ec8e0' });
-      div('hqp-cap', 'people on the site, by the minute', s);
-    }
-  }
-  if (!an || !an.headline) return;
-  const card = div('hqp-analyst', null, s);
-  div('hqp-verdict is-' + (an.verdict || 'normal'), an.verdict || 'reading', card);
-  div('hqp-ahead', an.headline, card);
-  (an.body || []).slice(0, 3).forEach((line) => div('hqp-abody', line, card));
-  (an.reads || []).slice(0, 4).forEach((r) => {
-    const row = div('hqp-aread', null, card);
-    div('hqp-aicon', r.icon || '•', row);
-    div('hqp-atext', r.text || String(r), row);
-  });
-  (an.recs || []).slice(0, 2).forEach((r) => div('hqp-arec', typeof r === 'string' ? r : (r.text || r.rec || ''), card));
-  if (an.confidence) div('hqp-cap', an.confidence + (an.sessions != null ? ' · ' + nfmt(an.sessions) + ' sessions vs ' + nfmt(an.avgSessions) + ' usual' : ''), card);
+// the last COMPLETE rollup day, or today's partial one — a row still being
+// written is a partial scan of the pass store, not a quiet day
+function lastDay(roll) {
+  const days = ((roll && roll.days) || []).filter((d) => d && d.passes != null && d.done);
+  return { days, now: days.length ? days[days.length - 1] : ((roll && roll.today) || null) };
 }
+const nope = (el) => div('hqp-empty', 'The rollup has not written a day yet. It walks the pass store every ten minutes; the first file lands within the hour.', el);
 
-// 🕹 the Arcade's cabinets, by the key the pass worker's boards use
-const ARC_NAMES = { peelout: 'Peel Out', snake: 'Banana Snake', invaders: 'Banana Invaders', pong: 'Banana Pong', stack: 'Banana Stack' };
+// ═══════════════════════════════════════════════════════════════════════════
+// 🎫 PLAYERS — passes, activity, growth, retention, the kept-pass funnel
+// ═══════════════════════════════════════════════════════════════════════════
+export function renderPlayersRoll(el, data) {
+  const { days, now } = lastDay(data.roll);
+  if (!now) { nope(el); return; }
+  const when = now.day + ' · the rollup';
 
-export function renderLedger(el, data) {
-  const roll = data.roll || {};
-  const world = data.world || {};
-  // ⚠️ `done` matters as much as `passes`: a row still being written is a
-  // PARTIAL scan of the pass store, not a quiet day. Charting one drags
-  // every line down until the night finishes.
-  const days = (roll.days || []).filter((d) => d && d.passes != null && d.done);
-  const now = days.length ? days[days.length - 1] : (roll.today || null);
-  el.textContent = '';
-
-
-  if (!now) {
-    div('hqp-empty', 'The rollup has not written a day yet. It walks the bucket every ten minutes; the first file lands within the hour.', el);
-    return;
-  }
-
-  // ── who is here ───────────────────────────────────────────────────────────
-  let s = section(el, 'Who is here', 'Every number on this screen comes from the workers, not from Google: no consent banner, no adblocker, no sampling. Stickiness is daily actives over monthly actives — the share of your monthly players who turned up today.');
+  let s = section(el, 'Passes and who is active', 'A pass is a Banana World identity — anyone who has synced once, whether or not they ever typed an email. Active means the pass was seen that day. The pass worker counts all of it itself, so no consent banner or adblocker hides anyone.', { src: 'serv', when });
   let g = div('hqp-tiles', null, s);
-  tile(g, 'people', nfmt(now.passes), nfmt(now.anon) + ' never signed in');
+  tile(g, 'passes', nfmt(now.passes), nfmt(now.anon) + ' never signed in');
   tile(g, 'active today', nfmt(now.dau), 'of ' + nfmt(now.mau) + ' this month');
   tile(g, 'active this week', nfmt(now.wau), nfmt(now.born7) + ' of them new');
-  tile(g, 'stickiness', pct(now.dau, now.mau) + '%', 'daily ÷ monthly', pct(now.dau, now.mau) >= 20 ? 'ok' : '');
+  tile(g, 'share of the month here today', pct(now.dau, now.mau) + '%', 'active today ÷ active this month', pct(now.dau, now.mau) >= 20 ? 'ok' : '');
   if (days.length > 1) {
-    lineChart(s, days.map((d) => ({ d: d.day, v: d.dau })), { label: 'active people per day' });
-    div('hqp-cap', 'active people per day', s);
+    lineChart(s, days.map((d) => ({ d: d.day, v: d.dau })), { label: 'active passes per day' });
+    div('hqp-cap', 'active passes per day', s);
   }
 
-  // ✉️ THE LOGIN LINKS (10 Sep 2026) — counted by the pass worker itself, one
-  // field per outcome, so a mail that never left or a link never finished is
-  // a number here and not a message from a player. Two weeks at most.
-  const mail = roll.mail || {};
-  const mdays = Object.keys(mail).sort();
-  if (mdays.length) {
-    const sum = (k) => mdays.reduce((t, d) => t + (mail[d][k] || 0), 0);
-    const sent = sum('sent'), opened = sum('opened'), expired = sum('expired'), used = sum('used');
-    const bad = sum('bad'), cool = sum('cooldown'), fail = sum('sendfail') + sum('unconfigured'), cap = sum('cap');
-    s = section(el, 'Login links', 'Every email login, from the worker itself: links sent, links finished, and every way one dies — read late (expired), opened twice or by a mail scanner (used), an address the box refused (rejected), a second request inside two minutes (too soon, silently unsent), the provider saying no (failed). ' + mdays.length + ' days.');
-    g = div('hqp-tiles', null, s);
-    tile(g, 'links sent', nfmt(sent), mdays[0].slice(5) + ' → ' + mdays[mdays.length - 1].slice(5));
-    tile(g, 'finished', nfmt(opened), sent ? Math.round(opened / sent * 100) + '% of sent' : 'none sent', sent && opened / sent < 0.6 ? 'warn' : '');
-    tile(g, 'expired', nfmt(expired), 'read after 30 min', expired ? 'warn' : '');
-    tile(g, 'used twice', nfmt(used), 'or opened by a scanner', used ? 'warn' : '');
-    tile(g, 'rejected', nfmt(bad), 'not an address');
-    tile(g, 'too soon', nfmt(cool), 'inside 2 min, unsent');
-    if (fail || cap) tile(g, 'failed to send', nfmt(fail + cap), cap ? 'daily cap hit' : 'the provider said no', 'warn');
-  }
-
-  // ── is it growing ─────────────────────────────────────────────────────────
-  // ⚠️ DAU WAS THE ONLY THING CHARTED, and it is the wrong line for this
-  // question. A world that recruits slowly moves its MONTHLY number; the daily
-  // one is mostly noise at this size — one person's quiet Tuesday is a 20%
-  // drop. Both series below were already in every nightly rollup and simply
-  // were not drawn.
   if (days.length > 1) {
-    s = section(el, 'Is it growing', 'Two different questions. The total only ever goes up, so its SLOPE is the recruitment rate — flattening means new people stopped arriving. The monthly number can fall, and that is the one that says whether the people already here are still turning up.');
-    lineChart(s, days.map((d) => ({ d: d.day, v: d.passes })), { label: 'people who have ever arrived', color: '#7ee0a8' });
-    div('hqp-cap', 'people who have ever arrived — the slope is the recruitment rate', s);
-    // ⚠️ ONE CHART, TWO LINES. Monthly and weekly actives share a scale and
-    // the GAP between them is the real signal — it is the share of the month's
-    // players who turned up in any given week. Two charts stacked cannot show
-    // a gap, and the weekly number was only ever a tile before this.
+    s = section(el, 'Growing?', 'Two lines, two questions. Passes ever made only goes up, so its slope is how fast new people arrive — flat means nobody new. Monthly actives can fall, and that line says whether the people already here still turn up.', { src: 'serv', when: days.length + ' rollup days' });
+    lineChart(s, days.map((d) => ({ d: d.day, v: d.passes })), { label: 'passes ever made', color: '#7ee0a8' });
+    div('hqp-cap', 'passes ever made — the slope is how fast new people arrive', s);
     lineChart(s, days.map((d) => ({ d: d.day, v: d.mau, wau: d.wau })), {
       label: 'monthly and weekly actives', color: '#ffd83d', label1: 'monthly',
       second: { key: 'wau', label: 'weekly', color: '#5ec8e0' },
     });
     div('hqp-cap', 'active in the last 30 days (yellow) and the last 7 (blue) — the gap is how much of the month shows up in a week', s);
-    // the honest caveat, once, under the pair rather than on each chart
-    const span = days.length;
-    div('hqp-cap', span < 30
-      ? span + ' days of rollup so far — the monthly line is still filling and reads low until it has 30.'
-      : span + ' days of rollup.', s);
+    div('hqp-cap', days.length < 30
+      ? days.length + ' days of rollup so far — the monthly line is still filling and reads low until it has 30.'
+      : days.length + ' days of rollup.', s);
   }
 
-  // ── do they come back ─────────────────────────────────────────────────────
-  s = section(el, 'Do they come back', 'Rolling retention: of everyone old enough to qualify, the share who turned up at least that many days after their first day. A rate is withheld under twenty people, because below that it is noise.');
+  s = section(el, 'Coming back?', 'Of everyone old enough to qualify, the share who turned up again at least that many days after their first day. A rate is withheld under twenty people, because below that it is noise.', { src: 'serv', when });
   g = div('hqp-rates', null, s);
   rate(g, 'next day', now.ret.r1, now.ret.c1);
   rate(g, 'after a week', now.ret.r7, now.ret.c7);
   rate(g, 'after a month', now.ret.r30, now.ret.c30);
 
-  // ── the funnel ────────────────────────────────────────────────────────────
-  s = section(el, 'From a visit to a home', 'Each step counts people, not events. The step to watch is the one that turns a browser into somebody who can come back: a pass that survives a lost phone.');
+  s = section(el, 'From a pass to a kept pass', 'Each step counts people, not events. The step to watch is the one that turns a browser into somebody who can come back: a pass with an email on it survives a lost phone.', { src: 'serv', when });
   funnel(s, [
     { k: 'have a pass', v: now.passes },
     { k: 'chose a name', v: now.named },
     { k: 'started the questline', v: now.quest },
-    { k: 'can get back in', v: now.mailCreds, work: true },
+    { k: 'can get back in (email on the pass)', v: now.mailCreds, work: true },
     { k: 'supporters', v: now.member },
   ]);
 
-  // ── the economy ───────────────────────────────────────────────────────────
-  s = section(el, 'Where the coins come from', 'Every coin event names the area and the faucet that paid it. This is the question GA4 has no event for at all — coins are never sent to it.');
-  g = div('hqp-tiles', null, s);
+  const mail = (data.roll && data.roll.mail) || {};
+  const mdays = Object.keys(mail).sort();
+  if (mdays.length) {
+    const sum = (k) => mdays.reduce((t, d) => t + (mail[d][k] || 0), 0);
+    const sent = sum('sent'), opened = sum('opened'), expired = sum('expired'), used = sum('used');
+    const bad = sum('bad'), cool = sum('cooldown'), fail = sum('sendfail') + sum('unconfigured'), cap = sum('cap');
+    s = section(el, 'Login links', 'Every email login, counted by the pass worker itself: links sent, links used to log in, and every way one dies. Read late means the 30-minute link expired; used twice is a second click or a mail scanner opening it first.', { src: 'serv', when: mdays.length + ' days' });
+    g = div('hqp-tiles', null, s);
+    tile(g, 'links sent', nfmt(sent), mdays[0].slice(5) + ' → ' + mdays[mdays.length - 1].slice(5));
+    tile(g, 'used to log in', nfmt(opened), sent ? Math.round(opened / sent * 100) + '% of sent' : 'none sent', sent && opened / sent < 0.6 ? 'warn' : '');
+    tile(g, 'read late', nfmt(expired), 'after the 30 min', expired ? 'warn' : '');
+    tile(g, 'used twice', nfmt(used), 'or opened by a scanner', used ? 'warn' : '');
+    tile(g, 'not a valid address', nfmt(bad), 'refused at the box');
+    tile(g, 'asked again inside 2 min', nfmt(cool), 'quietly not sent');
+    if (fail || cap) tile(g, 'failed to send', nfmt(fail + cap), cap ? 'daily cap hit' : 'the provider said no', 'warn');
+  }
+  const foot = div('hqp-foot', null, el);
+  foot.textContent = 'rolled up ' + (now.done ? 'in full' : 'part-way') + ' · '
+    + nfmt(now.scanned) + ' records over ' + nfmt(now.pages) + ' passes · ' + now.day;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 💰 THE ECONOMY — where coins come from, in words a reader knows
+// ═══════════════════════════════════════════════════════════════════════════
+export function renderEconomy(el, data) {
+  const { now } = lastDay(data.roll);
+  if (!now) { nope(el); return; }
+  const when = now.day + ' · the rollup';
+  let s = section(el, 'The economy', 'Every coin a player earns names the place and the source that paid it, and the pass worker keeps that tape. Google never sees a coin. Test tabs pay through a source the wallet refuses, and they are left out here.', { src: 'serv', when });
+  const g = div('hqp-tiles', null, s);
   tile(g, 'earned, all time', nfmt(now.coins.earned));
   tile(g, 'spent', nfmt(now.coins.spent));
-  tile(g, 'still held', nfmt(now.coins.held), 'the float');
-  const areaRows = Object.entries(now.area || {}).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
+  tile(g, 'in wallets now', nfmt(now.coins.held), 'the float');
+  const areaRows = Object.entries(now.area || {}).filter(([k]) => k !== 'qa')
+    .map(([k, v]) => ({ k: areaName(k), raw: k, v })).sort((a, b) => b.v - a.v);
   barsH(s, areaRows, { empty: 'no coin events in the tape yet' });
-  div('hqp-cap', 'coins by area', s);
-  const facRows = Object.entries(now.faucet || {}).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v).slice(0, 8);
+  div('hqp-cap', 'coins by place', s);
+  const facRows = Object.entries(now.faucet || {}).filter(([k]) => k !== 'qa')
+    .map(([k, v]) => ({ k: faucet(k), raw: k, v })).sort((a, b) => b.v - a.v).slice(0, 8);
   barsH(s, facRows, { mono: CAT[1] });
-  div('hqp-cap', 'top faucets', s);
+  div('hqp-cap', 'coins by source · the top eight', s);
+  const testCoins = (now.faucet && now.faucet.qa) || 0;
+  if (testCoins) div('hqp-cap', nfmt(testCoins) + ' test coins from Trym’s own test tabs are in this day file and are not on the charts.', s);
 
-  // ── the world itself ──────────────────────────────────────────────────────
+  s = section(el, 'Refusals', 'A refusal is the game saying no to a coin grant: a cap reached, a source it does not know, a test grant. A few are normal. A pile under one reason is a rule that bites real players.', { src: 'serv', when });
+  const refRows = Object.entries(now.refuse || {}).map(([k, v]) => ({ k: refusal(k), raw: k, v })).sort((a, b) => b.v - a.v);
+  barsH(s, refRows, { mono: BAD, empty: 'nothing has been refused' });
+  div('hqp-cap', 'refusals by reason', s);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🏡 THE HOMESTEADS — a census taken from the yards themselves
+// ═══════════════════════════════════════════════════════════════════════════
+export function renderHomesteads(el, data) {
+  const world = data.world || {};
   const c = world.census;
-  s = section(el, 'The world itself', 'A census of every homestead, taken from the documents themselves. QA yards are excluded — Trym’s own test farms once made this desk read as a boom.');
-  g = div('hqp-tiles', null, s);
-  tile(g, 'homesteads', nfmt(world.yards || 0), nfmt(world.week || 0) + ' touched this week');
+  let s = section(el, 'The homesteads', 'A census of every claimed homestead, read from the yards themselves as you open this floor. Test yards are left out — Trym’s own test farms once made this desk read as a boom.', { src: 'serv', when: 'right now' });
+  if (!world.yards && !c) { div('hqp-empty', 'the rave worker did not answer the census', s); return; }
+  const g = div('hqp-tiles', null, s);
+  tile(g, 'homesteads', nfmt(world.yards || 0), nfmt(world.week || 0) + ' changed this week');
   if (c) {
     tile(g, 'animals', nfmt(c.animals), nfmt(c.withAnimals) + ' farms keep one');
     tile(g, 'planted', nfmt(c.planted));
     tile(g, 'named signs', nfmt(c.named));
-  }
-  if (c) {
     barsH(s, ['plot', 'tent', 'cabin', 'house'].map((k, i) => ({ k, v: c.stage[i] || 0 })), { mono: CAT[3] });
-    div('hqp-cap', 'homesteads by what they have grown into', s);
-    s = section(el, 'Is anyone visiting', 'The neighbourhood mechanic, measured: what visitors actually did on other people’s farms. This is the question the farm launch was shipped to ask.');
+    div('hqp-cap', 'what the homesteads have grown into', s);
+    s = section(el, 'Neighbours', 'What visitors did on other people’s farms, counted from the yards: the neighbourhood mechanic the farm launch was shipped to test.', { src: 'serv', when: 'right now' });
     barsH(s, [
-      { k: 'visits', v: c.social.visits }, { k: 'guestbook', v: c.social.signs },
+      { k: 'visits', v: c.social.visits }, { k: 'guestbook signatures', v: c.social.signs },
       { k: 'waterings', v: c.social.waters }, { k: 'hugs', v: c.social.hugs },
       { k: 'troughs filled', v: c.social.feeds },
     ], { empty: 'nobody has been anywhere yet' });
   }
+}
 
-  // ── the health board ──────────────────────────────────────────────────────
-  s = section(el, 'The health board', 'Refusals are the game saying no: a cap reached, a price unmet, an overdraft. Unnamed events are coin grants arriving from a ruled area with no faucet named — the flag that gates strict rules stays off until this is zero for a day.');
-  g = div('hqp-tiles', null, s);
-  tile(g, 'unnamed events', nfmt(now.unruled), now.unruled ? 'strict rules must wait' : 'ready to flip', now.unruled ? 'warn' : 'ok');
-  tile(g, 'events on the tape', nfmt(now.events));
-  const wt = world.wt || {};
-  tile(g, 'world tokens', nfmt(wt.ok || 0) + ' ok', (wt.miss || 0) + ' wrong · ' + (wt.none || 0) + ' absent', (wt.miss || 0) ? 'warn' : 'ok');
-  const refRows = Object.entries(now.refuse || {}).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
-  barsH(s, refRows, { mono: BAD, empty: 'nothing has been refused' });
-  div('hqp-cap', 'refusals by reason', s);
-
-  // ── 🕹 the Arcade boards (12 Sep 2026): one board per cabinet, from the pass worker ──
+// 🕹 the Arcade's cabinets, by the key the pass worker's boards use
+const ARC_NAMES = { peelout: 'Peel Out', snake: 'Banana Snake', invaders: 'Banana Invaders', pong: 'Banana Pong', stack: 'Banana Stack' };
+export function renderArcade(el, data) {
   const arc = data.arcade && data.arcade.boards;
-  if (arc && Object.keys(arc).length) {
-    s = section(el, 'The Arcade boards', 'One board per cabinet, kept by the pass worker: how many bananas have a score on it, how many runs were posted, and who leads. A browser game can be fooled, so a board can be wiped from here when a score looks impossible; every pass keeps its own bests.');
-    g = div('hqp-tiles', null, s);
-    for (const [gk, b] of Object.entries(arc)) {
-      const lead = b.top && b.top[0];
-      tile(g, ARC_NAMES[gk] || gk, nfmt(b.players || 0), nfmt(b.runs || 0) + ' runs' + (lead ? ' · ' + lead.n + ' leads with ' + nfmt(lead.s) : ' · nobody yet'));
-    }
-    if (typeof data.arcadeWipe === 'function') {
-      const row = div('hqp-cap', 'wipe a board:', s);
-      for (const gk of Object.keys(arc)) {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'hqp-wipe'; b.textContent = ARC_NAMES[gk] || gk;
-        b.addEventListener('click', () => {
-          if (!confirm('Wipe the ' + (ARC_NAMES[gk] || gk) + ' board? Every score on it goes. The passes keep their own bests.')) return;
-          b.disabled = true;
-          data.arcadeWipe(gk).then((ok) => { b.textContent = ok ? (ARC_NAMES[gk] || gk) + ' · wiped' : (ARC_NAMES[gk] || gk) + ' · failed'; });
-        });
-        row.appendChild(b);
-      }
+  if (!arc || !Object.keys(arc).length) return;
+  const s = section(el, 'The Arcade boards', 'One board per cabinet, kept by the pass worker: how many bananas have a score on it, how many runs were posted, and who leads. A browser game can be fooled, so a board can be wiped from here when a score looks impossible; every pass keeps its own bests.', { src: 'serv', when: 'all time' });
+  const g = div('hqp-tiles', null, s);
+  for (const [gk, b] of Object.entries(arc)) {
+    const lead = b.top && b.top[0];
+    tile(g, ARC_NAMES[gk] || gk, nfmt(b.players || 0), nfmt(b.runs || 0) + ' runs' + (lead ? ' · ' + lead.n + ' leads with ' + nfmt(lead.s) : ' · nobody yet'));
+  }
+  if (typeof data.arcadeWipe === 'function') {
+    const row = div('hqp-cap', 'wipe a board:', s);
+    for (const gk of Object.keys(arc)) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'hqp-wipe'; b.textContent = ARC_NAMES[gk] || gk;
+      b.addEventListener('click', () => {
+        if (!confirm('Wipe the ' + (ARC_NAMES[gk] || gk) + ' board? Every score on it goes. The passes keep their own bests.')) return;
+        b.disabled = true;
+        data.arcadeWipe(gk).then((ok) => { b.textContent = ok ? (ARC_NAMES[gk] || gk) + ' · wiped' : (ARC_NAMES[gk] || gk) + ' · failed'; });
+      });
+      row.appendChild(b);
     }
   }
+}
 
-  // ✉️⚠️ REPORTED LETTERS (20 Sep 2026) — the plan's own gate before the first letter is sent:
-  // "the report path lands somewhere Trym opens, and removes the letter in the same tap"
-  // (docs/town-jobs-plan.md §6). The tap already does the second half. This is the first.
-  //
-  // ⭐ IT IS AT THE TOP OF NOTHING AND THE BOTTOM OF NOTHING WHEN IT IS EMPTY. A review queue with a
-  // standing empty state is a thing you learn to scroll past; the section is only drawn when there is
-  // something in it, and then it is the loudest thing on the desk.
-  const post = data.letters;
-  if (post && Array.isArray(post.rows) && post.rows.length) {
-    s = section(el, '✉️ Reported letters', 'Every letter somebody reported, and every one the filter let through but flagged — kept whole, newest first. A report already took the letter out of the reader\u2019s box; this is the copy, so nothing here is urgent for THEM. Clearing a row deletes it for good.');
-    const list = div('hqp-lets', null, s);
-    for (const r of post.rows.slice(0, 40)) {
-      const row = div('hqp-let' + (r.kind === 'flagged' ? ' is-flag' : ''), null, list);
-      const head = div('hqp-let__h', null, row);
-      head.textContent = (r.kind === 'flagged' ? 'FLAGGED' : 'REPORTED') + ' · '
-        + (r.from || '?') + ' → ' + (r.to || '?') + ' · ' + when(r.queuedAt || r.reportedAt || r.at);
-      // ⚠️ textContent, ALWAYS. This is the one string on the whole desk a stranger wrote.
-      div('hqp-let__t', String(r.text || ''), row);
-      if (typeof data.letterDrop === 'function') {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'hqp-wipe'; b.textContent = 'clear';
-        b.addEventListener('click', () => {
-          b.disabled = true;
-          data.letterDrop([r.k]).then((ok) => { if (ok) row.remove(); else b.textContent = 'failed'; });
-        });
-        head.appendChild(b);
-      }
+// ═══════════════════════════════════════════════════════════════════════════
+// 🩺 HEALTH CHECKS — the ledger's own alarms (the Dev floor)
+// ═══════════════════════════════════════════════════════════════════════════
+export function renderHealth(el, data) {
+  const { now } = lastDay(data.roll);
+  const world = data.world || {};
+  const s = section(el, 'Ledger checks', 'The pass worker’s own alarms. A coin grant with no source is a phone on old code paying itself without saying from where; strict rules stay off until that is zero for a day. World-token checks are the rave worker proving a phone is who it says, counted since that worker last restarted.', { src: 'serv', when: now ? now.day + ' · the rollup' : 'the rollup' });
+  if (!now) { div('hqp-empty', 'no rollup day yet — needs the pass admin key, on the Players floor', s); return; }
+  const g = div('hqp-tiles', null, s);
+  tile(g, 'coin grants with no source', nfmt(now.unruled), now.unruled ? 'strict rules must wait' : 'ready to flip', now.unruled ? 'warn' : 'ok');
+  tile(g, 'ledger events kept', nfmt(now.events), 'on the tape');
+  const wt = world.wt || {};
+  tile(g, 'world-token checks', nfmt(wt.ok || 0) + ' ok', (wt.miss || 0) + ' wrong · ' + (wt.none || 0) + ' absent · since the last restart', (wt.miss || 0) ? 'warn' : 'ok');
+  tile(g, 'refused grants', nfmt(Object.values(now.refuse || {}).reduce((t, v) => t + v, 0)), 'by reason on the World floor');
+  div('hqp-foot', 'rolled up ' + (now.done ? 'in full' : 'part-way') + ' · ' + nfmt(now.scanned) + ' records over ' + nfmt(now.pages) + ' passes · ' + now.day, s);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ✉️ REPORTED LETTERS — always drawn, in one of three honest states
+// ═══════════════════════════════════════════════════════════════════════════
+export function renderLetters(el, letters, drop) {
+  const L = letters || { state: 'nokey', rows: [] };
+  const s = section(el, 'Reported letters', 'Every letter a player reported, and every one the filter let through but flagged — kept whole, newest first. A report already took the letter out of the reader’s box, so nothing here is urgent for them. Clearing a row deletes this copy for good.', { src: 'serv', when: 'the review queue' });
+  if (L.state === 'nokey') { div('hqp-empty', 'Needs the pass admin key — paste it once on the Players floor and this queue opens here.', s); return; }
+  if (L.state === 'closed') { div('hqp-empty', 'The queue did not open with this key. The rave worker’s POST_ADMIN_KEY must be the same string as the pass admin key — until it is, this desk cannot tell an empty queue from a locked one.', s); return; }
+  if (L.state === 'error') { div('hqp-empty', 'The rave worker did not answer — try again in a moment.', s); return; }
+  const rows = Array.isArray(L.rows) ? L.rows : [];
+  if (!rows.length) { div('hqp-empty', 'Nothing reported and nothing flagged. The queue is empty.', s); return; }
+  const list = div('hqp-lets', null, s);
+  for (const r of rows.slice(0, 40)) {
+    const row = div('hqp-let' + (r.kind === 'flagged' ? ' is-flag' : ''), null, list);
+    const head = div('hqp-let__h', null, row);
+    head.textContent = (r.kind === 'flagged' ? 'FLAGGED' : 'REPORTED') + ' · '
+      + (r.from || '?') + ' → ' + (r.to || '?') + ' · ' + when(r.queuedAt || r.reportedAt || r.at);
+    // ⚠️ textContent, ALWAYS. This is the one string on the whole desk a stranger wrote.
+    div('hqp-let__t', String(r.text || ''), row);
+    if (typeof drop === 'function') {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'hqp-wipe'; b.textContent = 'clear';
+      b.addEventListener('click', () => {
+        b.disabled = true;
+        drop([r.k]).then((ok) => { if (ok) row.remove(); else { b.textContent = 'failed'; b.disabled = false; } });
+      });
+      head.appendChild(b);
     }
   }
-
-  const foot = div('hqp-foot', null, el);
-  foot.textContent = 'rolled up ' + (now.done ? 'in full' : 'part-way') + ' · '
-    + nfmt(now.scanned) + ' records over ' + nfmt(now.pages) + ' passes · ' + now.day;
 }
 
 // how long ago, in the desk's own plain words
