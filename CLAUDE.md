@@ -16,6 +16,7 @@ through the copy rig:
 node tools/copy.mjs <job>          # GPT drafts it into tools/copy-out/
 node tools/copy.mjs <job> --dry    # see the prompt, call nothing
 node tools/check-copy.mjs          # the rules gate (also runs in CI)
+node tools/check-literal-says.mjs  # no words typed into say/toast/passToast/bigMoment (older ones owed: tools/literal-says-owed.json)
 node tools/copy.mjs <job> --approve # Trym has read it: move it into src/data/copy/
 ```
 

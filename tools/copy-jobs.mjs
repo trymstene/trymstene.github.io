@@ -439,6 +439,20 @@ const lifeFields = {
   'work.start.condo': { kind: 'prose', aim: 60, max: 80, note: 'The same, for THE ARCADE: inside, sweep up the litter on the floor and wake a cabinet that has gone dark.' },
   'work.start.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for PIP’S GENERAL STORE: inside, carry a crate from the stack to an empty shelf.' },
   'work.start.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for THE POST OFFICE: open the mailbox at the counter and start a round of sorting.' },
+  // 🗣 THE TOWN'S TOASTS (22 Sep 2026): lines that were typed straight into say() — now a gate refuses that
+  'toasts.road': { kind: 'prose', aim: 30, max: 44, note: 'Said the moment a player walks off the square by the south road, which takes them to the park; the page changes a beat later. The world noting where they are going. One short line.' },
+  'toasts.sold': { kind: 'prose', aim: 90, max: 120, holds: ['{n}', '{what}', '{coins}'], note: 'The Exchange is not buying yet: its sell button only shows what the goods WOULD fetch. Said when a player taps sell on a row. MUST contain {n} (how many they have), {what} (the goods in lower case: eggs, milk or wool) and {coins} (what that would fetch at today’s price), each exactly once, then say plainly that nothing was sold and nothing changed hands. No other number.' },
+  'toasts.lure': { kind: 'prose', aim: 60, max: 80, note: 'Said when a player taps a lure in their pocket while in town: a lure only works at the pier at the beach, where it arms itself for the next casts; there is nothing to do with it here. Plain, no number.' },
+  'toasts.warming': { kind: 'prose', aim: 24, max: 40, note: 'The line under an arcade cabinet’s name on its card for the second or two while its game is loading: the machine is warming up. Lower case is fine.' },
+  'toasts.asleep': { kind: 'prose', aim: 44, max: 64, note: 'Said when an arcade cabinet’s game could not be loaded (a network hiccup): the machine is not answering right now; try again in a moment.' },
+  'toasts.prize': { kind: 'prose', aim: 60, max: 90, holds: ['{prizes}'], note: 'Said when a run on an arcade cabinet wins a prize. MUST contain {prizes} exactly once — the game puts in what was won, as “an arcade visor” (two are joined with a comma); then that it is in the player’s wardrobe now. No number.' },
+  'toasts.best': { kind: 'prose', aim: 50, max: 80, holds: ['{best}', '{rank}', '{players}'], note: 'Said when a run sets the player’s new personal best on that cabinet. MUST contain {best} (the score), {rank} (their place on this week’s board) and {players} (how many are on it), each exactly once, and no other number.' },
+  // 👝 THE POCKET TRAY (what the Wheel of Peel's prizes go into)
+  'pocket.firework': { kind: 'label', aim: 8, max: 14, note: 'The name of a firework as its row in the pocket tray shows it; a count follows it (“×2”). One word, a capital first.' },
+  'pocket.lure': { kind: 'label', aim: 4, max: 14, note: 'The name of a fishing lure as its row in the pocket tray shows it; a count follows it. One word, a capital first.' },
+  'pocket.lureWhere': { kind: 'label', aim: 24, max: 32, note: 'The small line under a lure’s row in the pocket tray, saying where it works: at the pier, where it arms itself. Lower case, no full stop.' },
+  'pocket.use': { kind: 'label', aim: 8, max: 12, note: 'The button on a firework’s row in the pocket tray: set it off here. A verb first, one or two words.' },
+  'pocket.empty': { kind: 'label', aim: 6, max: 16, note: 'The pocket tray when there is nothing in it. One or two words.' },
   // 🎆 the firework toast (it was hand-written in the code; 22 Sep 2026)
   'fx.yours': { kind: 'prose', aim: 40, max: 60, note: 'The world noting that the player’s own firework (a pocket item from Pip’s shop) just went up over the square. One short sentence, plain and a little proud.' },
   'fx.named': { kind: 'prose', aim: 40, max: 60, holds: ['{name}'], note: 'The same when the firework carries the name of who launched it — the player’s own name, or another player’s seen from across the square. MUST contain {name}, inside the sentence.' },
@@ -471,6 +485,12 @@ function lifeShape(data) {
   }
   // ⚠️ {where} IS LOWERCASE AND CARRIES ITS OWN ARTICLE. "Gladly. {where} could use your hands."
   // printed a sentence starting with a small letter for two of the three bosses.
+  for (const f of ['sold', 'prize', 'best']) {
+    const t = String(((data.toasts || {})[f]) || '').replace(/\{[a-z]+\}/g, '');
+    if (/\d/.test(t)) say(`toasts.${f}`, 'carries a number of its own — the game prints every figure', 'shape');
+  }
+  // ⚠️ {prizes} is lowercase and carries its own article ("an arcade visor"), like {where}: never a sentence's first word
+  if (/(^|[.!?]\s+)\{prizes\}/.test(String(((data.toasts || {}).prize) || ''))) say('toasts.prize', '{prizes} starts a sentence — it is lowercase with its own article ("an arcade visor"), so it must sit inside a clause', 'shape');
   for (const f of ['hired', 'moved', 'busy', 'momentLine']) {
     const l = String(((data.work || {})[f]) || '');
     if (/(^|[.!?]\s+)\{where\}/.test(l)) say(`work.${f}`, '{where} sits at the start of a sentence — it is lowercase and carries its own article, so it must stay inside a clause', 'range');
@@ -495,7 +515,7 @@ function lifeShape(data) {
   return bad;
 }
 const lifeSchema = {
-  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx'],
+  type: 'object', additionalProperties: false, required: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx', 'toasts', 'pocket'],
   properties: {
     bands: { type: 'array', description: 'The five bands, worst first, keys fixed.', items: { type: 'object', additionalProperties: false, required: ['key', 'name', 'brings'],
       properties: { key: str(lifeFields['bands[].key'].note), name: str(lifeFields['bands[].name'].note), brings: str(lifeFields['bands[].brings'].note) } } },
@@ -566,6 +586,10 @@ const lifeSchema = {
       yours: { type: 'string', description: lifeFields['fx.yours'].note },
       named: { type: 'string', description: lifeFields['fx.named'].note },
     } },
+    toasts: { type: 'object', additionalProperties: false, required: ['road', 'sold', 'lure', 'warming', 'asleep', 'prize', 'best'],
+      properties: Object.fromEntries(['road', 'sold', 'lure', 'warming', 'asleep', 'prize', 'best'].map((k) => [k, { type: 'string', description: lifeFields['toasts.' + k].note }])) },
+    pocket: { type: 'object', additionalProperties: false, required: ['firework', 'lure', 'lureWhere', 'use', 'empty'],
+      properties: Object.fromEntries(['firework', 'lure', 'lureWhere', 'use', 'empty'].map((k) => [k, { type: 'string', description: lifeFields['pocket.' + k].note }])) },
     things: { type: 'object', additionalProperties: false, description: 'What wants doing, in plain words: for each kind, [one, many].', required: ['lamp', 'litter', 'bin', 'dumpster', 'graffiti', 'fountain', 'shutter', 'crows', 'leaves'],
       properties: { lamp: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.lamp[]'].note }, litter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.litter[]'].note }, bin: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.bin[]'].note }, dumpster: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.dumpster[]'].note }, graffiti: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.graffiti[]'].note }, fountain: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.fountain[]'].note }, shutter: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.shutter[]'].note }, crows: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.crows[]'].note }, leaves: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'string' }, description: lifeFields['things.leaves[]'].note } } },
   },
@@ -1427,6 +1451,16 @@ const frontFields = {
   print: { kind: 'prose', aim: 80, max: 120, note: 'What the print shop says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the print shop with the sticker packs in its window; nothing to do inside yet — the packs are in the site’s shop. Never a price.' },
   wheel: { kind: 'prose', aim: 90, max: 130, note: 'The line under the Wheel of Peel’s heading on its card. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: Spinner’s wheel — one free spin a day, then a few coins a spin; every paid spin feeds the pot and one wedge takes it all. No rate beyond “a few coins”, no odds.' },
   exchange: { kind: 'prose', aim: 90, max: 130, note: 'The line under the Exchange’s heading on its card. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: Fig Jr. buys what your homestead made (eggs, milk, wool) at today’s price, which moves from day to day — sell now or hold. No number.' },
+  // 🪧 THE REST OF THE SQUARE'S SPOTS (22 Sep 2026): these still answered a tap with a sentence typed into the code
+  counter: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the counter inside the Arcade. One day it will hand out tokens and keep the high-score book; nothing to do at it yet (every cabinet keeps its own board already)." },
+  cart: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the fruit cart on the square. One day it will sell duck bread; nothing to buy at it yet." },
+  fountain: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the fountain in the middle of the square. It works; there is nothing to do at it but look." },
+  orchard: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the orchard by the lemonade stand. One day it will drop apples your animals at home love; nothing to pick yet." },
+  monument: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the monument: a statue of a banana on a plinth with no plaque, so nobody knows who it is. One day the week’s best will be read out here; nothing to do at it yet. Never name a day of the week." },
+  terrace: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the Coffee Cup’s terrace. Nowhere to sit yet, and nothing to do here yet." },
+  cut: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the road north out of town. One day it will lead to the Cut; it goes nowhere yet." },
+  gardenE: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the Coffee Cup’s garden. Nothing to do here yet." },
+  gardenW: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: Gran Fig’s flower garden. Nothing to do here yet. Never say when she is there." },
   oldCabinet: { kind: 'prose', aim: 50, max: 80, note: 'What an old arcade cabinet says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: this cabinet is out of order; nothing to play on it yet.' },
 };
 function frontShape(data) {
@@ -1437,23 +1471,33 @@ function frontShape(data) {
   plainPlace(bad, 'wheel', data.wheel, ['wheel'], ['spin']);
   plainPlace(bad, 'exchange', data.exchange, ['exchange', 'fig jr'], ['sell', 'buys', 'price']);
   plainPlace(bad, 'oldCabinet', data.oldCabinet, ['cabinet'], ['out of order', 'nothing', 'yet']);
+  plainPlace(bad, 'counter', data.counter, ['counter'], ['nothing', 'yet']);
+  plainPlace(bad, 'cart', data.cart, ['cart'], ['nothing', 'yet']);
+  plainPlace(bad, 'fountain', data.fountain, ['fountain'], ['nothing', 'look']);
+  plainPlace(bad, 'orchard', data.orchard, ['orchard'], ['nothing', 'yet']);
+  plainPlace(bad, 'monument', data.monument, ['monument', 'statue'], ['nothing', 'yet']);
+  plainPlace(bad, 'terrace', data.terrace, ['terrace'], ['nothing', 'yet']);
+  plainPlace(bad, 'cut', data.cut, ['road', 'cut'], ['nothing', 'yet', 'nowhere']);
+  plainPlace(bad, 'gardenE', data.gardenE, ['garden'], ['nothing', 'yet']);
+  plainPlace(bad, 'gardenW', data.gardenW, ['garden', 'flowers'], ['nothing', 'yet']);
+  for (const f of ['monument', 'gardenW']) if (/monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|afternoon|evening/i.test(String(data[f] || ''))) bad.push({ path: f, msg: 'names a day or a time — the town publishes no timetable', rule: 'shape' });
   for (const [f, v] of Object.entries(data)) if (typeof v === 'string' && /\d/.test(v)) bad.push({ path: f, msg: 'carries a number — no price, no odds, no date', rule: 'shape' });
   for (const [f, v] of Object.entries(data)) if (typeof v === 'string' && /\?\s*$/.test(v)) bad.push({ path: f, msg: 'ends in a question — nobody may ask the player one', rule: 'shape' });
   return bad;
 }
-const frontSchema = { type: 'object', additionalProperties: false, required: ['hall', 'bank', 'print', 'wheel', 'exchange', 'oldCabinet'],
+const frontSchema = { type: 'object', additionalProperties: false, required: ['hall', 'bank', 'print', 'wheel', 'exchange', 'oldCabinet', 'counter', 'cart', 'fountain', 'orchard', 'monument', 'terrace', 'cut', 'gardenE', 'gardenW'],
   properties: Object.fromEntries(Object.entries(frontFields).map(([k, v]) => [k, str(v.note)])) };
 
 export const JOBS = {
   'town-fronts': {
     id: 'town-fronts',
     title: 'Banana Town — what the other places say when tapped',
-    what: 'The Town Hall, the bank, the print shop and an old arcade cabinet when tapped; the line under the Wheel of Peel’s and the Exchange’s headings.',
+    what: 'The Town Hall, the bank, the print shop, an old arcade cabinet and the square’s smaller spots (the Arcade’s counter, the fruit cart, the fountain, the orchard, the monument, the terrace, the road north, the two gardens) when tapped; the line under the Wheel of Peel’s and the Exchange’s headings.',
     brief: 'tools/copy-briefs/town-fronts.md',
     out: 'tools/copy-out/town-fronts.json',
     approved: 'src/data/copy/town-fronts.json',
-    reads: 'src/scripts/banana-town.js (a static import: six short lines, read on every visit)',
-    top: ['hall', 'bank', 'print', 'wheel', 'exchange', 'oldCabinet'],
+    reads: 'src/scripts/banana-town.js (a static import: short lines, read on every visit)',
+    top: ['hall', 'bank', 'print', 'wheel', 'exchange', 'oldCabinet', 'counter', 'cart', 'fountain', 'orchard', 'monument', 'terrace', 'cut', 'gardenE', 'gardenW'],
     fields: frontFields,
     shape: frontShape,
     schema: frontSchema,
@@ -1466,7 +1510,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-life.json',
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
-    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx'],
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx', 'toasts', 'pocket'],
     // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',

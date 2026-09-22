@@ -60,9 +60,28 @@ test('the hall, the bank, the print shop, the wheel, the exchange, the café and
   await page.waitForTimeout(400);
   expect(await page.evaluate(() => document.querySelector('.tw-post').textContent), 'the post office says what it is on its card').toContain(POST.front);
   await closeCard(page);
-  // and no hand-written tap line is left in the town's own table
-  const stubs = await page.evaluate(() => Object.entries(window.__town.ABOUT || {}).filter(([k, v]) => /not built yet/i.test(String(v[2] || ''))).map(([k]) => k));
-  expect(stubs, 'no “Not built yet.” anywhere a tap can reach').toEqual([]);
+  // and no hand-written tap line is left in the town's own table. ⚠️ the table was not on the seam until 22 Sep 2026,
+  // so this check read an empty object and passed while the orchard still said “Not built yet.” — it fails on a
+  // missing table now, and every line in it must be the rig's (or a sign's NAME, in capitals)
+  const table = await page.evaluate(() => window.__town.ABOUT || null);
+  expect(table, 'the town’s place table is on the seam').not.toBeNull();
+  const typed = Object.entries(table).filter(([, v]) => v[2] && !Object.values(FRONTS).includes(v[2]) && !/^[A-Z0-9 ↑]+$/.test(v[2])).map(([k, v]) => k + ': ' + v[2]);
+  expect(typed, 'every tap line in the town’s table is the rig’s').toEqual([]);
+  expect(Object.entries(table).filter(([, v]) => /not built yet/i.test(String(v[2] || ''))).map(([k]) => k), 'no “Not built yet.” anywhere a tap can reach').toEqual([]);
+  expect(errs, 'nothing threw').toEqual([]);
+});
+
+// 🪧 THE SQUARE'S SMALL SPOTS (22 Sep 2026): nine more places that answered from a sentence typed into the code
+test('the counter, the cart, the fountain, the orchard, the monument, the terrace, the road north and the gardens answer in the rig’s words', async ({ page }) => {
+  const errs = await town(page);
+  for (const [key, field] of [['counter', 'counter'], ['cart', 'cart'], ['fountain', 'fountain'], ['orchard', 'orchard'], ['monument', 'monument'], ['terrace', 'terrace'], ['cut', 'cut'], ['garden_e', 'gardenE'], ['garden_w', 'gardenW']]) {
+    await page.evaluate(() => { const t = document.getElementById('twToast'); t.textContent = ''; });
+    await page.evaluate((k) => window.__town.open(k), key);
+    await page.waitForTimeout(150);
+    expect(await toast(page), key + ' answers in the rig’s words').toBe(FRONTS[field]);
+  }
+  // the bus stop and the info kiosk open their own doors, so they carry no line at all
+  expect(await page.evaluate(() => [window.__town.ABOUT.bus[2], window.__town.ABOUT.info[2]]), 'no dead lines left behind').toEqual(['', '']);
   expect(errs, 'nothing threw').toEqual([]);
 });
 

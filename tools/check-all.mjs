@@ -31,6 +31,7 @@ const GATES = [
   ['design', 'tools/check-design.mjs', []],
   ['storage', 'tools/check-storage.mjs', []],
   ['copy', 'tools/check-copy.mjs', []],
+  ['toasts', 'tools/check-literal-says.mjs', []],   // 🗣 no words typed into say/toast (22 Sep 2026)
   ['art', 'tools/check-wearart.mjs', []],
   ['lanes', 'tools/check-town-lanes.mjs', []],
   ['wardrobe', 'tools/check-wardrobe-rows.mjs', []],

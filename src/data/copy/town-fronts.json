@@ -4,5 +4,14 @@
   "print": "The print shop has sticker packs in its window. Nothing to do here yet; buy packs in the site’s shop.",
   "wheel": "Spinner’s Wheel of Peel gives one free spin a day. Paid spins cost a few coins, feed the pot, and one wedge wins it.",
   "exchange": "The Exchange is where Fig Jr. buys your eggs, milk, and wool. Today’s price changes daily: sell now or hold.",
+  "counter": "The Arcade counter is for tokens and the high-score book. Nothing to do at it yet.",
+  "cart": "The fruit cart will sell duck bread. Nothing to buy here yet.",
+  "fountain": "The fountain in the square works. There’s nothing to do but look.",
+  "orchard": "The orchard by the lemonade stand will drop apples for your animals. Nothing to pick yet.",
+  "monument": "This monument is an unmarked banana statue. Nobody knows who it is; nothing to do here yet.",
+  "terrace": "This is the Coffee Cup’s terrace. There’s nowhere to sit and nothing to do here yet.",
+  "cut": "This is the road north to the Cut. It goes nowhere yet.",
+  "gardenE": "This is the Coffee Cup’s garden. Nothing to do here yet.",
+  "gardenW": "This is Gran Fig’s flower garden. Nothing to do here yet.",
   "oldCabinet": "This old arcade cabinet is out of order. There’s nothing to play here yet."
 }

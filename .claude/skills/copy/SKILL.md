@@ -84,6 +84,11 @@ Two more things hold the line, and you will meet both:
 - **Editing `src/data/copy/*.json` with Edit or Write is blocked** by `tools/guard-copy.mjs`,
   a PreToolUse hook. If you are denied there, that is the rule working: run the rig. A hook
   only sees Claude's tool calls, so Trym's own editing is untouched.
+- **A toast cannot hold typed words.** `tools/check-literal-says.mjs` (in `check-all` and CI) reads
+  every `say` / `toast` / `passToast` / `bigMoment` call in `src/scripts/*.js` and fails on a string
+  literal with a letter in it (markup, entities, `{placeholders}`, emoji and copy keys like
+  `lifeWords('toasts')` are not words). Lines typed in before 22 Sep 2026 are listed word for word in
+  `tools/literal-says-owed.json`; that list only shrinks — route a line, then take it off.
 - The park's walk (`tests/park-peel.spec.mjs`) asserts on the built site that Old Peel says
   what the file says — his greeting, his deck, his five bands, his lore beats, his weather
   lines. Change the wiring and CI says so.

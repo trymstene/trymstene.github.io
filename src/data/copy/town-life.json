@@ -205,6 +205,22 @@
     "yours": "Your firework bursts over the square.",
     "named": "{name} sends a firework over the square."
   },
+  "toasts": {
+    "road": "Heading south to the park.",
+    "sold": "{n} {what} would fetch {coins} coins. Nothing was sold; nothing changed hands.",
+    "lure": "Lures work at the beach pier, where they arm for casts. Nothing to do here.",
+    "warming": "warming up",
+    "asleep": "This cabinet is not answering. Try again in a moment.",
+    "prize": "You won {prizes}. It is in your wardrobe now.",
+    "best": "New best: {best}. #{rank} of {players} this week."
+  },
+  "pocket": {
+    "firework": "Firework",
+    "lure": "Lure",
+    "lureWhere": "works at the beach pier",
+    "use": "Launch it",
+    "empty": "Empty pocket"
+  },
   "things": {
     "lamp": [
       "a dark lamp",

@@ -10,6 +10,7 @@
 // The rules of a classic are free to reuse; its name, art, sounds and layouts are
 // not. Every pixel here is ours: banana names, banana reasons, one twist each.
 import { PASS_API, pullIfStale } from '../lib/banana-pass.js';
+import { WEARABLE_PACKS } from '../data/wearables.js';
 
 const track = (n, p) => { try { if (window.gtag) window.gtag('event', n, p || {}); } catch (e) {} };
 const CW = 300, CH = 440;
@@ -21,7 +22,11 @@ const NAMES = {
   stack: ['Banana Stack', 'Tap to drop the crate. What hangs over is lost. Perfect drops grow it back.'],
 };
 const PRIZE = { peelout: ['the Arcade visor', 10], snake: ['the Pixel crown', 15], invaders: ['the Joystick', 25], pong: ['the Gold token', 5], stack: ['the Joy cap', 15] };
-const PRIZE_NAME = { arcvisor: 'the Arcade visor', pixelcrown: 'the Pixel crown', joystick: 'the Joystick', goldtoken: 'the Gold token', joycap: 'the Joy cap', arctrophy: 'the Arcade trophy', arcmedal: 'the Arcade medal' };
+// 🎁 a prize is called what the WARDROBE calls it (src/data/wearables.js `phrase`: "an arcade visor"), never a
+// second list of names typed here — the catalog is already in the engine chunk every area loads
+const PRIZE_PHRASE = Object.fromEntries(Object.values(WEARABLE_PACKS).flatMap((p) => ['hats', 'glasses', 'extras'].flatMap((k) => p[k] || [])).map((it) => [it.id, it.phrase || '']));
+// the rig's result lines with their holes filled (the words come through api.words(), from the town)
+const fillIn = (t, v) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 const bests = {};   // this visit's bests, per game (the server keeps the real ones)
 let boardCache = {};
 
@@ -89,8 +94,10 @@ export function openGame(key, api) {
       renderBoard(k, d);
       for (const id of d.prizes || []) track('arcade_prize', { game: k, item: id });
       if (d.prizes && d.prizes.length) { try { pullIfStale(0); } catch (e) {} }   // the server granted it on the pass; this device reads it back
-      if (d.prizes && d.prizes.length) api.say('A prize: ' + d.prizes.map((id) => PRIZE_NAME[id] || id).join(' and ') + '. It is in your wardrobe.');
-      else if (d.newBest && d.rank) api.say('New best: ' + d.best + '. You are #' + d.rank + ' of ' + d.players + '.');
+      const W = (api.words && api.words()) || {};
+      const won = (d.prizes || []).map((id) => PRIZE_PHRASE[id]).filter(Boolean).join(', ');
+      if (won && W.prize) api.say(fillIn(W.prize, { prizes: won }));
+      else if (d.newBest && d.rank && W.best) api.say(fillIn(W.best, { best: d.best, rank: d.rank, players: d.players }));
     } catch (e) {}
   }
   return { stop() { g.stop(); }, state: () => g.state(), key, game: g, restart: () => { ended = false; g.restart(); }, ended: () => ended };

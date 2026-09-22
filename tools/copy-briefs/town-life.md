@@ -353,3 +353,36 @@ A firework is a pocket item from Pip's shop; it bursts over the square for every
   sentence, plain and a little proud.
 - `fx.named` — the same with the launcher's name in it (the player's own, or another player's seen
   from across the square). MUST contain `{name}` inside the sentence.
+
+
+## 🗣 The town's toasts (22 Sep 2026)
+
+These lines were typed straight into the code as toasts; a gate now refuses that, so they are the
+rig's. A toast is the WORLD talking to the player about what they just did — never a character (a
+banana only speaks in their own card). Short, plain, a little warm.
+
+- `toasts.road` — the moment a player walks off the square by the south road, which takes them to the
+  park (the page changes a beat later). One short line: where they are going.
+- `toasts.sold` — the Exchange is not buying yet; its sell button only shows what the goods WOULD
+  fetch. It MUST contain `{n}` (how many they have), `{what}` (eggs, milk or wool, lower case) and
+  `{coins}` (what that would fetch at today's price), each once — then that nothing was sold and
+  nothing changed hands. No other number.
+- `toasts.lure` — a lure tapped in the pocket while in town: it only works at the pier at the beach,
+  where it arms itself for the next casts; nothing to do with it here.
+- `toasts.warming` — under an arcade cabinet's name while its game loads (a second or two): the
+  machine is warming up.
+- `toasts.asleep` — the cabinet's game could not load (a network hiccup): it is not answering right
+  now; try again in a moment.
+- `toasts.prize` — a run won a prize. MUST contain `{prizes}` once (the game puts in "an arcade
+  visor"; two are joined with a comma), then that it is in the player's wardrobe now. No number.
+- `toasts.best` — a run set the player's new best on that cabinet. MUST contain `{best}` (the score),
+  `{rank}` (their place on this week's board) and `{players}` (how many are on it), each once.
+
+## 👝 The pocket tray
+
+What the Wheel of Peel's prizes go into, opened from the action bar. Labels, not sentences:
+- `pocket.firework`, `pocket.lure` — the item names on their rows (a count follows: "×2").
+- `pocket.lureWhere` — the small line under a lure's row: where it works (at the pier, where it arms
+  itself). Lower case, no full stop.
+- `pocket.use` — the button on a firework's row: set it off here. A verb first.
+- `pocket.empty` — the tray with nothing in it.

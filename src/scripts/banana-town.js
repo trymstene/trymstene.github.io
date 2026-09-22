@@ -97,18 +97,19 @@ const ABOUT = {
   g7: ['', 0, FRONTS.oldCabinet || ''],
   g8: ['', 0, FRONTS.oldCabinet || ''],
   g9: ['', 0, FRONTS.oldCabinet || ''],
-  counter: ['', 0, 'The counter. Tokens and the high-score book, later.'],
-  cart: ['', 0, 'The fruit cart. Duck bread, later.'],
-  fountain: ['', 0, 'The fountain. It works.'],
+  // 🪧 the square's small spots: their lines are the rig's too since 22 Sep 2026 (town-fronts.json)
+  counter: ['', 0, FRONTS.counter || ''],
+  cart: ['', 0, FRONTS.cart || ''],
+  fountain: ['', 0, FRONTS.fountain || ''],
   // the mini-areas (11 Sep evening): every small place says what it is for
-  orchard: ['THE ORCHARD', 0, 'The orchard. Three apples fall here a day; a treat your animals at home love. Not built yet.'],
-  monument: ['THE MONUMENT', 232, 'The monument. Monday’s names are read out here. Not built yet.'],
-  bus: ['BUS STOP', 122, 'The bus stop. The roads still work; this is the shortcut.'],
-  info: ['', 224, 'The info point. A map of the town and what is where. Not built yet.'],
-  terrace: ['', 132, 'The terrace. Sit with the fortune. Not built yet.'],
-  cut: ['THE CUT ↑', 0, 'The road north. The Cut, later.'],
-  garden_e: ['', 0, 'The café’s garden. Sit with the fortune. Not built yet.'],
-  garden_w: ['', 0, 'Gran Fig’s flowers. She is here in the afternoons. Not built yet.'],
+  orchard: ['THE ORCHARD', 0, FRONTS.orchard || ''],
+  monument: ['THE MONUMENT', 232, FRONTS.monument || ''],
+  bus: ['BUS STOP', 122, ''],   // no line: the shelter opens the travel door (openFor 'bus')
+  info: ['', 224, ''],          // no line: the kiosk opens its rack of maps (openFor 'info')
+  terrace: ['', 132, FRONTS.terrace || ''],
+  cut: ['THE CUT ↑', 0, FRONTS.cut || ''],
+  garden_e: ['', 0, FRONTS.gardenE || ''],
+  garden_w: ['', 0, FRONTS.gardenW || ''],
   // 🍋 no third field: the stand answers for itself now, through the rig (town-room openFor + town-lemon.json `front`)
   stand: ['LEMONADE', 93, ''],
 };
@@ -411,6 +412,7 @@ function placeToast() {
   else if (above >= t.height + 20) { toastEl.style.bottom = 'auto'; toastEl.style.top = Math.round((above - t.height) / 2) + 'px'; }
 }
 function say(text) {
+  if (!text) return;   // a line the rig has not written (or a chunk not landed yet) says nothing, never an empty box
   toastEl.textContent = text;
   toastEl.hidden = false;
   placeToast();
@@ -489,7 +491,7 @@ function tick(now) {
   { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
   if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
-    say('Back down the road to the park…');
+    say(lifeWords('toasts').road);
     setTimeout(() => { location.href = '/park/'; }, 600);
   }
   requestAnimationFrame(tick);
@@ -623,7 +625,6 @@ function openFor(key) {
   // plan's rule (docs/town-jobs-plan.md §4: "the room is a gain, never a toll"). The store's room is
   // entered from that card, so this branch is reached by the arcade and by any later door of its kind.
   if (ROOMS[key] && !inRoom) { enterRoom(key); return true; }
-  if (key === 'store') { storeCard(); return true; }   // the fallback while town-room.js is still loading
   if (key === 'bus') { travel.open(); return true; }   // the shelter is the travel door's place in the world
   if (inRoom === 'condo' && CABINET[key]) return gameCard(key);   // a cabinet is the arcade's alone: the key space is shared by every room
   return false;
@@ -712,7 +713,8 @@ function exchangeCard() {
     + '<p class="tw-fine">Prototype: the prices are real for today, the sale is not. Your produce is read from your homestead on this device.</p>');
   cardBody.querySelectorAll('[data-sell]').forEach((b) => b.addEventListener('click', () => {
     const i = +b.dataset.sell; b.disabled = true; b.textContent = 'sold';
-    say('Prototype: ' + have[i] + ' ' + GOODS[i][1].toLowerCase() + ' would bring ' + Math.round(have[i] * priceOf(today, i)) + ' coins. Nothing moved.');
+    const line = fillWords(lifeWords('toasts').sold, { n: have[i], what: GOODS[i][1].toLowerCase(), coins: Math.round(have[i] * priceOf(today, i)) });
+    say(line);
   }));
 }
 
@@ -783,9 +785,9 @@ function spin(cv) {
 }
 
 // ---- 🏪 the General Store and the POCKET: buy, carry at most five of three kinds, use where it works
-const ITEMS = { firework: ['Firework', 15, 'Launch it where people are. Everyone present sees the burst, with your name under it.'],
-  lure: ['Lure', 20, 'Ten casts at the pier with better odds of a rare fish. Arms itself; nothing to carry.'],
-  bread: ['Duck bread', 5, 'The park’s ducks follow you around for a minute.'] };
+// 👝 THE POCKET: what the Wheel of Peel's prizes go into (a firework, a lure), carried at most five of a kind.
+// Its words are the rig's (town-life `pocket`). The old General Store card that also filled it was unreachable
+// (the store's room answers the tap first) and went on 22 Sep 2026, with duck bread, which only it sold.
 const pocket = {};     // this session only — the real one is two pass counters per kind
 function pocketAdd(k) { pocket[k] = Math.min(5, (pocket[k] || 0) + 1); pocketPaint(); }
 function pocketPaint() {
@@ -795,26 +797,12 @@ function pocketPaint() {
   pocketN.textContent = String(n);
   if (!n) tray.hidden = true;
 }
-function storeCard() {
-  let rows = '';
-  for (const [k, it] of Object.entries(ITEMS)) rows += '<div class="tw-row"><div><b>' + it[0] + ' · ' + it[1] + ' coins</b><small>' + it[2] + '</small></div><button type="button" data-buy="' + k + '">buy</button></div>';
-  openCard('<h2>The General Store</h2><p class="tw-card__sub">Pip sells things you use, never things you wear. Three kinds, five of each at most. What you carry shows as POCKET in the HUD.</p>'
-    + '<div class="tw-rows">' + rows + '</div>'
-    + '<p class="tw-fine">Prototype: nothing is charged and nothing is saved. On the real one a buy is a pass spend and the server refuses more than five.</p>');
-  cardBody.querySelectorAll('[data-buy]').forEach((b) => b.addEventListener('click', () => {
-    const k = b.dataset.buy;
-    if ((pocket[k] || 0) >= 5) { say('Pip: “Five is plenty. Use one first.”'); return; }
-    if (k === 'lure') { pocket.lure = Math.min(5, (pocket.lure || 0) + 1); pocketPaint(); say('The lure arms itself: your next ten casts at the pier are the lucky ones. Nothing to carry.'); return; }
-    pocketAdd(k);
-    say(ITEMS[k][0] + ' bought. It is in your pocket.');
-  }));
-}
 const tray = document.getElementById('twTray');
 const pocketBtn = document.getElementById('twPocket');
 // the slot is a glyph with a count badge, never a word (the HUD is icons — Trym, 11 Sep); the pack's own pixel pocket
 pocketBtn.innerHTML = iconSvg('pocket', { size: 22 }) + '<b class="tw-act__n" id="twPocketN">0</b>';
 const pocketN = document.getElementById('twPocketN');
-const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid', bread: 'bird-solid' };
+const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid' };
 // ⚠️ TWO TRAYS CANNOT SHARE THE BOTTOM OF THE SCREEN. The pocket is z 901 and the counter is z 1200,
 // so during a shift the pocket opened completely behind the counter's tray and a tap on the bag did
 // nothing a player could see. The counter yields while the bag is open and comes back when it closes —
@@ -825,19 +813,20 @@ function toggleTray() {
   cafeYield(true);
   toastEl.hidden = true; clearTimeout(toastT);   // the tray is what the player asked for; the chatter yields
   let html = '';
+  const P = lifeWords('pocket');
   // a row = glyph + name; the verb button only where the item works HERE, otherwise one small line
   // saying where it does (a sentence in a button wrapped the row — buttons never line-break)
   for (const [k, v] of Object.entries(pocket)) if (v) {
     const here = k === 'firework';
     html += '<div class="tw-row"' + (here ? '' : ' data-say="' + k + '" role="button"') + '><div class="tw-row__it">' + iconSvg(POCKET_ICON[k], { size: 22 })
-      + '<div><b>' + ITEMS[k][0] + ' ×' + v + '</b>' + (here ? '' : '<small>' + (k === 'lure' ? 'arms itself at the pier' : 'works in the park, by the pond') + '</small>') + '</div></div>'
-      + (here ? '<button type="button" data-use="' + k + '">use here</button>' : '') + '</div>';
+      + '<div><b>' + esc(P[k] || '') + ' ×' + v + '</b>' + (here ? '' : '<small>' + esc(P.lureWhere || '') + '</small>') + '</div></div>'
+      + (here ? '<button type="button" data-use="' + k + '">' + esc(P.use || '') + '</button>' : '') + '</div>';
   }
-  tray.innerHTML = html || '<div class="tw-row"><b>Empty.</b></div>';
+  tray.innerHTML = html || '<div class="tw-row"><b>' + esc(P.empty || '') + '</b></div>';
   tray.hidden = false;
   // the tray folds first either way, so the toast never lands on it
   tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => { tray.hidden = true; cafeYield(false); pocket.firework--; pocketPaint(); firework(); }));
-  tray.querySelectorAll('[data-say]').forEach((r) => r.addEventListener('click', () => { tray.hidden = true; cafeYield(false); say(r.dataset.say === 'lure' ? 'Lures arm themselves at the pier. Nothing to do here.' : 'Duck bread works in the park, by the pond.'); }));
+  tray.querySelectorAll('[data-say]').forEach((r) => r.addEventListener('click', () => { tray.hidden = true; cafeYield(false); say(lifeWords('toasts').lure); }));
 }
 
 // ---- 🕹 THE CABINETS (12 Sep 2026): five games, one module, loaded the first time a cabinet is tapped.
@@ -849,11 +838,11 @@ let arcGame = null, gamesMod = null;
 function bananaCanvas() { const off = document.createElement('canvas'); off.width = off.height = CV; drawComposite(off.getContext('2d'), CV, 1, ME_DRAW); return off; }
 function gameCard(key) {
   const g = CABINET[key]; if (!g) return false;
-  const go = (m) => { if (arcGame) { arcGame.stop(); arcGame = null; } arcGame = m.openGame(g, { openCard, say, bananaCanvas }); };
+  const go = (m) => { if (arcGame) { arcGame.stop(); arcGame = null; } arcGame = m.openGame(g, { openCard, say, bananaCanvas, words: () => lifeWords('toasts') }); };
   if (gamesMod) go(gamesMod);
   else {
-    openCard('<h2>' + ABOUT[key][2].split('.')[0] + '</h2><p class="tw-card__sub">warming up the cabinet…</p>');
-    import('./town-games.js').then((m) => { gamesMod = m; if (!panel.hidden) go(m); }).catch(() => { closeCard(); say('The cabinet is asleep. Try again in a moment.'); });
+    openCard('<h2>' + ABOUT[key][2].split('.')[0] + '</h2><p class="tw-card__sub">' + esc(lifeWords('toasts').warming || '') + '</p>');
+    import('./town-games.js').then((m) => { gamesMod = m; if (!panel.hidden) go(m); }).catch(() => { closeCard(); say(lifeWords('toasts').asleep); });
   }
   return true;
 }
@@ -904,6 +893,8 @@ function firework() {
 }
 // the town's world-voice words (town-life.json) live in the room chunk; before it lands there are none
 const lifeWords = (k) => (room && room.seam && room.seam.copyOf ? room.seam.copyOf(k) : null) || {};
+// a rig line with its holes filled — fillWords(T.sold, { n: 3, what: 'eggs', coins: 9 }); a hole with no value stays visible
+const fillWords = (t, v) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 // 👥 somebody else's firework, where they stood. The toast is the same line the launcher's own names
 // them with, so a burst off the edge of your view is still news; a nameless one just bursts.
 function peerFirework(wx, wy, name) {
@@ -1004,10 +995,10 @@ assetsReady().then(() => {
     try { qdone = !!(JSON.parse((wantC2 ? localStorage.getItem('bwq-c2') : localStorage.getItem('bwq-c1')) || 'null') || {}).done; } catch (e) {}
     if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { pos, tgt, SPOTS, NPCS, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
+  window.__town = { pos, tgt, SPOTS, ABOUT, NPCS, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)
-  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard }, pocket, pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

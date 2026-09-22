@@ -34,3 +34,23 @@ number (no price, no odds, no date), never a question, never "coming soon" with 
   hold. No number.
 - `oldCabinet` — an old cabinet along the arcade wall, tapped: it is out of order; nothing to play on
   it yet.
+
+## The rest of the square's spots (22 Sep 2026)
+
+Nine more places still answered a tap with a sentence typed into the code — most of them ending
+"Not built yet." or "…, later." Same rule: a signpost, two plain sentences at most, what this is and
+what a player can do here. For all nine the honest answer is that there is **nothing to do here yet**
+(the fountain: nothing to do but look). Say that plainly; never say when it will change.
+
+- `counter` — the counter inside the Arcade. One day it will hand out tokens and keep the high-score
+  book; nothing to do at it yet. (Every cabinet already keeps its own board.)
+- `cart` — the fruit cart on the square. One day it will sell duck bread; nothing to buy yet.
+- `fountain` — the fountain in the middle of the square. It works; nothing to do at it but look.
+- `orchard` — the orchard by the lemonade stand. One day it will drop apples your animals at home
+  love; nothing to pick yet.
+- `monument` — a statue of a banana on a plinth with no plaque, so nobody knows who it is. One day
+  the week's best will be read out here; nothing to do at it yet. Never name a day of the week.
+- `terrace` — the Coffee Cup's terrace. Nowhere to sit yet.
+- `cut` — the road north out of town. One day it will lead to the Cut; it goes nowhere yet.
+- `gardenE` — the Coffee Cup's garden. Nothing to do here yet.
+- `gardenW` — Gran Fig's flower garden. Nothing to do here yet. Never say when she is there.
