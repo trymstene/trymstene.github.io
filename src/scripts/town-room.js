@@ -581,7 +581,6 @@ export function bootTownLife(ctx) {
   }
   const SHUT_STILL = { cafe: ['shutcafe', 1, 3], info: ['shutinfo', 0, 43] };   // key → [still, dx, lift]; a front with no entry wears only the tape
   function shutters() {
-    hangForSale();
     for (const k of CLOSABLE) {
       const want = cond.shut.has(k) && !cond.fixedShut.has(k) && !hoardNow(k);   // your lock wins the display
       const on = !!shutSprites[k] || shutNoStill.has(k);
@@ -607,13 +606,6 @@ export function bootTownLife(ctx) {
   // red square sign on the window saying closed"). The tape and the sign are drawn, not pack art: there is no tape in the pack.
   const tapes = {};
   const shutNoStill = new Set();   // fronts wearing the tape with no shutter sprite of their own
-  // 🏷 FOR SALE on the Coffee Cup: the big red sign hangs until the café can be bought (docs/town-cafe-plan.md)
-  function hangForSale() {
-    const p = propOf('cafe'); if (!p || !COPY.forSale || world.querySelector('.tw-forsale')) return;
-    const s = document.createElement('b'); s.className = 'tw-forsale'; s.textContent = COPY.forSale;
-    s.style.left = pct(p.x + p.w / 2, W); s.style.top = pct(p.base - 140, H); s.style.zIndex = String(100 + p.base + 4);
-    world.appendChild(s);
-  }
   function barricade(k, p) {
     if (tapes[k]) return;
     const els = [];

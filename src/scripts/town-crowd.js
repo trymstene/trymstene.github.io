@@ -18,7 +18,7 @@ const WS = 'wss://banana-rave.trymstene.workers.dev/town';
 const CV = 150;
 
 export function bootTownCrowd(ctx) {
-  const { world, W, H, pct, hud, track, pos, outfit, name, inRoom } = ctx;
+  const { world, W, H, pct, hud, track, pos, outfit, name, inRoom, onBurst } = ctx;
   const peers = new Map();   // id → { el, ctx, outfit, name, x, y, room, lastF }
   let myId = null, sendAt = 0, sawPeer = false, sentRoom = '';
   const lastSent = { x: -1, y: -1 };
@@ -83,6 +83,8 @@ export function bootTownCrowd(ctx) {
         const p = peers.get(m.id);
         if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); }
       } else if (m.t === 'leave') dropPeer(m.id);
+      // 🎆 somebody's firework: where the room says they stood, with the room's copy of their name
+      else if (m.t === 'burst' && onBurst && !here()) onBurst(fromPX(m.x), fromPY(m.y), m.name || '');
     },
     onDown: () => { peers.forEach((p) => p.el.remove()); peers.clear(); refreshCrowd(); },
   });
@@ -102,6 +104,8 @@ export function bootTownCrowd(ctx) {
     // 🚪 through a door, either way: everybody on the square hides or shows again at once
     rooms: () => { for (const p of peers.values()) placePeer(p); },
     outfit: () => { if (room.live) room.send({ t: 'outfit', outfit: outfit() }); },
+    // 🎆 my firework, out to everyone on the square (the room drops one sent from indoors)
+    burst: () => { if (room.live && !here()) room.send({ t: 'burst', x: toPX(pos.x), y: toPY(pos.y) }); },
     others: () => { const out = []; for (const p of peers.values()) if (!p.el.hidden) out.push({ x: p.x, y: p.y }); return out; },
     seam: {
       live: () => !!room.live,

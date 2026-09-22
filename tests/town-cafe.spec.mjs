@@ -251,9 +251,8 @@ test('a shift is standing in the Coffee Cup’s own window, and only for its own
   expect(st.inside, 'the window it shows through is inside the kiosk’s own box').toBe(true);
   expect(st.bigger, 'and the banana is a proper size — the window crops it, the scale does not').toBe(true);
   expect(st.tray, 'and the tray is up').toBe(true);
-  // the shot is for the eye: Bean stands at this door and the FOR SALE sign hangs over it, and
-  // neither is what is being looked at
-  await page.addStyleTag({ content: '.tw-npc{display:none!important}.tw-forsale{display:none!important}' });
+  // the shot is for the eye: Bean stands at this door, and he is not what is being looked at
+  await page.addStyleTag({ content: '.tw-npc{display:none!important}' });
   await page.waitForTimeout(150);
   const kb = await page.locator('.tw-ov[data-key="cafe"]').boundingBox();
   await page.screenshot({ path: SHOT + 'shift.png', clip: { x: Math.max(0, kb.x - 20), y: Math.max(0, kb.y - 10), width: kb.width + 40, height: kb.height + 30 } });

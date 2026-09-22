@@ -635,7 +635,8 @@ one chapter step + copy + walk) is 6–8 sessions and is the honest first ask.**
     `tw-job-v1` mirror, and the walk asserts that with a kept pass on the device so the guard being
     tested is the right one. The week is in the letter's id, so the same answer seen twice is still
     one letter, and the server marks a week paid regardless — a lost letter never costs coins.
-    **Still to come in this group:** the store's restock chore and the café counter.
+    **Still to come in this group:** the store's restock chore and the café counter. *(Both built since: the
+    restock chore 19 Sep, d8ca2d52; the café counter 20 Sep, ea5c8f2f.)*
 13. The copy jobs (`town-restore`, `town-work`) through the rig, the gate, the approve.
 
 **Chapter 2**
@@ -909,7 +910,7 @@ Three of Trym's calls after playing the stand, each now a rule:
 5. **The lemonade stand** (9.5) — a deck on the tray + a boss + a cup.
 
 ### 11.7 Still Trym's to call
-- The post office's weekly rate — built at 75 (the store's 90, the arcade's 60); one number in `jobs.js` to move.
+- ~~The post office's weekly rate~~ ✅ **Settled as built, Trym 22 Sep:** 75 a week (the store's 90, the arcade's 60).
 - Whether a tip job's clock-out toast should name the total (words) or just show the coins (numbers).
 - The arcade's chore pay: nothing beyond the cheque (§3's rule), or a small per-chore coin.
 - Whether the duties chip may sit on screen in the other areas as the compass, or only in the town.
@@ -960,4 +961,4 @@ goodbye — and the arcade door still opens when you ask.
 ### 12.4 Still Trym's to call
 - The targets (three and three) and whether `days` should count at the arcade too.
 - Whether a boss's nudge should also toast in the square the first time it is seen.
-- The store's second duty: `days` (as built) or a second chore (the till?).
+- ~~The store's second duty~~ ✅ **Settled as built, Trym 22 Sep:** the restock chore and `days`.

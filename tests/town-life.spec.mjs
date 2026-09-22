@@ -326,7 +326,7 @@ test('the store sells a piece for the homestead into the shed or onto the van', 
   expect(((await page.locator('.tw-todo').textContent()) || '').split(' · ').length).toBe(Math.max(1, kinds));
   expect(await page.locator('.tw-stamp').count()).toBe(0);
   expect(await page.locator('.tw-paper--news').count()).toBe(0);   // an ordinary noon: no night notice; the nights are Moss's to tell
-  expect(await page.locator('.tw-forsale').count()).toBe(1);   // the Coffee Cup is for sale until it can be bought
+  expect(await page.locator('.tw-forsale').count()).toBe(0);   // 🏷 the Coffee Cup's FOR SALE sign came down (Trym, 22 Sep): nothing sells it
   expect((await page.evaluate(() => window.__town.life.talk('moss'))).topics.length).toBe(3);   // his two, and the nights
   expect(await page.locator('#twReport .tw-lamps').count()).toBe(1);   // 📌 the report is mounted under the meter now, not in a board card
   await page.screenshot({ path: SHOT + 'board.png' });

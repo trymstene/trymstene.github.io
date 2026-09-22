@@ -13,6 +13,8 @@ like a game, not a webpage."*
 > ⚠️ **SUPERSEDED IN PART, 19 Sep 2026.** Trym: *"we buy the coffee shop is the wrong wording
 > here - we unlock it after completing chapter 2 quest"*. The café is no longer BOUGHT: it is the
 > fourth signature of chapter 2, and the FOR SALE sign is the last thing the chapter takes down.
+> 🏷 **22 Sep 2026: the sign is down.** Trym: *"remove the for sale sign"* — a café nothing can buy
+> should not say it is for sale. Chapter 2 is parked, so no chapter was waiting to take it down.
 > Read **docs/town-jobs-plan.md** first — it owns the unlock, the closed-building system, the other
 > three workplaces and the post. Everything below about the COUNTER (the clock-in, the queue, the
 > three gestures, patience, the terrace, the night collision, the bench prototype) still stands.
@@ -114,7 +116,8 @@ nothing.
 ⚠️ **Still to do, and Trym's ask:** *"maybe it's best if the townsfolk NPCs don't do too much other
 than walk about sometimes greeting each other … mainly standing by their shops, to keep some
 consistency and not make it too messy."* The residents' day tables in town-life.js have not been
-dialled down yet. That is its own slice, in the EAGER town chunk.
+dialled down yet. That is its own slice, in the EAGER town chunk. *(✅ Done 20 Sep, 6deec7e2: the
+residents stand by their shops; the visitors are the traffic.)*
 
 ## 2. The shared workplace
 

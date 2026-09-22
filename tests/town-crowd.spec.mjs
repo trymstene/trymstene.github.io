@@ -41,6 +41,20 @@ test('two bananas in the square see each other, walk, go indoors, and leave', as
   // a picture for the record: A's square with B standing in it (the camera on the south road, where both spawned)
   await a.screenshot({ path: 'test-results/town-crowd-a-sees-b.png' });
 
+  // ── 🎆 A launches a firework from the pocket: B draws the burst with A's name, and is told whose it was
+  // (Trym, 22 Sep: "fix the firework so everyone sees it")
+  const fxB = await b.evaluate(() => window.__town.fx());
+  await a.evaluate(() => window.__town.pocketAdd('firework'));
+  await a.locator('#twPocket').click();
+  await a.locator('[data-use="firework"]').click();
+  expect(await a.evaluate(() => window.__town.fxLast()), 'A sees its own burst').toEqual({ name: 'QA Alpha', mine: true });
+  await b.waitForFunction((n) => window.__town.fx() > n, fxB, { timeout: 10000 });
+  expect(await b.evaluate(() => window.__town.fxLast()), 'B sees A\'s burst, with A\'s name').toEqual({ name: 'QA Alpha', mine: false });
+  expect(await b.locator('#twFx').isHidden(), 'drawn on B\'s screen').toBe(false);
+  expect(await b.locator('#twToast').textContent(), 'and B is told whose it was').toContain('QA Alpha');
+  await b.screenshot({ path: 'test-results/town-crowd-b-sees-a-firework.png' });
+  await b.waitForFunction(() => document.getElementById('twFx').hidden, null, { timeout: 8000 });   // and it burns out
+
   // ── B walks; A's copy of B follows within a beat
   await b.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = 700; t.pos.y = t.tgt.y = 1000; });
   await a.waitForFunction(() => { const p = window.__town.crowd.peers().find((q) => q.name === 'QA Bravo'); return p && Math.abs(p.x - 700) < 12 && Math.abs(p.y - 1000) < 12; }, null, { timeout: 10000 });

@@ -484,16 +484,12 @@ export function bootTownCafe(ctx, cfg0) {
         + ' at ' + pc((win[0] + win[2]) / 2 - l) + ' ' + pc((win[1] + win[3]) / 2 - t) + ')';
     }
     world.appendChild(el);
-    // 🏷 AND THE FOR SALE SIGN COMES DOWN. A big red plank offering the Coffee Cup for sale, hanging
-    // over your own banana serving in its window, is the building telling two stories at once.
-    world.classList.add('is-shift');
     atWork = el;
     paint();   // ⚠️ only once it is IN the world, because the size it is drawn at is the size it lands at
     const me = world.querySelector('.tw-me');
     if (me) me.classList.add('is-serving');   // ⚠️ a CLASS, never [hidden]: authored display beats it
   }
   function cafeStepOut() {
-    world.classList.remove('is-shift');
     if (atWork) { atWork.remove(); atWork = null; }
     clearTimeout(rz);
     const me = world.querySelector('.tw-me');

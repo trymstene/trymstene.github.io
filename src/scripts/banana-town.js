@@ -853,28 +853,54 @@ function gameCard(key) {
   return true;
 }
 
-// ---- 🎆 the firework: a burst over the square where you stand, your name under it
-let fxRuns = 0;
-function firework() {
-  const cv = document.getElementById('twFx'), r = view.getBoundingClientRect();
-  cv.width = Math.round(r.width); cv.height = Math.round(r.height); cv.hidden = false;
-  const ctx = cv.getContext('2d');
-  const x0 = pos.x * scale - camX, y0 = pos.y * scale - camY - 150 * scale;
-  let name = ''; try { name = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
+// ---- 🎆 the firework: a burst over the square, the launcher's name under it
+// Yours from the pocket, and since 22 Sep 2026 everybody else's too (Trym: "fix the firework so everyone
+// sees it" — the item always promised it and only the launcher's screen drew it). town-crowd.js carries
+// it and worker-rave's SquareRoom relays it with the room's own copy of the name. ONE loop draws every
+// burst in flight, each anchored to its spot on the square, so the camera can pan under it.
+let fxRuns = 0, fxLast = null, fxRaf = 0;
+const bursts = [];
+function burstAt(wx, wy, name, mine) {
   const parts = [];
-  for (let i = 0; i < 70; i++) { const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 4; parts.push({ x: x0, y: y0, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, c: ['#ffe135', '#ff5c8a', '#fffdf5', '#7ec8ff'][i % 4], life: 60 + Math.random() * 30 }); }
-  const t0 = performance.now();
+  for (let i = 0; i < 70; i++) { const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 4; parts.push({ x: 0, y: 0, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, c: ['#ffe135', '#ff5c8a', '#fffdf5', '#7ec8ff'][i % 4], life: 60 + Math.random() * 30 }); }
+  bursts.push({ wx, wy, name: name || '', parts, t0: performance.now() });
   fxRuns++;
-  say((name ? name + '’s' : 'Your') + ' firework went up over the square.');
-  (function frame(now) {
-    const t = (now - t0) / 1000;
-    ctx.clearRect(0, 0, cv.width, cv.height);
+  fxLast = { name: name || '', mine: !!mine };
+  if (!fxRaf) fxRaf = requestAnimationFrame(fxFrame);
+}
+function fxFrame(now) {
+  const cv = document.getElementById('twFx'), r = view.getBoundingClientRect();
+  const w = Math.round(r.width), h = Math.round(r.height);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  cv.hidden = false;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  for (let i = bursts.length - 1; i >= 0; i--) {
+    const b = bursts[i], t = (now - b.t0) / 1000;
+    const x0 = b.wx * scale - camX, y0 = b.wy * scale - camY - 150 * scale;
     let alive = 0;
-    for (const p of parts) { if (p.life <= 0) continue; alive++; p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.life -= 1; ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 40)); ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), 4, 4); }
+    for (const p of b.parts) { if (p.life <= 0) continue; alive++; p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.life -= 1; ctx.globalAlpha = Math.max(0, Math.min(1, p.life / 40)); ctx.fillStyle = p.c; ctx.fillRect(Math.round(x0 + p.x), Math.round(y0 + p.y), 4, 4); }
     ctx.globalAlpha = 1;
-    if (name && t < 1.6) { ctx.font = 'bold 14px "Archivo Black", sans-serif'; ctx.fillStyle = '#fffdf5'; ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1; ctx.fillText(name, x0, y0 + 46); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
-    if (alive && t < 2.2) requestAnimationFrame(frame); else { ctx.clearRect(0, 0, cv.width, cv.height); cv.hidden = true; }
-  })(t0);
+    if (b.name && t < 1.6) { ctx.font = 'bold 14px "Archivo Black", sans-serif'; ctx.fillStyle = '#fffdf5'; ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1; ctx.fillText(b.name, x0, y0 + 46); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
+    if (!alive || t >= 2.2) bursts.splice(i, 1);
+  }
+  if (bursts.length) { fxRaf = requestAnimationFrame(fxFrame); return; }
+  fxRaf = 0;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  cv.hidden = true;
+}
+function firework() {
+  let name = ''; try { name = (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) {}
+  burstAt(pos.x, pos.y, name, true);
+  say((name ? name + '’s' : 'Your') + ' firework went up over the square.');
+  if (crowd) crowd.burst();   // 👥 and out to everyone else on the square
+}
+// 👥 somebody else's firework, where they stood. The toast is the same line the launcher's own names
+// them with, so a burst off the edge of your view is still news; a nameless one just bursts.
+function peerFirework(wx, wy, name) {
+  if (inRoom) return;   // indoors, the square is not drawn
+  burstAt(wx, wy, name, false);
+  if (name) say(name + '’s firework went up over the square.');
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk
@@ -922,7 +948,7 @@ assetsReady().then(() => {
     const qa = /[?&]towntest/.test(location.search);
     if (!qa || /[?&]crowd=1/.test(location.search)) {
       import('./town-crowd.js').then((m) => {
-        crowd = m.bootTownCrowd({ world, W, H, pct, hud, track, pos, outfit: () => ME_DRAW, inRoom: () => inRoom,
+        crowd = m.bootTownCrowd({ world, W, H, pct, hud, track, pos, outfit: () => ME_DRAW, inRoom: () => inRoom, onBurst: peerFirework,
           name: () => { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } } });
         if (window.__town) window.__town.crowd = crowd.seam;
       }).catch((e) => { console.warn('[town] the crowd did not load', e); });
@@ -958,6 +984,6 @@ assetsReady().then(() => {
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)
-  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, fx: () => fxRuns, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard, store: storeCard }, pocket, pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

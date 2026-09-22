@@ -32,7 +32,7 @@ import { cleanName } from '../../src/lib/player-name.js';
 // not a flourish"). Written by the rig, approved by hand, and read HERE rather than in the page:
 // a letter from Nib has to be posted by the server, because a page that could claim to be Nib is
 // exactly the forgery the rail was closed against an hour before this shipped.
-import TOWN_NOTES from '../../src/data/copy/town-notes.json';
+import TOWN_NOTES from '../../src/data/copy/town-notes.json' with { type: 'json' };   // ⚠️ the attribute is what lets plain Node load this file for worker-rave/test (wrangler's bundler never needed it)
 // ⚠️ the NAME beside the key. A mailbox that said “from nib” in lower case would be the one
 // place in this world a person is shown as an id. tools/copy-jobs.mjs NOTE_FOLK is the source.
 const NOTE_NAMES = { nib: 'Nib', stamp: 'Stamp', moss: 'Moss', bean: 'Bean' };
@@ -2972,6 +2972,7 @@ function ySlugBase(name) {
 // is on the square. Nothing else lives here: the town's condition is the TownRoom's, the post is the
 // PostRoom's. Presence is cheap and it stays cheap.
 const SQUARE_CAP = 40;
+const SQUARE_BURST_GAP = 3000;   // 🎆 one firework per banana per three seconds: a pocket holds five, a strobe is nobody's
 const SQUARE_ROOMS = ['', 'condo', 'store'];
 const sqClamp = (v, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n * 10) / 10)) : d; };
 const sqRoom = (v) => (SQUARE_ROOMS.includes(v) ? v : '');
@@ -3087,6 +3088,18 @@ export class SquareRoom {
       me.outfit = sanitizeOutfit(msg.outfit, mrank);
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
+      return;
+    }
+    // 🎆 A FIREWORK OVER THE SQUARE (22 Sep 2026) — everyone else on the square draws it where the launcher
+    // stands, with the name THIS ROOM holds for them (filtered at join, a struck name comes back empty),
+    // never one the message carries. Indoors there is no square to launch it over.
+    if (msg.t === 'burst' && me) {
+      const now = Date.now();
+      if (me.room || now - (me.lastBurst || 0) < SQUARE_BURST_GAP) return;
+      me.lastBurst = now;
+      me.x = sqClamp(msg.x, me.x); me.y = sqClamp(msg.y, me.y);
+      ws.serializeAttachment(me);
+      this.broadcast({ t: 'burst', id: me.id, x: me.x, y: me.y, name: me.name || '' }, ws);
     }
   }
   async webSocketClose(ws) {
