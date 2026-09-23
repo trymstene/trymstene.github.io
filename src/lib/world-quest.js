@@ -624,7 +624,7 @@ body.bh-inside .bwq-hint,
    world walks on taps), so the badge has to buy its own back. */
 .bwq-hint__badge {
   position:absolute; left:-13px; top:-15px; line-height:0;
-  background:#111; border-radius:999px; padding:5px 8px 6px;
+  background:#111; width:32px; height:32px; padding:0; border-radius:50%; display:flex; align-items:center; justify-content:center; box-sizing:border-box;
   transform:rotate(-8deg); box-shadow:2px 2px 0 rgba(0,0,0,0.35);
   border:0; cursor:pointer; pointer-events:auto;
   touch-action:manipulation; -webkit-tap-highlight-color:transparent;

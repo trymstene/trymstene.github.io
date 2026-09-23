@@ -376,6 +376,24 @@ for (const f of files) {
   if (!read('src/lib/world.js').includes('export function snapScale')) problems.push(['src/lib/world.js', '§25: snapScale() is gone, and the four worlds call it']);
 }
 
+// §28 THE CORNER BADGES ARE ONE CIRCLE (Trym, 23 Sep 2026: "The icon for quests in players top left corner is a
+// different circle shape than the jobs icon - make it consistent - both should be a round circle with the icon
+// centered horizontally and vertically inside it. Make sure its consistent for all areas"). The quest badge, the
+// town's work badge and the work pager's badge (every other area) are three rules in three files; each must be the
+// same 32 px circle with its icon centred, or one of them drifts into an oval again. Also written without backslashes.
+{
+  const BADGES = [['src/lib/world-quest.js', '.bwq-hint__badge {'], ['src/scripts/town-duties.js', '.twd-chip__badge {'], ['src/lib/work-pager.js', '.wkp__b {']];
+  const MUST = ['width:32px', 'height:32px', 'padding:0', 'border-radius:50%', 'display:flex', 'align-items:center', 'justify-content:center'];
+  for (const [f, sel] of BADGES) {
+    let src = ''; try { src = readFileSync(join(ROOT, f), 'utf8'); } catch {}
+    const nl = src.indexOf(String.fromCharCode(10) + sel), at = nl < 0 ? -1 : nl + 1;   // the rule itself, at a line start — not a `.is-min … .badge {` variant
+    if (at < 0) { problems.push([f, '§28: the corner badge rule ' + sel.slice(0, -2) + ' is gone — the badges can no longer be checked as one circle']); continue; }
+    const body = src.slice(at + sel.length, src.indexOf('}', at)).split(' ').join('').split(String.fromCharCode(10)).join('');
+    const missing = MUST.filter((m) => !body.includes(m));
+    if (missing.length) problems.push([f, '§28: the corner badge ' + sel.slice(0, -2) + ' is not the shared circle (missing ' + missing.join(', ') + ') — the quest, work and pager badges are one 32 px circle, icon centred']);
+  }
+}
+
 let cssN = 0;
 for (const f of walkCss(join(ROOT, 'public/css'))) {
   cssN++;

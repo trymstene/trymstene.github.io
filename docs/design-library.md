@@ -840,3 +840,13 @@ dialogue popup should close first, then splash."*
 - **Proven by** `tests/town-hired.spec.mjs`: the card closes before the moment appears (timed in the
   page), the words are the rig's, the moment sits inside the view at 360 and 393, a burst went up, the
   where-to-start line follows, a ✕ during the yes still gets the moment, and a "no" never sets it off.
+
+## §28 THE CORNER BADGES ARE ONE CIRCLE (23 Sep 2026)
+
+Trym: *"The icon for quests in players top left corner is a different circle shape than the jobs icon - make it
+consistent - both should be a round circle with the icon centered horizontally and vertically inside it. Make sure its
+consistent for all areas."* The quest badge (`.bwq-hint__badge`, world-quest.js, every area), the town's work badge
+(`.twd-chip__badge`, town-duties.js) and the work pager's badge in the other areas (`.wkp__b`, work-pager.js) had each
+taken their shape from padding around a differently sized icon, so one was a tall oval and the others wide ones. All
+three are now the same **32 px circle** (`width/height 32px; padding 0; border-radius 50%`), the icon centred by flex.
+**Checked:** `tools/check-design.mjs` §28 reads the three rules and fails if any loses one of those declarations.

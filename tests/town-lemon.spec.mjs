@@ -82,6 +82,12 @@ test('the stand answers a stranger in its own words, and its own staff step roun
   const under = (v.floor - v.tableTop) / v.drawn;
   expect(under, 'chest-up: the counter takes the body and leaves the head, the shoulders and the hands').toBeGreaterThan(0.5);
   expect(under, '…but never the face').toBeLessThan(0.72);
+  // ⭐ and the stand is IN FRONT of it (Trym, 23 Sep: "the stand should overflow the banana"): the counter is drawn again over
+  // the vendor, so the banana shows down to the goods — the mouth and the chest — and the counter's shape hides the rest
+  expect(v.frontZ, 'the stall’s counter is drawn over the vendor').toBeGreaterThan(v.z);
+  expect(v.goodsTop, 'so more banana shows than a cut at the table’s edge left').toBeGreaterThan(v.tableTop);
+  const fr = await page.evaluate(() => { const f = document.querySelector('.tw-atwork-front'), i = f && f.querySelector('img'); return f ? { loaded: !!(i && i.complete && i.naturalWidth), h: f.getBoundingClientRect().height } : null; });
+  expect(fr && fr.loaded && fr.h > 0, 'the counter is really there, its picture loaded').toBe(true);
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.tw-me')).display === 'none'), 'your banana on the cobbles is the one at the counter').toBe(true);
   const drawn = await page.evaluate(() => { const e = document.querySelector('.tw-atwork--stand'), o = [...document.querySelectorAll('.tw-ov')].find((i) => /ov-50/.test(i.src)); const r = e.getBoundingClientRect(), k = o.getBoundingClientRect(); return { inside: r.left >= k.left - 30 && r.right <= k.right + 30, tall: r.height > k.height * 0.4, cvw: e.firstChild.width }; });
   expect(drawn.inside, 'it stands within the stall’s width').toBe(true);

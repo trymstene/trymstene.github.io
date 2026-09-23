@@ -19,7 +19,7 @@ const CSS = `
 .wkp[hidden] { display:none !important; }
 .wkp.is-min { max-width:none; padding:0; width:0; height:0; background:none; border-color:transparent; box-shadow:none; pointer-events:none; }
 .wkp.is-min > span { display:none; }
-.wkp__b { position:absolute; left:-13px; top:-15px; line-height:0; background:#111; border-radius:999px; padding:6px 7px; transform:rotate(-8deg);
+.wkp__b { position:absolute; left:-13px; top:-15px; line-height:0; background:#111; width:32px; height:32px; padding:0; border-radius:50%; display:flex; align-items:center; justify-content:center; box-sizing:border-box; transform:rotate(-8deg);
   box-shadow:2px 2px 0 rgba(0,0,0,0.35); border:0; cursor:pointer; pointer-events:auto; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .wkp.is-min .wkp__b { background:#f29a2e; }
 .wkp__b::after { content:''; position:absolute; inset:-8px; }

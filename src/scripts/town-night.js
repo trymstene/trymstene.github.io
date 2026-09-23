@@ -104,9 +104,42 @@ export function bootTownNight(ctx) {
           && nearestBanana(w[0], w[1]).d > 160 && clearWay(g.x, g.y, w[0], w[1])) spots.push(w);
       }
     }
-    return spots.length ? spots[Math.floor(Math.random() * spots.length)] : null;
+    // 👀 and the lamp it goes for is one near YOU when there is one: the scene Trym asked for is watching it happen
+    const mine = spots.filter((w) => Math.hypot(w[0] - ctx.pos.x, w[1] - ctx.pos.y) < NEAR_LAMP), from = mine.length ? mine : spots;
+    return from.length ? from[Math.floor(Math.random() * from.length)] : null;
+  }
+  // 👀 ⭐ A ROAMER COMES WHERE YOU ARE (23 Sep 2026). Trym: "i dont see any ghosts at night anymore". Measured over whole
+  // nights: five ghosts out, but on a phone at the lemon stand one was ON SCREEN for 5 % of the night (28 % by the
+  // fountain). The roamer rested only on the square's fourteen waypoints, "far from every banana", and the others keep
+  // their bench, their path and their statue — while a phone shows about 520 × 680 of the town. So most of its rests are
+  // now picked in the ring round YOUR banana: out of reach (the keep-away still turns it at 110) and on a phone's screen.
+  const SEEN = 0.6, RING = [170, 240], NEAR_LAMP = 320;
+  const RX = [Math.min(...ROAM.map((w) => w[0])) - 60, Math.max(...ROAM.map((w) => w[0])) + 80];
+  const RY = [Math.min(...ROAM.map((w) => w[1])) - 60, Math.max(...ROAM.map((w) => w[1])) + 40];
+  function wayNearMe(g) {
+    for (let i = 0; i < 12; i++) {
+      const a = Math.random() * Math.PI * 2, r = RING[0] + Math.random() * (RING[1] - RING[0]);
+      const x = Math.round(ctx.pos.x + Math.cos(a) * r), y = Math.round(ctx.pos.y + Math.sin(a) * r * 0.8);
+      if (x < RX[0] || x > RX[1] || y < RY[0] || y > RY[1]) continue;
+      if (BIG.some((q) => x > q[0] && x < q[2] && y > q[1] && y < q[3]) || OB_CIRCLES.some((c) => Math.hypot(x - c[0], y - c[1]) < c[2] + 24)) continue;
+      if (bananas.some((b) => Math.hypot(b.x - x, b.y - y) < 110) || !clearWay(g.x, g.y, x, y)) continue;
+      return [x, y];
+    }
+    // not reachable in a straight line from where it is (the fountain, a building between): a leg across the square
+    // toward you instead — the reachable waypoint that brings it closest, still out of every banana's reach
+    let best = null, bd = Math.hypot(g.x - ctx.pos.x, g.y - ctx.pos.y) - 60;
+    for (const w of ROAM) {
+      const d = Math.hypot(w[0] - ctx.pos.x, w[1] - ctx.pos.y), dd = Math.hypot(w[0] - g.x, w[1] - g.y);
+      if (d < bd && dd > 40 && dd < 700 && nearestBanana(w[0], w[1]).d > 160 && clearWay(g.x, g.y, w[0], w[1])) { best = w; bd = d; }
+    }
+    return best;
   }
   function pickWay(g) {
+    if (Math.random() < SEEN) {   // 👀 near you: a lit lamp near you first (the hunt you get to watch), else the ring, else a leg toward it
+      const l = Math.random() < LAMP_HUNT ? wayNearLamp(g) : null;
+      if (l && Math.hypot(l[0] - ctx.pos.x, l[1] - ctx.pos.y) < NEAR_LAMP) return l;
+      const w = wayNearMe(g); if (w) return w;
+    }
     if (Math.random() < LAMP_HUNT) { const w = wayNearLamp(g); if (w) return w; }
     const can = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]); });
     const far = can.filter((w) => nearestBanana(w[0], w[1]).d > 160);
