@@ -185,6 +185,7 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       if (wordOf(s)) return { top: tipsTop, line: esc(wordOf(s)), kind: 'word' };
       if (s.nudge && COPY.nudge && COPY.nudge[s.at]) return { top: tipsTop, line: esc(COPY.nudge[s.at]), kind: 'nudge' };
       if (!s.turnedUp) return d ? { top: tipsTop, line: esc(d), kind: 'duty' } : null;
+      if (used >= cap && cap > 0 && COPY.tipsAll) return { top: tipsTop, line: esc(COPY.tipsAll), kind: 'wage' };   // the day's tips are all earned: shifts still count, say so
       return after ? { top: tipsTop, line: esc(after), kind: 'wage' } : null;
     }
     const top = countsFor(s);

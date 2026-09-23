@@ -783,8 +783,22 @@ async function prepareLine(printCanvas, product, selection) {
 export async function addToOrder(printCanvas, product = getProduct('sticker'), selection = null) {
   if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
   const { line, key, url } = await prepareLine(printCanvas, product, selection);
-  const c = await cartAddLine(line);
+  const c = await addMinted(line, product.shopifyVariantGid);
   return { ...c, key, url };
+}
+// ⚠️ A JUST-MINTED VARIANT CAN BE UNKNOWN TO THE STOREFRONT FOR A MOMENT (24 Sep 2026). GA4, 23 Sep: two of three custom
+// sticker orders died at the cart with "The merchandise with id … does not exist" — the worker had minted the per-order
+// product and published it, and the Storefront API had not caught up; the buyer read "that didn't work" (Trym: "the
+// checkout button didnt work for Custom Sticker"). So the cart is asked again after a beat, twice, and then the SHARED
+// variant goes in: the checkout shows the generic image rather than breaking — the same rule as a failed mint.
+const unknownMerch = (e) => /merchandise with id .* does not exist/i.test(String((e && e.message) || e));
+async function addMinted(line, shared) {
+  if (!shared || line.merchandiseId === shared) return cartAddLine(line);
+  for (const wait of [0, 1200, 2400]) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    try { return await cartAddLine(line); } catch (e) { if (!unknownMerch(e)) throw e; }
+  }
+  return cartAddLine({ ...line, merchandiseId: shared });
 }
 
 // Ask Shopify what the stored order really holds (checkout may have completed

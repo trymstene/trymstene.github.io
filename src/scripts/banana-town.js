@@ -303,6 +303,9 @@ function roomTrack(e, p) {
     const kind = p.kind === 'lamp' && unlocked('condo', 'lamps', rk) ? 'lamp' : (p.kind === 'litter' || p.kind === 'leaves') && unlocked('condo', 'litter', rk) ? 'litter' : '';
     if (kind) { work.seam.chore(kind); tell(kind); }
   }
+  // 👻 THE NIGHT SHIFT (the arcade's rank 5, 24 Sep 2026): the night manager's reach is the square after dark — a ghost caught
+  // there is one of Spinner's repairs, the town's best content turned into the arcade's work. Said once a day, like the lamps.
+  if (e === 'town_ghost' && p.caught && j.at === 'condo' && unlocked('condo', 'ghosts', rk)) { work.seam.chore('ghost'); tell('ghost'); }
   if (e === 'town_shift' && p.at === 'cafe' && p.step === 'out' && (p.cups | 0) >= KEYS_CUPS && j.at === 'cafe' && unlocked('cafe', 'keys', rk) && room && room.seam.problems) {
     const c = PROPS.cafe, cx = c.x + c.w / 2, cy = c.base;
     const near = room.seam.problems().filter((q) => q.type !== 'crows' && Math.hypot(q.x - cx, q.y - cy) < KEYS_REACH).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];

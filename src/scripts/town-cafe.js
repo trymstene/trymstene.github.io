@@ -374,6 +374,7 @@ export function mountCounter(host, opts = {}) {
     // ⚠️ the walk's door: nothing in tests/ has ever driven a canvas, and a rAF gauge cannot be
     // thumbed by Playwright at a real millisecond. These let it press at an exact instant.
     seam: {
+      finish: (g) => { if (!cup) return false; const done = cup; done.done = true; done.grade = g | 0; sleep(); cup = null; if (opts.onCup) opts.onCup(done); return true; },   // QA: the cup made at a chosen grade
       // ⚠️ the class too, or the bench and every walk show a pour with no stream while a real thumb shows one
       press: (t) => { const r = cup ? press(cup, t) : null; box.classList.toggle('is-pouring', !!(cup && cup.held)); if (r) step(r); return r; },   // ⚠️ a pour's press STARTS a hold and grades nothing: stepping on null would log a phantom wrong
       release: (t) => { const r = cup ? release(cup, t) : null; box.classList.remove('is-pouring'); if (r) step(r); return r; },
@@ -486,6 +487,7 @@ export function bootTownCafe(ctx, cfg0) {
   let lastBest = '';   // which drink the last right cup was, for the receipt to name
   let grades = [], xpGot = 0;   // 🪜 the shift's cups by grade, reported once at clock-out, and the XP they came to
   let bigSaid = false, bigNext = null, jug = 0, jugSaid = false, specialSaid = false, specialNext = null;   // 🍋 the first big glass of a shift is announced, the rest are not; a walk may order the next one
+  let saidGrade = {}, tipsAllSaid = false;   // 🗣 the first good and first spot-on cup of a shift speak; the day's last tip is said once
   // ☕ THE RUSH (the café's rank 2, 23 Sep 2026; the ladder's slice 3). Once a day, a little way into a shift, the customers
   // stop leaving gaps: RUSH_N come one straight after another, and serving every one of them is a bonus on top of the
   // cups (jobs.js XP.cafe.rush). ⚠️ NOT "THREE AT ONCE", which the plan said: the rope holds two because a third customer
@@ -657,7 +659,8 @@ export function bootTownCafe(ctx, cfg0) {
     if (c.fromJug) { jug = Math.max(0, jug - 1); if (tray.jugs) tray.jugs(jug); }
     const row = c.row, i = line.indexOf(row);
     // 🪜 a tip only while today's cap has room: past it the cup still counts — for its work XP — and floats nothing
-    const n = Math.min(tipFor(c.grade) * (c.big ? 2 : 1) + (c.special && c.grade ? cfg.special.tip : 0), Math.max(0, left() - tips));   // 🍋 a big glass: twice the tip; ☕ a special: a little more
+    const full = tipFor(c.grade) * (c.big ? 2 : 1) + (c.special && c.grade ? cfg.special.tip : 0);   // 🍋 a big glass: twice the tip; ☕ a special: a little more
+    const n = Math.min(full, Math.max(0, left() - tips));
     tips += n; served++; grades.push(c.grade | 0);
     if (c.big) grades.push(c.grade | 0);   // …and two glasses' worth of work XP
     // 🪙 THE TIP IS SEEN THE MOMENT IT IS EARNED (Trym, 21 Sep: "its not very obvious how i make tips while
@@ -668,8 +671,14 @@ export function bootTownCafe(ctx, cfg0) {
     if (float && m && n > 0) float(m.x, m.y - 96, '+' + n);
     if (tray && tray.tips) tray.tips(tips);
     if (c.grade === 2) { best++; lastBest = c.drink; }
-    const deck = deckLineOf(WORDS, GRADES[c.grade], served);
-    if (deck) say(deck);
+    // 🗣 A LINE ONLY WHEN IT TELLS YOU SOMETHING (24 Sep 2026, design library §30). The +n over the hatch already says a good
+    // cup tipped, so a good cup and a spot-on cup each speak the FIRST time in a shift (what the grade was, and that the
+    // middle of the band tips more) and then leave it to the float. A wrong cup speaks every time: nothing floats, and the
+    // line is the only thing that says why. The day's last tip is said once, when it happens — the cups after it float
+    // nothing and must not be read as wrong.
+    const capped = full > n;
+    if (capped && !tipsAllSaid && WORDS.tipsAll) { tipsAllSaid = true; say(WORDS.tipsAll); }
+    else if (!capped && (c.grade === 0 || !saidGrade[c.grade])) { saidGrade[c.grade] = 1; const deck = deckLineOf(WORDS, GRADES[c.grade], served); if (deck) say(deck); }
     track('town_cup', { at: cfg.at, r: GRADES[c.grade], big: c.big ? 1 : 0, special: c.special ? 1 : 0, jug: c.fromJug ? 1 : 0 });
     if (row && row.rush && rush) { rush.got++; rushCheck(); }
     cup = null;
@@ -683,6 +692,7 @@ export function bootTownCafe(ctx, cfg0) {
   function clockIn(host) {
     if (on) return false;
     on = true;
+    saidGrade = {}; tipsAllSaid = false;
     served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0; grades = []; xpGot = 0; bigSaid = false; rush = null; rushXp = 0; jug = 0; jugSaid = false; specialSaid = false;
     standIn();
     if (!tray) tray = mountCounter(host || world.parentElement, { onCup, deck: cfg.deck, label: (k) => (WORDS.go || {})[k] || '', idle: () => WORDS.idle || '', leave: WORDS.leave || '', onLeave: () => clockOut() });
@@ -701,7 +711,6 @@ export function bootTownCafe(ctx, cfg0) {
     cup = null;
     stepOut();
     if (tray) { tray.idle(''); tray.hide(); }
-    if (WORDS.off) say(WORDS.off);
     track('town_shift', { at: cfg.at, step: 'out', cups: served });
     // ⭐ THE TILL. Paid ONCE, at the end, through the only faucet the server knows — and `pay` reads
     // what today's cap still allows BEFORE it hands anything over, so the counter stops paying rather
@@ -754,17 +763,13 @@ export function bootTownCafe(ctx, cfg0) {
     const line = paid > 0
       ? (w.take || '').replace('{n}', String(paid))
       : served > 0 ? (w.capped || w.none || '') : (w.none || '');
-    // 🧾 AND IT CARRIES EVIDENCE THAT WORK HAPPENED. The card used to show a number and a mood and
-    // nothing else: `served` and `best` were tracked, passed to pay() for Pulse, and never shown. One
-    // cup made right names itself, which is also the only place the three drinks' names are ever read.
-    const drink = best > 0 ? (WORDS.drinks || {})[lastBest] || '' : '';
-    const good = drink && w.best ? w.best.replace('{drink}', drink) : '';
+    // 🧾 THE RECEIPT SAYS THE RESULT AND NOTHING ELSE (24 Sep 2026, the copy review): the take (or why there is none), the work
+    // XP and its bar. It used to add a line of scenery and a drink's name the ticket never shows — and the shift's end was
+    // said twice, a toast as the receipt opened. The receipt IS the end of the shift.
     openCard('<div class="tw-cup__till">'
       + '<h2>' + esc(w.title) + '</h2>'
       + (line ? '<p class="tw-cup__take">' + esc(line) + '</p>' : '')
-      + (good ? '<p class="tw-cup__best">' + esc(good) + '</p>' : '')
       + ladderHtml(w)
-      + (w.line ? '<p class="tw-card__sub">' + esc(w.line) + '</p>' : '')
       + (w.back ? '<button class="tw-cta" id="twTillX" type="button"><span class="tw-cta__verb">' + esc(w.back) + '</span></button>' : '')
       + '</div>');
     const b = document.getElementById('twTillX');

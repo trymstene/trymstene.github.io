@@ -51,7 +51,7 @@ export function bootTownShop(ctx) {
           + '<button type="button" data-town-buy="' + esc(id) + '" data-price="' + price + '" data-where="' + esc(where) + '"' + (can ? '' : ' disabled') + '>buy</button></div>';
       }).join('');
     }
-    function wireBuys(soldLines) {
+    function wireBuys(soldLines, w) {
       cardBody.querySelectorAll('[data-town-buy]').forEach((b) => b.addEventListener('click', () => {
         const id = b.dataset.townBuy, price = +b.dataset.price, d = DEX[id]; if (!d) return;
         if (!canHold()) return;
@@ -61,7 +61,8 @@ export function bootTownShop(ctx) {
         if (hud && hud.refresh) hud.refresh();
         b.disabled = true;
         const line = fill(one(soldLines, price + id.length), d.name.toLowerCase());
-        if (line) say(line);
+        const where = (w && (mins ? w.byVan : w.inShed)) || '';   // and where it went: the shed now, or the morning van
+        if (line) say(where ? line + ' ' + where : line);
         track('town_buy', { id, price, where: b.dataset.where });
         // 🛍 the rest of the shelf re-prices against what is left in the purse
         cardBody.querySelectorAll('[data-town-buy]').forEach((o) => { if (!o.disabled && +o.dataset.price > coinsNow()) o.disabled = true; });
@@ -70,10 +71,10 @@ export function bootTownShop(ctx) {
     function storeCard() {
       const ids = shelfFor();
       const w = COPY.store || {};
-      openCard('<h2>The General Store</h2>'
+      openCard((w.title ? '<h2>' + esc(w.title) + '</h2>' : '')
         + (ids ? (w.greet ? '<p class="tw-card__sub">' + esc(fill(w.greet)) + '</p>' : '') + '<div class="tw-store">' + rows(ids, 1, 'store') + '</div>'
           : (w.shut ? '<p class="tw-card__sub">' + esc(fill(w.shut)) + '</p>' : '<p class="tw-card__sub"></p>')));
-      if (ids) wireBuys(w.sold);
+      if (ids) wireBuys(w.sold, w);
       // 🚪 THE SHELF IS ON THE COUNTER INSIDE (Trym, 23 Sep 2026: "you can walk inside that store before anything
       // happens"). A tap on the shopfront walks you in (banana-town.js openFor); this card is the till's, so it carries no
       // way inside. It used to open at the door with a "Step inside" row under the goods (the old "a room is a gain,

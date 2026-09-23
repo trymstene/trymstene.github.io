@@ -578,6 +578,15 @@ console.log('\n23. 📜 the top rank’s memento: owed at the promotion, handed 
   ok('and a workplace you never topped gives nothing', v.given === null, v);
 }
 
+console.log('\n24. 👻 the night shift: a ghost caught is one of the arcade’s repairs');
+{
+  CLOCK += 7 * DAY;
+  const P = as(await kept('night@example.com'));
+  await P('/job/take', { at: 'condo' });
+  const v = await P('/job/chore', { kind: 'ghost' });
+  ok('⭐ on the week’s sheet as a repair, and twenty XP on top of the day’s ten', v.job.duties.find((r) => r.kind === 'fix').done === 1 && v.job.lad.xp === 30, v.job);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

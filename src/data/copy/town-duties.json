@@ -8,17 +8,17 @@
     "serve": "customers served"
   },
   "duty": {
-    "cafe": "clock in at the serving window and make cups; they lack initiative.",
-    "stand": "step behind Fig Jr.’s stand and pour lemonade."
+    "cafe": "go to the Coffee Cup and make coffee for tips.",
+    "stand": "go to Fig Jr.’s stand and pour lemonade for tips."
   },
-  "wage": "the week’s wage is {coins}; payday is Monday, {days} days away.",
-  "done": "the week’s work is done; the remaining days are yours to misplace.",
+  "wage": "wage so far {coins}; days to payday: {days}.",
+  "done": "the week’s work is done: a full wage. Extra work still earns XP.",
   "nudge": {
-    "condo": "Spinner’s letter asks you to come to the arcade; the floor is not self-sweeping.",
-    "store": "Pip’s letter asks you to come to the store; the crate remains deeply patient.",
-    "post": "Stamp wrote asking if you’re coming in; the counter pile is waiting.",
-    "cafe": "Bean’s letter asks you to come and pour; the counter is quiet without you.",
-    "stand": "Fig Jr. has written about low staffing; the stand needs a shift from you."
+    "condo": "Spinner asks you in this week: two empty weeks in a row and the job is gone.",
+    "store": "Pip asks you in this week: two empty weeks in a row and the job is gone.",
+    "post": "Stamp asks you in this week: two empty weeks in a row and the job is gone.",
+    "cafe": "Bean asks you in this week: two empty weeks in a row and the job is gone.",
+    "stand": "Fig Jr. asks you in this week: two empty weeks in a row and the job is gone."
   },
   "fired": {
     "condo": "Spinner has let you go; ask again and you start from the first rank.",
@@ -27,16 +27,17 @@
     "cafe": "Bean has let you go; ask again and you start from the first cup.",
     "stand": "Fig Jr. has let you go; reapply and you start again at entry level."
   },
-  "cafeDone": "tips gather on the tray as you pour; paid when you step away.",
-  "standDone": "pour lemonade; tray tips are paid when you step away.",
-  "payslip": "go home and open the payslip waiting in your letterbox; it has news.",
+  "cafeDone": "tips add up on the tray as you pour; paid when you leave work.",
+  "standDone": "tips add up on the tray glass by glass; paid when you leave work.",
+  "payslip": "go home and open your payslip in your homestead mailbox.",
   "tips": "tips today",
   "call": {
-    "sweep": "Spinner calls: litter on the arcade floor, open until midnight.",
-    "fix": "Spinner calls: a cabinet has gone dark, open until midnight.",
-    "restock": "Pip calls: a delivery waits to be shelved, open until midnight.",
-    "serve": "Pip calls: customers are waiting at the till, open until midnight.",
-    "deliver": "Pip calls: a parcel waits at the store to be delivered, open until midnight."
+    "sweep": "Spinner calls: litter on the arcade floor, open for the rest of the day.",
+    "fix": "Spinner calls: a cabinet has gone dark, open for the rest of the day.",
+    "restock": "Pip calls: crates wait for the empty shelves, open for the rest of the day.",
+    "serve": "Pip calls: customers need serving at the till, open for the rest of the day.",
+    "deliver": "Pip calls: a parcel at the store to deliver, open for the rest of the day."
   },
-  "answered": "every call today is answered; nothing more is wanted until tomorrow."
+  "answered": "every call today is answered; nothing more is wanted until tomorrow.",
+  "tipsAll": "today’s tips are all earned; shifts still earn work XP."
 }

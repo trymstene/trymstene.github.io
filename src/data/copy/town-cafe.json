@@ -1,18 +1,15 @@
 {
   "leave": "Leave work",
-  "on": "Apron on, tray up; the counter has its banana.",
-  "off": "The counter goes quiet, with warm cups still on the shelf.",
+  "on": "Behind the counter. Make each cup the ticket shows.",
   "receipt": {
-    "title": "Counter Take",
+    "title": "Coffee Cup receipt",
     "take": "Tips gathered: {n} coins.",
-    "line": "The propeller turns above the square, and one cup is still warm.",
-    "none": "The counter kept its company; the cups stayed stacked and dry.",
-    "capped": "The cups went down the lane; today’s tips have already gone home.",
-    "best": "A warm {drink} crosses the rope.",
+    "none": "No cups went out this shift, so no tips.",
+    "capped": "Cups went out, but today’s tips were all earned. They still count for work XP.",
     "xp": "Work XP earned: {n}.",
-    "back": "Return"
+    "back": "Close"
   },
-  "idle": "The rope is clear; the counter is open.",
+  "idle": "Nobody is waiting yet. The counter is open.",
   "front": "Bean’s coffee kiosk. Ask Bean for a job to serve coffee here for tips.",
   "go": {
     "grind": "Tap to grind",
@@ -22,33 +19,29 @@
   },
   "cup": {
     "perfect": [
-      "A neat cup crosses the rope without a wobble.",
-      "The foam sits high, pleased with its little roof.",
-      "That cup leaves warm hands around it.",
-      "The grounds settle into a tidy little weather map."
+      "Spot on at every step. That cup tips more.",
+      "Every step in the middle of the green band: a bigger tip.",
+      "Spot on. The middle of the green band tips best.",
+      "Right in the middle, every step. A bigger tip for it."
     ],
     "fine": [
-      "A warm cup heads down the lane.",
-      "The milk finds its place and stays there.",
-      "The cup goes out with a sensible amount of steam.",
-      "One ordinary good cup joins the square."
+      "A good cup. Stop in the middle of the green band for a bigger tip.",
+      "Served, with a small tip. The middle of the green band tips more.",
+      "A good cup. Dead centre on each green band earns more.",
+      "Good enough for a small tip. Aim for the middle of the green band."
     ],
     "wrong": [
-      "That cup cools beside the grinder.",
-      "The order stays at the rope a moment longer.",
-      "The foam slumps quietly into the cup.",
-      "A cup and its order part ways by the lane."
+      "A step missed the green band. They take it, but leave no tip.",
+      "Not quite right. They take the cup, but leave no tip.",
+      "That one missed the green band, so no tip for it.",
+      "Outside the green band: they take it without a tip."
     ]
   },
-  "left": "Somebody turns from the rope, leaving the lane a little emptier.",
-  "drinks": {
-    "short": "Little Wake",
-    "tall": "Square Cup",
-    "double": "Propeller Dark"
-  },
+  "left": "Somebody got tired of waiting and walked off without a cup.",
   "rush": {
-    "on": "Rush hour: the customers keep coming, one after another.",
-    "done": "Every one of them served. Bean looks up from the grinder and nods."
+    "on": "A rush: customers back to back. Serve every one for extra work XP.",
+    "done": "Every one served: extra work XP. Bean nods from the grinder."
   },
-  "special": "A special order: a syrup step on top, and a better tip for it."
+  "special": "A special order: a syrup step on top, and a better tip for it.",
+  "tipsAll": "That’s today’s tips all earned. Cups still count for work XP."
 }

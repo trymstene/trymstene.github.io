@@ -56,3 +56,11 @@ No scenery, no metaphor, no riddle, no weather on the awning. A newcomer reads i
 and knows what the building is for. Warmth is welcome in the choice of words, never at the cost of
 the two answers. This rule outranks "six words when six will do": two plain sentences beat one
 pretty one.
+
+## A game line says what happened (24 Sep 2026)
+
+The town's own toasts and notes — a cup made, a round sorted, a week reviewed — are not scenery either. Each says
+what just happened and what it did for the player, in the names the screen uses ("the green band", "the ticket",
+"the pigeonhole"), never the code's ("the rope", "the lane"). A rule the player is judged by is said plainly before it
+bites ("two empty weeks in a row and the job is gone"): the mystery rule is for timetables and odds, not for rules.
+When to say a line at all is docs/design-library.md §30.

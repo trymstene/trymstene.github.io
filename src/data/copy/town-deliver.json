@@ -16,7 +16,7 @@
   "deliveredOne": "Delivered to {to}. The other parcel is for {next}.",
   "round": {
     "given": "The satchel: letters for {to}, {to2} and {to3}. The markers are over their doors.",
-    "deliveredOne": "A letter for {to}. {n} left in the satchel.",
+    "deliveredOne": "Delivered to {to}. {n} left in the satchel.",
     "delivered": "The satchel is empty. That is the round done."
   },
   "bus": {

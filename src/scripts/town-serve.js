@@ -56,7 +56,7 @@ export function bootTownServe(ctx) {
     const leave = box.querySelector('.tw-cup__leave');
     leave.textContent = COPY.leave || '';
     leave.hidden = !COPY.leave;
-    leave.addEventListener('click', (e) => { e.stopPropagation(); paused = true; gone(0, 'leave'); });
+    leave.addEventListener('click', (e) => { e.stopPropagation(); paused = true; gone(0, 'leave'); if (COPY.stopped) say(COPY.stopped); });   // the customers stop until you come back in: said, not discovered
     const imgs = box.querySelectorAll('.tw-serve__want img');
     return { box, img: imgs[0], img2: imgs[1], name: box.querySelector('b'), fill: box.querySelector('.tw-cup__fill'), note: box.querySelector('.tw-cup__note') };
   }

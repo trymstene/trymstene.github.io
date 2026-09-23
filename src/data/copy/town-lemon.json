@@ -1,17 +1,14 @@
 {
   "leave": "Leave work",
-  "on": "The lemonade table opens for the afternoon beneath its striped awning.",
-  "off": "The jug rests by the lane, and the striped awning keeps its shade.",
-  "idle": "The lemonade table is open; the lane is quiet.",
+  "on": "Behind the stand. Make each glass the ticket shows.",
+  "idle": "Nobody is waiting yet. The stand is open.",
   "front": "Fig Jr.’s lemonade stand. Ask Fig Jr. for a job and you can pour lemonade here for tips.",
-  "left": "Somebody turns from the table, leaving the awning to its shade.",
+  "left": "Somebody got tired of waiting and walked off without a glass.",
   "receipt": {
-    "title": "Lemonade Tally",
+    "title": "Lemonade stand receipt",
     "take": "Tips collected: {n} coins.",
-    "line": "The jug waits at the table while Hall Street keeps its sun.",
-    "none": "The jug kept cool company beneath the striped awning.",
-    "capped": "Glasses went down the lane; the day’s tips are already spent.",
-    "best": "A {drink} glass went down the lane with ice clicking.",
+    "none": "No glasses went out this shift, so no tips.",
+    "capped": "Glasses went out, but today’s tips were all earned. They still count for work XP.",
     "xp": "Work XP earned: {n}.",
     "back": "Close"
   },
@@ -23,33 +20,29 @@
   },
   "cup": {
     "perfect": [
-      "Ice ticks in a bright glass as it goes down the lane.",
-      "A lemon slice catches the sun above the glass.",
-      "The straw leaves with a glass cold enough for Hall Street.",
-      "Someone takes the glass before the ice can settle."
+      "Spot on at every step. That glass tips more.",
+      "Every step in the middle of the green band: a bigger tip.",
+      "Spot on. The middle of the green band tips best.",
+      "Right in the middle, every step. A bigger tip for it."
     ],
     "fine": [
-      "The glass goes out cool, with a lemon doing its best.",
-      "The ice reaches the lane before it can melt.",
-      "A straw leans cheerfully from the glass.",
-      "The glass heads down the lane with its ice still arguing."
+      "A good glass. Stop in the middle of the green band for a bigger tip.",
+      "Served, with a small tip. The middle of the green band tips more.",
+      "A good glass. Dead centre on each green band earns more.",
+      "Good enough for a small tip. Aim for the middle of the green band."
     ],
     "wrong": [
-      "The glass stays on the table, lemon and ice in a muddle.",
-      "No glass goes down the lane; the lemons keep the secret.",
-      "The ice settles back into a glass nobody takes.",
-      "This glass remains at the table, bright but unclaimed."
+      "A step missed the green band. They take it, but leave no tip.",
+      "Not quite right. They take the glass, but leave no tip.",
+      "That one missed the green band, so no tip for it.",
+      "Outside the green band: they take it without a tip."
     ]
-  },
-  "drinks": {
-    "still": "Plain Squeeze",
-    "minty": "Mint Squeeze",
-    "pink": "Pink Squeeze"
   },
   "big": "A big glass. Hold the squeeze a little longer for this one.",
   "jug": {
     "offer": "Nobody waiting: fill the jug, and the next glasses skip the squeeze.",
     "full": "The jug is full. The next three glasses skip the squeeze.",
     "spilt": "The jug spills over. Try again in the next quiet moment."
-  }
+  },
+  "tipsAll": "That’s today’s tips all earned. Glasses still count for work XP."
 }

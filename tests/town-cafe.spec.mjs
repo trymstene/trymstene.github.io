@@ -862,3 +862,37 @@ test('the café answers at its serving window, and nowhere else on the kiosk', a
   expect(isCafe(hits.roof), 'a tap on the roof never opens the counter: ' + JSON.stringify(hits.roof)).toBe(false);
   expect(isCafe(hits.side), '…nor does a tap beside the hatch: ' + JSON.stringify(hits.side)).toBe(false);
 });
+
+// 🗣 A LINE ONLY WHEN IT TELLS YOU SOMETHING (24 Sep 2026, design library §30): the first good and the first spot-on cup of a
+// shift speak, the ones after leave it to the float; a wrong cup speaks every time (nothing floats, the line says why); the
+// cup that meets the day's tip limit says so once, and the capped cups after it say nothing.
+test('the counter speaks at the moment a cup tells you something, and is quiet after', async ({ page }) => {
+  const errors = await shift(page);
+  const said = () => page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
+  const clear = () => page.evaluate(() => { document.getElementById('twToast').textContent = ''; });
+  const cup = async (g) => {
+    await page.evaluate(() => { const c = window.__town.room.cafe(); c.call(); c.arrive(); c.serve(); });
+    await clear();
+    return page.evaluate((x) => window.__town.room.cafe().gest().finish(x), g);
+  };
+  expect(await cup(2), 'a cup to make').toBe(true);
+  expect(COPY.cup.perfect, 'the first spot-on cup speaks').toContain(await said());
+  await cup(2);
+  expect(await said(), 'the second is left to the float').toBe('');
+  await cup(1);
+  expect(COPY.cup.fine, 'the first good cup speaks, and says the middle tips more').toContain(await said());
+  await cup(1);
+  expect(await said(), 'the second good cup does not').toBe('');
+  await cup(0);
+  expect(COPY.cup.wrong, 'a wrong cup speaks').toContain(await said());
+  await cup(0);
+  expect(COPY.cup.wrong, 'every time: nothing floats, and the line is the only thing that says why').toContain(await said());
+  // the day's tips run out: said once, at the cup that met the limit
+  await page.evaluate(() => { const c = window.__town.room.cafe(); c.tip(c.left() - c.take().tips - 1, 2); });
+  await cup(2);
+  expect(await said(), 'the cup that meets the limit says the day’s tips are all earned').toBe(COPY.tipsAll);
+  await cup(2);
+  expect(await said(), 'and the capped cups after it say nothing').toBe('');
+  await page.screenshot({ path: 'test-results/cafe-said.png' });
+  expect(errors).toEqual([]);
+});

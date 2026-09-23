@@ -1225,8 +1225,10 @@ Walks: tests/town-unlocks.spec.mjs (all eleven unlocks so far), tests/jobs-maths
   staff card at the top rank names it; the hire says whose reference counted.
 - **The top: a memento.** Promoted to a workplace's top rank, the boss gives a piece for your homestead from the pack's own
   art (`jobs.js MEMENTO`: an apple crate, a coffee counter, an arcade cabinet, a display cabinet, a grandfather clock) —
-  into the shed once (`tw-memento-v1`), said a beat after the rank's new thing; with the shed full it waits, and is given
-  on a later visit.
+  into the shed once, said a beat after the rank's new thing; with the shed full it waits, and is given on a later visit.
+  ⚠️ Whether it was given is the PASS WORKER's record (24 Sep 2026, the code review): a shed piece can be sold back, so a
+  device-local "given" let a second device or a cleared browser take it again. Owed (`lad.mem` 1) at the promotion to the
+  top, handed over once by `/job/memento` (2), and only its `given` puts the piece in the shed.
 
 Walks: tests/town-unlocks.spec.mjs; worker-pass jobs.test.mjs §19–20.
 
@@ -1246,3 +1248,21 @@ reaches for two months. Re-scoped to the ladder's own pattern (the counter gets 
 
 The store's parcels, the round and the mail bag share one carry engine (town-deliver.js RUNS: parcel, round, bus). Walks:
 tests/town-unlocks.spec.mjs.
+
+## 24. The arcade's top, the review's fairness, and the words (24 Sep 2026)
+
+- **Arcade rank 5 (the top) — the night shift.** The night manager's reach is the square after dark: a ghost caught there
+  (walked into) is one of Spinner's repairs (`COUNTS_AS.ghost = 'fix'`, 20 work XP), said once a day like the lamps. The
+  jobs now touch the town's best content. Every rank from the second at every workplace now gives a new thing to do.
+- **The weekly review judges only a week that could be passed** (the code review): never a week before
+  `REVIEW_FROM` (2026-W40 — the arcade's chores were only reported from 22 Sep and the store's week changed on 23 Sep), and
+  never a week you joined after its Monday. The store's weeks up to W39 pay days turned up as customers served, so a week of
+  turning up under the old duties still pays what it earned.
+- **A promotion overtakes a waiting word**: a warning still to be said is cleared, not said after the good news.
+- **The words** (the copy review, design library §30.1): a cup speaks when it tells you something; the day's last tip is
+  said once; receipts say the result; the nudge says the stake (two empty weeks and the job is gone); the first line after
+  HIRED names the button that starts the work. Ranks 3 and 4 renamed where the title named the wrong thing: the store's
+  rank 3 is the Delivery clerk, the post office's rank 4 the Registry clerk.
+
+Walks: tests/town-unlocks.spec.mjs (the night shift), tests/town-cafe.spec.mjs (the counter speaks at its moment);
+worker-pass jobs.test.mjs §21–24.

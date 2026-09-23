@@ -31,8 +31,8 @@
     "start": "Start sorting",
     "on": "A tray of post is on the counter, with the pigeonholes open behind it.",
     "off": "The tray is put away. The counter is clear again.",
-    "far": "The counter is just there, waiting.",
-    "hint": "Each card belongs in the hole with its matching stamp.",
+    "far": "Walk right up to the post office counter, then try again.",
+    "hint": "Each card goes in the pigeonhole with the same picture.",
     "stamp": "SORTED",
     "holes": {
       "park": "Park",
@@ -44,10 +44,10 @@
     "receipt": {
       "title": "Sorting Receipt",
       "take": "{n} of {of} cards went straight to their holes.",
-      "counted": "Stamp has this round on the week’s sheet.",
+      "counted": "This round counts toward the week’s sorting.",
       "xp": "Work XP earned: {n}.",
-      "short": "This round is not on the sheet. The counter will be ready again.",
-      "back": "Put away"
+      "short": "Under half the cards reached the right hole, so this round does not count.",
+      "back": "Close"
     },
     "parcel": "A parcel: sort it, then tap it on the scale.",
     "registered": "A red seal: registered post. Sort it at once."

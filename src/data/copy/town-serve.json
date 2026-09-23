@@ -10,5 +10,6 @@
     "perfect": "Handed over in a flash. The bell rings them out."
   },
   "late": "The customer gives up waiting and leaves.",
-  "leave": "Not now"
+  "leave": "Stop serving",
+  "stopped": "No more customers until you step out and back in."
 }

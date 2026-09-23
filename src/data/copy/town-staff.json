@@ -28,7 +28,7 @@
     "store": [
       "Shop assistant",
       "Counter clerk",
-      "Window dresser",
+      "Delivery clerk",
       "Stock buyer",
       "Deputy storekeeper"
     ],
@@ -36,7 +36,7 @@
       "Post sorter",
       "Senior sorter",
       "Parcel clerk",
-      "Postal clerk",
+      "Registry clerk",
       "Letter carrier",
       "Deputy postmaster"
     ]
@@ -68,7 +68,7 @@
   "tipsCap": "Tips stop at {cap} coins a day.",
   "week": "This week",
   "wage": "Wage so far",
-  "payday": "Payday is Monday, {days} days away.",
+  "payday": "Days to payday: {days}.",
   "calls": "Today’s calls",
   "call": {
     "sweep": "Litter on the arcade floor",
@@ -77,7 +77,7 @@
     "serve": "Customers at the till",
     "deliver": "A parcel to deliver"
   },
-  "until": "Calls stay open until midnight.",
+  "until": "Calls stay open for the rest of the day.",
   "go": "Go to work",
   "answer": "Answer the calls",
   "quiet": "Nothing needs you right now.",
@@ -103,7 +103,7 @@
     "stamp": "Last week weighed light. Another like it and you are {title} again. Noted."
   },
   "demoted": {
-    "bean": "The cups have spoken. You are {title} again, and it can come back.",
+    "bean": "The cups have spoken. You are {title} again; a better week wins the rank back.",
     "figjr": "Restructuring. Effective today, you are {title}. Upward remains open.",
     "spinner": "Not every show is a hit. You are {title} again; the stage is still yours.",
     "pip": "You are {title} again. Your old badge waits on the shelf until you earn it back.",
@@ -112,7 +112,7 @@
   "warnCard": "Another poor week here costs you a rank.",
   "last": {
     "full": "Last week was a full week: {xp} work XP extra.",
-    "poor": "Last week was poor: {xp} work XP taken back."
+    "poor": "Under half last week’s work done: {xp} work XP taken back."
   },
   "unlock": {
     "stand": {
@@ -120,33 +120,35 @@
       "jug": "The jug: fill it when nobody is waiting, and the next glasses skip the squeeze."
     },
     "cafe": {
-      "rush": "Rush hours: customers one after another, and a bonus for serving every one.",
+      "rush": "A rush: customers one after another, and extra work XP for serving every one.",
       "special": "Special orders: a syrup step on top of some cups, and a better tip for them.",
       "keys": "Keys to the café: after a good shift you tidy the square nearest the café."
     },
     "condo": {
-      "streak": "Streaks: a perfect repair lights its cabinet gold for the day.",
+      "streak": "Gold cabinets: a perfect repair glows gold all day, and runs are counted.",
       "lamps": "The square’s lamps: one you put right counts as a repair for Spinner.",
-      "litter": "The square’s litter: what you pick up out there counts as sweeping for Spinner."
+      "litter": "The square’s litter: what you pick up out there counts as sweeping for Spinner.",
+      "ghosts": "The night shift: a ghost you catch on the square counts as a repair for Spinner."
     },
     "store": {
       "basket": "Baskets: some customers want two things at once.",
       "deliver": "Home delivery: Pip sends a parcel across the square to a resident’s door.",
       "second": "Two parcels on a delivery day, for two different doors across the square.",
-      "keys": "Keyholder: Pip’s shelf sells to you at the staff price."
+      "keys": "The staff price: Pip’s shelf sells to you for less."
     },
     "post": {
-      "fifth": "The town’s own postmark, and a faster pile to sort.",
+      "fifth": "A fifth pigeonhole for Banana Town’s own post, and the cards come faster.",
       "parcel": "Parcels: sort them, then weigh them on the post office scale.",
       "registered": "Registered post: a red seal. Sorted at once it counts double; late, not at all.",
-      "round": "The round: after a good round of sorting, three letters to carry to their doors.",
+      "round": "The satchel: when a round of sorting counts, carry three letters to their doors.",
       "bus": "The morning post: the mail bus leaves a bag at the bus stop for you to bring in."
     }
   },
   "told": {
     "lamp": "Spinner counts that lamp as one of your repairs.",
     "litter": "Spinner counts litter off the square as your sweeping.",
-    "tidy": "You lock up and tidy the square by the café. The town looks better for it."
+    "tidy": "You lock up and tidy the square by the café. The town looks better for it.",
+    "ghost": "Spinner counts that ghost as one of your repairs."
   },
   "ref": {
     "cafe": "Fig Jr.’s reference counts: the Coffee Cup starts you at its second rank.",

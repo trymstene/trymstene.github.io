@@ -688,3 +688,25 @@ test('🚌 the post office’s rank 6: in the town’s morning the mail bus leav
   expect(await page.evaluate(() => window.__town.work.ladder().xp), 'the day’s ten and the bag’s thirty').toBe(5300 + DAY_XP + xpFor('post', 'bag'));
   expect(errs).toEqual([]);
 });
+
+test('👻 the arcade’s rank 5: a ghost caught on the square at night counts as one of Spinner’s repairs, said once', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await town(page);
+  await hire(page, 'condo', 5, 3000);
+  await page.waitForFunction(() => !!window.__town.work.words(), null, { timeout: 10000 });
+  await page.evaluate(() => window.__town.life.set(21));   // the town's own night: the ghosts are out
+  await page.waitForFunction(() => window.__town.room.ghosts().some((g) => !g.hidden), null, { timeout: 20000 });
+  const before = await page.evaluate(() => window.__town.work.ladder().xp);
+  // walk into a ghost: stand where it is, frame after frame, until it is caught
+  let caught = false;
+  for (let i = 0; i < 120 && !caught; i++) {
+    await page.evaluate(() => { const t = window.__town, g = t.room.ghosts().find((x) => !x.hidden); if (g) { t.pos.x = t.tgt.x = g.x; t.pos.y = t.tgt.y = g.y; } });
+    await page.waitForTimeout(100);
+    caught = (await events(page, 'town_ghost')).some((p) => p && p.caught);
+  }
+  expect(caught, 'a ghost walked into is caught').toBe(true);
+  await toast(page, STAFF.told.ghost);
+  expect(await page.evaluate(() => window.__town.work.ladder().xp), 'the day’s ten and the ghost’s twenty').toBe(before + DAY_XP + xpFor('condo', 'ghost'));
+  await page.screenshot({ path: 'test-results/unlock-night-shift.png' });
+  expect(errs).toEqual([]);
+});

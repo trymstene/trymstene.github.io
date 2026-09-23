@@ -893,3 +893,24 @@ of it."* The rules the jobs' unlocks settled on, for every new mechanic in the w
   business, not the line's.
 - **Pictures before words on a ticket.** A bigger glass is bigger pictures; a special order is one more picture (the
   syrup); a basket is two pictures. The words say only what a picture cannot: the gesture on the button, the one-time line.
+
+### §30.1 The counter's cups, the day's last tip, and the stakes (24 Sep 2026, the copy review)
+
+The same rule, applied to what the counters said on every cup (the review read every line against what the screen does):
+
+- **A line for a cup only when it tells you something.** The +n over the hatch already says a good cup tipped, so the
+  first good cup and the first spot-on cup of a shift speak — what the grade was, and that the middle of the GREEN BAND
+  tips more — and then the float carries it. A WRONG cup speaks every time: nothing floats, and the line is the only thing
+  that says why ("A step missed the green band. They take it, but leave no tip."). `town-cafe.js onCup`, walked in
+  `town-cafe.spec` "the counter speaks at the moment…".
+- **Name only what is on screen.** "The green band", "the ticket", "the pigeonhole with the same picture" — never the
+  code's names ("the rope", "the lane", "Hall Street"), never a drink's name the ticket never shows.
+- **The day's limit is said at the cup that meets it**, once (`tipsAll`), and the work note says it after
+  (`town-duties.json tipsAll`). Without it the cups after the limit floated nothing and read as wrong cups.
+- **A receipt says the result and nothing else.** The take (or why there is none), the work XP and its bar. The receipt IS
+  the end of the shift, so no toast says "shift over" as it opens. Every card closes with "Close".
+- **A consequence is said before it happens, not after.** The Thursday nudge says the stake — two empty weeks in a row
+  and the job is gone — because the sack must never arrive unannounced. "Under half last week's work done" says what
+  a poor week IS. A rule the player is judged by is not a mystery (voice.md's mystery rule is for timetables and odds).
+- **The first line after HIRED names the button that starts the work** ("Tap the Coffee Cup, then Go to work"), and a
+  button says what it does ("Stop serving", then a toast: no more customers until you step out and back in).
