@@ -1229,10 +1229,15 @@ export function bootTownLife(ctx) {
   }
   const REACH = { litter: 30, leaves: 30, bin: 60, dumpster: 64, shutter: 62, fountain: 72, graffiti: 56, crows: 74 };
   let autoAt = 0;
+  // 🚶 A PICKUP NEEDS A STEP (23 Sep 2026). The arrival point (1100,1230) is 28 px from street spot s19, inside litter's
+  // reach, so about one visit in twelve the seeded draw put rubbish there and it was fixed and paid as the page loaded —
+  // a chore nobody did (and a town-life walk that flaked on the same draw). Nothing is picked up until the banana has moved.
+  let still = [ctx.pos.x, ctx.pos.y];
   function autoPick(now) {
     if (now - autoAt < 120 || (ctx.inside && ctx.inside())) return;
     autoAt = now;
     const px = ctx.pos.x, py = ctx.pos.y;
+    if (still) { if (Math.hypot(px - still[0], py - still[1]) < 1) return; still = null; }
     for (const p of problems) { const r = REACH[p.type]; if (r && Math.hypot(p.x - px, (p.foot != null ? p.foot : p.y) - py) < r) { fix(p.id); return; } }
     for (const o of objectsNow()) if (Math.hypot(o.x - px, o.y - py) < 34) { dusk.takeObject(o); return; }
     const f = life.pickAt ? life.pickAt(px, py, 30) : null;
@@ -1421,6 +1426,7 @@ export function bootTownLife(ctx) {
     // ⚠️ the walk cannot assert a ghost into being while its chunk is still on the wire (the
     // shopReady precedent): await this first and the night is in hand.
     nightReady: () => loadDusk().then((d) => !!d),
+    litterAt: (x, y, kind, clear) => (TEST && dusk ? dusk.litterAt(x, y, kind, clear) : null),   // QA: one piece of rubbish exactly here (clear = sweep the rest first)
     objects: () => objectsNow().map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objectsNow().find((q) => q.def.id === id); if (o) dusk.takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,

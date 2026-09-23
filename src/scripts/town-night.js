@@ -138,6 +138,19 @@ export function bootTownNight(ctx) {
     if (lamp) { p.grab = LAMP_HIT.grab; p.tall = LAMP_HIT.tall; }
     problems().push(p); return p;
   }
+  // a piece of rubbish on the cobbles: a problem like any other, its own sprite, glowing
+  function drop(kind, x, y) {
+    const p = addProblem(rowOf('litter'), 'g' + (messN++), x, y, null, false);
+    p.sprite = sprite(kind, x, y); glowProblem(p); poof(x, y - 6);
+    return p;
+  }
+  // 🧪 the walk's door (?towntest only, through town-room's seam): sweep the cobbles clean, then put one piece exactly
+  // here — so a walk can ask the spacing rule about a bin bag it placed, not one a ghost happened to throw down
+  function litterAt(x, y, kind, clear) {
+    const ps = problems();
+    if (clear) for (let i = ps.length - 1; i >= 0; i--) { const q = ps[i]; if (q.type === 'litter' || q.type === 'leaves') { if (q.el) q.el.remove(); kill(q.sprite); ps.splice(i, 1); } }
+    return drop(kind || 'pile', x, y).id;
+  }
   function mischief(g, force) {
     if ((g.mess || 0) >= MESS_CAP) return null;   // every rest makes something, up to the cap (15 Sep: too slow to matter before)
     // the mess lands on the waypoint it rests at (every one measured in the open), never mid-way behind a bench
@@ -170,8 +183,7 @@ export function bootTownNight(ctx) {
         room = !litterRoom || litterRoom(x, y, kind);
       }
       if (!room) return null;   // nowhere to put it: this ghost simply does not litter this time
-      const p = addProblem(rowOf('litter'), 'g' + (messN++), x, y, null, false);
-      p.sprite = sprite(kind, x, y); glowProblem(p); poof(x, y - 6); did = 'litter';
+      drop(kind, x, y); did = 'litter';
     }
     g.mess = (g.mess || 0) + 1;
     // 👻 …AND THE TOWN PAYS FOR IT: a lamp out or a bin tipped is a point off the meter (town-room's
@@ -398,7 +410,7 @@ export function bootTownNight(ctx) {
   // and only read here, so it is set in rather than read out. The ghosts steer around whoever is
   // standing about, and that list is not this file's to keep.
   return {
-    ghostOf, stepGhosts, clearGhosts, mischief, spawnObject, takeObject, unhaunt,
+    ghostOf, stepGhosts, clearGhosts, mischief, litterAt, spawnObject, takeObject, unhaunt,
     nightBegins, nightEnds, spawnThroughNight, stepMeCurse, enterCurse, leaveCurse, omens,
     setBananas: (list) => { bananas = list; },
     // town-room's kill() used to splice this array itself; it cannot reach it any more

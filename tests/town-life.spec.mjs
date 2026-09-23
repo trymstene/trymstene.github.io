@@ -37,7 +37,19 @@ async function overview(page, name, clip) {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.waitForTimeout(250);
 }
+// 🕰 THE DRAW, PINNED ON REQUEST (23 Sep 2026). What the square seeds for a player — the day's problems, where rubbish
+// lies — is drawn from the owner id, the UTC day and the six-hour wave, and a fresh browser brings a fresh owner, so every
+// run of these walks sees a different town. Two walks flaked on that (the boot pickup, the rubbish probe). To prove a walk
+// does not depend on the draw, run it pinned: TOWN_CLOCK = a time (epoch ms or ISO) installs Playwright's clock there and
+// lets it run; TOWN_GID = an owner id. E.g. TOWN_CLOCK=2026-09-24T12:00:00Z TOWN_GID=0bd84937 put litter on s19, 28 px from
+// the arrival point, and boot picked it up before the step rule (town-room.js autoPick).
+async function pinned(page) {
+  const t = process.env.TOWN_CLOCK, g = process.env.TOWN_GID;
+  if (t) await page.clock.install({ time: /^\d+$/.test(t) ? +t : t });
+  if (g) await page.addInitScript((id) => { try { localStorage.setItem('world-gid', id); } catch (e) {} }, g);
+}
 async function town(page) {
+  await pinned(page);
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
   // the clock may be running a real night this minute: the walk asks for calm first
@@ -1300,6 +1312,35 @@ test('a shutter you fixed today is still open after a reload', async ({ page }) 
 // together IS what litter looks like. The spots themselves are derived from the street rectangles now,
 // thinned to 150px apart, so the seeded half cannot heap by construction — this proves it stays true
 // across a day of waves and a night of ghosts throwing things down.
+// 🚶 A PICKUP NEEDS A STEP (23 Sep 2026). The arrival point is 28 px from street spot s19, inside litter's reach, so on
+// about one draw in twelve the square picked up rubbish (and paid for it) as the page loaded — and the band walk above read
+// 44 where it expected 42. Nothing is picked up now until the banana has moved; the first step onto it picks it up.
+test('nothing is picked up until the banana takes a step; the step picks it up', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await pinned(page);
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  expect(await page.evaluate(() => window.__town.room.nightReady()), 'the night module (it drops rubbish)').toBe(true);
+  await page.evaluate(() => window.__town.room.curse('none'));
+  const at = await page.evaluate(() => [window.__town.pos.x, window.__town.pos.y]);
+  expect(at, 'the banana stands where the square receives it').toEqual([1100, 1230]);
+  // rubbish right beside the standing banana, well inside litter's 30 px reach
+  const id = await page.evaluate(([x, y]) => window.__town.room.litterAt(x + 12, y + 4, 'trash1', false), at);
+  const life0 = (await room(page, 'life')).life;
+  await page.waitForTimeout(900);
+  let ids = (await room(page, 'problems')).map((p) => p.id);
+  expect(ids, '⭐ standing still picks nothing up').toContain(id);
+  expect((await room(page, 'life')).life, 'and the meter has not moved').toBe(life0);
+  // one step onto it
+  await stand(page, at[0] + 8, at[1] + 2);
+  await page.waitForFunction((pid) => !(window.__town.room.problems() || []).some((p) => p.id === pid), id, { timeout: 3000 });
+  ids = (await room(page, 'problems')).map((p) => p.id);
+  expect(ids, 'the step picks it up').not.toContain(id);
+  expect((await room(page, 'life')).life, 'and the square counts the fix').toBeGreaterThan(life0);
+  expect(errors).toEqual([]);
+});
+
 test('rubbish is spread, never heaped, and never behind a building', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -1318,34 +1359,46 @@ test('rubbish is spread, never heaped, and never behind a building', async ({ pa
   // ⚠️ MEASURED IN WORLD COORDINATES, from the problem list — not from the sprites on screen. The
   // camera shows a fraction of the town, so a screen-rect check saw two pieces of rubbish out of twenty
   // and proved nothing: it passed just as happily against the placement that built the heap.
-  const all = [];
+  // ⚠️ AND A SNAPSHOT IS WHAT LIES ON THE SQUARE AT ONCE (23 Sep 2026). A new wave sweeps the cobbles and draws again, so
+  // pieces from two waves never lie side by side — and comparing them failed a correct town: two ghost waypoints sit 14
+  // and 19 px from street spots s11 and s2, so a ghost's drop in one wave could land within 20 px of where a seeded piece
+  // lay in another. Every snapshot is checked as it stands (the night's own mess is one of them, first); the tally
+  // across them is for the spread.
+  const snaps = [], all = [];
+  const snap = async () => {
+    const rows = await page.evaluate(() => (window.__town.room.problems() || [])
+      .filter((p) => p.type === 'litter' || p.type === 'leaves')
+      .map((p) => ({ x: p.x, y: p.y, art: p.art, id: p.id })));
+    snaps.push(rows);
+    for (const r of rows) if (!all.some((q) => q.id === r.id)) all.push(r);
+  };
+  await snap();   // the night's own mess, before the first wave sweeps it
   for (let wave = 0; wave < 6; wave++) {
     await seam(page, () => window.__town.room.nextWave());
     await page.waitForTimeout(220);
     for (let i = 0; i < 6; i++) { await seam(page, () => window.__town.room.mischief()); await page.waitForTimeout(70); }
-    const rows = await page.evaluate(() => (window.__town.room.problems() || [])
-      .filter((p) => p.type === 'litter' || p.type === 'leaves')
-      .map((p) => ({ x: p.x, y: p.y, art: p.art, id: p.id })));
-    for (const r of rows) if (!all.some((q) => q.id === r.id)) all.push(r);
+    await snap();
   }
-  console.log('QA rubbish: ' + all.length + ' pieces :: ' + JSON.stringify(all.map((r) => r.art + '@' + r.x + ',' + r.y)));
+  console.log('QA rubbish: ' + all.length + ' pieces in ' + snaps.length + ' snapshots :: ' + JSON.stringify(all.map((r) => r.art + '@' + r.x + ',' + r.y)));
   expect(all.length, 'a low town has rubbish in it').toBeGreaterThan(5);
 
-  // ⭐ ONE BIN BAG PER PATCH. A bag is a 65px heap the eye reads as ONE object, so two on a patch read
-  // as a rendering fault rather than as a mess.
-  const bags = all.filter((r) => r.art === 'pile');
-  for (let i = 0; i < bags.length; i++) {
-    for (let k = i + 1; k < bags.length; k++) {
-      const d = Math.hypot(bags[i].x - bags[k].x, bags[i].y - bags[k].y);
-      expect(Math.round(d), 'two bin bags on one patch — a bag stands on its own').toBeGreaterThanOrEqual(100);
+  for (const rows of snaps) {
+    // ⭐ ONE BIN BAG PER PATCH. A bag is a 65px heap the eye reads as ONE object, so two on a patch read
+    // as a rendering fault rather than as a mess.
+    const bags = rows.filter((r) => r.art === 'pile');
+    for (let i = 0; i < bags.length; i++) {
+      for (let k = i + 1; k < bags.length; k++) {
+        const d = Math.hypot(bags[i].x - bags[k].x, bags[i].y - bags[k].y);
+        expect(Math.round(d), 'two bin bags on one patch — a bag stands on its own').toBeGreaterThanOrEqual(100);
+      }
     }
-  }
-  // ⭐ AND NOTHING IS A TOTAL OVERLAP. Small litter may lie close together — that is what litter looks
-  // like — but never on top of itself.
-  for (let i = 0; i < all.length; i++) {
-    for (let k = i + 1; k < all.length; k++) {
-      const d = Math.hypot(all[i].x - all[k].x, all[i].y - all[k].y);
-      expect(Math.round(d), 'two pieces of rubbish in the same place — that is a total overlap, not a mess').toBeGreaterThanOrEqual(20);
+    // ⭐ AND NOTHING IS A TOTAL OVERLAP. Small litter may lie close together — that is what litter looks
+    // like — but never on top of itself.
+    for (let i = 0; i < rows.length; i++) {
+      for (let k = i + 1; k < rows.length; k++) {
+        const d = Math.hypot(rows[i].x - rows[k].x, rows[i].y - rows[k].y);
+        expect(Math.round(d), 'two pieces of rubbish in the same place — that is a total overlap, not a mess').toBeGreaterThanOrEqual(20);
+      }
     }
   }
   // ⭐ AND IT IS NEVER BEHIND A BUILDING, where the player can never find work they are paid for.
@@ -1363,32 +1416,37 @@ test('rubbish is spread, never heaped, and never behind a building', async ({ pa
   // ⭐ AND THE RULE ITSELF, asked directly. The end-to-end heap needs a ghost to rest twice on one
   // waypoint, which is probabilistic and cannot be forced — so what the walk above proves is that a
   // realistic day and night stay clean, and what this proves is the mechanism that keeps them clean.
-  const rule = await page.evaluate(() => {
-    // ⚠️ THE LIVE LIST, NOT THE RUNNING TALLY. `all` above accumulates across six waves and a bag from
-    // wave one is long gone by wave six — asking whether a bag may go where that one USED to be is a
-    // question about empty cobbles, and it answers yes, correctly, while proving nothing.
-    const bag = (window.__town.room.problems() || []).find((p) => p.art === 'pile');
-    if (!bag) return { skip: true };
+  // ⚠️ ASKED ABOUT A BAG THE WALK PUT DOWN (23 Sep 2026). It used to ask about whichever bag the last wave happened to
+  // hold — so on a draw with no bag the six rules were skipped outright, and on one where another piece or a shopfront lay
+  // 34 px from that bag, "small litter beside a bag" was refused, correctly, and the walk failed. The cobbles are swept,
+  // one bin bag goes down on street spot s10 (measured: open, with room beside it on every side), and all six are asked
+  // in the same breath — no ghost can move in between. The LIVE list still answers: the bag is in it.
+  const BAG = [1391, 1077];
+  const rule = await page.evaluate(([bx, by]) => {
     const R = window.__town.room;
+    R.litterAt(bx, by, 'pile', true);
+    const bag = (R.problems() || []).find((p) => p.art === 'pile' && p.x === bx && p.y === by);
+    if (!bag) return { placed: false };
     return {
+      placed: true, alone: (R.problems() || []).filter((p) => p.type === 'litter' || p.type === 'leaves').length,
       onTopOfABag: R.litterRoom(bag.x, bag.y, 'pile'),
       besideABag: R.litterRoom(bag.x + 40, bag.y, 'pile'),
-      // ⚠️ SOMEWHERE well away, not one fixed point: bag.x + 260 lands on another bag or behind a shopfront on
-      // some days, and then the rule is right to refuse it — the check is that distance frees a spot at all
+      // SOMEWHERE well away, not one fixed point: bag.x + 260 is a shopfront from some spots, and then the rule is right
+      // to refuse it — the check is that distance frees a spot at all
       wellAwayFromABag: [[260, 0], [-260, 0], [0, 260], [0, -260], [260, 260], [-260, -260], [260, -260], [-260, 260]]
         .some(([dx, dy]) => R.litterRoom(bag.x + dx, bag.y + dy, 'pile')),
       smallOnTop: R.litterRoom(bag.x, bag.y, 'trash1'),
       smallNearby: R.litterRoom(bag.x + 34, bag.y + 6, 'trash1'),
       behindAShopfront: R.litterRoom(window.__town.PROPS.post.x + 60, window.__town.PROPS.post.y + 120, 'trash1'),
     };
-  });
-  if (!rule.skip) {
-    expect(rule.onTopOfABag, 'a second bin bag may not go where one already is').toBe(false);
-    expect(rule.besideABag, 'nor a body’s length from it').toBe(false);
-    expect(rule.wellAwayFromABag, 'but across the square is fine').toBe(true);
-    expect(rule.smallOnTop, 'and nothing at all may go exactly on top of something').toBe(false);
-    expect(rule.smallNearby, 'while small litter beside a bag is what a mess looks like').toBe(true);
-    expect(rule.behindAShopfront, 'and nothing is dropped behind a building').toBe(false);
-  }
+  }, BAG);
+  expect(rule.placed, 'the walk’s bin bag lies on s10').toBe(true);
+  expect(rule.alone, 'and it is the only rubbish on the cobbles').toBe(1);
+  expect(rule.onTopOfABag, 'a second bin bag may not go where one already is').toBe(false);
+  expect(rule.besideABag, 'nor a body’s length from it').toBe(false);
+  expect(rule.wellAwayFromABag, 'but across the square is fine').toBe(true);
+  expect(rule.smallOnTop, 'and nothing at all may go exactly on top of something').toBe(false);
+  expect(rule.smallNearby, 'while small litter beside a bag is what a mess looks like').toBe(true);
+  expect(rule.behindAShopfront, 'and nothing is dropped behind a building').toBe(false);
   expect(errors).toEqual([]);
 });

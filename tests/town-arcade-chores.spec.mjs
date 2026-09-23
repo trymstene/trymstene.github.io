@@ -5,6 +5,7 @@
 // sweeps it; a tap on the dark cabinet is a repair — the streetlight's hold — and each counts on the
 // week's sheet, which the work note shows in the same beat. A customer sees none of it.
 import { test, expect } from '@playwright/test';
+import { JOB_PAY } from '../src/data/town/jobs.js';
 
 const town = async (page) => {
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
@@ -52,7 +53,7 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   await page.waitForFunction(() => window.__town.room.arcade().litter.length === 2, null, { timeout: 5000 });
   const s1 = await state(page);
   expect(s1.duties.find((d) => d.kind === 'sweep').done, 'floor swept 1/3').toBe(1);
-  expect(s1.sofar, 'a sixth of the week’s work is a sixth of the rate').toBe(Math.round(60 / 6));
+  expect(s1.sofar, 'a sixth of the week’s work is a sixth of the rate').toBe(Math.round(JOB_PAY.condo / 6));   // the one pay scale's rank 1 (src/data/town/jobs.js)
   expect(await page.evaluate(() => window.__town.duties.top()), 'the note says so').toMatch(/1\/3/);
 
   // ── the dark cabinet: standing at it and tapping starts a repair, the hold wakes it
@@ -65,7 +66,7 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   await page.waitForFunction(() => window.__town.room.arcade().dead === null, null, { timeout: 8000 });
   const s2 = await state(page);
   expect(s2.duties.find((d) => d.kind === 'fix').done, 'machines fixed 1/3').toBe(1);
-  expect(s2.sofar, 'two of six is a third of the rate').toBe(Math.round(60 / 3));
+  expect(s2.sofar, 'two of six is a third of the rate').toBe(Math.round(JOB_PAY.condo / 3));
   expect(await page.locator('.tw-dead').count(), 'the cabinet is lit again').toBe(0);
 
   // ── the day remembers: back in, the swept piece stays swept and the cabinet stays woken
