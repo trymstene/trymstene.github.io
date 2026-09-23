@@ -1532,13 +1532,14 @@ export function bootTownLife(ctx) {
   const ARC_CABS = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'g9'];
   const arcRead = () => { try { const a = JSON.parse(localStorage.getItem(ARC_KEY) || 'null'); return a && a.d === dayNum() && Array.isArray(a.swept) && Array.isArray(a.fixed) ? a : { d: dayNum(), swept: [], fixed: [] }; } catch (e) { return { d: dayNum(), swept: [], fixed: [] }; } };
   const arcWrite = (a) => { try { localStorage.setItem(ARC_KEY, JSON.stringify(a)); } catch (e) {} };
-  let arcLitter = [], arcDead = null;
+  let arcLitter = [], arcDead = null, arcLit = null;
   const arcStaff = () => { const j = ctx.job && ctx.job(); return !!(j && j.at === 'condo'); };
   let arcForce = null;   // 🧪 a walk may pick the day's dark cabinet (arcadeReset)
   const arcDeadKey = () => arcForce || ARC_CABS[Math.floor(h(dayNum(), 77, 1) * ARC_CABS.length) % ARC_CABS.length];
   function arcadeClear() {
     arcLitter.forEach((l) => kill(l.s)); arcLitter = [];
     if (arcDead) { arcDead.el.remove(); arcDead.m.remove(); arcDead = null; }
+    if (arcLit) { arcLit.remove(); arcLit = null; }
   }
   function arcadeShow() {
     arcadeClear();
@@ -1553,16 +1554,12 @@ export function bootTownLife(ctx) {
       const s = sprite(['trash1', 'trash2', 'trash3'][i % 3], x, y, { z: 2000 + y, cls: 'is-in' });
       if (s) arcLitter.push({ i, s, x, y });
     });
+    if (a.lit) litShow(a.lit);   // 🕹 the cabinet a perfect repair lit today (rank 2)
     const key = arcDeadKey();
     if (a.fixed.includes(key) || !callIn('condo', 'fix')) return;
-    const sp = ARCADE.spots.find((q) => q[0] === key);
-    if (!sp) return;
-    const [, x0, y0, x1, y1] = sp;
-    const el = document.createElement('i');
-    el.className = 'tw-dead is-in';
-    el.style.left = pct(x0, W); el.style.top = pct(y0, H); el.style.width = pct(x1 - x0, W); el.style.height = pct(y1 - y0, H);
-    el.style.zIndex = String(2000 + y1 + 1);
-    world.appendChild(el);
+    const el = cabBox(key, 'tw-dead');
+    if (!el) return;
+    const [, x0, , x1, y1] = ARCADE.spots.find((q) => q[0] === key);
     const m = mark((x0 + x1) / 2, y1, 60, 2000 + y1 + 2, true);
     m.classList.add('is-in');
     arcDead = { key, el, m, x: (x0 + x1) / 2, y: y1 };
@@ -1586,11 +1583,22 @@ export function bootTownLife(ctx) {
     if (ctx.repair) ctx.repair(key); else workStart({ id: 'cab:' + key, type: 'cabinet', x: arcDead.x, y: arcDead.y, foot: arcDead.y, inRoom: true });
     return true;
   }
-  function cabinetFixed(key, g) {
+  // a box over a cabinet's own spot: the dark one, or 🕹 one a perfect repair lit for the rest of the day (rank 2)
+  function cabBox(k, cls) {
+    const sp = ARCADE.spots.find((q) => q[0] === k); if (!sp) return null;
+    const [, x0, y0, x1, y1] = sp, el = document.createElement('i');
+    el.className = cls + ' is-in';
+    el.style.left = pct(x0, W); el.style.top = pct(y0, H); el.style.width = pct(x1 - x0, W); el.style.height = pct(y1 - y0, H);
+    el.style.zIndex = String(2001 + y1);
+    world.appendChild(el);
+    return el;
+  }
+  function litShow(k) { arcLit = cabBox(k, 'tw-lit'); }
+  function cabinetFixed(key, g, lit) {
     if (!arcDead || arcDead.key !== key) return;
     burst(arcDead.x, arcDead.y - 40);
     arcDead.el.remove(); arcDead.m.remove(); arcDead = null;
-    const a = arcRead(); a.fixed.push(key); arcWrite(a);
+    const a = arcRead(); a.fixed.push(key); if (lit) { a.lit = key; litShow(key); } arcWrite(a);
     if (ctx.chore) ctx.chore('fix', g);   // 🔧 the repair's grade is its work XP (src/data/town/jobs.js XP.condo.fix)
     track('town_chore', { at: 'condo', kind: 'fix', g: g | 0 });
   }

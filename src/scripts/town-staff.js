@@ -18,7 +18,7 @@
 // ⚠️ THE WORDS ARE THE COPY FILE'S (src/data/copy/town-staff.json). No words, no card: the town's own tap stands.
 import DUTY from '../data/copy/town-duties.json';
 import { ruleUsed } from '../lib/banana-pass.js';
-import { tipsCap, weekPay, xpAt, ranksOf, LADDER } from '../data/town/jobs.js';   // 🪜 the ladder (23 Sep 2026)
+import { tipsCap, weekPay, xpAt, ranksOf, LADDER, unlocksAt } from '../data/town/jobs.js';   // 🪜 the ladder (23 Sep 2026)
 import { daysToPayday } from './town-duties.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-staff.json', { eager: true, import: 'default' });
 const COPY = Object.values(COPY_MODS)[0] || null;
@@ -40,6 +40,7 @@ const CSS = `
 .tws-bar { height:10px; border:2px solid #000; background:#2a1a10; margin-top:0.35rem; overflow:hidden; }
 .tws-bar i { display:block; height:100%; background:linear-gradient(#ffe14d,#f2c012); transform-origin:0 50%; }
 .tws-note { margin:0.3rem 0 0; font-size:0.74rem; opacity:0.8; line-height:1.35; }
+.tws-unlock { opacity:1; font-weight:700; color:#ffe135; }
 .tws-rows { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
 .tws-rows li { display:flex; align-items:center; justify-content:space-between; gap:0.6rem; background:#2a1a10; border:2px solid #000; padding:0.35rem 0.55rem; font-size:0.8rem; }
 .tws-rows b { color:#ffe135; font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -123,7 +124,9 @@ export function bootTownStaff(ctx) {
       + '<div class="tws-bar' + (under ? ' is-under' : '') + '"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>'
       + '<p class="tws-note">' + esc(fill(COPY.today, { n: l.today, cap: (LADDER[at] || {}).day | 0 })) + '</p>'
       + (l.last && (COPY.last || {})[l.last.v] ? '<p class="tws-note">' + esc(fill(COPY.last[l.last.v], { xp: Math.abs(l.last.xp | 0) })) + '</p>' : '')
-      + (nextLine ? '<p class="tws-note">' + esc(nextLine) + '</p>' : '') + '</section>';
+      + (nextLine ? '<p class="tws-note">' + esc(nextLine) + '</p>' : '')
+      // 🔓 and what the next rank lets you DO (the ladder's slice 3): the reason to climb, in the card's own words
+      + unlocksAt(at, l.rank + 1).map((k) => ((COPY.unlock || {})[at] || {})[k]).filter(Boolean).map((u) => '<p class="tws-note tws-unlock">' + esc(u) + '</p>').join('') + '</section>';
   }
   const cta = (id, verb, off) => '<button type="button" class="tw-cta" id="' + id + '"' + (off ? ' disabled' : '') + '><span class="tw-cta__verb">' + esc(verb) + '</span></button>';
   const plain = (id, label) => '<button type="button" class="tw-btn--in" id="' + id + '">' + esc(label) + '</button>';

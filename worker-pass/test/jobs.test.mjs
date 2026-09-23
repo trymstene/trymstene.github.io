@@ -452,6 +452,22 @@ console.log('\n17. ↕ at a counter the review reads the cups — and a counter 
   ok('back at the first rank with nothing', v.job.lad.rank === 1 && v.job.lad.xp === 0, v.job.lad);
 }
 
+console.log('\n18. 🔓 the rank-2 unlocks: a basket is a customer served, and a cleared rush is a bonus at the café');
+{
+  const P = as(await kept('unlocks@example.com'));
+  CLOCK = monday(CLOCK);
+  await P('/job/take', { at: 'store' });
+  let v = await P('/job/chore', { kind: 'basket', g: 2 });   // the day's ten and a perfect basket's 22
+  ok('🧺 a basket counts on the sheet as a customer served', v.job.duties.find((d) => d.kind === 'serve').done === 1, v.job.duties);
+  ok('and earns a basket’s XP, half again a customer’s (10 + 22)', v.job.lad.xp === 32, v.job.lad);
+  v = await P('/job/chore', { kind: 'basket', g: 1 });
+  ok('a fine basket is 15', v.job.lad.xp === 47 && v.job.duties.find((d) => d.kind === 'serve').done === 2, v.job);
+  v = await P('/job/take', { at: 'cafe' });   // taking another job is the switch (there is no separate quit)
+  v = await P('/job/chore', { kind: 'rush' });
+  ok('☕ a rush served to the last customer is a bonus of 15 at the café (10 for the day + 15)', v.job.lad.xp === 25, v.job.lad);
+  ok('and is nothing on the week’s cups', !(v.job.done && v.job.done.cups), v.job);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

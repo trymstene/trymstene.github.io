@@ -54,6 +54,7 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     expect(c.text, 'today against the day’s cap').toContain(STAFF.today.replace('{n}', '40').replace('{cap}', String(LADDER.cafe.day)));
     expect(c.text, 'what the next rank gives: a title and a bigger tips cap').toContain(STAFF.nextTips.replace('{title}', STAFF.ranks.cafe[1]).replace('{cap}', String(tipsCap('cafe', 2))));
     expect(c.text, 'the tips cap is the rank’s').toContain('/ ' + tipsCap('cafe', 1));
+    expect(c.text, '🔓 and what the next rank lets you DO: the café’s rush (the ladder’s slice 3)').toContain(STAFF.unlock.cafe.rush);
     expect(c.news, 'no news yet').toBe(false);
     await page.locator('.tw-card').screenshot({ path: `test-results/ladder-card-r1-${w}.png` });
     await closeCard(page);
@@ -111,6 +112,8 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     expect(await page.evaluate(() => window.__town.fx()), 'a burst over your banana').toBeGreaterThan(fx0);
     await page.waitForTimeout(350);
     await page.screenshot({ path: `test-results/ladder-promoted-${w}.png` });
+    // 🔓 once the moment has gone up, the square says what the new rank lets you do
+    await page.waitForFunction((l) => (document.getElementById('twToast').textContent || '').trim() === l, STAFF.unlock.cafe.rush, { timeout: 7000 });
     // the server was asked, once, for the café
     expect(sent, 'one promotion asked of the pass worker, at the café').toEqual([{ credId: 'c', token: 't', at: 'cafe' }]);
     expect(await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_promo').map((e) => e[1])), 'Pulse hears it').toEqual([{ at: 'cafe', rank: 2 }]);

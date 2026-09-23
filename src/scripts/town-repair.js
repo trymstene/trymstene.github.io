@@ -13,7 +13,12 @@
 // ⚠️ IT DECIDES NOTHING ABOUT THE ARCADE. The town's room owns the dark cabinet and its fix (town-room.js cabinetFixed);
 // this is only the tray and the thumb, handed a cabinet and handing back a grade. While it is up the banana is held where
 // it stands (banana-town.js working()), and the tray's Leave button is the way out — the cabinet simply stays dark.
+//
+// 🕹 THE STREAK (rank 2, 23 Sep 2026; the ladder's slice 3). From Spinner's second rank a PERFECT repair lights its cabinet
+// for the rest of the day (the room draws it: town-room.js cabinetFixed), and perfect repairs in a row are counted on this
+// device and said: a fine one or a spark starts the count again. A trophy you can see, and a run you do not want to break.
 import { mountCounter, newCup, CAFE_DECK } from './town-cafe.js';
+import { unlocked } from '../data/town/jobs.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-repair.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
 
@@ -30,6 +35,9 @@ export const ARCADE_DECK = {
 
 export function bootTownRepair(ctx) {
   const { host, say, track, onFixed } = ctx;
+  const streaks = () => unlocked('condo', 'streak', ctx.rank ? ctx.rank() : 1);
+  const streak = () => { try { return ((JSON.parse(localStorage.getItem('tw-streak-v1') || 'null') || {}).n) | 0; } catch (e) { return 0; } };
+  const setStreak = (n) => { try { localStorage.setItem('tw-streak-v1', JSON.stringify({ n })); } catch (e) {} };
   let tray = null, on = false, key = '', tries = 0, held = false;
   const words = () => COPY.go || {};
   // the screw's slot moves with the day and each try, so a second go is not the same tap
@@ -48,6 +56,7 @@ export function bootTownRepair(ctx) {
     const g = c.grade | 0;
     if (!g) {   // it sparks and stays dark: another go (a fix is told to Pulse by the room that wakes the cabinet)
       track('town_chore', { at: 'condo', kind: 'spark' });
+      if (streaks()) setStreak(0);   // a spark breaks the run
       tries++;
       if (COPY.spark) say(COPY.spark);
       setTimeout(() => { if (on) serve(); }, 700);
@@ -55,9 +64,13 @@ export function bootTownRepair(ctx) {
     }
     on = false;
     tray.hide();
-    const line = (COPY.fixed || {})[g === 2 ? 'perfect' : 'fine'];
+    const lit = g === 2 && streaks(), n = lit ? streak() + 1 : 0;
+    if (streaks()) setStreak(n);
+    const s = COPY.streak || {};
+    const line = lit ? (n > 1 ? (s.run || '').replace('{n}', String(n)) : s.one) : (COPY.fixed || {})[g === 2 ? 'perfect' : 'fine'];
     if (line) say(line);
-    if (onFixed) onFixed(key, g);
+    if (lit) track('town_chore', { at: 'condo', kind: 'streak', n });
+    if (onFixed) onFixed(key, g, lit);
   }
   function stop() { if (!on) return false; on = false; if (tray) tray.hide(); return true; }
   return {
@@ -65,6 +78,6 @@ export function bootTownRepair(ctx) {
     on: () => on,
     // the pocket opens at the bottom of the screen too: the tray stands down for it, as the counters do
     hold(v) { held = !!v; if (!tray || !on) return; if (held) tray.fold(); else tray.show(); },
-    seam: { on: () => on, start, stop, key: () => key, tries: () => tries, cup: () => (tray ? tray.cup() : null), gest: () => (tray ? tray.seam : null) },
+    seam: { on: () => on, start, stop, key: () => key, tries: () => tries, cup: () => (tray ? tray.cup() : null), gest: () => (tray ? tray.seam : null), streak },
   };
 }

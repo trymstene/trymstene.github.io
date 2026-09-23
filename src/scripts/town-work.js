@@ -15,7 +15,7 @@
 // the server's answer corrects the mirror. The mirror never decides money — it only decides which
 // of four already-approved lines the boss says.
 import { passPost } from '../lib/banana-pass.js';
-import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor } from '../data/town/jobs.js';   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
+import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor, COUNTS_AS } from '../data/town/jobs.js';   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
@@ -85,7 +85,8 @@ export function bootTownWork(ctx) {
     if (!job.at) return Promise.resolve(null);
     const rows = Array.isArray(job.duties) && job.duties.length ? job.duties : rowsOf(job.at, {});
     const done = {}; for (const r of rows) done[r.kind] = r.done | 0;
-    if (kind in done) done[kind] = done[kind] + 1;
+    const dk = COUNTS_AS[kind] || kind;   // 🧺 a basket is a customer served, as the server counts it
+    if (dk in done) done[dk] = done[dk] + 1;
     const lad = ladder(), fresh = job.up !== todayKey();
     let add = fresh ? DAY_XP : 0;
     for (const x of Array.isArray(g) ? g : [g]) add += xpFor(job.at, kind, x);

@@ -2,6 +2,9 @@
   "find": "Find it on the shelves and bring it to the till.",
   "got": "Got it. Now to the till.",
   "wrong": "Not that one. Check the picture on the ticket.",
+  "basket": "Two things this time. Bring both to the till.",
+  "one": "One down. Now find the other one.",
+  "more": "Not yet. They wanted two things.",
   "served": {
     "fine": "Handed over. The customer nods and heads out.",
     "perfect": "Handed over in a flash. The bell rings them out."

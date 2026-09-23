@@ -27,6 +27,8 @@ export const LEMON_DECK = {
     ice: { ...CAFE_DECK.stations.milk, kind: 'taps' },        // three cubes on the pulse
     pour: { ...CAFE_DECK.stations.grind, kind: 'sweep' },     // the water to the line: stop the needle
   },
+  // 🍋 THE BIG GLASS (rank 2, 23 Sep 2026; the ladder's slice 3): a longer squeeze for a bigger glass, twice the tip
+  big: { station: 'squeeze', span: 2600 },
   // the drinks, as PICTURES on the ticket — a lemon, a mint leaf, a splash of pink, ice; the names are the rig's
   drinks: {
     still: ['lemon', 'ice'],

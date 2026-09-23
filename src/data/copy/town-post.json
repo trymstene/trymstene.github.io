@@ -38,7 +38,8 @@
       "park": "Park",
       "beach": "Banana Bay",
       "home": "Homesteads",
-      "rave": "Banana Rave"
+      "rave": "Banana Rave",
+      "town": "Banana Town"
     },
     "receipt": {
       "title": "Sorting Receipt",

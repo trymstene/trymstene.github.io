@@ -248,12 +248,14 @@
  * ⚠️ NO VERTICAL ROOM EITHER: the strip, one 46px row and the note fit under the tray's 150px ceiling.
  */
 .tw-cup--sort { touch-action: manipulation; }
+.tw-cup--sort .tw-cup__leave { margin-left: auto; }   /* the way out keeps the strip's right end now the tally has its own row */
 .tw-cup--sort .tw-cup__note:empty { display: none; }
 /* the pile: one small sheet per card still to sort */
-.tw-sort__pile { display: flex; gap: 3px; flex-wrap: wrap; }
+.tw-sort__pile { display: flex; flex-wrap: nowrap; min-width: 0; }
+.tw-sort__pip + .tw-sort__pip { margin-left: -6px; }   /* the cards still to sort, fanned like a deck: fifteen fit where four sat side by side */
 .tw-sort__pip { width: 9px; height: 12px; border: 2px solid #000; background: #f3e6cf; box-shadow: 1px 1px 0 #000; }
 /* the tally: one mark per card of the pile, coloured as it lands — green right, amber late, red wrong */
-.tw-sort__tally { display: flex; gap: 3px; margin-left: auto; }
+.tw-sort__tally { display: flex; flex-wrap: wrap; gap: 3px; }   /* the tray's own gap spaces it: a margin too put the first round's hint past the 150 px tray at 360 */
 .tw-sort__mark { width: 9px; height: 9px; border: 2px solid #000; background: #3a2a1c; }
 .tw-sort__mark.is-g2 { background: #7bc35e; }
 .tw-sort__mark.is-g1 { background: #f0b428; }
@@ -274,6 +276,7 @@
 .tw-sort__fuse { position: absolute; left: 3px; right: 3px; bottom: 3px; height: 4px; background: #7bc35e; transform-origin: 0 50%; transform: scaleX(1); }
 .tw-sort__card.is-late .tw-sort__fuse { background: #f0b428; }
 .tw-sort__holes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; min-width: 0; }
+.tw-sort__holes.is-five { grid-template-columns: repeat(5, 1fr); gap: 5px; }   /* ✉️ rank 2: the town's own postmark as a fifth hole */
 .tw-sort__hole {
   box-sizing: border-box; height: 46px; min-width: 0; padding: 0; border: 3px solid #000; border-radius: 0;
   background: #3a2a1c; color: #ffe135; box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.5), 2px 2px 0 #000;
@@ -322,6 +325,9 @@
 .tw-cup__pip--mint { background: #3f9b4a; }
 .tw-cup__pip--pink { background: #ff8fb8; }
 .tw-cup__pip--ice { background: #dff4ff; border-radius: 3px; }
+/* 🍋 a BIG glass (the stand's rank 2): the ticket's pictures come bigger — the order reads "large" before a word is read */
+.tw-cup.is-big .tw-cup__tick { gap: 5px; }
+.tw-cup.is-big .tw-cup__pip { width: 22px; height: 24px; }
 /* squeeze — a hold: the glass fills with juice, and the stream is juice, not coffee */
 .tw-cup[data-deck="lemon"][data-st="squeeze"] .tw-cup__fill { background: linear-gradient(#fff6c2 0 7px, #ffd23f 7px); }
 .tw-cup[data-deck="lemon"][data-st="squeeze"] .tw-cup__bar::after { background: linear-gradient(#fff6c2, #f2c200); }
@@ -375,7 +381,10 @@
 /* ---- 🛒 THE STORE'S CUSTOMERS (23 Sep 2026): the ticket is the till's own picture of the thing, the bar is their
  * patience running down, and every stocked face wears a little picture of what is on it (town-serve.js) ---------------- */
 .tw-serve__want { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 800; font-size: 0.82rem; }
-.tw-serve__want img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; background: #fff8e6; border: 2px solid #000; padding: 2px; }
+.tw-serve__want img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; background: #fff8e6; border: 2px solid #000; padding: 2px; flex: none; }
+.tw-serve__want { min-width: 0; }
+.tw-serve__want b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tw-serve__want img + img { margin-left: -0.2rem; }   /* 🧺 a basket: the two pictures side by side */
 .tw-cup--serve .tw-cup__fill { background: linear-gradient(#bfe89a 0 7px, #7bc35e 7px); transform-origin: 0 50%; transition: transform 200ms linear; }
 .tw-cup--serve.is-late .tw-cup__fill { background: linear-gradient(#ffd89a 0 7px, #e8902a 7px); }
 .tw-serve__tag { position: absolute; width: 1.7%; transform: translate(-50%, -100%); pointer-events: none; background: #fff8e6; border: 2px solid #000; padding: 1px; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); line-height: 0; }

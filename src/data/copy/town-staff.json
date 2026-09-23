@@ -112,5 +112,22 @@
   "last": {
     "full": "Last week was a full week: {xp} work XP extra.",
     "poor": "Last week was poor: {xp} work XP taken back."
+  },
+  "unlock": {
+    "stand": {
+      "big": "Big glasses: a longer squeeze, and twice the tip."
+    },
+    "cafe": {
+      "rush": "Rush hours: customers one after another, and a bonus for serving every one."
+    },
+    "condo": {
+      "streak": "Streaks: a perfect repair lights its cabinet gold for the day."
+    },
+    "store": {
+      "basket": "Baskets: some customers want two things at once."
+    },
+    "post": {
+      "fifth": "The town’s own postmark, and a faster pile to sort."
+    }
   }
 }

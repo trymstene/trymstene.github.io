@@ -44,5 +44,9 @@
     "short": "Little Wake",
     "tall": "Square Cup",
     "double": "Propeller Dark"
+  },
+  "rush": {
+    "on": "Rush hour: the customers keep coming, one after another.",
+    "done": "Every one of them served. Bean looks up from the grinder and nods."
   }
 }

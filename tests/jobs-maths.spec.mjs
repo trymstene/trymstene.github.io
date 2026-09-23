@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 import STAFF from '../src/data/copy/town-staff.json' with { type: 'json' };
 import { LADDER_RANKS } from '../tools/copy-jobs.mjs';
-import { JOB_PAY, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, dutiesOf, LADDER, RISE, TIPS_JOBS, DAY_XP, ranksOf, rankOf, xpAt, weekPay, tipsCap, xpFor, roundXp, reviewOf, reviewXp } from '../src/data/town/jobs.js';
+import { JOB_PAY, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, dutiesOf, LADDER, RISE, TIPS_JOBS, DAY_XP, ranksOf, rankOf, xpAt, weekPay, tipsCap, xpFor, roundXp, reviewOf, reviewXp, UNLOCKS, unlocked, unlocksAt, COUNTS_AS } from '../src/data/town/jobs.js';
 
 test('a week of work pays by its share, duty by duty, and prints its own reasoning', () => {
   // the arcade: two duties of three
@@ -111,4 +111,21 @@ test('the review: full, ordinary, poor and empty weeks at a payslip job and at a
   expect(reviewXp('store', 'full'), 'a full week: a day of the store’s XP extra').toBe(LADDER.store.day);
   expect(reviewXp('cafe', 'poor'), 'a poor week: a day of the café’s taken back').toBe(-LADDER.cafe.day);
   expect(reviewXp('post', 'ok')).toBe(0);
+});
+
+test('🔓 the unlocks: nothing at the first rank, one new thing at the second everywhere, and each has its words', () => {
+  for (const at of Object.keys(LADDER)) {
+    expect(unlocksAt(at, 1), at + ': the first rank is the job as it is').toEqual([]);
+    expect(unlocksAt(at, 2).length, at + ': the second rank brings one new thing').toBe(1);
+    for (const k of Object.keys(UNLOCKS[at])) {
+      expect(unlocked(at, k, UNLOCKS[at][k] - 1), at + '.' + k + ' is shut below its rank').toBe(false);
+      expect(unlocked(at, k, UNLOCKS[at][k]), at + '.' + k + ' opens at its rank').toBe(true);
+      expect(unlocked(at, k, ranksOf(at)), '…and stays open above it').toBe(true);
+      expect((STAFF.unlock || {})[at] && STAFF.unlock[at][k], at + '.' + k + ': the staff card can name it').toBeTruthy();
+    }
+  }
+  expect(unlocked('cafe', 'big', 4), 'an unlock belongs to its own workplace').toBe(false);
+  expect(COUNTS_AS.basket, 'a basket is a customer served on the week’s sheet').toBe('serve');
+  expect(xpFor('store', 'basket', 2), 'a perfect basket is half again a perfect customer, rounded down').toBe(Math.floor(xpFor('store', 'serve', 2) * 1.5));
+  expect(xpFor('cafe', 'rush'), 'a rush served to the end').toBe(15);
 });

@@ -9,9 +9,15 @@
 // ⚠️ IT DECIDES NOTHING ABOUT THE SHOP. What is on which face is the room's (shelfFor, in the order the faces fill); the
 // week's sheet is the pass worker's (a `serve` chore with its grade); the calls are work-calls.js. This is the customer,
 // the tags, the thing in your hands and the tray. Unlike a counter it does NOT hold the banana: the walk is the job.
+//
+// 🧺 THE BASKET (rank 2, 23 Sep 2026; the ladder's slice 3). From Pip's second rank some customers want TWO things: the
+// ticket shows both, the first goes over your head and the second stacks on it, and the till takes them together. A
+// longer wait, more walking under the clock, and half again a customer's work XP (jobs.js XP.store.basket) — an order
+// that says "bigger" the moment it arrives, the way the stand's big glass does at its own second rank.
 import { DECOR } from '../data/decor.js';
 import { STORE } from './town-geo.js';
 import { calls as callsAt } from '../lib/work-calls.js';
+import { unlocked } from '../data/town/jobs.js';
 import { FRAME_H_FRAC, FRAME_TOP_FRAC } from '../lib/banana-geo.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-serve.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
@@ -19,6 +25,7 @@ const DEX = {}; DECOR.forEach((d) => { DEX[d.id] = d; });
 
 export const PATIENCE = 24000;     // how long a customer waits at the till
 export const QUICK = 0.45;         // handed over inside this share of it: perfect
+export const PATIENCE_BASKET = 36000;   // 🧺 two things take longer to find: half again the wait
 const SPOT = [704, 858];           // the customer's feet, in front of the till
 const DOOR = [564, 994];           // where a customer walks in
 const HAND = [646, 862];           // where you stand to hand it over, beside them
@@ -31,8 +38,9 @@ const faceOf = (k) => (STORE.spots || []).find((s) => s[0] === k);
 export function bootTownServe(ctx) {
   const { world, view, W, H, pct, pos, say, track, drawMe, walk, burst, items, job, chore } = ctx;
   const FOOT = (1 - FRAME_TOP_FRAC - FRAME_H_FRAC) * (0.045 * W);
-  let inside = false, paused = false, cust = null, carry = null, tags = [], nextAt = 0, raf = 0, n = 0, tray = null, held = false;
+  let inside = false, paused = false, cust = null, hands = [], tags = [], nextAt = 0, raf = 0, n = 0, tray = null, held = false, force = null;
   const staff = () => { const j = job(); return !!(j && j.at === 'store'); };
+  const rank = () => { const j = job(); return Math.max(1, ((j && j.lad && j.lad.rank) | 0)); };
   const today = () => Math.floor(Date.now() / 864e5);
   const served = () => { try { const r = JSON.parse(localStorage.getItem('tw-serve-v1') || 'null'); return r && r.d === today() ? r.n | 0 : 0; } catch (e) { return 0; } };
   const wanted = () => { const c = callsAt('store').find((q) => q.kind === 'serve'); return !!(c && c.open); };
@@ -42,14 +50,15 @@ export function bootTownServe(ctx) {
     const box = document.createElement('div');
     box.className = 'tw-cup tw-cup--serve';
     box.hidden = true;
-    box.innerHTML = '<div class="tw-cup__top"><span class="tw-serve__want"><img alt=""><b></b></span><button type="button" class="tw-cup__leave"></button></div>'
+    box.innerHTML = '<div class="tw-cup__top"><span class="tw-serve__want"><img alt=""><img alt="" hidden><b></b></span><button type="button" class="tw-cup__leave"></button></div>'
       + '<div class="tw-cup__bar"><i class="tw-cup__fill"></i></div><p class="tw-cup__note"></p>';
     view.appendChild(box);
     const leave = box.querySelector('.tw-cup__leave');
     leave.textContent = COPY.leave || '';
     leave.hidden = !COPY.leave;
     leave.addEventListener('click', (e) => { e.stopPropagation(); paused = true; gone(0, 'leave'); });
-    return { box, img: box.querySelector('img'), name: box.querySelector('b'), fill: box.querySelector('.tw-cup__fill'), note: box.querySelector('.tw-cup__note') };
+    const imgs = box.querySelectorAll('.tw-serve__want img');
+    return { box, img: imgs[0], img2: imgs[1], name: box.querySelector('b'), fill: box.querySelector('.tw-cup__fill'), note: box.querySelector('.tw-cup__note') };
   }
   // while the ticket is up, the town's lines stand at the top of the view, as over the café's tray (banana-town placeToast)
   // what to do next is said on the ticket itself: a toast stands at the top of the view, which in the store is the shelves you are searching
@@ -76,16 +85,23 @@ export function bootTownServe(ctx) {
     const seed = (today() * 2654435761 + served() * 40503 + n * 97) >>> 0;
     const i = seed % list.length, id = list[i];
     if (!DEX[id]) return;
+    const ids = [id];
+    const basket = force != null ? force : unlocked('store', 'basket', rank()) && ((seed >>> 7) & 1) === 1;
+    if (basket && list.length > 1) { const k = (i + 1 + ((seed >>> 9) % (list.length - 1))) % list.length; if (DEX[list[k]]) ids.push(list[k]); }
+    force = null;
     n++;
     const b = bodyAt(DOOR[0], DOOR[1]);
     const outfit = { hat: HATS[seed % HATS.length], glasses: 'none', extras: { [BAGS[(seed >>> 3) % BAGS.length]]: true }, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
     try { drawMe(b.g, 150, 2, outfit); } catch (e) {}
-    cust = { id, face: FACES()[i][0], b, t0: 0, walkAt: performance.now() };
+    cust = { id, ids, faces: ids.map((x) => FACES()[list.indexOf(x)][0]), face: FACES()[i][0], b, t0: 0, walkAt: performance.now(), wait: ids.length > 1 ? PATIENCE_BASKET : PATIENCE };
     tagsShow();
     if (!tray) tray = mountTray();
     tray.img.src = DEX[id].img;
-    tray.name.textContent = DEX[id].name || '';
-    note(COPY.find);
+    tray.img2.hidden = ids.length < 2;
+    if (ids.length > 1) tray.img2.src = DEX[ids[1]].img;
+    tray.name.textContent = ids.map((x) => DEX[x].name || '').join(' + ');
+    tray.box.classList.toggle('is-basket', ids.length > 1);
+    note(ids.length > 1 ? COPY.basket || COPY.find : COPY.find);
     tray.fill.style.transform = 'scaleX(1)';
     trayShow(true);
     wake();
@@ -102,12 +118,12 @@ export function bootTownServe(ctx) {
     setTimeout(() => c.b.el.remove(), 600);
     if (g > 0) {
       try { localStorage.setItem('tw-serve-v1', JSON.stringify({ d: today(), n: served() + 1 })); } catch (e) {}
-      if (chore) chore('serve', g);
+      if (chore) chore(c.ids.length > 1 ? 'basket' : 'serve', g);   // 🧺 the pass worker counts a basket as a customer served (jobs.js COUNTS_AS)
       if (burst) burst(c.b.x, c.b.y - 60);
       const line = (COPY.served || {})[g === 2 ? 'perfect' : 'fine'];
       if (line) say(line);
     } else if (why === 'late' && COPY.late) say(COPY.late);
-    track('town_chore', { at: 'store', kind: g > 0 ? 'serve' : why === 'late' ? 'miss' : 'away', g: g | 0 });
+    track('town_chore', { at: 'store', kind: g > 0 ? (c.ids.length > 1 ? 'basket' : 'serve') : why === 'late' ? 'miss' : 'away', g: g | 0 });
     nextAt = performance.now() + GAP[0] + Math.random() * (GAP[1] - GAP[0]);
   }
 
@@ -131,17 +147,18 @@ export function bootTownServe(ctx) {
   function tagsClear() { tags.forEach((t) => t.remove()); tags = []; }
 
   // ---- the thing in your hands ----
+  // the second thing of a basket stacks on the first, over the banana's head
   function carryOn(id) {
-    carryOff();
     const el = document.createElement('i');
     el.className = 'tw-serve__held is-in';
     el.innerHTML = '<img alt="" src="' + DEX[id].img + '">';
     world.appendChild(el);
-    carry = { id, el };
+    hands.push({ id, el });
     carryTick();
   }
-  function carryOff() { if (carry) { carry.el.remove(); carry = null; } }
-  function carryTick() { if (!carry) return; carry.el.style.left = pct(pos.x, W); carry.el.style.top = pct(pos.y - 22, H); carry.el.style.zIndex = String(2110 + Math.round(pos.y)); }
+  function carryOff() { hands.forEach((h) => h.el.remove()); hands = []; }
+  function carryTick() { hands.forEach((h, k) => { h.el.style.left = pct(pos.x, W); h.el.style.top = pct(pos.y - 22 - k * 18, H); h.el.style.zIndex = String(2110 + Math.round(pos.y) + k); }); }
+  const holding = (id) => hands.some((h) => h.id === id);
 
   // ---- the beat ----
   function frame(now) {
@@ -154,7 +171,7 @@ export function bootTownServe(ctx) {
         place(cust.b, DOOR[0] + (SPOT[0] - DOOR[0]) * k, DOOR[1] + (SPOT[1] - DOOR[1]) * k);
         if (k >= 1) cust.t0 = now;
       } else {
-        const left = 1 - (now - cust.t0) / PATIENCE;
+        const left = 1 - (now - cust.t0) / cust.wait;
         if (tray) tray.fill.style.transform = 'scaleX(' + Math.max(0, left).toFixed(3) + ')';
         if (tray) tray.box.classList.toggle('is-late', left < 1 - QUICK);
         if (left <= 0) gone(0, 'late');
@@ -184,21 +201,23 @@ export function bootTownServe(ctx) {
     if (!inside || !cust || !cust.t0) return false;
     const f = faceOf(key);
     const onFace = FACES().some(([k]) => k === key);
-    if (onFace && f && !carry) {
+    const all = () => cust.ids.every(holding);
+    if (onFace && f && !all()) {
       walk((f[1] + f[3]) / 2, f[4] + 26, () => {
         if (!cust) return;
-        const list = items() || [], i = FACES().findIndex(([k]) => k === key);
-        if (list[i] === cust.id) { carryOn(cust.id); note(COPY.got); }
-        else note(COPY.wrong);
+        const list = items() || [], it = list[FACES().findIndex(([k]) => k === key)];
+        if (cust.ids.includes(it) && !holding(it)) { carryOn(it); note(all() ? COPY.got : COPY.one || COPY.got); }
+        else if (!holding(it)) note(COPY.wrong);
       });
       return true;
     }
     if (key === 'till') {
-      if (!carry) { note(COPY.find); return true; }
+      if (!hands.length) { note(COPY.find); return true; }
       walk(HAND[0], HAND[1], () => {
-        if (!cust || !carry || carry.id !== cust.id) return;
+        if (!cust || !hands.length) return;
+        if (!all()) { note(COPY.more || COPY.find); return; }   // 🧺 half a basket is not an order
         const took = performance.now() - cust.t0;
-        gone(took <= PATIENCE * QUICK ? 2 : 1, 'served');
+        gone(took <= cust.wait * QUICK ? 2 : 1, 'served');
       });
       return true;
     }
@@ -210,13 +229,15 @@ export function bootTownServe(ctx) {
     on: () => !!cust,
     hold(v) { held = !!v; if (tray) trayShow(!!cust); },
     seam: {
-      want: () => (cust ? { id: cust.id, face: cust.face, waiting: !!cust.t0, x: cust.b.x, y: cust.b.y } : null),
-      carrying: () => (carry ? carry.id : ''),
+      want: () => (cust ? { id: cust.id, ids: cust.ids.slice(), faces: cust.faces.slice(), face: cust.face, basket: cust.ids.length > 1, wait: cust.wait, waiting: !!cust.t0, x: cust.b.x, y: cust.b.y } : null),
+      carrying: () => hands.map((h) => h.id).join('+'),
+      stack: () => hands.map((h) => { const r = h.el.getBoundingClientRect(); return { id: h.id, top: Math.round(r.top), bottom: Math.round(r.bottom) }; }),
+      basket: (v) => { force = v == null ? null : !!v; return true; },   // the next customer is (or is not) a basket, whatever the draw
       served,
       tags: () => tags.map((t) => t.dataset.face),
       age: (ms) => { if (cust && cust.t0) cust.t0 -= ms | 0; return !!cust; },   // the walk cannot wait 24 real seconds
       arriveNow: () => { if (!cust && inside) { nextAt = 0; paused = false; } return true; },
-      tray: () => (tray ? { shown: !tray.box.hidden, name: tray.name.textContent, img: tray.img.getAttribute('src'), note: tray.note.textContent } : null),
+      tray: () => (tray ? { shown: !tray.box.hidden, name: tray.name.textContent, img: tray.img.getAttribute('src'), img2: tray.img2.hidden ? '' : tray.img2.getAttribute('src'), basket: tray.box.classList.contains('is-basket'), note: tray.note.textContent } : null),
     },
   };
 }

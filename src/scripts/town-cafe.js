@@ -25,7 +25,7 @@
 // left. The counter runs wordless until the rig approves them, the way every surface in this world
 // does, and no player who never works a shift downloads a byte of them.
 import { passStat, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
-import { tipsCap, xpAt } from '../data/town/jobs.js';   // 🪜 the rank's tips cap and the shift's work XP (23 Sep 2026)
+import { tipsCap, xpAt, unlocked } from '../data/town/jobs.js';   // 🪜 the rank's tips cap and the shift's work XP (23 Sep 2026)
 const COPY_MODS = import.meta.glob('../data/copy/town-cafe.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
 // a deck line, picked by a number the caller already has, so the same cup never says two things
@@ -80,7 +80,8 @@ export const DRINK_IDS = Object.keys(DRINKS);
 // lemonade stand brings its own (town-lemon.js) and plays it on the same tray with the same thumb.
 export const CAFE_DECK = { id: 'cafe', order: ORDER, stations: STATIONS, drinks: DRINKS };
 const deckOf = (cup) => (cup && cup.deck) || CAFE_DECK;
-const stationDef = (cup, key) => deckOf(cup).stations[key] || STATIONS[key];
+// 🍋 a BIG glass (the stand's rank 2) plays one station longer — the deck says which, and how long (town-lemon.js)
+const stationDef = (cup, key) => { const d = deckOf(cup), st = d.stations[key] || STATIONS[key]; return cup && cup.big && d.big && d.big.station === key ? { ...st, span: d.big.span } : st; };
 
 // `at` is where this cup's grinder band sits, from the town's own seed: a reload never rerolls one
 // customer's order into an easier one, and two cups in a row are not the same tap.
@@ -332,6 +333,7 @@ export function mountCounter(host, opts = {}) {
       cup = c;
       shown = stationOf(c);
       box.dataset.st = shown;
+      box.classList.toggle('is-big', !!c.big);   // 🍋 a big glass: a bigger ticket
       clearTaps();
       note.textContent = '';
       tickEl.textContent = '';
@@ -349,7 +351,7 @@ export function mountCounter(host, opts = {}) {
     // 2 px green borders at width 0, so a still gauge carried a green stub that read as a target; and the
     // one button sat there as a dead yellow slab with no word on it, which reads as broken rather than
     // quiet. The band goes away and the button goes with it — what is left is the line that says why.
-    idle(label) { cup = null; sleep(); clearTaps(); delete box.dataset.st; tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; go.hidden = !label; needle.hidden = true; fillEl.hidden = true; zoneEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
+    idle(label) { cup = null; sleep(); clearTaps(); delete box.dataset.st; box.classList.remove('is-big'); tickEl.textContent = ''; note.textContent = opts.idle ? opts.idle() : ''; go.textContent = label || ''; go.disabled = true; go.hidden = !label; needle.hidden = true; fillEl.hidden = true; zoneEl.hidden = true; zoneEl.style.width = '0%'; stepEls.forEach((s) => { s.className = 'tw-cup__step'; }); },
     // 🪙 the running total for the shift (0 hides it: a fresh shift has nothing to show yet)
     tips(n) { n = n | 0; tipsEl.hidden = n <= 0; tipsEl.innerHTML = COIN + '<b>' + n + '</b>'; tipsEl.classList.remove('is-pop'); void tipsEl.offsetWidth; tipsEl.classList.add('is-pop'); },
     say(text) { note.textContent = text || ''; },
@@ -474,6 +476,31 @@ export function bootTownCafe(ctx, cfg0) {
   let held = false;   // something else asked for the bottom of the screen (the pocket): the tray yields
   let lastBest = '';   // which drink the last right cup was, for the receipt to name
   let grades = [], xpGot = 0;   // 🪜 the shift's cups by grade, reported once at clock-out, and the XP they came to
+  let bigSaid = false, bigNext = null;   // 🍋 the first big glass of a shift is announced, the rest are not; a walk may order the next one
+  // ☕ THE RUSH (the café's rank 2, 23 Sep 2026; the ladder's slice 3). Once a day, a little way into a shift, the customers
+  // stop leaving gaps: RUSH_N come one straight after another, and serving every one of them is a bonus on top of the
+  // cups (jobs.js XP.cafe.rush). ⚠️ NOT "THREE AT ONCE", which the plan said: the rope holds two because a third customer
+  // stands off every phone's screen (ROPE, above), so a rush is a stream you can see rather than a crowd you cannot.
+  // ⚠️ AND NOT A SHARED CLOCK: "the same moment for everyone" would be met by almost nobody at ten players a day.
+  const RUSH_N = 4, RUSH_AFTER = 2;
+  let rush = null, rushXp = 0;   // { left, got, lost } while one runs
+  const today = () => Math.floor(Date.now() / 864e5);
+  const rushed = () => { try { const r = JSON.parse(localStorage.getItem('tw-rush-v1') || 'null'); return !!(r && r.d === today()); } catch (e) { return false; } };
+  function rushStart() {
+    rush = { left: RUSH_N, got: 0, lost: 0 };
+    try { localStorage.setItem('tw-rush-v1', JSON.stringify({ d: today() })); } catch (e) {}
+    if ((WORDS.rush || {}).on) say(WORDS.rush.on);
+    track('town_cup', { at: cfg.at, r: 'rush' });
+  }
+  function rushCheck() {
+    if (!rush || rush.left > 0 || rush.got + rush.lost < RUSH_N) return;
+    const ok = !rush.lost;
+    rush = null;
+    if (!ok) return;
+    if ((WORDS.rush || {}).done) say(WORDS.rush.done);
+    if (ctx.chore) { const p = ctx.chore('rush'); rushXp += (p && p.got) | 0; }
+    track('town_chore', { at: cfg.at, kind: 'rush' });
+  }
   // the mark is the workplace's own front, the same point town-work.js measures turning up against
   const mark = cfg.mark || (() => { const p = PROPS && PROPS.cafe; return p ? { x: p.x + p.w / 2, y: p.base } : null; });
 
@@ -527,20 +554,24 @@ export function bootTownCafe(ctx, cfg0) {
 
   // ---- the queue ---------------------------------------------------------------------------------
   const seedAt = (n) => Math.abs(Math.floor(Date.now() / 60000) * 2654435761 + n * 40503) >>> 0;
-  function callOne(now) {
-    if (line.length >= cfg.rope.length || !folk) return;
+  function callOne(now, inRush) {
+    if (line.length >= cfg.rope.length || !folk) return null;
     const f = folk();
-    if (!f) return;
+    if (!f) return null;
     const free = f.idle().filter((v) => !line.some((q) => q.v === v));
-    if (!free.length) return;
+    if (!free.length) return null;
     const seed = seedAt(served + line.length);
     const v = free[seed % free.length];
     const spot = cfg.rope[line.length];
     const ids = Object.keys(cfg.deck.drinks);
-    const row = { v, drink: ids[seed % ids.length], at: 0, seed };
+    // 🍋 at the stand's second rank some orders are a big glass (the deck names its longer station)
+    const big = !!cfg.deck.big && (bigNext != null ? bigNext : unlocked(cfg.at, 'big', rank()) && (seed >>> 5) % 3 === 0);
+    bigNext = null;
+    const row = { v, drink: ids[seed % ids.length], at: 0, seed, big, rush: !!inRush };
     line.push(row);
     f.take(v, { x: spot[0], y: spot[1] }, () => { row.at = performance.now(); });
     void now;
+    return row;
   }
   // ⭐ PATIENCE IS THE BODY AND NOTHING ELSE (the Quiet Rule). Green, amber at half, red at a fifth,
   // and then they turn and go — a shadow under a banana, never a bubble over one.
@@ -553,6 +584,7 @@ export function bootTownCafe(ctx, cfg0) {
       if (left > 0) continue;
       // gone. The body does the acting: it turns its back and walks off, and the town says so once.
       drop(i, false);
+      if (row.rush && rush) { rush.lost++; rushCheck(); }
       if (WORDS.left) say(WORDS.left);
       track('town_cup', { at: cfg.at, r: 'left' });
     }
@@ -571,7 +603,8 @@ export function bootTownCafe(ctx, cfg0) {
     const row = line.find((q) => q.at);
     if (!row) return;
     const c = newCup(row.drink, served, row.seed, cfg.deck);
-    c.row = row;
+    c.row = row; c.big = !!row.big;
+    if (c.big && !bigSaid) { bigSaid = true; if (WORDS.big) say(WORDS.big); }
     cup = c;
     // ⚠️ NOT THE DRINK'S NAME. The ticket on the tray is pictures and the names are for the
     // receipt — the button said "Little Wake" for a day, which is the shop's word for a small
@@ -581,8 +614,9 @@ export function bootTownCafe(ctx, cfg0) {
   function onCup(c) {
     const row = c.row, i = line.indexOf(row);
     // 🪜 a tip only while today's cap has room: past it the cup still counts — for its work XP — and floats nothing
-    const n = Math.min(tipFor(c.grade), Math.max(0, left() - tips));
+    const n = Math.min(tipFor(c.grade) * (c.big ? 2 : 1), Math.max(0, left() - tips));   // 🍋 a big glass: twice the tip
     tips += n; served++; grades.push(c.grade | 0);
+    if (c.big) grades.push(c.grade | 0);   // …and two glasses' worth of work XP
     // 🪙 THE TIP IS SEEN THE MOMENT IT IS EARNED (Trym, 21 Sep: "its not very obvious how i make tips while
     // working, so there needs to be some system to visualize how im making a couple of coins per coffee").
     // A +n floats up from the hatch, and the tray's own counter keeps the shift's total — numbers and the
@@ -593,7 +627,8 @@ export function bootTownCafe(ctx, cfg0) {
     if (c.grade === 2) { best++; lastBest = c.drink; }
     const deck = deckLineOf(WORDS, GRADES[c.grade], served);
     if (deck) say(deck);
-    track('town_cup', { at: cfg.at, r: GRADES[c.grade] });
+    track('town_cup', { at: cfg.at, r: GRADES[c.grade], big: c.big ? 1 : 0 });
+    if (row && row.rush && rush) { rush.got++; rushCheck(); }
     cup = null;
     // ☕ THE CUP GOES WITH THEM, and it is the only thing on screen that says a coffee was made: the
     // toast is gone in four seconds and the terrace is across the square. `mug` is no longer carried by
@@ -605,7 +640,7 @@ export function bootTownCafe(ctx, cfg0) {
   function clockIn(host) {
     if (on) return false;
     on = true;
-    served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0; grades = []; xpGot = 0;
+    served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0; grades = []; xpGot = 0; bigSaid = false; rush = null; rushXp = 0;
     standIn();
     if (!tray) tray = mountCounter(host || world.parentElement, { onCup, deck: cfg.deck, label: (k) => (WORDS.go || {})[k] || '', idle: () => WORDS.idle || '', leave: WORDS.leave || '', onLeave: () => clockOut() });
     if (tray.tips) tray.tips(0);
@@ -631,6 +666,8 @@ export function bootTownCafe(ctx, cfg0) {
     // 🪜 the shift's cups go on the ladder in ONE report (a list of grades), and the receipt shows what they earned
     xpGot = 0;
     if (grades.length && ctx.chore) { const p = ctx.chore('cup', grades.slice(0, 60)); xpGot = (p && p.got) | 0; }
+    xpGot += rushXp;   // ☕ a rush's bonus is on the receipt too
+    rush = null;   // a rush cut short by the end of the shift pays nothing
     receipt(paid);
     return true;
   }
@@ -724,7 +761,9 @@ export function bootTownCafe(ctx, cfg0) {
       }
       if (away) { away = 0; standIn(); if (tray && !held) tray.show(); }
     }
-    if (now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
+    if (!rush && served >= RUSH_AFTER && !line.length && !cup && unlocked(cfg.at, 'rush', rank()) && !rushed()) rushStart();
+    if (rush && rush.left > 0) { if (callOne(now, true)) rush.left--; }
+    else if (!rush && now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
     patienceTick(now);
     serveNext();
     void shiftAt;
@@ -782,6 +821,8 @@ export function bootTownCafe(ctx, cfg0) {
       take: () => ({ served, tips, best }),
       tip: (n, g) => { tips += n | 0; served++; grades.push(g == null ? 2 : g | 0); return tips; },   // QA: a long shift's takings without forty real cups
       grades: () => grades.slice(), xp: () => xpGot, left,   // 🪜 the shift's cups by grade, the XP the receipt showed, today's room
+      rush: () => (rush ? { ...rush } : null), rushed, rushNow: () => { if (!rush) rushStart(); return true; },   // ☕ the café's rank 2
+      big: () => !!(tray && tray.cup() && tray.cup().big), bigNext: (v) => { bigNext = v == null ? null : !!v; return true; },   // 🍋 the stand's
       receipt: (n) => receipt(n | 0),
       gest: () => (tray ? tray.seam : null),   // the tray’s own thumb-door, so a walk can make a real cup
     },

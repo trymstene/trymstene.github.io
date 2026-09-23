@@ -18,7 +18,7 @@
 // card's freshness is measured from the instant it landed, never from the last painted frame.
 import { iconSvg } from '../lib/pixel-icons.js';
 import { seedRand, burstInto } from '../lib/world.js';
-import { roundXp, xpAt } from '../data/town/jobs.js';   // 🪜 a round's points are its work XP (23 Sep 2026)
+import { roundXp, xpAt, unlocked } from '../data/town/jobs.js';   // 🪜 a round's points are its work XP (23 Sep 2026)
 
 // ✉️ THE FIRST ROUND EXPLAINS ITSELF, ONCE (Trym, 22 Sep: "a small one-time notice by the sorting buttons that
 // says something about what to do … Short and sweet"). One line under the pigeonholes through a device's
@@ -36,24 +36,29 @@ export const COPY = ALL.round || {};
 // ---- the round, and nothing about a screen -----------------------------------------------------
 // the four postmarks: where post from this counter goes. ⚠️ pixel icons from the bundled pack, never OS
 // emoji, and each is a thing that area already owns (the park's beds, the bay's pier, a gate, the club).
-export const MARKS = ['park', 'beach', 'home', 'rave'];
-export const MARK_ICON = { park: 'flower-solid', beach: 'fish-solid', home: 'home', rave: 'music' };
-export const PILE = 12;            // cards in a round: three of each postmark
+// ✉️ THE FIFTH (rank 2, 23 Sep 2026; the ladder's slice 3): Stamp's senior sorters also sort the town's own post — a bell,
+// the town hall's — and the pile comes faster (FAST). Rank 1 plays the first four, exactly as before.
+export const MARKS = ['park', 'beach', 'home', 'rave', 'town'];
+export const MARK_ICON = { park: 'flower-solid', beach: 'fish-solid', home: 'home', rave: 'music', town: 'bell' };
+export const BASE = 4;             // the postmarks a first-rank round sorts
+export const EACH = 3;             // cards of each postmark in a round
+export const PILE = BASE * EACH;   // cards in a first-rank round: three of each postmark
+export const FAST = { fresh: 3400, gone: 7500 };   // ✉️ the senior sorter's pile: a card goes stale and leaves sooner
 export const ROUND_MS = 120000;    // a round is two minutes at most
 export const FRESH_MS = 4200;      // sorted within this, a card is RIGHT; after it, the right hole is LATE
 export const GONE_MS = 9000;       // a card nobody sorts leaves the counter as WRONG
 export const COUNTS_AT = 0.5;      // the round counts on the week's sheet when this much of the pile went to the right hole
 export const GRADES = ['wrong', 'late', 'right'];
 
-export function newRound(seed) {
-  // a balanced pile — three of each postmark — shuffled by the seed, so every round teaches all four holes
-  const cards = [];
-  for (let i = 0; i < PILE; i++) cards.push(MARKS[i % MARKS.length]);
+export function newRound(seed, o = {}) {
+  // a balanced pile — three of each postmark — shuffled by the seed, so every round teaches every hole
+  const marks = o.marks || MARKS.slice(0, BASE), cards = [];
+  for (let i = 0; i < marks.length * EACH; i++) cards.push(marks[i % marks.length]);
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(seedRand((seed | 0) * 31 + i * 7 + 11) * (i + 1));
     const t = cards[i]; cards[i] = cards[j]; cards[j] = t;
   }
-  return { seed: seed | 0, cards, i: 0, t0: 0, at: 0, marks: [], right: 0, late: 0, wrong: 0, done: false, timeUp: false };
+  return { seed: seed | 0, cards, holes: marks.slice(), fresh: o.fresh || FRESH_MS, gone: o.gone || GONE_MS, i: 0, t0: 0, at: 0, marks: [], right: 0, late: 0, wrong: 0, done: false, timeUp: false };
 }
 export const cardOf = (r) => (!r || r.done || r.i >= r.cards.length ? '' : r.cards[r.i]);
 export function start(r, now) { r.t0 = now; r.at = now; return r; }
@@ -68,18 +73,18 @@ function land(r, g, now) {
 export function tick(r, now) {
   if (!r || r.done || !r.t0) return null;
   if (now - r.t0 >= ROUND_MS) { r.done = true; r.timeUp = true; return { g: -1, i: r.i, done: true, timeUp: true }; }
-  if (now - r.at >= GONE_MS) return { ...land(r, 0, now), gone: true };
+  if (now - r.at >= (r.gone || GONE_MS)) return { ...land(r, 0, now), gone: true };
   return null;
 }
 export function sortInto(r, hole, now) {
   const c = cardOf(r);
   if (!c) return null;
-  const g = hole !== c ? 0 : (now - r.at <= FRESH_MS ? 2 : 1);
+  const g = hole !== c ? 0 : (now - r.at <= (r.fresh || FRESH_MS) ? 2 : 1);
   return land(r, g, now);
 }
 // how much of the card's time is left, 1 → 0 (for the tray to draw, and for nothing else)
-export const fuse = (r, now) => (!r || r.done || !r.at ? 0 : Math.max(0, Math.min(1, 1 - (now - r.at) / GONE_MS)));
-export const late = (r, now) => !!r && !r.done && !!r.at && now - r.at > FRESH_MS;
+export const fuse = (r, now) => (!r || r.done || !r.at ? 0 : Math.max(0, Math.min(1, 1 - (now - r.at) / (r.gone || GONE_MS))));
+export const late = (r, now) => !!r && !r.done && !!r.at && now - r.at > (r.fresh || FRESH_MS);
 // ⭐ the mail got where it was going: half the pile in the right hole, late or not, and the round counts
 export const counts = (r) => !!r && r.right + r.late >= Math.ceil(r.cards.length * COUNTS_AT);
 
@@ -96,7 +101,7 @@ export function mountSorter(host, opts = {}) {
   box.hidden = true;
   const top = el('div', 'tw-cup__top', box);
   const pileEl = el('div', 'tw-sort__pile', top);     // the cards still to sort, as small sheets
-  const tallyEl = el('div', 'tw-sort__tally', top);   // one mark per card of the pile, coloured as it lands
+  const tallyEl = el('div', 'tw-sort__tally');   // one mark per card of the pile, coloured as it lands — its own row, under the holes (placed below)
   // 🚪 the way out (Trym, 22 Sep): the round holds the banana at the counter, so the strip carries the one door out
   const leaveBtn = el('button', 'tw-cup__leave', top);
   leaveBtn.type = 'button';
@@ -109,13 +114,26 @@ export function mountSorter(host, opts = {}) {
   const fuseEl = el('i', 'tw-sort__fuse', cardEl);
   const holes = el('div', 'tw-sort__holes', row);
   const names = (opts.holes && opts.holes()) || {};
-  const holeEls = MARKS.map((m) => {
-    const b = el('button', 'tw-sort__hole', holes);
-    b.type = 'button'; b.dataset.mark = m;
-    b.innerHTML = iconSvg(MARK_ICON[m], { size: 22 });
-    if (names[m]) b.setAttribute('aria-label', names[m]);   // read out to somebody who cannot see the mark: the rig's word
-    return b;
-  });
+  // the pigeonholes for the round's own postmarks: four at the first rank, five from the second
+  let holeEls = [];
+  function buildHoles(list) {
+    if (holeEls.map((b) => b.dataset.mark).join() === list.join()) return;
+    holes.innerHTML = '';
+    holes.classList.toggle('is-five', list.length > 4);
+    holeEls = list.map((m) => {
+      const b = el('button', 'tw-sort__hole', holes);
+      b.type = 'button'; b.dataset.mark = m;
+      b.innerHTML = iconSvg(MARK_ICON[m], { size: 22 });
+      if (names[m]) b.setAttribute('aria-label', names[m]);   // read out to somebody who cannot see the mark: the rig's word
+      b.addEventListener('pointerdown', (e) => { if (e.cancelable) e.preventDefault(); hit(b); });
+      return b;
+    });
+  }
+  buildHoles(MARKS.slice(0, BASE));
+  // ⚠️ THE TALLY HAS ITS OWN ROW. It shared the strip with the pile and the way out, and at the post office's second rank
+  // (fifteen cards, 23 Sep 2026) the three needed ~560 px of a 360 phone's ~310: the pile folded into a column fifteen pips
+  // tall and pushed the card and every pigeonhole out of the tray. Under the holes it has the tray's whole width.
+  box.appendChild(tallyEl);
   const note = el('p', 'tw-cup__note', box);
 
   let r = null, raf = 0, ro = null;
@@ -196,11 +214,10 @@ export function mountSorter(host, opts = {}) {
     if (res) { const c = 'is-g' + res.g; b.classList.add(c); setTimeout(() => b.classList.remove(c), 320); }   // the hole answers in the grade's colour
     landed(res);
   }
-  holeEls.forEach((b) => b.addEventListener('pointerdown', (e) => { if (e.cancelable) e.preventDefault(); hit(b); }));
 
   return {
     el: box,
-    deal(round) { r = round; note.textContent = ''; paintTally(); paintCard(); wake(); },
+    deal(round) { r = round; buildHoles(round.holes || MARKS.slice(0, BASE)); note.textContent = ''; paintTally(); paintCard(); wake(); },
     step,
     say(text, hint) { note.textContent = text || ''; note.classList.toggle('is-hint', !!(text && hint)); },
     show() { box.hidden = false; box.classList.remove('is-folded'); toast(true); wake(); },
@@ -220,6 +237,7 @@ export function mountSorter(host, opts = {}) {
       note: () => note.textContent,
       hint: () => note.classList.contains('is-hint') && !!note.textContent,
       tally: () => [...tallyEl.children].map((m) => (m.className.match(/is-g(\d)/) || [])[1] || ''),
+      holes: () => holeEls.map((b) => b.dataset.mark),
     },
     destroy() { sleep(); toast(false); box.remove(); },
   };
@@ -246,7 +264,8 @@ export function bootTownSort(ctx) {
     if (m && pos && Math.hypot(pos.x - m.x, pos.y - m.y) > NEAR) { if (COPY.far) say(COPY.far); return false; }
     on = true; away = 0;
     if (!tray) tray = mountSorter(host, { onLand, onDone, holes: () => COPY.holes || {}, leave: COPY.leave || '', onLeave: () => clockOut() });
-    const r = start(newRound(seedNow()), performance.now());
+    const j = ctx.job ? ctx.job() : null, rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0));
+    const r = start(newRound(seedNow(), unlocked('post', 'fifth', rk) ? { marks: MARKS, ...FAST } : {}), performance.now());   // ✉️ rank 2: the fifth postmark, faster
     rounds++;
     tray.deal(r);
     // the first round on this device carries its notice under the holes; every later one runs wordless
@@ -346,7 +365,8 @@ export function bootTownSort(ctx) {
     tray: () => tray,
     seam: {
       on: () => on, clockIn, clockOut,
-      round: () => { const r = tray && tray.round(); return r ? { i: r.i, cards: r.cards.slice(), marks: r.marks.slice(), right: r.right, late: r.late, wrong: r.wrong, done: r.done, at: r.at, t0: r.t0 } : null; },
+      round: () => { const r = tray && tray.round(); return r ? { i: r.i, cards: r.cards.slice(), holes: r.holes.slice(), fresh: r.fresh, gone: r.gone, marks: r.marks.slice(), right: r.right, late: r.late, wrong: r.wrong, done: r.done, at: r.at, t0: r.t0 } : null; },
+      holes: () => (tray ? tray.seam.holes() : []),
       last: () => (last ? { right: last.right, late: last.late, wrong: last.wrong, marks: last.marks.slice(), counted: counts(last), timeUp: !!last.timeUp, xp: xpGot } : null),
       card: () => (tray ? tray.seam.card() : ''),
       sort: (mark2, t) => (tray ? tray.seam.sort(mark2, t) : null),

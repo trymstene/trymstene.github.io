@@ -6,6 +6,7 @@
 // say what they will be. The page is noindexed and linked from nowhere.
 // Chassis = the park's essentials only: camera on both axes, tap-to-walk +
 // keys, foot colliders, y-sorted overlays, the shared HUD.
+import { unlocksAt } from '../data/town/jobs.js';   // 🔓 what a rank lets you do (23 Sep 2026)
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
@@ -606,7 +607,7 @@ function loadServe() {
 function loadRepair() {
   if (!repairP) {
     repairP = import('./town-repair.js')
-      .then((m) => { repair = m.bootTownRepair({ host: view, say, track, onFixed: (key, g) => { if (room && room.seam.cabinetFixed) room.seam.cabinetFixed(key, g); } }); if (window.__town) window.__town.repair = repair.seam; return repair; })
+      .then((m) => { repair = m.bootTownRepair({ host: view, say, track, rank: () => { const j = work ? work.seam.job() : null; return Math.max(1, ((j && j.lad && j.lad.rank) | 0)); }, onFixed: (key, g, lit) => { if (room && room.seam.cabinetFixed) room.seam.cabinetFixed(key, g, lit); } }); if (window.__town) window.__town.repair = repair.seam; return repair; })
       .catch((e) => { repairP = null; console.warn('[town] the repair did not load', e); return null; });
   }
   return repairP;
@@ -972,6 +973,9 @@ function promotedMoment(at, rank) {
   const where = (lifeWords('work').at || {})[at] || '';
   burstAt(pos.x, pos.y, '', true);
   if (L.promoMoment) bigMoment(view, L.promoMoment, (L.promoLine || '').replace('{title}', work.seam.title(at, rank)).replace('{where}', where));
+  // 🔓 and, once it has gone up, what the new rank lets you do (the ladder's slice 3) — the hire's own beat for its start line
+  const u = unlocksAt(at, rank).map((k) => ((L.unlock || {})[at] || {})[k]).filter(Boolean)[0];
+  if (u) setTimeout(() => say(u), 4400);
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk

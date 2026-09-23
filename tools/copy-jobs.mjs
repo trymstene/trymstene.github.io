@@ -607,6 +607,8 @@ const lifeSchema = {
 // The hiring is NOT here: `work.ask/hired/moved/already/keep/day` on town-life already ask Bean for
 // a job, and `work.at.cafe` already names the building. This is the counter itself.
 const cafeFields = {
+  'rush.on': { kind: 'prose', aim: 50, max: 70, note: '☕ The town’s toast as a rush begins (the café’s rank 2): customers now come one straight after another. Plain, a little urgent; never a number, never how long it lasts or how often it comes.' },
+  'rush.done': { kind: 'prose', aim: 54, max: 76, note: '☕ The town’s toast when every customer of the rush was served. Bean may notice it. Never praise of the player in so many words, never a number or a bonus named.' },
   on: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as the banana steps behind the counter and the tray rises: the apron going on. Not an instruction, not a greeting to anybody — a shift has started, and that is the whole feeling. Never a time, never a rate.' },
   off: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as they step away, a beat before the receipt card opens. The work is over for now. Contented; never a summary and never a number — the receipt carries the number.' },
   'receipt.title': { kind: 'prose', aim: 16, max: 24, note: 'The receipt card’s heading. Two or three words, a NAME for the thing rather than a sentence.' },
@@ -634,6 +636,7 @@ const cafeFields = {
 // 🍋 THE LEMONADE STAND (22 Sep 2026, docs/town-jobs-plan.md §11.5): the café's counter with a lemonade deck on
 // it, so the same fields — re-noted for a stall with a jug on it, a glass instead of a cup, and a kid behind it.
 const lemonFields = {
+  big: { kind: 'prose', aim: 48, max: 66, note: '🍋 Said the first time in a shift a customer orders a big glass (the stand’s rank 2): it is a big glass, and the squeeze is held longer. Plain; never a number, never the tip.' },
   on: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as the banana steps round the back of the stand’s table and the tray rises: the stand opening for the afternoon. Not an instruction, not a greeting to anybody. Never the café’s words (no apron, no propeller).' },
   off: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as they step away, a beat before the receipt card opens. The stand is quiet for now. Contented; never a summary and never a number.' },
   'receipt.title': { kind: 'prose', aim: 16, max: 24, note: 'The receipt card’s heading. Two or three words, a NAME for the paper rather than a sentence — and not the café’s.' },
@@ -851,6 +854,7 @@ const postFields = {
   'round.holes.beach': { kind: 'label', aim: 10, max: 16, note: 'The same for Banana Bay, whose stamp is a fish. Its own name, titled.' },
   'round.holes.home': { kind: 'label', aim: 10, max: 16, note: 'The same for the homesteads — everybody’s own plot, whose stamp is a house. One or two words, titled.' },
   'round.holes.rave': { kind: 'label', aim: 10, max: 16, note: 'The same for the Banana Rave, whose stamp is a note of music. Its own name, titled.' },
+  'round.holes.town': { kind: 'label', aim: 10, max: 16, note: 'The same for Banana Town itself, the fifth hole a senior sorter gets (rank 2), whose stamp is the town hall’s bell. Its own name, titled.' },
   'round.hint': { kind: 'prose', aim: 40, max: 60, note: '⭐ THE ONE-TIME NOTICE under the pigeonholes, shown through a player’s FIRST round only (Trym, 22 Sep: “a small one-time notice by the sorting buttons that says something about what to do … Short and sweet”). One short line that says what the round wants: the card on the counter goes into the hole with the same stamp. It may explain, but it may not name a control — no “tap”, “click”, “button”, “press” — and no number.' },
   'round.stamp': { kind: 'label', aim: 6, max: 8, note: 'The word on the rubber stamp slammed across the receipt of a round that made the week’s sheet — the payslip has PAID; this is the counter’s own. CAPITALS, one word, at most 8 letters.' },
   'round.far': { kind: 'prose', aim: 50, max: 70, note: 'The town’s toast when the round is asked for and the banana is not at the counter (the walk from the card stopped short): the counter is a step away and waits. It notices, it never instructs — no “walk”, “go”, “tap” — and no number.' },
@@ -1618,7 +1622,7 @@ export const JOBS = {
     what: 'The card a worker opens at their own workplace or from the work note: where they work and for whom, their title, today’s tips or the week’s work and wage, today’s calls, and the buttons (go to work, answer the calls, the place’s other use).',
     approved: 'src/data/copy/town-staff.json',
     reads: 'src/scripts/town-staff.js (through a glob inside the card’s own lazy chunk)',
-    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'wordQ', 'word', 'warn', 'demoted', 'warnCard', 'last', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut'],
+    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'wordQ', 'word', 'warn', 'demoted', 'warnCard', 'last', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut', 'unlock'],
     fields: {
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`of.${k}`, { kind: 'label', max: 40, note: 'Small capitals over the title: the workplace, then whose staff you are.' }])),
       // 🪜 THE LADDER (23 Sep 2026; Trym's calls: ranks 3·4·5·5·6, promotion at the boss). A title per rank, bottom first —
@@ -1630,6 +1634,9 @@ export const JOBS = {
       nextWeek: toastLine(64, 'What the next rank gives at a payslip job: its title, and what a full week pays there.', { ...holdsAll('title', 'coins'), ...NO_MARKUP }),
       nextTips: toastLine(64, 'What the next rank gives at a tips job: its title, and the day’s tips cap there.', { ...holdsAll('title', 'cap'), ...NO_MARKUP }),
       top: toastLine(40, 'Instead of that line at the top rank.', NO_MARKUP),
+      // 🔓 THE UNLOCKS (23 Sep 2026; the ladder's slice 3, src/data/town/jobs.js UNLOCKS): what a rank lets you DO, one line per
+      // unlock — under the next rank's line on the staff card, and said once the PROMOTED moment has gone up
+      ...Object.fromEntries([['stand', 'big'], ['cafe', 'rush'], ['condo', 'streak'], ['store', 'basket'], ['post', 'fifth']].map(([a, k]) => [`unlock.${a}.${k}`, toastLine(80, 'What this rank lets you do at this workplace, in plain words: the new thing first, then what it means. Never a number, a rate or how often it comes (docs/voice.md).', NO_MARKUP)])),
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`news.${k}`, toastLine(64, 'Over the XP once it has crossed the next rank’s line — and the WORK NOTE’s green line too (town-duties.js reads it from here): the boss has news, and you hear it by talking to them (promotion happens at the boss). Starts with the boss’s name. Never the word promoted, never a title or a number.', { ...NO_MARKUP, forbids: [[/[<>&]/, 'markup or an entity'], [/promot|\d/i, 'the word promoted or a number — the news is said in person']] })])),
       promoQ: { kind: 'prose', aim: 22, max: 32, note: 'The PLAYER’s question on their own boss’s card when the boss has news: the player’s voice, a question with a question mark (the job question’s sibling).' },
       ...Object.fromEntries(['bean', 'figjr', 'spinner', 'pip', 'stamp'].map((k) => [`promo.${k}`, { kind: 'prose', aim: 72, max: 96, holds: ['{title}'], needs: [[/\{title\}/, 'must carry {title} — the new rank’s title']], note: 'The boss telling the player they are promoted, in the boss’s own voice (Bean reads cups, Fig Jr. talks like a company, Spinner is a showman, Pip keeps last ones, Stamp weighs things and says Noted). MUST contain {title}, the new title, inside a sentence. No number, no pay.' }])),
@@ -1691,11 +1698,14 @@ export const JOBS = {
     what: 'What the store says while its staff serve a customer: the line under the ticket (what to do, the thing picked up, the wrong face), handing it over (fine and quick), a customer who gives up, and the tray’s way out.',
     approved: 'src/data/copy/town-serve.json',
     reads: 'src/scripts/town-serve.js (through a glob inside its own lazy chunk)',
-    top: ['find', 'got', 'wrong', 'served', 'late', 'leave'],
+    top: ['find', 'got', 'wrong', 'basket', 'one', 'more', 'served', 'late', 'leave'],
     fields: {
       find: toastLine(60, 'Under the ticket, as the customer comes in (and again if you tap the till with empty hands): find the thing on the shelves and bring it to the till. The one instruction, plain.', NO_MARKUP),
       got: toastLine(50, 'Under the ticket once you picked the right thing off the shelf: now to the till.', NO_MARKUP),
       wrong: toastLine(60, 'Under the ticket when you tapped a face with something else on it. Kind, plain, points at the ticket.', NO_MARKUP),
+      basket: toastLine(60, 'Under the ticket when a customer wants TWO things (the rank-2 basket): bring both to the till. Plain.', NO_MARKUP),
+      one: toastLine(50, 'Under the ticket once you hold the first of the two things: now the other one.', NO_MARKUP),
+      more: toastLine(50, 'Under the ticket when you reach the till holding only one of the two things. Never a telling-off.', NO_MARKUP),
       'served.fine': toastLine(60, 'Handed over in time. The customer leaves content.', NO_MARKUP),
       'served.perfect': toastLine(60, 'Handed over quickly. The store’s bell rings the customer out. Delight, never praise of the player.', NO_MARKUP),
       late: toastLine(60, 'The customer waited too long and leaves. Never a telling-off.', NO_MARKUP),
@@ -1715,7 +1725,7 @@ export const JOBS = {
     what: 'The tray that opens when the arcade’s staff reach a dark cabinet: its three buttons, the way out, and the world’s lines as the panel comes off, when a repair sparks, and when the cabinet wakes.',
     approved: 'src/data/copy/town-repair.json',
     reads: 'src/scripts/town-repair.js (through a glob inside its own lazy chunk)',
-    top: ['on', 'go', 'leave', 'spark', 'fixed'],
+    top: ['on', 'go', 'leave', 'spark', 'fixed', 'streak'],
     fields: {
       on: toastLine(76, 'Said as the repair tray rises: the cabinet’s back panel comes off, and what is wrong inside it. The world’s voice, plain, a picture of the three things to put right (a screw, a wire, a switch). Never an instruction.', NO_MARKUP),
       'go.unscrew': { kind: 'label', max: 16, note: 'The button for the first step, a TAPPED one: stop the needle in the screw’s slot. Starts with “Tap”.' },
@@ -1725,6 +1735,8 @@ export const JOBS = {
       spark: toastLine(60, 'A spoiled repair: the cabinet sparks and stays dark, and another go begins at once. Never a telling-off.', NO_MARKUP),
       'fixed.fine': toastLine(60, 'A repair that came out fine: the cabinet wakes, a little grudgingly.', NO_MARKUP),
       'fixed.perfect': toastLine(60, 'A perfect repair: the cabinet wakes as good as new. Delight, never praise of the player.', NO_MARKUP),
+      'streak.one': toastLine(60, '🕹 A perfect repair at the arcade’s rank 2, the first of a run: the cabinet lights up (gold) and stays lit for the day. Said instead of fixed.perfect.', NO_MARKUP),
+      'streak.run': toastLine(64, '🕹 A perfect repair that continues a run: it lights gold again, and the run’s count. MUST contain {n} — the game puts the count there.', { ...NO_MARKUP, ...holdsAll('n') }),
     },
     shape: (d) => {
       const bad = [];
@@ -1877,7 +1889,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-lemon.json',
     approved: 'src/data/copy/town-lemon.json',
     reads: 'src/scripts/town-lemon.js (through a glob inside the stand’s own lazy chunk)',
-    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave'],
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave', 'big'],
     personas: 'town-personas',
     fields: lemonFields,
     shape: lemonShape,
@@ -1891,7 +1903,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-cafe.json',
     approved: 'src/data/copy/town-cafe.json',
     reads: 'src/scripts/town-cafe.js (through a glob inside the café’s own lazy chunk, so town-room never carries these bytes)',
-    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave'],
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave', 'rush'],
     // 🧍 Bean speaks here, so the writer gets the bible
     personas: 'town-personas',
     fields: cafeFields,

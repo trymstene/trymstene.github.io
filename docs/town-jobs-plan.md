@@ -1148,3 +1148,34 @@ chunk loaded on entering the store with the store job).
 Walks: tests/town-serve.spec.mjs (the whole beat with real taps, the late customer, Not now, the call answered; the
 tray, tickets and customer on a 360 phone); tests/jobs-maths.spec.mjs; worker-pass/test/jobs.test.mjs (the store's
 sections serve customers now).
+
+## 20. The unlocks, rank 2 — the ladder's slice 3 (23 Sep 2026)
+
+Trym: *"yes build it all"* — every workplace's second rank gives a new thing to DO, not only a bigger number
+(`jobs.js UNLOCKS`, `unlocked(at, key, rank)`; the town reads the rank from the job mirror). The staff card names what
+the next rank brings (`town-staff.json unlock`), and the promotion says it once PROMOTED has gone up.
+
+- **Lemonade stand — big glass.** Some orders (about one in three) are a big glass: the ticket's pictures come bigger,
+  the squeeze is held longer (`LEMON_DECK.big`: 2600 ms instead of 1700), and it tips twice and counts as two glasses
+  of work. The first of a shift is announced.
+- **Coffee Cup — the rush.** Once a day, after two cups with the rope clear, the customers stop leaving gaps: four
+  in a row, and serving every one earns a bonus (`XP.cafe.rush` 15, on the receipt too). ⚠️ Two changes from the plan:
+  the plan said "three at once" but the rope holds two, because a third customer stands off every phone's screen, so
+  the rush is a stream you can see. And "at the same moment for everyone" would be met by almost nobody at ten
+  players a day, so it comes during your own shift.
+- **Arcade — the streak.** A perfect repair lights its cabinet gold for the rest of the day (`tw-arcade-v1 lit`, drawn
+  by `town-room.js cabBox`), and perfect repairs in a row are counted and said (`tw-streak-v1`); a fine repair or a
+  spark starts the count over.
+- **General store — the basket.** About one customer in two wants two things: both pictures on the ticket, the first
+  over your head and the second stacked on it, one till for both (half an order is not handed over), a longer wait
+  (36 s), and half again a customer's XP (`XP.store.basket`). The pass worker counts a basket as a customer served
+  (`COUNTS_AS`).
+- **Post office — the fifth postmark.** The town's own post (a bell) joins the four, three cards of each (15), and the
+  pile comes faster (fresh 3.4 s, gone 7.5 s). ⚠️ The tally moved to its own row under the pigeonholes and the pile
+  fans like a deck: fifteen of each in one strip needed ~560 px of a 360 phone's ~310 and pushed every hole out of the
+  150 px tray.
+
+On-call jobs level up by reaching further into the world, counter jobs by new orders on the tray (Trym's two types).
+The store's later ranks (the front shelf, the van order) are menu choices with nothing felt, and get rethought when
+players near rank 3. Walks: tests/town-unlocks.spec.mjs (all five, at rank 2, and the first rank's card naming each),
+tests/jobs-maths.spec.mjs, tests/town-ladder.spec.mjs (the promotion says the café's rush), worker-pass jobs.test.mjs §18.

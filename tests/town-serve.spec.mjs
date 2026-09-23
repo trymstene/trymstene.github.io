@@ -63,6 +63,7 @@ test('a customer walks to the till and wants a thing: find it by its picture, ca
   const w1 = await want(page);
   const shelf = await page.evaluate(() => window.__town.room.shelf());
   expect(shelf, 'what they want is on the shelves').toContain(w1.id);
+  expect(w1.basket, '🧺 a first-rank shop assistant never gets a basket (the store’s rank 2)').toBe(false);
   const tray = await page.evaluate(() => window.__town.serve.tray());
   expect(tray.shown, '🎟 the ticket is up').toBe(true);
   expect(tray.name, 'with the thing’s name on it').toBeTruthy();

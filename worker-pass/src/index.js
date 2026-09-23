@@ -34,7 +34,7 @@ import { levelFor } from '../../src/lib/pass-defs.js';
 import { cleanName } from '../../src/lib/player-name.js';
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
-import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp } from '../../src/data/town/jobs.js';
+import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS } from '../../src/data/town/jobs.js';
 // 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
 // the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
 import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
@@ -1461,11 +1461,12 @@ async function jobChore(request, env) {
     // week counts it up to the duty's target and no further — so the ceiling a forged client can reach is
     // still one full week's rate. `days` is never reported; the worker counts attendance itself.
     const kind = typeof b.kind === 'string' ? b.kind.slice(0, 12) : '';
-    const duty = kind && kind !== 'days' ? (DUTIES[j.at] || []).find(([k]) => k === kind) : null;
+    const dk = COUNTS_AS[kind] || kind;   // 🧺 a basket (the store's rank 2, 23 Sep 2026) is a customer served on the sheet
+    const duty = dk && dk !== 'days' ? (DUTIES[j.at] || []).find(([k]) => k === dk) : null;
     if (!j.done) j.done = {};
     let dn = j.done[wk];
     if (!dn || dn.at !== j.at) dn = j.done[wk] = { at: j.at };   // a fresh sheet for this job's week
-    if (duty) dn[kind] = Math.min(duty[1], ((dn[kind] | 0) + 1));
+    if (duty) dn[dk] = Math.min(duty[1], ((dn[dk] | 0) + 1));
     // ↕ a counter's cups by grade (wrong · fine · perfect): the review of a tips job reads how the week went from these
     if (kind === 'cup' && TIPS_JOBS.includes(j.at)) { const c = dn.cups || (dn.cups = [0, 0, 0]); for (const g of (Array.isArray(b.g) ? b.g.slice(0, 60) : [b.g])) c[Math.max(0, Math.min(2, (+g) | 0))]++; }
     dn.r = Math.max(dn.r | 0, toldOf(j, j.at));   // 🪜 the rank this week is worked at

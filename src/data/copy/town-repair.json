@@ -10,5 +10,9 @@
   "fixed": {
     "fine": "The cabinet coughs, flickers and lights up.",
     "perfect": "The cabinet lights up like new, and its music starts."
+  },
+  "streak": {
+    "one": "The cabinet lights up gold, and stays lit for the day.",
+    "run": "Lit gold again. That makes {n} perfect repairs in a row."
   }
 }
