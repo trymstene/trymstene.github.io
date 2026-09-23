@@ -80,7 +80,7 @@ test('the ladder: ranks by XP, one pay scale that rises a fifth a rank, and tips
   expect([0, 1, 2].map((g) => xpFor('stand', 'cup', g)), 'a glass by its grade').toEqual([0, 2, 4]);
   expect([0, 1, 2].map((g) => xpFor('cafe', 'cup', g)), 'a cup by its grade').toEqual([0, 3, 6]);
   expect(xpFor('cafe', 'cup', 9), 'a forged grade is a perfect cup').toBe(6);
-  expect(xpFor('condo', 'sweep'), 'a piece of litter').toBe(15);
+  expect(xpFor('condo', 'sweep'), 'the day’s piece of litter (one a call day since 23 Sep 2026)').toBe(45);
   expect(xpFor('condo', 'fix'), 'a repair reported with no grade (an older page) earns its top').toBe(45);
   expect([0, 1, 2].map((g) => xpFor('condo', 'fix', g)), '🔧 a repair by its grade: spoiled, fine, perfect').toEqual([0, 30, 45]);
   expect(xpFor('store', 'restock')).toBe(45);
@@ -89,7 +89,7 @@ test('the ladder: ranks by XP, one pay scale that rises a fifth a rank, and tips
   expect(xpFor('post', 'sort', 999), 'and no forged round earns more').toBe(60);
   expect(xpFor('store', 'sweep'), 'a verb another workplace owns earns nothing here').toBe(0);
   // a full day fills each workplace's cap from its own verbs
-  expect(DAY_XP + 3 * xpFor('condo', 'sweep') + xpFor('condo', 'fix'), 'the arcade: three pieces of litter and a cabinet').toBe(LADDER.condo.day);
+  expect(DAY_XP + xpFor('condo', 'sweep') + xpFor('condo', 'fix'), 'the arcade: the day’s piece of litter and a cabinet').toBe(LADDER.condo.day);
   expect(DAY_XP + 2 * xpFor('store', 'restock'), 'the store: the delivery’s two faces').toBe(LADDER.store.day);
   expect(DAY_XP + 2 * xpFor('post', 'sort', roundXp(12, 0)), 'the post office: two perfect rounds').toBeGreaterThanOrEqual(LADDER.post.day);
 });

@@ -42,7 +42,7 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   await page.waitForTimeout(300);
   a = await arcade(page);
   expect(a.staff, 'staff now').toBe(true);
-  expect(a.litter.length, 'three pieces of litter on the floor').toBe(3);
+  expect(a.litter.length, '🗑 one piece of litter on the floor: litter comes a piece a call day, through the week').toBe(1);
   expect(a.dead, 'and one cabinet gone dark').toMatch(/^g[1-9]$/);
   expect(await page.locator('.tw-dead.is-in').count(), 'drawn dark on the room’s plate').toBe(1);
   const s0 = await state(page);
@@ -53,7 +53,7 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   // ── walking onto a piece sweeps it, and the note moves in the same beat
   const l = a.litter[0];
   await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y; }, [l.x, l.y]);
-  await page.waitForFunction(() => window.__town.room.arcade().litter.length === 2, null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__town.room.arcade().litter.length === 0, null, { timeout: 5000 });
   const s1 = await state(page);
   expect(s1.duties.find((d) => d.kind === 'sweep').done, 'floor swept 1/3').toBe(1);
   expect(s1.sofar, 'a sixth of the week’s work is a sixth of the rate').toBe(Math.round(JOB_PAY.condo / 6));   // the one pay scale's rank 1 (src/data/town/jobs.js)
@@ -74,7 +74,7 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   await playRepair(page, false);
   await page.waitForFunction(() => window.__town.room.arcade().dead === null, null, { timeout: 8000 });
   await page.waitForFunction((l) => (document.getElementById('twToast').textContent || '').trim() === l, REPAIR.fixed.perfect, { timeout: 5000 });   // a perfect repair, said
-  expect(await page.evaluate(() => window.__town.work.ladder().xp), 'a perfect repair is the most work XP a repair earns (45), on top of the sweep (25)').toBe(70);
+  expect(await page.evaluate(() => window.__town.work.ladder().xp), 'a perfect repair (45) on top of the day’s ten and its one piece of litter (45): the arcade’s whole day').toBe(100);
   const s2 = await state(page);
   expect(s2.duties.find((d) => d.kind === 'fix').done, 'machines fixed 1/3').toBe(1);
   expect(s2.sofar, 'two of six is a third of the rate').toBe(Math.round(JOB_PAY.condo / 3));
@@ -85,7 +85,7 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   await page.evaluate(() => window.__town.arcade.enter());
   await page.waitForTimeout(300);
   a = await arcade(page);
-  expect(a.litter.length, 'two pieces left today').toBe(2);
+  expect(a.litter.length, 'the day’s piece is swept: nothing more until the next call').toBe(0);
   expect(a.dead, 'no cabinet to wake until tomorrow').toBeNull();
 
   const ev = await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_chore').map((e) => e[1].kind));

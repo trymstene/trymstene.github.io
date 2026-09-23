@@ -97,7 +97,7 @@ test('the arcade is a door for its staff too: in first, the calls lit inside, th
   test.setTimeout(90000);
   const errs = await town(page);
   await page.evaluate(() => window.__town.work.set({ at: 'condo', sofar: 20 }));
-  await page.evaluate(() => window.__town.room.arcadeReset('g2'));   // a fresh day with its calls in: three bits of litter, g2 dark
+  await page.evaluate(() => window.__town.room.arcadeReset('g2'));   // a fresh day with its calls in: the day's piece of litter, g2 dark
   await stand(page, 480, 600);
 
   // ── the tap on the arcade: no card at the door, the banana goes in, and the calls are there, lit
@@ -105,7 +105,7 @@ test('the arcade is a door for its staff too: in first, the calls lit inside, th
   await page.waitForFunction(() => window.__town.rooms.now() === 'condo', null, { timeout: 15000 });
   expect(await card(page), 'nothing opened at the door').toBe(null);
   const a = await page.evaluate(() => window.__town.room.arcade());
-  expect(a.litter.length, 'the litter on the floor').toBe(3);
+  expect(a.litter.length, 'the day’s piece of litter on the floor').toBe(1);
   expect(a.dead, 'the dark cabinet').toBe('g2');
 
   // ── inside, the note is up, and it opens the card: today's calls, the week, the wage
@@ -115,7 +115,7 @@ test('the arcade is a door for its staff too: in first, the calls lit inside, th
   let c = await card(page);
   expect(c.kind, 'the arcade is the town calling').toBe('oncall');
   expect(c.calls, 'the litter and the dark cabinet are today’s calls').toEqual(['sweep', 'fix']);
-  expect(c.text, 'the litter is counted').toMatch(new RegExp(STAFF.call.sweep + '\\s*3'));
+  expect(c.text, 'the litter call, one piece (no count to print)').toContain(STAFF.call.sweep);
   expect(c.go).toBe(STAFF.answer);
   expect(c.text, 'the week').toContain(DUTY.kinds.sweep);
   expect(c.text, 'the wage').toContain(STAFF.wage);

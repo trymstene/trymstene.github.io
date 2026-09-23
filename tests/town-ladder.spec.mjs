@@ -150,9 +150,9 @@ test('at the arcade a sweep is work XP on the note’s bar, and the card says wh
   await page.waitForFunction((t) => window.__town.duties.top().indexOf(t) === 0, STAFF.ranks.condo[0], { timeout: 5000 });
   expect(await page.evaluate(() => window.__town.duties.xp()), 'nothing yet').toBe('0.0%');
   await page.evaluate(() => window.__town.work.chore('sweep'));
-  // the day's ten and a piece of litter's fifteen, of the three hundred to the next rank
-  expect(await page.evaluate(() => window.__town.work.ladder()), 'twenty-five work XP').toMatchObject({ xp: 25, today: 25 });
-  await page.waitForFunction((x) => window.__town.duties.xp() === x, (25 / 300 * 100).toFixed(1) + '%', { timeout: 3000 });
+  // the day's ten and the day's piece of litter's forty-five, of the three hundred to the next rank
+  expect(await page.evaluate(() => window.__town.work.ladder()), 'fifty-five work XP').toMatchObject({ xp: 55, today: 55 });
+  await page.waitForFunction((x) => window.__town.duties.xp() === x, (55 / 300 * 100).toFixed(1) + '%', { timeout: 3000 });
   await page.evaluate(() => window.__town.staffOpen('condo', 'note'));
   const c = await card(page);
   expect(c.title).toBe(STAFF.ranks.condo[0]);

@@ -82,7 +82,7 @@ test('the arcade’s day: quiet, then a call rings the note and the room draws i
   expect(n.line, 'Spinner calls, in the note’s own words').toBe(DUTY.call.sweep);
   expect(n.rang, 'and it rang').toBe(true);
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.twd-chip')).backgroundImage), 'amber, not the quest’s gold').toContain('rgb(255, 195, 107)');
-  await page.waitForFunction(() => window.__town.room.arcade().litter.length === 3, null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__town.room.arcade().litter.length === 1, null, { timeout: 5000 });   // 🗑 one piece a call day
   a = await page.evaluate(() => window.__town.room.arcade());
   expect(a.dead, 'the dark cabinet is in the room too').not.toBeNull();
   await page.screenshot({ path: SHOT + 'arcade-ringing.png' });
@@ -95,7 +95,7 @@ test('the arcade’s day: quiet, then a call rings the note and the room draws i
   expect(await page.evaluate(() => document.querySelector('.tws').innerText), 'open until midnight').toContain(STAFF.until);
   await page.evaluate(() => document.getElementById('twCardX').click());
 
-  // ── sweep the three pieces: the litter call is answered, and the note moves on to the cabinet
+  // ── sweep the day's piece: the litter call is answered, and the note moves on to the cabinet
   for (const l of a.litter) await page.evaluate(([x, y]) => window.__town.room.sweepAt(x, y), [l.x, l.y]);
   await page.waitForFunction((l) => window.__town.duties.line() === l, DUTY.call.fix, { timeout: 5000 });
 

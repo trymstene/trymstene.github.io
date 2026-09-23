@@ -14,7 +14,7 @@
 export const ONCALL_JOBS = { condo: ['sweep', 'fix'], store: ['restock'] };
 const WEEKLY = { sweep: 6, fix: 5, restock: 6 };                    // days in a week that carry the call
 const DELAY = { sweep: [1, 4], fix: [3, 8], restock: [1, 5] };      // minutes after the day's first visit
-export const NEEDS = { sweep: 3, fix: 1, restock: 2 };              // what answers it: town-room ARC_LITTER, one cabinet, STAFF_FACES
+export const NEEDS = { sweep: 1, fix: 1, restock: 2 };              // what answers it: the day's one piece of litter (23 Sep 2026: litter through the week), one cabinet, STAFF_FACES
 
 export const dayOf = (t) => Math.floor(t / 86400000);
 const get = (fn) => { try { return JSON.parse(fn() || 'null'); } catch (e) { return null; } };   // every key a literal at its read (the storage gate)

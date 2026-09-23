@@ -1545,8 +1545,11 @@ export function bootTownLife(ctx) {
     if (!arcStaff() || !ARCADE || !ARCADE.spots) return;
     const a = arcRead();
     const sweepIn = callIn('condo', 'sweep');   // 📟 the litter and the dark cabinet are the day's CALLS: drawn once each has come in
+    // 🗑 LITTER THROUGH THE WEEK (23 Sep 2026): a sweep call brings ONE piece, on the spot of the three the day picks — so the
+    // week's three are swept over three call days instead of all on the first (the ladder plan's complaint about the arcade)
+    const li = Math.floor(h(dayNum(), 55, 2) * ARC_LITTER.length) % ARC_LITTER.length;
     ARC_LITTER.forEach(([x, y], i) => {
-      if (a.swept.includes(i) || !sweepIn) return;
+      if (i !== li || a.swept.includes(i) || !sweepIn) return;
       const s = sprite(['trash1', 'trash2', 'trash3'][i % 3], x, y, { z: 2000 + y, cls: 'is-in' });
       if (s) arcLitter.push({ i, s, x, y });
     });

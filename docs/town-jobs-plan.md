@@ -1111,3 +1111,13 @@ chunk, `ARCADE_DECK` on `town-cafe.js mountCounter` — the café's thumb-measur
   retry, and Leave it); tests/jobs-maths.spec.mjs (XP by grade).
 - Still to come in slice 2: litter through the week (today all three pieces arrive on day one), the store's customer
   requests. The ladder's R2 unlock for the arcade (a perfect repair lights the cabinet with a streak) is slice 3.
+
+## 18. Litter through the week (23 Sep 2026)
+
+Trym: *"do the litter through the week next"*. A sweep call used to put all three pieces of litter on the arcade floor at
+once, so the week's target of three was met on the first call day and the rest of the week's litter counted for nothing.
+A sweep call now brings **one piece**, on whichever of the three floor spots the day picks (`town-room.js arcadeShow`,
+`work-calls.js NEEDS.sweep = 1`). Calls come six days in seven, so the week's three are swept over three call days — the
+arcade's week asks for three visits, not one. One piece is a day's sweeping, so it is worth **45 work XP** (was 15 a piece),
+and a full arcade day is still 100: ten for turning up, the day's piece, and a perfect repair. Walks: town-arcade-chores,
+town-calls, town-staff, town-ladder; tests/jobs-maths.spec.mjs.

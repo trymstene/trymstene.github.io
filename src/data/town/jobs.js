@@ -39,7 +39,7 @@ export const DAY_XP = 10;       // turning up, once a day, at every workplace
 export const XP = {
   stand: { cup: [0, 2, 4] },
   cafe: { cup: [0, 3, 6] },
-  condo: { sweep: 15, fix: [0, 30, 45] },   // three pieces of litter and a cabinet woken fill the arcade's day; 🔧 a repair by its grade (town-repair.js)
+  condo: { sweep: 45, fix: [0, 30, 45] },   // the day's one piece of litter (it comes a piece a call day now) and a cabinet woken fill the arcade's day; 🔧 a repair by its grade (town-repair.js)
   store: { restock: 45 },          // the delivery's two faces fill the store's
   post: { sort: 60 },              // two good rounds fill the post office's
 };
