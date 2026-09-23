@@ -34,8 +34,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Install Playwright chromium
-        run: npx playwright install --with-deps chromium
+      # 📱 and WebKit, the engine inside every iPhone browser: tests/town-counter-touch.spec.mjs opens the
+      # counter in it at two iPhone sizes (Trym, 23 Sep: the counters "struggled to work properly on my iphone")
+      - name: Install Playwright chromium and webkit
+        run: npx playwright install --with-deps chromium webkit
       - name: Build
         run: npm run build
       - name: Walk the world

@@ -30,6 +30,11 @@
   /* ⚠️ the pour is a HOLD, and a vertical drag on a canvas that can scroll gets pointercancel after
      two moves — measured. Nothing in here scrolls, and the canvas takes the pointer outright. */
   touch-action: none; overscroll-behavior: contain;
+  /* 📱 AND ON AN IPHONE A HOLD IS ALSO A LONG PRESS (Trym, 23 Sep: the counter "struggled to work properly on my
+     iphone"). touch-action says nothing about long presses: iOS starts a text selection or a callout on the button's
+     word and cancels the touch halfway up the bar, so the pour and the squeeze stopped where the thumb had got to.
+     Nothing on a tray is text to copy. */
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
 }
 .tw-cup[hidden] { display: none; }
 /* folded: you stepped off the counter mark. The customer keeps its ticket; the tray just goes down. */
@@ -63,12 +68,22 @@
   position: relative; height: 34px; border: 3px solid #000; background: #2a1a10;
   box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.5);
   overflow: hidden;
+  /* 📱 ITS OWN LAYER, AND ITS OWN ORDER. Four things in here animate (a texture, the band's pulse, the needle's
+     judder, the stream), so each is composited — and Safari clips composited children of an overflow box
+     reliably only when that box is a layer itself. The z-indexes below are the order the tree already gave,
+     written down, so no engine has to work it out: the dressing, the band, the level, the needle, the marks. */
+  isolation: isolate; transform: translateZ(0);
 }
-/* the band to land in. ⚠️ a STATIC filter under an opacity pulse — never an animated filter */
+.tw-cup__bar::before { z-index: 0; }
+.tw-cup__bar::after { z-index: 5; }
+/* the band to land in. ⚠️ ITS GLOW IS A box-shadow, NEVER A filter: Safari draws drop-shadow() unreliably
+   (missing on first paint, flickering after), and this band is the one thing a player must see to act. The old
+   drop-shadow also lay UNDER the band's see-through inside and greened it, so the fill is 0.47, not the 0.32 it was
+   — measured off the pixels, the same green as before. The pulse stays opacity only. */
 .tw-cup__zone {
-  position: absolute; top: 0; bottom: 0; background: rgba(123, 195, 94, 0.32);
+  position: absolute; top: 0; bottom: 0; z-index: 1; background: rgba(123, 195, 94, 0.47);
   border-left: 2px solid #7bc35e; border-right: 2px solid #7bc35e;
-  filter: drop-shadow(0 0 4px rgba(123, 195, 94, 0.7));
+  box-shadow: 0 0 4px rgba(123, 195, 94, 0.7);
   animation: twCupZone 1.5s ease-in-out infinite alternate;
 }
 @keyframes twCupZone { from { opacity: 0.72; } to { opacity: 1; } }
@@ -77,11 +92,11 @@
 /* ⚠️ A HORIZONTAL-BAND GRADIENT ONLY. The fill is scaleX'd every frame (town-cafe.js paint), so any
    detail with an x dimension stretches from a sliver to a slab as the cup fills. A band across the top
    is invisible to that — and it is what turns a brown progress bar into coffee with crema on it. */
-.tw-cup__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(#e6b072 0 7px, #a86a2e 7px); transform-origin: 0 50%; transform: scaleX(0); }
-.tw-cup__needle { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: #ffe135; border: 2px solid #000; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+.tw-cup__fill { position: absolute; z-index: 2; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(#e6b072 0 7px, #a86a2e 7px); transform-origin: 0 50%; transform: scaleX(0); }
+.tw-cup__needle { position: absolute; z-index: 3; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: #ffe135; border: 2px solid #000; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
 /* the milk wants three taps: each one leaves its mark where it fell, coloured by how it landed, so a
    player can see two down and one to go without a single word on the tray */
-.tw-cup__tap { position: absolute; top: 3px; height: 10px; width: 4px; margin-left: -2px; border: 2px solid #000; background: #d64030; }
+.tw-cup__tap { position: absolute; z-index: 4; top: 3px; height: 10px; width: 4px; margin-left: -2px; border: 2px solid #000; background: #d64030; }
 .tw-cup__tap.is-g1 { background: #f0b428; }
 .tw-cup__tap.is-g2 { background: #7bc35e; }
 .tw-cup__tap[hidden] { display: none; }

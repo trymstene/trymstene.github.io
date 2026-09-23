@@ -92,9 +92,10 @@ export function newCup(drink, n, seed, deck = CAFE_DECK) {
 export const stationOf = (cup) => deckOf(cup).order[cup.i] || '';
 
 function vAt(cup, key, now) {
-  const st = stationDef(cup, key), e = now - (cup.t0 || now);
+  // ⚠️ never before the station began: a thumb's own instant can be a few ms older than the frame that started it
+  const st = stationDef(cup, key), e = Math.max(0, now - (cup.t0 || now));
   if (st.kind === 'sweep') { const p = (e % (st.span * 2)) / st.span; return p <= 1 ? p : 2 - p; }
-  if (st.kind === 'hold') return cup.held ? Math.min(1, (now - cup.held) / st.span) : 0;
+  if (st.kind === 'hold') return cup.held ? Math.min(1, Math.max(0, now - cup.held) / st.span) : 0;
   const p = (e % st.span) / st.span; return p <= 0.5 ? p * 2 : 2 - p * 2;
 }
 
@@ -261,32 +262,51 @@ export function mountCounter(host, opts = {}) {
 
   // ⚠️ THE POUR IS A HOLD, AND A HOLD IS FRAGILE. A vertical drag begun on a control inside anything
   // that can scroll gets `pointercancel` after two moves and the pour dies before it is written —
-  // measured. So: touch-action:none in the CSS, a container that cannot scroll, release listened for
-  // on the WINDOW (a thumb that slides off the button still finishes its pour), and world-steer's
-  // own bail — if the event stops being cancelable a scroll won, and we let go rather than fight it.
+  // measured. So: touch-action:none in the CSS, a container that cannot scroll, and release listened
+  // for on the WINDOW (a thumb that slides off the button still finishes its pour). A scroll that wins
+  // arrives as pointercancel, which lets the pour go where it stands.
+  //
+  // 📱 AND IT IS ONE THUMB (Trym, 23 Sep: the counter "struggled to work properly on my iphone … the action
+  // button … didnt work all the time"). Only the finger that pressed can let go: a palm or a second finger
+  // lifting anywhere on the screen used to end the pour, and so did any move from it. And the press is judged
+  // at the thumb's own instant — the event's timestamp, not whenever a busy phone got round to running this —
+  // which is what the top of this file always said it did.
+  let pid = null;
+  const stamp = (e) => {
+    const n = now();
+    if (opts.now || !e) return n;   // a caller with its own clock keeps it
+    const t = e.timeStamp;
+    return t > 0 && t <= n && n - t < 400 ? t : n;   // a stamp from another clock, or a stale one, is not an instant
+  };
   function down(e) {
     if (!cup || cup.done) return;
     if (e.cancelable) e.preventDefault();
-    holding = true; cx = e.clientX; cy = e.clientY;
+    holding = true; pid = e.pointerId; cx = e.clientX; cy = e.clientY;
+    try { go.setPointerCapture(e.pointerId); } catch (err) { /* a synthetic event has no pointer to capture */ }
     go.classList.add('is-held');
-    const r = press(cup, now());
+    const r = press(cup, stamp(e));
     box.classList.toggle('is-pouring', !!(cup && cup.held));   // ☕ the stream falls only while the thumb is down
     if (r) step(r);
   }
-  function up() {
-    if (!holding) return;
-    holding = false;
+  function up(e) {
+    if (!holding || (e && e.pointerId !== pid)) return;
+    holding = false; pid = null;
     go.classList.remove('is-held');
     box.classList.remove('is-pouring');
     if (!cup || cup.done) return;
-    const r = release(cup, now());
+    const r = release(cup, stamp(e));
     if (r) step(r);
   }
   function move(e) {
-    if (!holding) return;
-    // a real scroll won, or the thumb wandered: let the pour go where it stands rather than hang on
-    if (!e.cancelable || Math.hypot(e.clientX - cx, e.clientY - cy) > HOLD_SLOP * 12) up();
+    if (!holding || e.pointerId !== pid) return;
+    // the thumb wandered right away from the counter: let the pour go where it stands rather than hang on
+    if (Math.hypot(e.clientX - cx, e.clientY - cy) > HOLD_SLOP * 12) up(e);
   }
+  // 📱 THE WHOLE TOUCH IS THE COUNTER'S. Cancelling pointerdown only stops the compatibility mouse events; iOS
+  // runs its own long-press, selection and double-tap recognisers on the touch underneath, and any of them can
+  // cancel a pour mid-hold. A cancelled touchstart tells Safari none of them apply. It needs a listener that is
+  // allowed to cancel, so it is not passive.
+  const own = (e) => { if (e.cancelable) e.preventDefault(); };
   function step(r) {
     if (opts.onStep) opts.onStep(r, cup);
     if (!r.done) return;
@@ -295,6 +315,7 @@ export function mountCounter(host, opts = {}) {
     if (opts.onCup) opts.onCup(done);
   }
   go.addEventListener('pointerdown', down);
+  go.addEventListener('touchstart', own, { passive: false });
   window.addEventListener('pointerup', up);
   window.addEventListener('pointercancel', up);
   window.addEventListener('pointermove', move, { passive: true });
@@ -357,7 +378,7 @@ export function mountCounter(host, opts = {}) {
         return c >= t ? c : c + Math.ceil((t - c) / (st.span * 2)) * st.span * 2;
       },
     },
-    destroy() { sleep(); toast(false); go.removeEventListener('pointerdown', down); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('pointermove', move); box.remove(); },
+    destroy() { sleep(); toast(false); go.removeEventListener('pointerdown', down); go.removeEventListener('touchstart', own); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('pointermove', move); box.remove(); },
   };
 }
 
