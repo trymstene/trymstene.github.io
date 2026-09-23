@@ -16,7 +16,7 @@
 // of four already-approved lines the boss says.
 import { passPost } from '../lib/banana-pass.js';
 import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor, COUNTS_AS, dayCap, MEMENTO, ranksOf } from '../data/town/jobs.js';
-import { grantToShed } from '../lib/homestead-inventory.js';   // 📜 a boss's memento goes to your homestead's shed   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
+import { grantToShed, canHold } from '../lib/homestead-inventory.js';   // 📜 a boss's memento goes to your homestead's shed   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
@@ -53,7 +53,9 @@ export function bootTownWork(ctx) {
   // the server's answer is the truth; the mirror follows it. ⚠️ `up`, `hm` and `told` are the
   // DEVICE's own (turned up today, the chip folded, what the chip has said) and ride along untouched.
   function land(res) {
-    if (!res || res.error) return res;
+    // a refusal can still carry the job as it stands (the server's 409 'no job' does): the mirror lands it, so a job the
+    // server has let go of stops being answered as held
+    if (!res || (res.error && !(res.error === 'no job' && res.job))) return res;
     if (res.job) {
       const was = job.at || '';
       const l = res.job.lad;
@@ -61,7 +63,7 @@ export function bootTownWork(ctx) {
         duties: Array.isArray(res.job.duties) ? res.job.duties : [], share: +res.job.share || 0, nudge: !!res.job.nudge, fired: res.job.fired || null,
         // 🪜 the ladder at the job you hold: XP, the rank your boss has told you, today's XP (worker-pass ladderOf)
         lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey(),
-          warn: !!l.warn, talk: l.talk || '', last: l.last || null } : null };   // ↕ the weekly review: warned, the boss's word waiting, last week
+          warn: !!l.warn, talk: l.talk || '', last: l.last || null, mem: l.mem | 0 } : null };   // ↕ the weekly review: warned, the boss's word waiting, last week
       if (was !== job.at) job.up = '';
       // 💼 a job that is gone is REMEMBERED for a while: the homestead still asks for the payslip it owes
       if (was && !job.at) { job.was = was; job.wasT = Date.now(); }
@@ -152,7 +154,7 @@ export function bootTownWork(ctx) {
           if (res && res.error === 'keep') { job = { ...job, at: before }; writeJob(job); if (w.keep) say(w.keep); }
         });
         // optimistic, and honestly so: if the server refuses, the line above corrects it
-        job = { ...job, at, up: '', lad: null };   // 🪜 a new workplace's ladder comes back with the server's answer
+        job = { ...job, at, up: '', lad: null, ref: '' };   // a reference is this hire's alone: the next take starts without one   // 🪜 a new workplace's ladder comes back with the server's answer
         loadWords();
         writeJob(job);
         notify();
@@ -172,7 +174,7 @@ export function bootTownWork(ctx) {
         if (job.at !== at) return w.already ? '' : '';
         track('town_job', { at, r: 'quit' });
         passPost('/job/take', { at: '' }).then(land);
-        job = { ...job, at: '', was: at, wasT: Date.now(), up: '', duties: [], share: 0, sofar: 0, nudge: false };
+        job = { ...job, at: '', was: at, wasT: Date.now(), up: '', duties: [], share: 0, sofar: 0, nudge: false, ref: '' };
         writeJob(job);
         notify();
         return w.quitDone || '';
@@ -198,7 +200,7 @@ export function bootTownWork(ctx) {
         told = n.earned;
         track('town_promo', { at, rank: told });
         passPost('/job/promote', { at }).then(land);
-        job = { ...job, lad: { ...(job.lad || {}), xp: n.xp, rank: told, today: n.today, d: todayKey() } };
+        job = { ...job, lad: { ...(job.lad || {}), xp: n.xp, rank: told, today: n.today, d: todayKey(), warn: false, talk: '' } };   // the promotion overtakes a waiting word
         writeJob(job); notify();
         return line.replace('{title}', titleOf(at, told));
       },
@@ -269,18 +271,22 @@ export function bootTownWork(ctx) {
       // 🪜 the ladder: where you stand, the words it is told in (null until they land), and a title by rank
       ladder, words: () => LW, title: titleOf, wordsReady: loadWords,
       // ⚠️ the walk's door to the ladder: XP and a told rank, as the server would have answered them
-      // 📜 THE MEMENTO at a workplace's top rank: into the homestead's shed ONCE (tw-memento-v1), and the line that says so — or,
-      // with the shed full, the line that says it waits, and it is tried again the next time the town asks
-      memento: (at) => {
-        const id = MEMENTO[at]; if (!id || !LW) return '';   // no words yet: nothing is given without its line
-        let given = {}; try { given = JSON.parse(localStorage.getItem('tw-memento-v1') || '{}') || {}; } catch (e) {}
-        if (given[at]) return '';
-        if (!grantToShed(id)) return ((LW || {}).mementoFull) || '';
-        given[at] = 1; try { localStorage.setItem('tw-memento-v1', JSON.stringify(given)); } catch (e) {}
-        return (((LW || {}).memento) || {})[at] || '';
+      // 📜 THE MEMENTO at a workplace's top rank: into the homestead's shed ONCE, and the line that says so — or, with the shed
+      // full, the line that says it waits, and it is tried again the next time the town asks. A shed piece can be sold back, so
+      // whether it was given is the pass worker's record (lad.mem: 1 owed, 2 handed over), never this device's: the town asks
+      // /job/memento, and only its `given` puts the piece in the shed. A promise of the line ('' when there is nothing to say).
+      memento: async (at) => {
+        const id = MEMENTO[at]; if (!id || !LW || job.at !== at) return '';   // no words yet: nothing is given without its line
+        if ((((job.lad || {}).mem) | 0) !== 1) return '';
+        if (!canHold()) return LW.mementoFull || '';
+        const res = await passPost('/job/memento', { at });
+        land(res);
+        if (!res || res.given !== at) return '';
+        if (!grantToShed(id)) return LW.mementoFull || '';
+        return (LW.memento || {})[at] || '';
       },
-      mementoDue: () => { const l = ladder(); if (!job.at || !MEMENTO[job.at] || l.rank < ranksOf(job.at)) return false; try { return !(JSON.parse(localStorage.getItem('tw-memento-v1') || '{}') || {})[job.at]; } catch (e) { return true; } },
-      setLad: (l) => { job = { ...job, lad: { xp: (l && l.xp) | 0, rank: Math.max(1, (l && l.rank) | 0), today: (l && l.today) | 0, d: todayKey(), warn: !!(l && l.warn), talk: (l && l.talk) || '', last: (l && l.last) || null } }; writeJob(job); notify(); return ladder(); },
+      mementoDue: () => !!(job.at && MEMENTO[job.at] && (((job.lad || {}).mem) | 0) === 1),
+      setLad: (l) => { job = { ...job, lad: { xp: (l && l.xp) | 0, rank: Math.max(1, (l && l.rank) | 0), today: (l && l.today) | 0, d: todayKey(), warn: !!(l && l.warn), talk: (l && l.talk) || '', last: (l && l.last) || null, mem: (l && l.mem) | 0 } }; writeJob(job); notify(); return ladder(); },
       word: (key) => { const t = wordFor(key); return t ? { q: t.q, a: t.a() } : null; },
       promote: (key) => { const t = promoFor(key); return t ? { q: t.q, a: t.a() } : null; },
       turnUp: () => { job.up = todayKey(); job.days = (job.days | 0) + 1; writeJob(job); notify(); },   // QA: the day counted

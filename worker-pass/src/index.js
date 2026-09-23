@@ -80,6 +80,7 @@ export default {
       if (url.pathname === '/job/pay') return jobPay(request, env);
       if (url.pathname === '/job/view') return jobViewRoute(request, env);
       if (url.pathname === '/job/promote') return jobPromote(request, env);
+      if (url.pathname === '/job/memento') return jobMemento(request, env);
       if (url.pathname === '/town/wheel') return townWheel(request, env, ctx);
       if (url.pathname === '/town/sell') return townSell(request, env);
       if (url.pathname === '/town/pot') return townPot(request, env);
@@ -1295,6 +1296,7 @@ function ladderOf(j, at, now) {
   const last = (j.rev || {})[jobWeek(now - 7 * DAY)];
   return { xp, rank, today: xpToday(j, at, now), news: rankOf(at, xp) > rank,
     warn: !!(j.warn && j.warn[at]), talk: (j.talk && j.talk[at]) || '',   // ↕ warned; the boss's word waiting ('warn' | 'demoted')
+    mem: ((j.mem && j.mem[at]) | 0),   // 📜 the top rank's memento: 1 owed, 2 handed over
     last: last && last.at === at && last.v ? { v: last.v, xp: last.xp | 0 } : null };   // ↕ last week's review
 }
 // the XP a chore earns, after the day's cap — and the day's own ten the first time you turn up
@@ -1323,7 +1325,7 @@ function jobView(j, now) {
     const w0 = jobWeek(now - i * 7 * DAY);
     if (!(j.wk && j.wk[w0]) && !(j.done && j.done[w0])) continue;
     if (j.paid && j.paid[w0] != null) continue;
-    const d0 = doneOf(j, w0);
+    const d0 = sheetOf(j, w0);
     owed += payOf(d0.at, d0, weekRank(j, d0));
   }
   const at = j.at || '';
@@ -1349,6 +1351,19 @@ const weekRank = (j, dn) => ((dn && dn.r) | 0) || (dn && dn.at ? toldOf(j, dn.at
 //           and that workplace starts over: its XP to nothing, its rank to the first, its warning gone
 // Runs on every /job/* call before its answer, so a phone that opens the town finds out the same as one that opens the
 // homestead's mailbox. Returns whether anything changed (the record must then be saved).
+// ⚖️ A WEEK IS JUDGED ONLY IF IT COULD HAVE BEEN PASSED (24 Sep 2026; found by the day's code review). The arcade's sweep and
+// fix chores were only reported from 22 Sep and the store's week became crates + customers on 23 Sep, so the weeks before
+// REVIEW_FROM are never reviewed — a sheet from a week whose chores did not exist yet was an "empty" week and a strike toward
+// the sack. And a week you were hired after its Monday is not judged either: a Friday hire with one round is not a poor week.
+export const REVIEW_FROM = '2026-W40';
+// the week's sheet as its cheque and its review read it: for the store's weeks up to the change (W39 and before), a day you
+// turned up fills the customers duty that replaced it — so a cheque for a week of turning up still pays what it earned
+const STORE_SHIM_TO = '2026-W39';
+function sheetOf(j, wk) {
+  const dn = doneOf(j, wk);
+  if (dn.at === 'store' && wk <= STORE_SHIM_TO && (dn.days | 0) > (dn.serve | 0)) return { ...dn, serve: dn.days | 0 };
+  return dn;
+}
 function jobReview(j, now) {
   if (!j) return false;
   const rev = j.rev || (j.rev = {});
@@ -1356,11 +1371,11 @@ function jobReview(j, now) {
   for (let i = PAY_BACK; i >= 1; i--) {
     const W = weekOf(now - i * 7 * DAY), wk = W.id;
     if (rev[wk]) continue;
-    const dn = doneOf(j, wk), at = dn.at;
+    const dn = sheetOf(j, wk), at = dn.at;
     if (!at || !LADDER[at]) continue;
     changed = true;
-    // not the job you hold, or a week that was over before you were hired: nothing to review
-    if (at !== j.at || (j.since || 0) >= W.to) { rev[wk] = { at, v: '' }; continue; }
+    // not the job you hold, a week before the review began, or a week you joined after its Monday: nothing to review
+    if (at !== j.at || wk < REVIEW_FROM || (j.since || 0) >= W.from + DAY) { rev[wk] = { at, v: '' }; continue; }
     const v = reviewOf(at, dn), r = { at, v, xp: 0 };
     if (v === 'empty') {
       j.zero = (j.zero | 0) + 1;
@@ -1517,10 +1532,38 @@ async function jobPromote(request, env) {
       return json({ ok: true, promoted: null, heard: heard || null, job: jobView(j, now) }, 200, cors(env, request));
     }
     (j.rk || (j.rk = {}))[at] = to;
+    // a promotion is the boss's whole word: a warning or a demotion still waiting to be said is overtaken by it, not said after
+    if (j.warn) delete j.warn[at];
+    if (j.talk) delete j.talk[at];
+    if (to >= ranksOf(at) && !((j.mem || {})[at])) (j.mem || (j.mem = {}))[at] = 1;   // 📜 the top rank: the boss's memento is owed
     const dn = j.done && j.done[jobWeek(now)];
     if (dn && dn.at === at) dn.r = Math.max(dn.r | 0, to);   // this week pays at the new rank
     await saveKey(env, R.homeKey, R.home);
     return json({ ok: true, promoted: { at, from: was, to }, job: jobView(j, now) }, 200, cors(env, request));
+  });
+}
+
+// ---------- POST /job/memento — the top rank's gift, handed over once (24 Sep 2026) ----------
+// 📜 The memento goes into the homestead's shed, and a shed piece can be sold back — so the one record of whether it was
+// given is HERE, not on a device: owed (1) at the promotion to the top, handed over (2) by this route, exactly once. The
+// town asks when it is about to put it in the shed; only the answer that moves 1 → 2 says `given`, so a second device, a
+// cleared browser or a second tap is told there is nothing to give.
+async function jobMemento(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const at = String((b && b.at) || '');
+  return retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+    if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
+    const j = jobRec(R.home, false);
+    const now = Date.now();
+    if (!j || !LADDER[at] || ((j.mem || {})[at] | 0) !== 1) return json({ ok: true, given: null, job: j ? jobView(j, now) : null }, 200, cors(env, request));
+    j.mem[at] = 2;
+    await saveKey(env, R.homeKey, R.home);
+    return json({ ok: true, given: at, job: jobView(j, now) }, 200, cors(env, request));
   });
 }
 
@@ -1547,7 +1590,7 @@ async function jobPay(request, env) {
       const wk = jobWeek(now - i * 7 * DAY);
       const worked = !!(j.wk && j.wk[wk]) || !!(j.done && j.done[wk]);
       if (!worked || j.paid[wk] != null) continue;
-      const dn = doneOf(j, wk), at = dn.at;
+      const dn = sheetOf(j, wk), at = dn.at;
       // ⭐ THE CHEQUE IS THE RATE SCALED BY THE WEEK'S WORK (docs/town-jobs-plan.md §12): the counts
       // ride the row, so the payslip prints the reasoning — "floor swept 1/3, machines fixed 0/3".
       const rank = weekRank(j, dn);   // 🪜 a cheque pays the rank the week was worked at

@@ -49,7 +49,8 @@
       "short": "This round is not on the sheet. The counter will be ready again.",
       "back": "Put away"
     },
-    "parcel": "A parcel: sort it, then tap it on the scale."
+    "parcel": "A parcel: sort it, then tap it on the scale.",
+    "registered": "A red seal: registered post. Sort it at once."
   },
   "card": {
     "title": "Picture Postcard",

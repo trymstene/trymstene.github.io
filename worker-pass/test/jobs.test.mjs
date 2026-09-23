@@ -55,7 +55,7 @@ const ok = (name, cond, extra) => {
 // ── the clock, so a week can pass in a millisecond ──────────────────────────
 const REAL_NOW = Date.now;
 // a Wednesday, so "this week" has room on both sides
-let CLOCK = Date.UTC(2026, 8, 16, 12, 0, 0);
+let CLOCK = Date.UTC(2026, 9, 7, 12, 0, 0);   // a Wednesday in W41: the weekly review judges weeks from W40 (REVIEW_FROM)
 Date.now = () => CLOCK;
 const DAY = 86400000;
 
@@ -505,6 +505,77 @@ console.log('\n20. 📜 a reference: the top rank at the stand starts you at the
   ok('back again later: no second start, the café keeps what you had', !v.ref && v.job.lad.rank === 2, v);
   v = await P('/job/take', { at: 'condo' });
   ok('the arcade is two rungs up: the stand’s reference is not for it', !v.ref && v.job.lad.rank === 1, v);
+}
+
+console.log('\n21. ⚖️ a week is judged only if it could have been passed');
+const LATEST = CLOCK;   // §21 goes back to September for its weeks; the sections after it carry on from here (the IP throttle counts a minute forward)
+{
+  CLOCK = Date.UTC(2026, 8, 18, 12, 0, 0);   // Friday of W38, before the chores and the review
+  const P = as(await kept('fair@example.com'));
+  await P('/job/take', { at: 'condo' });
+  await P('/job/chore', {});   // turned up: a sheet, and no sweep or fix existed yet
+  CLOCK = Date.UTC(2026, 8, 25, 12, 0, 0);   // Friday of W39
+  await P('/job/chore', {});
+  CLOCK = Date.UTC(2026, 8, 30, 12, 0, 0);   // Wednesday of W40: W38 and W39 are finished
+  let v = await P('/job/view');
+  ok('the weeks before the review began are never a strike: still employed', v.job.at === 'condo' && !v.job.fired, v.job);
+  // the store's transition: a W39 week of turning up still pays what it earned under the old duties
+  const S = as(await kept('fair-store@example.com'));
+  CLOCK = Date.UTC(2026, 8, 21, 9, 0, 0);   // Monday of W39
+  await S('/job/take', { at: 'store' });
+  for (let d = 0; d < 3; d++) { await S('/job/chore', {}); CLOCK += DAY; }   // three days turned up, no customers (the duty did not exist yet)
+  CLOCK = Date.UTC(2026, 8, 30, 12, 0, 0);
+  const pay = await S('/job/pay');
+  ok('⭐ three days turned up in W39 pay the half of the store’s week they earned (75)', pay.total === 75, pay);
+  // a week joined after its Monday is not judged
+  const F = as(await kept('friday@example.com'));
+  CLOCK = Date.UTC(2026, 9, 9, 12, 0, 0);   // Friday of W41
+  await F('/job/take', { at: 'post' });
+  await F('/job/chore', { kind: 'sort', g: 10 });
+  CLOCK = Date.UTC(2026, 9, 14, 12, 0, 0);   // Wednesday of W42
+  v = await F('/job/view');
+  ok('a Friday hire’s first week is not a poor week: no XP taken back, no warning', !(v.job.lad.last && v.job.lad.last.v) && !v.job.lad.warn && v.job.lad.xp > 0, v.job.lad);
+}
+
+console.log('\n22. 🪜 a promotion overtakes a word still waiting');
+{
+  CLOCK = LATEST + 14 * DAY;
+  const P = as(await kept('overtaken@example.com'));
+  await P('/job/take', { at: 'stand' });
+  await P('/job/chore', {});
+  // warned last week, and — however it got there — over the next rank's line now: seeded straight into the record
+  for (const [k, v] of env.PASSES._m) {
+    const rec = JSON.parse(v);
+    if (rec && rec.job && rec.job.at === 'stand' && rec.job.xp && rec.job.xp.stand === 10) {
+      rec.job.xp.stand = 650; rec.job.rk = { stand: 2 }; rec.job.warn = { stand: '2026-W42' }; rec.job.talk = { stand: 'warn' };
+      env.PASSES._m.set(k, JSON.stringify(rec));
+    }
+  }
+  const v = await P('/job/promote', { at: 'stand' });
+  ok('the promotion is told, not the warning', v.promoted && v.promoted.to === 3 && !v.heard, v);
+  ok('⭐ and the warning is gone with it: nothing left for the boss to say after', v.job.lad.warn === false && v.job.lad.talk === '', v.job.lad);
+}
+
+console.log('\n23. 📜 the top rank’s memento: owed at the promotion, handed over once');
+{
+  CLOCK += 7 * DAY;
+  const P = as(await kept('memento@example.com'));
+  await P('/job/take', { at: 'stand' });
+  await P('/job/chore', {});
+  let v = await P('/job/memento', { at: 'stand' });
+  ok('nothing is owed below the top', v.given === null && v.job.lad.mem === 0, v);
+  for (const [k, raw] of env.PASSES._m) {
+    const rec = JSON.parse(raw);
+    if (rec && rec.job && rec.job.at === 'stand' && rec.job.xp && rec.job.xp.stand === 10) { rec.job.xp.stand = 650; rec.job.rk = { stand: 2 }; env.PASSES._m.set(k, JSON.stringify(rec)); }
+  }
+  v = await P('/job/promote', { at: 'stand' });
+  ok('promoted to the top: the memento is owed', v.promoted && v.promoted.to === 3 && v.job.lad.mem === 1, v);
+  v = await P('/job/memento', { at: 'stand' });
+  ok('⭐ asked for, it is given', v.given === 'stand' && v.job.lad.mem === 2, v);
+  v = await P('/job/memento', { at: 'stand' });
+  ok('⭐ asked again — a second device, a cleared browser — there is nothing to give', v.given === null && v.job.lad.mem === 2, v);
+  v = await P('/job/memento', { at: 'cafe' });
+  ok('and a workplace you never topped gives nothing', v.given === null, v);
 }
 
 Date.now = REAL_NOW;

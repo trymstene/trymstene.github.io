@@ -279,6 +279,8 @@
 .tw-sort__card.is-parcel { background: #d9bb8e; box-shadow: 2px 2px 0 #000, inset 0 0 0 2px #a8845a; }
 .tw-sort__card.is-parcel::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #6b4a2b; opacity: 0.55; }
 .tw-sort__card.is-weigh { cursor: pointer; }
+/* 🔴 REGISTERED POST (the post office's rank 4): a red wax seal in the card's corner */
+.tw-sort__card.is-reg::after { content: ''; position: absolute; right: 3px; top: 3px; width: 12px; height: 12px; border-radius: 999px; background: #c8261e; box-shadow: inset -2px -2px 0 #8a1510, 1px 1px 0 #000; }
 .tw-sort__card.is-weigh .tw-sort__fuse { display: none; }
 .tw-sort__scale { position: absolute; left: 3px; right: 3px; bottom: 3px; height: 9px; background: #1a120c; border: 1px solid #000; }
 .tw-sort__scale b { position: absolute; top: 0; bottom: 0; background: #4f8a3a; }

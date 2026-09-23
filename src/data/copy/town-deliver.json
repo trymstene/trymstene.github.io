@@ -9,8 +9,19 @@
     "figjr": "Fig Jr. in the garden",
     "spinner": "Spinner at the arcade",
     "dot": "Dot at the print shop",
-    "granfig": "Gran Fig in the garden"
+    "granfig": "Gran Fig in the garden",
+    "pip": "Pip at the general store"
   },
   "pickedTwo": "Two parcels: for {to} and for {to2}. The markers are over their doors.",
-  "deliveredOne": "Delivered to {to}. The other parcel is for {next}."
+  "deliveredOne": "Delivered to {to}. The other parcel is for {next}.",
+  "round": {
+    "given": "The satchel: letters for {to}, {to2} and {to3}. The markers are over their doors.",
+    "deliveredOne": "A letter for {to}. {n} left in the satchel.",
+    "delivered": "The satchel is empty. That is the round done."
+  },
+  "bus": {
+    "waiting": "The mail bus has left a bag of post at the bus stop.",
+    "picked": "The morning post. Carry the bag to the post office.",
+    "delivered": "The morning post is in. Stamp can start the day."
+  }
 }

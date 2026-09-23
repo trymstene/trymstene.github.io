@@ -137,7 +137,10 @@
     },
     "post": {
       "fifth": "The town’s own postmark, and a faster pile to sort.",
-      "parcel": "Parcels: sort them, then weigh them on the post office scale."
+      "parcel": "Parcels: sort them, then weigh them on the post office scale.",
+      "registered": "Registered post: a red seal. Sorted at once it counts double; late, not at all.",
+      "round": "The round: after a good round of sorting, three letters to carry to their doors.",
+      "bus": "The morning post: the mail bus leaves a bag at the bus stop for you to bring in."
     }
   },
   "told": {

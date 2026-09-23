@@ -46,7 +46,7 @@ export const XP = {
   cafe: { cup: [0, 3, 6], rush: 15 },   // ☕ a rush served to the last customer (rank 2): a bonus on top of its cups
   condo: { sweep: 45, fix: [0, 30, 45], lamp: 20, litter: 10 },   // the day's piece of litter and a cabinet woken fill the arcade's day; 🔧 a repair by its grade; 🕹 a lamp on the square (rank 3)
   store: { restock: 30, serve: [0, 10, 15], basket: [0, 15, 22], deliver: 30 },   // the delivery's two faces and 🛒 the day's two customers, by how quickly they were served, fill the store's; 🧺 a two-thing order (rank 2) is worth half again
-  post: { sort: 60 },              // two good rounds fill the post office's
+  post: { sort: 60, letter: 15, bag: 30 },   // two good rounds fill the post office's; ✉️ a letter of the round (rank 5), the morning's mail bag (rank 6)
 };
 
 // 🔓 THE UNLOCKS (23 Sep 2026; the ladder's slice 3 — Trym: "yes build it all"). Every rank from the second gives a new
@@ -57,7 +57,7 @@ export const UNLOCKS = {
   cafe: { rush: 2, special: 3, keys: 4 },      // ☕ a rush: customers without a break, and a bonus for serving every one; special orders with syrup
   condo: { streak: 2, lamps: 3, litter: 4 },   // 🕹 a perfect repair lights its cabinet for the day, and perfect repairs in a row are counted; the square's lamps are yours too
   store: { basket: 2, deliver: 3, second: 4, keys: 5 },   // 🧺 some customers want two things; 📦 a parcel carried to a resident's door
-  post: { fifth: 2, parcel: 3 },     // ✉️ the town's own postmark, and a faster pile; 📦 parcels, weighed on the scale
+  post: { fifth: 2, parcel: 3, registered: 4, round: 5, bus: 6 },     // ✉️ the town's own postmark, and a faster pile; 📦 parcels, weighed on the scale
 };
 export const unlocked = (at, key, rank) => { const r = (UNLOCKS[at] || {})[key]; return r != null && (rank | 0) >= r; };
 export const unlocksAt = (at, rank) => Object.keys(UNLOCKS[at] || {}).filter((k) => UNLOCKS[at][k] === (rank | 0));

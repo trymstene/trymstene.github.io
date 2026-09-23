@@ -1229,3 +1229,20 @@ Walks: tests/town-unlocks.spec.mjs (all eleven unlocks so far), tests/jobs-maths
   on a later visit.
 
 Walks: tests/town-unlocks.spec.mjs; worker-pass jobs.test.mjs §19–20.
+
+## 23. The post office's top: registered post, the round, the morning mail bus (24 Sep 2026)
+
+The plan's rank 4 ("your stamp mark on postcards") and rank 6 ("letters sent while you are on shift say who carried
+them") both needed the POST server to know who is on shift — a registry held by another worker, for a feature nobody
+reaches for two months. Re-scoped to the ladder's own pattern (the counter gets new orders; the top reaches the square):
+
+- **Rank 4 — registered post.** Some cards carry a red seal: sorted into the right hole while fresh they count twice (a
+  registered letter on time); sorted late they count wrong. Said once, the first time a sealed card comes up.
+- **Rank 5 — the round.** A round of sorting that counts hands you a satchel of three letters for three residents' doors
+  (once the receipt is closed, §27); the markers are over the doors; each letter is XP (`XP.post.letter`).
+- **Rank 6 (the top of the whole ladder) — the morning post.** In the town's morning (the beat when Stamp waits at the bus
+  stop) the mail bus leaves a bag at the stop; the deputy postmaster carries it to the post office — the town's post comes
+  in through you. Said once, the first time the bag is there.
+
+The store's parcels, the round and the mail bag share one carry engine (town-deliver.js RUNS: parcel, round, bus). Walks:
+tests/town-unlocks.spec.mjs.

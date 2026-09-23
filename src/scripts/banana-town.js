@@ -292,11 +292,13 @@ function shiftFrameY(now) {
 const toldToday = {};
 const tell = (k) => { const L = (work && work.seam.words()) || {}, d = Math.floor(Date.now() / 864e5); if ((L.told || {})[k] && toldToday[k] !== d) { toldToday[k] = d; say(L.told[k]); } };
 let tidyNext = null;   // ☕ the keyholder's tidy waits for the receipt to close (§27: the moment comes after the card)
+let roundNext = false;   // ✉️ the post office's satchel (rank 5) waits for the round's receipt to close, the same way
 function roomTrack(e, p) {
   track(e, p);
   if (!work || !p) return;
   const j = work.seam.job(), rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0));
   if (!j || !j.at) return;
+  if (e === 'town_chore' && p.at === 'post' && p.kind === 'sort' && j.at === 'post' && unlocked('post', 'round', rk)) roundNext = true;   // ✉️ a round that counted: the satchel
   if (e === 'town_fix' && j.at === 'condo') {
     const kind = p.kind === 'lamp' && unlocked('condo', 'lamps', rk) ? 'lamp' : (p.kind === 'litter' || p.kind === 'leaves') && unlocked('condo', 'litter', rk) ? 'litter' : '';
     if (kind) { work.seam.chore(kind); tell(kind); }
@@ -339,8 +341,10 @@ function cam(snap) {
 // ---- walking: tap or keys, foot colliders, the world's edge
 const SPEED = 168;
 // 📦 a banana carrying something walks slower — the restock chore's whole feel is the weight of
-// the crate, so the room sets this and the loop reads it (docs/town-jobs-plan.md §4)
-let slow = 1;
+// the crate, so the room sets this and the loop reads it (docs/town-jobs-plan.md §4). Two things can be carried at once —
+// the room's crate and the square's parcel — so each keeps its own and the walk takes the heavier; neither can undo the other
+let slowRoom = 1, slowCarry = 1;
+const slowNow = () => Math.min(slowRoom, slowCarry);
 const keys = {};
 addEventListener('keydown', (e) => {
   const t = e.target;
@@ -544,7 +548,7 @@ function tick(now) {
   if (dx || dy) { tgt.x = pos.x; tgt.y = pos.y; const n = Math.hypot(dx, dy); dx /= n; dy /= n; }
   else { const ex = tgt.x - pos.x, ey = tgt.y - pos.y, d = Math.hypot(ex, ey); if (d > 2) { dx = ex / d; dy = ey / d; } }
   if (dx || dy) {
-    const step = SPEED * dt * slow;
+    const step = SPEED * dt * slowNow();
     const nx = pos.x + dx * step, ny = pos.y + dy * step;
     // ⚠️ A SLIDE THAT GOES NOWHERE IS A STOP. Blocked head-on, the banana slides along the wall by its
     // sideways component — and straight below a planter that component was 0.005, so it crept 0.01 px a
@@ -569,7 +573,11 @@ function tick(now) {
   if (work) work.tick(now);
   if (sort) sort.tick(now);   // ✉️ the sorting round's clock and its mark
   if (deliver) deliver.tick(); else if (!deliverP && deliverWanted()) loadDeliver();   // 📦 the store's parcel (rank 3)
-  if (tidyNext && panel.hidden && room && room.seam.fix) { const id = tidyNext; tidyNext = null; room.seam.fix(id); tell('tidy'); }   // ☕ the keyholder's tidy, once the receipt is closed
+  if (roundNext && panel.hidden && deliver) { roundNext = false; deliver.give('round'); }   // ✉️ the satchel, once the receipt is closed
+  if (tidyNext && panel.hidden && room && room.seam.fix) {   // ☕ the keyholder's tidy, once the receipt is closed — and only a mess still lying there is
+    const id = tidyNext; tidyNext = null;                    // tidied and said: somebody may have picked it up while the receipt was up
+    if (room.seam.problems().some((q) => q.id === id)) { room.seam.fix(id); tell('tidy'); }
+  }   // ☕ the keyholder's tidy, once the receipt is closed
   { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
   if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -647,14 +655,14 @@ let repair = null, repairP = null;
 // 📦 THE STORE'S HOME DELIVERY (the store's rank 3, 23 Sep 2026) — its own lazy chunk, loaded once a worker of that rank holds the
 // store: a parcel on the store's floor, carried across the square to a resident's door (town-deliver.js)
 let deliver = null, deliverP = null;
-const deliverWanted = () => { const j = work ? work.seam.job() : null; return !!(j && j.at === 'store' && unlocked('store', 'deliver', Math.max(1, ((j.lad && j.lad.rank) | 0)))); };
+const deliverWanted = () => { const j = work ? work.seam.job() : null, rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0)); return !!(j && ((j.at === 'store' && unlocked('store', 'deliver', rk)) || (j.at === 'post' && unlocked('post', 'round', rk)))); };
 function loadDeliver() {
   if (!deliverP) {
     deliverP = import('./town-deliver.js')
       .then((m) => { deliver = m.bootTownDeliver({ world, W, H, pct, pos, say, track, burst: (x, y) => burstAt(x, y, '', true),
         job: () => (work ? work.seam.job() : null), chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null),
         open: () => !!(room && room.seam.calls && room.seam.calls('store').some((c) => c.kind === 'deliver')), room: () => inRoom, homeOf: (k) => life.homeOf(k),
-        setSlow: (v) => { slow = +v > 0 ? +v : 1; } }); if (window.__town) window.__town.deliver = deliver.seam; return deliver; })
+        setSlow: (v) => { slowCarry = +v > 0 ? +v : 1; }, morning: () => life.beat() === 0 }); if (window.__town) window.__town.deliver = deliver.seam; return deliver; })
       .catch((e) => { deliverP = null; console.warn('[town] the parcel did not come', e); return null; });
   }
   return deliverP;
@@ -682,7 +690,7 @@ function loadRepair() {
 function loadSort() {
   if (!sortP) {
     sortP = import('./town-sort.js')
-      .then((m) => { sort = m.bootTownSort({ host: view, PROPS, pos, say, track, openCard, closeCard, esc, world, W, H, inside: () => !!inRoom, chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null), job: () => (work ? work.seam.job() : null) }); return sort; })
+      .then((m) => { sort = m.bootTownSort({ host: view, PROPS, pos, say, track: roomTrack, openCard, closeCard, esc, world, W, H, inside: () => !!inRoom, chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null), job: () => (work ? work.seam.job() : null) }); return sort; })
       .catch((e) => { sortP = null; console.warn('[town] the sorting counter did not load', e); return null; });
   }
   return sortP;
@@ -1046,7 +1054,7 @@ function promotedMoment(at, rank) {
   const u = unlocksAt(at, rank).map((k) => ((L.unlock || {})[at] || {})[k]).filter(Boolean)[0];
   if (u) setTimeout(() => say(u), 4400);
   // 📜 the top rank: the boss's memento, a beat after the new thing has been said
-  if (rank >= ranksOf(at) && work && work.seam.memento) setTimeout(() => { const m = work.seam.memento(at); if (m) say(m); }, u ? 9000 : 4400);
+  if (rank >= ranksOf(at) && work && work.seam.memento) setTimeout(() => { work.seam.memento(at).then((m) => { if (m) say(m); }); }, u ? 9000 : 4400);
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk
@@ -1076,7 +1084,7 @@ assetsReady().then(() => {
   import('./town-room.js').then((m) => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
       hud, esc, track: roomTrack, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
-      setSlow: (v) => { slow = +v > 0 ? +v : 1; },
+      setSlow: (v) => { slowRoom = +v > 0 ? +v : 1; },
       nibStation,   // 🕯 where chapter one wants Nib right now ('fountain' while its first scene is open)
       // ⭐ WALK TO IT, THEN IT HAPPENS — the grammar every other reachable thing in this world already
       // uses (a cabinet, a flyer, a resident, a town problem). The tap has already set the target to
@@ -1112,7 +1120,7 @@ assetsReady().then(() => {
       });
       if (window.__town) { window.__town.work = work.seam; window.__town.moment = { hired: hiredMoment, promoted: promotedMoment }; }   // 🧪 the walks' doors to the two moments
       // 📜 a top-rank memento the shed had no room for is given on a later visit, once the job's words are in to say so
-      if (work.seam.mementoDue) work.seam.wordsReady().then(() => { if (work.seam.mementoDue()) setTimeout(() => { const m = work.seam.memento(work.seam.job().at); if (m) say(m); }, 6000); });
+      if (work.seam.mementoDue) work.seam.wordsReady().then(() => { if (work.seam.mementoDue()) setTimeout(() => { work.seam.memento(work.seam.job().at).then((m) => { if (m) say(m); }); }, 6000); });
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)
       import('./town-duties.js').then((d) => {
         // 💼 a tap on the note opens your staff card — never over another card, and never mid-shift (the tray is the job then)
@@ -1139,6 +1147,6 @@ assetsReady().then(() => {
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)
-  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, staff: () => (staff ? staff.seam : null), staffReady: () => loadStaff().then((x) => !!x), staffOpen: (at, door) => staffCard(at, door || 'note'), staffAct, info: () => info && info.seam, OVERLAYS, cards: { wheel: () => marketCard('wheel'), exchange: () => marketCard('exchange') }, market: () => loadMarket().then((m) => m.seam), pocket: () => pocketOf(), pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, staff: () => (staff ? staff.seam : null), staffReady: () => loadStaff().then((x) => !!x), staffOpen: (at, door) => staffCard(at, door || 'note'), staffAct, info: () => info && info.seam, OVERLAYS, cards: { wheel: () => marketCard('wheel'), exchange: () => marketCard('exchange') }, market: () => loadMarket().then((m) => m.seam), pocket: () => pocketOf(), pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: slowNow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

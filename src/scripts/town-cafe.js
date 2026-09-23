@@ -508,9 +508,11 @@ export function bootTownCafe(ctx, cfg0) {
   const RUSH_N = 4, RUSH_AFTER = 2;
   let rush = null, rushXp = 0;   // { left, got, lost } while one runs
   const today = () => Math.floor(Date.now() / 864e5);
-  const rushed = () => { try { const r = JSON.parse(localStorage.getItem('tw-rush-v1') || 'null'); return !!(r && r.d === today()); } catch (e) { return false; } };
+  let rushDay = -1;   // the day already known to have had its rush: asked every idle frame, so it is read from storage once
+  const rushed = () => { if (rushDay === today()) return true; try { const r = JSON.parse(localStorage.getItem('tw-rush-v1') || 'null'); if (r && r.d === today()) { rushDay = r.d; return true; } } catch (e) {} return false; };
   function rushStart() {
     rush = { left: RUSH_N, got: 0, lost: 0 };
+    rushDay = today();
     try { localStorage.setItem('tw-rush-v1', JSON.stringify({ d: today() })); } catch (e) {}
     if ((WORDS.rush || {}).on) say(WORDS.rush.on);
     track('town_cup', { at: cfg.at, r: 'rush' });
