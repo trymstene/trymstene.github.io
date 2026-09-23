@@ -1315,7 +1315,7 @@ function xpAdd(j, add, now) {
 const tipsDay = (home) => Math.max(...TIPS_JOBS.map((at) => tipsCap(at, toldOf(home.job, at))));
 function jobView(j, now) {
   const wk = jobWeek(now);
-  const dn = doneOf(j, wk);
+  const dn = sheetOf(j, wk);
   // 💼 what the duties chip prints (docs/town-jobs-plan.md §12): the week's counts against their
   // targets, the share, the wage so far by the cheque's own formula, `owed` = what /job/pay would hand
   // over right now (the same walk, marking nothing), the boss's nudge (Thursday on and nothing done),
@@ -1334,7 +1334,7 @@ function jobView(j, now) {
   const rank = weekRank(j, dn);
   return { at, since: j.since || 0, week: wk, days: dn.days | 0, pay: JOB_PAY[at] ? weekPay(at, rank) : 0,
     duties: rowsOf(at, dn), share, sofar: payOf(at, dn, rank), owed,
-    nudge: !!(at && dow >= NUDGE_DAY && reviewOf(at, dn) === 'empty'),   // ↕ the tips jobs too, since the review can let them go
+    nudge: !!(at && dow >= NUDGE_DAY && judged(j, at, weekOf(now)) && reviewOf(at, dn) === 'empty'),   // ↕ the tips jobs too; never about a week the review will not judge
     fired: j.fired || null,
     lad: ladderOf(j, at, now) };   // 🪜 your XP and rank at the job you hold, and whether the boss has news
 }
@@ -1364,10 +1364,24 @@ function sheetOf(j, wk) {
   if (dn.at === 'store' && wk <= STORE_SHIM_TO && (dn.days | 0) > (dn.serve | 0)) return { ...dn, serve: dn.days | 0 };
   return dn;
 }
+// a week is judged only from REVIEW_FROM on, and only if you first joined this workplace by its Monday — the FIRST hire there,
+// so quitting and asking again mid-week does not buy a week off (24 Sep 2026, the second review)
+const firstAt = (j, at) => ((j.first || {})[at]) || j.since || 0;
+const judged = (j, at, W) => W.id >= REVIEW_FROM && firstAt(j, at) < W.from + DAY;
 function jobReview(j, now) {
   if (!j) return false;
   const rev = j.rev || (j.rev = {});
   let changed = false;
+  // ⚖️ ONCE PER RECORD: what the first review code (live for a few hours on 23 Sep) judged before REVIEW_FROM is undone —
+  // its strikes toward the sack and its warnings came from weeks whose chores did not exist yet. And a workplace already
+  // at its top rank is owed its memento (the memento became the server's on 24 Sep).
+  if (!j.rf) {
+    j.rf = 1; changed = true;
+    j.zero = 0;
+    for (const at of Object.keys(j.warn || {})) if (String(j.warn[at]) < REVIEW_FROM) { delete j.warn[at]; if (j.talk && j.talk[at] === 'warn') delete j.talk[at]; }
+    for (const at of Object.keys(j.rk || {})) if (LADDER[at] && toldOf(j, at) >= ranksOf(at) && !((j.mem || {})[at])) (j.mem || (j.mem = {}))[at] = 1;
+    if (j.at && j.since && !((j.first || {})[j.at])) (j.first || (j.first = {}))[j.at] = j.since;
+  }
   for (let i = PAY_BACK; i >= 1; i--) {
     const W = weekOf(now - i * 7 * DAY), wk = W.id;
     if (rev[wk]) continue;
@@ -1375,7 +1389,7 @@ function jobReview(j, now) {
     if (!at || !LADDER[at]) continue;
     changed = true;
     // not the job you hold, a week before the review began, or a week you joined after its Monday: nothing to review
-    if (at !== j.at || wk < REVIEW_FROM || (j.since || 0) >= W.from + DAY) { rev[wk] = { at, v: '' }; continue; }
+    if (at !== j.at || !judged(j, at, W)) { rev[wk] = { at, v: '' }; continue; }
     const v = reviewOf(at, dn), r = { at, v, xp: 0 };
     if (v === 'empty') {
       j.zero = (j.zero | 0) + 1;
@@ -1451,6 +1465,7 @@ async function jobTake(request, env) {
     // ⭐ ONE AT A TIME. Taking a second job is leaving the first, and the weeks already worked stay
     // on the record with the job that earned them, so a change never eats a cheque you are owed.
     if (j.at !== at) { j.at = at; j.since = at ? now : 0; }
+    if (at && !((j.first || {})[at])) (j.first || (j.first = {}))[at] = now;   // ⚖️ the first hire at a workplace decides whether a week was joined late
     j.fired = null; j.zero = 0;   // 💼 asked again: the sack is history, the count starts afresh
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);

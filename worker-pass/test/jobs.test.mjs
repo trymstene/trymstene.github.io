@@ -587,6 +587,52 @@ console.log('\n24. 👻 the night shift: a ghost caught is one of the arcade’s
   ok('⭐ on the week’s sheet as a repair, and twenty XP on top of the day’s ten', v.job.duties.find((r) => r.kind === 'fix').done === 1 && v.job.lad.xp === 30, v.job);
 }
 
+console.log('\n25. ⚖️ the second review: old strikes undone, the nudge judges like the review, quitting buys no week off');
+{
+  CLOCK = monday(CLOCK + 14 * DAY);   // a Monday: the hire week is a judged week
+  const P = as(await kept('oldstrike@example.com'));
+  await P('/job/take', { at: 'condo' });
+  await P('/job/chore', {});
+  // a record as the first review code left it: a strike and a warning from a week before the review began, and no migration mark
+  for (const [k, raw] of env.PASSES._m) {
+    const rec = JSON.parse(raw);
+    if (rec && rec.job && rec.job.at === 'condo' && rec.job.xp && rec.job.xp.condo === 10 && !rec.job.zero) { rec.job.zero = 1; rec.job.warn = { condo: '2026-W38' }; rec.job.talk = { condo: 'warn' }; delete rec.job.rf; env.PASSES._m.set(k, JSON.stringify(rec)); }
+  }
+  let v = await P('/job/view');
+  ok('⭐ the old warning is gone, and nothing is waiting to be said', v.job.lad.warn === false && v.job.lad.talk === '', v.job.lad);
+  // one empty week now is ONE strike, not the second: still employed after it
+  CLOCK = monday(CLOCK) + DAY;   // the Tuesday after: the hire week (empty) is judged
+  v = await P('/job/view');
+  ok('⭐ an empty week after the old strike is the first strike, not the sack', v.job.at === 'condo' && !v.job.fired, v.job);
+  // quitting and asking again mid-week does not make that week a late join
+  const Q = as(await kept('dodger@example.com'));
+  CLOCK = monday(CLOCK) + 12 * 3600000;
+  await Q('/job/take', { at: 'store' });
+  await Q('/job/chore', { kind: 'restock' });
+  CLOCK += DAY;
+  await Q('/job/take', { at: '' });
+  await Q('/job/take', { at: 'store' });   // back on Tuesday
+  CLOCK = monday(CLOCK) + DAY;
+  v = await Q('/job/view');
+  ok('⭐ the week is still judged (poor: one restock of six duties)', v.job.lad.last && v.job.lad.last.v === 'poor', v.job.lad);
+  // the nudge says nothing about a week the review will not judge: a Friday hire
+  const N = as(await kept('fridaynudge@example.com'));
+  CLOCK = monday(CLOCK) + 4 * DAY + 12 * 3600000;
+  v = await N('/job/take', { at: 'post' });
+  ok('a Friday hire’s empty week is not nudged: it will not be judged', v.job.nudge === false, v.job);
+}
+
+console.log('\n26. 🔴 registered post: a sealed card on time earns its XP again, outside the round’s sixty');
+{
+  CLOCK += 7 * DAY;
+  const P = as(await kept('registered@example.com'));
+  await P('/job/take', { at: 'post' });
+  await P('/job/chore', { kind: 'sort', g: 60 });
+  const v = await P('/job/chore', { kind: 'reg', g: 10 });
+  ok('⭐ the day’s ten, the round’s sixty and two sealed cards’ ten', v.job.lad.xp === 80, v.job.lad);
+  ok('and it is not a round on the sheet', v.job.duties.find((r) => r.kind === 'sort').done === 1, v.job.duties);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

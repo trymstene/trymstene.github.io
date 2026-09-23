@@ -896,6 +896,14 @@ test('the counter speaks at the moment a cup tells you something, and is quiet a
   await cup(2);
   await page.evaluate(() => window.__town.room.cafe().clockOut());
   expect(await page.evaluate(() => document.getElementById('twToast').hidden), 'the receipt is the end of the shift: no line lingers under it').toBe(true);
+  await page.evaluate(() => { const x = document.getElementById('twTillX'); if (x) x.click(); });
+  // a new shift of wrong cups only: its receipt says every cup missed, not that the day's limit was met
+  await page.evaluate(() => window.__town.room.cafe().clockIn());
+  await page.waitForFunction(() => window.__town.room.cafe().on(), null, { timeout: 5000 });
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));   // the first shift's customers went off with their cups
+  expect(await cup(0), 'a cup to spoil').toBe(true);
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  expect(await page.evaluate(() => document.getElementById('twCardBody').textContent), 'a shift of wrong cups says so').toContain(COPY.receipt.wrong);
   await page.screenshot({ path: 'test-results/cafe-said.png' });
   expect(errors).toEqual([]);
 });

@@ -16,7 +16,7 @@
 // of four already-approved lines the boss says.
 import { passPost } from '../lib/banana-pass.js';
 import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor, COUNTS_AS, dayCap, MEMENTO, ranksOf } from '../data/town/jobs.js';
-import { grantToShed, canHold } from '../lib/homestead-inventory.js';   // 📜 a boss's memento goes to your homestead's shed   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
+import { grantToShed, takeFromShed, canHold } from '../lib/homestead-inventory.js';   // 📜 a boss's memento goes to your homestead's shed   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
@@ -52,10 +52,11 @@ export function bootTownWork(ctx) {
 
   // the server's answer is the truth; the mirror follows it. ⚠️ `up`, `hm` and `told` are the
   // DEVICE's own (turned up today, the chip folded, what the chip has said) and ride along untouched.
+  let taking = 0;   // takes on the wire: a hire or a quit the server has not answered yet
   function land(res) {
     // a refusal can still carry the job as it stands (the server's 409 'no job' does): the mirror lands it, so a job the
     // server has let go of stops being answered as held
-    if (!res || (res.error && !(res.error === 'no job' && res.job))) return res;
+    if (!res || (res.error && !(res.error === 'no job' && res.job && !taking))) return res;   // ⚠️ never while a take is in flight: the chore may have read the record before the take wrote it
     if (res.job) {
       const was = job.at || '';
       const l = res.job.lad;
@@ -145,7 +146,9 @@ export function bootTownWork(ctx) {
         const line = (w.hired || '').replace('{where}', nameOf(at));
         asked = 'took';
         track('town_job', { at, r: 'took' });
+        taking++;
         passPost('/job/take', { at }).then((res) => {
+          taking--;
           land(res);
           if (res && res.ref) { job = { ...job, ref: res.ref }; writeJob(job); }   // 📜 a reference started you higher: the hire says so
           // the one case the device could not know: a link that is still an unkept pass
@@ -173,7 +176,8 @@ export function bootTownWork(ctx) {
       a: () => {
         if (job.at !== at) return w.already ? '' : '';
         track('town_job', { at, r: 'quit' });
-        passPost('/job/take', { at: '' }).then(land);
+        taking++;
+        passPost('/job/take', { at: '' }).then((res) => { taking--; land(res); });
         job = { ...job, at: '', was: at, wasT: Date.now(), up: '', duties: [], share: 0, sofar: 0, nudge: false, ref: '' };
         writeJob(job);
         notify();
@@ -241,7 +245,7 @@ export function bootTownWork(ctx) {
   // same day however many times it is made. The mirror's `days` comes back from the answer.
   let askAt = 0;
   function tick(now) {
-    if (!job.at || now - askAt < 4000) return;
+    if (!job.at || taking || now - askAt < 4000) return;
     const m = markOf(PROPS, job.at);
     if (!m) return;
     if (Math.hypot(pos.x - m.x, pos.y - m.y) > NEAR) return;
@@ -279,11 +283,10 @@ export function bootTownWork(ctx) {
       memento: async (at) => {
         const id = MEMENTO[at]; if (!id || !LW || job.at !== at) return '';   // no words yet: nothing is given without its line
         if ((((job.lad || {}).mem) | 0) !== 1) return '';
-        if (!canHold()) return LW.mementoFull || '';
+        if (!canHold() || !grantToShed(id)) return LW.mementoFull || '';   // full: it stays owed, and is tried again later
         const res = await passPost('/job/memento', { at });
+        if (!res || res.given !== at) { takeFromShed(id); if (res && res.job) land(res); return ''; }   // not given (given elsewhere, or no answer): back out
         land(res);
-        if (!res || res.given !== at) return '';
-        if (!grantToShed(id)) return LW.mementoFull || '';
         return (LW.memento || {})[at] || '';
       },
       mementoDue: () => !!(job.at && MEMENTO[job.at] && (((job.lad || {}).mem) | 0) === 1),

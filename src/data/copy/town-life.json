@@ -30,7 +30,7 @@
     "greet": "Buy things for your homestead here. Tomorrow the shelf has different ones.",
     "shut": "The bell is quiet, the shutters are down, and Pip has taken the shelf indoors.",
     "needs": "House needs another room",
-    "van": "Sent by morning van",
+    "van": "Comes by van",
     "sold": [
       "{item} is yours. I had nearly named it.",
       "There goes {item}. The shelf looks surprised.",
@@ -40,7 +40,7 @@
     "staff": "staff price",
     "title": "Pip’s General Store",
     "inShed": "It is in your homestead shed.",
-    "byVan": "It comes to your homestead by the morning van."
+    "byVan": "It comes to your homestead by van."
   },
   "board": {
     "title": "Square Report",

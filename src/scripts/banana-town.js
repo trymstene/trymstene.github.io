@@ -291,6 +291,8 @@ function shiftFrameY(now) {
 // Each says so ONCE a day (design library §30): after that the work note's bar moving is enough.
 const toldToday = {};
 const tell = (k) => { const L = (work && work.seam.words()) || {}, d = Math.floor(Date.now() / 864e5); if ((L.told || {})[k] && toldToday[k] !== d) { toldToday[k] = d; say(L.told[k]); } };
+// 👻 each ghost is one repair a day: a caught ghost forms again a few seconds later, and walking into it again is not work
+const ghostFirst = (id) => { const d = Math.floor(Date.now() / 864e5); let g = null; try { g = JSON.parse(localStorage.getItem('tw-ghost-v1') || 'null'); } catch (e) {} if (!g || g.d !== d || !Array.isArray(g.ids)) g = { d, ids: [] }; if (g.ids.includes(String(id))) return false; g.ids.push(String(id)); try { localStorage.setItem('tw-ghost-v1', JSON.stringify(g)); } catch (e) {} return true; };
 let tidyNext = null;   // ☕ the keyholder's tidy waits for the receipt to close (§27: the moment comes after the card)
 let roundNext = false;   // ✉️ the post office's satchel (rank 5) waits for the round's receipt to close, the same way
 function roomTrack(e, p) {
@@ -305,7 +307,7 @@ function roomTrack(e, p) {
   }
   // 👻 THE NIGHT SHIFT (the arcade's rank 5, 24 Sep 2026): the night manager's reach is the square after dark — a ghost caught
   // there is one of Spinner's repairs, the town's best content turned into the arcade's work. Said once a day, like the lamps.
-  if (e === 'town_ghost' && p.caught && j.at === 'condo' && unlocked('condo', 'ghosts', rk)) { work.seam.chore('ghost'); tell('ghost'); }
+  if (e === 'town_ghost' && p.caught && j.at === 'condo' && unlocked('condo', 'ghosts', rk) && ghostFirst(p.id)) { work.seam.chore('ghost'); tell('ghost'); }
   if (e === 'town_shift' && p.at === 'cafe' && p.step === 'out' && (p.cups | 0) >= KEYS_CUPS && j.at === 'cafe' && unlocked('cafe', 'keys', rk) && room && room.seam.problems) {
     const c = PROPS.cafe, cx = c.x + c.w / 2, cy = c.base;
     const near = room.seam.problems().filter((q) => q.type !== 'crows' && Math.hypot(q.x - cx, q.y - cy) < KEYS_REACH).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];

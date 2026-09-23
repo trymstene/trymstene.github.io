@@ -487,7 +487,7 @@ export function bootTownCafe(ctx, cfg0) {
   let lastBest = '';   // which drink the last right cup was, for the receipt to name
   let grades = [], xpGot = 0;   // 🪜 the shift's cups by grade, reported once at clock-out, and the XP they came to
   let bigSaid = false, bigNext = null, jug = 0, jugSaid = false, specialSaid = false, specialNext = null;   // 🍋 the first big glass of a shift is announced, the rest are not; a walk may order the next one
-  let saidGrade = {}, tipsAllSaid = false;   // 🗣 the first good and first spot-on cup of a shift speak; the day's last tip is said once
+  let saidGrade = {}, tipsAllSaid = false, cappedHit = false;   // 🗣 the first good and first spot-on cup of a shift speak; the day's last tip is said once
   // ☕ THE RUSH (the café's rank 2, 23 Sep 2026; the ladder's slice 3). Once a day, a little way into a shift, the customers
   // stop leaving gaps: RUSH_N come one straight after another, and serving every one of them is a bonus on top of the
   // cups (jobs.js XP.cafe.rush). ⚠️ NOT "THREE AT ONCE", which the plan said: the rope holds two because a third customer
@@ -677,6 +677,7 @@ export function bootTownCafe(ctx, cfg0) {
     // line is the only thing that says why. The day's last tip is said once, when it happens — the cups after it float
     // nothing and must not be read as wrong.
     const capped = full > n;
+    if (capped) cappedHit = true;
     if (capped && !tipsAllSaid && WORDS.tipsAll) { tipsAllSaid = true; say(WORDS.tipsAll); }
     else if (!capped && (c.grade === 0 || !saidGrade[c.grade])) { saidGrade[c.grade] = 1; const deck = deckLineOf(WORDS, GRADES[c.grade], served); if (deck) say(deck); }
     track('town_cup', { at: cfg.at, r: GRADES[c.grade], big: c.big ? 1 : 0, special: c.special ? 1 : 0, jug: c.fromJug ? 1 : 0 });
@@ -692,7 +693,7 @@ export function bootTownCafe(ctx, cfg0) {
   function clockIn(host) {
     if (on) return false;
     on = true;
-    saidGrade = {}; tipsAllSaid = false;
+    saidGrade = {}; tipsAllSaid = false; cappedHit = false;
     served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0; grades = []; xpGot = 0; bigSaid = false; rush = null; rushXp = 0; jug = 0; jugSaid = false; specialSaid = false;
     standIn();
     if (!tray) tray = mountCounter(host || world.parentElement, { onCup, deck: cfg.deck, label: (k) => (WORDS.go || {})[k] || '', idle: () => WORDS.idle || '', leave: WORDS.leave || '', onLeave: () => clockOut() });
@@ -763,7 +764,7 @@ export function bootTownCafe(ctx, cfg0) {
     // A shift that served nothing and a shift the cap refused are different days, and the receipt says so.
     const line = paid > 0
       ? (w.take || '').replace('{n}', String(paid))
-      : served > 0 ? (w.capped || w.none || '') : (w.none || '');
+      : served > 0 ? ((cappedHit ? w.capped : w.wrong) || w.none || '') : (w.none || '');   // the day's limit, or every cup missed
     // 🧾 THE RECEIPT SAYS THE RESULT AND NOTHING ELSE (24 Sep 2026, the copy review): the take (or why there is none), the work
     // XP and its bar. It used to add a line of scenery and a drink's name the ticket never shows — and the shift's end was
     // said twice, a toast as the receipt opened. The receipt IS the end of the shift.

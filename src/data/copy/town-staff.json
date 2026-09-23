@@ -139,7 +139,7 @@
     "post": {
       "fifth": "A fifth pigeonhole for Banana Town’s own post, and the cards come faster.",
       "parcel": "Parcels: sort them, then weigh them on the post office scale.",
-      "registered": "Registered post: a red seal. Sorted at once it counts double; late, not at all.",
+      "registered": "Registered post: a red seal. On time, its XP counts twice; late, it is wrong.",
       "round": "The satchel: when a round of sorting counts, carry three letters to their doors.",
       "bus": "The morning post: the mail bus leaves a bag at the bus stop for you to bring in."
     }

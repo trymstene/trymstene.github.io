@@ -324,7 +324,10 @@ export function bootTownSort(ctx) {
     // 💼 the round is on the week's sheet: the town says "sorted", the pass worker counts it (up to the target)
     // 🪜 …and its points are work XP: five a card sorted fresh, two a card sorted late (roundXp), a round that made the sheet
     xpGot = 0;
-    if (ok && chore) { const p = chore('sort', roundXp(last.right + (last.regRight | 0), last.late)); xpGot = (p && p.got) | 0; }   // 🔴 a registered letter on time counts twice
+    if (ok && chore) { const p = chore('sort', roundXp(last.right, last.late)); xpGot = (p && p.got) | 0; }
+    // 🔴 A REGISTERED LETTER ON TIME COUNTS TWICE, and the second time is its own (24 Sep 2026, the second review): folded into
+    // the round it vanished under the round's cap of sixty, so it is reported apart — five a sealed card, outside that cap
+    if (ok && chore && last.regRight) { const q = chore('reg', (last.regRight | 0) * 5); xpGot += (q && q.got) | 0; }
     if (ok) track('town_chore', { at: 'post', kind: 'sort' });   // 📡 Pulse reads the week's work by kind, as the arcade's chores do
     track('town_shift', { at: 'post', step: 'out', right: last ? last.right : 0, late: last ? last.late : 0, wrong: last ? last.wrong : 0, counted: ok ? 1 : 0 });
     receipt(last, ok);

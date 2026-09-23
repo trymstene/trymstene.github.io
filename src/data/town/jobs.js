@@ -46,7 +46,7 @@ export const XP = {
   cafe: { cup: [0, 3, 6], rush: 15 },   // ☕ a rush served to the last customer (rank 2): a bonus on top of its cups
   condo: { sweep: 45, fix: [0, 30, 45], lamp: 20, litter: 10, ghost: 20 },   // the day's piece of litter and a cabinet woken fill the arcade's day; 🔧 a repair by its grade; 🕹 a lamp on the square (rank 3)
   store: { restock: 30, serve: [0, 10, 15], basket: [0, 15, 22], deliver: 30 },   // the delivery's two faces and 🛒 the day's two customers, by how quickly they were served, fill the store's; 🧺 a two-thing order (rank 2) is worth half again
-  post: { sort: 60, letter: 15, bag: 30 },   // two good rounds fill the post office's; ✉️ a letter of the round (rank 5), the morning's mail bag (rank 6)
+  post: { sort: 60, letter: 15, bag: 30, reg: 15 },   // 🔴 registered post on time (rank 4): each sealed card's five again, outside the round's sixty   // two good rounds fill the post office's; ✉️ a letter of the round (rank 5), the morning's mail bag (rank 6)
 };
 
 // 🔓 THE UNLOCKS (23 Sep 2026; the ladder's slice 3 — Trym: "yes build it all"). Every rank from the second gives a new

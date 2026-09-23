@@ -7,7 +7,8 @@
     "none": "No cups went out this shift, so no tips.",
     "capped": "Cups went out, but today’s tips were all earned. They still count for work XP.",
     "xp": "Work XP earned: {n}.",
-    "back": "Close"
+    "back": "Close",
+    "wrong": "Every cup missed the green band, so no tips this shift."
   },
   "idle": "Nobody is waiting yet. The counter is open.",
   "front": "Bean’s coffee kiosk. Ask Bean for a job to serve coffee here for tips.",

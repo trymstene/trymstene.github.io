@@ -708,5 +708,16 @@ test('👻 the arcade’s rank 5: a ghost caught on the square at night counts a
   await toast(page, STAFF.told.ghost);
   expect(await page.evaluate(() => window.__town.work.ladder().xp), 'the day’s ten and the ghost’s twenty').toBe(before + DAY_XP + xpFor('condo', 'ghost'));
   await page.screenshot({ path: 'test-results/unlock-night-shift.png' });
+  // the same ghost forms again a few seconds later: walked into again, it is not a second repair
+  const id = (await events(page, 'town_ghost')).find((p) => p && p.caught).id;
+  const n0 = (await events(page, 'town_ghost')).filter((p) => p && p.caught).length;
+  await page.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = t.pos.x + 160; });
+  let again = false;
+  for (let i = 0; i < 150 && !again; i++) {
+    await page.evaluate((gid) => { const t = window.__town, g = t.room.ghosts().find((x) => x.id === gid && !x.hidden); if (g) { t.pos.x = t.tgt.x = g.x; t.pos.y = t.tgt.y = g.y; } }, id);
+    await page.waitForTimeout(100);
+    again = (await events(page, 'town_ghost')).filter((p) => p && p.caught).length > n0;
+  }
+  if (again) expect(await page.evaluate(() => window.__town.work.ladder().xp), 'caught again: no second repair').toBe(before + DAY_XP + xpFor('condo', 'ghost'));
   expect(errs).toEqual([]);
 });
