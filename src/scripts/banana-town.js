@@ -498,6 +498,8 @@ function placeToast(opening) {
   // card is up (a purchase) is about the card, and stays.
   else if (opening) { toastEl.hidden = true; clearTimeout(toastT); }
 }
+// the toast taken down at once: a card that ENDS something (a counter's receipt) must not sit over a line about what it ended
+function hush() { clearTimeout(toastT); toastEl.hidden = true; }
 function say(text) {
   if (!text) return;   // a line the rig has not written (or a chunk not landed yet) says nothing, never an empty box
   toastEl.textContent = text;
@@ -1086,7 +1088,7 @@ assetsReady().then(() => {
   // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
   import('./town-room.js').then((m) => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
-      hud, esc, track: roomTrack, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
+      hud, esc, track: roomTrack, hush, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
       setSlow: (v) => { slowRoom = +v > 0 ? +v : 1; },
       nibStation,   // 🕯 where chapter one wants Nib right now ('fountain' while its first scene is open)
       // ⭐ WALK TO IT, THEN IT HAPPENS — the grammar every other reachable thing in this world already

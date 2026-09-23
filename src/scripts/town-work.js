@@ -228,7 +228,8 @@ export function bootTownWork(ctx) {
     };
   }
   // every topic a boss's card carries for you: the news first (a promotion, or the boss's word), the job question, and the way out
-  const topicsFor = (key) => [promoFor(key) || wordFor(key), topicFor(key), quitFor(key)].filter(Boolean);
+  // your own boss's card does not ask for the job you already have (24 Sep 2026, the QA sweep): news or a word, and the way out
+  const topicsFor = (key) => [promoFor(key) || wordFor(key), job.at && job.at === BOSS[key] ? null : topicFor(key), quitFor(key)].filter(Boolean);
   // ⚠️ the building's name comes from the RIG, not from the sign plank: the planks shout (“ARCADE”)
   // and two of the three are empty because the sprite carries its own sign. work.at holds the three
   // names written to sit inside a sentence, article and all.
@@ -297,6 +298,7 @@ export function bootTownWork(ctx) {
       view,
       ask: (key) => { const t = topicFor(key); return t ? { q: t.q, a: t.a() } : null; },
       quit: (key) => { const t = quitFor(key); return t ? { q: t.q, a: t.a() } : null; },
+      topics: (key) => topicsFor(key).map((t) => t.q),   // what a boss's card offers, asked nothing
       near: () => { const m = job.at && markOf(PROPS, job.at); return !!m && Math.hypot(pos.x - m.x, pos.y - m.y) <= NEAR; },
     },
   };

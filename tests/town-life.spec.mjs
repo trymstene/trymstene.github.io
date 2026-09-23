@@ -10,6 +10,7 @@ import { OBJECTS, WHERE } from '../src/data/town/objects.js';
 import { GHOSTS, ROAM } from '../src/data/town/ghosts.js';
 import * as decorMod from '../src/data/decor.js';
 import { OVERLAYS } from '../src/scripts/town-geo.js';
+import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
 
 const SHOT = 'test-results/town-';
 
@@ -213,6 +214,9 @@ test('a fix clears the mark, pays on the pass and counts on the room', async ({ 
 
 test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it ends', async ({ page }) => {
   await town(page);
+  // ⚠️ the sky after a curse is the CLOCK's again (world-weather.js setKind(null)), and the clock has storms of its own:
+  // the walk flaked on a night the real weather was a storm. What must come back is the sky as it was before the curse.
+  const stormBefore = await page.evaluate(() => !!document.querySelector('.wx.is-storm'));
   // ⚠️ THE NIGHT IS A LAZY CHUNK (src/scripts/town-night.js, split out 20 Sep). It loads on the
   // evening beat, a Curse Night, an omen or a day ghost — and this test plants a cursed object at
   // NOON, which is none of those. Ask for it first, the way the shop's card does (shopReady): a walk
@@ -296,15 +300,15 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   // over, calls leaveCurse(), which clears the sky, the ghosts, the vendor AND the storm — and a fixed
   // 1500 ms was enough alone and not enough with a second worker on the machine. Same bug as the
   // lock walk, same fix: wait for the thing itself.
-  await page.waitForFunction(() => window.__town.room.night() === 0
+  await page.waitForFunction((sb) => window.__town.room.night() === 0
     && window.__town.room.ghosts().length === 0
     && !window.__town.room.vendor()
-    && !document.querySelector('.wx.is-storm'), null, { timeout: 15000 });
+    && !!document.querySelector('.wx.is-storm') === sb, stormBefore, { timeout: 15000 });
   expect(await room(page, 'night')).toBe(0);
   expect((await room(page, 'ghosts')).length).toBe(0);
   expect(await room(page, 'vendor')).toBe(false);
   expect((await seam(page, () => window.__town.life.kept())).length).toBe(kept0);
-  expect(await page.evaluate(() => !!document.querySelector('.wx.is-storm'))).toBe(false);
+  expect(await page.evaluate(() => !!document.querySelector('.wx.is-storm')), 'the curse’s storm is lifted: the sky is the clock’s again').toBe(stormBefore);
 });
 
 test('the store sells a piece for the homestead into the shed or onto the van', async ({ page }) => {
@@ -961,6 +965,8 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   expect(busy.a, 'Spinner says you are the store’s').toContain('General Store');
   expect(busy.a).not.toContain('{where}');
   expect(await seam(page, () => window.__town.work.job()), 'and the job did not move').toMatchObject({ at: 'store' });
+  expect(await page.evaluate(() => window.__town.work.topics('pip')), 'your own boss does not offer the job you already have').not.toContain(LIFE.work.ask);
+  expect(await page.evaluate(() => window.__town.work.topics('spinner')), 'another boss still does').toContain(LIFE.work.ask);
   expect(await seam(page, () => window.__town.work.quit('spinner')), 'no way out on a boss who is not yours').toBeNull();
   const gone = await seam(page, () => window.__town.work.quit('pip'));
   expect(gone, 'your own boss carries the way out').toBeTruthy();

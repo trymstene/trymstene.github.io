@@ -893,6 +893,9 @@ test('the counter speaks at the moment a cup tells you something, and is quiet a
   expect(await said(), 'the cup that meets the limit says the day’s tips are all earned').toBe(COPY.tipsAll);
   await cup(2);
   expect(await said(), 'and the capped cups after it say nothing').toBe('');
+  await cup(2);
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  expect(await page.evaluate(() => document.getElementById('twToast').hidden), 'the receipt is the end of the shift: no line lingers under it').toBe(true);
   await page.screenshot({ path: 'test-results/cafe-said.png' });
   expect(errors).toEqual([]);
 });

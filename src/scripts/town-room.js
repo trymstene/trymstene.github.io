@@ -924,7 +924,7 @@ export function bootTownLife(ctx) {
   // counter's weight would be downloaded by a banana who only ever restocks Pip's shelves.
   let cafe = null, cafeP = null;
   function cafeCtx(at = 'cafe') {
-    return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track, float,
+    return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track, float, hush: ctx.hush,
       outfit: ctx.outfit || (() => ({})),
       folk: () => folk,   // ☕ the counter borrows its customers from the town's own visitors
       pos: ctx.pos,   // ☕ the counter mark is a DISTANCE: step off it and the tray folds

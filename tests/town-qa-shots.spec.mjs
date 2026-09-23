@@ -183,7 +183,7 @@ test('the counter mark, a real cup, and the receipt that names it', async ({ pag
   await page.waitForTimeout(800);
   await page.screenshot({ path: SHOT + '17-off-the-mark.png' });
 
-  // ── and the receipt, with the cup that came out right named on it
+  // ── and the receipt: the take, the work XP, and nothing lingering under it
   await page.evaluate(() => window.__town.room.cafe().clockOut());
   await page.waitForTimeout(700);
   await page.screenshot({ path: SHOT + '18-receipt-with-a-take.png' });

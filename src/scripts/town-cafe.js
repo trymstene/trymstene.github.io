@@ -721,6 +721,7 @@ export function bootTownCafe(ctx, cfg0) {
     if (grades.length && ctx.chore) { const p = ctx.chore('cup', grades.slice(0, 60)); xpGot = (p && p.got) | 0; }
     xpGot += rushXp;   // ☕ a rush's bonus is on the receipt too
     rush = null;   // a rush cut short by the end of the shift pays nothing
+    if (ctx.hush) ctx.hush();   // the receipt IS the end of the shift: the last cup's line does not linger under it
     receipt(paid);
     return true;
   }

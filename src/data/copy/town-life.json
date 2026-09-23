@@ -27,7 +27,7 @@
     }
   ],
   "store": {
-    "greet": "Pip’s general store. Buy things for your homestead here; tomorrow the shelf has different ones.",
+    "greet": "Buy things for your homestead here. Tomorrow the shelf has different ones.",
     "shut": "The bell is quiet, the shutters are down, and Pip has taken the shelf indoors.",
     "needs": "House needs another room",
     "van": "Sent by morning van",
