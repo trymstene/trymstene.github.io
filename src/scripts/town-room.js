@@ -25,7 +25,7 @@
 // banana or ghost — a ghost with a line says it in the town's toast. ⚠️ EVERY WORD is copy:
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
-import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto } from '../lib/world.js';
+import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt } from '../lib/world.js';
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
@@ -97,9 +97,9 @@ export function bootTownLife(ctx) {
     if (TEST) {
       if (path === '/fix') { if (shim.used < 24) { shim.v = Math.min(100, shim.v + 2); shim.used++; shim.fixes++; shim.people = 1; } }   // mirrors worker-rave TOWN_FIX / TOWN_FIX_CAP
       let counted = 0;
-      // 👻 mirrors worker-rave TOWN_DARK_NIGHT / TOWN_DARK_FLOOR / TOWN_DARK_N (the night gate is the room's; the shim is one long night)
-      if (path === '/dark') { const n = Math.max(1, Math.min(10, Math.round(+(body && body.n)) || 1)); counted = Math.max(0, Math.min(n, 10 - shim.dark, Math.floor(shim.v - 60 + 1e-9))); shim.v = Math.max(5, shim.v - counted); shim.dark += counted; }
-      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 10, floor: 60, night: true }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
+      // 👻 mirrors worker-rave TOWN_DARK (2 a wreck) / TOWN_DARK_NIGHT (15 points) / TOWN_DARK_FLOOR (45): the shim is one long plain night
+      if (path === '/dark') { const n = Math.max(1, Math.min(10, Math.round(+(body && body.n)) || 1)); counted = Math.max(0, Math.min(n, Math.floor(Math.min(15 - shim.dark, Math.floor(shim.v - 45 + 1e-9)) / 2))); shim.v = Math.max(5, shim.v - 2 * counted); shim.dark += 2 * counted; }
+      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 15, floor: 45, night: true, per: 2 }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
         // ⚠️ a forced MORNING says a night happened and that none is happening now — setting `curse`
         // to the tier put ghosts in the square in daylight, which is a different thing entirely.
         curse: curseAt(Date.now()).type, stormAt: 0,
@@ -156,9 +156,11 @@ export function bootTownLife(ctx) {
   function dark(n) {
     n = Math.max(1, Math.round(+n || 1));
     // the optimistic notch, the fix's mirror: drawn only while tonight's take is unspent and the meter
-    // is above the ghosts' floor, so the bar never shows a drop the room will not confirm
-    const can = !L.dark || (L.dark.used < L.dark.max && L.life - n >= (L.dark.floor == null ? 0 : L.dark.floor));
-    if (can) { L.life = Math.max(0, L.life - n); if (L.dark) L.dark.used += n; paintMeter(); }
+    // is above the ghosts' floor, so the bar never shows a drop the room will not confirm. The room counts
+    // POINTS, `per` a wreck (2 since 23 Sep 2026, when the nights were made to bite)
+    const p = n * ((L.dark && L.dark.per) || 2);
+    const can = !L.dark || (L.dark.used + p <= L.dark.max && L.life - p >= (L.dark.floor == null ? 0 : L.dark.floor));
+    if (can) { L.life = Math.max(0, L.life - p); if (L.dark) L.dark.used += p; paintMeter(); }
     darkN += n;
     if (!darkT) darkT = setTimeout(flushDark, 1500);
   }
@@ -1176,6 +1178,7 @@ export function bootTownLife(ctx) {
       night: () => night, plainNight: () => plainNight, curseTold: () => curseTold,
       // 👻 what a ghost's mischief costs the town, and the float that shows it where it happens
       dark, float,
+      hauntLine: () => ((COPY.toasts || {}).haunt || ''),   // 👻 what the square says as a haunted night falls
       // …and setters, because a getter cannot stand on the left of an assignment
       setCurse: (v) => { curse = v; }, setVendor: (v) => { vendor = v; },
       setPlainNight: (v) => { plainNight = v; }, setCurseTold: (v) => { curseTold = v; } };
@@ -1202,7 +1205,8 @@ export function bootTownLife(ctx) {
   function curseNow() {
     if (forced && Date.now() < forcedUntil) return forced === 'omen' ? 'none' : forced;   // a chapter's own night — or 'none', a chapter's own calm
     if (forced) forced = null;
-    return curseAt(Date.now()).type;
+    const c = curseAt(Date.now()).type;
+    return c !== 'none' ? c : townHauntAt(Date.now()) ? 'haunt' : 'none';   // 👻 one town night in ten is haunted (23 Sep 2026)
   }
 
   // ═══════════════════════════════════ the sky, the tick ═════════════════════════════

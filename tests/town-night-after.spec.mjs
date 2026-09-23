@@ -19,6 +19,7 @@
 // in a second place. That is what the last assertion here is really guarding.
 import { test, expect } from '@playwright/test';
 import { NIGHT_AFTER } from '../src/data/town/condition.js';
+import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
 
 const town = async (page, life = 95) => {
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
@@ -101,7 +102,12 @@ test('a curse night leaves work behind, even on a thriving square', async ({ pag
 // and a bin it tips are a point each: at once on the bar, then on the room's word. Later that evening,
 // after a second night: *"up to 10% off the town meter a night until its atleast 60% minimum"* — so a
 // night takes ten at most, shared, and the ghosts never drag a town below 60 on their own.
-test('a ghost’s damage costs the town — at once, on the room’s word, ten a night, never below sixty', async ({ page }) => {
+// ⚠️ AND THEN THE NIGHTS WERE MADE TO BITE (23 Sep 2026). Trym: *"the nights still doesnt feel very scary - town health
+// went to 99% and then we where right up to 100% again - its been 100% the whole day when ive dropped by"*. He chose
+// "Hard": a wreck costs TWO (relighting pays two, so an answered night no longer leaves the town higher), a night may
+// take FIFTEEN, never below FORTY-FIVE on its own — and every night takes its toll by itself (worker-rave's walk,
+// proven in worker-rave/test/town-nights.test.mjs, where the clock can be held).
+test('a ghost’s damage costs the town — two a wreck, at once and on the room’s word, fifteen a night, never below forty-five', async ({ page }) => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.addInitScript(() => { window.__ev = []; window.gtag = (kind, name, p) => window.__ev.push([name, p]); });
@@ -110,27 +116,65 @@ test('a ghost’s damage costs the town — at once, on the room’s word, ten a
   const before = await page.evaluate(() => window.__town.room.life().life);
   expect(before, 'a healthy town').toBeGreaterThanOrEqual(90);
 
-  // ── two things broken: the bar drops two, and the room agrees
+  // ── two things wrecked: the bar drops four, and the room agrees
   const j = await page.evaluate(() => window.__town.room.dark(2));
   expect(j && j.counted, 'the room counted both').toBe(2);
   const after = await page.evaluate(() => ({ life: window.__town.room.life().life, bar: document.querySelector('.tw-hbar').textContent }));
-  expect(after.life, 'two points off the meter').toBeCloseTo(before - 2, 5);
-  expect(after.bar, 'and the bar on screen says so').toContain(Math.round(before - 2) + '%');
+  expect(after.life, 'four points off the meter: two a wreck').toBeCloseTo(before - 4, 5);
+  expect(after.bar, 'and the bar on screen says so').toContain(Math.round(before - 4) + '%');
   const ev = await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_dark'));
   expect(ev.length, 'Pulse hears about it once per batch').toBe(1);
 
-  // ── the night's cap: ten in all, then the town stops paying (the lamp stays yours to relight)
-  const j2 = await page.evaluate(() => window.__town.room.dark(6));
-  expect(j2 && j2.counted, 'six more, all counted').toBe(6);
+  // ── the night's cap: fifteen points in all, then the town stops paying (the lamp stays yours to relight)
+  const j2 = await page.evaluate(() => window.__town.room.dark(3));
+  expect(j2 && j2.counted, 'three more, all counted').toBe(3);
   const j3 = await page.evaluate(() => window.__town.room.dark(5));
-  expect(j3 && j3.counted, 'the last two of the night, and no more').toBe(2);
+  expect(j3 && j3.counted, 'two more fit in the night’s fifteen, and no more').toBe(2);
   const capped = await page.evaluate(() => window.__town.room.life());
-  expect(capped.life, '…and the meter stands where the cap left it').toBeCloseTo(before - 10, 5);
-  expect(capped.dark && capped.dark.used, 'the night’s take is spent').toBe(10);
-  // ── the floor: a town at 62 loses two and not a point more, whatever the ghosts do
-  await page.evaluate(() => window.__town.room.set(62));   // a set is a fresh night for the shim's take
+  expect(capped.life, '…and the meter stands where the cap left it').toBeCloseTo(before - 14, 5);
+  expect(capped.dark && capped.dark.used, 'fourteen of the night’s fifteen spent: the last point is not a whole wreck').toBe(14);
+  // ── the floor: a town at 49 loses four and not a point more, whatever the ghosts do
+  await page.evaluate(() => window.__town.room.set(49));   // a set is a fresh night for the shim's take
   const j4 = await page.evaluate(() => window.__town.room.dark(5));
-  expect(j4 && j4.counted, 'sixty is the floor the ghosts cannot cross').toBe(2);
-  expect((await page.evaluate(() => window.__town.room.life())).life, 'the meter stops at 60').toBeCloseTo(60, 5);
+  expect(j4 && j4.counted, 'forty-five is the floor a plain night cannot cross').toBe(2);
+  expect((await page.evaluate(() => window.__town.room.life())).life, 'the meter stops at 45').toBeCloseTo(45, 5);
+  expect(errs, 'nothing threw').toEqual([]);
+});
+
+// 👻 THE HAUNTED NIGHT (23 Sep 2026): one of the town's own nights in ten — Trym: "i know we have some cursed nights or
+// something but ive not seen any of those yet". It wears the Curse Night's look for its two minutes, and it does NOT shut
+// the fronts: it comes too often to end somebody's shift at the café's hatch.
+test('a haunted night: the curse’s look, bolder ghosts, a line said once — and the café keeps its shift', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => { window.__ev = []; window.gtag = (kind, name, p) => window.__ev.push([name, p]); try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); } catch (e) {} });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await town(page, 85);
+  // a shift running at the Coffee Cup when the night falls
+  await page.evaluate(() => window.__town.room.folkReady());
+  expect(await page.evaluate(() => window.__town.room.cafeReady())).toBe(true);
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__town.room.cafe().clockIn())).toBe(true);
+
+  await page.evaluate(() => window.__town.room.curse('haunt'));
+  // the square says it, once, in the town's own words
+  await page.waitForFunction((l) => (document.getElementById('twToast').textContent || '').trim() === l, LIFE.toasts.haunt, { timeout: 5000 });
+  await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => window.__town.room.night()), 'the curse’s dark').toBeGreaterThanOrEqual(0.45);
+  expect((await page.evaluate(() => window.__town.life.kept())).length, 'the residents go indoors').toBeGreaterThanOrEqual(8);
+  const g = await page.evaluate(() => window.__town.room.ghosts());
+  expect(g.map((x) => x.id).sort(), 'the creeping night’s company').toEqual(['drift', 'knock', 'roam', 'roam2', 'sit', 'wisp']);
+  expect(await page.evaluate(() => !!document.querySelector('.wx.is-heavy')), 'a cold rain').toBe(true);
+  expect(await page.evaluate(() => window.__town.room.vendor()), 'no night vendor: that is a deep night’s').toBe(false);
+  const shut = await page.evaluate(() => window.__town.room.shut());
+  expect(shut.includes('cafe') || shut.includes('info'), '⭐ the fronts stay open').toBe(false);
+  expect(await page.evaluate(() => window.__town.room.cafe().on()), '⭐ and the café’s shift goes on').toBe(true);
+  const told = await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_curse').map((e) => e[1].tier));
+  expect(told, 'Pulse hears one haunted night').toEqual(['haunt']);
+  await page.screenshot({ path: 'test-results/night-haunted.png' });
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
   expect(errs, 'nothing threw').toEqual([]);
 });

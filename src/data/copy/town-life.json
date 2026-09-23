@@ -210,7 +210,8 @@
     "warming": "warming up",
     "asleep": "This cabinet is not answering. Try again in a moment.",
     "prize": "You won {prizes}. It is in your wardrobe now.",
-    "best": "New best: {best}. #{rank} of {players} this week."
+    "best": "New best: {best}. #{rank} of {players} this week.",
+    "haunt": "A cold wind crosses the square. Tonight is haunted."
   },
   "pocket": {
     "firework": "Firework",

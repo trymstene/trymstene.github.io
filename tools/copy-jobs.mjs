@@ -442,6 +442,7 @@ const lifeFields = {
   // 🗣 THE TOWN'S TOASTS (22 Sep 2026): lines that were typed straight into say() — now a gate refuses that
   'toasts.road': { kind: 'prose', aim: 30, max: 44, note: 'Said the moment a player walks off the square by the south road, which takes them to the park; the page changes a beat later. The world noting where they are going. One short line.' },
   'toasts.lure': { kind: 'prose', aim: 60, max: 80, note: 'Said when a player taps a lure in their pocket while in town: a lure only works at the pier at the beach, where it arms itself for the next casts; there is nothing to do with it here. Plain, no number.' },
+  'toasts.haunt': { kind: 'prose', aim: 50, max: 70, note: 'Said as a HAUNTED night falls — one of the town’s own nights in ten (23 Sep 2026): darker, a cold rain, the residents indoors, bolder ghosts, a cursed thing to find, and a bigger bite out of the town’s health. The world’s voice, plain: tonight is haunted. Never a time, never how often.' },
   'toasts.warming': { kind: 'prose', aim: 24, max: 40, note: 'The line under an arcade cabinet’s name on its card for the second or two while its game is loading: the machine is warming up. Lower case is fine.' },
   'toasts.asleep': { kind: 'prose', aim: 44, max: 64, note: 'Said when an arcade cabinet’s game could not be loaded (a network hiccup): the machine is not answering right now; try again in a moment.' },
   'toasts.prize': { kind: 'prose', aim: 60, max: 90, holds: ['{prizes}'], note: 'Said when a run on an arcade cabinet wins a prize. MUST contain {prizes} exactly once — the game puts in what was won, as “an arcade visor” (two are joined with a comma); then that it is in the player’s wardrobe now. No number.' },
@@ -583,8 +584,8 @@ const lifeSchema = {
       yours: { type: 'string', description: lifeFields['fx.yours'].note },
       named: { type: 'string', description: lifeFields['fx.named'].note },
     } },
-    toasts: { type: 'object', additionalProperties: false, required: ['road', 'lure', 'warming', 'asleep', 'prize', 'best'],
-      properties: Object.fromEntries(['road', 'lure', 'warming', 'asleep', 'prize', 'best'].map((k) => [k, { type: 'string', description: lifeFields['toasts.' + k].note }])) },
+    toasts: { type: 'object', additionalProperties: false, required: ['road', 'lure', 'warming', 'asleep', 'prize', 'best', 'haunt'],
+      properties: Object.fromEntries(['road', 'lure', 'warming', 'asleep', 'prize', 'best', 'haunt'].map((k) => [k, { type: 'string', description: lifeFields['toasts.' + k].note }])) },
     pocket: { type: 'object', additionalProperties: false, required: ['firework', 'lure', 'lureWhere', 'use', 'empty'],
       properties: Object.fromEntries(['firework', 'lure', 'lureWhere', 'use', 'empty'].map((k) => [k, { type: 'string', description: lifeFields['pocket.' + k].note }])) },
     things: { type: 'object', additionalProperties: false, description: 'What wants doing, in plain words: for each kind, [one, many].', required: ['lamp', 'litter', 'bin', 'dumpster', 'graffiti', 'fountain', 'shutter', 'crows', 'leaves'],

@@ -448,4 +448,15 @@ export function townNightAt(t) {
   // half-minute of dawn still counts as the night just gone
   return inDay >= 600000 || inDay < 30000;
 }
+// the night a moment belongs to: the last beat of a twelve-minute day, plus the half-minute of dawn after it
+export const townNightIdx = (t) => Math.floor((t - 30000) / TOWN_DAY_MS);
+// 👻 THE HAUNTED NIGHT (23 Sep 2026). Trym: "the nights still doesnt feel very scary … i know we have some cursed
+// nights or something but ive not seen any of those yet". The real-time Curse Nights keep to an evening window on
+// about one day in five, so a daytime player never meets one. So one in ten of the town's OWN nights is haunted —
+// about one every two hours of real time — seeded by the night's index, so the square and the TownRoom agree
+// without a message: it wears a Curse Night's look for its two minutes, and it costs the town more.
+export const TOWN_HAUNT_SALT = 0x6a17;
+export const TOWN_HAUNT_SHARE = 0.1;
+export const townHaunted = (idx) => seedRand(TOWN_HAUNT_SALT + idx * 7919) < TOWN_HAUNT_SHARE;
+export const townHauntAt = (t) => townNightAt(t) && townHaunted(townNightIdx(t));
 // CLOCK-END

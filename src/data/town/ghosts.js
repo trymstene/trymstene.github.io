@@ -39,6 +39,7 @@ export const NIGHT_GHOSTS = {
   night: ['roam', 'drift', 'sit', 'wisp'],
   hush: ['roam', 'drift', 'sit', 'wisp'],
   creep: ['roam', 'roam2', 'drift', 'sit', 'knock', 'wisp'],
+  haunt: ['roam', 'roam2', 'drift', 'sit', 'knock', 'wisp'],   // 👻 a haunted town night (23 Sep 2026): the creeping night's company
   deep: ['roam', 'roam2', 'drift', 'sit', 'lead', 'knock', 'repeat', 'wisp'],
 };
 export const DAY_GHOSTS = ['wisp'];

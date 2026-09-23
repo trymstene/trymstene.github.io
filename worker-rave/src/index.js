@@ -280,6 +280,17 @@ function townNightAt(t) {
   // half-minute of dawn still counts as the night just gone
   return inDay >= 600000 || inDay < 30000;
 }
+// the night a moment belongs to: the last beat of a twelve-minute day, plus the half-minute of dawn after it
+const townNightIdx = (t) => Math.floor((t - 30000) / TOWN_DAY_MS);
+// 👻 THE HAUNTED NIGHT (23 Sep 2026). Trym: "the nights still doesnt feel very scary … i know we have some cursed
+// nights or something but ive not seen any of those yet". The real-time Curse Nights keep to an evening window on
+// about one day in five, so a daytime player never meets one. So one in ten of the town's OWN nights is haunted —
+// about one every two hours of real time — seeded by the night's index, so the square and the TownRoom agree
+// without a message: it wears a Curse Night's look for its two minutes, and it costs the town more.
+const TOWN_HAUNT_SALT = 0x6a17;
+const TOWN_HAUNT_SHARE = 0.1;
+const townHaunted = (idx) => seedRand(TOWN_HAUNT_SALT + idx * 7919) < TOWN_HAUNT_SHARE;
+const townHauntAt = (t) => townNightAt(t) && townHaunted(townNightIdx(t));
 // CLOCK-END
 function vinylSpot(w) {
   let x = 12 + seedRand(0x5eed + w * 2) * 70;
@@ -1366,13 +1377,35 @@ const TOWN_FIX = 2.0, TOWN_FIX_CAP = 24;     // one contribution, and the most o
 // TOWN_DARK_FLOOR on their own; only a Curse Night's ghosts may go on down to the town's floor. The
 // per-person daily cap went: the night cap and the floor bound a script the same way they bound a
 // player, and `k` on the person's row is a count now, not a cap.
-const TOWN_DARK = 1, TOWN_DARK_NIGHT = 10, TOWN_DARK_FLOOR = 60, TOWN_DARK_N = 10;
+// 🌃 AND NOW THE NIGHTS BITE (23 Sep 2026). Trym: "the nights still doesnt feel very scary - town health went to 99% and
+// then we where right up to 100% again - its been 100% the whole day when ive dropped by … right now they are very
+// harmless". Two reasons, both arithmetic: a wrecked thing cost 1 while relighting it paid 2, so a night that was
+// answered left the town HIGHER than it found it; and a night nobody watched cost nothing at all, so between two visits
+// the town simply sat at the top. He chose "Hard": a wrecked thing costs 2 (relighting now only breaks even), a night
+// may take 15 and never below 45 on its own — and every night takes its TOLL (TOWN_TOLL, in the walk below) whether or
+// not anybody is there. A HAUNTED night (one town night in ten, townHauntAt in the shared clock) takes more and lower.
+// The DARK numbers are POINTS: a report of n things costs TOWN_DARK × n, bounded by the night's points and the floor.
+const TOWN_DARK = 2, TOWN_DARK_NIGHT = 15, TOWN_DARK_FLOOR = 45, TOWN_DARK_N = 10;
+const TOWN_HAUNT_NIGHT = 25, TOWN_HAUNT_FLOOR = 20;       // a haunted night, and a real Curse Night's cap
+const TOWN_TOLL = { plain: 1, haunt: 3 };                 // what a town night takes by itself, watched or not
 // the night a moment belongs to: the last beat of the twelve-minute day, plus the half-minute of dawn
 // that townNightAt (the shared clock) still counts as that night
-const nightIdxAt = (t) => Math.floor((t - 30000) / TOWN_DAY_MS);
+const nightIdxAt = townNightIdx;   // the shared clock's (CLOCK block above)
 const TOWN_WALK_MAX = 48 * 3600_000;         // a room nobody read for a week walks two days of it, not seven
 const TOWN_BANDS = [[85, 'thriving'], [65, 'lively'], [40, 'recovering'], [15, 'struggling'], [0, 'abandoned']];
 const townBand = (v) => (TOWN_BANDS.find(([lo]) => v >= lo) || TOWN_BANDS[TOWN_BANDS.length - 1])[1];
+
+// 🌃 every town night that BEGAN in (from, to], each with its toll and the floor that toll stops at. A night begins at
+// 600 000 ms into its twelve-minute day (townNightAt); a 48-hour walk holds at most 240 of them.
+function tollsBetween(from, to) {
+  const out = [];
+  const first = Math.floor((from - 600000) / TOWN_DAY_MS) + 1, last = Math.floor((to - 600000) / TOWN_DAY_MS);
+  for (let n = first; n <= last; n++) {
+    const haunt = townHaunted(n);
+    out.push({ at: n * TOWN_DAY_MS + 600000, kind: 'toll', hit: haunt ? TOWN_TOLL.haunt : TOWN_TOLL.plain, floor: haunt ? TOWN_HAUNT_FLOOR : TOWN_DARK_FLOOR, haunt });
+  }
+  return out;
+}
 
 export class TownRoom {
   constructor(state, env) {
@@ -1422,13 +1455,16 @@ export class TownRoom {
       const events = [
         ...weatherBetween(from, now).filter((e) => TOWN_WX[e.type]).map((e) => ({ at: e.at, hit: TOWN_WX[e.type], kind: 'wx', type: e.type })),
         ...curseBetween(from, now).map((e) => ({ at: e.at, hit: TOWN_CURSE[e.type] || 0, kind: 'curse', type: e.type })),
+        ...tollsBetween(from, now),
       ].sort((a, c) => a.at - c.at);
       let v = life.v, cursor = from;
       for (const e of events) {
         v = drift(v, e.at - cursor);
         cursor = e.at;
-        // ⚠️ ONLY EVER DOWNWARD, and never through the floor. Weather damages; it never heals.
-        if (e.hit) v = Math.max(TOWN_FLOOR, v - e.hit);
+        // ⚠️ ONLY EVER DOWNWARD, and never through the floor. Weather damages; it never heals. A night's toll has a
+        // floor of its own (45, a haunted one 20): above it the night takes its share, at or below it nothing.
+        if (e.kind === 'toll') { if (v > e.floor) v = Math.max(e.floor, v - e.hit); }
+        else if (e.hit) v = Math.max(TOWN_FLOOR, v - e.hit);
         if (e.kind === 'wx' && e.type === 'storm') stormAt = e.at;
         if (e.kind === 'curse' && e.type !== 'hush') { curseAt_ = e.at; curseKind_ = e.type; }
       }
@@ -1451,7 +1487,9 @@ export class TownRoom {
     const cursedNow = cu.type === 'creep' || cu.type === 'deep' || !!(this.env && String(this.env.TOWN_CURSED_ANYTIME || '') === '1');
     const nightIdx = nightIdxAt(now);
     const darkUsed = dnight.i === nightIdx ? dnight.n : 0;
-    const darkFloor = cursedNow ? TOWN_FLOOR : TOWN_DARK_FLOOR;
+    const hauntNow = townHauntAt(now) || !!(this.env && String(this.env.TOWN_HAUNT_ANYTIME || '') === '1');
+    const darkFloor = cursedNow ? TOWN_FLOOR : hauntNow ? TOWN_HAUNT_FLOOR : TOWN_DARK_FLOOR;
+    const darkMax = cursedNow || hauntNow ? TOWN_HAUNT_NIGHT : TOWN_DARK_NIGHT;
     let people = 0, fixes = 0, darkN = 0;
     const tally = () => { people = 0; fixes = 0; darkN = 0; for (const k of Object.keys(fday)) if (fday[k].d === day) { people++; fixes += fday[k].n || 0; darkN += fday[k].k || 0; } };
     tally();
@@ -1472,7 +1510,7 @@ export class TownRoom {
       stormAt, curseAt: curseAt_, curseKind: curseKind_,
       curse: cu.type,                          // the clock's own word, so a client can prove it agrees
       cap: { used, max: TOWN_FIX_CAP },
-      dark: { used: darkUsed, max: TOWN_DARK_NIGHT, floor: darkFloor, night: townNightAt(now) || cursedNow },
+      dark: { used: darkUsed, max: darkMax, floor: darkFloor, night: townNightAt(now) || cursedNow, per: TOWN_DARK, haunt: hauntNow },
       today: { fixes, people, dark: darkN },
       at: now,
       ...extra,
@@ -1528,7 +1566,7 @@ export class TownRoom {
     // the person's two counters today, whichever name they were kept under
     const haveFix = () => Math.max(usedBy(short), alt && alt !== short ? usedBy(alt) : 0);
     const haveDark = () => Math.max(darkBy(short), alt && alt !== short ? darkBy(alt) : 0);
-    const mine = () => ({ cap: { used: haveFix(), max: TOWN_FIX_CAP }, dark: { used: dnight.i === nightIdx ? dnight.n : 0, max: TOWN_DARK_NIGHT, floor: darkFloor, night: townNightAt(now) || cursedNow } });
+    const mine = () => ({ cap: { used: haveFix(), max: TOWN_FIX_CAP }, dark: { used: dnight.i === nightIdx ? dnight.n : 0, max: darkMax, floor: darkFloor, night: townNightAt(now) || cursedNow, per: TOWN_DARK, haunt: hauntNow } });
     if (isDark) {
       // 👻 only while ghosts are out — the town's own night or a Curse Night. TOWN_NIGHT_ANYTIME (and
       // TOWN_CURSED_ANYTIME, for the floor) are wrangler --vars for the local proof
@@ -1539,12 +1577,12 @@ export class TownRoom {
       // ⚠️ THE CAP IS SILENT: past tonight's ten, or at the floor, the lamp is still out on the client
       // and still yours to relight; only the town stops paying for it. Never an error — counted: 0.
       // Whole points only: the meter is read as an integer, and a 60.4 is at the floor already.
-      const room = Math.max(0, Math.min(TOWN_DARK_NIGHT - darkUsed, Math.floor(life.v - darkFloor + 1e-9)));
-      const counted = Math.max(0, Math.min(n, room));
+      const room = Math.max(0, Math.min(darkMax - darkUsed, Math.floor(life.v - darkFloor + 1e-9)));   // in POINTS
+      const counted = Math.max(0, Math.min(n, Math.floor(room / TOWN_DARK)));                              // in THINGS
       if (counted) {
         // ⚠️ ONLY EVER DOWNWARD — the storm's rule, the ghosts' too
         life.v = Math.max(TOWN_FLOOR, life.v - TOWN_DARK * counted);
-        dnight = { i: nightIdx, n: darkUsed + counted };
+        dnight = { i: nightIdx, n: darkUsed + TOWN_DARK * counted };
         fday[short] = { d: day, n: haveFix(), k: haveDark() + counted };   // the person's count, for the day's total
         if (alt && alt !== short) delete fday[alt];   // fold the old name in
         prune();

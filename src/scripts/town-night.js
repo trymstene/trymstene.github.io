@@ -20,7 +20,7 @@ import { CURSE_SHELF } from '../data/town/stock.js';
 import { PROBLEMS } from '../data/town/problems.js';
 import { LOOK, NIGHT } from '../data/town/condition.js';
 import { OB_RECTS, OB_CIRCLES } from './town-geo.js';
-import { burstInto } from '../lib/world.js';
+import { burstInto, townNightIdx } from '../lib/world.js';
 import { passStat } from '../lib/banana-pass.js';
 import { grantToShed } from '../lib/homestead-inventory.js';
 
@@ -347,13 +347,17 @@ export function bootTownNight(ctx) {
     track('town_object', { id: o.def.id, first: first ? 1 : 0, kept: ok ? 1 : 0 });
     if (first) passStat('rep', 5);
   }
+  // 👻 A HAUNTED NIGHT (23 Sep 2026) is one of the town's own nights in ten, two minutes long and every two hours or so:
+  // the Curse Night's look — the dark, a cold rain, the residents indoors, the candles, the creeping night's ghosts and
+  // its cursed things — but THE FRONTS STAY OPEN. A haunted night comes too often to end somebody's shift at the café's
+  // hatch; only a real Curse Night shuts the café and the kiosk.
   function enterCurse(type) {
     setCurse(type);
     if (night()) night().style.opacity = String(type === 'hush' ? NIGHT.hush : NIGHT.curse);
-    weather.setKind(type === 'deep' ? 'storm' : type === 'creep' ? 'heavy' : null);
+    weather.setKind(type === 'deep' ? 'storm' : type === 'creep' || type === 'haunt' ? 'heavy' : null);
     if (type !== 'hush') {
       life.setKeep(keepFn); life.setGlow(() => false);
-      cond.shut.add('cafe'); cond.shut.add('info'); shutters();
+      if (type !== 'haunt') { cond.shut.add('cafe'); cond.shut.add('info'); shutters(); }
       candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
     }
     // a hush is dusk, not a night: it brings no ghosts and no cursed things of its own — the town's own night does
@@ -361,7 +365,8 @@ export function bootTownNight(ctx) {
     if (type !== 'hush') { (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true)); nightBegins(type === 'deep' ? 4 : 3); }
     if (type === 'deep') { setVendor(body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' })); bodies.add(vendor()); }
     lampsByHour();
-    if (curseTold() !== type + dayNum()) { setCurseTold(type + dayNum()); track('town_curse', { tier: type }); }
+    const told = type + (type === 'haunt' ? townNightIdx(Date.now()) : dayNum());   // a haunted night is told once per NIGHT, a Curse Night once per day
+    if (curseTold() !== told) { setCurseTold(told); track('town_curse', { tier: type }); if (type === 'haunt') { const hl = ctx.hauntLine ? ctx.hauntLine() : ''; if (hl) say(hl); } }
   }
   function leaveCurse() {
     setCurse(null);
