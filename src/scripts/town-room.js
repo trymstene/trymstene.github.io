@@ -1541,7 +1541,8 @@ export function bootTownLife(ctx) {
   const arcWrite = (a) => { try { localStorage.setItem(ARC_KEY, JSON.stringify(a)); } catch (e) {} };
   let arcLitter = [], arcDead = null;
   const arcStaff = () => { const j = ctx.job && ctx.job(); return !!(j && j.at === 'condo'); };
-  const arcDeadKey = () => ARC_CABS[Math.floor(h(dayNum(), 77, 1) * ARC_CABS.length) % ARC_CABS.length];
+  let arcForce = null;   // 🧪 a walk may pick the day's dark cabinet (arcadeReset)
+  const arcDeadKey = () => arcForce || ARC_CABS[Math.floor(h(dayNum(), 77, 1) * ARC_CABS.length) % ARC_CABS.length];
   function arcadeClear() {
     arcLitter.forEach((l) => kill(l.s)); arcLitter = [];
     if (arcDead) { arcDead.el.remove(); arcDead.m.remove(); arcDead = null; }
@@ -1596,7 +1597,7 @@ export function bootTownLife(ctx) {
     track('town_chore', { at: 'condo', kind: 'fix' });
   }
   seam.arcade = () => ({ staff: arcStaff(), litter: arcLitter.map((l) => ({ i: l.i, x: l.x, y: l.y })), dead: arcDead ? arcDead.key : null, working: !!(work && String(work.id).indexOf('cab:') === 0) });
-  seam.arcadeReset = () => { if (!TEST) return false; arcWrite({ d: dayNum(), swept: [], fixed: [] }); if (roomAt === 'condo') arcadeShow(); return true; };
+  seam.arcadeReset = (k) => { if (!TEST) return false; arcForce = ARC_CABS.includes(k) ? k : null; arcWrite({ d: dayNum(), swept: [], fixed: [] }); if (roomAt === 'condo') arcadeShow(); return true; };
   seam.cabinetDead = cabinetDead; seam.cabinetRepair = cabinetRepair; seam.sweepAt = sweepAt;   // the walk's doors to the same three
 
   return { tick, at, tap, openFor, seam, story, roomShow, sweepAt, cabinetDead, cabinetRepair };

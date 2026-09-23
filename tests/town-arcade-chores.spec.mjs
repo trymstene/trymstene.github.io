@@ -80,3 +80,27 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   expect(ev, 'Pulse heard a sweep and a fix').toEqual(['sweep', 'fix']);
   expect(errs, 'nothing threw').toEqual([]);
 });
+
+// ⭐ 23 Sep 2026: the day's dark cabinet is drawn from all nine, but a TAP only led to a repair on the five with a game
+// on them. On the four old ones' days (26 of the next 60 were) the tap said "old cabinet" and the fix could not be
+// earned at all. The walk above calls the repair directly, which is why it never saw this: this one taps.
+for (const key of ['g6', 'g9']) {
+  test('a dark old cabinet (' + key + ', no game on it) is woken by a real tap', async ({ page }) => {
+    test.setTimeout(60000);
+    const errs = [];
+    page.on('pageerror', (e) => errs.push(String(e)));
+    await town(page);
+    await page.evaluate(() => window.__town.work.set({ at: 'condo', pay: 60 }));
+    await page.evaluate(() => window.__town.arcade.enter());
+    await page.waitForTimeout(300);
+    await page.evaluate((k) => window.__town.room.arcadeReset(k), key);
+    await page.waitForTimeout(300);
+    expect((await arcade(page)).dead, 'the day’s dark cabinet is the old one').toBe(key);
+    const box = await page.evaluate(() => { const r = document.querySelector('.tw-dead.is-in').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+    await page.mouse.click(box.x, box.y);
+    await page.waitForFunction(() => window.__town.room.arcade().working, null, { timeout: 10000 });
+    await page.waitForFunction(() => window.__town.room.arcade().dead === null, null, { timeout: 12000 });
+    expect((await state(page)).duties.find((d) => d.kind === 'fix').done, 'machines fixed 1/3').toBe(1);
+    expect(errs).toEqual([]);
+  });
+}

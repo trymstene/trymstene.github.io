@@ -351,9 +351,14 @@ view.addEventListener('pointerdown', (e) => {
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
   const hit = thingAt(wx, wy);
   if (hit) {
-    if (inRoom === 'condo' && CABINET[hit[1]]) {   // walk to the machine's front; the card opens when you get there
+    // 🕹 …and a DARK cabinet is any of the nine: the day's dark one is drawn from all of them, and on the four old
+    // ones' days (no game on them) the tap only said "old cabinet", so the staff could not earn the repair (23 Sep 2026)
+    const dark = inRoom === 'condo' && !!(room && room.cabinetDead && room.cabinetDead(hit[1]));
+    if (inRoom === 'condo' && (CABINET[hit[1]] || dark)) {   // walk to the machine's front; the card opens when you get there
       const r2 = ROOMS.condo.spots.find((q) => q[0] === hit[1]);
-      if (r2) { tgt.x = (r2[1] + r2[3]) / 2; tgt.y = r2[4] + 26; }
+      // the five on the back wall face down the room; the four old ones stand on the side walls and face in
+      const side = r2 ? (r2[3] < 400 ? 1 : r2[1] > 780 ? -1 : 0) : 0;
+      if (r2) { tgt.x = side ? (side > 0 ? r2[3] + 28 : r2[1] - 28) : (r2[1] + r2[3]) / 2; tgt.y = side ? r2[4] - 20 : r2[4] + 26; }
       // 🕹 a cabinet gone dark is the arcade's own staff's to wake: the tap is a repair, not a game
       const key = hit[1]; arriveThen = () => ((room && room.cabinetDead && room.cabinetDead(key)) ? room.cabinetRepair(key) : gameCard(key));
       return;
