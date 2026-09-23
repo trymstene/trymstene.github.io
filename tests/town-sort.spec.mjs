@@ -53,13 +53,20 @@ test('the staff’s mailbox has the round; it starts when the banana reaches the
     await page.waitForTimeout(200);
   }
 
-  // ── the post office's own staff: the button, the rig's word on it
+  // ── the post office's own staff: their staff card first (23 Sep 2026), and the mailbox — its other use — still
+  // carries the round's own button, in the rig's word
   await page.evaluate(() => window.__town.work.set({ at: 'post', pay: 75 }));
   await stand(page, 1450, 600);   // on Hall Street, a clear walk east to the counter (the planters south of it block a straight line — the walk stops there, and the counter says so)
   await page.evaluate(() => window.__town.open('post'));
+  await page.waitForFunction(() => !!document.querySelector('.tws[data-at="post"] #twsGo'), null, { timeout: 20000 });
+  await page.click('#twsSecond');
   await page.waitForFunction(() => !!document.querySelector('#twPostSort'), null, { timeout: 20000 });
   expect((await page.locator('#twPostSort').textContent()).trim(), 'the button is the rig’s word').toBe(R.start);
-  await page.click('#twPostSort');
+  await page.evaluate(() => document.getElementById('twCardX').click());
+  // …and the staff card's Go to work is the same round: it walks you to the counter and starts there
+  await page.evaluate(() => window.__town.open('post'));
+  await page.waitForFunction(() => !!document.querySelector('.tws[data-at="post"] #twsGo'), null, { timeout: 20000 });
+  await page.click('#twsGo');
   expect(await page.evaluate(() => document.getElementById('twPanel').hidden), 'the card closed on the tap').toBe(true);
   expect(await page.evaluate(() => !!(window.__town.sort() && window.__town.sort().on())), 'and the round waits for the banana to arrive').toBe(false);
   await page.waitForFunction(() => window.__town.sort() && window.__town.sort().on(), null, { timeout: 60000 });
@@ -203,8 +210,8 @@ test('a round that goes wrong is not on the sheet; off the mark the tray folds a
   // and the counter says it is a step away instead of raising a tray nobody can see
   await stand(page, 1700, 780);
   await page.evaluate(() => window.__town.open('post'));
-  await page.waitForFunction(() => !!document.querySelector('#twPostSort'), null, { timeout: 20000 });
-  await page.click('#twPostSort');
+  await page.waitForFunction(() => !!document.querySelector('.tws[data-at="post"] #twsGo'), null, { timeout: 20000 });
+  await page.click('#twsGo');
   await page.waitForFunction(() => (document.getElementById('twToast').textContent || '').trim() === window.__R_FAR, null, { timeout: 15000 }).catch(() => {});
   const farSaid = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
   expect(farSaid, 'the counter says it is a step away').toBe(R.far);

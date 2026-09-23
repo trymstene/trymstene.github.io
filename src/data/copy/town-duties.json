@@ -24,5 +24,6 @@
   },
   "cafeDone": "tips gather on the tray as you pour; paid when you step away.",
   "standDone": "pour lemonade; tray tips are paid when you step away.",
-  "payslip": "go home and open the payslip waiting in your letterbox; it has news."
+  "payslip": "go home and open the payslip waiting in your letterbox; it has news.",
+  "tips": "tips today"
 }

@@ -15,6 +15,8 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const COPY = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-lemon.json'), 'utf8'));
 const DUTY = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-duties.json'), 'utf8'));
+const STAFF = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-staff.json'), 'utf8'));
+import { TIPS_DAY } from '../src/data/town/jobs.js';
 
 async function square(page) {
   const errors = [];
@@ -171,10 +173,11 @@ test('the stand answers a stranger in its own words, and its own staff step roun
 test('Fig Jr. steps to the orchard while his stand is worked, and the work note knows the stand as a tips job', async ({ page }) => {
   test.setTimeout(90000);
   const errors = await square(page);
-  // ── the note: the stand’s duty until you have clocked in today, then its after-line; never a count
+  // ── the note: today's tips over the stand's duty until you have clocked in today, then its after-line; never the
+  // week's counts (23 Sep 2026: a tips job's note had no numbers at all until the staff card)
   await page.evaluate(() => window.__town.work.set({ at: 'stand', pay: 0 }));
   await page.waitForFunction((l) => window.__town.duties.line() === l, DUTY.duty.stand, { timeout: 5000 });
-  expect(await page.evaluate(() => window.__town.duties.top()), 'no counts on a tips job').toBe('');
+  expect(await page.evaluate(() => window.__town.duties.top()), 'today’s tips, not the week’s counts').toBe(DUTY.tips + ' 0/' + TIPS_DAY);
   await page.evaluate(() => window.__town.work.turnUp());
   await page.waitForFunction((l) => window.__town.duties.line() === l, DUTY.standDone, { timeout: 5000 });
   expect(await page.evaluate(() => window.__town.duties.html()), 'no number anywhere on a tips job').not.toMatch(/<b>\d/);
@@ -199,7 +202,7 @@ test('Fig Jr. steps to the orchard while his stand is worked, and the work note 
 // ⭐ 23 Sep 2026: the "LEMONADE" sign skipped the walk. For the stand's own staff a tap on it clocked them in where they
 // stood (from across the square, so the shift ended at once with an empty receipt) or out in the middle of a shift.
 // A sign is its place now: the same walk, then the same deed, and nothing while the tray is up.
-test('the LEMONADE sign walks a worker to the stand before the shift, and never ends one', async ({ page }) => {
+test('the LEMONADE sign walks a worker to the stand, where the staff card starts the shift — and never ends one', async ({ page }) => {
   test.setTimeout(90000);
   const errors = await square(page);
   await page.evaluate(() => window.__town.work.set({ at: 'stand' }));
@@ -211,6 +214,11 @@ test('the LEMONADE sign walks a worker to the stand before the shift, and never 
   await page.waitForTimeout(300);
   expect(await lemon(page, (l) => l.on()), 'no shift where you stand').toBe(false);
   expect(await page.evaluate(() => { const t = window.__town; return Math.hypot(t.tgt.x - t.pos.x, t.tgt.y - t.pos.y) > 100; }), 'the banana sets off for the stand').toBe(true);
+  // 💼 at the stand, your staff card (23 Sep 2026): the shift starts from its Go to work, not on arrival
+  await page.waitForFunction(() => !document.getElementById('twPanel').hidden && !!document.querySelector('.tws[data-at="stand"]'), null, { timeout: 30000 });
+  expect(await lemon(page, (l) => l.on()), 'the card comes first, the shift second').toBe(false);
+  expect((await page.locator('#twsGo').textContent()).trim()).toBe(STAFF.go);
+  await page.click('#twsGo');
   await page.waitForFunction(() => window.__town.room.lemon() && window.__town.room.lemon().on(), null, { timeout: 30000 });
   await sign.dispatchEvent('click');
   await page.waitForTimeout(500);

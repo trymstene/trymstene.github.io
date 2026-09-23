@@ -15,6 +15,7 @@
 // itself (days you turned up); every other kind is a chore the town reports as it is done.
 
 export const JOB_PAY = { store: 90, condo: 60, post: 75, cafe: 0, stand: 0 };   // the café and the lemonade stand pay tips per glass instead of a cheque; the post office's 75 sits between the two (settled as built, Trym 22 Sep)
+export const TIPS_DAY = 120;   // the most tips one banana earns in a day — worker-pass RULES.town.tips.day, which refuses the rest; the staff card and the work note show it
 export const PAY_BACK = 2;                                  // whole weeks a cheque may walk back
 
 // the week's work, per payslip job: [kind, target]. A job with no entry pays by tips (the café).

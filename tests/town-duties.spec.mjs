@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const COPY = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-duties.json'), 'utf8'));
 const POST = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'homestead-post.json'), 'utf8'));
+import { TIPS_DAY } from '../src/data/town/jobs.js';
 const strip = (s) => String(s).replace(/\{(coins|days)\}/g, '').replace(/\s+/g, ' ').trim();
 
 const town = async (page) => {
@@ -74,28 +75,30 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   expect(c.top, 'shelf restocked 3/3').toContain(COPY.kinds.restock + ' 3/3');
   expect(c.top, 'turned up 0/3').toContain(COPY.kinds.days + ' 0/3');
 
-  // ── the café is a tips job: its duty, then its after-line, never a count
+  // ── the café is a tips job: today's tips against the day's cap over it (23 Sep 2026: the note had no numbers at
+  // all for a tips job), then its duty, then its after-line — never the week's counts
   await page.evaluate(() => window.__town.work.set({ at: 'cafe', pay: 0 }));
   await waitLine(page, COPY.duty.cafe);
-  expect((await chip(page)).top, 'no counts on a tips job').toBe('');
+  expect((await chip(page)).top, 'today’s tips, not the week’s counts').toBe(COPY.tips + ' 0/' + TIPS_DAY);
   await page.evaluate(() => window.__town.work.turnUp());
   await waitLine(page, COPY.cafeDone);
   expect((await chip(page)).html, 'no number anywhere on a tips job').not.toMatch(/<b>\d/);
 
-  // ── it folds like the quest chip: the badge, and the paper itself (Trym, 22 Sep: "important that it's possible
-  // to contract the work-quest-notification") — and a tap on the paper never walks the banana
+  // ── it folds like the quest chip, by its badge (Trym, 22 Sep: "important that it's possible to contract the
+  // work-quest-notification") — and a tap on the paper opens your staff card now (23 Sep 2026, the staff card plan's
+  // decision 2) and never walks the banana
   await page.click('.twd-chip__badge');
   expect((await chip(page)).folded, 'folded to its badge').toBe(true);
   await page.click('.twd-chip__badge');
   expect((await chip(page)).folded, '…and open again').toBe(false);
   const before = await page.evaluate(() => ({ x: window.__town.pos.x, y: window.__town.pos.y, tx: window.__town.tgt.x, ty: window.__town.tgt.y }));
   await page.click('.twd-chip__line');
-  expect((await chip(page)).folded, 'a tap on the paper folds it').toBe(true);
+  await page.waitForFunction(() => !document.getElementById('twPanel').hidden && !!document.querySelector('.tws[data-at="cafe"]'), null, { timeout: 10000 });
+  expect((await chip(page)).folded, 'a tap on the paper opens the card, and does not fold it').toBe(false);
   await page.waitForTimeout(300);
   const after = await page.evaluate(() => ({ x: window.__town.pos.x, y: window.__town.pos.y, tx: window.__town.tgt.x, ty: window.__town.tgt.y }));
   expect([after.tx, after.ty], '…and the banana was not sent walking').toEqual([before.tx, before.ty]);
-  await page.click('.twd-chip__badge');
-  expect((await chip(page)).folded, 'the badge brings it back').toBe(false);
+  await page.evaluate(() => document.getElementById('twCardX').click());
 
   // ── Pulse heard each kind of line once per day
   const ev = await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_duty').map((e) => e[1].kind));
@@ -119,7 +122,7 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   expect(qb.h, 'the quest note folded to its badge').toBeGreaterThan(0);
   expect(db.top, 'the work note’s badge sits under the quest badge, not on it').toBeGreaterThanOrEqual(qb.bottom);
   expect(dn.top, 'and the note came up the column').toBeLessThan(stack.dTop);
-  await page.click('.twd-chip__line');
+  await page.click('.twd-chip__badge');   // 💼 the work note folds by its badge (a tap on its paper opens the staff card)
   await page.waitForTimeout(450);
   qb = await rect('.bwq-hint__badge'); db = await rect('.twd-chip__badge');
   expect(db.top, 'two folded notes: two badges, stacked').toBeGreaterThanOrEqual(qb.bottom);

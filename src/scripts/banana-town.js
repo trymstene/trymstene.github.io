@@ -626,7 +626,60 @@ function dressCard() {
   }
   dressP.then((d) => { if (d) d.open(); });
 }
+// 💼 THE STAFF CARD — your own workplace's card (23 Sep 2026, town-staff.js; the plan's slice 0a). A tap on the place
+// you work opens it when the banana gets there, the way every reachable thing in this town answers; the work note is
+// its other door. Its own lazy chunk: nobody without a job downloads a byte of it. Everybody else's tap, and your tap
+// on anybody else's place, is untouched (openPlain below is the town's tap as it always was).
+const WORKPLACES = ['cafe', 'stand', 'post', 'condo', 'store'];
+let staff = null, staffP = null;
+function loadStaff() {
+  if (!staffP) {
+    staffP = import('./town-staff.js')
+      .then((m) => {
+        staff = m.bootTownStaff({ openCard, closeCard, esc, track, act: staffAct,
+          job: () => (work ? work.seam.state() : { at: '' }),
+          calls: (at) => (room && room.seam.calls ? room.seam.calls(at) : []),
+          shut: (at) => !!(room && room.seam.shutNow && room.seam.shutNow(at)) });
+        return staff;
+      })
+      .catch((e) => { staffP = null; console.warn('[town] the staff card did not open', e); return null; });
+  }
+  return staffP;
+}
+function staffCard(at, door) {
+  return loadStaff().then((s) => {
+    if (s && s.open(at, door)) return true;
+    if (door === 'place') openPlain(at);   // no card after all (the words, or the job changed on the walk): the place answers as it always has
+    return false;
+  });
+}
+// the card's buttons hand their verb back here, and each does what a tap on the world already does
+function walkThen(at, fn) {
+  if (inRoom && inRoom !== at) exitRoom();
+  const s = SPOTS[at];
+  if (inRoom === at || !s || Math.hypot(pos.x - s.x, pos.y - (s.y + 30)) <= 12) { fn(); return; }
+  tgt.x = s.x; tgt.y = s.y + 30; arriveThen = fn;
+}
+function staffAct(at, what) {
+  if (what === 'go') {
+    if (at === 'post') { if (inRoom) exitRoom(); startSort(); return; }   // ✉️ the round walks you to its own counter
+    walkThen(at, () => { if (room && room.seam.clockIn) room.seam.clockIn(at); });   // ☕🍋 the shift starts at the counter
+    return;
+  }
+  if (what === 'answer' || (what === 'second' && at === 'condo')) { walkThen(at, () => { if (inRoom !== at) enterRoom(at); }); return; }
+  if (what === 'second' && at === 'post') { postCard(); return; }
+  if (what === 'second' && at === 'store' && room && room.seam.cards) room.seam.cards.store();   // 🏪 Pip's shelf, as a customer
+}
 function openFor(key) {
+  // 💼 your own workplace answers its own staff with the staff card — unless its front is locked to you (the lock
+  // answers first, as it does for everybody)
+  if (!inRoom && WORKPLACES.includes(key) && isStaff(key) && !(room && room.seam.hoardNow && room.seam.hoardNow(key))) {
+    arriveThen = () => { staffCard(key, 'place'); };
+    return true;
+  }
+  return openPlain(key);
+}
+function openPlain(key) {
   if (room && room.openFor(key)) return true;   // 🏘️ the store's shelf, the notice board, a shut kiosk, a stall
   // 👕 THE CLOTHES SHOP is a dressing room and nothing else — no room, no job, no boss — so it lives
   // here beside the wheel rather than in town-room.js, whose business is the town's condition. Its own
@@ -924,7 +977,8 @@ assetsReady().then(() => {
       if (window.__town) window.__town.work = work.seam;
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)
       import('./town-duties.js').then((d) => {
-        duties = d.bootTownDuties({ view, work, track });
+        // 💼 a tap on the note opens your staff card — never over another card, and never mid-shift (the tray is the job then)
+        duties = d.bootTownDuties({ view, work, track, open: (at) => { if (!panel.hidden || working()) return false; staffCard(at, 'note'); return true; } });
         if (window.__town) window.__town.duties = duties ? duties.seam : null;
       }).catch((e) => { console.warn('[town] the work note did not load', e); });
     }).catch((e) => { console.warn('[town] work did not load', e); });
@@ -945,6 +999,6 @@ assetsReady().then(() => {
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)
-  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: () => marketCard('wheel'), exchange: () => marketCard('exchange') }, market: () => loadMarket().then((m) => m.seam), pocket: () => pocketOf(), pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, staff: () => (staff ? staff.seam : null), staffReady: () => loadStaff().then((x) => !!x), staffOpen: (at, door) => staffCard(at, door || 'note'), staffAct, info: () => info && info.seam, OVERLAYS, cards: { wheel: () => marketCard('wheel'), exchange: () => marketCard('exchange') }, market: () => loadMarket().then((m) => m.seam), pocket: () => pocketOf(), pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

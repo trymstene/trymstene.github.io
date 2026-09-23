@@ -1402,6 +1402,7 @@ const dutyFields = {
   cafeDone: { kind: 'prose', aim: 50, max: 70, note: 'The Coffee Cup once you have clocked in today: tips are counted on the tray as you pour and paid when you step away. No numbers. Lower case first letter.' },
   standDone: { kind: 'prose', aim: 50, max: 70, note: 'The lemonade stand once you have clocked in today: the tips gather on the tray glass by glass and are paid when you step away. No numbers. Lower case first letter, not the café\u2019s words.' },
   payslip: { kind: 'prose', aim: 50, max: 70, note: 'A cheque has been paid and the payslip waits in the letterbox at your homestead: it sends you home to open it. No numbers \u2014 the payslip has them. Lower case first letter.' },
+  tips: { kind: 'label', aim: 10, max: 18, note: 'Today\u2019s tips at the caf\u00e9 or the stand, before the count the game prints (what goes before \u201c24/120\u201d). Two lower-case words, no number. (23 Sep 2026: the caf\u00e9 and stand notes had no numbers at all.)' },
 };
 const DUTY_UI = new RegExp('\\b(tap|click|button|menu|screen|swipe)\\b', 'i');
 const DUTY_PAY = new RegExp('\\b(reward|bonus|prize|jackpot)\\b', 'i');
@@ -1410,7 +1411,7 @@ function dutyShape(data) {
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
   const k = data.kinds || {}, d = data.duty || {}, nu = data.nudge || {}, fi = data.fired || {};
   const all = [...DUTY_KINDS.map((x) => ['kinds.' + x, k[x]]), ['duty.cafe', d.cafe], ['duty.stand', d.stand], ['standDone', data.standDone], ['wage', data.wage], ['done', data.done],
-    ...DUTY_BOSS.map((x) => ['nudge.' + x, nu[x]]), ...DUTY_BOSS.map((x) => ['fired.' + x, fi[x]]), ['cafeDone', data.cafeDone], ['payslip', data.payslip]];
+    ...DUTY_BOSS.map((x) => ['nudge.' + x, nu[x]]), ...DUTY_BOSS.map((x) => ['fired.' + x, fi[x]]), ['cafeDone', data.cafeDone], ['payslip', data.payslip], ['tips', data.tips]];
   for (const [p, v0] of all) {
     const v = String(v0 || '');
     if (!v) { say(p, 'is empty'); continue; }
@@ -1420,7 +1421,7 @@ function dutyShape(data) {
     if (DUTY_PAY.test(v)) say(p, 'calls a wage or a tip a reward');
     if (/\d/.test(v.replace(/\{coins\}|\{days\}/g, ''))) say(p, 'carries a number of its own \u2014 the game prints the numbers');
     if (p !== 'wage' && /\{(coins|days)\}/.test(v)) say(p, 'has a placeholder, and only the wage line carries the numbers');
-    if (p.startsWith('kinds.') && v.split(/\s+/).length > 3) say(p, 'is more than three words, and it sits before a count');
+    if ((p.startsWith('kinds.') || p === 'tips') && v.split(/\s+/).length > 3) say(p, 'is more than three words, and it sits before a count');
   }
   const w = String(data.wage || '');
   if ((w.match(/\{coins\}/g) || []).length !== 1) say('wage', 'must contain {coins} exactly once');
@@ -1428,7 +1429,7 @@ function dutyShape(data) {
   return bad;
 }
 const dutySchema = {
-  type: 'object', additionalProperties: false, required: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip'],
+  type: 'object', additionalProperties: false, required: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip', 'tips'],
   properties: {
     kinds: { type: 'object', additionalProperties: false, required: DUTY_KINDS,
       properties: Object.fromEntries(DUTY_KINDS.map((x) => [x, str(dutyFields['kinds.' + x].note)])) },
@@ -1436,7 +1437,7 @@ const dutySchema = {
     wage: str(dutyFields.wage.note), done: str(dutyFields.done.note),
     nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['nudge.condo'].note), store: str(dutyFields['nudge.store'].note), post: str(dutyFields['nudge.post'].note) } },
     fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['fired.condo'].note), store: str(dutyFields['fired.store'].note), post: str(dutyFields['fired.post'].note) } },
-    cafeDone: str(dutyFields.cafeDone.note), standDone: str(dutyFields.standDone.note), payslip: str(dutyFields.payslip.note),
+    cafeDone: str(dutyFields.cafeDone.note), standDone: str(dutyFields.standDone.note), payslip: str(dutyFields.payslip.note), tips: str(dutyFields.tips.note),
   },
 };
 
@@ -1576,6 +1577,48 @@ export const JOBS = {
       return bad;
     },
   },
+  // 💼 THE STAFF CARD (23 Sep 2026; the plan https://claude.ai/artifact/Ub4HFW4zdQcDiCGrUZNJxH): one card for all five
+  // workplaces, opened by a tap on your own workplace or on the work note. Its top half is who you are there; its
+  // bottom half is a round you play (the café, the stand, the post office) or the calls the town has for you (the
+  // arcade, the store). A place answers plainly (docs/voice.md): these are signposts and labels, not a resident's line.
+  'town-staff': {
+    id: 'town-staff',
+    title: 'Banana Town — the staff card',
+    what: 'The card a worker opens at their own workplace or from the work note: where they work and for whom, their title, today’s tips or the week’s work and wage, today’s calls, and the buttons (go to work, answer the calls, the place’s other use).',
+    approved: 'src/data/copy/town-staff.json',
+    reads: 'src/scripts/town-staff.js (through a glob inside the card’s own lazy chunk)',
+    top: ['of', 'title', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'go', 'answer', 'quiet', 'second', 'shut'],
+    fields: {
+      ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`of.${k}`, { kind: 'label', max: 40, note: 'Small capitals over the title: the workplace, then whose staff you are.' }])),
+      ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`title.${k}`, { kind: 'label', max: 20, note: 'The card’s heading: what you are called at this workplace.' }])),
+      tips: { kind: 'label', max: 14, note: 'Over today’s tips (café, stand); the game prints the number and the cap beside it.' },
+      tipsCap: toastLine(50, 'Under the tips bar: the most tips one banana can earn in a day; {cap} is the number.', { ...holdsAll('cap'), ...NO_MARKUP }),
+      week: { kind: 'label', max: 14, note: 'Over the week’s duties (post office, arcade, store).' },
+      wage: { kind: 'label', max: 16, note: 'Beside the week’s wage so far; the game prints the coins.' },
+      payday: toastLine(50, 'Under the wage: payday is Monday; {days} is how many days away.', { ...holdsAll('days'), ...NO_MARKUP }),
+      calls: { kind: 'label', max: 16, note: 'Over the list of what is waiting at the arcade or the store today.' },
+      'call.sweep': { kind: 'label', max: 32, note: 'A call: litter to sweep on the arcade floor; the game prints how many.' },
+      'call.fix': { kind: 'label', max: 32, note: 'A call: one arcade cabinet has gone dark and needs fixing.' },
+      'call.restock': { kind: 'label', max: 32, note: 'A call: bare shelves in the store to fill from the crates.' },
+      go: { kind: 'label', max: 14, note: 'The big button on a shift job’s card: start the round.' },
+      answer: { kind: 'label', max: 18, note: 'The big button when calls are waiting: go in and see to them.' },
+      quiet: toastLine(40, 'Instead of that button when nothing is waiting.', NO_MARKUP),
+      'second.post': { kind: 'label', max: 22, note: 'The post office’s other use, under Go to work: your own letters.' },
+      'second.store': { kind: 'label', max: 22, note: 'The store’s other use: Pip’s shelf, to buy things.' },
+      'second.condo': { kind: 'label', max: 22, note: 'The arcade’s other use: go inside and play the cabinets.' },
+      shut: toastLine(70, 'The workplace is shut today: no work until it opens.', NO_MARKUP),
+    },
+    shape: (d) => {
+      const bad = [];
+      for (const k of ['cafe', 'stand', 'post', 'condo', 'store']) {
+        if (!(d.of || {})[k]) bad.push({ path: 'of.' + k, msg: 'missing — every workplace has a staff card' });
+        if (!(d.title || {})[k]) bad.push({ path: 'title.' + k, msg: 'missing — every workplace has a staff card' });
+      }
+      for (const k of ['sweep', 'fix', 'restock']) if (!(d.call || {})[k]) bad.push({ path: 'call.' + k, msg: 'missing — src/scripts/town-staff.js lists this call' });
+      for (const k of ['post', 'store', 'condo']) if (!(d.second || {})[k]) bad.push({ path: 'second.' + k, msg: 'missing — this workplace has another use' });
+      return bad;
+    },
+  },
   'town-fronts': {
     id: 'town-fronts',
     title: 'Banana Town — what the other places say when tapped',
@@ -1694,7 +1737,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-duties.json',
     approved: 'src/data/copy/town-duties.json',
     reads: 'src/scripts/town-duties.js (through a glob \u2014 no words, no chip)',
-    top: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip'],
+    top: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip', 'tips'],
     fields: dutyFields,
     shape: dutyShape,
     schema: dutySchema,

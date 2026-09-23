@@ -1600,5 +1600,22 @@ export function bootTownLife(ctx) {
   seam.arcadeReset = (k) => { if (!TEST) return false; arcForce = ARC_CABS.includes(k) ? k : null; arcWrite({ d: dayNum(), swept: [], fixed: [] }); if (roomAt === 'condo') arcadeShow(); return true; };
   seam.cabinetDead = cabinetDead; seam.cabinetRepair = cabinetRepair; seam.sweepAt = sweepAt;   // the walk's doors to the same three
 
+  // 💼 THE STAFF CARD ASKS THIS ROOM TWO THINGS (23 Sep 2026, town-staff.js): what is waiting for its worker today —
+  // the same litter, dark cabinet and bare faces the rooms already show their staff — and the shift begun at the
+  // counter the worker has walked to. Both are this file's own state and this file's own deeds; the card copies neither.
+  seam.calls = (at) => {
+    const j = ctx.job && ctx.job();
+    if (!j || j.at !== at) return [];
+    if (at === 'condo') { const a = arcRead(); return [{ kind: 'sweep', n: Math.max(0, ARC_LITTER.length - a.swept.length) }, { kind: 'fix', n: a.fixed.includes(arcDeadKey()) ? 0 : 1 }]; }
+    if (at === 'store') { const i = bareShelf(); return [{ kind: 'restock', n: i < 0 || !STORE || !STORE.full ? 0 : STORE.full.length - i }]; }
+    return [];
+  };
+  seam.clockIn = (at) => {
+    if (at === 'cafe') { loadCafe().then((c) => { if (c && !c.on()) c.clockIn(view); }); return true; }
+    if (at === 'stand') { loadLemon().then((l) => { if (l && !l.on()) l.clockIn(view); }); return true; }
+    return false;
+  };
+  seam.hoardNow = hoardNow;
+
   return { tick, at, tap, openFor, seam, story, roomShow, sweepAt, cabinetDead, cabinetRepair };
 }

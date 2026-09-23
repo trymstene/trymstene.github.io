@@ -1,0 +1,36 @@
+{
+  "of": {
+    "cafe": "The Coffee Cup · Bean’s staff",
+    "stand": "The lemonade stand · Fig Jr.’s staff",
+    "post": "The Post Office · Stamp’s staff",
+    "condo": "The Arcade · Spinner’s staff",
+    "store": "Pip’s General Store · Pip’s staff"
+  },
+  "title": {
+    "cafe": "Barista",
+    "stand": "Lemonade seller",
+    "post": "Post sorter",
+    "condo": "Arcade attendant",
+    "store": "Shop assistant"
+  },
+  "tips": "Tips today",
+  "tipsCap": "Tips stop at {cap} coins a day.",
+  "week": "This week",
+  "wage": "Wage so far",
+  "payday": "Payday is Monday, {days} days away.",
+  "calls": "Today’s calls",
+  "call": {
+    "sweep": "Litter on the arcade floor",
+    "fix": "A cabinet has gone dark",
+    "restock": "Empty shelves to fill"
+  },
+  "go": "Go to work",
+  "answer": "Answer the calls",
+  "quiet": "Nothing needs you right now.",
+  "second": {
+    "post": "Open your mailbox",
+    "store": "Shop at Pip’s shelf",
+    "condo": "Go in and play"
+  },
+  "shut": "Closed today. The work waits until it opens."
+}

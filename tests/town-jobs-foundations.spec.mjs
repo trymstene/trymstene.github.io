@@ -91,7 +91,10 @@ test('Stamp’s staff can start a round with no address and no post room', async
   await page.route('**/post/**', (r) => r.abort());
   await seam(page, () => window.__town.work.set({ at: 'post' }));
   await seam(page, () => { const p = window.__town.PROPS.post, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  // 💼 staff reach the post office through their staff card (23 Sep 2026); the mailbox is its other use
   await seam(page, () => window.__town.open('post'));
+  await page.waitForFunction(() => !!document.querySelector('#twsSecond'), null, { timeout: 15000 });
+  await page.click('#twsSecond');
   await page.waitForFunction(() => !!document.querySelector('.tw-post'), null, { timeout: 15000 });
   await page.waitForTimeout(600);
   const st = await page.evaluate(() => ({ none: (document.querySelector('.tw-post__none') || {}).textContent || '', sort: (document.getElementById('twPostSort') || {}).textContent || '' }));
