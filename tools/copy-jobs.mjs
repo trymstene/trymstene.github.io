@@ -1403,6 +1403,13 @@ const dutyFields = {
   standDone: { kind: 'prose', aim: 50, max: 70, note: 'The lemonade stand once you have clocked in today: the tips gather on the tray glass by glass and are paid when you step away. No numbers. Lower case first letter, not the café\u2019s words.' },
   payslip: { kind: 'prose', aim: 50, max: 70, note: 'A cheque has been paid and the payslip waits in the letterbox at your homestead: it sends you home to open it. No numbers \u2014 the payslip has them. Lower case first letter.' },
   tips: { kind: 'label', aim: 10, max: 18, note: 'Today\u2019s tips at the caf\u00e9 or the stand, before the count the game prints (what goes before \u201c24/120\u201d). Two lower-case words, no number. (23 Sep 2026: the caf\u00e9 and stand notes had no numbers at all.)' },
+  // \ud83d\udcdf the pager (23 Sep 2026, the staff card plan\u2019s slice 0b): at the arcade and the store the town CALLS its staff,
+  // and the note is where the call lands, gold, until it is answered. The boss is named, and the window is said: open
+  // until midnight. Never a guilt line, never a countdown.
+  'call.sweep': { kind: 'prose', aim: 55, max: 80, note: 'The note when the arcade\u2019s litter call has come in: Spinner calls, litter on the arcade floor, open until midnight. Starts with Spinner\u2019s name.' },
+  'call.fix': { kind: 'prose', aim: 55, max: 80, note: 'The note when the arcade\u2019s dark-cabinet call has come in: Spinner calls, a cabinet has gone dark, open until midnight. Starts with Spinner\u2019s name.' },
+  'call.restock': { kind: 'prose', aim: 55, max: 80, note: 'The note when the store\u2019s delivery call has come in: Pip calls, a delivery waits to be shelved, open until midnight. Starts with Pip\u2019s name.' },
+  answered: { kind: 'prose', aim: 50, max: 70, note: 'The note once every one of today\u2019s calls is answered: nothing more is wanted until tomorrow. No numbers, no praise-as-reward. Lower case first letter.' },
 };
 const DUTY_UI = new RegExp('\\b(tap|click|button|menu|screen|swipe)\\b', 'i');
 const DUTY_PAY = new RegExp('\\b(reward|bonus|prize|jackpot)\\b', 'i');
@@ -1411,7 +1418,8 @@ function dutyShape(data) {
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
   const k = data.kinds || {}, d = data.duty || {}, nu = data.nudge || {}, fi = data.fired || {};
   const all = [...DUTY_KINDS.map((x) => ['kinds.' + x, k[x]]), ['duty.cafe', d.cafe], ['duty.stand', d.stand], ['standDone', data.standDone], ['wage', data.wage], ['done', data.done],
-    ...DUTY_BOSS.map((x) => ['nudge.' + x, nu[x]]), ...DUTY_BOSS.map((x) => ['fired.' + x, fi[x]]), ['cafeDone', data.cafeDone], ['payslip', data.payslip], ['tips', data.tips]];
+    ...DUTY_BOSS.map((x) => ['nudge.' + x, nu[x]]), ...DUTY_BOSS.map((x) => ['fired.' + x, fi[x]]), ['cafeDone', data.cafeDone], ['payslip', data.payslip], ['tips', data.tips],
+    ...['sweep', 'fix', 'restock'].map((x) => ['call.' + x, (data.call || {})[x]]), ['answered', data.answered]];
   for (const [p, v0] of all) {
     const v = String(v0 || '');
     if (!v) { say(p, 'is empty'); continue; }
@@ -1429,7 +1437,7 @@ function dutyShape(data) {
   return bad;
 }
 const dutySchema = {
-  type: 'object', additionalProperties: false, required: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip', 'tips'],
+  type: 'object', additionalProperties: false, required: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip', 'tips', 'call', 'answered'],
   properties: {
     kinds: { type: 'object', additionalProperties: false, required: DUTY_KINDS,
       properties: Object.fromEntries(DUTY_KINDS.map((x) => [x, str(dutyFields['kinds.' + x].note)])) },
@@ -1438,6 +1446,8 @@ const dutySchema = {
     nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['nudge.condo'].note), store: str(dutyFields['nudge.store'].note), post: str(dutyFields['nudge.post'].note) } },
     fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['fired.condo'].note), store: str(dutyFields['fired.store'].note), post: str(dutyFields['fired.post'].note) } },
     cafeDone: str(dutyFields.cafeDone.note), standDone: str(dutyFields.standDone.note), payslip: str(dutyFields.payslip.note), tips: str(dutyFields.tips.note),
+    call: { type: 'object', additionalProperties: false, required: ['sweep', 'fix', 'restock'], properties: { sweep: str(dutyFields['call.sweep'].note), fix: str(dutyFields['call.fix'].note), restock: str(dutyFields['call.restock'].note) } },
+    answered: str(dutyFields.answered.note),
   },
 };
 
@@ -1587,7 +1597,7 @@ export const JOBS = {
     what: 'The card a worker opens at their own workplace or from the work note: where they work and for whom, their title, today’s tips or the week’s work and wage, today’s calls, and the buttons (go to work, answer the calls, the place’s other use).',
     approved: 'src/data/copy/town-staff.json',
     reads: 'src/scripts/town-staff.js (through a glob inside the card’s own lazy chunk)',
-    top: ['of', 'title', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'go', 'answer', 'quiet', 'second', 'shut'],
+    top: ['of', 'title', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut'],
     fields: {
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`of.${k}`, { kind: 'label', max: 40, note: 'Small capitals over the title: the workplace, then whose staff you are.' }])),
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`title.${k}`, { kind: 'label', max: 20, note: 'The card’s heading: what you are called at this workplace.' }])),
@@ -1600,6 +1610,7 @@ export const JOBS = {
       'call.sweep': { kind: 'label', max: 32, note: 'A call: litter to sweep on the arcade floor; the game prints how many.' },
       'call.fix': { kind: 'label', max: 32, note: 'A call: one arcade cabinet has gone dark and needs fixing.' },
       'call.restock': { kind: 'label', max: 32, note: 'A call: bare shelves in the store to fill from the crates.' },
+      until: toastLine(40, 'Under today’s calls: a call stays open until midnight (slice 0b). No countdown, no pressure.', NO_MARKUP),
       go: { kind: 'label', max: 14, note: 'The big button on a shift job’s card: start the round.' },
       answer: { kind: 'label', max: 18, note: 'The big button when calls are waiting: go in and see to them.' },
       quiet: toastLine(40, 'Instead of that button when nothing is waiting.', NO_MARKUP),
@@ -1737,7 +1748,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-duties.json',
     approved: 'src/data/copy/town-duties.json',
     reads: 'src/scripts/town-duties.js (through a glob \u2014 no words, no chip)',
-    top: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip', 'tips'],
+    top: ['kinds', 'duty', 'wage', 'done', 'nudge', 'fired', 'cafeDone', 'standDone', 'payslip', 'tips', 'call', 'answered'],
     fields: dutyFields,
     shape: dutyShape,
     schema: dutySchema,

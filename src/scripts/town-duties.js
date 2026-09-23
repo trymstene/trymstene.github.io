@@ -18,6 +18,7 @@
 import POST from '../data/copy/homestead-post.json';
 import { ruleUsed } from '../lib/banana-pass.js';
 import { TIPS_DAY } from '../data/town/jobs.js';
+import { calls as callsAt, ONCALL_JOBS } from '../lib/work-calls.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-duties.json', { eager: true, import: 'default' });
 const COPY = Object.values(COPY_MODS)[0] || null;
 
@@ -56,6 +57,11 @@ const CSS = `
 .twd-chip__line { display:block; }
 .twd-chip--nudge { background:linear-gradient(#ffe8c2,#f2c98a); }
 .twd-chip--fired { background:linear-gradient(#e8dcd2,#cdbcae); }
+.twd-chip--call { background:linear-gradient(#ffc36b,#f29a2e); color:#2a1606; }
+.twd-chip--call.is-min .twd-chip__badge { background:#f29a2e; }
+.twd-chip.is-ring:not(.is-min), .twd-chip.is-ring .twd-chip__badge { animation:twdRing 0.8s ease-out; }
+@keyframes twdRing { 20% { transform:rotate(-6deg) scale(1.08); } 45% { transform:rotate(5deg) scale(1.08); } 70% { transform:rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .twd-chip.is-ring, .twd-chip.is-ring .twd-chip__badge { animation:none; } }
 .twd-chip__badge {
   position:absolute; left:-13px; top:-15px; line-height:0;
   background:#111; border-radius:999px; padding:6px 7px;
@@ -82,7 +88,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 // the numbers go in bold, so the eye finds them; the words stay the rig's
 const fill = (line, vals) => esc(line).replace(/\{(coins|days)\}/g, (m, k) => '<b>' + (vals[k] | 0) + '</b>');
 
-export function bootTownDuties({ view, work, track, open }) {
+export function bootTownDuties({ view, work, track, open, onCall }) {
   if (!COPY || !COPY.kinds) return null;   // the words are not approved yet: the square has no chip, not a broken one
   injectCss();
   const el = document.createElement('div');
@@ -93,6 +99,7 @@ export function bootTownDuties({ view, work, track, open }) {
   const badge = el.querySelector('button'), top = el.querySelector('.twd-chip__top'), text = el.querySelector('.twd-chip__line');
   view.appendChild(el);
   let shown = '';   // what the chip last said, so a re-render is free and Pulse hears each line once
+  let rung = '';    // 📟 the call the note last rang for: a count moving under a call is not a new call
 
   const fold = () => {
     const min = !!work.seam.folded();
@@ -169,7 +176,13 @@ export function bootTownDuties({ view, work, track, open }) {
     }
     const top = countsFor(s);
     if (s.owed > 0 && COPY.payslip) return { top, line: esc(COPY.payslip), kind: 'payslip' };
+    // 📟 THE PAGER (slice 0b): at the arcade and the store the town CALLS you, and the note is where the call lands —
+    // amber (the quest's note is the gold one), the call's own line, until it is answered; then the next one; then one line for a day's calls all answered
+    const cs = ONCALL_JOBS[s.at] ? callsAt(s.at) : [];
+    const ring = cs.find((c) => c.open);
+    if (ring && COPY.call && COPY.call[ring.kind]) return { top, line: esc(COPY.call[ring.kind]), kind: 'call' };
     if (s.nudge && COPY.nudge && COPY.nudge[s.at]) return { top, line: esc(COPY.nudge[s.at]), kind: 'nudge' };
+    if (cs.length && cs.every((c) => c.done) && COPY.answered) return { top, line: esc(COPY.answered), kind: 'answered' };
     if (s.share >= 1 && COPY.done) return { top, line: esc(COPY.done), kind: 'done' };
     return COPY.wage ? { top, line: fill(COPY.wage, { coins: s.sofar, days: daysToPayday() }), kind: 'wage' } : null;
   }
@@ -186,6 +199,11 @@ export function bootTownDuties({ view, work, track, open }) {
       text.innerHTML = says.line;
       el.classList.toggle('twd-chip--nudge', says.kind === 'nudge');
       el.classList.toggle('twd-chip--fired', says.kind === 'fired');
+      // 📟 a call is amber, and a NEW call rings the note once — its badge too, if you folded it — and tells the town, so
+      // a room you are standing in draws the work it just brought (no sound: nowhere outside the rave has any, or a mute)
+      el.classList.toggle('twd-chip--call', says.kind === 'call');
+      if (says.kind === 'call' && says.line !== rung) { rung = says.line; el.classList.remove('is-ring'); void el.offsetWidth; el.classList.add('is-ring'); if (onCall) onCall(s.at); }
+      if (says.kind !== 'call') rung = '';
       // 📡 Pulse hears the chip once per line per day: a duty shown, a wage shown, a nudge, the sack, a payslip announced
       const at = s.at || (s.fired && s.fired.at) || '';
       const pk = today() + ':' + at + ':' + says.kind;
@@ -205,7 +223,8 @@ export function bootTownDuties({ view, work, track, open }) {
       top: () => top.textContent,
       line: () => text.textContent,
       html: () => text.innerHTML,
-      kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : ''),
+      kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : el.classList.contains('twd-chip--call') ? 'call' : ''),
+      rang: () => el.classList.contains('is-ring'),
       folded: () => el.classList.contains('is-min'),
       offset: () => el.style.top,
       stop: () => { clearInterval(placer); if (ro) ro.disconnect(); },

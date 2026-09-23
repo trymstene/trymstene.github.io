@@ -91,7 +91,7 @@ export function bootTownStaff(ctx) {
     if (!calls.length) return COPY.quiet ? '<p class="tws-quiet">' + esc(COPY.quiet) + '</p>' : '';
     return '<section><span class="tws-lab">' + esc(COPY.calls) + '</span><ul class="tws-rows tws-calls">'
       + calls.map((c) => '<li data-call="' + c.kind + '"><span>' + esc((COPY.call || {})[c.kind] || c.kind) + '</span>' + ((c.n | 0) > 1 ? '<b>' + (c.n | 0) + '</b>' : '') + '</li>').join('')
-      + '</ul></section>';
+      + '</ul>' + (COPY.until ? '<p class="tws-note">' + esc(COPY.until) + '</p>' : '') + '</section>';
   }
   const cta = (id, verb, off) => '<button type="button" class="tw-cta" id="' + id + '"' + (off ? ' disabled' : '') + '><span class="tw-cta__verb">' + esc(verb) + '</span></button>';
   const plain = (id, label) => '<button type="button" class="tw-btn--in" id="' + id + '">' + esc(label) + '</button>';

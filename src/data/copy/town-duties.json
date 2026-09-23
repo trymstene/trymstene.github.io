@@ -25,5 +25,11 @@
   "cafeDone": "tips gather on the tray as you pour; paid when you step away.",
   "standDone": "pour lemonade; tray tips are paid when you step away.",
   "payslip": "go home and open the payslip waiting in your letterbox; it has news.",
-  "tips": "tips today"
+  "tips": "tips today",
+  "call": {
+    "sweep": "Spinner calls: litter on the arcade floor, open until midnight.",
+    "fix": "Spinner calls: a cabinet has gone dark, open until midnight.",
+    "restock": "Pip calls: a delivery waits to be shelved, open until midnight."
+  },
+  "answered": "every call today is answered; nothing more is wanted until tomorrow."
 }

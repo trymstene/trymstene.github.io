@@ -24,6 +24,7 @@
     "fix": "A cabinet has gone dark",
     "restock": "Empty shelves to fill"
   },
+  "until": "Calls stay open until midnight.",
   "go": "Go to work",
   "answer": "Answer the calls",
   "quiet": "Nothing needs you right now.",

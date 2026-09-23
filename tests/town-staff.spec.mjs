@@ -136,6 +136,7 @@ test('the store calls its staff to its bare shelves, and Pip’s shelf is still 
   test.setTimeout(90000);
   const errs = await town(page);
   await page.evaluate(() => window.__town.work.set({ at: 'store', sofar: 30 }));
+  await page.evaluate(() => localStorage.setItem('tw-calls-v1', JSON.stringify({ d: Math.floor(Date.now() / 864e5), t0: Date.now() - 36e5, qa: ['restock'] })));   // the day's delivery call is in (slice 0b)
   expect(await page.evaluate(() => window.__town.room.shopReady()), 'the shop’s chunk arrives').toBe(true);
   await stand(page, 480, 1080);
   await page.evaluate(() => window.__town.open('store'));

@@ -978,7 +978,9 @@ assetsReady().then(() => {
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)
       import('./town-duties.js').then((d) => {
         // 💼 a tap on the note opens your staff card — never over another card, and never mid-shift (the tray is the job then)
-        duties = d.bootTownDuties({ view, work, track, open: (at) => { if (!panel.hidden || working()) return false; staffCard(at, 'note'); return true; } });
+        // 📟 and a call that comes in while you stand in its room brings its work into the room there and then (slice 0b)
+        duties = d.bootTownDuties({ view, work, track, open: (at) => { if (!panel.hidden || working()) return false; staffCard(at, 'note'); return true; },
+          onCall: (at) => { if (inRoom === at && room && room.roomShow) room.roomShow(at); } });
         if (window.__town) window.__town.duties = duties ? duties.seam : null;
       }).catch((e) => { console.warn('[town] the work note did not load', e); });
     }).catch((e) => { console.warn('[town] work did not load', e); });

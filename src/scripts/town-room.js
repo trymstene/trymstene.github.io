@@ -32,6 +32,7 @@ import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shi
 import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, INFO_WIN, OVERLAYS, ARCADE } from './town-geo.js';
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
+import { arrived as callIn, calls as callsAt } from '../lib/work-calls.js';   // 📟 the on-call staff's work comes in as calls (slice 0b)
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, MERCHANT, CURSE_SHELF } from '../data/town/stock.js';
@@ -850,7 +851,7 @@ export function bootTownLife(ctx) {
     // store paid at most half its rate in exactly the town it is the reward for. On its own staff's screen the
     // band's picks now leave two faces for them every day (the shelf is drawn per device: nobody else's changes).
     const j = ctx.job && ctx.job();
-    if (j && j.at === 'store' && STORE && STORE.full && out.length > STORE.full.length - STAFF_FACES) out.length = Math.max(0, STORE.full.length - STAFF_FACES);
+    if (j && j.at === 'store' && STORE && STORE.full && out.length > STORE.full.length - STAFF_FACES && callIn('store', 'restock')) out.length = Math.max(0, STORE.full.length - STAFF_FACES);   // 📟 once the day's delivery call is in
     // ⭐ and the rows YOU put out today, drawn from the same pools with a different salt so they are
     // never the band's own picks twice. This is why the till has the row on it before you leave.
     const mine = restocked();
@@ -1551,13 +1552,14 @@ export function bootTownLife(ctx) {
     arcadeClear();
     if (!arcStaff() || !ARCADE || !ARCADE.spots) return;
     const a = arcRead();
+    const sweepIn = callIn('condo', 'sweep');   // 📟 the litter and the dark cabinet are the day's CALLS: drawn once each has come in
     ARC_LITTER.forEach(([x, y], i) => {
-      if (a.swept.includes(i)) return;
+      if (a.swept.includes(i) || !sweepIn) return;
       const s = sprite(['trash1', 'trash2', 'trash3'][i % 3], x, y, { z: 2000 + y, cls: 'is-in' });
       if (s) arcLitter.push({ i, s, x, y });
     });
     const key = arcDeadKey();
-    if (a.fixed.includes(key)) return;
+    if (a.fixed.includes(key) || !callIn('condo', 'fix')) return;
     const sp = ARCADE.spots.find((q) => q[0] === key);
     if (!sp) return;
     const [, x0, y0, x1, y1] = sp;
@@ -1597,7 +1599,8 @@ export function bootTownLife(ctx) {
     track('town_chore', { at: 'condo', kind: 'fix' });
   }
   seam.arcade = () => ({ staff: arcStaff(), litter: arcLitter.map((l) => ({ i: l.i, x: l.x, y: l.y })), dead: arcDead ? arcDead.key : null, working: !!(work && String(work.id).indexOf('cab:') === 0) });
-  seam.arcadeReset = (k) => { if (!TEST) return false; arcForce = ARC_CABS.includes(k) ? k : null; arcWrite({ d: dayNum(), swept: [], fixed: [] }); if (roomAt === 'condo') arcadeShow(); return true; };
+  // 🧪 a fresh arcade day for its staff — and its calls already in (tw-calls-v1 qa, honoured under ?towntest alone)
+  seam.arcadeReset = (k) => { if (!TEST) return false; arcForce = ARC_CABS.includes(k) ? k : null; arcWrite({ d: dayNum(), swept: [], fixed: [] }); try { localStorage.setItem('tw-calls-v1', JSON.stringify({ d: dayNum(), t0: Date.now() - 36e5, qa: ['sweep', 'fix'] })); } catch (e) {} if (roomAt === 'condo') arcadeShow(); return true; };
   seam.cabinetDead = cabinetDead; seam.cabinetRepair = cabinetRepair; seam.sweepAt = sweepAt;   // the walk's doors to the same three
 
   // 💼 THE STAFF CARD ASKS THIS ROOM TWO THINGS (23 Sep 2026, town-staff.js): what is waiting for its worker today —
@@ -1606,9 +1609,7 @@ export function bootTownLife(ctx) {
   seam.calls = (at) => {
     const j = ctx.job && ctx.job();
     if (!j || j.at !== at) return [];
-    if (at === 'condo') { const a = arcRead(); return [{ kind: 'sweep', n: Math.max(0, ARC_LITTER.length - a.swept.length) }, { kind: 'fix', n: a.fixed.includes(arcDeadKey()) ? 0 : 1 }]; }
-    if (at === 'store') { const i = bareShelf(); return [{ kind: 'restock', n: i < 0 || !STORE || !STORE.full ? 0 : STORE.full.length - i }]; }
-    return [];
+    return callsAt(at).filter((c) => c.open).map((c) => ({ kind: c.kind, n: c.left }));   // 📟 the calls that have come in and are not yet answered
   };
   seam.clockIn = (at) => {
     if (at === 'cafe') { loadCafe().then((c) => { if (c && !c.on()) c.clockIn(view); }); return true; }

@@ -1337,5 +1337,14 @@ const description = 'A clearing west of the park with your name on the sign: cla
         import('../lib/world-quest.js').then((m) => m.bootQuest());
       }
     } catch (e) { /* quest is optional garnish — the area must never break */ }
+    // 📟 AN ON-CALL JOB'S PAGER (23 Sep 2026, the staff card plan's slice 0b): the town's work note, gold, while the
+    // arcade or the store has a call open — so a call reaches a worker here too. Only for somebody who holds such a job:
+    // this read is free, the chunk is not.
+    try {
+      const job = (JSON.parse(localStorage.getItem('tw-job-v1') || 'null') || {}).at;
+      if (job === 'condo' || job === 'store') {
+        import('../lib/work-pager.js').then((m) => { const p = m.bootWorkPager({ view: document.querySelector('.hs-view'), area: 'homestead' }); if (p) window.__pager = p.seam; });
+      }
+    } catch (e) { /* the pager is garnish too: the area must never break */ }
   </script>
 </BaseLayout>

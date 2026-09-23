@@ -42,8 +42,9 @@ test('a THRIVING town still leaves the store’s staff two faces to fill', async
   const full = await seam(page, () => window.__town.rooms.of('store').full.length);
   expect((await room(page, 'shelf')).length, 'a thriving store is full for a customer').toBe(full);
   expect(await room(page, 'bare'), 'with no bare face').toBe(-1);
-  // ⭐ its staff find the day's delivery waiting
+  // ⭐ its staff find the day's delivery waiting — once the day's delivery call has come in (slice 0b: the calls)
   await seam(page, () => window.__town.work.set({ at: 'store' }));
+  await seam(page, () => localStorage.setItem('tw-calls-v1', JSON.stringify({ d: Math.floor(Date.now() / 864e5), t0: Date.now() - 36e5, qa: ['restock'] })));
   await inside(page, 'store');
   expect((await room(page, 'shelf')).length, '⭐ two faces are left for the staff').toBe(full - 2);
   expect(await room(page, 'hints'), 'and the crates are lit').toEqual(['overcr1', 'overcr2']);
