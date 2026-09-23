@@ -18,7 +18,7 @@
 // ⚠️ THE WORDS ARE THE COPY FILE'S (src/data/copy/town-staff.json). No words, no card: the town's own tap stands.
 import DUTY from '../data/copy/town-duties.json';
 import { ruleUsed } from '../lib/banana-pass.js';
-import { tipsCap, weekPay, xpAt, ranksOf, LADDER, unlocksAt, dayCap } from '../data/town/jobs.js';   // 🪜 the ladder (23 Sep 2026)
+import { tipsCap, weekPay, xpAt, ranksOf, LADDER, unlocksAt, dayCap, refTo } from '../data/town/jobs.js';   // 🪜 the ladder (23 Sep 2026)
 import { daysToPayday } from './town-duties.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-staff.json', { eager: true, import: 'default' });
 const COPY = Object.values(COPY_MODS)[0] || null;
@@ -126,7 +126,9 @@ export function bootTownStaff(ctx) {
       + (l.last && (COPY.last || {})[l.last.v] ? '<p class="tws-note">' + esc(fill(COPY.last[l.last.v], { xp: Math.abs(l.last.xp | 0) })) + '</p>' : '')
       + (nextLine ? '<p class="tws-note">' + esc(nextLine) + '</p>' : '')
       // 🔓 and what the next rank lets you DO (the ladder's slice 3): the reason to climb, in the card's own words
-      + unlocksAt(at, l.rank + 1).map((k) => ((COPY.unlock || {})[at] || {})[k]).filter(Boolean).map((u) => '<p class="tws-note tws-unlock">' + esc(u) + '</p>').join('') + '</section>';
+      + unlocksAt(at, l.rank + 1).map((k) => ((COPY.unlock || {})[at] || {})[k]).filter(Boolean).map((u) => '<p class="tws-note tws-unlock">' + esc(u) + '</p>').join('')
+      // 📜 and at the top rank, the reference it has earned you at the next rung up
+      + (!next && refTo(at) && (COPY.refCard || {})[at] ? '<p class="tws-note tws-unlock">' + esc(COPY.refCard[at]) + '</p>' : '') + '</section>';
   }
   const cta = (id, verb, off) => '<button type="button" class="tw-cta" id="' + id + '"' + (off ? ' disabled' : '') + '><span class="tw-cta__verb">' + esc(verb) + '</span></button>';
   const plain = (id, label) => '<button type="button" class="tw-btn--in" id="' + id + '">' + esc(label) + '</button>';

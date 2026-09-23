@@ -36,7 +36,8 @@
       "There goes {item}. The shelf looks surprised.",
       "{item} will sit nicely at home.",
       "A fine choice: {item}. I was saving it for nobody."
-    ]
+    ],
+    "staff": "staff price"
   },
   "board": {
     "title": "Square Report",

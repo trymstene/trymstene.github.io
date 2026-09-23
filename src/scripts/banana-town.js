@@ -6,7 +6,7 @@
 // say what they will be. The page is noindexed and linked from nowhere.
 // Chassis = the park's essentials only: camera on both axes, tap-to-walk +
 // keys, foot colliders, y-sorted overlays, the shared HUD.
-import { unlocksAt, unlocked } from '../data/town/jobs.js';   // 🔓 what a rank lets you do (23 Sep 2026)
+import { unlocksAt, unlocked, ranksOf } from '../data/town/jobs.js';   // 🔓 what a rank lets you do (23 Sep 2026)
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
@@ -284,18 +284,30 @@ function shiftFrameY(now) {
   frameY = bot - top >= y1 - y0 ? (y0 + y1) / 2 - (top + bot) / 2 : y0 - top;   // centred in the band, or its top at the band's top
   return frameY;
 }
-// 🕹 THE SQUARE'S LAMPS ARE THE ARCADE'S TOO (the arcade's rank 3, 23 Sep 2026). A lamp put right on the square is one of
-// Spinner's repairs for a cabinet tech: work XP, and the week's repairs (jobs.js COUNTS_AS). The room only says a lamp was
-// fixed — it is at its size cap — and the job hears it here.
+// 🔓 THE SQUARE IS THE ON-CALL JOBS' TOO, AND THE CAFÉ'S KEYHOLDER TIDIES IT (the ladder's slice 3, 23–24 Sep 2026). The room
+// only REPORTS what happened — it is at its size cap — and the job hears it here:
+//   🕹 the arcade's rank 3: a lamp put right on the square is one of Spinner's repairs; rank 4: litter picked up is its sweeping
+//   ☕ the café's rank 4 (keyholder): a good shift ends with the nearest mess on the square put right — the town's health rises
+// Each says so ONCE a day (design library §30): after that the work note's bar moving is enough.
+const toldToday = {};
+const tell = (k) => { const L = (work && work.seam.words()) || {}, d = Math.floor(Date.now() / 864e5); if ((L.told || {})[k] && toldToday[k] !== d) { toldToday[k] = d; say(L.told[k]); } };
+let tidyNext = null;   // ☕ the keyholder's tidy waits for the receipt to close (§27: the moment comes after the card)
 function roomTrack(e, p) {
   track(e, p);
-  if (e !== 'town_fix' || !p || p.kind !== 'lamp' || !work) return;
+  if (!work || !p) return;
   const j = work.seam.job(), rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0));
-  if (!j || j.at !== 'condo' || !unlocked('condo', 'lamps', rk)) return;
-  work.seam.chore('lamp');
-  const L = work.seam.words() || {};
-  if ((L.told || {}).lamp) say(L.told.lamp);
+  if (!j || !j.at) return;
+  if (e === 'town_fix' && j.at === 'condo') {
+    const kind = p.kind === 'lamp' && unlocked('condo', 'lamps', rk) ? 'lamp' : (p.kind === 'litter' || p.kind === 'leaves') && unlocked('condo', 'litter', rk) ? 'litter' : '';
+    if (kind) { work.seam.chore(kind); tell(kind); }
+  }
+  if (e === 'town_shift' && p.at === 'cafe' && p.step === 'out' && (p.cups | 0) >= KEYS_CUPS && j.at === 'cafe' && unlocked('cafe', 'keys', rk) && room && room.seam.problems) {
+    const c = PROPS.cafe, cx = c.x + c.w / 2, cy = c.base;
+    const near = room.seam.problems().filter((q) => q.type !== 'crows' && Math.hypot(q.x - cx, q.y - cy) < KEYS_REACH).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];
+    if (near) tidyNext = near.id;
+  }
 }
+const KEYS_CUPS = 5, KEYS_REACH = 520;   // ☕ a good shift, and how far the keyholder's tidying reaches from the café
 function camTarget() {
   const fy = shiftFrameY(performance.now());   // 🎯 a counter shift frames the counter
   // 🚪 INDOORS THE CAMERA FRAMES THE ROOM (23 Sep 2026). It followed the banana against the whole world, so at the store's
@@ -557,6 +569,7 @@ function tick(now) {
   if (work) work.tick(now);
   if (sort) sort.tick(now);   // ✉️ the sorting round's clock and its mark
   if (deliver) deliver.tick(); else if (!deliverP && deliverWanted()) loadDeliver();   // 📦 the store's parcel (rank 3)
+  if (tidyNext && panel.hidden && room && room.seam.fix) { const id = tidyNext; tidyNext = null; room.seam.fix(id); tell('tidy'); }   // ☕ the keyholder's tidy, once the receipt is closed
   { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
   if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -1019,6 +1032,8 @@ function hiredMoment(at) {
   if (w.moment) bigMoment(view, w.moment, (w.momentLine || '').replace('{where}', where));
   const start = (w.start || {})[at];
   if (start) setTimeout(() => say(start), 4400);
+  // 📜 a reference started you higher: said after the start line, once the server has answered
+  setTimeout(() => { const j = work && work.seam.job(), L = (work && work.seam.words()) || {}; if (j && j.at === at && j.ref && (L.ref || {})[at]) say(L.ref[at]); }, 9000);
 }
 // 🪜 PROMOTED (23 Sep 2026): the hire's own moment, for a rank the boss has just told you — the card has closed by now,
 // and the square says what you are and where. The words are the staff card's (town-staff.json), loaded with the job.
@@ -1030,6 +1045,8 @@ function promotedMoment(at, rank) {
   // 🔓 and, once it has gone up, what the new rank lets you do (the ladder's slice 3) — the hire's own beat for its start line
   const u = unlocksAt(at, rank).map((k) => ((L.unlock || {})[at] || {})[k]).filter(Boolean)[0];
   if (u) setTimeout(() => say(u), 4400);
+  // 📜 the top rank: the boss's memento, a beat after the new thing has been said
+  if (rank >= ranksOf(at) && work && work.seam.memento) setTimeout(() => { const m = work.seam.memento(at); if (m) say(m); }, u ? 9000 : 4400);
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk
@@ -1093,7 +1110,9 @@ assetsReady().then(() => {
         hired: (at) => hiredMoment(at),
         promoted: (at, rank) => promotedMoment(at, rank),   // 🪜 the boss told you: PROMOTED over the square
       });
-      if (window.__town) window.__town.work = work.seam;
+      if (window.__town) { window.__town.work = work.seam; window.__town.moment = { hired: hiredMoment, promoted: promotedMoment }; }   // 🧪 the walks' doors to the two moments
+      // 📜 a top-rank memento the shed had no room for is given on a later visit, once the job's words are in to say so
+      if (work.seam.mementoDue) work.seam.wordsReady().then(() => { if (work.seam.mementoDue()) setTimeout(() => { const m = work.seam.memento(work.seam.job().at); if (m) say(m); }, 6000); });
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)
       import('./town-duties.js').then((d) => {
         // 💼 a tap on the note opens your staff card — never over another card, and never mid-shift (the tray is the job then)

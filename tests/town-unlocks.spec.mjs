@@ -13,6 +13,7 @@ import CAFE from '../src/data/copy/town-cafe.json' with { type: 'json' };
 import REPAIR from '../src/data/copy/town-repair.json' with { type: 'json' };
 import POST from '../src/data/copy/town-post.json' with { type: 'json' };
 import DELIVER from '../src/data/copy/town-deliver.json' with { type: 'json' };
+import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
 import { DAY_XP, xpFor, UNLOCKS } from '../src/data/town/jobs.js';
 const PERFECT_TIP = 2;   // town-cafe.js TIP[2]: what a perfect cup or glass tips (that module globs its words, so node cannot import it)
 import { playRepair } from './play-repair.mjs';
@@ -435,7 +436,7 @@ test('📦 the store’s rank 3: a parcel on the floor, carried across the squar
   const at = await page.evaluate(() => window.__town.deliver.parcelAt());
   await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y; }, at);
   await page.waitForFunction(() => window.__town.deliver.shown().held, null, { timeout: 5000 });
-  const to = await page.evaluate(() => window.__town.deliver.to());
+  const to = (await page.evaluate(() => window.__town.deliver.to()))[0];
   await toast(page, DELIVER.picked.replace('{to}', DELIVER.to[to]));
   // ── out on the square: the marker bounces over the door
   await page.evaluate(() => window.__town.rooms.exit());
@@ -448,8 +449,147 @@ test('📦 the store’s rank 3: a parcel on the floor, carried across the squar
   await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y + 20; }, door);
   await page.waitForFunction(() => window.__town.deliver.state().n === 1, null, { timeout: 5000 });
   await toast(page, DELIVER.delivered.replace('{to}', DELIVER.to[to]));
-  expect(await page.evaluate(() => window.__town.deliver.shown()), 'nothing left drawn').toEqual({ box: false, held: false, marker: false });
+  expect(await page.evaluate(() => window.__town.deliver.shown()), 'nothing left drawn').toEqual({ box: false, held: 0, marker: 0 });
   expect((await events(page, 'town_chore')).map((e) => e.kind).filter((k) => k === 'pickup' || k === 'deliver'), 'Pulse hears the pickup and the delivery').toEqual(['pickup', 'deliver']);
   expect(await page.evaluate(() => window.__town.work.ladder().xp), 'the day’s ten and a delivery’s thirty').toBe(950 + DAY_XP + xpFor('store', 'deliver'));
+  expect(errs).toEqual([]);
+});
+
+test('☕ the café’s rank 4: after a good shift the keyholder tidies the square by the café — once the receipt is closed', async ({ page }) => {
+  test.setTimeout(150000);
+  const errs = await town(page);
+  await page.evaluate(() => window.__town.room.set(85));   // an ordinary town: the planted mess below is what there is to tidy
+  await page.waitForTimeout(700);
+  const id = await page.evaluate(() => { const p = window.__town.PROPS.cafe; return window.__town.room.plant('litter', [p.x + p.w / 2 - 160, p.base + 20]); });
+  await hire(page, 'cafe', 4, 1600);
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.waitForTimeout(250);
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe() && window.__town.room.cafe().on(), null, { timeout: 8000 });
+  await page.evaluate(() => localStorage.setItem('tw-rush-v1', JSON.stringify({ d: Math.floor(Date.now() / 864e5) })));   // no rush in the way today
+  for (let i = 0; i < 5; i++) {
+    await page.evaluate(() => { window.__town.room.folk().fill(6, performance.now()); const c = window.__town.room.cafe(); c.specialNext(false); if (!c.line().length) c.call(); });
+    await page.waitForFunction(() => window.__town.room.cafe().line().length > 0, null, { timeout: 20000 });
+    await page.evaluate(() => window.__town.room.cafe().arrive());
+    await makeOne(page, 'cafe', ['pour']);
+  }
+  expect((await page.evaluate(() => window.__town.room.cafe().take())).served, 'five cups: a good shift').toBeGreaterThanOrEqual(5);
+  // the keyholder tidies the NEAREST mess to the café (the planted one guarantees there is one)
+  const nearest = () => page.evaluate(() => { const p = window.__town.PROPS.cafe, cx = p.x + p.w / 2, cy = p.base; const q = window.__town.room.problems().filter((o) => o.type !== 'crows' && Math.hypot(o.x - cx, o.y - cy) < 520).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0]; return q ? q.id : null; });
+  expect(id, 'a mess planted by the café').toBeTruthy();
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  await page.waitForSelector('#twTillX', { timeout: 5000 });
+  const n0 = await nearest();
+  expect(n0, 'a mess near the café').toBeTruthy();
+  await page.waitForTimeout(600);
+  expect(await page.evaluate((x) => window.__town.room.problems().some((q) => q.id === x), n0), 'it waits while the receipt is up').toBe(true);
+  await page.click('#twTillX');
+  await page.waitForFunction((x) => !window.__town.room.problems().some((q) => q.id === x), n0, { timeout: 5000 });
+  await toast(page, STAFF.told.tidy);
+  expect((await events(page, 'town_fix')).length, 'a fix on the square: the town’s health rises').toBeGreaterThanOrEqual(1);
+  expect(errs).toEqual([]);
+});
+
+test('🕹 the arcade’s rank 4: litter off the square is Spinner’s sweeping — said once a day', async ({ page }) => {
+  test.setTimeout(60000);
+  const errs = await town(page);
+  await page.evaluate(() => window.__town.room.set(5));
+  await page.waitForTimeout(700);
+  await hire(page, 'condo', 4, 1900);
+  const pick = async (i) => { const id = await page.evaluate((k) => window.__town.room.plant('litter', [900 + k * 60, 1000]), i); await page.evaluate((x) => window.__town.room.fix(x), id); await page.waitForTimeout(300); };
+  const swept = () => page.evaluate(() => (window.__town.work.state().duties.find((d) => d.kind === 'sweep') || {}).done | 0);
+  await pick(0);
+  await toast(page, STAFF.told.litter);
+  expect(await swept(), 'sweeping on the week’s sheet').toBe(1);
+  await page.evaluate(() => { document.getElementById('twToast').textContent = ''; });
+  await pick(1);
+  expect(await swept(), 'and again').toBe(2);
+  expect(await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim()), 'said once a day, not every piece').not.toBe(STAFF.told.litter);
+  expect(errs).toEqual([]);
+});
+
+test('📦 the store’s rank 4: two parcels, two doors — one pickup, two markers, and the first delivery says whose the other is', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await town(page);
+  await hire(page, 'store', 4, 1900);
+  await page.evaluate((d) => { localStorage.setItem('tw-calls-v1', JSON.stringify({ d, t0: Date.now() - 36e5, qa: ['deliver'] })); localStorage.removeItem('tw-deliver-v1'); }, DAY());
+  await page.waitForFunction(() => !!window.__town.deliver, null, { timeout: 10000 });
+  await page.evaluate(() => window.__town.rooms.enter('store'));
+  await page.waitForFunction(() => window.__town.deliver.shown().box, null, { timeout: 5000 });
+  const at = await page.evaluate(() => window.__town.deliver.parcelAt());
+  await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y; }, at);
+  await page.waitForFunction(() => window.__town.deliver.shown().held === 2, null, { timeout: 5000 });
+  const to = await page.evaluate(() => window.__town.deliver.to());
+  expect(to.length, 'two parcels').toBe(2);
+  const doors = await page.evaluate(() => window.__town.deliver.doors());
+  expect(String(doors[0]) !== String(doors[1]), 'for two different doors').toBe(true);
+  await toast(page, DELIVER.pickedTwo.replace('{to}', DELIVER.to[to[0]]).replace('{to2}', DELIVER.to[to[1]]));
+  await page.evaluate(() => window.__town.rooms.exit());
+  await page.waitForFunction(() => window.__town.deliver.shown().marker === 2, null, { timeout: 5000 });
+  await page.screenshot({ path: 'test-results/unlock-deliver-two.png' });
+  // ── the second door first: either order
+  await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y + 20; }, doors[1]);
+  await page.waitForFunction(() => window.__town.deliver.state().n === 1, null, { timeout: 5000 });
+  await toast(page, DELIVER.deliveredOne.replace('{to}', DELIVER.to[to[1]]).replace('{next}', DELIVER.to[to[0]]));
+  expect(await page.evaluate(() => window.__town.deliver.shown()), 'one in hand, one marker left').toMatchObject({ held: 1, marker: 1 });
+  await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y + 20; }, doors[0]);
+  await page.waitForFunction(() => window.__town.deliver.state().n === 2, null, { timeout: 5000 });
+  await toast(page, DELIVER.delivered.replace('{to}', DELIVER.to[to[0]]));
+  expect(await page.evaluate(() => window.__town.room.calls('store').some((c) => c.kind === 'deliver')), 'the day’s parcel call is answered').toBe(false);
+  expect(errs).toEqual([]);
+});
+
+test('🔑 the store’s rank 5: Pip’s shelf sells to its keyholder at the staff price — and only Pip’s shelf', async ({ page }) => {
+  test.setTimeout(60000);
+  const errs = await town(page);
+  await page.evaluate(() => window.__town.room.set(70));
+  await page.waitForTimeout(700);
+  await page.evaluate(() => window.__town.room.rich());
+  const priceRows = async () => { await page.evaluate(() => window.__town.room.cards.store()); const rows = page.locator('[data-town-buy]'); await expect(rows).toHaveCount(6, { timeout: 10000 }); const r = await page.evaluate(() => [...document.querySelectorAll('[data-town-buy]')].map((b) => ({ id: b.dataset.townBuy, price: +b.dataset.price, note: b.closest('.tw-row').querySelector('small').textContent }))); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return r; };
+  await hire(page, 'store', 4, 1900);
+  const full = await priceRows();
+  expect(full.every((r) => !r.note.includes(LIFE.store.staff)), 'the fourth rank pays the shelf price').toBe(true);
+  await hire(page, 'store', 5, 3100);
+  const staff = await priceRows();
+  for (const r of staff) {
+    const f = full.find((x) => x.id === r.id);
+    expect(r.price, r.id + ': the staff price').toBe(Math.max(1, Math.round(f.price * 0.8)));
+    expect(r.note, 'and the row says so').toContain(LIFE.store.staff);
+  }
+  await page.locator('.tw-card').screenshot({ path: 'test-results/unlock-staff-price.png' }).catch(() => {});
+  expect(errs).toEqual([]);
+});
+
+test('📜 the top rank: the new thing, then the boss’s memento in the shed — once; the card names the reference; a reference starts you higher', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await town(page);
+  await hire(page, 'stand', 3, 650);
+  await page.waitForFunction(() => !!window.__town.work.words(), null, { timeout: 10000 });
+  await page.evaluate(() => localStorage.removeItem('tw-memento-v1'));
+  const shed = () => page.evaluate(() => ((JSON.parse(localStorage.getItem('hs-v1') || '{}') || {}).shed || []).map((x) => x.id));
+  const shed0 = await shed();
+  // ── PROMOTED to the top: the rank's new thing is said, and a beat later the boss's gift
+  await page.evaluate(() => window.__town.moment.promoted('stand', 3));
+  await toast(page, STAFF.unlock.stand.jug, 7000);
+  await toast(page, STAFF.memento.stand, 12000);
+  const shed1 = await shed();
+  expect(shed1.length, 'one piece more in the homestead shed').toBe(shed0.length + 1);
+  expect(shed1, 'the apple crate').toContain('crate');
+  // ── told again (a later promotion to the same top): no second gift
+  expect(await page.evaluate(() => window.__town.work.memento('stand')), 'given once').toBe('');
+  expect((await shed()).length, 'the shed unchanged').toBe(shed1.length);
+  // ── the card at the top rank names the reference it has earned
+  await page.evaluate(() => window.__town.staffOpen('stand', 'note'));
+  await page.waitForSelector('.tws-unlock', { timeout: 5000 });
+  expect(await page.evaluate(() => [...document.querySelectorAll('.tws-unlock')].map((e) => e.textContent)), 'the reference, on the card').toContain(STAFF.refCard.stand);
+  await page.locator('.tw-card').screenshot({ path: 'test-results/unlock-top-card.png' });
+  await page.keyboard.press('Escape');
+  // ── a reference started you higher at the next rung: the hire says whose
+  await page.evaluate(() => { window.__town.work.set({ at: 'cafe', ref: 'stand' }); window.__town.work.setLad({ xp: 250, rank: 2, today: 0 }); });
+  await page.evaluate(() => { const j = window.__town.work.job(); window.__town.work.set({ ...j, ref: 'stand' }); window.__town.moment.hired('cafe'); });
+  await toast(page, STAFF.ref.cafe, 12000);
   expect(errs).toEqual([]);
 });

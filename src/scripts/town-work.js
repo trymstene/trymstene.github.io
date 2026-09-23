@@ -15,7 +15,8 @@
 // the server's answer corrects the mirror. The mirror never decides money — it only decides which
 // of four already-approved lines the boss says.
 import { passPost } from '../lib/banana-pass.js';
-import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor, COUNTS_AS, dayCap } from '../data/town/jobs.js';   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
+import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor, COUNTS_AS, dayCap, MEMENTO, ranksOf } from '../data/town/jobs.js';
+import { grantToShed } from '../lib/homestead-inventory.js';   // 📜 a boss's memento goes to your homestead's shed   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
@@ -144,6 +145,7 @@ export function bootTownWork(ctx) {
         track('town_job', { at, r: 'took' });
         passPost('/job/take', { at }).then((res) => {
           land(res);
+          if (res && res.ref) { job = { ...job, ref: res.ref }; writeJob(job); }   // 📜 a reference started you higher: the hire says so
           // the one case the device could not know: a link that is still an unkept pass
           // ⚠️ AND THE OPTIMISM IS ROLLED BACK. Without this the mirror kept a job the server refused,
           // so every later ask answered 'already' about work nobody had given you.
@@ -267,6 +269,17 @@ export function bootTownWork(ctx) {
       // 🪜 the ladder: where you stand, the words it is told in (null until they land), and a title by rank
       ladder, words: () => LW, title: titleOf, wordsReady: loadWords,
       // ⚠️ the walk's door to the ladder: XP and a told rank, as the server would have answered them
+      // 📜 THE MEMENTO at a workplace's top rank: into the homestead's shed ONCE (tw-memento-v1), and the line that says so — or,
+      // with the shed full, the line that says it waits, and it is tried again the next time the town asks
+      memento: (at) => {
+        const id = MEMENTO[at]; if (!id || !LW) return '';   // no words yet: nothing is given without its line
+        let given = {}; try { given = JSON.parse(localStorage.getItem('tw-memento-v1') || '{}') || {}; } catch (e) {}
+        if (given[at]) return '';
+        if (!grantToShed(id)) return ((LW || {}).mementoFull) || '';
+        given[at] = 1; try { localStorage.setItem('tw-memento-v1', JSON.stringify(given)); } catch (e) {}
+        return (((LW || {}).memento) || {})[at] || '';
+      },
+      mementoDue: () => { const l = ladder(); if (!job.at || !MEMENTO[job.at] || l.rank < ranksOf(job.at)) return false; try { return !(JSON.parse(localStorage.getItem('tw-memento-v1') || '{}') || {})[job.at]; } catch (e) { return true; } },
       setLad: (l) => { job = { ...job, lad: { xp: (l && l.xp) | 0, rank: Math.max(1, (l && l.rank) | 0), today: (l && l.today) | 0, d: todayKey(), warn: !!(l && l.warn), talk: (l && l.talk) || '', last: (l && l.last) || null } }; writeJob(job); notify(); return ladder(); },
       word: (key) => { const t = wordFor(key); return t ? { q: t.q, a: t.a() } : null; },
       promote: (key) => { const t = promoFor(key); return t ? { q: t.q, a: t.a() } : null; },

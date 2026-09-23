@@ -50,7 +50,7 @@ function dayStart(now) {
 // how much of a call is answered today, from the room's own record of it
 function got(kind, day) {
   if (kind === 'restock') { const r = get(() => localStorage.getItem('tw-restock-v1')); return r && r.d === day ? r.n | 0 : 0; }
-  if (kind === 'deliver') { const r = get(() => localStorage.getItem('tw-deliver-v1')); return r && r.d === day ? r.n | 0 : 0; }
+  if (kind === 'deliver') { const r = get(() => localStorage.getItem('tw-deliver-v1')); return r && r.d === day && (r.n | 0) >= Math.max(1, r.of | 0) ? 1 : 0; }   // answered once EVERY parcel of the day is at its door
   if (kind === 'serve') { const r = get(() => localStorage.getItem('tw-serve-v1')); return r && r.d === day ? r.n | 0 : 0; }
   const a = get(() => localStorage.getItem('tw-arcade-v1'));
   if (!a || a.d !== day) return 0;

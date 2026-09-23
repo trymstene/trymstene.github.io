@@ -10,5 +10,7 @@
     "spinner": "Spinner at the arcade",
     "dot": "Dot at the print shop",
     "granfig": "Gran Fig in the garden"
-  }
+  },
+  "pickedTwo": "Two parcels: for {to} and for {to2}. The markers are over their doors.",
+  "deliveredOne": "Delivered to {to}. The other parcel is for {next}."
 }

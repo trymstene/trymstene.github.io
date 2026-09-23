@@ -1208,3 +1208,24 @@ reaching further into the world) and the question "does it change what you do, o
   still to come and get the same test.
 
 Walks: tests/town-unlocks.spec.mjs (all eleven unlocks so far), tests/jobs-maths.spec.mjs (dayCap), worker-pass §19.
+
+## 22. Rank 4, the store's rank 5, and the ladder's top: references and mementos (24 Sep 2026)
+
+- **Coffee Cup rank 4 (the top) — keys to the café.** A shift of five or more cups ends with the nearest mess on the square
+  by the café put right (the room's own fix: the town's health rises, and it pays like a fix). The tidy waits until the
+  receipt card has closed (§27 of the design library: the moment comes after the card), then the burst is seen on the square.
+- **Arcade rank 4 — the square's litter.** Litter picked up off the square counts as the arcade's sweeping (the lamps'
+  twin at rank 3; `COUNTS_AS.litter = 'sweep'`). Both lines are said once a day (§30).
+- **Store rank 4 — two parcels.** A delivery day brings two parcels for two different doors: one pickup, two markers,
+  either order; the first delivery says whose the other is. The day's call is answered when both are at their doors.
+- **Store rank 5 (the top) — keyholder.** Pip's own shelf sells to the keyholder at the staff price (a fifth off), and the
+  row says "staff price" where the price is read. The stall and the night vendor are not Pip's.
+- **The top: a reference.** The top rank at a workplace starts you at the second rank of the next rung up
+  (`jobs.js RUNGS`: stand → café → arcade → store → post office) — the first time you join it, not two rungs up. The
+  staff card at the top rank names it; the hire says whose reference counted.
+- **The top: a memento.** Promoted to a workplace's top rank, the boss gives a piece for your homestead from the pack's own
+  art (`jobs.js MEMENTO`: an apple crate, a coffee counter, an arcade cabinet, a display cabinet, a grandfather clock) —
+  into the shed once (`tw-memento-v1`), said a beat after the rank's new thing; with the shed full it waits, and is given
+  on a later visit.
+
+Walks: tests/town-unlocks.spec.mjs; worker-pass jobs.test.mjs §19–20.

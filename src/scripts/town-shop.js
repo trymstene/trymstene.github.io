@@ -17,6 +17,13 @@
 import { passSpend, passStat, coinsNow } from '../lib/banana-pass.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
 import { iconSvg } from '../lib/pixel-icons.js';
+import { unlocked } from '../data/town/jobs.js';
+
+// 🔑 THE KEYHOLDER'S PRICE (the store's rank 5, the top, 24 Sep 2026; the ladder's slice 3). Pip's deputy storekeeper buys off
+// Pip's own shelf at the staff price — a coin sink that feels like a perk, said on the row where the price is read. The rank is
+// read off this device's job mirror (tw-job-v1), the same the work note reads; the stall and the night vendor are not Pip's.
+export const STAFF_PRICE = 0.8;
+const keyholder = () => { try { const j = JSON.parse(localStorage.getItem('tw-job-v1') || 'null'); return !!(j && j.at === 'store' && j.lad && unlocked('store', 'keys', j.lad.rank)); } catch (e) { return false; } };
 
 const dayNum = () => Math.floor(Date.now() / 86400000);
 
@@ -36,10 +43,11 @@ export function bootTownShop(ctx) {
       const stage = homeStage(), coins = coinsNow(), room = canHold(), ws = COPY.store || {};
       return ids.map((id) => {
         const d = DEX[id]; if (!d) return '';
-        const price = Math.max(1, Math.round(d.price * (markup || 1)));
+        const staff = where === 'store' && keyholder();
+        const price = Math.max(1, Math.round(d.price * (markup || 1) * (staff ? STAFF_PRICE : 1)));
         const can = d.stage <= stage && coins >= price && room;
         // the two notes are copy (store.needs / store.van): nothing until the words are approved
-        return '<div class="tw-row"><div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(d.name) + '</b><small>' + price + ' coins' + (d.stage > stage && ws.needs ? ' · ' + esc(ws.needs) : '') + (shipMin(d) && ws.van ? ' · ' + esc(ws.van) : '') + '</small></div></div>'
+        return '<div class="tw-row"><div class="tw-store__it"><img src="' + esc(d.img) + '" alt=""><div><b>' + esc(d.name) + '</b><small>' + price + ' coins' + (staff && ws.staff ? ' · ' + esc(ws.staff) : '') + (d.stage > stage && ws.needs ? ' · ' + esc(ws.needs) : '') + (shipMin(d) && ws.van ? ' · ' + esc(ws.van) : '') + '</small></div></div>'
           + '<button type="button" data-town-buy="' + esc(id) + '" data-price="' + price + '" data-where="' + esc(where) + '"' + (can ? '' : ' disabled') + '>buy</button></div>';
       }).join('');
     }

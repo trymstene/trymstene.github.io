@@ -44,7 +44,7 @@ export const dayCap = (at, rank) => Math.round(((LADDER[at] || {}).day || 0) * (
 export const XP = {
   stand: { cup: [0, 2, 4] },
   cafe: { cup: [0, 3, 6], rush: 15 },   // ☕ a rush served to the last customer (rank 2): a bonus on top of its cups
-  condo: { sweep: 45, fix: [0, 30, 45], lamp: 20 },   // the day's piece of litter and a cabinet woken fill the arcade's day; 🔧 a repair by its grade; 🕹 a lamp on the square (rank 3)
+  condo: { sweep: 45, fix: [0, 30, 45], lamp: 20, litter: 10 },   // the day's piece of litter and a cabinet woken fill the arcade's day; 🔧 a repair by its grade; 🕹 a lamp on the square (rank 3)
   store: { restock: 30, serve: [0, 10, 15], basket: [0, 15, 22], deliver: 30 },   // the delivery's two faces and 🛒 the day's two customers, by how quickly they were served, fill the store's; 🧺 a two-thing order (rank 2) is worth half again
   post: { sort: 60 },              // two good rounds fill the post office's
 };
@@ -54,15 +54,23 @@ export const XP = {
 // shift offers; the words for each live in town-staff.json `unlock`, told on the staff card and at the promotion.
 export const UNLOCKS = {
   stand: { big: 2, jug: 3 },      // 🍋 big glasses: a longer squeeze, twice the tip; the jug, filled in a quiet moment
-  cafe: { rush: 2, special: 3 },      // ☕ a rush: customers without a break, and a bonus for serving every one; special orders with syrup
-  condo: { streak: 2, lamps: 3 },   // 🕹 a perfect repair lights its cabinet for the day, and perfect repairs in a row are counted; the square's lamps are yours too
-  store: { basket: 2, deliver: 3 },   // 🧺 some customers want two things; 📦 a parcel carried to a resident's door
+  cafe: { rush: 2, special: 3, keys: 4 },      // ☕ a rush: customers without a break, and a bonus for serving every one; special orders with syrup
+  condo: { streak: 2, lamps: 3, litter: 4 },   // 🕹 a perfect repair lights its cabinet for the day, and perfect repairs in a row are counted; the square's lamps are yours too
+  store: { basket: 2, deliver: 3, second: 4, keys: 5 },   // 🧺 some customers want two things; 📦 a parcel carried to a resident's door
   post: { fifth: 2, parcel: 3 },     // ✉️ the town's own postmark, and a faster pile; 📦 parcels, weighed on the scale
 };
 export const unlocked = (at, key, rank) => { const r = (UNLOCKS[at] || {})[key]; return r != null && (rank | 0) >= r; };
 export const unlocksAt = (at, rank) => Object.keys(UNLOCKS[at] || {}).filter((k) => UNLOCKS[at][k] === (rank | 0));
+// 📜 THE LADDER'S TOP (24 Sep 2026; the plan's slice 4). The workplaces are rungs themselves, lowest first (Trym, 22 Sep: "lemonade
+// stand is the 'lowest' jobtype, then coffee shop, then arcade, then general store, and then post office"). Reach the top rank
+// at one and its boss's REFERENCE starts you at the second rank of the next one up; and each boss gives a MEMENTO for your
+// homestead from the pack's own art (Trym's decision 5, the plan's recommendation: mementos first).
+export const RUNGS = ['stand', 'cafe', 'condo', 'store', 'post'];
+export const refFrom = (at) => { const i = RUNGS.indexOf(at); return i > 0 ? RUNGS[i - 1] : ''; };
+export const refTo = (at) => { const i = RUNGS.indexOf(at); return i >= 0 && i < RUNGS.length - 1 ? RUNGS[i + 1] : ''; };
+export const MEMENTO = { stand: 'crate', cafe: 'coffeemk', condo: 'arcade', store: 'displaycab', post: 'gclock' };   // src/data/decor.js ids
 // a chore that counts on the week's sheet as another duty's: a basket is a customer served
-export const COUNTS_AS = { basket: 'serve', lamp: 'fix' };   // …and a lamp on the square is one of the arcade's repairs
+export const COUNTS_AS = { basket: 'serve', lamp: 'fix', litter: 'sweep' };   // …and a lamp on the square is one of the arcade's repairs
 export const roundXp = (right, late) => Math.min(XP.post.sort, (right | 0) * 5 + (late | 0) * 2);
 
 export const JOB_PAY = { store: 150, condo: 120, post: 180, cafe: 0, stand: 0 };   // the cheque for a full week at rank 1 (LADDER.week); the café and the stand pay tips per glass instead

@@ -490,6 +490,23 @@ console.log('\n19. 🔓 rank 3: the day holds more, a delivery earns its XP, and
   ok('🕹 a lamp on the square is one of the arcade’s repairs on the week’s sheet', v.job.duties.find((d) => d.kind === 'fix').done === 1, v.job.duties);
 }
 
+console.log('\n20. 📜 a reference: the top rank at the stand starts you at the café’s second rank — and only there, and only the first time');
+{
+  const P = as(await kept('reference@example.com'));
+  CLOCK = monday(CLOCK);
+  await P('/job/take', { at: 'stand' });
+  for (let d = 0; d < 11; d++) { await P('/job/chore', { kind: 'cup', g: Array(20).fill(2) }); CLOCK += DAY; }
+  let v = await P('/job/promote', { at: 'stand' });
+  ok('the stand’s top rank, told', v.job.lad.rank === 3, v.job.lad);
+  v = await P('/job/take', { at: 'cafe' });
+  ok('⭐ Fig Jr.’s reference: the Coffee Cup starts you at its second rank', v.ref === 'stand' && v.job.lad.rank === 2 && v.job.lad.xp === 250, v);
+  v = await P('/job/take', { at: 'stand' });
+  v = await P('/job/take', { at: 'cafe' });
+  ok('back again later: no second start, the café keeps what you had', !v.ref && v.job.lad.rank === 2, v);
+  v = await P('/job/take', { at: 'condo' });
+  ok('the arcade is two rungs up: the stand’s reference is not for it', !v.ref && v.job.lad.rank === 1, v);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

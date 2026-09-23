@@ -34,7 +34,7 @@ import { levelFor } from '../../src/lib/pass-defs.js';
 import { cleanName } from '../../src/lib/player-name.js';
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
-import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS, dayCap } from '../../src/data/town/jobs.js';
+import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS, dayCap, refFrom, ranksOf } from '../../src/data/town/jobs.js';
 // 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
 // the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
 import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
@@ -1426,13 +1426,20 @@ async function jobTake(request, env) {
     const now = Date.now();
     const j = jobRec(R.home, true);
     jobReview(j, now);   // ↕ a sack that is due lands first
+    // 📜 A REFERENCE (the ladder's top, 24 Sep 2026): the top rank held at the rung below, and no work done here yet —
+    // this workplace starts you at its second rank (jobs.js RUNGS / refFrom). Said on the hire (`ref`: whose reference).
+    let ref = '';
+    if (at && j.at !== at) {
+      const from = refFrom(at);
+      if (from && toldOf(j, from) >= ranksOf(from) && !(((j.xp || {})[at] | 0) > 0)) { (j.xp || (j.xp = {}))[at] = xpAt(at, 2); (j.rk || (j.rk = {}))[at] = 2; ref = from; }
+    }
     // ⭐ ONE AT A TIME. Taking a second job is leaving the first, and the weeks already worked stay
     // on the record with the job that earned them, so a change never eats a cheque you are owed.
     if (j.at !== at) { j.at = at; j.since = at ? now : 0; }
     j.fired = null; j.zero = 0;   // 💼 asked again: the sack is history, the count starts afresh
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
-    return json({ ok: true, job: jobView(j, now) }, 200, cors(env, request));
+    return json({ ok: true, job: jobView(j, now), ref }, 200, cors(env, request));
   });
 }
 
