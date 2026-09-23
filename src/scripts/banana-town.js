@@ -577,7 +577,18 @@ let sort = null, sortP = null;
 // should be locked … better to lock it and have a button for leave work"). While a shift or a round is on, a tap on
 // the world does not walk and a key does not move: the tray's own Leave button is the way out (the geography rule —
 // off the mark it folds, far away it ends — stays underneath as the safety net for a banana that is moved anyway).
-const working = () => !!(room && room.seam && room.seam.working && room.seam.working()) || !!(sort && sort.on());
+const working = () => !!(room && room.seam && room.seam.working && room.seam.working()) || !!(sort && sort.on()) || !!(repair && repair.on());
+// 🔧 THE ARCADE'S REPAIR GAME (23 Sep 2026) — its own lazy chunk, loaded the first time a member of staff reaches a dark
+// cabinet. The room hands over the cabinet; the game hands back a grade and the room wakes it.
+let repair = null, repairP = null;
+function loadRepair() {
+  if (!repairP) {
+    repairP = import('./town-repair.js')
+      .then((m) => { repair = m.bootTownRepair({ host: view, say, track, onFixed: (key, g) => { if (room && room.seam.cabinetFixed) room.seam.cabinetFixed(key, g); } }); if (window.__town) window.__town.repair = repair.seam; return repair; })
+      .catch((e) => { repairP = null; console.warn('[town] the repair did not load', e); return null; });
+  }
+  return repairP;
+}
 function loadSort() {
   if (!sortP) {
     sortP = import('./town-sort.js')
@@ -823,7 +834,7 @@ const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid' };
 // so during a shift the pocket opened completely behind the counter's tray and a tap on the bag did
 // nothing a player could see. The counter yields while the bag is open and comes back when it closes —
 // the same courtesy the toast already does for the pocket, two lines down.
-const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} try { const l = room && room.seam && room.seam.lemon && room.seam.lemon(); if (l && l.hold) l.hold(v); } catch (e) {} try { if (sort && sort.hold) sort.hold(v); } catch (e) {} };
+const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} try { const l = room && room.seam && room.seam.lemon && room.seam.lemon(); if (l && l.hold) l.hold(v); } catch (e) {} try { if (sort && sort.hold) sort.hold(v); } catch (e) {} try { if (repair) repair.hold(v); } catch (e) {} };
 function toggleTray() {
   if (!tray.hidden) { tray.hidden = true; cafeYield(false); return; }
   cafeYield(true);
@@ -975,6 +986,7 @@ assetsReady().then(() => {
       job: () => (work ? work.seam.job() : null),   // 💼 what the room may ask of you depends on who you work for
       sortOn: () => !!(sort && sort.on()),   // ✉️ the sorting round is on: Stamp steps aside
       chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null),   // 💼 …and what you did there counts on the week's sheet (🪜 and earns work XP by its grade)
+      repair: (key) => loadRepair().then((r) => r && r.start(key)), repairing: () => !!(repair && repair.on()),   // 🔧 a dark cabinet is a repair game
       outfit: () => ME_DRAW,   // ☕ the café draws YOUR banana in its window, in one locked pose
       others: () => (crowd ? crowd.others() : []),   // 👥 other players' bananas on the square (the ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });

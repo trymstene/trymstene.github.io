@@ -1680,6 +1680,32 @@ export const JOBS = {
       return bad;
     },
   },
+  // 🔧 THE ARCADE'S REPAIR GAME (23 Sep 2026): a dark cabinet is three steps on the counter's tray — unscrew (a needle to
+  // stop), solder (a hold), power up (three taps) — graded like a cup. The world's voice around it, and the three buttons.
+  'town-repair': {
+    id: 'town-repair',
+    title: 'Banana Town — the arcade’s repair game',
+    what: 'The tray that opens when the arcade’s staff reach a dark cabinet: its three buttons, the way out, and the world’s lines as the panel comes off, when a repair sparks, and when the cabinet wakes.',
+    approved: 'src/data/copy/town-repair.json',
+    reads: 'src/scripts/town-repair.js (through a glob inside its own lazy chunk)',
+    top: ['on', 'go', 'leave', 'spark', 'fixed'],
+    fields: {
+      on: toastLine(76, 'Said as the repair tray rises: the cabinet’s back panel comes off, and what is wrong inside it. The world’s voice, plain, a picture of the three things to put right (a screw, a wire, a switch). Never an instruction.', NO_MARKUP),
+      'go.unscrew': { kind: 'label', max: 16, note: 'The button for the first step, a TAPPED one: stop the needle in the screw’s slot. Starts with “Tap”.' },
+      'go.solder': { kind: 'label', max: 16, note: 'The button for the second step, a HELD one: hold the iron to the wire and let go in the band. Starts with “Hold”.' },
+      'go.power': { kind: 'label', max: 16, note: 'The button for the third step, TAPPED three times on the switch’s pulse. Starts with “Tap”.' },
+      leave: { kind: 'label', max: 12, note: 'The tray’s way out: stop the repair, and the cabinet stays dark. A verb, short.' },
+      spark: toastLine(60, 'A spoiled repair: the cabinet sparks and stays dark, and another go begins at once. Never a telling-off.', NO_MARKUP),
+      'fixed.fine': toastLine(60, 'A repair that came out fine: the cabinet wakes, a little grudgingly.', NO_MARKUP),
+      'fixed.perfect': toastLine(60, 'A perfect repair: the cabinet wakes as good as new. Delight, never praise of the player.', NO_MARKUP),
+    },
+    shape: (d) => {
+      const bad = [];
+      gestureLabels(bad, d.go, ['solder'], ['unscrew', 'power']);
+      for (const k of ['fine', 'perfect']) if (!(d.fixed || {})[k]) bad.push({ path: 'fixed.' + k, msg: 'missing — a repair comes out fine or perfect' });
+      return bad;
+    },
+  },
   'town-fronts': {
     id: 'town-fronts',
     title: 'Banana Town — what the other places say when tapped',

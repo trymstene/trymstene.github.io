@@ -381,7 +381,7 @@ export const EV_EXPLAIN = {
   town_warn:'a poor week put them under their rank’s line: the boss’s warning, heard (at, rank)',
   town_demote:'a second poor week cost a rank, heard at the boss (at, rank)',
   town_staff:'the staff card (at; door = place | note | pager; act = open | go | answer | second, or on the pager elsewhere ring | travel; calls = how many waited). go ÷ open: looking that turns into a shift; travel ÷ ring: calls that bring a worker back to town',
-  town_chore:'a step of the shop’s restock chore (at = store, step = lift | stock), or a chore of the week’s work at the arcade (at = condo, kind = sweep | fix). The store’s chore pays nothing in coins: what it buys is the shelf; the arcade’s counts on the payslip. lift ÷ stock is how many crates get picked up and put down again',
+  town_chore:'a step of the shop’s restock chore (at = store, step = lift | stock), or a chore of the week’s work at the arcade (at = condo, kind = sweep | fix | spark — a spoiled repair; g = a fix’s grade). The store’s chore pays nothing in coins: what it buys is the shelf; the arcade’s counts on the payslip. lift ÷ stock is how many crates get picked up and put down again',
   town_merchant:'the travelling stall’s shelf was opened — it only stands in the square on seeded days from Lively up (n = pieces on it)',
   rave_coin:'walked into a bananacoin drop (n = how many; at = park when caught outside the club; windows every ~4 min, 70% one / 25% three / 5% five, one shared faucet)',
   stand_exit_rave:'walked their banana out the BOTTOM of the park — the road back to the rave (the return leg of the door)',

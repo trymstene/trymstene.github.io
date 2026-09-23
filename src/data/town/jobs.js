@@ -33,12 +33,13 @@ export const RISE = 1.2;        // each rank pays a fifth more than the one belo
 export const TIPS_JOBS = ['cafe', 'stand'];   // paid a glass at a time, never by cheque
 export const TIPS_DAYS = 5;     // a full tips cap on five days is a full week
 export const DAY_XP = 10;       // turning up, once a day, at every workplace
-// the work XP a verb earns: an array is by the cup's grade (wrong · fine · perfect); a number is the most it can earn,
-// and a chore that reports a `g` earns that much of it (a round of sorting reports its points: roundXp below)
+// the work XP a verb earns: an array is by the grade (wrong · fine · perfect) of a cup or a repair; a number is the most it
+// can earn, and a chore that reports a `g` earns that much of it (a round of sorting reports its points: roundXp below).
+// A verb reported with no grade at all earns its top: an older page that knew no grades is not docked for it.
 export const XP = {
   stand: { cup: [0, 2, 4] },
   cafe: { cup: [0, 3, 6] },
-  condo: { sweep: 15, fix: 45 },   // three pieces of litter and a cabinet woken fill the arcade's day
+  condo: { sweep: 15, fix: [0, 30, 45] },   // three pieces of litter and a cabinet woken fill the arcade's day; 🔧 a repair by its grade (town-repair.js)
   store: { restock: 45 },          // the delivery's two faces fill the store's
   post: { sort: 60 },              // two good rounds fill the post office's
 };
@@ -78,7 +79,7 @@ export const tipsCap = (at, rank) => (TIPS_JOBS.includes(at) ? Math.round(weekPa
 // the work XP one chore is worth, before the day's cap
 export function xpFor(at, kind, g) {
   const v = (XP[at] || {})[kind];
-  if (Array.isArray(v)) return v[Math.max(0, Math.min(v.length - 1, g | 0))] | 0;
+  if (Array.isArray(v)) return (g == null ? v[v.length - 1] : v[Math.max(0, Math.min(v.length - 1, g | 0))]) | 0;
   if (typeof v !== 'number') return 0;
   return g == null ? v : Math.max(0, Math.min(v, Math.round(+g) || 0));
 }

@@ -6,6 +6,9 @@
 // week's sheet, which the work note shows in the same beat. A customer sees none of it.
 import { test, expect } from '@playwright/test';
 import { JOB_PAY } from '../src/data/town/jobs.js';
+import REPAIR from '../src/data/copy/town-repair.json' with { type: 'json' };
+
+import { playRepair } from './play-repair.mjs';
 
 const town = async (page) => {
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
@@ -56,14 +59,22 @@ test('the arcade’s staff sweep the floor and wake the dark cabinet, and the we
   expect(s1.sofar, 'a sixth of the week’s work is a sixth of the rate').toBe(Math.round(JOB_PAY.condo / 6));   // the one pay scale's rank 1 (src/data/town/jobs.js)
   expect(await page.evaluate(() => window.__town.duties.top()), 'the note says so').toMatch(/1\/3/);
 
-  // ── the dark cabinet: standing at it and tapping starts a repair, the hold wakes it
+  // ── the dark cabinet: standing at it and tapping starts a repair — the arcade's own skill game on the counter's tray
   const key = a.dead;
   const spot = await page.evaluate((k) => window.__town.arcade.spots().find((q) => q[0] === k), key);
   await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y; }, [(spot[1] + spot[3]) / 2, spot[4] + 26]);
   expect(await page.evaluate((k) => window.__town.room.cabinetRepair(k), key), 'the repair starts').toBe(true);
-  expect((await arcade(page)).working, 'the hold is on').toBe(true);
-  expect(await page.locator('.tw-work.is-in').count(), 'and its bar is on the room’s plate').toBe(1);
+  await page.waitForFunction(() => window.__town.room.arcade().working, null, { timeout: 10000 });
+  const tray = await page.evaluate(() => { const t = document.querySelector('.tw-cup[data-deck="arcade"]'); return t ? { shown: !t.hidden, st: t.dataset.st, go: (t.querySelector('.tw-cup__go') || {}).textContent, pips: [...t.querySelectorAll('.tw-cup__pip')].map((p) => p.className) } : null; });
+  expect(tray && tray.shown, '🔧 the repair tray rises').toBe(true);
+  expect(tray.st, 'on its first step').toBe('unscrew');
+  expect(tray.go, 'and its button says the gesture').toBe(REPAIR.go.unscrew);
+  expect(tray.pips.length, 'the ticket shows the three parts').toBe(3);
+  await page.screenshot({ path: 'test-results/arcade-repair-tray.png' });
+  await playRepair(page, false);
   await page.waitForFunction(() => window.__town.room.arcade().dead === null, null, { timeout: 8000 });
+  await page.waitForFunction((l) => (document.getElementById('twToast').textContent || '').trim() === l, REPAIR.fixed.perfect, { timeout: 5000 });   // a perfect repair, said
+  expect(await page.evaluate(() => window.__town.work.ladder().xp), 'a perfect repair is the most work XP a repair earns (45), on top of the sweep (25)').toBe(70);
   const s2 = await state(page);
   expect(s2.duties.find((d) => d.kind === 'fix').done, 'machines fixed 1/3').toBe(1);
   expect(s2.sofar, 'two of six is a third of the rate').toBe(Math.round(JOB_PAY.condo / 3));
@@ -100,8 +111,52 @@ for (const key of ['g6', 'g9']) {
     const box = await page.evaluate(() => { const r = document.querySelector('.tw-dead.is-in').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     await page.mouse.click(box.x, box.y);
     await page.waitForFunction(() => window.__town.room.arcade().working, null, { timeout: 10000 });
+    await playRepair(page, false);
     await page.waitForFunction(() => window.__town.room.arcade().dead === null, null, { timeout: 12000 });
     expect((await state(page)).duties.find((d) => d.kind === 'fix').done, 'machines fixed 1/3').toBe(1);
     expect(errs).toEqual([]);
   });
 }
+
+// 🔧 A SPOILED REPAIR SPARKS AND GOES AGAIN (23 Sep 2026): the cabinet stays dark, nothing counts, and the next go is on the
+// tray at once — and while the tray is up the banana is held where it stands; Leave it is the way out.
+test('a spoiled repair sparks and the cabinet stays dark; another go wakes it; Leave it stops', async ({ page }) => {
+  test.setTimeout(60000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => { window.__ev = []; window.gtag = (k, n, p) => window.__ev.push([n, p]); });
+  await town(page);
+  await page.evaluate(() => window.__town.work.set({ at: 'condo' }));
+  await page.evaluate(() => window.__town.arcade.enter());
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.__town.room.arcadeReset());
+  await page.waitForTimeout(300);
+  const key = (await arcade(page)).dead;
+  expect(key, 'a dark cabinet').toBeTruthy();
+  const spot = await page.evaluate((k) => window.__town.arcade.spots().find((q) => q[0] === k), key);
+  await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y; }, [(spot[1] + spot[3]) / 2, spot[4] + 26]);
+  await page.evaluate((k) => window.__town.room.cabinetRepair(k), key);
+  // ── the first go, spoiled: it sparks, the cabinet stays dark, nothing is on the sheet
+  await playRepair(page, true);
+  await page.waitForFunction((l) => (document.getElementById('twToast').textContent || '').trim() === l, REPAIR.spark, { timeout: 5000 });
+  expect((await arcade(page)).dead, 'it sparks, and the cabinet stays dark').toBe(key);
+  expect((await state(page)).duties.find((d) => d.kind === 'fix').done, 'nothing on the sheet').toBe(0);
+  // ── the next go is on the tray at once: played well, it wakes the cabinet
+  const tries = await playRepair(page, false);
+  expect(tries, 'the spoiled go counted as a try').toBe(1);
+  await page.waitForFunction(() => window.__town.room.arcade().dead === null, null, { timeout: 8000 });
+  expect(await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_chore').map((e) => e[1].kind)), 'Pulse heard a spark, and then a fix').toEqual(['spark', 'fix']);
+  expect((await arcade(page)).dead, 'woken on the second go').toBeNull();
+  expect((await state(page)).duties.find((d) => d.kind === 'fix').done, 'one fix on the sheet, not two').toBe(1);
+  // ── a new dark cabinet, and Leave it: the tray goes, the cabinet stays dark, the banana walks again
+  await page.evaluate(() => window.__town.room.arcadeReset());
+  await page.waitForTimeout(300);
+  const key2 = (await arcade(page)).dead;
+  await page.evaluate((k) => window.__town.room.cabinetRepair(k), key2);
+  await page.waitForFunction(() => window.__town.room.arcade().working, null, { timeout: 10000 });
+  await page.click('.tw-cup[data-deck="arcade"] .tw-cup__leave');
+  expect((await arcade(page)).working, 'Leave it ends the repair').toBe(false);
+  expect((await arcade(page)).dead, 'and the cabinet stays dark').toBe(key2);
+  expect(await page.evaluate(() => document.querySelector('.tw-cup[data-deck="arcade"]').hidden), 'the tray is down').toBe(true);
+  expect(errs, 'nothing threw').toEqual([]);
+});

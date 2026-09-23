@@ -1579,21 +1579,22 @@ export function bootTownLife(ctx) {
   const cabinetDead = (key) => !!(arcDead && arcDead.key === key);
   function cabinetRepair(key) {
     if (!cabinetDead(key)) return false;
-    workStart({ id: 'cab:' + key, type: 'cabinet', x: arcDead.x, y: arcDead.y, foot: arcDead.y, inRoom: true });
+    // 🔧 a repair is the arcade's own skill game now (town-repair.js, 23 Sep 2026); the hold stays only as the fallback
+    if (ctx.repair) ctx.repair(key); else workStart({ id: 'cab:' + key, type: 'cabinet', x: arcDead.x, y: arcDead.y, foot: arcDead.y, inRoom: true });
     return true;
   }
-  function cabinetFixed(key) {
+  function cabinetFixed(key, g) {
     if (!arcDead || arcDead.key !== key) return;
     burst(arcDead.x, arcDead.y - 40);
     arcDead.el.remove(); arcDead.m.remove(); arcDead = null;
     const a = arcRead(); a.fixed.push(key); arcWrite(a);
-    if (ctx.chore) ctx.chore('fix');
-    track('town_chore', { at: 'condo', kind: 'fix' });
+    if (ctx.chore) ctx.chore('fix', g);   // 🔧 the repair's grade is its work XP (src/data/town/jobs.js XP.condo.fix)
+    track('town_chore', { at: 'condo', kind: 'fix', g: g | 0 });
   }
-  seam.arcade = () => ({ staff: arcStaff(), litter: arcLitter.map((l) => ({ i: l.i, x: l.x, y: l.y })), dead: arcDead ? arcDead.key : null, working: !!(work && String(work.id).indexOf('cab:') === 0) });
+  seam.arcade = () => ({ staff: arcStaff(), litter: arcLitter.map((l) => ({ i: l.i, x: l.x, y: l.y })), dead: arcDead ? arcDead.key : null, working: !!(work && String(work.id).indexOf('cab:') === 0) || !!(ctx.repairing && ctx.repairing()) });
   // 🧪 a fresh arcade day for its staff — and its calls already in (tw-calls-v1 qa, honoured under ?towntest alone)
   seam.arcadeReset = (k) => { if (!TEST) return false; arcForce = ARC_CABS.includes(k) ? k : null; arcWrite({ d: dayNum(), swept: [], fixed: [] }); try { localStorage.setItem('tw-calls-v1', JSON.stringify({ d: dayNum(), t0: Date.now() - 36e5, qa: ['sweep', 'fix'] })); } catch (e) {} if (roomAt === 'condo') arcadeShow(); return true; };
-  seam.cabinetDead = cabinetDead; seam.cabinetRepair = cabinetRepair; seam.sweepAt = sweepAt;   // the walk's doors to the same three
+  seam.cabinetDead = cabinetDead; seam.cabinetRepair = cabinetRepair; seam.cabinetFixed = cabinetFixed; seam.sweepAt = sweepAt;   // the walk's doors to the same three
 
   // 💼 THE STAFF CARD ASKS THIS ROOM TWO THINGS (23 Sep 2026, town-staff.js): what is waiting for its worker today —
   // the same litter, dark cabinet and bare faces the rooms already show their staff — and the shift begun at the

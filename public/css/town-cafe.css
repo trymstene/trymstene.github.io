@@ -350,6 +350,28 @@
 .tw-cup[data-deck="lemon"][data-st="pour"] .tw-cup__go { background: linear-gradient(#9fd7ff, #5fb3ea); color: #102a3a; }
 @media (prefers-reduced-motion: reduce) { .tw-cup[data-deck="lemon"] .tw-cup__bar::before { animation: none; } }
 
+/* ---- 🔧 THE ARCADE'S REPAIR DECK (23 Sep 2026): the same tray and gestures, dressed as a cabinet's back panel ----------
+ * town-repair.js plays [data-deck="arcade"]: unscrew (the needle), solder (a hold), power (three taps on a pulse). */
+.tw-cup__pip--screw { background: #b8c0c8; border-radius: 999px; }
+.tw-cup__pip--wire { background: #e04a3a; }
+.tw-cup__pip--switch { background: #7be07b; }
+.tw-cup[data-deck="arcade"] .tw-cup__bar { background: #181c21; }   /* dark steel, so the green band to land in stands out */
+.tw-cup[data-deck="arcade"][data-st="unscrew"] .tw-cup__bar::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(115deg, #232a31 0 4px, #181c21 4px 9px);
+}
+.tw-cup[data-deck="arcade"][data-st="unscrew"] .tw-cup__go { background: linear-gradient(#d8dee4, #9aa4ae); color: #10161c; }
+.tw-cup[data-deck="arcade"][data-st="solder"] .tw-cup__fill { background: linear-gradient(#f4f6f8 0 7px, #aab4bc 7px); }
+.tw-cup[data-deck="arcade"][data-st="solder"] .tw-cup__go { background: linear-gradient(#ffb070, #e0622a); color: #200a02; }
+.tw-cup[data-deck="arcade"][data-st="power"] .tw-cup__bar::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0 45%, rgba(123, 224, 123, 0.35) 50%, transparent 55%);
+  animation: twCupFoam 1s ease-out infinite;
+}
+.tw-cup[data-deck="arcade"][data-st="power"] .tw-cup__tap { background: #7be07b; }
+.tw-cup[data-deck="arcade"][data-st="power"] .tw-cup__go { background: linear-gradient(#a8f0a8, #4fbf4f); color: #0c200c; }
+@media (prefers-reduced-motion: reduce) { .tw-cup[data-deck="arcade"] .tw-cup__bar::before { animation: none; } }
+
 /* 🚪 THE WAY OUT (22 Sep 2026): the one button that ends a shift or a round, on the tray's strip. It sits in the
    row the strip already has — the tray has no vertical room for another — dark, small, the rig's word on it. */
 .tw-cup__leave {

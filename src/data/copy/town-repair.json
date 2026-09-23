@@ -1,0 +1,14 @@
+{
+  "on": "The back panel comes off: three screws, a scorched wire, a dead switch.",
+  "go": {
+    "unscrew": "Tap to unscrew",
+    "solder": "Hold to solder",
+    "power": "Tap to power up"
+  },
+  "leave": "Leave it",
+  "spark": "It sparks and stays dark. Another go.",
+  "fixed": {
+    "fine": "The cabinet coughs, flickers and lights up.",
+    "perfect": "The cabinet lights up like new, and its music starts."
+  }
+}

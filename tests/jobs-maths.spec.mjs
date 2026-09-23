@@ -81,7 +81,8 @@ test('the ladder: ranks by XP, one pay scale that rises a fifth a rank, and tips
   expect([0, 1, 2].map((g) => xpFor('cafe', 'cup', g)), 'a cup by its grade').toEqual([0, 3, 6]);
   expect(xpFor('cafe', 'cup', 9), 'a forged grade is a perfect cup').toBe(6);
   expect(xpFor('condo', 'sweep'), 'a piece of litter').toBe(15);
-  expect(xpFor('condo', 'fix')).toBe(45);
+  expect(xpFor('condo', 'fix'), 'a repair reported with no grade (an older page) earns its top').toBe(45);
+  expect([0, 1, 2].map((g) => xpFor('condo', 'fix', g)), '🔧 a repair by its grade: spoiled, fine, perfect').toEqual([0, 30, 45]);
   expect(xpFor('store', 'restock')).toBe(45);
   expect(xpFor('post', 'sort', roundXp(12, 0)), 'a perfect round is the most a round earns').toBe(60);
   expect(xpFor('post', 'sort', roundXp(4, 3)), 'four fresh and three late').toBe(26);

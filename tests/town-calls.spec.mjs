@@ -6,6 +6,7 @@
 // rings the note, the room drawing the work the moment the call lands, the calls answered one by one, the day's line
 // for all of them — the store's delivery the same — and the call reaching the worker in the park, with the way back.
 import { test, expect } from '@playwright/test';
+import { playRepair } from './play-repair.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -103,6 +104,7 @@ test('the arcade’s day: quiet, then a call rings the note and the room draws i
   const spot = await page.evaluate((k) => window.__town.arcade.spots().find((q) => q[0] === k), key);
   await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y; }, [(spot[1] + spot[3]) / 2, spot[4] + 26]);
   expect(await page.evaluate((k) => window.__town.room.cabinetRepair(k), key)).toBe(true);
+  await playRepair(page, false);   // 🔧 the repair is the arcade's skill game now (town-repair.js)
   await page.waitForFunction(() => window.__town.room.arcade().dead === null, null, { timeout: 8000 });
   await page.waitForFunction((l) => window.__town.duties.line() === l, DUTY.answered, { timeout: 5000 });
   expect((await note(page)).kind, 'no longer calling').toBe('');

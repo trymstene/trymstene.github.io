@@ -1091,3 +1091,23 @@ can cost you, time away without a job can't**, and quitting properly keeps your 
 - **Pulse:** `town_warn`, `town_demote` (heard at the boss); `town_duty` kind `word`.
 - **Proof:** worker-pass/test/jobs.test.mjs §13–17; tests/jobs-maths.spec.mjs (reviewOf); tests/town-ladder.spec.mjs
   (a warning, then a demotion, at Bean); tests/homestead-payslip.spec.mjs (the slip's review rows).
+
+## 17. The arcade's repair game — the ladder's slice 2, first skill (23 Sep 2026)
+
+Trym: *"build the arcade repair game next"* (decision 6 of the ladder plan). A dark cabinet used to be a 3.2-second hold
+at its front; now it is the arcade's own skill, played on the counter's tray (`src/scripts/town-repair.js`, its own lazy
+chunk, `ARCADE_DECK` on `town-cafe.js mountCounter` — the café's thumb-measured windows, renamed as the stand's were):
+- **unscrew** — stop the needle in the screw's slot (a tap); **solder** — hold the iron, let go in the band (a hold);
+  **power** — three presses on the switch's pulse (taps). The repair's grade is its WORST step, as a cup's is.
+- **Spoiled** (grade 0): it sparks, the cabinet stays dark, nothing counts, and the next go is on the tray at once.
+  **Fine**: the cabinet wakes, 30 work XP. **Perfect**: it wakes, 45 (`XP.condo.fix = [0, 30, 45]`; a fix reported with
+  no grade, from an older page, still earns 45).
+- While the tray is up the banana is held (banana-town `working()`); **Leave it** stops, and the cabinet stays dark. The
+  tray stands down for the pocket like the counters. The room still owns the cabinet: `cabinetRepair` hands it to the
+  game (`ctx.repair`), and `cabinetFixed(key, g)` wakes it and reports the chore with its grade.
+- Words: `src/data/copy/town-repair.json` (gesture-labelled buttons, held to the copy gate's `gestureLabels`).
+- Pulse: `town_chore` kind `spark` (a spoiled go) and `g` on a fix.
+- Proof: tests/town-arcade-chores.spec.mjs plays the repair through the tray's own seam (perfect, and a spark then a
+  retry, and Leave it); tests/jobs-maths.spec.mjs (XP by grade).
+- Still to come in slice 2: litter through the week (today all three pieces arrive on day one), the store's customer
+  requests. The ladder's R2 unlock for the arcade (a perfect repair lights the cabinet with a streak) is slice 3.
