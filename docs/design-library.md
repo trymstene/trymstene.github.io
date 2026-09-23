@@ -850,3 +850,23 @@ consistent for all areas."* The quest badge (`.bwq-hint__badge`, world-quest.js,
 taken their shape from padding around a differently sized icon, so one was a tall oval and the others wide ones. All
 three are now the same **32 px circle** (`width/height 32px; padding 0; border-radius 50%`), the icon centred by flex.
 **Checked:** `tools/check-design.mjs` §28 reads the three rules and fails if any loses one of those declarations.
+
+## §29 A COUNTER SHIFT FRAMES THE COUNTER, AND THE TOAST USES ITS WIDTH (23 Sep 2026)
+
+On a phone the lemonade stand vanished during a shift. It stands near the top of the world, the camera put the player at
+58% of the view, and that left the stand high in the view — under the work note and under every toast, which docks at
+the top while a tray is up (§25). Measured at 393×852: the stand at y 298–368, the note over 236–319, the toast over
+327–403. The café never showed it only because its hatch is low in the world, where the camera cannot go further.
+
+- **The camera frames the FIGURE AT WORK.** While a counter holds the banana (the café, the stand, the post round, a
+  repair), `banana-town.js shiftFrameY` places the figure — the banana in the window or behind the table (`.tw-atwork`),
+  or your own at a counter — in the band between the top notes plus a toast's place under them (three lines, measured
+  from the toast's own style) and the tray. MEASURED every quarter second, never a number per counter: the notes fold
+  and unfold, the strip grows a line, a tray is its own height. Indoors the framing may pass the world's edge, because
+  outside a room is dark already (§22).
+- **A toast uses its width.** Placed from the middle of the view (`left: 50%` + `translateX(-50%)`), an absolutely
+  positioned box shrinks to fit HALF the view — a line of the town's took five rows. `width: max-content` under the same
+  `max-width` gives it the whole 92%, and the same line takes two. A short toast is also a smaller slot to keep clear.
+- **Proof:** `tests/town-counter-frame.spec.mjs` walks all four counters at 360 and 393 on the built site and asserts
+  the figure (and the stand's own sprite) intersects neither `.twd-chip`, `.bwq-hint` nor a showing `#twToast`, and
+  sits above the tray. Failed 5 of 8 before the fix.

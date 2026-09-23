@@ -116,7 +116,7 @@ const description = PAGE.description;
        holds it: on every page with a veil, the toast sorts above it. The park and the homestead had
        the same fault (20 under 1000, 30 under a FIXED 950) and were fixed as the same class. */
     .tw-toast {
-      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2200; max-width: min(92%, 520px);
+      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2200; width: max-content; max-width: min(92%, 520px);   /* ⚠️ width: placed from the middle, a toast shrank to HALF the view and a line took five rows */
       background: #ffe135; color: #141208; border: 3px solid #000; box-shadow: 4px 4px 0 #000;
       padding: 0.5rem 0.8rem; font-size: 0.86rem; font-weight: 700; line-height: 1.3; pointer-events: none;
     }

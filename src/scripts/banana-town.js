@@ -260,18 +260,44 @@ function layout() {
 addEventListener('resize', layout);
 layout();
 const pos = { x: SPAWN.x, y: SPAWN.y }, tgt = { x: SPAWN.x, y: SPAWN.y };
+// 🎯 A COUNTER SHIFT FRAMES THE COUNTER (23 Sep 2026). On a phone the lemonade stand vanished during a shift: it stands near
+// the top of the world, the camera put the player at 58% of the view, and that left the stand high up — under the work note
+// and under every toast, which docks at the top while a counter's tray is up (design library §25). Measured at 393×852:
+// the stand at y 298–368, the note over 236–319, the toast over 327–403. So while a counter holds the banana (the café, the
+// stand, the post round, a repair) the camera frames the FIGURE AT WORK — the banana in the window or behind the table, or
+// your own at a counter — in the band between the top notes (and a toast's place under them, three lines of it) and the
+// tray. MEASURED, never a number per counter: the notes fold and unfold, the strip grows a line, the tray is its own height.
+// A counter the world's edge will not let the camera reach (the café's hatch, low in the world) simply stays where it is.
+let frameAt = -1e9, frameY = null;
+function shiftFrameY(now) {
+  if (now - frameAt < 250) return frameY;
+  frameAt = now; frameY = null;
+  if (!working()) return null;
+  const tray = [...view.querySelectorAll('.tw-cup')].find((e) => !e.hidden && !e.classList.contains('is-folded'));
+  const fig = world.querySelector('.tw-atwork') || me;
+  if (!tray || !fig) return null;
+  const v = view.getBoundingClientRect(), wr = world.getBoundingClientRect(), f = fig.getBoundingClientRect(), cs = getComputedStyle(toastEl);
+  let low = 0;
+  for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); }
+  const top = Math.max(14, low + 10) + (parseFloat(cs.lineHeight) || 18) * 3 + (parseFloat(cs.paddingTop) || 8) * 2 + 14, bot = tray.getBoundingClientRect().top - v.top - 8;
+  const y0 = f.top - wr.top, y1 = f.bottom - wr.top;   // the figure, in the world's own scaled pixels
+  frameY = bot - top >= y1 - y0 ? (y0 + y1) / 2 - (top + bot) / 2 : y0 - top;   // centred in the band, or its top at the band's top
+  return frameY;
+}
 function camTarget() {
+  const fy = shiftFrameY(performance.now());   // 🎯 a counter shift frames the counter
   // 🚪 INDOORS THE CAMERA FRAMES THE ROOM (23 Sep 2026). It followed the banana against the whole world, so at the store's
   // shelves a phone showed the dark beyond the left wall and lost the till off the right — where the customer waits.
   // A room as wide as the view (PLAZA_FIT) is centred and stays still; a wider one pans between its own walls.
   const b = roomNow() && roomNow().box;
   if (b) {
     const a = b[0] * scale, n = b[2] * scale;
-    return { x: n <= viewW ? a - (viewW - n) / 2 : Math.max(a, Math.min(a + n - viewW, pos.x * scale - viewW / 2)), y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)) };
+    // indoors the framing may pass the world's edge: outside the room is dark already (§22), as it is beside a centred room
+    return { x: n <= viewW ? a - (viewW - n) / 2 : Math.max(a, Math.min(a + n - viewW, pos.x * scale - viewW / 2)), y: fy != null ? fy : Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)) };
   }
   return {
     x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), pos.x * scale - viewW / 2)),
-    y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)),
+    y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), fy != null ? fy : pos.y * scale - viewH * 0.58)),
   };
 }
 let camWX = NaN, camWY = NaN;
