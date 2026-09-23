@@ -59,7 +59,8 @@ export function bootTownWork(ctx) {
       job = { ...job, at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0, pay: res.job.pay | 0, sofar: res.job.sofar | 0, owed: res.job.owed | 0,
         duties: Array.isArray(res.job.duties) ? res.job.duties : [], share: +res.job.share || 0, nudge: !!res.job.nudge, fired: res.job.fired || null,
         // 🪜 the ladder at the job you hold: XP, the rank your boss has told you, today's XP (worker-pass ladderOf)
-        lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey() } : null };
+        lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey(),
+          warn: !!l.warn, talk: l.talk || '', last: l.last || null } : null };   // ↕ the weekly review: warned, the boss's word waiting, last week
       if (was !== job.at) job.up = '';
       // 💼 a job that is gone is REMEMBERED for a while: the homestead still asks for the payslip it owes
       if (was && !job.at) { job.was = was; job.wasT = Date.now(); }
@@ -90,7 +91,7 @@ export function bootTownWork(ctx) {
     for (const x of Array.isArray(g) ? g : [g]) add += xpFor(job.at, kind, x);
     const got = Math.max(0, Math.min(add, ((LADDER[job.at] || {}).day || 0) - lad.today));
     job = { ...job, duties: rowsOf(job.at, done), share: shareOf(job.at, done), sofar: payOf(job.at, done, lad.rank), up: todayKey(),
-      lad: { xp: lad.xp + got, rank: lad.rank, today: lad.today + got, d: todayKey() } };
+      lad: { ...(job.lad || {}), xp: lad.xp + got, rank: lad.rank, today: lad.today + got, d: todayKey() } };
     writeJob(job); notify();
     const p = passPost('/job/chore', g == null ? { kind } : { kind, g }).then(land);
     p.got = got;
@@ -100,7 +101,8 @@ export function bootTownWork(ctx) {
   function ladder() {
     const l = job.lad || {};
     const xp = l.xp | 0, rank = Math.max(1, l.rank | 0), today = l.d === todayKey() ? (l.today | 0) : 0;
-    return { at: job.at || '', xp, rank, today, earned: job.at ? rankOf(job.at, xp) : 0, news: !!job.at && rankOf(job.at, xp) > rank };
+    return { at: job.at || '', xp, rank, today, earned: job.at ? rankOf(job.at, xp) : 0, news: !!job.at && rankOf(job.at, xp) > rank,
+      warn: !!l.warn, talk: l.talk || '', last: l.last || null };
   }
 
   // ---- the question on a boss's card ------------------------------------------------------
@@ -193,14 +195,35 @@ export function bootTownWork(ctx) {
         told = n.earned;
         track('town_promo', { at, rank: told });
         passPost('/job/promote', { at }).then(land);
-        job = { ...job, lad: { xp: n.xp, rank: told, today: n.today, d: todayKey() } };
+        job = { ...job, lad: { ...(job.lad || {}), xp: n.xp, rank: told, today: n.today, d: todayKey() } };
         writeJob(job); notify();
         return line.replace('{title}', titleOf(at, told));
       },
     };
   }
-  // every topic a boss's card carries for you: the news first, the job question, and the way out while the job is yours
-  const topicsFor = (key) => [promoFor(key), topicFor(key), quitFor(key)].filter(Boolean);
+  // ↕ THE BOSS HAS A WORD (23 Sep 2026, the weekly review): a poor week under your rank's line left a WARNING for the boss to
+  // say, or — the second time — a DEMOTION. The rank has already moved on the server (nobody dodges a demotion by staying
+  // away from the boss); this is you hearing it, in the boss's own words, and /job/promote clears it.
+  function wordFor(key) {
+    const at = BOSS[key], l = ladder();
+    if (!at || job.at !== at || !l.talk || !LW || !LW.wordQ || !((LW[l.talk] || {})[key])) return null;
+    return {
+      news: true,
+      q: LW.wordQ,
+      a: () => {
+        const n = ladder(), k = n.talk;
+        const line = k && (LW[k] || {})[key];
+        if (!line) return W().already || '';
+        track(k === 'demoted' ? 'town_demote' : 'town_warn', { at, rank: n.rank });
+        passPost('/job/promote', { at }).then(land);
+        job = { ...job, lad: { ...(job.lad || {}), talk: '' } };
+        writeJob(job); notify();
+        return line.replace('{title}', titleOf(at, k === 'warn' ? n.rank - 1 : n.rank));   // a warning names the rank you would drop to
+      },
+    };
+  }
+  // every topic a boss's card carries for you: the news first (a promotion, or the boss's word), the job question, and the way out
+  const topicsFor = (key) => [promoFor(key) || wordFor(key), topicFor(key), quitFor(key)].filter(Boolean);
   // ⚠️ the building's name comes from the RIG, not from the sign plank: the planks shout (“ARCADE”)
   // and two of the three are empty because the sprite carries its own sign. work.at holds the three
   // names written to sit inside a sentence, article and all.
@@ -243,7 +266,8 @@ export function bootTownWork(ctx) {
       // 🪜 the ladder: where you stand, the words it is told in (null until they land), and a title by rank
       ladder, words: () => LW, title: titleOf, wordsReady: loadWords,
       // ⚠️ the walk's door to the ladder: XP and a told rank, as the server would have answered them
-      setLad: (l) => { job = { ...job, lad: { xp: (l && l.xp) | 0, rank: Math.max(1, (l && l.rank) | 0), today: (l && l.today) | 0, d: todayKey() } }; writeJob(job); notify(); return ladder(); },
+      setLad: (l) => { job = { ...job, lad: { xp: (l && l.xp) | 0, rank: Math.max(1, (l && l.rank) | 0), today: (l && l.today) | 0, d: todayKey(), warn: !!(l && l.warn), talk: (l && l.talk) || '', last: (l && l.last) || null } }; writeJob(job); notify(); return ladder(); },
+      word: (key) => { const t = wordFor(key); return t ? { q: t.q, a: t.a() } : null; },
       promote: (key) => { const t = promoFor(key); return t ? { q: t.q, a: t.a() } : null; },
       turnUp: () => { job.up = todayKey(); job.days = (job.days | 0) + 1; writeJob(job); notify(); },   // QA: the day counted
       chore,

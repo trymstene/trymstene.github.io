@@ -15,12 +15,16 @@
   "nudge": {
     "condo": "Spinner’s letter asks you to come to the arcade; the floor is not self-sweeping.",
     "store": "Pip’s letter asks you to come to the store; the crate remains deeply patient.",
-    "post": "Stamp wrote asking if you’re coming in; the counter pile is waiting."
+    "post": "Stamp wrote asking if you’re coming in; the counter pile is waiting.",
+    "cafe": "Bean’s letter asks you to come and pour; the counter is quiet without you.",
+    "stand": "Fig Jr. has written about low staffing; the stand needs a shift from you."
   },
   "fired": {
-    "condo": "Spinner has let you go; ask at the arcade again, and his door is open.",
-    "store": "Pip has let you go; ask at the store again, and his door is open.",
-    "post": "Stamp let you go after empty weeks; ask again and his door is open."
+    "condo": "Spinner has let you go; ask again and you start from the first rank.",
+    "store": "Pip has let you go; ask again and you start from the first rank.",
+    "post": "Stamp let you go after empty weeks; ask again and you start at the first rank.",
+    "cafe": "Bean has let you go; ask again and you start from the first cup.",
+    "stand": "Fig Jr. has let you go; reapply and you start again at entry level."
   },
   "cafeDone": "tips gather on the tray as you pour; paid when you step away.",
   "standDone": "pour lemonade; tray tips are paid when you step away.",

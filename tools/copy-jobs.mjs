@@ -1397,7 +1397,7 @@ const pageSchema = {
 // paper — the week's counts (composed by the game from the duty labels and the numbers) and one line
 // under them. The numbers are the pass worker's and go into {coins} and {days}; the words never carry one.
 export const DUTY_KINDS = ['sweep', 'fix', 'restock', 'days', 'sort'];
-export const DUTY_BOSS = ['condo', 'store', 'post'];
+export const DUTY_BOSS = ['condo', 'store', 'post', 'cafe', 'stand'];   // ↕ the counters can be nudged and let go too (23 Sep 2026, the weekly review)
 const dutyFields = {
   'kinds.sweep': { kind: 'label', aim: 11, max: 18, note: 'The arcade floor, swept — the duty AS DONE, two or three lower-case words, no number: e.g. what goes before "1/3" in "floor swept 1/3".' },
   'kinds.fix': { kind: 'label', aim: 14, max: 18, note: 'A dark arcade cabinet brought back — the duty as done, two or three lower-case words, no number.' },
@@ -1413,6 +1413,10 @@ const dutyFields = {
   'fired.condo': { kind: 'prose', aim: 60, max: 80, note: 'Spinner let you go after two finished weeks with nothing done at the Arcade; his door is open if you ask again. Never cruel, never a lecture, no numbers. Lower case first letter.' },
   'fired.store': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the General Store: Pip let you go; ask again when you like. No numbers. Lower case first letter.' },
   'nudge.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the Post Office: Stamp, the postmaster, has written to ask if you are coming in — the pile is not sorting itself. No numbers. Lower case first letter.' },
+  'nudge.cafe': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the Coffee Cup (23 Sep 2026: the review can let a counter go too): Bean has written, the counter is quiet without you. No numbers. Starts with Bean’s name.' },
+  'nudge.stand': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the lemonade stand: Fig Jr. has written, in his company voice, that the stand needs a shift. No numbers. Starts with Fig Jr.’s name.' },
+  'fired.cafe': { kind: 'prose', aim: 60, max: 80, note: 'Bean let you go after empty weeks; ask again and you start over from the first rank (Trym: fired means you “have to start over”). No numbers.' },
+  'fired.stand': { kind: 'prose', aim: 60, max: 80, note: 'Fig Jr. let you go; reapply and you start over at the bottom. No numbers.' },
   'fired.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for the Post Office: Stamp let you go; ask again when you like. No numbers. Lower case first letter.' },
   cafeDone: { kind: 'prose', aim: 50, max: 70, note: 'The Coffee Cup once you have clocked in today: tips are counted on the tray as you pour and paid when you step away. No numbers. Lower case first letter.' },
   standDone: { kind: 'prose', aim: 50, max: 70, note: 'The lemonade stand once you have clocked in today: the tips gather on the tray glass by glass and are paid when you step away. No numbers. Lower case first letter, not the café\u2019s words.' },
@@ -1458,8 +1462,8 @@ const dutySchema = {
       properties: Object.fromEntries(DUTY_KINDS.map((x) => [x, str(dutyFields['kinds.' + x].note)])) },
     duty: { type: 'object', additionalProperties: false, required: ['cafe', 'stand'], properties: { cafe: str(dutyFields['duty.cafe'].note), stand: str(dutyFields['duty.stand'].note) } },
     wage: str(dutyFields.wage.note), done: str(dutyFields.done.note),
-    nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['nudge.condo'].note), store: str(dutyFields['nudge.store'].note), post: str(dutyFields['nudge.post'].note) } },
-    fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: { condo: str(dutyFields['fired.condo'].note), store: str(dutyFields['fired.store'].note), post: str(dutyFields['fired.post'].note) } },
+    nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: Object.fromEntries(DUTY_BOSS.map((x) => [x, str(dutyFields['nudge.' + x].note)])) },
+    fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: Object.fromEntries(DUTY_BOSS.map((x) => [x, str(dutyFields['fired.' + x].note)])) },
     cafeDone: str(dutyFields.cafeDone.note), standDone: str(dutyFields.standDone.note), payslip: str(dutyFields.payslip.note), tips: str(dutyFields.tips.note),
     call: { type: 'object', additionalProperties: false, required: ['sweep', 'fix', 'restock'], properties: { sweep: str(dutyFields['call.sweep'].note), fix: str(dutyFields['call.fix'].note), restock: str(dutyFields['call.restock'].note) } },
     answered: str(dutyFields.answered.note),
@@ -1612,7 +1616,7 @@ export const JOBS = {
     what: 'The card a worker opens at their own workplace or from the work note: where they work and for whom, their title, today’s tips or the week’s work and wage, today’s calls, and the buttons (go to work, answer the calls, the place’s other use).',
     approved: 'src/data/copy/town-staff.json',
     reads: 'src/scripts/town-staff.js (through a glob inside the card’s own lazy chunk)',
-    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut'],
+    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'wordQ', 'word', 'warn', 'demoted', 'warnCard', 'last', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut'],
     fields: {
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`of.${k}`, { kind: 'label', max: 40, note: 'Small capitals over the title: the workplace, then whose staff you are.' }])),
       // 🪜 THE LADDER (23 Sep 2026; Trym's calls: ranks 3·4·5·5·6, promotion at the boss). A title per rank, bottom first —
@@ -1627,6 +1631,15 @@ export const JOBS = {
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`news.${k}`, toastLine(64, 'Over the XP once it has crossed the next rank’s line — and the WORK NOTE’s green line too (town-duties.js reads it from here): the boss has news, and you hear it by talking to them (promotion happens at the boss). Starts with the boss’s name. Never the word promoted, never a title or a number.', { ...NO_MARKUP, forbids: [[/[<>&]/, 'markup or an entity'], [/promot|\d/i, 'the word promoted or a number — the news is said in person']] })])),
       promoQ: { kind: 'prose', aim: 22, max: 32, note: 'The PLAYER’s question on their own boss’s card when the boss has news: the player’s voice, a question with a question mark (the job question’s sibling).' },
       ...Object.fromEntries(['bean', 'figjr', 'spinner', 'pip', 'stamp'].map((k) => [`promo.${k}`, { kind: 'prose', aim: 72, max: 96, holds: ['{title}'], needs: [[/\{title\}/, 'must carry {title} — the new rank’s title']], note: 'The boss telling the player they are promoted, in the boss’s own voice (Bean reads cups, Fig Jr. talks like a company, Spinner is a showman, Pip keeps last ones, Stamp weighs things and says Noted). MUST contain {title}, the new title, inside a sentence. No number, no pay.' }])),
+      // ↕ THE WEEKLY REVIEW (23 Sep 2026): a poor week under the rank's line brings the boss's WARNING, the next one a DEMOTION —
+      // both said in person, like a promotion, though the rank has already moved on the server
+      wordQ: { kind: 'prose', aim: 20, max: 32, note: 'The PLAYER’s question on their own boss’s card when the boss has a word for them (a warning or a demotion): the player’s voice, a question with a question mark.' },
+      ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`word.${k}`, toastLine(64, 'On the work note and the staff card while the boss has a word waiting: who wants a word, and that you hear it by talking to them. Starts with the boss’s name. Never the word demoted, never a title or a number.', { forbids: [[/[<>&]/, 'markup or an entity'], [/demot|promot|\d/i, 'the word demoted or promoted, or a number — it is said in person']] })])),
+      ...Object.fromEntries(['bean', 'figjr', 'spinner', 'pip', 'stamp'].map((k) => [`warn.${k}`, { kind: 'prose', aim: 72, max: 96, holds: ['{title}'], needs: [[/\{title\}/, 'must carry {title} — the rank you would drop to']], note: 'The boss’s WARNING, in their own voice (Bean reads cups, Fig Jr. talks like a company, Spinner is a showman, Pip keeps last ones, Stamp weighs things and says Noted): last week was poor, and another like it costs a rank. MUST contain {title}, the title one rank down. Firm, never cruel, no number.' }])),
+      ...Object.fromEntries(['bean', 'figjr', 'spinner', 'pip', 'stamp'].map((k) => [`demoted.${k}`, { kind: 'prose', aim: 72, max: 96, holds: ['{title}'], needs: [[/\{title\}/, 'must carry {title} — the rank you are now']], note: 'The boss telling you that you are moved down a rank, in their own voice. MUST contain {title}, the title you hold now. It must leave the way back open. No number.' }])),
+      warnCard: toastLine(60, 'On the staff card while a warning stands: another poor week here costs a rank. Plain.', NO_MARKUP),
+      'last.full': toastLine(60, 'On the staff card: last week’s review was a full week, and {xp} work XP came extra.', { ...holdsAll('xp'), ...NO_MARKUP }),
+      'last.poor': toastLine(60, 'On the staff card: last week’s review was poor, and {xp} work XP was taken back.', { ...holdsAll('xp'), ...NO_MARKUP }),
       promoMoment: { kind: 'label', max: 10, note: 'The BIG word over the square once the boss’s card has closed on a promotion — the hire’s HIRED, for a new rank. Capitals, one word.' },
       promoLine: { kind: 'prose', aim: 30, max: 52, holds: ['{title}', '{where}'], needs: [[/\{title\}/, 'must carry {title}'], [/\{where\}/, 'must carry {where}']], note: 'The small line under it: the new title and where. {where} is lower case with its article (“the Coffee Cup”), so never first. The screen sets it in capitals.' },
       tips: { kind: 'label', max: 14, note: 'Over today’s tips (café, stand); the game prints the number and the cap beside it.' },
@@ -1656,7 +1669,9 @@ export const JOBS = {
         if (new Set(r).size !== r.length) bad.push({ path: 'ranks.' + k, msg: 'two ranks share a title' });
         if (!(d.news || {})[k]) bad.push({ path: 'news.' + k, msg: 'missing — every workplace has a boss with news' });
       }
-      for (const k of ['bean', 'figjr', 'spinner', 'pip', 'stamp']) if (!(d.promo || {})[k]) bad.push({ path: 'promo.' + k, msg: 'missing — every boss promotes' });
+      for (const k of ['bean', 'figjr', 'spinner', 'pip', 'stamp']) for (const t of ['promo', 'warn', 'demoted']) if (!(d[t] || {})[k]) bad.push({ path: t + '.' + k, msg: 'missing — every boss has this to say' });
+      for (const k of ['cafe', 'stand', 'post', 'condo', 'store']) if (!(d.word || {})[k]) bad.push({ path: 'word.' + k, msg: 'missing — every workplace has a boss with a word' });
+      if (!/\?$/.test(String(d.wordQ || ''))) bad.push({ path: 'wordQ', msg: 'is a question, with a question mark' });
       if (!/^[A-Z]+$/.test(String(d.promoMoment || ''))) bad.push({ path: 'promoMoment', msg: 'one word in capitals' });
       if (/^\{where\}/.test(String(d.promoLine || ''))) bad.push({ path: 'promoLine', msg: 'starts with {where}, which is lower case' });
       if (!/\?$/.test(String(d.promoQ || ''))) bad.push({ path: 'promoQ', msg: 'is a question, with a question mark' });
@@ -1936,6 +1951,11 @@ export const JOBS = {
       'bosses.fired.post.line': { kind: 'prose', aim: 100, max: 140, note: 'Stamp\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' },
       // 🪜 the boss has news and you have not come by (23 Sep 2026: promotion happens at the boss, a letter if you do not come)
       ...Object.fromEntries(['cafe', 'stand', 'condo', 'store', 'post'].flatMap((k) => [[`bosses.news.${k}.from`, { kind: 'prose', aim: 6, max: 20, note: 'Who signs it: the boss at this workplace.' }], [`bosses.news.${k}.line`, { kind: 'prose', aim: 90, max: 140, note: 'The boss’s letter when the player’s work XP has earned a promotion and they have not come by: come and see me, I have news. In the boss’s own voice. Never the word promoted, never a title, never a number — the news is said in person.' }]])),
+      ...Object.fromEntries(['cafe', 'stand'].flatMap((k) => ['nudge', 'fired'].flatMap((t) => [[`bosses.${t}.${k}.from`, { kind: 'prose', aim: 6, max: 20, note: 'Who signs it: the boss at this workplace.' }], [`bosses.${t}.${k}.line`, { kind: 'prose', aim: 100, max: 140, note: t === 'nudge' ? 'The boss’s Thursday letter when nothing has been done at the counter this week (23 Sep 2026: the counters can be let go too): come in when you can. Warm, a little pointed, never a threat, no number.' : 'The boss’s letter when empty weeks have cost you the job: you are off the book, and asking again starts you over from the bottom (Trym: fired means you “have to start over”). Never cruel, no number.' }]]))),
+      'wage.review.full': { kind: 'prose', aim: 36, max: 50, holds: ['{xp}'], needs: [[/\{xp\}/, 'must carry {xp}']], note: 'A row on the payslip: the week’s review found a full week, and {xp} work XP came extra.' },
+      'wage.review.poor': { kind: 'prose', aim: 36, max: 50, holds: ['{xp}'], needs: [[/\{xp\}/, 'must carry {xp}']], note: 'A row on the payslip: the week’s review found a poor week, and {xp} work XP was taken back.' },
+      'wage.warned': { kind: 'prose', aim: 30, max: 50, note: 'A row on the payslip under a poor week that left you under your rank’s line: your boss wants a word. No number, no title.' },
+      'wage.demoted': { kind: 'prose', aim: 30, max: 50, note: 'A row on the payslip under the week that cost you a rank. Plain, no number, no title.' },
       'bosses.fired.store.line': { kind: 'prose', aim: 100, max: 140, note: 'Pip\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number.' },
       'wage.at.store': { kind: 'prose', aim: 17, max: 24, note: 'The General Store as it is printed on a payslip: lower case, with its article.' },
       'wage.at.condo': { kind: 'prose', aim: 10, max: 24, note: 'The Arcade as it is printed on a payslip: lower case, with its article.' },
@@ -1977,7 +1997,7 @@ export const JOBS = {
         if (!l) say('bosses.news.' + k + '.line', 'is empty');
         if (/\d|promot/i.test(l)) say('bosses.news.' + k + '.line', 'names a number or the promotion — the news is said in person');
       }
-      for (const kind of ['nudge', 'fired']) for (const k of ['condo', 'store', 'post']) {
+      for (const kind of ['nudge', 'fired']) for (const k of ['condo', 'store', 'post', 'cafe', 'stand']) {
         const b = (bo[kind] || {})[k] || {};
         if (!String(b.from || '')) say('bosses.' + kind + '.' + k + '.from', 'is empty');
         const l = String(b.line || '');

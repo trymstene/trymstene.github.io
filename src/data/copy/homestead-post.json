@@ -12,20 +12,36 @@
       "store": {
         "from": "Pip",
         "line": "The store shelf needs restocking. Come in when you can; the empty spaces have become very confident."
+      },
+      "cafe": {
+        "from": "Bean",
+        "line": "The counter has been quiet without you this week. Come and pour a few cups when you can."
+      },
+      "stand": {
+        "from": "Fig Jr.",
+        "line": "The stand reports low staffing this week. Please report for a shift at your earliest convenience."
       }
     },
     "fired": {
       "post": {
         "from": "Stamp",
-        "line": "I have taken you off the book. The post office door stays open if you want work again."
+        "line": "You stopped coming in, so you are off the book. Ask again and you start at the first pile. Noted."
       },
       "condo": {
         "from": "Spinner",
-        "line": "I have taken your name off the arcade book. If you want work again, come ask me; the door is still open."
+        "line": "You stopped coming, so your name is off the arcade book. Ask again and you start from the first rung."
       },
       "store": {
         "from": "Pip",
-        "line": "I have taken your name off the store book. If you want work again, come ask me; the bell is still there."
+        "line": "You stopped coming, so your name is off the store book. Ask again and you start as new."
+      },
+      "cafe": {
+        "from": "Bean",
+        "line": "Your cups went cold, so you are off the Coffee Cup book. Ask again and you start from the first cup."
+      },
+      "stand": {
+        "from": "Fig Jr.",
+        "line": "Attendance review complete: your position is vacated. You may reapply, starting again at entry level."
       }
     },
     "news": {
@@ -62,7 +78,13 @@
       "store": "the general store",
       "condo": "the arcade",
       "post": "the post office"
-    }
+    },
+    "review": {
+      "full": "A full week: {xp} work XP extra.",
+      "poor": "A poor week: {xp} work XP taken back."
+    },
+    "warned": "Your boss wants a word about it.",
+    "demoted": "You were moved down a rank."
   },
   "letters": {
     "welcome": {

@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 import STAFF from '../src/data/copy/town-staff.json' with { type: 'json' };
 import { LADDER_RANKS } from '../tools/copy-jobs.mjs';
-import { JOB_PAY, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, dutiesOf, LADDER, RISE, TIPS_JOBS, DAY_XP, ranksOf, rankOf, xpAt, weekPay, tipsCap, xpFor, roundXp } from '../src/data/town/jobs.js';
+import { JOB_PAY, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, dutiesOf, LADDER, RISE, TIPS_JOBS, DAY_XP, ranksOf, rankOf, xpAt, weekPay, tipsCap, xpFor, roundXp, reviewOf, reviewXp } from '../src/data/town/jobs.js';
 
 test('a week of work pays by its share, duty by duty, and prints its own reasoning', () => {
   // the arcade: two duties of three
@@ -91,4 +91,21 @@ test('the ladder: ranks by XP, one pay scale that rises a fifth a rank, and tips
   expect(DAY_XP + 3 * xpFor('condo', 'sweep') + xpFor('condo', 'fix'), 'the arcade: three pieces of litter and a cabinet').toBe(LADDER.condo.day);
   expect(DAY_XP + 2 * xpFor('store', 'restock'), 'the store: the delivery’s two faces').toBe(LADDER.store.day);
   expect(DAY_XP + 2 * xpFor('post', 'sort', roundXp(12, 0)), 'the post office: two perfect rounds').toBeGreaterThanOrEqual(LADDER.post.day);
+});
+
+// ↕ THE WEEKLY REVIEW (23 Sep 2026): what a week at each kind of job comes to, and what that moves
+test('the review: full, ordinary, poor and empty weeks at a payslip job and at a counter', () => {
+  expect(reviewOf('store', { restock: 3, days: 3 }), 'every duty met').toBe('full');
+  expect(reviewOf('store', { restock: 1, days: 2 }), 'half the work').toBe('ok');
+  expect(reviewOf('store', { restock: 0, days: 1 }), 'a sixth of it').toBe('poor');
+  expect(reviewOf('store', {}), 'nothing at all').toBe('empty');
+  expect(reviewOf('condo', { days: 3 }), 'turning up at the arcade and sweeping nothing is nothing').toBe('empty');
+  expect(reviewOf('cafe', { days: 3, cups: [1, 4, 8] }), 'three days, four cups in five good or better').toBe('full');
+  expect(reviewOf('cafe', { days: 1, cups: [5, 0, 1] }), 'more than half the cups spoiled').toBe('poor');
+  expect(reviewOf('cafe', { days: 1, cups: [1, 1, 2] }), 'a short, decent shift').toBe('ok');
+  expect(reviewOf('stand', { days: 1 }), 'turning up at the stand is not nothing').toBe('ok');
+  expect(reviewOf('stand', {}), 'never came').toBe('empty');
+  expect(reviewXp('store', 'full'), 'a full week: a day of the store’s XP extra').toBe(LADDER.store.day);
+  expect(reviewXp('cafe', 'poor'), 'a poor week: a day of the café’s taken back').toBe(-LADDER.cafe.day);
+  expect(reviewXp('post', 'ok')).toBe(0);
 });

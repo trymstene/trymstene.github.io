@@ -9,6 +9,7 @@
 import { test, expect } from '@playwright/test';
 import STAFF from '../src/data/copy/town-staff.json' with { type: 'json' };
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
+import DUTY from '../src/data/copy/town-duties.json' with { type: 'json' };
 import { tipsCap, xpAt, LADDER } from '../src/data/town/jobs.js';
 
 const stand = (page, x, y) => page.evaluate(([px, py]) => { const t = window.__town; t.pos.x = t.tgt.x = px; t.pos.y = t.tgt.y = py; }, [x, y]);
@@ -32,7 +33,7 @@ async function town(page, w, h) {
   expect(await page.evaluate(() => window.__town.staffReady()), 'the card’s chunk arrives').toBe(true);
   return { errs, sent };
 }
-const card = (page) => page.evaluate(() => { const s = window.__town.staff(); const l = s && s.last(); const b = document.getElementById('twCardBody'); return l && b && !document.getElementById('twPanel').hidden ? { ...l, text: b.innerText, pips: b.querySelectorAll('.tws-pips i').length, on: b.querySelectorAll('.tws-pips i.is-on').length, bar: (b.querySelector('.tws-xp .tws-bar i') || {}).style ? b.querySelector('.tws-xp .tws-bar i').style.transform : '', news: !!b.querySelector('.tws-news') } : null; });
+const card = (page) => page.evaluate(() => { const s = window.__town.staff(); const l = s && s.last(); const b = document.getElementById('twCardBody'); return l && b && !document.getElementById('twPanel').hidden ? { ...l, text: b.innerText, pips: b.querySelectorAll('.tws-pips i').length, on: b.querySelectorAll('.tws-pips i.is-on').length, bar: (b.querySelector('.tws-xp .tws-bar i') || {}).style ? b.querySelector('.tws-xp .tws-bar i').style.transform : '', news: !!b.querySelector('.tws-news:not(.is-word)') } : null; });
 const closeCard = (page) => page.evaluate(() => { const x = document.getElementById('twCardX'); if (x) x.click(); });
 
 for (const [w, h] of [[360, 640], [393, 852]]) {
@@ -158,5 +159,80 @@ test('at the arcade a sweep is work XP on the note’s bar, and the card says wh
   expect([c.pips, c.on], 'five ranks at the arcade').toEqual([5, 1]);
   expect(c.text, 'the next rank’s title and its full week (120 × 1.2)').toContain(STAFF.nextWeek.replace('{title}', STAFF.ranks.condo[1]).replace('{coins}', '144'));
   await page.locator('.tw-card').screenshot({ path: 'test-results/ladder-card-arcade.png' });
+  expect(errs).toEqual([]);
+});
+
+// ↕ THE WEEKLY REVIEW (23 Sep 2026). Trym: "you should also be able to be demoted, or fired … if you want to be great and
+// stay great you must do a good job". A poor week under your rank's line leaves the boss a WORD — a warning, and the next
+// time a demotion (the rank has moved on the server already). The note turns the nudge's colour, the card says so, and the
+// first question on the boss's card is "You wanted a word?".
+test('a warning, then a demotion, heard at Bean — and the card and the note say where you stand', async ({ page }) => {
+  test.setTimeout(90000);
+  const { errs } = await town(page, 393, 852);
+  await page.route('**/job/promote', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...view({ xp: 220, rank: 2, today: 0, news: false, warn: true, talk: '' }), promoted: null, heard: 'warn' }) }));
+  // ── warned: a poor week took 80 back and left 220 under the second rank's 250
+  await page.evaluate(() => window.__town.work.setLad({ xp: 220, rank: 2, today: 0, warn: true, talk: 'warn', last: { v: 'poor', xp: -80 } }));
+  await page.waitForFunction((l) => window.__town.duties.line() === l, STAFF.word.cafe, { timeout: 5000 });
+  expect(await page.evaluate(() => window.__town.duties.kind()), 'the note wears the nudge’s colour').toBe('word');
+  await page.screenshot({ path: 'test-results/ladder-note-word.png' });
+  await page.evaluate(() => window.__town.staffOpen('cafe', 'note'));
+  let c = await card(page);
+  expect(c.title, 'still the rank you hold').toBe(STAFF.ranks.cafe[1]);
+  expect(c.text, 'the boss’s word waits').toContain(STAFF.word.cafe);
+  expect(c.text, 'the warning stands').toContain(STAFF.warnCard);
+  expect(c.text, 'and last week is on the card').toContain(STAFF.last.poor.replace('{xp}', '80'));
+  expect(c.text, 'the XP counts toward climbing back over your own rank’s line').toContain('/ ' + xpAt('cafe', 2));
+  expect(await page.evaluate(() => !!document.querySelector('#twCardBody .tws-xp .tws-bar.is-under')), 'on an amber bar').toBe(true);
+  expect(c.news, 'no promotion').toBe(false);
+  await page.locator('.tw-card').screenshot({ path: 'test-results/ladder-card-warned.png' });
+  await closeCard(page);
+
+  // ── at Bean: "You wanted a word?" first; the warning names the rank you would drop to
+  const at = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
+  await stand(page, at.x + 40, at.y + 20);
+  await page.waitForTimeout(500);
+  const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
+  await page.mouse.click(hit.x, hit.y);
+  await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), STAFF.wordQ, { timeout: 10000 });
+  expect((await page.evaluate(() => [...document.querySelectorAll('#twCardBody .wd-q button')].map((b) => b.textContent)))[0], '⭐ the boss’s word is the first thing to ask').toBe(STAFF.wordQ);
+  await page.evaluate((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].find((b) => b.textContent === q).click(), STAFF.wordQ);
+  const warned = STAFF.warn.bean.replace('{title}', STAFF.ranks.cafe[0]);
+  await page.waitForFunction((t) => (document.querySelector('#twCardBody .wd-box p') || {}).textContent === t, warned, { timeout: 8000 });
+  await page.locator('.tw-card').screenshot({ path: 'test-results/ladder-bean-warns.png' });
+  expect(await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_warn').map((e) => e[1])), 'Pulse hears the warning').toEqual([{ at: 'cafe', rank: 2 }]);
+  expect(await page.evaluate(() => window.__town.work.ladder()), 'heard: no word waiting, the warning still stands').toMatchObject({ talk: '', warn: true, rank: 2 });
+  await closeCard(page);
+
+  // ── another poor week: the server has moved you down; Bean tells you
+  await page.unroute('**/job/promote');
+  await page.route('**/job/promote', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...view({ xp: 150, rank: 1, today: 0, news: false, warn: false, talk: '' }), promoted: null, heard: 'demoted' }) }));
+  await page.evaluate(() => window.__town.work.setLad({ xp: 150, rank: 1, today: 0, warn: false, talk: 'demoted', last: { v: 'poor', xp: -80 } }));
+  await page.waitForFunction((l) => window.__town.duties.line() === l, STAFF.word.cafe, { timeout: 5000 });
+  await page.waitForFunction((t) => window.__town.duties.top().indexOf(t) === 0, STAFF.ranks.cafe[0], { timeout: 5000 });
+  // Bean has walked on by now: find Bean again
+  const at2 = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
+  await stand(page, at2.x + 40, at2.y + 20);
+  await page.waitForTimeout(500);
+  const hit2 = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
+  await page.mouse.click(hit2.x, hit2.y);
+  await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), STAFF.wordQ, { timeout: 10000 });
+  await page.evaluate((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].find((b) => b.textContent === q).click(), STAFF.wordQ);
+  const demoted = STAFF.demoted.bean.replace('{title}', STAFF.ranks.cafe[0]);
+  await page.waitForFunction((t) => (document.querySelector('#twCardBody .wd-box p') || {}).textContent === t, demoted, { timeout: 8000 });
+  await page.locator('.tw-card').screenshot({ path: 'test-results/ladder-bean-demotes.png' });
+  expect(await page.waitForFunction(() => document.getElementById('twPanel').hidden === false, null, { timeout: 2000 }).then(() => true), 'no big moment: the card stays until you close it').toBe(true);
+  expect(await page.locator('.wm-moment').count(), 'a demotion is said, never celebrated').toBe(0);
+  expect(await page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_demote').map((e) => e[1])), 'Pulse hears the demotion').toEqual([{ at: 'cafe', rank: 1 }]);
+  await closeCard(page);
+  await page.evaluate(() => window.__town.staffOpen('cafe', 'note'));
+  c = await card(page);
+  expect(c.title, 'the card has the first rank’s title').toBe(STAFF.ranks.cafe[0]);
+  expect(c.text, 'and the first rank’s tips cap').toContain('/ ' + tipsCap('cafe', 1));
+  expect(c.text, 'no word waiting any more').not.toContain(STAFF.word.cafe);
+  await closeCard(page);
+  // ── a Thursday with nothing done: the Coffee Cup nudges too, now that a counter can be let go
+  await page.evaluate(() => window.__town.work.set({ at: 'cafe', nudge: true }));
+  await page.waitForFunction((l) => window.__town.duties.line() === l, DUTY.nudge.cafe, { timeout: 5000 });
+  expect(await page.evaluate(() => window.__town.duties.kind())).toBe('nudge');
   expect(errs).toEqual([]);
 });

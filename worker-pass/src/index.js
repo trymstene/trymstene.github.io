@@ -34,7 +34,7 @@ import { levelFor } from '../../src/lib/pass-defs.js';
 import { cleanName } from '../../src/lib/player-name.js';
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
-import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor } from '../../src/data/town/jobs.js';
+import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp } from '../../src/data/town/jobs.js';
 // 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
 // the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
 import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
@@ -1269,6 +1269,7 @@ function jobPrune(j, now) {
   for (const k in j.wk) if (!live.has(k)) delete j.wk[k];
   for (const k in j.paid) if (!live.has(k)) delete j.paid[k];
   for (const k in (j.done || {})) if (!live.has(k)) delete j.done[k];
+  for (const k in (j.rev || {})) if (!live.has(k)) delete j.rev[k];
 }
 // 💼 THE WEEK'S COUNTS, with `days` counted here from attendance (the one duty the client never reports).
 // The week remembers which job its counts belong to (`at`): a mid-week move starts a fresh sheet, so a
@@ -1291,7 +1292,10 @@ const xpToday = (j, at, now) => (j && j.xd && j.xd.d === utcDay(now) ? ((j.xd.n 
 function ladderOf(j, at, now) {
   if (!at || !LADDER[at]) return null;
   const xp = ((j.xp || {})[at]) | 0, rank = toldOf(j, at);
-  return { xp, rank, today: xpToday(j, at, now), news: rankOf(at, xp) > rank };
+  const last = (j.rev || {})[jobWeek(now - 7 * DAY)];
+  return { xp, rank, today: xpToday(j, at, now), news: rankOf(at, xp) > rank,
+    warn: !!(j.warn && j.warn[at]), talk: (j.talk && j.talk[at]) || '',   // ↕ warned; the boss's word waiting ('warn' | 'demoted')
+    last: last && last.at === at && last.v ? { v: last.v, xp: last.xp | 0 } : null };   // ↕ last week's review
 }
 // the XP a chore earns, after the day's cap — and the day's own ten the first time you turn up
 function xpAdd(j, add, now) {
@@ -1328,7 +1332,7 @@ function jobView(j, now) {
   const rank = weekRank(j, dn);
   return { at, since: j.since || 0, week: wk, days: dn.days | 0, pay: JOB_PAY[at] ? weekPay(at, rank) : 0,
     duties: rowsOf(at, dn), share, sofar: payOf(at, dn, rank), owed,
-    nudge: !!(at && DUTIES[at] && dow >= NUDGE_DAY && share === 0),
+    nudge: !!(at && dow >= NUDGE_DAY && reviewOf(at, dn) === 'empty'),   // ↕ the tips jobs too, since the review can let them go
     fired: j.fired || null,
     lad: ladderOf(j, at, now) };   // 🪜 your XP and rank at the job you hold, and whether the boss has news
 }
@@ -1336,6 +1340,51 @@ function jobView(j, now) {
 // a promotion), else the one you hold there now — so a promotion on a Thursday pays that whole week at the new rank, and
 // last week's cheque stays at last week's
 const weekRank = (j, dn) => ((dn && dn.r) | 0) || (dn && dn.at ? toldOf(j, dn.at) : 1);
+// ↕ THE WEEKLY REVIEW (23 Sep 2026; src/data/town/jobs.js reviewOf). Trym: "you should also be able to be demoted, or
+// fired … if you want to be great and stay great you must do a good job" — and a firing means "you loose your job, and
+// have to start over". Each finished week the payday can still reach is reviewed ONCE (j.rev[week]), oldest first, and
+// only for the job you hold: time without a job costs nothing, and quitting keeps your standing.
+//   full    a day's XP extra                  poor    a day's XP back, and under your rank's line: warned, then one rank down
+//   empty   nothing done, or never came — the week counts even with no visit at all; two in a row and you are let go,
+//           and that workplace starts over: its XP to nothing, its rank to the first, its warning gone
+// Runs on every /job/* call before its answer, so a phone that opens the town finds out the same as one that opens the
+// homestead's mailbox. Returns whether anything changed (the record must then be saved).
+function jobReview(j, now) {
+  if (!j) return false;
+  const rev = j.rev || (j.rev = {});
+  let changed = false;
+  for (let i = PAY_BACK; i >= 1; i--) {
+    const W = weekOf(now - i * 7 * DAY), wk = W.id;
+    if (rev[wk]) continue;
+    const dn = doneOf(j, wk), at = dn.at;
+    if (!at || !LADDER[at]) continue;
+    changed = true;
+    // not the job you hold, or a week that was over before you were hired: nothing to review
+    if (at !== j.at || (j.since || 0) >= W.to) { rev[wk] = { at, v: '' }; continue; }
+    const v = reviewOf(at, dn), r = { at, v, xp: 0 };
+    if (v === 'empty') {
+      j.zero = (j.zero | 0) + 1;
+      if (j.zero >= FIRE_WEEKS) {
+        j.fired = { at, week: wk, t: now };
+        j.at = ''; j.since = 0; j.zero = 0;
+        if (j.xp) j.xp[at] = 0;
+        for (const k of ['rk', 'warn', 'talk']) if (j[k]) delete j[k][at];
+        r.fired = true;
+      }
+    } else {
+      j.zero = 0;
+      const xp0 = ((j.xp || {})[at]) | 0, xp1 = Math.max(0, xp0 + reviewXp(at, v));
+      (j.xp || (j.xp = {}))[at] = xp1; r.xp = xp1 - xp0;
+      const told = toldOf(j, at), warn = j.warn || (j.warn = {}), talk = j.talk || (j.talk = {});
+      if (xp1 < (xpAt(at, told) | 0)) {
+        if (v === 'poor' && warn[at]) { const to = Math.max(1, told - 1); (j.rk || (j.rk = {}))[at] = to; delete warn[at]; talk[at] = 'demoted'; r.demoted = { from: told, to }; }
+        else if (v === 'poor') { warn[at] = wk; talk[at] = 'warn'; r.warned = true; }
+      } else if (warn[at]) { delete warn[at]; if (talk[at] === 'warn') delete talk[at]; r.lifted = true; }
+    }
+    rev[wk] = r;
+  }
+  return changed;
+}
 // 🪪 A KEPT PASS (23 Sep 2026). An email or a passkey that JOINS an anonymous pass is a pointer to that home, and the
 // home kept its `anon` mark forever — so every /job/* call from a pass kept the normal way was refused 'keep', and
 // the desk counted it anonymous. The mark is cleared where a pointer attaches (mailUse, register) and here, lazily,
@@ -1349,12 +1398,16 @@ async function jobViewRoute(request, env) {
   if (bad) return bad;
   let b;
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
-  const R = await tokenRec(env, b.credId, b.token);
-  if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-  if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
-  const j = jobRec(R.home, false);
-  const now = Date.now();
-  return json({ ok: true, job: jobView(j || { at: '', since: 0, wk: {}, paid: {} }, now) }, 200, cors(env, request));
+  return retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+    if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
+    const j = jobRec(R.home, false);
+    const now = Date.now();
+    // ↕ the review runs here too — a phone that only ever opens the town still has its weeks reviewed
+    if (jobReview(j, now)) { jobPrune(j, now); await saveKey(env, R.homeKey, R.home); }
+    return json({ ok: true, job: jobView(j || { at: '', since: 0, wk: {}, paid: {} }, now) }, 200, cors(env, request));
+  });
 }
 
 // ---------- POST /job/take — ask a boss for the job, or hand it back ----------
@@ -1372,6 +1425,7 @@ async function jobTake(request, env) {
     unmarkKept(R);
     const now = Date.now();
     const j = jobRec(R.home, true);
+    jobReview(j, now);   // ↕ a sack that is due lands first
     // ⭐ ONE AT A TIME. Taking a second job is leaving the first, and the weeks already worked stay
     // on the record with the job that earned them, so a change never eats a cheque you are owed.
     if (j.at !== at) { j.at = at; j.since = at ? now : 0; }
@@ -1394,8 +1448,9 @@ async function jobChore(request, env) {
     if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
     unmarkKept(R);
     const j = jobRec(R.home, true);
-    if (!j.at) return json({ error: 'no job' }, 409, cors(env, request));
     const now = Date.now(), wk = jobWeek(now);
+    const moved = jobReview(j, now);   // ↕ last week's review, if it is due
+    if (!j.at) { if (moved) { jobPrune(j, now); await saveKey(env, R.homeKey, R.home); } return json({ error: 'no job', job: jobView(j, now) }, 409, cors(env, request)); }
     // ⚠️ A DAY, NOT A COUNT, AND ONE JOB PER DAY. Turning up ten times on a Tuesday is one Tuesday
     // however many times the client says so, and switching jobs twice in an afternoon overwrites the
     // day rather than buying a second one.
@@ -1411,6 +1466,8 @@ async function jobChore(request, env) {
     let dn = j.done[wk];
     if (!dn || dn.at !== j.at) dn = j.done[wk] = { at: j.at };   // a fresh sheet for this job's week
     if (duty) dn[kind] = Math.min(duty[1], ((dn[kind] | 0) + 1));
+    // ↕ a counter's cups by grade (wrong · fine · perfect): the review of a tips job reads how the week went from these
+    if (kind === 'cup' && TIPS_JOBS.includes(j.at)) { const c = dn.cups || (dn.cups = [0, 0, 0]); for (const g of (Array.isArray(b.g) ? b.g.slice(0, 60) : [b.g])) c[Math.max(0, Math.min(2, (+g) | 0))]++; }
     dn.r = Math.max(dn.r | 0, toldOf(j, j.at));   // 🪜 the rank this week is worked at
     // 🪜 WORK XP (23 Sep 2026): the day's ten the first time you turn up, and the verb's own worth — a cup by its grade,
     // a round by its points (`g`), litter, a cabinet or a crate flat — up to the workplace's cap for the day. A counter
@@ -1440,10 +1497,17 @@ async function jobPromote(request, env) {
     if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
     if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
     const j = jobRec(R.home, false);
-    if (!j || !j.at || j.at !== at) return json({ error: 'not yours' }, 409, cors(env, request));
     const now = Date.now();
+    const moved = jobReview(j, now);
+    if (!j || !j.at || j.at !== at) { if (moved) await saveKey(env, R.homeKey, R.home); return json({ error: 'not yours' }, 409, cors(env, request)); }
     const was = toldOf(j, at), to = rankOf(at, (j.xp || {})[at] | 0);
-    if (to <= was) return json({ ok: true, promoted: null, job: jobView(j, now) }, 200, cors(env, request));
+    if (to <= was) {
+      // ↕ no promotion to tell: a warning or a demotion the review left for the boss to say, heard now
+      const heard = (j.talk && j.talk[at]) || '';
+      if (heard) delete j.talk[at];
+      if (heard || moved) await saveKey(env, R.homeKey, R.home);
+      return json({ ok: true, promoted: null, heard: heard || null, job: jobView(j, now) }, 200, cors(env, request));
+    }
     (j.rk || (j.rk = {}))[at] = to;
     const dn = j.done && j.done[jobWeek(now)];
     if (dn && dn.at === at) dn.r = Math.max(dn.r | 0, to);   // this week pays at the new rank
@@ -1465,6 +1529,7 @@ async function jobPay(request, env) {
     unmarkKept(R);
     const j = jobRec(R.home, true);
     const now = Date.now();
+    jobReview(j, now);   // ↕ the weeks are reviewed before they are paid, and the rows carry what the review said
     const paid = [];
     let total = 0;
     // ⚠️ WHOLE WEEKS ONLY, and never this one: a cheque is for a week that has finished, so the
@@ -1480,16 +1545,11 @@ async function jobPay(request, env) {
       const rank = weekRank(j, dn);   // 🪜 a cheque pays the rank the week was worked at
       const coins = payOf(at, dn, rank);
       const row = { week: wk, at, days: dn.days | 0, coins, pay: JOB_PAY[at] ? weekPay(at, rank) : 0, rank, duties: rowsOf(at, dn), share: shareOf(at, dn) };
-      // 🪓 TWO EMPTY WEEKS AND THE BOSS LETS YOU GO — only while you still hold that job, and only for
-      // a job that has duties to neglect. Asking again rehires you (/job/take clears the count).
-      if (DUTIES[at] && DUTIES[at].length) {
-        if (coins === 0) j.zero = (j.zero | 0) + 1; else j.zero = 0;
-        if (coins === 0 && j.at === at && j.zero >= FIRE_WEEKS) {
-          j.fired = { at, week: wk, t: now };
-          j.at = ''; j.since = 0; j.zero = 0;
-          row.fired = true;
-        }
-      }
+      // 🪓 TWO EMPTY WEEKS AND THE BOSS LETS YOU GO — decided by the review above (jobReview), which counts a week you
+      // never came to as well; the row says what the review said, so the payslip can print it
+      const rv = (j.rev || {})[wk];
+      if (rv && rv.v) { row.review = { v: rv.v, xp: rv.xp | 0 }; if (rv.warned) row.review.warned = true; if (rv.demoted) row.review.demoted = rv.demoted; }
+      if (rv && rv.fired) row.fired = true;
       paid.push(row);
       j.paid[wk] = coins;                       // marked even at zero, so a quiet week is never re-walked
       total += coins;

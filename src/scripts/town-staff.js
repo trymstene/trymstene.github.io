@@ -56,7 +56,10 @@ const CSS = `
 .tws-pips i { width:10px; height:10px; border:2px solid #000; background:#2a1a10; }
 .tws-pips i.is-on { background:#ffe135; }
 .tws-xp .tws-bar i { background:linear-gradient(#a8e08a,#6fbf4a); }
+.tws-xp .tws-bar.is-under i { background:linear-gradient(#ffc36b,#f29a2e); }
 .tws-news { margin:0; padding:0.4rem 0.6rem; border:2px solid #000; background:#b5de86; color:#1e3310; font-size:0.82rem; font-weight:800; box-shadow:2px 2px 0 rgba(0,0,0,0.45); }
+.tws-news.is-word { background:#f2c98a; color:#3a2410; }
+.tws-warn { margin:0; font-size:0.8rem; font-weight:800; color:#ffb347; }
 `;
 let styled = false;
 function injectCss() { if (styled) return; styled = true; const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st); }
@@ -102,18 +105,24 @@ export function bootTownStaff(ctx) {
   // 🪜 THE LADDER, on the card (23 Sep 2026): the rank you hold as pips, your work XP against the next rank's line, today's
   // XP against the day's cap, and what the next rank gives — or the boss's news once the XP has crossed the line
   function ladderHtml(at, l) {
-    const of = ranksOf(at), a = xpAt(at, l.rank) | 0, b = xpAt(at, l.rank + 1);
-    const k = b == null ? 1 : Math.max(0, Math.min(1, (l.xp - a) / (b - a)));
+    const of = ranksOf(at), a = xpAt(at, l.rank) | 0;
+    // ↕ a poor week can leave you UNDER your own rank's line: then the bar is the climb back over it, in amber
+    const under = l.xp < a, lo = under ? xpAt(at, l.rank - 1) | 0 : a, b = under ? a : xpAt(at, l.rank + 1);
+    const k = b == null ? 1 : Math.max(0, Math.min(1, (l.xp - lo) / (b - lo)));
     let pips = '';
     for (let i = 1; i <= of; i++) pips += '<i' + (i <= l.rank ? ' class="is-on"' : '') + '></i>';
     const next = COPY.ranks[at][l.rank];
     const nextLine = !next ? COPY.top : TIPS.includes(at) ? fill(COPY.nextTips, { title: next, cap: tipsCap(at, l.rank + 1) }) : fill(COPY.nextWeek, { title: next, coins: weekPay(at, l.rank + 1) });
     return '<div class="tws-rank"><span class="tws-pips">' + pips + '</span><span>' + esc(fill(COPY.rank, { n: l.rank, of })) + '</span></div>'
       + (l.news && (COPY.news || {})[at] ? '<p class="tws-news">' + esc(COPY.news[at]) + '</p>' : '')
+      // ↕ the weekly review: the boss's word waiting, the warning that stands, and what last week came to
+      + (!l.news && l.talk && (COPY.word || {})[at] ? '<p class="tws-news is-word">' + esc(COPY.word[at]) + '</p>' : '')
+      + (l.warn && COPY.warnCard ? '<p class="tws-warn">' + esc(COPY.warnCard) + '</p>' : '')
       + '<section class="tws-xp"><span class="tws-lab">' + esc(COPY.xp) + '</span>'
       + '<div class="tws-stat"><b>' + l.xp + '</b>' + (b != null ? '<small>/ ' + b + '</small>' : '') + '</div>'
-      + '<div class="tws-bar"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>'
+      + '<div class="tws-bar' + (under ? ' is-under' : '') + '"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>'
       + '<p class="tws-note">' + esc(fill(COPY.today, { n: l.today, cap: (LADDER[at] || {}).day | 0 })) + '</p>'
+      + (l.last && (COPY.last || {})[l.last.v] ? '<p class="tws-note">' + esc(fill(COPY.last[l.last.v], { xp: Math.abs(l.last.xp | 0) })) + '</p>' : '')
       + (nextLine ? '<p class="tws-note">' + esc(nextLine) + '</p>' : '') + '</section>';
   }
   const cta = (id, verb, off) => '<button type="button" class="tw-cta" id="' + id + '"' + (off ? ' disabled' : '') + '><span class="tw-cta__verb">' + esc(verb) + '</span></button>';
@@ -152,7 +161,7 @@ export function bootTownStaff(ctx) {
     const verb = kind === 'shift' ? 'go' : 'answer';
     if (go) go.addEventListener('click', () => { if (go.disabled) return; closeCard(); track('town_staff', { at, door, act: verb }); if (ctx.act) ctx.act(at, verb); });
     if (sec) sec.addEventListener('click', () => { closeCard(); track('town_staff', { at, door, act: 'second' }); if (ctx.act) ctx.act(at, 'second'); });
-    last = { at, door, kind, shut, calls: calls.map((c) => ({ ...c })), go: !!go && !go.disabled, second: !!sec, rank: l.rank, xp: l.xp, news: !!l.news, title: COPY.ranks[at][l.rank - 1] || '' };
+    last = { at, door, kind, shut, calls: calls.map((c) => ({ ...c })), go: !!go && !go.disabled, second: !!sec, rank: l.rank, xp: l.xp, news: !!l.news, title: COPY.ranks[at][l.rank - 1] || '', warn: !!l.warn, talk: l.talk || '' };
     track('town_staff', { at, door, act: 'open', calls: calls.length });
     return true;
   }

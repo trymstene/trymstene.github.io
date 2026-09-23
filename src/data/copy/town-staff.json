@@ -84,5 +84,32 @@
     "store": "Shop at Pip’s shelf",
     "condo": "Go in and play"
   },
-  "shut": "Closed today. The work waits until it opens."
+  "shut": "Closed today. The work waits until it opens.",
+  "wordQ": "You wanted a word?",
+  "word": {
+    "cafe": "Bean wants a word with you. Talk to Bean to hear it.",
+    "stand": "Fig Jr. wants a word with you. Talk to Fig Jr. to hear it.",
+    "condo": "Spinner wants a word with you. Talk to Spinner to hear it.",
+    "store": "Pip wants a word with you. Talk to Pip to hear it.",
+    "post": "Stamp wants a word with you. Talk to Stamp to hear it."
+  },
+  "warn": {
+    "bean": "Last week’s cups read poorly. Another like it and you are {title} again.",
+    "figjr": "Performance concern noted. Another week like that returns you to {title}.",
+    "spinner": "The crowd went quiet! One more week like that and you are {title} again.",
+    "pip": "Last week was thin. Another like it and you are {title} again.",
+    "stamp": "Last week weighed light. Another like it and you are {title} again. Noted."
+  },
+  "demoted": {
+    "bean": "The cups have spoken. You are {title} again, and it can come back.",
+    "figjr": "Restructuring. Effective today, you are {title}. Upward remains open.",
+    "spinner": "Not every show is a hit. You are {title} again; the stage is still yours.",
+    "pip": "You are {title} again. Your old badge waits on the shelf until you earn it back.",
+    "stamp": "I weighed the last two weeks. You are {title} again. Noted, not for ever."
+  },
+  "warnCard": "Another poor week here costs you a rank.",
+  "last": {
+    "full": "Last week was a full week: {xp} work XP extra.",
+    "poor": "Last week was poor: {xp} work XP taken back."
+  }
 }

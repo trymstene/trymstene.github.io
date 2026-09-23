@@ -83,6 +83,25 @@ export function xpFor(at, kind, g) {
   return g == null ? v : Math.max(0, Math.min(v, Math.round(+g) || 0));
 }
 
+// ↕ THE WEEKLY REVIEW (23 Sep 2026). Trym: "you should also be able to be demoted, or fired … if you want to be great and
+// stay great you must do a good job (and get more pay)" — and "if you get fired … you should loose your job, and have to
+// start over". Every finished week at the job you hold is reviewed once, on the server:
+//   full   the week's work all done (a payslip job) or three good days at the counter (a tips job): a day's XP extra
+//   poor   under half the week's work, or more than half the cups spoiled: a day's XP taken back — and if that leaves you
+//          under your rank's line, the boss warns you; the next poor week there costs one rank (never below the first)
+//   empty  nothing done at all, or never came: two in a row and you are let go, and that workplace starts over from nothing
+// Time without a job costs nothing, and quitting keeps your standing: only the job you hold is reviewed.
+export function reviewOf(at, d) {
+  if (DUTIES[at]) { const s = shareOf(at, d); return s >= 1 ? 'full' : s === 0 ? 'empty' : s < 0.5 ? 'poor' : 'ok'; }
+  const c = (d && d.cups) || [], n = (c[0] | 0) + (c[1] | 0) + (c[2] | 0), days = (d && d.days) | 0;
+  if (!days && !n) return 'empty';
+  if (n >= 6 && (c[0] | 0) * 2 > n) return 'poor';
+  if (days >= 3 && n >= 10 && (c[0] | 0) * 5 <= n) return 'full';
+  return 'ok';
+}
+// the XP a review moves, in the workplace's own day's worth
+export const reviewXp = (at, v) => (v === 'full' ? 1 : v === 'poor' ? -1 : 0) * ((LADDER[at] || {}).day || 0);
+
 // what a week of that work pays: the rank's full week, scaled — and rounded once, so the slip's total is the ledger's
 export const payOf = (at, done, rank) => (JOB_PAY[at] ? Math.round(weekPay(at, rank) * shareOf(at, done)) : 0);
 // the rows a chip or a payslip prints: kind · done · of

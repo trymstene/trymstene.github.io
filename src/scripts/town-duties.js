@@ -56,7 +56,7 @@ const CSS = `
 @keyframes twdPop { 0% { transform: scale(1); } 35% { transform: scale(1.12); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .twd-chip__top.is-pop { animation: none; } }
 .twd-chip__line { display:block; }
-.twd-chip--nudge { background:linear-gradient(#ffe8c2,#f2c98a); }
+.twd-chip--nudge, .twd-chip--word { background:linear-gradient(#ffe8c2,#f2c98a); }
 .twd-chip--fired { background:linear-gradient(#e8dcd2,#cdbcae); }
 .twd-chip--call { background:linear-gradient(#ffc36b,#f29a2e); color:#2a1606; }
 .twd-chip--news { background:linear-gradient(#e2f5c4,#b5de86); color:#1e3310; }
@@ -165,6 +165,8 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
   }
   // 🪜 the boss has a promotion to tell you: the staff card's own line (town-staff.json, loaded with the job) — one line, two surfaces
   const newsOf = (s) => (s.lad && s.lad.news && ((work.seam.words && work.seam.words()) || {}).news || {})[s.at] || '';
+  // ↕ …or a word to hear (a warning, a demotion: the weekly review), in the nudge's colour
+  const wordOf = (s) => (s.lad && s.lad.talk && ((work.seam.words && work.seam.words()) || {}).word || {})[s.at] || '';
   function saysFor(s) {
     if (!s) return null;
     // 🪓 the sack: the note says so for a few days after, whatever job you hold now (none, usually)
@@ -180,6 +182,8 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       let used = 0; try { used = Math.min(cap, ruleUsed('town:tips').used | 0); } catch (e) {}
       const tipsTop = COPY.tips ? head(s) + esc(COPY.tips) + ' <b>' + used + '</b>/' + cap : '';
       if (newsOf(s)) return { top: tipsTop, line: esc(newsOf(s)), kind: 'news' };
+      if (wordOf(s)) return { top: tipsTop, line: esc(wordOf(s)), kind: 'word' };
+      if (s.nudge && COPY.nudge && COPY.nudge[s.at]) return { top: tipsTop, line: esc(COPY.nudge[s.at]), kind: 'nudge' };
       if (!s.turnedUp) return d ? { top: tipsTop, line: esc(d), kind: 'duty' } : null;
       return after ? { top: tipsTop, line: esc(after), kind: 'wage' } : null;
     }
@@ -191,6 +195,7 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
     const ring = cs.find((c) => c.open);
     if (ring && COPY.call && COPY.call[ring.kind]) return { top, line: esc(COPY.call[ring.kind]), kind: 'call' };
     if (newsOf(s)) return { top, line: esc(newsOf(s)), kind: 'news' };
+    if (wordOf(s)) return { top, line: esc(wordOf(s)), kind: 'word' };
     if (s.nudge && COPY.nudge && COPY.nudge[s.at]) return { top, line: esc(COPY.nudge[s.at]), kind: 'nudge' };
     if (cs.length && cs.every((c) => c.done) && COPY.answered) return { top, line: esc(COPY.answered), kind: 'answered' };
     if (s.share >= 1 && COPY.done) return { top, line: esc(COPY.done), kind: 'done' };
@@ -210,6 +215,7 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       el.classList.toggle('twd-chip--nudge', says.kind === 'nudge');
       el.classList.toggle('twd-chip--fired', says.kind === 'fired');
       el.classList.toggle('twd-chip--news', says.kind === 'news');
+      el.classList.toggle('twd-chip--word', says.kind === 'word');
       // 📟 a call is amber, and a NEW call rings the note once — its badge too, if you folded it — and tells the town, so
       // a room you are standing in draws the work it just brought (no sound: nowhere outside the rave has any, or a mute)
       el.classList.toggle('twd-chip--call', says.kind === 'call');
@@ -238,7 +244,7 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       top: () => top.textContent,
       line: () => text.textContent,
       html: () => text.innerHTML,
-      kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : el.classList.contains('twd-chip--call') ? 'call' : el.classList.contains('twd-chip--news') ? 'news' : ''),
+      kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : el.classList.contains('twd-chip--call') ? 'call' : el.classList.contains('twd-chip--news') ? 'news' : el.classList.contains('twd-chip--word') ? 'word' : ''),
       xp: () => (el.classList.contains('has-xp') ? el.style.getPropertyValue('--xp') : ''),
       rang: () => el.classList.contains('is-ring'),
       folded: () => el.classList.contains('is-min'),

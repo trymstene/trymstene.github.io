@@ -1061,3 +1061,33 @@ real post) belong to later slices and are still his.
   on-call jobs with no shift to end; their XP shows on the note's bar as it happens and on the card's "today" line.
 - **Next:** slice 2 (a skill for the middle rungs — decision 6 is Trym's), then the unlocks rank by rank, then the
   social top (references, mementos, staff of the week).
+
+## 16. The weekly review: demotion, and a firing that starts you over (23 Sep 2026)
+
+Trym: *"you should also be able to be demoted, or fired … if you do the job very bad, or if you never show up, you will
+get fired … if you want to be great and stay great you must do a good job (and get more pay)"* — and *"if you get fired,
+you shouldnt loose a rank, you should loose your job, and have to start over"*. Agreed with one line drawn: **bad work
+can cost you, time away without a job can't**, and quitting properly keeps your standing.
+
+- **The review** (`src/data/town/jobs.js reviewOf`, run by worker-pass `jobReview` on every `/job/*` call, each finished
+  week once, oldest first, only for the job you hold):
+  - **full** — every duty met, or three good days at a counter (≥10 cups, four in five fine or better): a day's XP extra.
+  - **poor** — under half the duties, or more than half the cups spoiled: a day's XP taken back (never below nothing).
+  - **empty** — nothing done, or never came (a week with no visit counts too, from the week you were hired).
+  - **ok** — anything else: nothing moves.
+- **Warning, then demotion:** a poor week that leaves your XP under your rank's line brings a warning; the next poor
+  week there costs one rank (never below the first), and the pay and tips cap follow at once. Climbing back over the
+  line lifts the warning. Both are said IN PERSON — the note turns the nudge's colour ("Bean wants a word with you"), the
+  boss's card asks "You wanted a word?" first — but the rank has already moved on the server: nobody dodges a demotion
+  by avoiding the boss. No big moment for it.
+- **Fired = start over:** two empty weeks and the boss lets you go; that workplace's XP goes to nothing, its rank to the
+  first, its warning away. Your other workplaces keep everything. The counters can be nudged and let go now too.
+- **Quitting keeps your standing:** with no job, nothing is reviewed; take the job back and your rank and XP are there.
+- **Shows on:** the staff card (the word, the warning, "Last week was poor: 80 work XP taken back", and while under the
+  line the bar is the amber climb back over it), the note, the payslip (a review row, "Your boss wants a word about it",
+  "You were moved down a rank"), the homestead's fired and nudge letters (all five bosses).
+- **Words:** `town-staff.json` wordQ/word/warn/demoted/warnCard/last; `town-duties.json` nudge/fired for all five;
+  `homestead-post.json` bosses.nudge/fired for all five, wage.review/warned/demoted.
+- **Pulse:** `town_warn`, `town_demote` (heard at the boss); `town_duty` kind `word`.
+- **Proof:** worker-pass/test/jobs.test.mjs §13–17; tests/jobs-maths.spec.mjs (reviewOf); tests/town-ladder.spec.mjs
+  (a warning, then a demotion, at Bean); tests/homestead-payslip.spec.mjs (the slip's review rows).

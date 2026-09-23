@@ -2970,6 +2970,9 @@ function init(visitDoc, visitMiss) {
       }
       rows.appendChild(terms);
       const total = document.createElement('span'); total.className = 'bw-slip__total'; total.innerHTML = SLIP_COIN + '<b>' + (m.n | 0) + '</b>'; rows.appendChild(total);
+      // ↕ THE WEEK'S REVIEW (23 Sep 2026): a full week's extra, a poor week's cost, and the word or the rank that came of it
+      const rv = [(w.review || {})[m.rv] ? w.review[m.rv].replace('{xp}', String(Math.abs(m.rx | 0))) : '', m.rw ? w.warned : '', m.rd ? w.demoted : ''];
+      for (const t of rv) if (t) { const d = document.createElement('span'); d.className = 'bw-slip__duty'; d.textContent = t; rows.appendChild(d); }
       p.appendChild(rows);
     }
     const from = document.createElement('i');
@@ -3075,7 +3078,8 @@ function init(visitDoc, visitMiss) {
       const id = 'wage:' + row.week + ':' + row.at;
       if ((state.mail || []).some((m) => m.id === id)) continue;
       (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, n: row.coins | 0, d: row.days | 0, at: String(row.at || ''), r: row.pay | 0,
-        duties: Array.isArray(row.duties) ? row.duties.map((q) => ({ kind: String(q.kind || ''), done: q.done | 0, of: q.of | 0 })) : [], share: +row.share || 0 });   // 📄 the slip's figures and the week's counts
+        duties: Array.isArray(row.duties) ? row.duties.map((q) => ({ kind: String(q.kind || ''), done: q.done | 0, of: q.of | 0 })) : [], share: +row.share || 0,   // 📄 the slip's figures and the week's counts
+        rv: row.review ? String(row.review.v || '') : '', rx: row.review ? row.review.xp | 0 : 0, rw: !!(row.review && row.review.warned), rd: !!(row.review && row.review.demoted) });   // ↕ …and what the week's review said
       n++;
     }
     // 💼 THE BOSS'S LETTERS (docs/town-jobs-plan.md §12): Thursday with nothing done and he asks if you

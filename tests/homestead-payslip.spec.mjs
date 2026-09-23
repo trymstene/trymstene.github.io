@@ -167,3 +167,36 @@ test('a promotion waiting at the boss is a letter from the boss, once per rank',
   await page.screenshot({ path: 'test-results/homestead-news-letter.png' });
   expect(errs, 'nothing threw').toEqual([]);
 });
+
+// ↕ A PAYSLIP CARRIES ITS WEEK'S REVIEW (23 Sep 2026): a full week's extra, or a poor week's cost and the word it brought
+test('a payslip prints what the week’s review said', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"letters":[],"unread":0,"knocks":0}' }));
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/homestead/?hstest=claimed', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.mail, null, { timeout: 30000 });
+  await page.evaluate(() => window.__hs.slug('my-yard'));
+  await page.evaluate(() => {
+    window.__hs.mail({ id: 'wage:2026-W37:store', n: 150, d: 3, at: 'store', r: 150, share: 1, duties: [{ kind: 'restock', done: 3, of: 3 }, { kind: 'days', done: 3, of: 3 }], rv: 'full', rx: 100 });
+    window.__hs.mail({ id: 'wage:2026-W38:store', n: 25, d: 1, at: 'store', r: 180, share: 1 / 6, duties: [{ kind: 'restock', done: 0, of: 3 }, { kind: 'days', done: 1, of: 3 }], rv: 'poor', rx: -100, rw: true });
+  });
+  await page.evaluate(() => window.__hs.post());
+  const read = async (id) => {
+    await page.waitForSelector('#hsLetters .tw-post__env[data-id="' + id + '"]', { timeout: 15000 });
+    await page.locator('#hsLetters .tw-post__env[data-id="' + id + '"]').click();
+    await page.waitForSelector('#hsLetters .tw-post__world .bw-paper--wage', { timeout: 5000 });
+    const t = await page.evaluate(() => [...document.querySelectorAll('#hsLetters .tw-post__world .bw-slip__duty')].map((d) => d.textContent.trim()));
+    return t;
+  };
+  let rows = await read('w:wage:2026-W37:store');
+  expect(rows, 'a full week says so on the slip').toContain(COPY.wage.review.full.replace('{xp}', '100'));
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: 'test-results/homestead-payslip-review.png' });
+  await page.click('#twPostBack');
+  await page.waitForTimeout(250);
+  rows = await read('w:wage:2026-W38:store');
+  expect(rows, 'a poor week says what it cost').toContain(COPY.wage.review.poor.replace('{xp}', '100'));
+  expect(rows, '…and that the boss wants a word').toContain(COPY.wage.warned);
+  expect(errs, 'nothing threw').toEqual([]);
+});
