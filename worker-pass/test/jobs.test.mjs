@@ -468,6 +468,28 @@ console.log('\n18. 🔓 the rank-2 unlocks: a basket is a customer served, and a
   ok('and is nothing on the week’s cups', !(v.job.done && v.job.done.cups), v.job);
 }
 
+console.log('\n19. 🔓 rank 3: the day holds more, a delivery earns its XP, and a lamp is one of the arcade’s repairs');
+{
+  const P = as(await kept('rank3@example.com'));
+  CLOCK = monday(CLOCK);
+  await P('/job/take', { at: 'store' });
+  const fullDay = async () => { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 }); await P('/job/chore', { kind: 'serve', g: 2 }); };
+  for (let d = 0; d < 10; d++) { await fullDay(); CLOCK += DAY; }
+  let v = await P('/job/promote', { at: 'store' });
+  ok('ten full days at the store, and Pip tells you the rank they earned: 3', v.job.lad.rank === 3, v.job.lad);
+  CLOCK += DAY;
+  await fullDay();
+  v = await P('/job/view');
+  ok('a full day at the store is 100', v.job.lad.today === 100, v.job.lad);
+  v = await P('/job/chore', { kind: 'deliver' });
+  ok('📦 a delivery on top still counts at rank 3: the rank’s day holds 130 (100 × 1.3)', v.xp === 30 && v.job.lad.today === 130, v);
+  v = await P('/job/chore', { kind: 'deliver' });
+  ok('…and stops there', v.xp === 0 && v.job.lad.today === 130, v);
+  v = await P('/job/take', { at: 'condo' });
+  v = await P('/job/chore', { kind: 'lamp' });
+  ok('🕹 a lamp on the square is one of the arcade’s repairs on the week’s sheet', v.job.duties.find((d) => d.kind === 'fix').done === 1, v.job.duties);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -35,7 +35,8 @@
     "sweep": "Spinner calls: litter on the arcade floor, open until midnight.",
     "fix": "Spinner calls: a cabinet has gone dark, open until midnight.",
     "restock": "Pip calls: a delivery waits to be shelved, open until midnight.",
-    "serve": "Pip calls: customers are waiting at the till, open until midnight."
+    "serve": "Pip calls: customers are waiting at the till, open until midnight.",
+    "deliver": "Pip calls: a parcel waits at the store to be delivered, open until midnight."
   },
   "answered": "every call today is answered; nothing more is wanted until tomorrow."
 }

@@ -35,17 +35,17 @@ const note = (page) => page.evaluate(() => ({ kind: window.__town.duties.kind(),
 
 test('a week of calls is sized to the week’s work, per person, and each comes in within minutes', () => {
   // pure: the schedule alone, over a thousand people and a week each
-  const days = { sweep: 0, fix: 0, restock: 0, serve: 0 }, people = 1000;
+  const days = { sweep: 0, fix: 0, restock: 0, serve: 0, deliver: 0 }, people = 1000;
   const monday = 20360;   // a Monday (day 4 of the epoch was one, and 20360 = 4 + 7 × 2908): (day + 3) % 7 === 0
   expect((monday + 3) % 7, 'the week starts on a Monday, the payslip’s week').toBe(0);
   let maxAfter = 0;
   for (let p = 0; p < people; p++) {
     const id = 'c' + p.toString(36) + 'x';
-    const week = { sweep: 0, fix: 0, restock: 0, serve: 0 };
+    const week = { sweep: 0, fix: 0, restock: 0, serve: 0, deliver: 0 };
     for (let d = monday; d < monday + 7; d++) {
       for (const at of ['condo', 'store']) for (const c of schedule(at, d, id)) { week[c.kind]++; maxAfter = Math.max(maxAfter, c.after); }
     }
-    expect(week, 'every worker gets the same number of calls a week').toEqual({ sweep: 6, fix: 5, restock: 6, serve: 5 });
+    expect(week, 'every worker gets the same number of calls a week').toEqual({ sweep: 6, fix: 5, restock: 6, serve: 5, deliver: 3 });   // 📦 the parcel is a rank-3 store worker's (calls() holds it back below)
     for (const k of Object.keys(days)) days[k] += week[k];
   }
   // the targets on the payslip (src/data/town/jobs.js): sweep 3, fix 3, restock 3, serve 3 — every one can be met

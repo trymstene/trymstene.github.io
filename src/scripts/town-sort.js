@@ -44,6 +44,11 @@ export const BASE = 4;             // the postmarks a first-rank round sorts
 export const EACH = 3;             // cards of each postmark in a round
 export const PILE = BASE * EACH;   // cards in a first-rank round: three of each postmark
 export const FAST = { fresh: 3400, gone: 7500 };   // ✉️ the senior sorter's pile: a card goes stale and leaves sooner
+// 📦 PARCELS (rank 3, 23 Sep 2026; the ladder's slice 3): Stamp's parcel clerk also gets parcels in the pile. A parcel goes in its
+// hole like any card, and then onto the SCALE — the post office's own, in the town's scene — where a needle swings and one
+// tap on the parcel stops it: in the band it is weighed right, anywhere else (or left on the scale) it is late. A wrong hole
+// is wrong, as for a card. The timing gesture is the counters' own needle, so a thumb that knows a cup knows a parcel.
+export const PARCELS = 3, WEIGH_SPAN = 1100, WEIGH_MS = 3200, WEIGH_HALF = 0.13;
 export const ROUND_MS = 120000;    // a round is two minutes at most
 export const FRESH_MS = 4200;      // sorted within this, a card is RIGHT; after it, the right hole is LATE
 export const GONE_MS = 9000;       // a card nobody sorts leaves the counter as WRONG
@@ -52,13 +57,14 @@ export const GRADES = ['wrong', 'late', 'right'];
 
 export function newRound(seed, o = {}) {
   // a balanced pile — three of each postmark — shuffled by the seed, so every round teaches every hole
-  const marks = o.marks || MARKS.slice(0, BASE), cards = [];
+  const marks = o.marks || MARKS.slice(0, BASE), cards = [], parcel = new Set();
   for (let i = 0; i < marks.length * EACH; i++) cards.push(marks[i % marks.length]);
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(seedRand((seed | 0) * 31 + i * 7 + 11) * (i + 1));
     const t = cards[i]; cards[i] = cards[j]; cards[j] = t;
   }
-  return { seed: seed | 0, cards, holes: marks.slice(), fresh: o.fresh || FRESH_MS, gone: o.gone || GONE_MS, i: 0, t0: 0, at: 0, marks: [], right: 0, late: 0, wrong: 0, done: false, timeUp: false };
+  for (let k = 0; parcel.size < Math.min(o.parcels | 0, cards.length) && k < 50; k++) parcel.add(Math.floor(seedRand((seed | 0) * 17 + k * 13 + 5) * cards.length));
+  return { seed: seed | 0, cards, parcel, weigh: null, holes: marks.slice(), fresh: o.fresh || FRESH_MS, gone: o.gone || GONE_MS, i: 0, t0: 0, at: 0, marks: [], right: 0, late: 0, wrong: 0, done: false, timeUp: false };
 }
 export const cardOf = (r) => (!r || r.done || r.i >= r.cards.length ? '' : r.cards[r.i]);
 export function start(r, now) { r.t0 = now; r.at = now; return r; }
@@ -73,16 +79,28 @@ function land(r, g, now) {
 export function tick(r, now) {
   if (!r || r.done || !r.t0) return null;
   if (now - r.t0 >= ROUND_MS) { r.done = true; r.timeUp = true; return { g: -1, i: r.i, done: true, timeUp: true }; }
+  if (r.weigh) { if (now - r.weigh.t0 >= WEIGH_MS) { r.weigh = null; return land(r, 1, now); } return null; }   // 📦 left on the scale: late
   if (now - r.at >= (r.gone || GONE_MS)) return { ...land(r, 0, now), gone: true };
   return null;
 }
 export function sortInto(r, hole, now) {
   const c = cardOf(r);
   if (!c) return null;
+  if (r.weigh) return null;   // on the scale: the parcel is weighed, not sorted again
+  if (hole === c && r.parcel && r.parcel.has(r.i)) { r.weigh = { t0: now, band: 0.3 + seedRand(r.seed * 7 + r.i * 3) * 0.4 }; return { g: -2, weigh: true, i: r.i }; }   // 📦 onto the scale
   const g = hole !== c ? 0 : (now - r.at <= (r.fresh || FRESH_MS) ? 2 : 1);
   return land(r, g, now);
 }
 // how much of the card's time is left, 1 → 0 (for the tray to draw, and for nothing else)
+// 📦 the scale: the needle swings across the parcel, and a tap stops it
+export const needle = (r, now) => { if (!r || !r.weigh) return -1; const p = ((now - r.weigh.t0) % (WEIGH_SPAN * 2)) / WEIGH_SPAN; return p <= 1 ? p : 2 - p; };
+export function weighAt(r, now) {
+  if (!r || !r.weigh) return null;
+  const g = Math.abs(needle(r, now) - r.weigh.band) <= WEIGH_HALF ? 2 : 1;
+  r.weigh = null;
+  return land(r, g, now);
+}
+export const isParcel = (r) => !!(r && r.parcel && r.parcel.has(r.i) && !r.done);
 export const fuse = (r, now) => (!r || r.done || !r.at ? 0 : Math.max(0, Math.min(1, 1 - (now - r.at) / (r.gone || GONE_MS))));
 export const late = (r, now) => !!r && !r.done && !!r.at && now - r.at > (r.fresh || FRESH_MS);
 // ⭐ the mail got where it was going: half the pile in the right hole, late or not, and the round counts
@@ -112,6 +130,9 @@ export function mountSorter(host, opts = {}) {
   const cardEl = el('div', 'tw-sort__card', row);
   const stampEl = el('i', 'tw-sort__stamp', cardEl);
   const fuseEl = el('i', 'tw-sort__fuse', cardEl);
+  const scaleEl = el('i', 'tw-sort__scale', cardEl), bandEl = el('b', '', scaleEl), needleEl = el('u', '', scaleEl);   // 📦
+  scaleEl.hidden = true;
+  cardEl.addEventListener('pointerdown', (e) => { if (!r || !r.weigh) return; if (e.cancelable) e.preventDefault(); landed(weighAt(r, now())); });
   const holes = el('div', 'tw-sort__holes', row);
   const names = (opts.holes && opts.holes()) || {};
   // the pigeonholes for the round's own postmarks: four at the first rank, five from the second
@@ -136,7 +157,7 @@ export function mountSorter(host, opts = {}) {
   box.appendChild(tallyEl);
   const note = el('p', 'tw-cup__note', box);
 
-  let r = null, raf = 0, ro = null;
+  let r = null, raf = 0, ro = null, parcelSaid = false;
   // ⚠️ the town's toast docks at the bottom and outranks the tray, so it steps up to the top of the view
   // for as long as the tray is up — the café's own recipe, measured off the HUD strip.
   const placeToast = () => {
@@ -167,6 +188,8 @@ export function mountSorter(host, opts = {}) {
     if (!c) return;
     for (let i = r.i; i < r.cards.length; i++) el('i', 'tw-sort__pip', pileEl);
     stampEl.innerHTML = iconSvg(MARK_ICON[c], { size: 28 });
+    cardEl.classList.toggle('is-parcel', isParcel(r)); scaleEl.hidden = true; cardEl.classList.remove('is-weigh');
+    if (isParcel(r) && !parcelSaid && opts.parcel) { parcelSaid = true; note.textContent = opts.parcel; note.classList.add('is-hint'); }
     cardEl.classList.remove('is-late', 'is-in');
     void cardEl.offsetWidth;   // so the next card slides in again
     cardEl.classList.add('is-in');
@@ -185,6 +208,7 @@ export function mountSorter(host, opts = {}) {
     if (!r || box.hidden) return;
     const t = now();
     fuseEl.style.transform = 'scaleX(' + fuse(r, t).toFixed(4) + ')';
+    if (r.weigh) { scaleEl.hidden = false; cardEl.classList.add('is-weigh'); bandEl.style.left = ((r.weigh.band - WEIGH_HALF) * 100).toFixed(1) + '%'; bandEl.style.width = (WEIGH_HALF * 200).toFixed(1) + '%'; needleEl.style.left = (needle(r, t) * 100).toFixed(2) + '%'; }
     cardEl.classList.toggle('is-late', late(r, t));
     raf = requestAnimationFrame(paint);
   }
@@ -192,6 +216,7 @@ export function mountSorter(host, opts = {}) {
   const sleep = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } };
   function landed(res) {
     if (!res || !r) return;
+    if (res.weigh) return;   // 📦 the parcel is on the scale: the card stays, the needle swings
     if (res.g >= 0) { paintTally(); if (opts.onLand) opts.onLand(res, r); }
     if (res.done) {
       // ⭐ THE FINISH (Trym, 22 Sep: "some effect or animation or something pleasing for finishing the sorting … it
@@ -217,7 +242,7 @@ export function mountSorter(host, opts = {}) {
 
   return {
     el: box,
-    deal(round) { r = round; buildHoles(round.holes || MARKS.slice(0, BASE)); note.textContent = ''; paintTally(); paintCard(); wake(); },
+    deal(round) { r = round; parcelSaid = false; buildHoles(round.holes || MARKS.slice(0, BASE)); note.textContent = ''; paintTally(); paintCard(); wake(); },
     step,
     say(text, hint) { note.textContent = text || ''; note.classList.toggle('is-hint', !!(text && hint)); },
     show() { box.hidden = false; box.classList.remove('is-folded'); toast(true); wake(); },
@@ -238,6 +263,10 @@ export function mountSorter(host, opts = {}) {
       hint: () => note.classList.contains('is-hint') && !!note.textContent,
       tally: () => [...tallyEl.children].map((m) => (m.className.match(/is-g(\d)/) || [])[1] || ''),
       holes: () => holeEls.map((b) => b.dataset.mark),
+      parcel: () => isParcel(r), weighing: () => !!(r && r.weigh),
+      weigh: (t) => { const res = r ? weighAt(r, t == null ? now() : t) : null; landed(res); return res; },
+      // the instant the needle stands in the middle of the band, so a walk can weigh it right without a real second
+      bestWeigh: (t) => { if (!r || !r.weigh) return 0; const w = r.weigh, c = w.t0 + w.band * WEIGH_SPAN; return c >= t ? c : c + Math.ceil((t - c) / (WEIGH_SPAN * 2)) * WEIGH_SPAN * 2; },
     },
     destroy() { sleep(); toast(false); box.remove(); },
   };
@@ -263,9 +292,9 @@ export function bootTownSort(ctx) {
     const m = mark();
     if (m && pos && Math.hypot(pos.x - m.x, pos.y - m.y) > NEAR) { if (COPY.far) say(COPY.far); return false; }
     on = true; away = 0;
-    if (!tray) tray = mountSorter(host, { onLand, onDone, holes: () => COPY.holes || {}, leave: COPY.leave || '', onLeave: () => clockOut() });
+    if (!tray) tray = mountSorter(host, { onLand, onDone, holes: () => COPY.holes || {}, leave: COPY.leave || '', onLeave: () => clockOut(), parcel: COPY.parcel || '' });
     const j = ctx.job ? ctx.job() : null, rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0));
-    const r = start(newRound(seedNow(), unlocked('post', 'fifth', rk) ? { marks: MARKS, ...FAST } : {}), performance.now());   // ✉️ rank 2: the fifth postmark, faster
+    const r = start(newRound(seedNow(), { ...(unlocked('post', 'fifth', rk) ? { marks: MARKS, ...FAST } : {}), parcels: unlocked('post', 'parcel', rk) ? PARCELS : 0 }), performance.now());   // ✉️ rank 2: the fifth postmark, faster; 📦 rank 3: parcels
     rounds++;
     tray.deal(r);
     // the first round on this device carries its notice under the holes; every later one runs wordless
@@ -367,6 +396,7 @@ export function bootTownSort(ctx) {
       on: () => on, clockIn, clockOut,
       round: () => { const r = tray && tray.round(); return r ? { i: r.i, cards: r.cards.slice(), holes: r.holes.slice(), fresh: r.fresh, gone: r.gone, marks: r.marks.slice(), right: r.right, late: r.late, wrong: r.wrong, done: r.done, at: r.at, t0: r.t0 } : null; },
       holes: () => (tray ? tray.seam.holes() : []),
+      parcel: () => !!(tray && tray.seam.parcel()), weighing: () => !!(tray && tray.seam.weighing()), weigh: (t) => (tray ? tray.seam.weigh(t) : null), bestWeigh: (t) => (tray ? tray.seam.bestWeigh(t) : 0),
       last: () => (last ? { right: last.right, late: last.late, wrong: last.wrong, marks: last.marks.slice(), counted: counts(last), timeUp: !!last.timeUp, xp: xpGot } : null),
       card: () => (tray ? tray.seam.card() : ''),
       sort: (mark2, t) => (tray ? tray.seam.sort(mark2, t) : null),

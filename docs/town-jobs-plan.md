@@ -1179,3 +1179,32 @@ On-call jobs level up by reaching further into the world, counter jobs by new or
 The store's later ranks (the front shelf, the van order) are menu choices with nothing felt, and get rethought when
 players near rank 3. Walks: tests/town-unlocks.spec.mjs (all five, at rank 2, and the first rank's card naming each),
 tests/jobs-maths.spec.mjs, tests/town-ladder.spec.mjs (the promotion says the café's rush), worker-pass jobs.test.mjs §18.
+
+## 21. The unlocks, rank 3 — and a day that holds more (24 Sep 2026)
+
+Built the same night as rank 2, with the two-types frame (counter jobs level up by new orders on the tray, on-call jobs by
+reaching further into the world) and the question "does it change what you do, or only a menu?":
+
+- **Lemonade stand — the jug.** When nobody is waiting the tray offers the jug ("Hold to fill jug"); filled, the next
+  three glasses skip the squeeze (`cup.order`). A customer who reaches the front first always wins: an untouched jug
+  offer steps aside. The quiet moments between customers get something to do, and it pays in the busy ones.
+- **Coffee Cup — special orders.** Some orders add a fourth step, syrup (the grinder's needle on a narrower band), with
+  an amber drop on the ticket, and tip one more.
+- **Arcade — the square's lamps.** A street lamp put right on the square counts as one of Spinner's repairs: work XP and
+  the week's repair duty (`COUNTS_AS.lamp = 'fix'`). Hooked on the room's own `town_fix` report in banana-town.js, since
+  the room file is at its size cap.
+- **General store — home delivery.** A `deliver` call three days a week (work-calls.js, held back until the rank): a
+  parcel on the store's floor, walked onto to pick up, carried (a little slower) across the square to a resident's
+  workplace door under a bouncing marker. Its own lazy chunk, town-deliver.js.
+- **Post office — parcels.** Three cards of a rank-3 round are parcels (kraft and string): sorted into the right hole,
+  they go on the scale, a needle swings across the card and one tap stops it — in the band right, anywhere else or left
+  there late.
+- **⚠️ The day's cap rises with the rank** (`jobs.js dayCap`, CAP_RISE 0.15). The cap was exactly one full day of a
+  workplace's duties, so every unlock that earns work XP (the rush, a delivery, a lamp) counted for nothing on a normal
+  day. A rank's day now holds 15% more per rank climbed (the café's 80 is 92 at rank 2; the store's 100 is 130 at rank 3),
+  on the server (xpAdd), the client's mirror and the staff card.
+- ⚠️ The arcade's plan had "free runs" at rank 4: the cabinets are already free to play ("No coins move"), so that perk
+  gives nothing and is dropped. The store's "front shelf" and "van order" were menu choices; the rank-4/5 unlocks are
+  still to come and get the same test.
+
+Walks: tests/town-unlocks.spec.mjs (all eleven unlocks so far), tests/jobs-maths.spec.mjs (dayCap), worker-pass §19.

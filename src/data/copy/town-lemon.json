@@ -18,7 +18,8 @@
   "go": {
     "squeeze": "Hold to squeeze",
     "ice": "Tap for ice",
-    "pour": "Tap to pour"
+    "pour": "Tap to pour",
+    "fill": "Hold to fill jug"
   },
   "cup": {
     "perfect": [
@@ -45,5 +46,10 @@
     "minty": "Mint Squeeze",
     "pink": "Pink Squeeze"
   },
-  "big": "A big glass. Hold the squeeze a little longer for this one."
+  "big": "A big glass. Hold the squeeze a little longer for this one.",
+  "jug": {
+    "offer": "Nobody waiting: fill the jug, and the next glasses skip the squeeze.",
+    "full": "The jug is full. The next three glasses skip the squeeze.",
+    "spilt": "The jug spills over. Try again in the next quiet moment."
+  }
 }

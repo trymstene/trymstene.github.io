@@ -24,11 +24,13 @@ export const LEMON_DECK = {
   order: ['squeeze', 'ice', 'pour'],
   stations: {
     squeeze: { ...CAFE_DECK.stations.pour, kind: 'hold' },    // a lemon squeezed until the glass has enough, let go in the band
+    fill: { ...CAFE_DECK.stations.pour, kind: 'hold', span: 2200 },   // 🍋 the jug, filled to its line (rank 3)
     ice: { ...CAFE_DECK.stations.milk, kind: 'taps' },        // three cubes on the pulse
     pour: { ...CAFE_DECK.stations.grind, kind: 'sweep' },     // the water to the line: stop the needle
   },
   // 🍋 THE BIG GLASS (rank 2, 23 Sep 2026; the ladder's slice 3): a longer squeeze for a bigger glass, twice the tip
   big: { station: 'squeeze', span: 2600 },
+  // 🍋 the jug (rank 3): a longer hold, filled between customers — its glasses skip the squeeze
   // the drinks, as PICTURES on the ticket — a lemon, a mint leaf, a splash of pink, ice; the names are the rig's
   drinks: {
     still: ['lemon', 'ice'],
@@ -120,7 +122,7 @@ export function bootTownLemon(ctx) {
   window.addEventListener('resize', onResize);
 
   const c = bootTownCafe(ctx, {
-    at: 'stand', deck: LEMON_DECK, copy: COPY, rope: ROPE, item: 'lemoncup',
+    at: 'stand', deck: LEMON_DECK, copy: COPY, rope: ROPE, item: 'lemoncup', jug: { station: 'fill', skip: 'squeeze', n: 3 },
     mark: () => ({ x: STAND.front.x, y: STAND.front.y }),   // the counter is a distance from the table's front, where the walk stops
     standIn, stepOut,
   });

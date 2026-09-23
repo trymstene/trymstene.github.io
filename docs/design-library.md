@@ -870,3 +870,26 @@ the top while a tray is up (§25). Measured at 393×852: the stand at y 298–36
 - **Proof:** `tests/town-counter-frame.spec.mjs` walks all four counters at 360 and 393 on the built site and asserts
   the figure (and the stand's own sprite) intersects neither `.twd-chip`, `.bwq-hint` nor a showing `#twToast`, and
   sits above the tray. Failed 5 of 8 before the fix.
+
+## §30 INFORMATION HAS A MOMENT: say it when it applies, once, and then let the world show it (24 Sep 2026)
+
+Trym, 23 Sep: *"always game design first, and getting the correct timing of what information the players gets of whats
+happening, when it should happen, and when the player doesnt need to see information to avoid clutter — thats the art
+of it."* The rules the jobs' unlocks settled on, for every new mechanic in the world:
+
+- **Before it exists, one line where you plan.** What the next rank brings is a line on the staff card, under the next
+  rank's pay (`town-staff.json unlock`). It is the reason to climb, read when you are looking at your progress — never a
+  toast out of nowhere.
+- **When it arrives, one line.** A promotion says what the new rank lets you do once PROMOTED has gone up (§27), and the
+  first time a new thing happens in a shift it says itself once: the big glass, the special order, the jug. The second
+  time it is silent — the ticket's pictures and the button's own words carry it.
+- **A signpost beats commentary.** The parcel's line says who it is for and where, once, at pickup; after that a marker
+  bounces over the door and nothing speaks until it arrives. A lamp's own dark look is its signpost. No running
+  instructions, no timers on screen that do not change a decision.
+- **The tray note is for an EMPTY tray.** A tray with an order on it has no room for a line (it is capped at 150 px, and a
+  second line is cut off below the view — measured twice: the post office's hint and the jug's offer). A one-time line
+  that belongs to an order is the town's toast, said once.
+- **Never a rate or a timetable** (docs/voice.md): "some customers", not "one in two"; "once a day" is the game's
+  business, not the line's.
+- **Pictures before words on a ticket.** A bigger glass is bigger pictures; a special order is one more picture (the
+  syrup); a basket is two pictures. The words say only what a picture cannot: the gesture on the button, the one-time line.

@@ -34,7 +34,7 @@ import { levelFor } from '../../src/lib/pass-defs.js';
 import { cleanName } from '../../src/lib/player-name.js';
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
-import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS } from '../../src/data/town/jobs.js';
+import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS, dayCap } from '../../src/data/town/jobs.js';
 // 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
 // the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
 import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
@@ -1303,7 +1303,7 @@ function xpAdd(j, add, now) {
   if (!L || !(add > 0)) return 0;
   const d = utcDay(now);
   if (!j.xd || j.xd.d !== d) j.xd = { d, n: {} };
-  const got = Math.min(add, Math.max(0, L.day - ((j.xd.n[at]) | 0)));
+  const got = Math.min(add, Math.max(0, dayCap(at, toldOf(j, at)) - ((j.xd.n[at]) | 0)));   // 🔓 the RANK's day (jobs.js dayCap)
   if (!got) return 0;
   j.xd.n[at] = ((j.xd.n[at]) | 0) + got;
   (j.xp || (j.xp = {}))[at] = (((j.xp[at]) | 0) + got);

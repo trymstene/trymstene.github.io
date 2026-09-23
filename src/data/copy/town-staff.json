@@ -74,7 +74,8 @@
     "sweep": "Litter on the arcade floor",
     "fix": "A cabinet has gone dark",
     "restock": "Empty shelves to fill",
-    "serve": "Customers at the till"
+    "serve": "Customers at the till",
+    "deliver": "A parcel to deliver"
   },
   "until": "Calls stay open until midnight.",
   "go": "Go to work",
@@ -115,19 +116,27 @@
   },
   "unlock": {
     "stand": {
-      "big": "Big glasses: a longer squeeze, and twice the tip."
+      "big": "Big glasses: a longer squeeze, and twice the tip.",
+      "jug": "The jug: fill it when nobody is waiting, and the next glasses skip the squeeze."
     },
     "cafe": {
-      "rush": "Rush hours: customers one after another, and a bonus for serving every one."
+      "rush": "Rush hours: customers one after another, and a bonus for serving every one.",
+      "special": "Special orders: a syrup step on top of some cups, and a better tip for them."
     },
     "condo": {
-      "streak": "Streaks: a perfect repair lights its cabinet gold for the day."
+      "streak": "Streaks: a perfect repair lights its cabinet gold for the day.",
+      "lamps": "The square’s lamps: one you put right counts as a repair for Spinner."
     },
     "store": {
-      "basket": "Baskets: some customers want two things at once."
+      "basket": "Baskets: some customers want two things at once.",
+      "deliver": "Home delivery: Pip sends a parcel across the square to a resident’s door."
     },
     "post": {
-      "fifth": "The town’s own postmark, and a faster pile to sort."
+      "fifth": "The town’s own postmark, and a faster pile to sort.",
+      "parcel": "Parcels: sort them, then weigh them on the post office scale."
     }
+  },
+  "told": {
+    "lamp": "Spinner counts that lamp as one of your repairs."
   }
 }

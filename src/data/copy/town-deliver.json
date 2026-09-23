@@ -1,0 +1,14 @@
+{
+  "picked": "A parcel for {to}. Carry it there: the marker is over the door.",
+  "delivered": "Delivered to {to}. That is the parcel off Pip’s list.",
+  "to": {
+    "nib": "Nib at the town hall",
+    "stamp": "Stamp at the post office",
+    "moss": "Moss at the arcade",
+    "bean": "Bean at the Coffee Cup",
+    "figjr": "Fig Jr. in the garden",
+    "spinner": "Spinner at the arcade",
+    "dot": "Dot at the print shop",
+    "granfig": "Gran Fig in the garden"
+  }
+}

@@ -6,7 +6,7 @@
 // say what they will be. The page is noindexed and linked from nowhere.
 // Chassis = the park's essentials only: camera on both axes, tap-to-walk +
 // keys, foot colliders, y-sorted overlays, the shared HUD.
-import { unlocksAt } from '../data/town/jobs.js';   // 🔓 what a rank lets you do (23 Sep 2026)
+import { unlocksAt, unlocked } from '../data/town/jobs.js';   // 🔓 what a rank lets you do (23 Sep 2026)
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
@@ -284,6 +284,18 @@ function shiftFrameY(now) {
   frameY = bot - top >= y1 - y0 ? (y0 + y1) / 2 - (top + bot) / 2 : y0 - top;   // centred in the band, or its top at the band's top
   return frameY;
 }
+// 🕹 THE SQUARE'S LAMPS ARE THE ARCADE'S TOO (the arcade's rank 3, 23 Sep 2026). A lamp put right on the square is one of
+// Spinner's repairs for a cabinet tech: work XP, and the week's repairs (jobs.js COUNTS_AS). The room only says a lamp was
+// fixed — it is at its size cap — and the job hears it here.
+function roomTrack(e, p) {
+  track(e, p);
+  if (e !== 'town_fix' || !p || p.kind !== 'lamp' || !work) return;
+  const j = work.seam.job(), rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0));
+  if (!j || j.at !== 'condo' || !unlocked('condo', 'lamps', rk)) return;
+  work.seam.chore('lamp');
+  const L = work.seam.words() || {};
+  if ((L.told || {}).lamp) say(L.told.lamp);
+}
 function camTarget() {
   const fy = shiftFrameY(performance.now());   // 🎯 a counter shift frames the counter
   // 🚪 INDOORS THE CAMERA FRAMES THE ROOM (23 Sep 2026). It followed the banana against the whole world, so at the store's
@@ -544,6 +556,7 @@ function tick(now) {
   if (room && inRoom === 'condo' && room.sweepAt) room.sweepAt(pos.x, pos.y);   // 🕹 walking onto arcade litter sweeps it (staff only)
   if (work) work.tick(now);
   if (sort) sort.tick(now);   // ✉️ the sorting round's clock and its mark
+  if (deliver) deliver.tick(); else if (!deliverP && deliverWanted()) loadDeliver();   // 📦 the store's parcel (rank 3)
   { const rm = roomNow(); if (rm) { const [x0, y0, x1, y1] = rm.exit; if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1) exitRoom(); } }
   if (!inRoom && !leaving && pos.y > H - 40 && Math.abs(pos.x - DOORS.south.x) < 70) {
     leaving = true;
@@ -618,6 +631,21 @@ const working = () => !!(room && room.seam && room.seam.working && room.seam.wor
 // cabinet. The room hands over the cabinet; the game hands back a grade and the room wakes it.
 let repair = null, repairP = null;
 // 🛒 THE STORE'S CUSTOMERS (23 Sep 2026) — their own lazy chunk, loaded when the store's own staff walk into it
+// 📦 THE STORE'S HOME DELIVERY (the store's rank 3, 23 Sep 2026) — its own lazy chunk, loaded once a worker of that rank holds the
+// store: a parcel on the store's floor, carried across the square to a resident's door (town-deliver.js)
+let deliver = null, deliverP = null;
+const deliverWanted = () => { const j = work ? work.seam.job() : null; return !!(j && j.at === 'store' && unlocked('store', 'deliver', Math.max(1, ((j.lad && j.lad.rank) | 0)))); };
+function loadDeliver() {
+  if (!deliverP) {
+    deliverP = import('./town-deliver.js')
+      .then((m) => { deliver = m.bootTownDeliver({ world, W, H, pct, pos, say, track, burst: (x, y) => burstAt(x, y, '', true),
+        job: () => (work ? work.seam.job() : null), chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null),
+        open: () => !!(room && room.seam.calls && room.seam.calls('store').some((c) => c.kind === 'deliver')), room: () => inRoom, homeOf: (k) => life.homeOf(k),
+        setSlow: (v) => { slow = +v > 0 ? +v : 1; } }); if (window.__town) window.__town.deliver = deliver.seam; return deliver; })
+      .catch((e) => { deliverP = null; console.warn('[town] the parcel did not come', e); return null; });
+  }
+  return deliverP;
+}
 let serve = null, serveP = null;
 function loadServe() {
   if (!serveP) {
@@ -1030,7 +1058,7 @@ assetsReady().then(() => {
   // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
   import('./town-room.js').then((m) => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
-      hud, esc, track, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
+      hud, esc, track: roomTrack, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
       setSlow: (v) => { slow = +v > 0 ? +v : 1; },
       nibStation,   // 🕯 where chapter one wants Nib right now ('fountain' while its first scene is open)
       // ⭐ WALK TO IT, THEN IT HAPPENS — the grammar every other reachable thing in this world already

@@ -607,6 +607,8 @@ const lifeSchema = {
 // The hiring is NOT here: `work.ask/hired/moved/already/keep/day` on town-life already ask Bean for
 // a job, and `work.at.cafe` already names the building. This is the counter itself.
 const cafeFields = {
+  'go.syrup': { kind: 'label', aim: 14, max: 16, note: '☕ The tray’s button for a special order’s SYRUP step (rank 3): a needle sweeps, one tap stops it. Starts with “Tap”.' },
+  special: { kind: 'prose', aim: 50, max: 70, note: '☕ Said at the first special order of a shift (rank 3): some orders add a syrup step, and they tip a little more. Plain; never a number.' },
   'rush.on': { kind: 'prose', aim: 50, max: 70, note: '☕ The town’s toast as a rush begins (the café’s rank 2): customers now come one straight after another. Plain, a little urgent; never a number, never how long it lasts or how often it comes.' },
   'rush.done': { kind: 'prose', aim: 54, max: 76, note: '☕ The town’s toast when every customer of the rush was served. Bean may notice it. Never praise of the player in so many words, never a number or a bonus named.' },
   on: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as the banana steps behind the counter and the tray rises: the apron going on. Not an instruction, not a greeting to anybody — a shift has started, and that is the whole feeling. Never a time, never a rate.' },
@@ -636,6 +638,10 @@ const cafeFields = {
 // 🍋 THE LEMONADE STAND (22 Sep 2026, docs/town-jobs-plan.md §11.5): the café's counter with a lemonade deck on
 // it, so the same fields — re-noted for a stall with a jug on it, a glass instead of a cup, and a kid behind it.
 const lemonFields = {
+  'go.fill': { kind: 'label', aim: 14, max: 16, note: '🍋 The tray’s button while the JUG is filled (rank 3): HOLD it, let go at the line. Starts with “Hold”. Never wraps on a 360-wide phone.' },
+  'jug.offer': { kind: 'prose', aim: 50, max: 70, note: '🍋 The town’s line the FIRST time in a shift the jug is offered (rank 3, nobody waiting): fill it now, and the next glasses skip the squeeze. Said once a shift — after that the button’s own words do it.' },
+  'jug.full': { kind: 'prose', aim: 50, max: 70, note: '🍋 The jug filled: the next glasses skip the squeeze. A count is fine; never a rate or a time.' },
+  'jug.spilt': { kind: 'prose', aim: 50, max: 70, note: '🍋 The jug filled badly and spilt: nothing counts, try again when it is quiet. Never a telling-off.' },
   big: { kind: 'prose', aim: 48, max: 66, note: '🍋 Said the first time in a shift a customer orders a big glass (the stand’s rank 2): it is a big glass, and the squeeze is held longer. Plain; never a number, never the tip.' },
   on: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as the banana steps round the back of the stand’s table and the tray rises: the stand opening for the afternoon. Not an instruction, not a greeting to anybody. Never the café’s words (no apron, no propeller).' },
   off: { kind: 'prose', aim: 58, max: 76, note: 'The town’s toast as they step away, a beat before the receipt card opens. The stand is quiet for now. Contented; never a summary and never a number.' },
@@ -671,7 +677,7 @@ function gestureLabels(bad, go, held, tapped) {
 }
 function lemonShape(data) {
   const bad = cafeRules(data);
-  gestureLabels(bad, data.go, ['squeeze'], ['ice', 'pour']);   // the same mechanical rules: decks are decks, nobody is asked a question, {drink} is there
+  gestureLabels(bad, data.go, ['squeeze', 'fill'], ['ice', 'pour']);   // the same mechanical rules: decks are decks, nobody is asked a question, {drink} is there
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
   const walk = (v, path) => {
     if (Array.isArray(v)) v.forEach((x, i) => walk(x, path + '[' + i + ']'));
@@ -728,7 +734,7 @@ function cafeRules(data) {
 // the café's own shape: the shared rules, then its front names the Coffee Cup (the stand shares the rules, not the name)
 function cafeShape(data) {
   const bad = cafeRules(data);
-  gestureLabels(bad, data.go, ['pour'], ['grind', 'milk']);
+  gestureLabels(bad, data.go, ['pour'], ['grind', 'milk', 'syrup']);
   plainPlace(bad, 'front', data.front, ['coffee cup', 'kiosk', 'café', 'cafe'], ['job', 'work', 'serve', 'tips']);
   return bad;
 }
@@ -854,6 +860,7 @@ const postFields = {
   'round.holes.beach': { kind: 'label', aim: 10, max: 16, note: 'The same for Banana Bay, whose stamp is a fish. Its own name, titled.' },
   'round.holes.home': { kind: 'label', aim: 10, max: 16, note: 'The same for the homesteads — everybody’s own plot, whose stamp is a house. One or two words, titled.' },
   'round.holes.rave': { kind: 'label', aim: 10, max: 16, note: 'The same for the Banana Rave, whose stamp is a note of music. Its own name, titled.' },
+  'round.parcel': { kind: 'prose', aim: 40, max: 48, note: '📦 Under the pigeonholes the first time a PARCEL comes up in a round (rank 3): sort it, then tap it while it sits on the scale. ⚠️ ONE LINE on a 360 phone.' },
   'round.holes.town': { kind: 'label', aim: 10, max: 16, note: 'The same for Banana Town itself, the fifth hole a senior sorter gets (rank 2), whose stamp is the town hall’s bell. Its own name, titled.' },
   'round.hint': { kind: 'prose', aim: 40, max: 60, note: '⭐ THE ONE-TIME NOTICE under the pigeonholes, shown through a player’s FIRST round only (Trym, 22 Sep: “a small one-time notice by the sorting buttons that says something about what to do … Short and sweet”). One short line that says what the round wants: the card on the counter goes into the hole with the same stamp. It may explain, but it may not name a control — no “tap”, “click”, “button”, “press” — and no number.' },
   'round.stamp': { kind: 'label', aim: 6, max: 8, note: 'The word on the rubber stamp slammed across the receipt of a round that made the week’s sheet — the payslip has PAID; this is the counter’s own. CAPITALS, one word, at most 8 letters.' },
@@ -1434,6 +1441,7 @@ const dutyFields = {
   'call.fix': { kind: 'prose', aim: 55, max: 80, note: 'The note when the arcade\u2019s dark-cabinet call has come in: Spinner calls, a cabinet has gone dark, open until midnight. Starts with Spinner\u2019s name.' },
   'call.restock': { kind: 'prose', aim: 55, max: 80, note: 'The note when the store\u2019s delivery call has come in: Pip calls, a delivery waits to be shelved, open until midnight. Starts with Pip\u2019s name.' },
   'call.serve': { kind: 'prose', aim: 55, max: 80, note: 'The note when the store\u2019s customer call has come in (23 Sep 2026): Pip calls, customers are waiting at the till, open until midnight. Starts with Pip\u2019s name.' },
+  'call.deliver': { kind: 'prose', aim: 60, max: 82, note: '📦 The note when the store\u2019s parcel call has come in (rank 3): Pip calls, a parcel waits at the store to be delivered, open until midnight. Starts with Pip\u2019s name.' },
   answered: { kind: 'prose', aim: 50, max: 70, note: 'The note once every one of today\u2019s calls is answered: nothing more is wanted until tomorrow. No numbers, no praise-as-reward. Lower case first letter.' },
 };
 const DUTY_UI = new RegExp('\\b(tap|click|button|menu|screen|swipe)\\b', 'i');
@@ -1471,7 +1479,7 @@ const dutySchema = {
     nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: Object.fromEntries(DUTY_BOSS.map((x) => [x, str(dutyFields['nudge.' + x].note)])) },
     fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: Object.fromEntries(DUTY_BOSS.map((x) => [x, str(dutyFields['fired.' + x].note)])) },
     cafeDone: str(dutyFields.cafeDone.note), standDone: str(dutyFields.standDone.note), payslip: str(dutyFields.payslip.note), tips: str(dutyFields.tips.note),
-    call: { type: 'object', additionalProperties: false, required: ['sweep', 'fix', 'restock', 'serve'], properties: { sweep: str(dutyFields['call.sweep'].note), fix: str(dutyFields['call.fix'].note), restock: str(dutyFields['call.restock'].note), serve: str(dutyFields['call.serve'].note) } },
+    call: { type: 'object', additionalProperties: false, required: ['sweep', 'fix', 'restock', 'serve', 'deliver'], properties: { sweep: str(dutyFields['call.sweep'].note), fix: str(dutyFields['call.fix'].note), restock: str(dutyFields['call.restock'].note), serve: str(dutyFields['call.serve'].note), deliver: str(dutyFields['call.deliver'].note) } },
     answered: str(dutyFields.answered.note),
   },
 };
@@ -1622,7 +1630,7 @@ export const JOBS = {
     what: 'The card a worker opens at their own workplace or from the work note: where they work and for whom, their title, today’s tips or the week’s work and wage, today’s calls, and the buttons (go to work, answer the calls, the place’s other use).',
     approved: 'src/data/copy/town-staff.json',
     reads: 'src/scripts/town-staff.js (through a glob inside the card’s own lazy chunk)',
-    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'wordQ', 'word', 'warn', 'demoted', 'warnCard', 'last', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut', 'unlock'],
+    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'wordQ', 'word', 'warn', 'demoted', 'warnCard', 'last', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut', 'unlock', 'told'],
     fields: {
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`of.${k}`, { kind: 'label', max: 40, note: 'Small capitals over the title: the workplace, then whose staff you are.' }])),
       // 🪜 THE LADDER (23 Sep 2026; Trym's calls: ranks 3·4·5·5·6, promotion at the boss). A title per rank, bottom first —
@@ -1634,9 +1642,10 @@ export const JOBS = {
       nextWeek: toastLine(64, 'What the next rank gives at a payslip job: its title, and what a full week pays there.', { ...holdsAll('title', 'coins'), ...NO_MARKUP }),
       nextTips: toastLine(64, 'What the next rank gives at a tips job: its title, and the day’s tips cap there.', { ...holdsAll('title', 'cap'), ...NO_MARKUP }),
       top: toastLine(40, 'Instead of that line at the top rank.', NO_MARKUP),
+      'told.lamp': toastLine(60, '🕹 Said when an arcade worker of the third rank puts a street lamp right on the square: it counts as one of their repairs for Spinner. Plain.', NO_MARKUP),
       // 🔓 THE UNLOCKS (23 Sep 2026; the ladder's slice 3, src/data/town/jobs.js UNLOCKS): what a rank lets you DO, one line per
       // unlock — under the next rank's line on the staff card, and said once the PROMOTED moment has gone up
-      ...Object.fromEntries([['stand', 'big'], ['cafe', 'rush'], ['condo', 'streak'], ['store', 'basket'], ['post', 'fifth']].map(([a, k]) => [`unlock.${a}.${k}`, toastLine(80, 'What this rank lets you do at this workplace, in plain words: the new thing first, then what it means. Never a number, a rate or how often it comes (docs/voice.md).', NO_MARKUP)])),
+      ...Object.fromEntries([['stand', 'big'], ['stand', 'jug'], ['cafe', 'rush'], ['cafe', 'special'], ['condo', 'streak'], ['condo', 'lamps'], ['store', 'basket'], ['store', 'deliver'], ['post', 'fifth'], ['post', 'parcel']].map(([a, k]) => [`unlock.${a}.${k}`, toastLine(80, 'What this rank lets you do at this workplace, in plain words: the new thing first, then what it means. Never a number, a rate or how often it comes (docs/voice.md).', NO_MARKUP)])),
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`news.${k}`, toastLine(64, 'Over the XP once it has crossed the next rank’s line — and the WORK NOTE’s green line too (town-duties.js reads it from here): the boss has news, and you hear it by talking to them (promotion happens at the boss). Starts with the boss’s name. Never the word promoted, never a title or a number.', { ...NO_MARKUP, forbids: [[/[<>&]/, 'markup or an entity'], [/promot|\d/i, 'the word promoted or a number — the news is said in person']] })])),
       promoQ: { kind: 'prose', aim: 22, max: 32, note: 'The PLAYER’s question on their own boss’s card when the boss has news: the player’s voice, a question with a question mark (the job question’s sibling).' },
       ...Object.fromEntries(['bean', 'figjr', 'spinner', 'pip', 'stamp'].map((k) => [`promo.${k}`, { kind: 'prose', aim: 72, max: 96, holds: ['{title}'], needs: [[/\{title\}/, 'must carry {title} — the new rank’s title']], note: 'The boss telling the player they are promoted, in the boss’s own voice (Bean reads cups, Fig Jr. talks like a company, Spinner is a showman, Pip keeps last ones, Stamp weighs things and says Noted). MUST contain {title}, the new title, inside a sentence. No number, no pay.' }])),
@@ -1661,6 +1670,7 @@ export const JOBS = {
       'call.fix': { kind: 'label', max: 32, note: 'A call: one arcade cabinet has gone dark and needs fixing.' },
       'call.restock': { kind: 'label', max: 32, note: 'A call: bare shelves in the store to fill from the crates.' },
       'call.serve': { kind: 'label', max: 32, note: 'A call: customers waiting at the store’s till (23 Sep 2026).' },
+      'call.deliver': { kind: 'label', max: 32, note: '📦 A call: a parcel at the store to carry to a resident (rank 3).' },
       until: toastLine(40, 'Under today’s calls: a call stays open until midnight (slice 0b). No countdown, no pressure.', NO_MARKUP),
       go: { kind: 'label', max: 14, note: 'The big button on a shift job’s card: start the round.' },
       answer: { kind: 'label', max: 18, note: 'The big button when calls are waiting: go in and see to them.' },
@@ -1692,6 +1702,20 @@ export const JOBS = {
   },
   // 🛒 THE STORE'S CUSTOMERS (23 Sep 2026): a customer at the till wants a thing from the shelves; the ticket is its
   // picture, the bar their patience; find it, carry it to the till, hand it over. The world's voice around it.
+  'town-deliver': {
+    id: 'town-deliver',
+    title: 'Banana Town — the store’s home delivery',
+    what: 'The store’s parcel (rank 3): the one line when you pick it up (who it is for and where), the line when it arrives, and each resident as the parcel names them.',
+    approved: 'src/data/copy/town-deliver.json',
+    reads: 'src/scripts/town-deliver.js (through a glob inside its own lazy chunk)',
+    top: ['picked', 'delivered', 'to'],
+    fields: {
+      picked: toastLine(80, '📦 Said when the parcel is picked up off the store’s floor: who it is for and where ({to}, e.g. “Dot at the print shop”), and that the marker over the door shows the way. Plain, one breath.', { ...NO_MARKUP, ...holdsAll('to') }),
+      delivered: toastLine(70, '📦 Said when the parcel reaches the door: delivered to {to}, and the job is done. Plain; never praise of the player.', { ...NO_MARKUP, ...holdsAll('to') }),
+      ...Object.fromEntries(['nib', 'stamp', 'moss', 'bean', 'figjr', 'spinner', 'dot', 'granfig'].map((k) => ['to.' + k, { kind: 'label', max: 30, note: 'The resident and their place, as the parcel line names them: “Name at the place”. The place is where their door is on the square.' }])),
+    },
+    shape: (d) => Object.keys((d && d.to) || {}).length === 8 ? [] : [{ path: 'to', msg: 'every resident but Pip needs a line: the parcel can be for any of them' }],
+  },
   'town-serve': {
     id: 'town-serve',
     title: 'Banana Town — the store’s customers',
@@ -1889,7 +1913,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-lemon.json',
     approved: 'src/data/copy/town-lemon.json',
     reads: 'src/scripts/town-lemon.js (through a glob inside the stand’s own lazy chunk)',
-    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave', 'big'],
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave', 'big', 'jug'],
     personas: 'town-personas',
     fields: lemonFields,
     shape: lemonShape,
@@ -1903,7 +1927,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-cafe.json',
     approved: 'src/data/copy/town-cafe.json',
     reads: 'src/scripts/town-cafe.js (through a glob inside the café’s own lazy chunk, so town-room never carries these bytes)',
-    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave', 'rush'],
+    top: ['on', 'off', 'idle', 'front', 'receipt', 'go', 'cup', 'left', 'drinks', 'leave', 'rush', 'special'],
     // 🧍 Bean speaks here, so the writer gets the bible
     personas: 'town-personas',
     fields: cafeFields,

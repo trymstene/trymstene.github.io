@@ -6,7 +6,7 @@
 import { test, expect } from '@playwright/test';
 import STAFF from '../src/data/copy/town-staff.json' with { type: 'json' };
 import { LADDER_RANKS } from '../tools/copy-jobs.mjs';
-import { JOB_PAY, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, dutiesOf, LADDER, RISE, TIPS_JOBS, DAY_XP, ranksOf, rankOf, xpAt, weekPay, tipsCap, xpFor, roundXp, reviewOf, reviewXp, UNLOCKS, unlocked, unlocksAt, COUNTS_AS } from '../src/data/town/jobs.js';
+import { JOB_PAY, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, dutiesOf, LADDER, RISE, TIPS_JOBS, DAY_XP, ranksOf, rankOf, xpAt, weekPay, tipsCap, xpFor, roundXp, reviewOf, reviewXp, UNLOCKS, unlocked, unlocksAt, COUNTS_AS, dayCap } from '../src/data/town/jobs.js';
 
 test('a week of work pays by its share, duty by duty, and prints its own reasoning', () => {
   // the arcade: two duties of three
@@ -128,4 +128,14 @@ test('🔓 the unlocks: nothing at the first rank, one new thing at the second e
   expect(COUNTS_AS.basket, 'a basket is a customer served on the week’s sheet').toBe('serve');
   expect(xpFor('store', 'basket', 2), 'a perfect basket is half again a perfect customer, rounded down').toBe(Math.floor(xpFor('store', 'serve', 2) * 1.5));
   expect(xpFor('cafe', 'rush'), 'a rush served to the end').toBe(15);
+});
+
+test('🔓 the day’s work XP rises with the rank, so a rank’s new things are not swallowed by a full day', () => {
+  for (const at of Object.keys(LADDER)) {
+    expect(dayCap(at, 1), at + ': the first rank’s day is the ladder’s own').toBe(LADDER[at].day);
+    for (let r = 2; r <= ranksOf(at); r++) expect(dayCap(at, r), at + ' rank ' + r + ' holds more than the one below').toBeGreaterThan(dayCap(at, r - 1));
+  }
+  expect(dayCap('store', 3) - LADDER.store.day, 'a rank-3 store day has room for a delivery').toBeGreaterThanOrEqual(xpFor('store', 'deliver'));
+  expect(dayCap('condo', 3) - LADDER.condo.day, '…and a rank-3 arcade day for a lamp').toBeGreaterThanOrEqual(xpFor('condo', 'lamp'));
+  expect(dayCap('cafe', 2) - LADDER.cafe.day, '…and a rank-2 café day for most of a rush').toBeGreaterThanOrEqual(12);
 });

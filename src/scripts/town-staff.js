@@ -18,7 +18,7 @@
 // ⚠️ THE WORDS ARE THE COPY FILE'S (src/data/copy/town-staff.json). No words, no card: the town's own tap stands.
 import DUTY from '../data/copy/town-duties.json';
 import { ruleUsed } from '../lib/banana-pass.js';
-import { tipsCap, weekPay, xpAt, ranksOf, LADDER, unlocksAt } from '../data/town/jobs.js';   // 🪜 the ladder (23 Sep 2026)
+import { tipsCap, weekPay, xpAt, ranksOf, LADDER, unlocksAt, dayCap } from '../data/town/jobs.js';   // 🪜 the ladder (23 Sep 2026)
 import { daysToPayday } from './town-duties.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-staff.json', { eager: true, import: 'default' });
 const COPY = Object.values(COPY_MODS)[0] || null;
@@ -27,7 +27,7 @@ export const SHIFT = ['cafe', 'stand', 'post'];   // a round you play
 export const ONCALL = ['condo', 'store'];         // the town calls you
 export const WORKPLACES = [...SHIFT, ...ONCALL];
 const TIPS = ['cafe', 'stand'];                   // paid per glass, not by payslip (src/data/town/jobs.js JOB_PAY 0)
-const CALL_KINDS = ['sweep', 'fix', 'restock', 'serve'];
+const CALL_KINDS = ['sweep', 'fix', 'restock', 'serve', 'deliver'];
 
 const CSS = `
 .tws { display:grid; gap:0.55rem; }
@@ -122,7 +122,7 @@ export function bootTownStaff(ctx) {
       + '<section class="tws-xp"><span class="tws-lab">' + esc(COPY.xp) + '</span>'
       + '<div class="tws-stat"><b>' + l.xp + '</b>' + (b != null ? '<small>/ ' + b + '</small>' : '') + '</div>'
       + '<div class="tws-bar' + (under ? ' is-under' : '') + '"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>'
-      + '<p class="tws-note">' + esc(fill(COPY.today, { n: l.today, cap: (LADDER[at] || {}).day | 0 })) + '</p>'
+      + '<p class="tws-note">' + esc(fill(COPY.today, { n: l.today, cap: dayCap(at, l.rank) })) + '</p>'
       + (l.last && (COPY.last || {})[l.last.v] ? '<p class="tws-note">' + esc(fill(COPY.last[l.last.v], { xp: Math.abs(l.last.xp | 0) })) + '</p>' : '')
       + (nextLine ? '<p class="tws-note">' + esc(nextLine) + '</p>' : '')
       // 🔓 and what the next rank lets you DO (the ladder's slice 3): the reason to climb, in the card's own words

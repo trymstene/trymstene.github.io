@@ -11,6 +11,8 @@ import STAFF from '../src/data/copy/town-staff.json' with { type: 'json' };
 import LEMON from '../src/data/copy/town-lemon.json' with { type: 'json' };
 import CAFE from '../src/data/copy/town-cafe.json' with { type: 'json' };
 import REPAIR from '../src/data/copy/town-repair.json' with { type: 'json' };
+import POST from '../src/data/copy/town-post.json' with { type: 'json' };
+import DELIVER from '../src/data/copy/town-deliver.json' with { type: 'json' };
 import { DAY_XP, xpFor, UNLOCKS } from '../src/data/town/jobs.js';
 const PERFECT_TIP = 2;   // town-cafe.js TIP[2]: what a perfect cup or glass tips (that module globs its words, so node cannot import it)
 import { playRepair } from './play-repair.mjs';
@@ -42,17 +44,18 @@ async function tapSpot(page, key) {
   await page.mouse.click(p.x, p.y);
 }
 // a cup or a glass made right at the tray's own instants (the counter walks' recipe); `hold` is the deck's held station
-const makeOne = (page, which, hold) => page.evaluate(async ([w, h]) => {
+const makeOne = (page, which, hold) => page.evaluate(async ([w, hs]) => {
+  const h = [].concat(hs);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const c = window.__town.room[w]();
   c.serve();
-  const g = c.gest();
+  const g = c.gest(), first = c.cup();
   if (!g) return false;
-  for (let s = 0; s < 20 && c.cup(); s++) {
+  for (let s = 0; s < 20 && c.cup() && c.cup() === first; s++) {
     const key = g.station(); if (!key) break;
     const t = g.best(performance.now());
     await wait(Math.max(0, t - performance.now()));
-    if (key === h) { g.press(performance.now()); await wait(30); g.release(g.best(performance.now())); }
+    if (h.includes(key)) { g.press(performance.now()); await wait(30); g.release(g.best(performance.now())); }
     else g.press(g.best(performance.now()));
     await wait(20);
   }
@@ -287,5 +290,166 @@ test('🔓 at the first rank every staff card names what the second rank lets yo
     await page.keyboard.press('Escape');
     await page.waitForTimeout(250);
   }
+  expect(errs).toEqual([]);
+});
+
+// the order already on the tray, made right (no serve() first)
+const finishOne = (page, which, hold) => page.evaluate(async ([w, hs]) => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const c = window.__town.room[w](), g = c.gest(), h = [].concat(hs), first = c.cup();
+  for (let s = 0; s < 20 && c.cup() && c.cup() === first; s++) {   // this order only: the next one (or the jug) is not ours
+    const key = g.station(); if (!key) break;
+    const t = g.best(performance.now()); await wait(Math.max(0, t - performance.now()));
+    if (h.includes(key)) { g.press(performance.now()); await wait(30); g.release(g.best(performance.now())); } else g.press(g.best(performance.now()));
+    await wait(20);
+  }
+  await wait(150);
+}, [which, hold]);
+
+test('🍋 the stand’s rank 3: the jug — offered when nobody waits, stepping aside for a customer, and its glasses skip the squeeze', async ({ page }) => {
+  test.setTimeout(120000);
+  const errs = await town(page);
+  await page.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = 890; t.pos.y = t.tgt.y = 610; });
+  await hire(page, 'stand', 3, 650);
+  await page.evaluate(() => window.__town.room.folkReady());
+  expect(await page.evaluate(() => window.__town.room.lemonReady())).toBe(true);
+  await page.evaluate(() => window.__town.room.open('stand'));
+  await page.waitForFunction(() => window.__town.room.lemon() && window.__town.room.lemon().on(), null, { timeout: 30000 });
+  // ── nobody at the rope yet: the tray offers the jug, and says so under it
+  await page.waitForFunction(() => { const o = window.__town.room.lemon().order(); return o && o.join() === 'fill'; }, null, { timeout: 8000 });
+  const t = await page.evaluate(() => { const b = document.querySelector('.tw-cup[data-deck="lemon"]'); return { go: b.querySelector('.tw-cup__go').textContent, pip: !!b.querySelector('.tw-cup__pip--jug') }; });
+  expect(t, 'the jug on the tray, and its button').toEqual({ go: LEMON.go.fill, pip: true });
+  await toast(page, LEMON.jug.offer);   // said once a shift, the first time it is offered
+  await page.screenshot({ path: 'test-results/unlock-jug-offer.png' });
+  // ── a customer reaches the front: the untouched jug steps aside for them
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => { const l = window.__town.room.lemon(); l.bigNext(false); l.call(); l.arrive(); });
+  await page.waitForFunction(() => { const o = window.__town.room.lemon().order(); return o && o[0] === 'squeeze'; }, null, { timeout: 8000 });
+  await finishOne(page, 'lemon', ['squeeze', 'fill']);
+  // ── the rope clear again: the jug, filled
+  await page.waitForFunction(() => { const l = window.__town.room.lemon(); return !l.line().some((q) => q.waiting) && (l.order() || []).join() === 'fill'; }, null, { timeout: 15000 });
+  await finishOne(page, 'lemon', ['squeeze', 'fill']);
+  expect(await page.evaluate(() => window.__town.room.lemon().jug()), 'a full jug: three glasses').toBe(3);
+  await toast(page, LEMON.jug.full);
+  expect(await page.locator('.tw-cup__jug i').count(), 'the three in the strip').toBe(3);
+  // ── the next glass skips the squeeze
+  await page.evaluate(() => { const l = window.__town.room.lemon(); l.bigNext(false); l.call(); l.arrive(); });
+  await page.waitForFunction(() => { const o = window.__town.room.lemon().order(); return o && o[0] !== 'fill'; }, null, { timeout: 8000 });
+  expect(await page.evaluate(() => window.__town.room.lemon().order()), 'from the jug: ice and pour').toEqual(['ice', 'pour']);
+  expect(await page.locator('.tw-cup[data-deck="lemon"] .tw-cup__step').count(), 'two steps on the tray').toBe(2);
+  await page.screenshot({ path: 'test-results/unlock-jug-glass.png' });
+  await finishOne(page, 'lemon', ['squeeze', 'fill']);
+  expect(await page.evaluate(() => window.__town.room.lemon().jug()), 'one glass poured from it').toBe(2);
+  expect(errs).toEqual([]);
+});
+
+test('☕ the café’s rank 3: a special order adds a syrup step, and tips a little more', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await town(page);
+  await hire(page, 'cafe', 3, 800);
+  await page.evaluate(() => window.__town.room.folkReady());
+  await page.evaluate(() => window.__town.room.cafeReady());
+  await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
+  await page.evaluate(() => { const p = window.__town.PROPS.cafe, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 40; });
+  await page.waitForTimeout(250);
+  await page.evaluate(() => window.__town.room.cafe().specialNext(true));
+  await page.evaluate(() => window.__town.room.open('cafe'));
+  await page.waitForFunction(() => window.__town.room.cafe() && window.__town.room.cafe().on() && window.__town.room.cafe().line().length > 0, null, { timeout: 15000 });
+  await page.evaluate(() => window.__town.room.cafe().arrive());
+  expect(await page.evaluate(() => window.__town.room.cafe().serve())).toBe(true);
+  expect(await page.evaluate(() => window.__town.room.cafe().special()), 'a special order').toBe(true);
+  expect(await page.evaluate(() => window.__town.room.cafe().order()), 'with a syrup step on the end').toEqual(['grind', 'pour', 'milk', 'syrup']);
+  const b = await page.evaluate(() => { const e = document.querySelector('.tw-cup:not(.tw-cup--sort)'); return { steps: e.querySelectorAll('.tw-cup__step').length, syrup: !!e.querySelector('.tw-cup__pip--syrup') }; });
+  expect(b, 'four steps, and the syrup on the ticket').toEqual({ steps: 4, syrup: true });
+  await toast(page, CAFE.special);
+  await page.screenshot({ path: 'test-results/unlock-special.png' });
+  const tips0 = (await page.evaluate(() => window.__town.room.cafe().take())).tips;
+  await finishOne(page, 'cafe', ['pour']);
+  expect((await page.evaluate(() => window.__town.room.cafe().take())).tips - tips0, 'a perfect cup’s tip and one more for the special').toBe(PERFECT_TIP + 1);
+  expect(errs).toEqual([]);
+});
+
+test('🕹 the arcade’s rank 3: a lamp put right on the square is one of Spinner’s repairs — not before', async ({ page }) => {
+  test.setTimeout(60000);
+  const errs = await town(page);
+  await page.evaluate(() => window.__town.room.set(5));   // abandoned: the lamps are dark
+  await page.waitForTimeout(700);
+  const lampFix = async () => { const id = await page.evaluate(() => { const l = window.__town.room.problems().find((q) => q.type === 'lamp'); return l ? l.id : window.__town.room.plant('lamp'); }); expect(id, 'a dark lamp').toBeTruthy(); await page.evaluate((x) => window.__town.room.fix(x), id); await page.waitForTimeout(300); };
+  const fixDone = () => page.evaluate(() => (window.__town.work.state().duties.find((d) => d.kind === 'fix') || {}).done | 0);
+  // ── the second rank: a lamp is the town's, and that is all
+  await hire(page, 'condo', 2, 400);
+  await lampFix();
+  expect(await fixDone(), 'not a repair on the sheet at the second rank').toBe(0);
+  // ── the third rank: Spinner counts it
+  await hire(page, 'condo', 3, 950);
+  await lampFix();
+  await toast(page, STAFF.told.lamp);
+  expect(await fixDone(), 'a repair on the week’s sheet').toBe(1);
+  expect(await page.evaluate(() => window.__town.work.ladder().xp), 'the day’s ten and a lamp’s twenty').toBe(950 + DAY_XP + xpFor('condo', 'lamp'));
+  expect(errs).toEqual([]);
+});
+
+test('📦 the post office’s rank 3: a parcel is sorted, then weighed on the scale — in the band it is right, left there it is late', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await town(page, 360);
+  const S = (fn, a) => page.evaluate(([src, x]) => (0, eval)('(' + src + ')')(window.__town.sort(), x), [fn.toString(), a]);
+  await hire(page, 'post', 3, 1100);
+  await page.evaluate(() => { const p = window.__town.PROPS.post, t = window.__town; t.pos.x = t.tgt.x = p.x + p.w / 2; t.pos.y = t.tgt.y = p.base + 30; });
+  expect(await page.evaluate(() => window.__town.sortReady())).toBe(true);
+  expect(await S((s) => s.clockIn())).toBe(true);
+  const toParcel = async () => { for (let i = 0; i < 16 && !(await S((s) => s.parcel())); i++) await S((s) => s.sort(s.card())); return S((s) => s.parcel()); };
+  // ── the first parcel: sorted into its hole, it goes on the scale, and the tray says what to do
+  expect(await toParcel(), 'a parcel in the pile').toBe(true);
+  expect(await page.evaluate(() => document.querySelector('.tw-sort__card').classList.contains('is-parcel')), 'dressed as a parcel').toBe(true);
+  const res = await S((s) => s.sort(s.card()));
+  expect(res && res.weigh, 'onto the scale').toBe(true);
+  expect(await S((s) => s.weighing()), 'weighing').toBe(true);
+  expect(await S((s) => s.note()), 'the one line, the first time').toBe(POST.round.parcel);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: 'test-results/unlock-parcel-scale.png' });
+  const m0 = (await S((s) => s.round())).marks.length;
+  await S((s) => s.weigh(s.bestWeigh(performance.now())));
+  let r = await S((s) => s.round());
+  expect([r.marks.length, r.marks[r.marks.length - 1]], 'weighed in the band: right').toEqual([m0 + 1, 2]);
+  // ── the next parcel, left on the scale: late
+  if (await toParcel()) {
+    await S((s) => s.sort(s.card()));
+    const at = await page.evaluate(() => performance.now());
+    await S((s, x) => s.step(x + 3400), at);
+    r = await S((s) => s.round());
+    expect(r.marks[r.marks.length - 1], 'left on the scale: late').toBe(1);
+  }
+  expect(errs).toEqual([]);
+});
+
+test('📦 the store’s rank 3: a parcel on the floor, carried across the square to the door with the marker, and delivered', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await town(page);
+  await hire(page, 'store', 3, 950);
+  await page.evaluate((d) => { localStorage.setItem('tw-calls-v1', JSON.stringify({ d, t0: Date.now() - 36e5, qa: ['deliver'] })); localStorage.removeItem('tw-deliver-v1'); }, DAY());
+  await page.waitForFunction(() => !!window.__town.deliver, null, { timeout: 10000 });
+  await page.evaluate(() => window.__town.rooms.enter('store'));
+  await page.waitForFunction(() => window.__town.deliver.shown().box, null, { timeout: 5000 });
+  await page.screenshot({ path: 'test-results/unlock-deliver-floor.png' });
+  // ── walked onto: picked up, and the line says whose and where
+  const at = await page.evaluate(() => window.__town.deliver.parcelAt());
+  await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y; }, at);
+  await page.waitForFunction(() => window.__town.deliver.shown().held, null, { timeout: 5000 });
+  const to = await page.evaluate(() => window.__town.deliver.to());
+  await toast(page, DELIVER.picked.replace('{to}', DELIVER.to[to]));
+  // ── out on the square: the marker bounces over the door
+  await page.evaluate(() => window.__town.rooms.exit());
+  await page.waitForFunction(() => window.__town.deliver.shown().marker, null, { timeout: 5000 });
+  const door = await page.evaluate(() => window.__town.deliver.door());
+  await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y + 90; }, door);
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: 'test-results/unlock-deliver-marker.png' });
+  // ── at the door: delivered
+  await page.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x; t.pos.y = t.tgt.y = y + 20; }, door);
+  await page.waitForFunction(() => window.__town.deliver.state().n === 1, null, { timeout: 5000 });
+  await toast(page, DELIVER.delivered.replace('{to}', DELIVER.to[to]));
+  expect(await page.evaluate(() => window.__town.deliver.shown()), 'nothing left drawn').toEqual({ box: false, held: false, marker: false });
+  expect((await events(page, 'town_chore')).map((e) => e.kind).filter((k) => k === 'pickup' || k === 'deliver'), 'Pulse hears the pickup and the delivery').toEqual(['pickup', 'deliver']);
+  expect(await page.evaluate(() => window.__town.work.ladder().xp), 'the day’s ten and a delivery’s thirty').toBe(950 + DAY_XP + xpFor('store', 'deliver'));
   expect(errs).toEqual([]);
 });

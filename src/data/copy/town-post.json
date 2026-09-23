@@ -48,7 +48,8 @@
       "xp": "Work XP earned: {n}.",
       "short": "This round is not on the sheet. The counter will be ready again.",
       "back": "Put away"
-    }
+    },
+    "parcel": "A parcel: sort it, then tap it on the scale."
   },
   "card": {
     "title": "Picture Postcard",

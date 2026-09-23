@@ -17,7 +17,8 @@
   "go": {
     "grind": "Tap to grind",
     "pour": "Hold to pour",
-    "milk": "Tap to foam"
+    "milk": "Tap to foam",
+    "syrup": "Tap to add syrup"
   },
   "cup": {
     "perfect": [
@@ -48,5 +49,6 @@
   "rush": {
     "on": "Rush hour: the customers keep coming, one after another.",
     "done": "Every one of them served. Bean looks up from the grinder and nods."
-  }
+  },
+  "special": "A special order: a syrup step on top, and a better tip for it."
 }

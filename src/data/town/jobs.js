@@ -33,14 +33,19 @@ export const RISE = 1.2;        // each rank pays a fifth more than the one belo
 export const TIPS_JOBS = ['cafe', 'stand'];   // paid a glass at a time, never by cheque
 export const TIPS_DAYS = 5;     // a full tips cap on five days is a full week
 export const DAY_XP = 10;       // turning up, once a day, at every workplace
+// 🔓 THE DAY'S CAP RISES WITH THE RANK (23 Sep 2026). `day` is exactly a full day of a workplace's duties, so every unlock that
+// earns work XP (the café's rush, a delivery, a lamp) was swallowed by the cap on any day the duties were done. A rank's day
+// holds a sixth-or-so more for each rank climbed — room for the new things to do, and a little faster the higher you are.
+export const CAP_RISE = 0.15;
+export const dayCap = (at, rank) => Math.round(((LADDER[at] || {}).day || 0) * (1 + CAP_RISE * (Math.max(1, rank | 0) - 1)));
 // the work XP a verb earns: an array is by the grade (wrong · fine · perfect) of a cup or a repair; a number is the most it
 // can earn, and a chore that reports a `g` earns that much of it (a round of sorting reports its points: roundXp below).
 // A verb reported with no grade at all earns its top: an older page that knew no grades is not docked for it.
 export const XP = {
   stand: { cup: [0, 2, 4] },
   cafe: { cup: [0, 3, 6], rush: 15 },   // ☕ a rush served to the last customer (rank 2): a bonus on top of its cups
-  condo: { sweep: 45, fix: [0, 30, 45] },   // the day's one piece of litter (it comes a piece a call day now) and a cabinet woken fill the arcade's day; 🔧 a repair by its grade (town-repair.js)
-  store: { restock: 30, serve: [0, 10, 15], basket: [0, 15, 22] },   // the delivery's two faces and 🛒 the day's two customers, by how quickly they were served, fill the store's; 🧺 a two-thing order (rank 2) is worth half again
+  condo: { sweep: 45, fix: [0, 30, 45], lamp: 20 },   // the day's piece of litter and a cabinet woken fill the arcade's day; 🔧 a repair by its grade; 🕹 a lamp on the square (rank 3)
+  store: { restock: 30, serve: [0, 10, 15], basket: [0, 15, 22], deliver: 30 },   // the delivery's two faces and 🛒 the day's two customers, by how quickly they were served, fill the store's; 🧺 a two-thing order (rank 2) is worth half again
   post: { sort: 60 },              // two good rounds fill the post office's
 };
 
@@ -48,16 +53,16 @@ export const XP = {
 // thing to DO, not only a bigger number: the rank it arrives at, per workplace. The town reads these to decide what a
 // shift offers; the words for each live in town-staff.json `unlock`, told on the staff card and at the promotion.
 export const UNLOCKS = {
-  stand: { big: 2 },      // 🍋 big glasses: a longer squeeze, twice the tip
-  cafe: { rush: 2 },      // ☕ a rush: customers without a break, and a bonus for serving every one
-  condo: { streak: 2 },   // 🕹 a perfect repair lights its cabinet for the day, and perfect repairs in a row are counted
-  store: { basket: 2 },   // 🧺 some customers want two things
-  post: { fifth: 2 },     // ✉️ the town's own postmark, and a faster pile
+  stand: { big: 2, jug: 3 },      // 🍋 big glasses: a longer squeeze, twice the tip; the jug, filled in a quiet moment
+  cafe: { rush: 2, special: 3 },      // ☕ a rush: customers without a break, and a bonus for serving every one; special orders with syrup
+  condo: { streak: 2, lamps: 3 },   // 🕹 a perfect repair lights its cabinet for the day, and perfect repairs in a row are counted; the square's lamps are yours too
+  store: { basket: 2, deliver: 3 },   // 🧺 some customers want two things; 📦 a parcel carried to a resident's door
+  post: { fifth: 2, parcel: 3 },     // ✉️ the town's own postmark, and a faster pile; 📦 parcels, weighed on the scale
 };
 export const unlocked = (at, key, rank) => { const r = (UNLOCKS[at] || {})[key]; return r != null && (rank | 0) >= r; };
 export const unlocksAt = (at, rank) => Object.keys(UNLOCKS[at] || {}).filter((k) => UNLOCKS[at][k] === (rank | 0));
 // a chore that counts on the week's sheet as another duty's: a basket is a customer served
-export const COUNTS_AS = { basket: 'serve' };
+export const COUNTS_AS = { basket: 'serve', lamp: 'fix' };   // …and a lamp on the square is one of the arcade's repairs
 export const roundXp = (right, late) => Math.min(XP.post.sort, (right | 0) * 5 + (late | 0) * 2);
 
 export const JOB_PAY = { store: 150, condo: 120, post: 180, cafe: 0, stand: 0 };   // the cheque for a full week at rank 1 (LADDER.week); the café and the stand pay tips per glass instead

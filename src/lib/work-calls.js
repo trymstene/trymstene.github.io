@@ -11,11 +11,13 @@
 // ⚠️ THE DAY'S CLOCK IS THIS DEVICE'S (tw-calls-v1): it starts the first time any area of Banana World asks, with the job
 // held. ⚠️ THE ANSWERS ARE THE ROOMS' OWN RECORDS (tw-arcade-v1, tw-restock-v1), read here exactly as town-room.js
 // writes them (arcRead, restocked); tests/town-calls.spec.mjs proves the two agree.
-export const ONCALL_JOBS = { condo: ['sweep', 'fix'], store: ['restock', 'serve'] };   // 🛒 serve: customers at the till (23 Sep 2026)
-const WEEKLY = { sweep: 6, fix: 5, restock: 6, serve: 5 };                    // days in a week that carry the call
-const DELAY = { sweep: [1, 4], fix: [3, 8], restock: [1, 5], serve: [2, 6] };      // minutes after the day's first visit
-export const NEEDS = { sweep: 1, fix: 1, restock: 2, serve: 2 };              // what answers it: the day's one piece of litter (23 Sep 2026: litter through the week), one cabinet, STAFF_FACES
+import { unlocked } from '../data/town/jobs.js';
+export const ONCALL_JOBS = { condo: ['sweep', 'fix'], store: ['restock', 'serve', 'deliver'] };   // 📦 deliver: a parcel to a resident's door (rank 3)   // 🛒 serve: customers at the till (23 Sep 2026)
+const WEEKLY = { sweep: 6, fix: 5, restock: 6, serve: 5, deliver: 3 };                    // days in a week that carry the call
+const DELAY = { sweep: [1, 4], fix: [3, 8], restock: [1, 5], serve: [2, 6], deliver: [3, 8] };      // minutes after the day's first visit
+export const NEEDS = { sweep: 1, fix: 1, restock: 2, serve: 2, deliver: 1 };              // what answers it: the day's one piece of litter (23 Sep 2026: litter through the week), one cabinet, STAFF_FACES
 
+const RANKED = { deliver: 'deliver' };   // the call kind → the unlock that brings it (jobs.js UNLOCKS)
 export const dayOf = (t) => Math.floor(t / 86400000);
 const get = (fn) => { try { return JSON.parse(fn() || 'null'); } catch (e) { return null; } };   // every key a literal at its read (the storage gate)
 const mix = (x) => { x = Math.imul(x ^ (x >>> 16), 0x7feb352d); x = Math.imul(x ^ (x >>> 15), 0x846ca68b); return (x ^ (x >>> 16)) >>> 0; };
@@ -48,6 +50,7 @@ function dayStart(now) {
 // how much of a call is answered today, from the room's own record of it
 function got(kind, day) {
   if (kind === 'restock') { const r = get(() => localStorage.getItem('tw-restock-v1')); return r && r.d === day ? r.n | 0 : 0; }
+  if (kind === 'deliver') { const r = get(() => localStorage.getItem('tw-deliver-v1')); return r && r.d === day ? r.n | 0 : 0; }
   if (kind === 'serve') { const r = get(() => localStorage.getItem('tw-serve-v1')); return r && r.d === day ? r.n | 0 : 0; }
   const a = get(() => localStorage.getItem('tw-arcade-v1'));
   if (!a || a.d !== day) return 0;
@@ -58,7 +61,9 @@ export function calls(at, now = Date.now()) {
   if (!ONCALL_JOBS[at]) return [];
   const day = dayOf(now), c = dayStart(now);
   const plan = QA() && Array.isArray(c.qa) ? c.qa.map((k) => ({ kind: k, after: 0 })) : schedule(at, day, who());
-  return plan.filter((p) => NEEDS[p.kind]).map((p) => {
+  // 🔓 a call a rank brings comes only once the rank is held (the store's parcel, rank 3) — a walk's own pin excepted
+  const rk = Math.max(1, (((get(() => localStorage.getItem('tw-job-v1')) || {}).lad || {}).rank) | 0);
+  return plan.filter((p) => NEEDS[p.kind] && (QA() && Array.isArray(c.qa) || !RANKED[p.kind] || unlocked(at, RANKED[p.kind], rk))).map((p) => {
     const left = Math.max(0, NEEDS[p.kind] - got(p.kind, day)), arrived = now >= c.t0 + p.after;
     return { kind: p.kind, at: c.t0 + p.after, arrived, done: left === 0, open: arrived && left > 0, left };
   });

@@ -275,6 +275,14 @@
 .tw-sort__stamp svg { display: block; }
 .tw-sort__fuse { position: absolute; left: 3px; right: 3px; bottom: 3px; height: 4px; background: #7bc35e; transform-origin: 0 50%; transform: scaleX(1); }
 .tw-sort__card.is-late .tw-sort__fuse { background: #f0b428; }
+/* 📦 A PARCEL (the post office's rank 3): kraft paper and string; on the scale a needle swings across it, a tap stops it */
+.tw-sort__card.is-parcel { background: #d9bb8e; box-shadow: 2px 2px 0 #000, inset 0 0 0 2px #a8845a; }
+.tw-sort__card.is-parcel::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #6b4a2b; opacity: 0.55; }
+.tw-sort__card.is-weigh { cursor: pointer; }
+.tw-sort__card.is-weigh .tw-sort__fuse { display: none; }
+.tw-sort__scale { position: absolute; left: 3px; right: 3px; bottom: 3px; height: 9px; background: #1a120c; border: 1px solid #000; }
+.tw-sort__scale b { position: absolute; top: 0; bottom: 0; background: #4f8a3a; }
+.tw-sort__scale u { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #ffe135; }
 .tw-sort__holes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; min-width: 0; }
 .tw-sort__holes.is-five { grid-template-columns: repeat(5, 1fr); gap: 5px; }   /* ✉️ rank 2: the town's own postmark as a fifth hole */
 .tw-sort__hole {
@@ -328,6 +336,12 @@
 /* 🍋 a BIG glass (the stand's rank 2): the ticket's pictures come bigger — the order reads "large" before a word is read */
 .tw-cup.is-big .tw-cup__tick { gap: 5px; }
 .tw-cup.is-big .tw-cup__pip { width: 22px; height: 24px; }
+/* 🍋 THE JUG (the stand's rank 3): its ticket is a jug, and the glasses left in it are small marks in the strip */
+.tw-cup__pip--jug { width: 18px; height: 22px; background: #ffe98a; border-radius: 0 0 5px 5px; }
+.tw-cup__jug { display: flex; gap: 2px; }
+.tw-cup__jug i { width: 6px; height: 11px; border: 2px solid #000; background: #ffd23f; }
+/* ☕ a special order's syrup (the café's rank 3): an amber drop on the ticket */
+.tw-cup__pip--syrup { background: #c8741e; border-radius: 999px; }
 /* squeeze — a hold: the glass fills with juice, and the stream is juice, not coffee */
 .tw-cup[data-deck="lemon"][data-st="squeeze"] .tw-cup__fill { background: linear-gradient(#fff6c2 0 7px, #ffd23f 7px); }
 .tw-cup[data-deck="lemon"][data-st="squeeze"] .tw-cup__bar::after { background: linear-gradient(#fff6c2, #f2c200); }
@@ -391,6 +405,14 @@
 .tw-serve__tag img, .tw-serve__held img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
 .tw-serve__held { position: absolute; width: 1.3%; transform: translate(-50%, -100%); pointer-events: none; line-height: 0; }
 .tw-serve__cust.is-gone { opacity: 0; transition: opacity 500ms ease-out; }
+/* 📦 THE STORE'S PARCEL (rank 3): on the floor, over your head, and a marker bouncing over the door it is for */
+.tw-deliver__box, .tw-deliver__held, .tw-deliver__to { position: absolute; transform: translate(-50%, -100%); pointer-events: none; line-height: 0; }
+.tw-deliver__box, .tw-deliver__held { width: 1.5%; }
+.tw-deliver__box img, .tw-deliver__held img, .tw-deliver__to img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.tw-deliver__to { width: 1.6%; padding: 3px; background: #fff8e6; border: 2px solid #000; box-shadow: 2px 2px 0 #000; animation: twDeliverBob 1.1s ease-in-out infinite; }
+.tw-deliver__to::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -6px; border: 6px solid transparent; border-top-color: #000; border-bottom: 0; }
+@keyframes twDeliverBob { 50% { transform: translate(-50%, calc(-100% - 6px)); } }
+@media (prefers-reduced-motion: reduce) { .tw-deliver__to { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .tw-cup--serve .tw-cup__fill, .tw-serve__cust.is-gone { transition: none; } }
 
 /* 🚪 THE WAY OUT (22 Sep 2026): the one button that ends a shift or a round, on the tray's strip. It sits in the
