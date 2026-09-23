@@ -332,8 +332,12 @@ faces are sprites drawn over it by band. So **how full the shop looks IS the tow
 with no new state and no number on screen. The restock chore is: carry a crate, the banana slows,
 the bare face fills, and the till ten steps away has that row on it before you leave.
 
-Pip's existing shelf card **stays tappable at the door** — the room is a gain, never a toll, and
-no shopper is charged a walk for something that already shipped.
+~~Pip's existing shelf card **stays tappable at the door** — the room is a gain, never a toll, and
+no shopper is charged a walk for something that already shipped.~~ **Reversed by Trym, 23 Sep 2026:**
+*"for the general store - right now when you click on the building, you get a popup with all the goods you can buy
+and a 'enter the store' button at the bottom of the popup - so this needs to move to inside the store instead since you
+can walk inside that store before anything happens, the same goes for the arcade really"*. A building with an inside
+is a door: a tap walks you in, and the shelf is on the counter inside (design library §22).
 
 ⚠️ Two traps already found by the research, both of which would have cost a session:
 - The `is-inside` CSS hide lists hide `.tw-state`, `.tw-mark` and `.tw-glow`, so **every sprite

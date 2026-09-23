@@ -407,7 +407,7 @@ let toastT = 0;
 // keeps its z over the veil and moves out of the card's rectangle: below it when there is room, above
 // it when there is not. ⚠️ run from BOTH doors — a toast said while a card is open, and a card opened
 // while a toast is up (the café's "off" line lands a beat before its receipt does).
-function placeToast() {
+function placeToast(opening) {
   toastEl.style.top = ''; toastEl.style.bottom = '';
   // ☕✉️ A COUNTER'S TRAY IS UP: the toast stands at the top of the view — under the HUD strip, AND under the
   // journal chips (the quest note, the work note), which is exactly where it used to land: the café's own
@@ -426,6 +426,10 @@ function placeToast() {
   const below = v.bottom - c.bottom, above = c.top - v.top;
   if (below >= t.height + 20) toastEl.style.bottom = Math.max(14, Math.round((below - t.height) / 2)) + 'px';
   else if (above >= t.height + 20) { toastEl.style.bottom = 'auto'; toastEl.style.top = Math.round((above - t.height) / 2) + 'px'; }
+  // 🃏 and when a card that fills the view has just OPENED, the line said before it gives way rather than sit on it — the
+  // store's own arrival line landed on Pip's shelf the moment the shelf moved inside (23 Sep 2026). A line said while the
+  // card is up (a purchase) is about the card, and stays.
+  else if (opening) { toastEl.hidden = true; clearTimeout(toastT); }
 }
 function say(text) {
   if (!text) return;   // a line the rig has not written (or a chunk not landed yet) says nothing, never an empty box
@@ -519,7 +523,7 @@ function tick(now) {
 // server picks the wedge and writes the tape. The Exchange is the honest one:
 // it reads the farm you actually have on this device and today's real price.
 const panel = document.getElementById('twPanel'), cardBody = document.getElementById('twCardBody'), card = panel.querySelector('.tw-card');
-function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; placeToast(); }
+function openCard(html) { cardBody.innerHTML = html; panel.hidden = false; placeToast(true); }
 // ⚠️ EVERY MODIFIER THIS CARD CAN WEAR IS NAMED HERE. openCard() never clears a class, so a modifier
 // left behind styles whatever the player opens NEXT — and every chunk that runs a loop inside the card
 // (the dialogue's typewriter, an arcade game, the dressing room's mirror) stops here or it runs forever.
@@ -630,7 +634,6 @@ function dressCard() {
 // you work opens it when the banana gets there, the way every reachable thing in this town answers; the work note is
 // its other door. Its own lazy chunk: nobody without a job downloads a byte of it. Everybody else's tap, and your tap
 // on anybody else's place, is untouched (openPlain below is the town's tap as it always was).
-const WORKPLACES = ['cafe', 'stand', 'post', 'condo', 'store'];
 let staff = null, staffP = null;
 function loadStaff() {
   if (!staffP) {
@@ -668,12 +671,26 @@ function staffAct(at, what) {
   }
   if (what === 'answer' || (what === 'second' && at === 'condo')) { walkThen(at, () => { if (inRoom !== at) enterRoom(at); }); return; }
   if (what === 'second' && at === 'post') { postCard(); return; }
-  if (what === 'second' && at === 'store' && room && room.seam.cards) room.seam.cards.store();   // 🏪 Pip's shelf, as a customer
+  // 🏪 Pip's shelf, as a customer — and it is on the counter inside now, so the walk goes in first
+  if (what === 'second' && at === 'store') walkThen('store', () => { if (inRoom !== 'store') enterRoom('store'); if (room && room.seam.cards) room.seam.cards.store(); });
 }
+// 🚪 A BUILDING WITH AN INSIDE IS A DOOR (Trym, 23 Sep 2026: "for the general store - right now when you click on the
+// building, you get a popup with all the goods you can buy and a 'enter the store' button at the bottom of the popup - so
+// this needs to move to inside the store instead since you can walk inside that store before anything happens, the same
+// goes for the arcade really, theres an inside of that building aswell, while the others doesnt"). A tap on the store or
+// the arcade walks the banana to its door and in — customers and staff alike — and what the place has for you is inside:
+// Pip's shelf on the counter, the cabinets, the day's calls lit for its staff. A shut or locked front still answers at the
+// door (openPlain), because there is no inside to go to then.
+const INSIDES = ['store', 'condo'];
+const DOOR_CARD = ['cafe', 'stand', 'post'];   // 💼 the workplaces with no inside answer their staff with the staff card
+const barred = (key) => !!(room && ((room.seam.shutNow && room.seam.shutNow(key)) || (room.seam.hoardNow && room.seam.hoardNow(key))));
 function openFor(key) {
-  // 💼 your own workplace answers its own staff with the staff card — unless its front is locked to you (the lock
-  // answers first, as it does for everybody)
-  if (!inRoom && WORKPLACES.includes(key) && isStaff(key) && !(room && room.seam.hoardNow && room.seam.hoardNow(key))) {
+  if (!inRoom && INSIDES.includes(key) && ROOMS[key] && !barred(key)) {
+    arriveThen = () => { if (!inRoom) enterRoom(key); };
+    return true;
+  }
+  // 💼 your own workplace (one with no inside) answers you with your staff card, when the banana gets there
+  if (!inRoom && DOOR_CARD.includes(key) && isStaff(key) && !(room && room.seam.hoardNow && room.seam.hoardNow(key))) {
     arriveThen = () => { staffCard(key, 'place'); };
     return true;
   }
@@ -688,10 +705,8 @@ function openPlain(key) {
   if (key === 'post') { postCard(); return true; }   // ✉️ your letters, and writing back
   if (key === 'info') { infoCard(); return true; }   // 🗺️ the rack of maps, and the rave's flyer
   if (key === 'wheel' || key === 'exchange') return marketCard(key);   // 🎡📈 real since 23 Sep 2026 (town-market.js)
-  // 🚪 a door with a room behind it. ⚠️ town-room.js gets FIRST refusal above, and it still owns
-  // 'store' — a shut front says why, and an open one gives Pip's shelf at the door, which is the
-  // plan's rule (docs/town-jobs-plan.md §4: "the room is a gain, never a toll"). The store's room is
-  // entered from that card, so this branch is reached by the arcade and by any later door of its kind.
+  // 🚪 a door with a room behind it. The store and the arcade are walked into by openFor above (23 Sep 2026); a shut or
+  // locked front reaches town-room.js first and says why. This is the fallback for any later door of their kind.
   if (ROOMS[key] && !inRoom) { enterRoom(key); return true; }
   if (key === 'bus') { travel.open(); return true; }   // the shelter is the travel door's place in the world
   if (inRoom === 'condo' && CABINET[key]) return gameCard(key);   // a cabinet is the arcade's alone: the key space is shared by every room

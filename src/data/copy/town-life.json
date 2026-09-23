@@ -145,8 +145,7 @@
   },
   "rooms": {
     "condo": "Spinner’s Arcade. Tap a cabinet to play; scores earn prizes to wear.",
-    "store": "Pip’s general store. Today’s shelves and counter sell homestead things.",
-    "in": "Step inside"
+    "store": "Pip’s general store. Today’s shelves and counter sell homestead things."
   },
   "objects": [
     {

@@ -660,11 +660,24 @@ Two more things a room sprite must get right, both measured on the real page:
   The store's plate sits directly over the store's shopfront, so a fall-through would find the
   front behind it and re-enter the room you are already standing in.
 
-### What a room is not
+### A building with an inside is a door
 
-A room is not a toll. If a card already answered at the door, it keeps answering at the door, and
-the room is something you may do instead (docs/town-jobs-plan.md §4). Pip's shelf opens on one tap
-of the shopfront exactly as it always did; **"Step inside" is one more row on that same card.**
+Trym, 23 Sep 2026: *"for the general store - right now when you click on the building, you get a
+popup with all the goods you can buy and a 'enter the store' button at the bottom of the popup - so
+this needs to move to inside the store instead since you can walk inside that store before anything
+happens, the same goes for the arcade really, theres an inside of that building aswell, while the
+others doesnt"*.
+
+So a tap on a building that HAS a room walks the banana to its door and in, with nothing popping up
+at the door, for customers and staff alike. What the place has for you is inside: Pip's shelf is the
+counter's card (the till), the arcade's cabinets are its games, the day's calls are lit in the room for
+its staff. A building with no inside (the café's hatch, the lemonade stand, the post office, the kiosk)
+answers with its card where it stands. A shut or locked front answers at the door too, because there
+is no inside to go to then.
+
+⚠️ This REVERSES the rule that was here ("a room is not a toll: Pip's shelf opens on one tap of the
+shopfront, and 'Step inside' is one more row on that same card", docs/town-jobs-plan.md §4). Do not
+put a shop card back on a door that has a room behind it.
 
 ## The enforcement ledger — which of these rules can actually fail a build
 

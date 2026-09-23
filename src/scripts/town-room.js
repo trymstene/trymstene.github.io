@@ -1080,7 +1080,7 @@ export function bootTownLife(ctx) {
       ctx.then(() => chore(key));
       return true;
     }
-    if (key === 'store' || key === 'till') return shopCard('store');   // 🏪 the front AND the counter inside: the shelf is the same shelf
+    if (key === 'store' || key === 'till') return shopCard('store');   // 🏪 the counter inside (a tap on the front walks you in since 23 Sep 2026: banana-town.js openFor)
     return false;
   }
 

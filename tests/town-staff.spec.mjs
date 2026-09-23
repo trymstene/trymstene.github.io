@@ -90,77 +90,96 @@ test('your own workplace answers a real tap with your staff card; a stranger’s
   expect(errs).toEqual([]);
 });
 
-test('the arcade calls its staff: today’s calls, Answer takes you in with them lit, and a quiet day says so', async ({ page }) => {
+// 🚪 THE ARCADE AND THE STORE ARE DOORS (Trym, 23 Sep 2026: "you can walk inside that store before anything happens,
+// the same goes for the arcade really, theres an inside of that building aswell"): their own staff walk in like anybody
+// else, the work is lit inside, and the staff card is the work note's — which stays up inside your own workplace.
+test('the arcade is a door for its staff too: in first, the calls lit inside, the card on the note; a quiet day says so', async ({ page }) => {
   test.setTimeout(90000);
   const errs = await town(page);
   await page.evaluate(() => window.__town.work.set({ at: 'condo', sofar: 20 }));
-  await page.evaluate(() => window.__town.room.arcadeReset('g2'));   // a fresh day: three bits of litter, g2 dark
+  await page.evaluate(() => window.__town.room.arcadeReset('g2'));   // a fresh day with its calls in: three bits of litter, g2 dark
   await stand(page, 480, 600);
+
+  // ── the tap on the arcade: no card at the door, the banana goes in, and the calls are there, lit
   await page.evaluate(() => window.__town.open('condo'));
+  await page.waitForFunction(() => window.__town.rooms.now() === 'condo', null, { timeout: 15000 });
+  expect(await card(page), 'nothing opened at the door').toBe(null);
+  const a = await page.evaluate(() => window.__town.room.arcade());
+  expect(a.litter.length, 'the litter on the floor').toBe(3);
+  expect(a.dead, 'the dark cabinet').toBe('g2');
+
+  // ── inside, the note is up, and it opens the card: today's calls, the week, the wage
+  await page.waitForFunction(() => !window.__town.duties.hidden(), null, { timeout: 5000 });
+  await page.click('.twd-chip__line');
   await waitCard(page, 'condo');
   let c = await card(page);
   expect(c.kind, 'the arcade is the town calling').toBe('oncall');
   expect(c.calls, 'the litter and the dark cabinet are today’s calls').toEqual(['sweep', 'fix']);
   expect(c.text, 'the litter is counted').toMatch(new RegExp(STAFF.call.sweep + '\\s*3'));
   expect(c.go).toBe(STAFF.answer);
-  expect(c.second, 'and the arcade is still a place to play').toBe(STAFF.second.condo);
   expect(c.text, 'the week').toContain(DUTY.kinds.sweep);
   expect(c.text, 'the wage').toContain(STAFF.wage);
   await page.locator('.tw-card').screenshot({ path: SHOT + 'arcade.png' });
-
-  // ── Answer the calls: through the door, and the calls are there, lit, for the staff
+  // Answer the calls, standing in the arcade already: the card closes and you are where the work is
   await page.click('#twsGo');
-  await page.waitForFunction(() => window.__town.rooms.now() === 'condo', null, { timeout: 15000 });
-  const a = await page.evaluate(() => window.__town.room.arcade());
-  expect(a.litter.length, 'the litter on the floor').toBe(3);
-  expect(a.dead, 'the dark cabinet').toBe('g2');
+  expect(await page.evaluate(() => document.getElementById('twPanel').hidden)).toBe(true);
+  expect(await page.evaluate(() => window.__town.rooms.now()), 'still in the arcade').toBe('condo');
   await page.evaluate(() => window.__town.rooms.exit());
 
-  // ── every call answered: the card says nothing needs you, has no big button, and the door still takes you in
+  // ── every call answered: from the square, the note's card says nothing needs you, and its other use walks you in to play
   await page.evaluate(() => { const k = 'tw-arcade-v1', a = JSON.parse(localStorage.getItem(k)); a.swept = [0, 1, 2]; a.fixed = ['g2']; localStorage.setItem(k, JSON.stringify(a)); });
-  await page.evaluate(() => window.__town.open('condo'));
+  await page.waitForTimeout(1400);
+  await page.click('.twd-chip__line');
   await waitCard(page, 'condo');
   c = await card(page);
   expect(c.calls, 'no calls').toEqual([]);
   expect(c.text, 'said plainly').toContain(STAFF.quiet);
   expect(c.go, 'nothing to press').toBe('');
+  expect(c.second, 'and the arcade is still a place to play').toBe(STAFF.second.condo);
   await page.click('#twsSecond');
   await page.waitForFunction(() => window.__town.rooms.now() === 'condo', null, { timeout: 15000 });
   const ev = await events(page, 'town_staff');
   expect(ev.map((e) => e.act)).toEqual(['open', 'answer', 'open', 'second']);
+  expect(ev[0].door, 'the card came from the note').toBe('note');
   expect(ev[0].calls, 'an open says how many calls were waiting').toBe(2);
   expect(errs).toEqual([]);
 });
 
-test('the store calls its staff to its bare shelves, and Pip’s shelf is still one tap away', async ({ page }) => {
+test('the store is a door for its staff too: in first, the crates lit; Pip’s shelf is the counter’s, from the card as well', async ({ page }) => {
   test.setTimeout(90000);
   const errs = await town(page);
   await page.evaluate(() => window.__town.work.set({ at: 'store', sofar: 30 }));
   await page.evaluate(() => localStorage.setItem('tw-calls-v1', JSON.stringify({ d: Math.floor(Date.now() / 864e5), t0: Date.now() - 36e5, qa: ['restock'] })));   // the day's delivery call is in (slice 0b)
   expect(await page.evaluate(() => window.__town.room.shopReady()), 'the shop’s chunk arrives').toBe(true);
   await stand(page, 480, 1080);
+
+  // ── the tap on the store: no shelf and no card at the door; the banana goes in and the crates are lit
   await page.evaluate(() => window.__town.open('store'));
+  await page.waitForFunction(() => window.__town.rooms.now() === 'store', null, { timeout: 15000 });
+  expect(await card(page), 'no staff card at the door').toBe(null);
+  expect(await page.locator('.tw-store').count(), 'no shelf at the door').toBe(0);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => document.querySelectorAll('#twWorld .is-todo').length), 'the crates glow').toBeGreaterThan(0);
+
+  // ── the note's card, inside: the delivery is today's call
+  await page.click('.twd-chip__line');
   await waitCard(page, 'store');
-  let c = await card(page);
+  const c = await card(page);
   expect(c.kind).toBe('oncall');
   expect(c.calls, 'the bare faces are today’s call').toEqual(['restock']);
   expect(c.go).toBe(STAFF.answer);
   expect(c.second).toBe(STAFF.second.store);
   await page.locator('.tw-card').screenshot({ path: SHOT + 'store.png' });
 
-  // ── Answer: inside, and the crates are lit for the one who can lift them
-  await page.click('#twsGo');
-  await page.waitForFunction(() => window.__town.rooms.now() === 'store', null, { timeout: 15000 });
-  await page.waitForTimeout(300);
-  expect(await page.evaluate(() => document.querySelectorAll('#twWorld .is-todo').length), 'the crates glow').toBeGreaterThan(0);
+  // ── its other use from out on the square: the banana walks in, and Pip's shelf opens on the counter
+  await page.evaluate(() => document.getElementById('twCardX').click());
   await page.evaluate(() => window.__town.rooms.exit());
-
-  // ── the other use: Pip's shelf, the one every customer gets at this door
-  await page.evaluate(() => window.__town.open('store'));
+  await page.waitForTimeout(400);
+  await page.click('.twd-chip__line');
   await waitCard(page, 'store');
   await page.click('#twsSecond');
-  await page.waitForFunction(() => !document.getElementById('twPanel').hidden && document.querySelectorAll('.tw-store').length === 1, null, { timeout: 15000 });
-  expect(await card(page), 'the shelf replaced the staff card').toBe(null);
+  await page.waitForFunction(() => window.__town.rooms.now() === 'store' && !document.getElementById('twPanel').hidden && document.querySelectorAll('.tw-store').length === 1, null, { timeout: 15000 });
+  expect(await card(page), 'the shelf, not the staff card').toBe(null);
   expect(errs).toEqual([]);
 });
 

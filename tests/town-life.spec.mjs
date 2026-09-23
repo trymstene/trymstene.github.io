@@ -673,27 +673,37 @@ test('the arcade: you step in, the walls hold you, and the door puts you back on
 });
 
 // 🏪 PIP'S SHOP IS A PLACE YOU CAN STAND IN (19 Sep 2026). The second interior the town has ever
-// had, and the one that proves `inside` becoming a room KEY was worth doing. ⭐ The plan's rule is
-// the load-bearing one (docs/town-jobs-plan.md §4): "Pip's existing shelf card stays tappable at the
-// door — the room is a gain, never a toll". So the front still opens the shelf in one tap with no
-// walk, and the way inside is one more row on that same card.
-test('the general store: the shelf stays at the door, the room is a gain, and the counter inside is the same shelf', async ({ page }) => {
+// had, and the one that proves `inside` becoming a room KEY was worth doing. Its first rule was "Pip's existing shelf
+// card stays tappable at the door — the room is a gain, never a toll" (docs/town-jobs-plan.md §4).
+// ⚠️ REVERSED 23 Sep 2026 (Trym: "right now when you click on the building, you get a popup with all the goods you can
+// buy and a 'enter the store' button at the bottom of the popup - so this needs to move to inside the store instead since
+// you can walk inside that store before anything happens"). A building with an inside is a DOOR (design library §22):
+// a tap on the front opens nothing, walks the banana to the door and in, and the shelf is the counter's card.
+test('the general store is a door: a tap walks you in with nothing at the front, and the shelf is on the counter inside', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await town(page);
   await setBand(page, 70);   // lively: the store is open and the shelf has rows
   expect(await room(page, 'shut')).not.toContain('store');
 
-  // ── the door: the shelf, at once, and the way in under it
-  await seam(page, () => window.__town.room.open('store'));
-  await page.waitForTimeout(400);
-  expect(await page.locator('.tw-store').count(), 'the shelf is on the card at the door').toBe(1);
-  expect(await page.locator('.tw-btn--in').count()).toBe(1);
-  expect(await seam(page, () => window.__town.rooms.now()), 'tapping the front does NOT charge you a walk').toBe('');
-
-  // ── stepping inside
-  await page.locator('.tw-btn--in').click();
-  await page.waitForTimeout(900);
+  // ── the door: a REAL tap on the shopfront, from a few steps up the street
+  const door = await seam(page, () => window.__town.SPOTS.store);
+  await stand(page, door.x + 150, door.y + 70);
+  await page.waitForTimeout(700);
+  let front = null;
+  for (let dy = 20; dy <= 160 && !front; dy += 10) {
+    const hit = await seam(page, ([x, y]) => window.__town.thing(x, y), [door.x, door.y - dy]);
+    if (hit && hit[1] === 'store') front = { x: door.x, y: door.y - dy };
+  }
+  expect(front, 'the shopfront answers a tap').not.toBeNull();
+  const p = await page.evaluate(([x, y]) => { const w = document.getElementById('twWorld'), k = parseFloat(w.style.getPropertyValue('--ws')), r = w.getBoundingClientRect(); return { x: r.left + x * k, y: r.top + y * k }; }, [front.x, front.y]);
+  await page.mouse.click(p.x, p.y);
+  await page.waitForTimeout(250);
+  expect(await page.evaluate(() => document.getElementById('twPanel').hidden), 'nothing opens at the front').toBe(true);
+  expect(await page.locator('.tw-store').count(), 'no shelf at the door').toBe(0);
+  expect(await seam(page, () => window.__town.rooms.now()), 'the banana walks to the door first').toBe('');
+  await page.waitForFunction(() => window.__town.rooms.now() === 'store', null, { timeout: 15000 });
+  await page.waitForTimeout(500);
   const st = await page.evaluate(() => ({
     now: window.__town.rooms.now(),
     marked: document.getElementById('twWorld').classList.contains('is-inside'),
@@ -709,10 +719,14 @@ test('the general store: the shelf stays at the door, the room is a gain, and th
   expect(st.pos.y).toBeGreaterThan(st.box[1]);
   expect(st.pos.y).toBeLessThan(st.box[1] + st.box[3]);
 
-  // ── the counter inside is the SAME shelf, not a second one
+  // ── the counter inside is where the shelf is, and its card carries no way "inside" any more
   await seam(page, () => window.__town.room.open('till'));
   await page.waitForTimeout(400);
-  expect(await page.locator('.tw-store').count()).toBe(1);
+  expect(await page.locator('.tw-store').count(), 'Pip’s shelf, on the counter').toBe(1);
+  expect(await page.locator('.tw-card .tw-btn--in').count(), 'no "step inside" row: you are inside').toBe(0);
+  // ⚠️ the store's arrival line was still up when the shelf opened, and sat on it: a line said before a card gives way
+  const clash = await page.evaluate(() => { const t = document.getElementById('twToast'), c = document.querySelector('.tw-card').getBoundingClientRect(); if (t.hidden) return false; const r = t.getBoundingClientRect(); return r.bottom > c.top && r.top < c.bottom; });
+  expect(clash, 'nothing said before the card sits on it').toBe(false);
   await seam(page, () => document.getElementById('twCardX').click());
 
   // ── the doorway puts you back on the shop's own doorstep

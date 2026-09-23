@@ -29,7 +29,7 @@ export function bootTownShop(ctx) {
     // ⚠️ GETTERS: town-room reassigns each of these, so a value would go stale
     band, life, problems, curse,
     // the world's card furniture and its books
-    openCard, closeCard, cardBody, card, esc, say, hud, track, enterRoom,
+    openCard, closeCard, cardBody, card, esc, say, hud, track,
   } = ctx;
 
     function rows(ids, markup, where) {
@@ -66,16 +66,10 @@ export function bootTownShop(ctx) {
         + (ids ? (w.greet ? '<p class="tw-card__sub">' + esc(fill(w.greet)) + '</p>' : '') + '<div class="tw-store">' + rows(ids, 1, 'store') + '</div>'
           : (w.shut ? '<p class="tw-card__sub">' + esc(fill(w.shut)) + '</p>' : '<p class="tw-card__sub"></p>')));
       if (ids) wireBuys(w.sold);
-      // 🚪 THE ROOM IS A GAIN, NEVER A TOLL (docs/town-jobs-plan.md §4). The shelf stays exactly where
-      // it has always been — one tap on the front, no walk — and the way inside is one more row on the
-      // same card. A shut front never gets here: openFor answers that first.
-      const wr = COPY.rooms || {};
-      if (wr.in && enterRoom) {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'tw-btn--in'; b.textContent = fill(wr.in);
-        b.addEventListener('click', () => { closeCard(); enterRoom('store'); });
-        cardBody.appendChild(b);
-      }
+      // 🚪 THE SHELF IS ON THE COUNTER INSIDE (Trym, 23 Sep 2026: "you can walk inside that store before anything
+      // happens"). A tap on the shopfront walks you in (banana-town.js openFor); this card is the till's, so it carries no
+      // way inside. It used to open at the door with a "Step inside" row under the goods (the old "a room is a gain,
+      // never a toll" rule, docs/town-jobs-plan.md §4), and that is the thing Trym asked to move.
       return true;
     }
     function merchantCard() {
