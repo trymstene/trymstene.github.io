@@ -1266,3 +1266,14 @@ tests/town-unlocks.spec.mjs.
 
 Walks: tests/town-unlocks.spec.mjs (the night shift), tests/town-cafe.spec.mjs (the counter speaks at its moment);
 worker-pass jobs.test.mjs §21–24.
+
+### 24.1 The second review (24 Sep 2026, 4a7c83ae)
+
+- The first review code (live a few hours on 23 Sep) judged weeks before REVIEW_FROM: its strikes (`j.zero`) and warnings
+  are undone once per record (`j.rf`), and a workplace already at its top rank is owed its memento.
+- The Thursday nudge and the review judge by one rule (`judged`): from REVIEW_FROM, and only a week you FIRST joined that
+  workplace by its Monday (`j.first[at]`) — quitting and asking again mid-week buys no week off.
+- The night shift counts each ghost once a day (`tw-ghost-v1`); a caught ghost forms again and is not a second repair.
+- Registered post's double is its own chore (`reg`, 5 a sealed card, `XP.post.reg` 15), outside the round's cap of 60.
+- The memento goes into the shed first and back out if the pass worker says it was given elsewhere.
+- A hire in flight: the turn-up chore waits, and a 409 'no job' cannot undo it on the device.
