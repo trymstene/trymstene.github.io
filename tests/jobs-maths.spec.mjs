@@ -18,9 +18,10 @@ test('a week of work pays by its share, duty by duty, and prints its own reasoni
   expect(payOf('condo', { sweep: 2, fix: 1 }), '…which is half the rate').toBe(Math.round(JOB_PAY.condo / 2));
   expect(rowsOf('condo', { sweep: 5, fix: 1 }), 'the rows a chip or a payslip prints, capped at the target').toEqual([{ kind: 'sweep', done: 3, of: 3 }, { kind: 'fix', done: 1, of: 3 }]);
   // the store: restocking, and being there
-  expect(dutiesOf('store').map((d) => d[0]), 'the store counts crates and days').toEqual(['restock', 'days']);
-  expect(payOf('store', { restock: 3, days: 3 }), 'a full week at the store').toBe(JOB_PAY.store);
-  expect(payOf('store', { restock: 0, days: 3 }), 'only turning up is half the store’s week').toBe(Math.round(JOB_PAY.store / 2));
+  expect(dutiesOf('store').map((d) => d[0]), '🛒 the store counts crates and customers (it was days turned up until 23 Sep 2026)').toEqual(['restock', 'serve']);
+  expect(payOf('store', { restock: 3, serve: 3 }), 'a full week at the store').toBe(JOB_PAY.store);
+  expect(payOf('store', { restock: 0, serve: 3 }), 'only the customers is half the store’s week').toBe(Math.round(JOB_PAY.store / 2));
+  expect(payOf('store', { days: 5 }), 'and turning up alone is nothing there now').toBe(0);
   // the post office: rounds of sorting at the counter, and being there (22 Sep 2026)
   expect(dutiesOf('post').map((d) => d[0]), 'the post office counts rounds and days').toEqual(['sort', 'days']);
   expect(payOf('post', { sort: 3, days: 3 }), 'a full week at the post office').toBe(JOB_PAY.post);
@@ -73,8 +74,8 @@ test('the ladder: ranks by XP, one pay scale that rises a fifth a rank, and tips
   expect(tipsCap('cafe', 2)).toBe(22);
   expect(tipsCap('store', 3), 'a payslip job has no tips').toBe(0);
   // a cheque scales with the rank
-  expect(payOf('store', { restock: 3, days: 3 }, 2), 'a full week at the store’s second rank').toBe(180);
-  expect(payOf('store', { restock: 3, days: 3 }), 'no rank given is the first').toBe(150);
+  expect(payOf('store', { restock: 3, serve: 3 }, 2), 'a full week at the store’s second rank').toBe(180);
+  expect(payOf('store', { restock: 3, serve: 3 }), 'no rank given is the first').toBe(150);
   expect(payOf('cafe', { days: 7 }, 4), 'the café pays no cheque at any rank').toBe(0);
   // the XP a verb earns
   expect([0, 1, 2].map((g) => xpFor('stand', 'cup', g)), 'a glass by its grade').toEqual([0, 2, 4]);
@@ -83,22 +84,23 @@ test('the ladder: ranks by XP, one pay scale that rises a fifth a rank, and tips
   expect(xpFor('condo', 'sweep'), 'the day’s piece of litter (one a call day since 23 Sep 2026)').toBe(45);
   expect(xpFor('condo', 'fix'), 'a repair reported with no grade (an older page) earns its top').toBe(45);
   expect([0, 1, 2].map((g) => xpFor('condo', 'fix', g)), '🔧 a repair by its grade: spoiled, fine, perfect').toEqual([0, 30, 45]);
-  expect(xpFor('store', 'restock')).toBe(45);
+  expect(xpFor('store', 'restock')).toBe(30);
+  expect([0, 1, 2].map((g) => xpFor('store', 'serve', g)), '🛒 a customer by how quickly: gave up, in time, quickly').toEqual([0, 10, 15]);
   expect(xpFor('post', 'sort', roundXp(12, 0)), 'a perfect round is the most a round earns').toBe(60);
   expect(xpFor('post', 'sort', roundXp(4, 3)), 'four fresh and three late').toBe(26);
   expect(xpFor('post', 'sort', 999), 'and no forged round earns more').toBe(60);
   expect(xpFor('store', 'sweep'), 'a verb another workplace owns earns nothing here').toBe(0);
   // a full day fills each workplace's cap from its own verbs
   expect(DAY_XP + xpFor('condo', 'sweep') + xpFor('condo', 'fix'), 'the arcade: the day’s piece of litter and a cabinet').toBe(LADDER.condo.day);
-  expect(DAY_XP + 2 * xpFor('store', 'restock'), 'the store: the delivery’s two faces').toBe(LADDER.store.day);
+  expect(DAY_XP + 2 * xpFor('store', 'restock') + 2 * xpFor('store', 'serve', 2), 'the store: the delivery’s two faces and the day’s two customers').toBe(LADDER.store.day);
   expect(DAY_XP + 2 * xpFor('post', 'sort', roundXp(12, 0)), 'the post office: two perfect rounds').toBeGreaterThanOrEqual(LADDER.post.day);
 });
 
 // ↕ THE WEEKLY REVIEW (23 Sep 2026): what a week at each kind of job comes to, and what that moves
 test('the review: full, ordinary, poor and empty weeks at a payslip job and at a counter', () => {
-  expect(reviewOf('store', { restock: 3, days: 3 }), 'every duty met').toBe('full');
-  expect(reviewOf('store', { restock: 1, days: 2 }), 'half the work').toBe('ok');
-  expect(reviewOf('store', { restock: 0, days: 1 }), 'a sixth of it').toBe('poor');
+  expect(reviewOf('store', { restock: 3, serve: 3 }), 'every duty met').toBe('full');
+  expect(reviewOf('store', { restock: 1, serve: 2 }), 'half the work').toBe('ok');
+  expect(reviewOf('store', { serve: 1 }), 'a sixth of it').toBe('poor');
   expect(reviewOf('store', {}), 'nothing at all').toBe('empty');
   expect(reviewOf('condo', { days: 3 }), 'turning up at the arcade and sweeping nothing is nothing').toBe('empty');
   expect(reviewOf('cafe', { days: 3, cups: [1, 4, 8] }), 'three days, four cups in five good or better').toBe('full');

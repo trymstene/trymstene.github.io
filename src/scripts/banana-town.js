@@ -260,6 +260,14 @@ addEventListener('resize', layout);
 layout();
 const pos = { x: SPAWN.x, y: SPAWN.y }, tgt = { x: SPAWN.x, y: SPAWN.y };
 function camTarget() {
+  // 🚪 INDOORS THE CAMERA FRAMES THE ROOM (23 Sep 2026). It followed the banana against the whole world, so at the store's
+  // shelves a phone showed the dark beyond the left wall and lost the till off the right — where the customer waits.
+  // A room as wide as the view (PLAZA_FIT) is centred and stays still; a wider one pans between its own walls.
+  const b = roomNow() && roomNow().box;
+  if (b) {
+    const a = b[0] * scale, n = b[2] * scale;
+    return { x: n <= viewW ? a - (viewW - n) / 2 : Math.max(a, Math.min(a + n - viewW, pos.x * scale - viewW / 2)), y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)) };
+  }
   return {
     x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), pos.x * scale - viewW / 2)),
     y: Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)),
@@ -389,6 +397,7 @@ view.addEventListener('pointerdown', (e) => {
       return;
     }
     if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { if (life.pick(hit[1])) { float(f.x, f.y - 30, '+1'); hud.refresh(); } }; } return; }   // walk to it, then it is picked up: a point of rep, the park's litter rule
+    if (inRoom === 'store' && serve && serve.tap(hit[1])) return;   // 🛒 a customer is waiting: the shelves and the till are theirs first
     const spot = SPOTS[hit[1]], wasIn = inRoom;
     // ⚠️ a thing with nothing to say says NOTHING. This used to fall back to the raw key, which was
     // harmless while every tappable thing had an entry — a room full of shelves would have toasted "sh1".
@@ -581,6 +590,19 @@ const working = () => !!(room && room.seam && room.seam.working && room.seam.wor
 // 🔧 THE ARCADE'S REPAIR GAME (23 Sep 2026) — its own lazy chunk, loaded the first time a member of staff reaches a dark
 // cabinet. The room hands over the cabinet; the game hands back a grade and the room wakes it.
 let repair = null, repairP = null;
+// 🛒 THE STORE'S CUSTOMERS (23 Sep 2026) — their own lazy chunk, loaded when the store's own staff walk into it
+let serve = null, serveP = null;
+function loadServe() {
+  if (!serveP) {
+    serveP = import('./town-serve.js')
+      .then((m) => { serve = m.bootTownServe({ world, view, W, H, pct, pos, say, track, drawMe: (g, size, frame, outfit) => drawComposite(g, size, frame, outfit),
+        walk: (x, y, fn) => { tgt.x = x; tgt.y = y; arriveThen = fn; }, burst: (x, y) => burstAt(x, y, '', true),
+        items: () => (room && room.seam.shelf ? room.seam.shelf() : []), job: () => (work ? work.seam.job() : null),
+        chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null) }); if (window.__town) window.__town.serve = serve.seam; return serve; })
+      .catch((e) => { serveP = null; console.warn('[town] the customers did not come', e); return null; });
+  }
+  return serveP;
+}
 function loadRepair() {
   if (!repairP) {
     repairP = import('./town-repair.js')
@@ -754,9 +776,11 @@ function enterRoom(key) {
   if (room && room.roomShow) room.roomShow(key);   // 🧺 what the room shows of itself: the store's shelves fill with the town's health
   const rw = room && room.seam && room.seam.copyOf ? room.seam.copyOf('rooms') : null;   // the words are the rig's
   if (rw && rw[key]) say(rw[key]);
+  if (key === 'store' && work && (work.seam.job() || {}).at === 'store') loadServe().then((c) => { if (c && inRoom === 'store') c.enter(); });   // 🛒 the store's own staff: customers may come in
 }
 function exitRoom() {
   const key = inRoom; if (!key) return;
+  if (serve) serve.leave();   // 🛒 customers belong to the shop
   inRoom = '';
   if (room && room.roomShow) room.roomShow('');
   world.classList.remove('is-inside');
@@ -834,7 +858,7 @@ const POCKET_ICON = { firework: 'party-popper-solid', lure: 'fish-solid' };
 // so during a shift the pocket opened completely behind the counter's tray and a tap on the bag did
 // nothing a player could see. The counter yields while the bag is open and comes back when it closes —
 // the same courtesy the toast already does for the pocket, two lines down.
-const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} try { const l = room && room.seam && room.seam.lemon && room.seam.lemon(); if (l && l.hold) l.hold(v); } catch (e) {} try { if (sort && sort.hold) sort.hold(v); } catch (e) {} try { if (repair) repair.hold(v); } catch (e) {} };
+const cafeYield = (v) => { try { const c = room && room.seam && room.seam.cafe && room.seam.cafe(); if (c && c.hold) c.hold(v); } catch (e) {} try { const l = room && room.seam && room.seam.lemon && room.seam.lemon(); if (l && l.hold) l.hold(v); } catch (e) {} try { if (sort && sort.hold) sort.hold(v); } catch (e) {} try { if (repair) repair.hold(v); } catch (e) {} try { if (serve) serve.hold(v); } catch (e) {} };
 function toggleTray() {
   if (!tray.hidden) { tray.hidden = true; cafeYield(false); return; }
   cafeYield(true);

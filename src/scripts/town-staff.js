@@ -27,7 +27,7 @@ export const SHIFT = ['cafe', 'stand', 'post'];   // a round you play
 export const ONCALL = ['condo', 'store'];         // the town calls you
 export const WORKPLACES = [...SHIFT, ...ONCALL];
 const TIPS = ['cafe', 'stand'];                   // paid per glass, not by payslip (src/data/town/jobs.js JOB_PAY 0)
-const CALL_KINDS = ['sweep', 'fix', 'restock'];
+const CALL_KINDS = ['sweep', 'fix', 'restock', 'serve'];
 
 const CSS = `
 .tws { display:grid; gap:0.55rem; }

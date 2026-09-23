@@ -1396,13 +1396,14 @@ const pageSchema = {
 // 💼 THE WORK NOTE (22 Sep 2026; docs/town-jobs-plan.md §12): the quest chip's sibling in the town's
 // paper — the week's counts (composed by the game from the duty labels and the numbers) and one line
 // under them. The numbers are the pass worker's and go into {coins} and {days}; the words never carry one.
-export const DUTY_KINDS = ['sweep', 'fix', 'restock', 'days', 'sort'];
+export const DUTY_KINDS = ['sweep', 'fix', 'restock', 'days', 'sort', 'serve'];
 export const DUTY_BOSS = ['condo', 'store', 'post', 'cafe', 'stand'];   // ↕ the counters can be nudged and let go too (23 Sep 2026, the weekly review)
 const dutyFields = {
   'kinds.sweep': { kind: 'label', aim: 11, max: 18, note: 'The arcade floor, swept — the duty AS DONE, two or three lower-case words, no number: e.g. what goes before "1/3" in "floor swept 1/3".' },
   'kinds.fix': { kind: 'label', aim: 14, max: 18, note: 'A dark arcade cabinet brought back — the duty as done, two or three lower-case words, no number.' },
   'kinds.restock': { kind: 'label', aim: 15, max: 18, note: 'The General Store\u2019s shelf restocked from a crate — the duty as done, two or three lower-case words, no number.' },
   'kinds.days': { kind: 'label', aim: 9, max: 18, note: 'Days you turned up at the workplace — as done, one or two lower-case words, no number.' },
+  'kinds.serve': { kind: 'label', aim: 16, max: 18, note: 'Customers served at the store’s till (23 Sep 2026) — the duty as done, two or three lower-case words, no number.' },
   'kinds.sort': { kind: 'label', aim: 11, max: 18, note: 'The post office\u2019s post sorted (a duty that comes later) — as done, two lower-case words, no number.' },
   'duty.cafe': { kind: 'prose', aim: 44, max: 70, note: 'The Coffee Cup\u2019s note until you have clocked in today: clock in at the serving window and make cups. Lower case first letter.' },
   'duty.stand': { kind: 'prose', aim: 44, max: 70, note: 'The lemonade stand\u2019s note until you have clocked in today: step behind Fig Jr.\u2019s stand and pour glasses of lemonade for whoever comes to the front. Lower case first letter, no numbers, not the café\u2019s words.' },
@@ -1428,6 +1429,7 @@ const dutyFields = {
   'call.sweep': { kind: 'prose', aim: 55, max: 80, note: 'The note when the arcade\u2019s litter call has come in: Spinner calls, litter on the arcade floor, open until midnight. Starts with Spinner\u2019s name.' },
   'call.fix': { kind: 'prose', aim: 55, max: 80, note: 'The note when the arcade\u2019s dark-cabinet call has come in: Spinner calls, a cabinet has gone dark, open until midnight. Starts with Spinner\u2019s name.' },
   'call.restock': { kind: 'prose', aim: 55, max: 80, note: 'The note when the store\u2019s delivery call has come in: Pip calls, a delivery waits to be shelved, open until midnight. Starts with Pip\u2019s name.' },
+  'call.serve': { kind: 'prose', aim: 55, max: 80, note: 'The note when the store\u2019s customer call has come in (23 Sep 2026): Pip calls, customers are waiting at the till, open until midnight. Starts with Pip\u2019s name.' },
   answered: { kind: 'prose', aim: 50, max: 70, note: 'The note once every one of today\u2019s calls is answered: nothing more is wanted until tomorrow. No numbers, no praise-as-reward. Lower case first letter.' },
 };
 const DUTY_UI = new RegExp('\\b(tap|click|button|menu|screen|swipe)\\b', 'i');
@@ -1438,7 +1440,7 @@ function dutyShape(data) {
   const k = data.kinds || {}, d = data.duty || {}, nu = data.nudge || {}, fi = data.fired || {};
   const all = [...DUTY_KINDS.map((x) => ['kinds.' + x, k[x]]), ['duty.cafe', d.cafe], ['duty.stand', d.stand], ['standDone', data.standDone], ['wage', data.wage], ['done', data.done],
     ...DUTY_BOSS.map((x) => ['nudge.' + x, nu[x]]), ...DUTY_BOSS.map((x) => ['fired.' + x, fi[x]]), ['cafeDone', data.cafeDone], ['payslip', data.payslip], ['tips', data.tips],
-    ...['sweep', 'fix', 'restock'].map((x) => ['call.' + x, (data.call || {})[x]]), ['answered', data.answered]];
+    ...['sweep', 'fix', 'restock', 'serve'].map((x) => ['call.' + x, (data.call || {})[x]]), ['answered', data.answered]];
   for (const [p, v0] of all) {
     const v = String(v0 || '');
     if (!v) { say(p, 'is empty'); continue; }
@@ -1465,7 +1467,7 @@ const dutySchema = {
     nudge: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: Object.fromEntries(DUTY_BOSS.map((x) => [x, str(dutyFields['nudge.' + x].note)])) },
     fired: { type: 'object', additionalProperties: false, required: DUTY_BOSS, properties: Object.fromEntries(DUTY_BOSS.map((x) => [x, str(dutyFields['fired.' + x].note)])) },
     cafeDone: str(dutyFields.cafeDone.note), standDone: str(dutyFields.standDone.note), payslip: str(dutyFields.payslip.note), tips: str(dutyFields.tips.note),
-    call: { type: 'object', additionalProperties: false, required: ['sweep', 'fix', 'restock'], properties: { sweep: str(dutyFields['call.sweep'].note), fix: str(dutyFields['call.fix'].note), restock: str(dutyFields['call.restock'].note) } },
+    call: { type: 'object', additionalProperties: false, required: ['sweep', 'fix', 'restock', 'serve'], properties: { sweep: str(dutyFields['call.sweep'].note), fix: str(dutyFields['call.fix'].note), restock: str(dutyFields['call.restock'].note), serve: str(dutyFields['call.serve'].note) } },
     answered: str(dutyFields.answered.note),
   },
 };
@@ -1651,6 +1653,7 @@ export const JOBS = {
       'call.sweep': { kind: 'label', max: 32, note: 'A call: litter to sweep on the arcade floor; the game prints how many.' },
       'call.fix': { kind: 'label', max: 32, note: 'A call: one arcade cabinet has gone dark and needs fixing.' },
       'call.restock': { kind: 'label', max: 32, note: 'A call: bare shelves in the store to fill from the crates.' },
+      'call.serve': { kind: 'label', max: 32, note: 'A call: customers waiting at the store’s till (23 Sep 2026).' },
       until: toastLine(40, 'Under today’s calls: a call stays open until midnight (slice 0b). No countdown, no pressure.', NO_MARKUP),
       go: { kind: 'label', max: 14, note: 'The big button on a shift job’s card: start the round.' },
       answer: { kind: 'label', max: 18, note: 'The big button when calls are waiting: go in and see to them.' },
@@ -1675,8 +1678,32 @@ export const JOBS = {
       if (!/^[A-Z]+$/.test(String(d.promoMoment || ''))) bad.push({ path: 'promoMoment', msg: 'one word in capitals' });
       if (/^\{where\}/.test(String(d.promoLine || ''))) bad.push({ path: 'promoLine', msg: 'starts with {where}, which is lower case' });
       if (!/\?$/.test(String(d.promoQ || ''))) bad.push({ path: 'promoQ', msg: 'is a question, with a question mark' });
-      for (const k of ['sweep', 'fix', 'restock']) if (!(d.call || {})[k]) bad.push({ path: 'call.' + k, msg: 'missing — src/scripts/town-staff.js lists this call' });
+      for (const k of ['sweep', 'fix', 'restock', 'serve']) if (!(d.call || {})[k]) bad.push({ path: 'call.' + k, msg: 'missing — src/scripts/town-staff.js lists this call' });
       for (const k of ['post', 'store', 'condo']) if (!(d.second || {})[k]) bad.push({ path: 'second.' + k, msg: 'missing — this workplace has another use' });
+      return bad;
+    },
+  },
+  // 🛒 THE STORE'S CUSTOMERS (23 Sep 2026): a customer at the till wants a thing from the shelves; the ticket is its
+  // picture, the bar their patience; find it, carry it to the till, hand it over. The world's voice around it.
+  'town-serve': {
+    id: 'town-serve',
+    title: 'Banana Town — the store’s customers',
+    what: 'What the store says while its staff serve a customer: the line under the ticket (what to do, the thing picked up, the wrong face), handing it over (fine and quick), a customer who gives up, and the tray’s way out.',
+    approved: 'src/data/copy/town-serve.json',
+    reads: 'src/scripts/town-serve.js (through a glob inside its own lazy chunk)',
+    top: ['find', 'got', 'wrong', 'served', 'late', 'leave'],
+    fields: {
+      find: toastLine(60, 'Under the ticket, as the customer comes in (and again if you tap the till with empty hands): find the thing on the shelves and bring it to the till. The one instruction, plain.', NO_MARKUP),
+      got: toastLine(50, 'Under the ticket once you picked the right thing off the shelf: now to the till.', NO_MARKUP),
+      wrong: toastLine(60, 'Under the ticket when you tapped a face with something else on it. Kind, plain, points at the ticket.', NO_MARKUP),
+      'served.fine': toastLine(60, 'Handed over in time. The customer leaves content.', NO_MARKUP),
+      'served.perfect': toastLine(60, 'Handed over quickly. The store’s bell rings the customer out. Delight, never praise of the player.', NO_MARKUP),
+      late: toastLine(60, 'The customer waited too long and leaves. Never a telling-off.', NO_MARKUP),
+      leave: { kind: 'label', max: 12, note: 'The tray’s way out: send this customer away and take no more for now. Short.' },
+    },
+    shape: (d) => {
+      const bad = [];
+      for (const k of ['fine', 'perfect']) if (!(d.served || {})[k]) bad.push({ path: 'served.' + k, msg: 'missing — a customer is served fine or quickly' });
       return bad;
     },
   },

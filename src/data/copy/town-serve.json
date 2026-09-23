@@ -1,0 +1,11 @@
+{
+  "find": "Find it on the shelves and bring it to the till.",
+  "got": "Got it. Now to the till.",
+  "wrong": "Not that one. Check the picture on the ticket.",
+  "served": {
+    "fine": "Handed over. The customer nods and heads out.",
+    "perfect": "Handed over in a flash. The bell rings them out."
+  },
+  "late": "The customer gives up waiting and leaves.",
+  "leave": "Not now"
+}

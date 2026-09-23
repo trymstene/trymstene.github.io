@@ -73,7 +73,8 @@
   "call": {
     "sweep": "Litter on the arcade floor",
     "fix": "A cabinet has gone dark",
-    "restock": "Empty shelves to fill"
+    "restock": "Empty shelves to fill",
+    "serve": "Customers at the till"
   },
   "until": "Calls stay open until midnight.",
   "go": "Go to work",

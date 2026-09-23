@@ -12,7 +12,7 @@
 //   · ⭐ THE JOB SURVIVES A PUSH — it lived in the blob, and every ordinary sync erased it (§9)
 //
 // Pay is the §12 formula (src/data/town/jobs.js): the rate × the share of the week's duties met. The
-// store's duties are restock 3 and days 3, so days alone pay at most half the rate.
+// store's duties are restock 3 and serve 3 (customers at the till, since 23 Sep 2026 — it was days turned up).
 //
 // ⚠️ the clock is faked (Date.now) so a "week" can pass in a millisecond; the worker only ever
 // reads Date.now(), so this exercises the real code path rather than a parallel one.
@@ -87,13 +87,13 @@ ok('an ANONYMOUS pass cannot be hired (403 keep)', r.status === 403 && (await r.
 
 console.log('\n2. a day is a day');
 for (let i = 0; i < 9; i++) await post('/job/chore', { credId: me.credId, token: me.token });
-r = await (await post('/job/chore', { credId: me.credId, token: me.token })).json();
+r = await (await post('/job/chore', { credId: me.credId, token: me.token, kind: 'serve', g: 2 })).json();   // 🛒 and one customer served
 ok('turning up ten times on one day is one day', r.job.days === 1, r.job);
 
 CLOCK += DAY;
-await post('/job/chore', { credId: me.credId, token: me.token });
+await post('/job/chore', { credId: me.credId, token: me.token, kind: 'serve', g: 2 });
 CLOCK += DAY;
-await post('/job/chore', { credId: me.credId, token: me.token });
+await post('/job/chore', { credId: me.credId, token: me.token, kind: 'serve', g: 2 });
 r = await (await post('/job/chore', { credId: me.credId, token: me.token })).json();
 ok('three different days are three days', r.job.days === 3, r.job);
 
@@ -139,9 +139,9 @@ console.log('\n6. changing jobs does not eat a week you worked');
 {
   const two = await kept('switch@example.com');
   await post('/job/take', { credId: two.credId, token: two.token, at: 'store' });
-  await post('/job/chore', { credId: two.credId, token: two.token });
+  await post('/job/chore', { credId: two.credId, token: two.token, kind: 'serve', g: 2 });
   CLOCK += DAY;
-  await post('/job/chore', { credId: two.credId, token: two.token });
+  await post('/job/chore', { credId: two.credId, token: two.token, kind: 'serve', g: 2 });
   const moved = await (await post('/job/take', { credId: two.credId, token: two.token, at: 'condo' })).json();
   ok('the arcade hires you away', moved.job.at === 'condo', moved.job);
   ok('and the days you already worked are still on the record', moved.job.days === 2, moved.job);
@@ -191,7 +191,7 @@ console.log('\n8. the cheque has to reach the WALLET, not only the ledger slot')
   const before = first.wallet.bal;
 
   await post('/job/take', { credId: spender.credId, token: spender.token, at: 'store' });
-  await post('/job/chore', { credId: spender.credId, token: spender.token });
+  await post('/job/chore', { credId: spender.credId, token: spender.token, kind: 'serve', g: 2 });
   CLOCK += 7 * DAY;
   const g = await (await post('/job/pay', { credId: spender.credId, token: spender.token })).json();
   ok('the cheque pays for the day worked (1 of 6 of 150 = 25)', g.total === 25, g);
@@ -213,6 +213,7 @@ console.log('\n9. ⭐ the job survives a push (it lived in the blob, and every s
   await post('/push', { credId: w.credId, token: w.token, blob: blob() });
   await post('/job/take', { credId: w.credId, token: w.token, at: 'store' });
   await post('/job/chore', { credId: w.credId, token: w.token, kind: 'restock' });
+  await post('/job/chore', { credId: w.credId, token: w.token, kind: 'serve', g: 2 });
   const ack = await (await post('/push', { credId: w.credId, token: w.token, blob: blob() })).json();
   ok('an ordinary push after taking the job…', ack.ok === true, ack);
   const v = await (await post('/job/view', { credId: w.credId, token: w.token })).json();
@@ -222,10 +223,11 @@ console.log('\n9. ⭐ the job survives a push (it lived in the blob, and every s
   CLOCK += DAY;
   await post('/push', { credId: w.credId, token: w.token, blob: blob() });
   await post('/job/chore', { credId: w.credId, token: w.token, kind: 'restock' });
+  await post('/job/chore', { credId: w.credId, token: w.token, kind: 'serve', g: 2 });
   await post('/push', { credId: w.credId, token: w.token, blob: blob() });
   CLOCK += 7 * DAY;
   const g = await (await post('/job/pay', { credId: w.credId, token: w.token })).json();
-  // two days turned up, two crates restocked: 4 of 6 of 150 = 100 — through three pushes
+  // two crates restocked, two customers served: 4 of 6 of 150 = 100 — through three pushes
   ok('⭐ and payday pays the whole week, through every push in between (4 of 6 of 150 = 100)', g.total === 100, g);
   const rec = [...env.PASSES._m.entries()].map(([k, v2]) => JSON.parse(v2)).find((r) => r && r.job && r.job.at === 'store' && r.job.paid && Object.values(r.job.paid).includes(100));
   ok('the job is on the record itself, beside the wallet', !!rec, null);
@@ -315,13 +317,13 @@ console.log('\n12. 🪜 a cheque pays the rank the week was worked at');
   CLOCK = mon(CLOCK);
   await P('/job/take', { at: 'store' });
   // a week at rank 1: three days, three crates — the full week, 150
-  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); CLOCK += DAY; }
+  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 }); CLOCK += DAY; }
   let v = await P('/job/view');
   ok('the store pays its first rank (150 a full week)', v.job.pay === 150 && v.job.sofar === 150, v.job);
-  ok('three crates and three days are 3 × 45 + 3 × 10 = 165 XP', v.job.lad.xp === 165, v.job.lad);
+  ok('three crates, three customers and three days are 3 × (30 + 15 + 10) = 165 XP', v.job.lad.xp === 165, v.job.lad);
   // the next week: climb past 300 and hear it on the Thursday
   CLOCK = mon(CLOCK);
-  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' }); CLOCK += DAY; }
+  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 }); CLOCK += DAY; }
   v = await P('/job/pay');
   ok('last week’s cheque is the first rank’s full week (150)', v.total === 150 && v.paid[0].rank === 1, v);
   v = await P('/job/promote', { at: 'store' });
@@ -342,26 +344,26 @@ console.log('\n13. ↕ a full week lifts you; a poor one warns you, and the next
   const P = as(await kept('review@example.com'));
   CLOCK = monday(CLOCK);
   await P('/job/take', { at: 'store' });
-  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); CLOCK += DAY; }   // week A: every duty met
+  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 }); CLOCK += DAY; }   // week A: every duty met
   CLOCK = monday(CLOCK);
   let v = await P('/job/view');
   ok('a full week is a day’s work XP extra (3 × 55 = 165, then + 100)', v.job.lad.xp === 265, v.job.lad);
   ok('and last week’s review rides the view', v.job.lad.last && v.job.lad.last.v === 'full' && v.job.lad.last.xp === 100, v.job.lad.last);
-  await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' });   // week B: 365, over the line
+  await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 });   // week B: 365, over the line
   v = await P('/job/promote', { at: 'store' });
   ok('rank 2 is told', v.promoted && v.promoted.to === 2, v);
   CLOCK = monday(CLOCK);
-  v = await P('/job/chore', {});   // week C: turned up once, nothing more
-  ok('half the week’s work is an ordinary week: nothing moves (365, + 10 for turning up)', v.job.lad.xp === 375 && v.job.lad.last.v === 'ok' && v.job.lad.last.xp === 0, v.job.lad);
+  v = await P('/job/chore', { kind: 'serve', g: 2 });   // week C: one customer, nothing more
+  ok('half the week’s work is an ordinary week: nothing moves (350, + 25 for the day and a customer)', v.job.lad.xp === 375 && v.job.lad.last.v === 'ok' && v.job.lad.last.xp === 0, v.job.lad);
   CLOCK = monday(CLOCK);
   v = await P('/job/view');
   ok('⭐ a poor week takes a day back, and under the rank’s line the boss warns you', v.job.lad.xp === 275 && v.job.lad.warn === true && v.job.lad.talk === 'warn' && v.job.lad.rank === 2, v.job.lad);
   v = await P('/job/promote', { at: 'store' });
   ok('the warning is heard at the boss, and the rank stays', v.heard === 'warn' && v.promoted === null && v.job.lad.talk === '' && v.job.lad.rank === 2 && v.job.lad.warn === true, v);
-  await P('/job/chore', {});   // week D: poor again
+  await P('/job/chore', { kind: 'serve', g: 2 });   // week D: poor again
   CLOCK = monday(CLOCK);
   v = await P('/job/view');
-  ok('⭐ warned, and another poor week: one rank down', v.job.lad.rank === 1 && v.job.lad.talk === 'demoted' && v.job.lad.warn === false && v.job.lad.xp === 185, v.job.lad);
+  ok('⭐ warned, and another poor week: one rank down', v.job.lad.rank === 1 && v.job.lad.talk === 'demoted' && v.job.lad.warn === false && v.job.lad.xp === 200, v.job.lad);
   ok('and the pay follows the rank (a full week at the store’s first rank: 150)', v.job.pay === 150, v.job);
   v = await P('/job/promote', { at: 'store' });
   ok('the demotion is heard at the boss', v.heard === 'demoted' && v.job.lad.talk === '', v);
@@ -377,16 +379,16 @@ console.log('\n14. ↕ a warning is lifted by climbing back over the line');
   const P = as(await kept('lift@example.com'));
   CLOCK = monday(CLOCK);
   await P('/job/take', { at: 'store' });
-  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); CLOCK += DAY; }   // A: full → 265
+  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 }); CLOCK += DAY; }   // A: full → 265
   CLOCK = monday(CLOCK);
-  await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' });   // B: 365
+  await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 });   // B: 365
   await P('/job/promote', { at: 'store' });
   CLOCK = monday(CLOCK);
-  await P('/job/chore', {});   // C: poor after the ordinary B
+  await P('/job/chore', { kind: 'serve', g: 2 });   // C: poor after the ordinary B
   CLOCK = monday(CLOCK);
   let v = await P('/job/view');
   ok('warned at 275', v.job.lad.warn === true && v.job.lad.xp === 275, v.job.lad);
-  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); CLOCK += DAY; }   // D: a full week, 440
+  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 }); CLOCK += DAY; }   // D: a full week, 440
   CLOCK = monday(CLOCK);
   v = await P('/job/view');
   ok('⭐ a full week back over the line lifts the warning, and the boss has nothing to say', v.job.lad.xp === 540 && v.job.lad.warn === false && v.job.lad.talk === '' && v.job.lad.rank === 2, v.job.lad);
@@ -417,16 +419,16 @@ console.log('\n16. ↕ quitting keeps your standing, however long you are away')
   const P = as(await kept('quitter@example.com'));
   CLOCK = monday(CLOCK);
   await P('/job/take', { at: 'store' });
-  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); CLOCK += DAY; }
+  for (let d = 0; d < 3; d++) { await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 }); CLOCK += DAY; }
   CLOCK = monday(CLOCK);
-  await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' });
+  await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'restock' }); await P('/job/chore', { kind: 'serve', g: 2 });
   await P('/job/promote', { at: 'store' });
   await P('/job/take', { at: '' });   // quits properly, mid-week
   CLOCK += 30 * DAY;
   let v = await P('/job/view');
   ok('a month away without a job: nothing to review, no sack', v.job.at === '' && !v.job.fired, v.job);
   v = await P('/job/take', { at: 'store' });
-  ok('⭐ back at the store at the rank you left with, every XP there', v.job.lad.rank === 2 && v.job.lad.xp === 365 && !v.job.lad.warn, v.job.lad);
+  ok('⭐ back at the store at the rank you left with, every XP there', v.job.lad.rank === 2 && v.job.lad.xp === 350 && !v.job.lad.warn, v.job.lad);
 }
 
 console.log('\n17. ↕ at a counter the review reads the cups — and a counter job can be let go too');

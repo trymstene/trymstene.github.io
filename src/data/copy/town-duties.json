@@ -4,7 +4,8 @@
     "fix": "machines fixed",
     "restock": "shelf restocked",
     "days": "turned up",
-    "sort": "post sorted"
+    "sort": "post sorted",
+    "serve": "customers served"
   },
   "duty": {
     "cafe": "clock in at the serving window and make cups; they lack initiative.",
@@ -33,7 +34,8 @@
   "call": {
     "sweep": "Spinner calls: litter on the arcade floor, open until midnight.",
     "fix": "Spinner calls: a cabinet has gone dark, open until midnight.",
-    "restock": "Pip calls: a delivery waits to be shelved, open until midnight."
+    "restock": "Pip calls: a delivery waits to be shelved, open until midnight.",
+    "serve": "Pip calls: customers are waiting at the till, open until midnight."
   },
   "answered": "every call today is answered; nothing more is wanted until tomorrow."
 }

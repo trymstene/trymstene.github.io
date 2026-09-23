@@ -1121,3 +1121,30 @@ A sweep call now brings **one piece**, on whichever of the three floor spots the
 arcade's week asks for three visits, not one. One piece is a day's sweeping, so it is worth **45 work XP** (was 15 a piece),
 and a full arcade day is still 100: ten for turning up, the day's piece, and a perfect repair. Walks: town-arcade-chores,
 town-calls, town-staff, town-ladder; tests/jobs-maths.spec.mjs.
+
+## 19. The store's customers — the ladder's slice 2, second skill (23 Sep 2026)
+
+Trym: *"do the store's customer requests next"*. The store's week was a crate to a bare shelf and **days turned up** — the
+ladder plan's "a job with no skill in it". The days duty is gone; the store's week is **3 crates + 3 customers served**
+(`jobs.js DUTIES.store`). A new call, **serve** (`work-calls.js`: five days a week, 2–6 minutes into the first visit,
+answered by **two** customers served), brings customers into the store while its staff are inside (`town-serve.js`, a
+chunk loaded on entering the store with the store job).
+
+- A customer walks from the door to the till. The ticket tray (the café's `.tw-cup` family, rising from the action bar)
+  shows the thing they want — the till's own picture and name — and their **patience** (24 s) as a bar that goes amber
+  past the quick share (45 %).
+- While somebody waits, every stocked face wears a **ticket**: the picture of what is on it (the room's `shelfFor`, in the
+  order the faces fill). A tap on a face walks there: the right one is picked up (drawn over the banana's head), the
+  wrong one says so. A tap on the till walks to it and hands the thing over.
+- Handed over inside 45 % of the wait: **perfect** (grade 2, 15 XP); later: **fine** (grade 1, 10 XP). Left too long:
+  the customer gives up and goes, and nothing counts. **Not now** turns the customer away and no one else comes while
+  you stay inside; walking back in brings them again.
+- A face filled is worth **30 XP** now (was 45), so a full store day is still 100: ten for turning up, the delivery's two
+  faces and the day's two customers served perfectly.
+- The pass worker records a `serve` chore with its grade, like the arcade's `fix`. Pulse hears `town_chore` kinds
+  `serve`, `miss` (gave up) and `away` (turned away). The day's count is `tw-serve-v1`, read by the calls as the room's
+  own record.
+
+Walks: tests/town-serve.spec.mjs (the whole beat with real taps, the late customer, Not now, the call answered; the
+tray, tickets and customer on a 360 phone); tests/jobs-maths.spec.mjs; worker-pass/test/jobs.test.mjs (the store's
+sections serve customers now).

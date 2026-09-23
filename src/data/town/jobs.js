@@ -40,7 +40,7 @@ export const XP = {
   stand: { cup: [0, 2, 4] },
   cafe: { cup: [0, 3, 6] },
   condo: { sweep: 45, fix: [0, 30, 45] },   // the day's one piece of litter (it comes a piece a call day now) and a cabinet woken fill the arcade's day; 🔧 a repair by its grade (town-repair.js)
-  store: { restock: 45 },          // the delivery's two faces fill the store's
+  store: { restock: 30, serve: [0, 10, 15] },   // the delivery's two faces and 🛒 the day's two customers, by how quickly they were served, fill the store's
   post: { sort: 60 },              // two good rounds fill the post office's
 };
 export const roundXp = (right, late) => Math.min(XP.post.sort, (right | 0) * 5 + (late | 0) * 2);
@@ -51,7 +51,7 @@ export const PAY_BACK = 2;                                  // whole weeks a che
 // the week's work, per payslip job: [kind, target]. A job with no entry pays by tips (the café).
 export const DUTIES = {
   condo: [['sweep', 3], ['fix', 3]],      // the arcade: litter on the floor, a cabinet gone dark
-  store: [['restock', 3], ['days', 3]],   // the general store: crates to the till, and being there
+  store: [['restock', 3], ['serve', 3]],  // the general store: crates to the shelf, and 🛒 customers served at the till (23 Sep 2026: it was 'days', being there)
   post: [['sort', 3], ['days', 3]],       // the post office: rounds of sorting at the counter, and being there (22 Sep 2026)
 };
 export const NUDGE_DAY = 3;    // Thursday (Monday = 0): nothing done by then, and the boss writes
