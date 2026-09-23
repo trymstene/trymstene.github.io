@@ -131,7 +131,15 @@ for (const [key, spot] of Object.entries(SPOTS)) {
   p.textContent = a[0];
   p.style.left = pct(spot.x + (a[3] || 0), W); p.style.top = pct(spot.y - a[1], H);   // a[3]: a sideways nudge, world px
   p.style.zIndex = String(100 + spot.y + 3);
-  p.addEventListener('click', (e) => { e.stopPropagation(); if (!openFor(key)) say(a[2]); });
+  // a sign is its place: the same walk-then-deed a tap on the place itself gets, and nothing mid-shift (23 Sep 2026 —
+  // the stand's sign clocked a worker in where they stood, from across the square, or out in the middle of a shift)
+  p.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (working()) return;
+    const wasIn = inRoom;
+    if (!openFor(key)) say(a[2]);
+    if (inRoom === wasIn) { tgt.x = spot.x; tgt.y = spot.y + 30; }
+  });
   p.addEventListener('pointerdown', (e) => { if (panel && !panel.hidden) e.stopPropagation(); });   // a prop under an open card is not tappable
   world.appendChild(p);
 }

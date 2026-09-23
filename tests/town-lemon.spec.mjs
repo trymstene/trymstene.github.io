@@ -195,3 +195,25 @@ test('Fig Jr. steps to the orchard while his stand is worked, and the work note 
   await page.waitForFunction(() => { const r = (window.__town.life.residents() || []).find((q) => q.key === 'figjr'); return !!r && r.place !== 'booth'; }, null, { timeout: 8000 });
   expect(errors).toEqual([]);
 });
+
+// ⭐ 23 Sep 2026: the "LEMONADE" sign skipped the walk. For the stand's own staff a tap on it clocked them in where they
+// stood (from across the square, so the shift ended at once with an empty receipt) or out in the middle of a shift.
+// A sign is its place now: the same walk, then the same deed, and nothing while the tray is up.
+test('the LEMONADE sign walks a worker to the stand before the shift, and never ends one', async ({ page }) => {
+  test.setTimeout(90000);
+  const errors = await square(page);
+  await page.evaluate(() => window.__town.work.set({ at: 'stand' }));
+  expect(await page.evaluate(() => window.__town.room.lemonReady()), 'the stand’s chunk arrives').toBe(true);
+  await stand(page, 1500, 1000);   // across the square from the stand
+  await page.waitForTimeout(400);
+  const sign = page.locator('.tw-plank[data-key="stand"]');
+  await sign.dispatchEvent('click');
+  await page.waitForTimeout(300);
+  expect(await lemon(page, (l) => l.on()), 'no shift where you stand').toBe(false);
+  expect(await page.evaluate(() => { const t = window.__town; return Math.hypot(t.tgt.x - t.pos.x, t.tgt.y - t.pos.y) > 100; }), 'the banana sets off for the stand').toBe(true);
+  await page.waitForFunction(() => window.__town.room.lemon() && window.__town.room.lemon().on(), null, { timeout: 30000 });
+  await sign.dispatchEvent('click');
+  await page.waitForTimeout(500);
+  expect(await lemon(page, (l) => l.on()), 'a tap on the sign mid-shift does not end it').toBe(true);
+  expect(errors).toEqual([]);
+});
