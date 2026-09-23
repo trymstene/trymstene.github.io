@@ -441,7 +441,6 @@ const lifeFields = {
   'work.start.post': { kind: 'prose', aim: 60, max: 80, note: 'The same, for THE POST OFFICE: open the mailbox at the counter and start a round of sorting.' },
   // 🗣 THE TOWN'S TOASTS (22 Sep 2026): lines that were typed straight into say() — now a gate refuses that
   'toasts.road': { kind: 'prose', aim: 30, max: 44, note: 'Said the moment a player walks off the square by the south road, which takes them to the park; the page changes a beat later. The world noting where they are going. One short line.' },
-  'toasts.sold': { kind: 'prose', aim: 90, max: 120, holds: ['{n}', '{what}', '{coins}'], note: 'The Exchange is not buying yet: its sell button only shows what the goods WOULD fetch. Said when a player taps sell on a row. MUST contain {n} (how many they have), {what} (the goods in lower case: eggs, milk or wool) and {coins} (what that would fetch at today’s price), each exactly once, then say plainly that nothing was sold and nothing changed hands. No other number.' },
   'toasts.lure': { kind: 'prose', aim: 60, max: 80, note: 'Said when a player taps a lure in their pocket while in town: a lure only works at the pier at the beach, where it arms itself for the next casts; there is nothing to do with it here. Plain, no number.' },
   'toasts.warming': { kind: 'prose', aim: 24, max: 40, note: 'The line under an arcade cabinet’s name on its card for the second or two while its game is loading: the machine is warming up. Lower case is fine.' },
   'toasts.asleep': { kind: 'prose', aim: 44, max: 64, note: 'Said when an arcade cabinet’s game could not be loaded (a network hiccup): the machine is not answering right now; try again in a moment.' },
@@ -485,7 +484,7 @@ function lifeShape(data) {
   }
   // ⚠️ {where} IS LOWERCASE AND CARRIES ITS OWN ARTICLE. "Gladly. {where} could use your hands."
   // printed a sentence starting with a small letter for two of the three bosses.
-  for (const f of ['sold', 'prize', 'best']) {
+  for (const f of ['prize', 'best']) {
     const t = String(((data.toasts || {})[f]) || '').replace(/\{[a-z]+\}/g, '');
     if (/\d/.test(t)) say(`toasts.${f}`, 'carries a number of its own — the game prints every figure', 'shape');
   }
@@ -586,8 +585,8 @@ const lifeSchema = {
       yours: { type: 'string', description: lifeFields['fx.yours'].note },
       named: { type: 'string', description: lifeFields['fx.named'].note },
     } },
-    toasts: { type: 'object', additionalProperties: false, required: ['road', 'sold', 'lure', 'warming', 'asleep', 'prize', 'best'],
-      properties: Object.fromEntries(['road', 'sold', 'lure', 'warming', 'asleep', 'prize', 'best'].map((k) => [k, { type: 'string', description: lifeFields['toasts.' + k].note }])) },
+    toasts: { type: 'object', additionalProperties: false, required: ['road', 'lure', 'warming', 'asleep', 'prize', 'best'],
+      properties: Object.fromEntries(['road', 'lure', 'warming', 'asleep', 'prize', 'best'].map((k) => [k, { type: 'string', description: lifeFields['toasts.' + k].note }])) },
     pocket: { type: 'object', additionalProperties: false, required: ['firework', 'lure', 'lureWhere', 'use', 'empty'],
       properties: Object.fromEntries(['firework', 'lure', 'lureWhere', 'use', 'empty'].map((k) => [k, { type: 'string', description: lifeFields['pocket.' + k].note }])) },
     things: { type: 'object', additionalProperties: false, description: 'What wants doing, in plain words: for each kind, [one, many].', required: ['lamp', 'litter', 'bin', 'dumpster', 'graffiti', 'fountain', 'shutter', 'crows', 'leaves'],
@@ -1500,6 +1499,83 @@ const holdsAll = (...keys) => ({
 const NO_MARKUP = { forbids: [[/[<>&]/, 'markup or an entity — the code builds the markup around this line']] };
 
 export const JOBS = {
+  // 📈🎡 THE MARKET (23 Sep 2026): the Wheel of Peel's card and the Exchange's card, now that both are real —
+  // the server rolls the wheel and pays it, and a sale takes the produce out of the saved farm. The ids the
+  // lists are keyed by (wedges, goods) are src/data/town/market.js's; the shape check holds the two together.
+  'town-market': {
+    id: 'town-market',
+    title: 'Banana Town — the Wheel of Peel and the Exchange',
+    what: 'The two market cards on the square: the wheel’s pot, its wedges, its buttons and what each spin says; the Exchange’s rows, its button, Bean’s rumour and what a sale says.',
+    approved: 'src/data/copy/town-market.json',
+    reads: 'src/scripts/banana-town.js (a static import: both cards open from the square)',
+    top: ['wheel', 'exchange'],
+    fields: {
+      'wheel.title': { kind: 'label', max: 24, note: 'The wheel card’s heading.' },
+      'wheel.pot': toastLine(30, 'Over the wheel: how many coins are in the shared pot right now.', holdsAll('n')),
+      'wheel.wedges.c5': { kind: 'label', max: 10, note: 'Painted on the wedge that pays five coins. Short: it is drawn on a canvas.' },
+      'wheel.wedges.firework': { kind: 'label', max: 12, note: 'The wedge that puts a firework in the pocket.' },
+      'wheel.wedges.peel': { kind: 'label', max: 10, note: 'The two wedges that pay nothing (a banana peel).' },
+      'wheel.wedges.c20': { kind: 'label', max: 10, note: 'The wedge that pays twenty coins.' },
+      'wheel.wedges.lure': { kind: 'label', max: 10, note: 'The wedge that puts a lure in the pocket.' },
+      'wheel.wedges.again': { kind: 'label', max: 12, note: 'The wedge that gives a free spin straight away.' },
+      'wheel.wedges.pot': { kind: 'label', max: 10, note: 'The wedge that takes the whole pot.' },
+      'wheel.free': { kind: 'label', max: 14, note: 'The button’s verb for the day’s free spin.' },
+      'wheel.freeNote': { kind: 'label', max: 18, note: 'Under it: that it costs nothing today.' },
+      'wheel.again': { kind: 'label', max: 14, note: 'The verb after a “spin again” wedge.' },
+      'wheel.againNote': { kind: 'label', max: 18, note: 'Under it: that it is free.' },
+      'wheel.paid': { kind: 'label', max: 14, note: 'The verb for a paid spin.' },
+      'wheel.paidNote': { kind: 'label', max: 18, note: 'Under it: what it costs; {n} is the price.', ...holdsAll('n') },
+      'wheel.wait': { kind: 'label', max: 14, note: 'On the button while the wheel turns.' },
+      'wheel.won.coins': toastLine(40, 'Under the wheel after a coin wedge; {n} is what it paid.', holdsAll('n')),
+      'wheel.won.firework': toastLine(90, 'After the firework wedge: it went into the pocket, and it can be launched on the square.'),
+      'wheel.won.lure': toastLine(90, 'After the lure wedge: it went into the pocket, and it works at the beach pier.'),
+      'wheel.won.peel': toastLine(60, 'After a peel wedge: nothing, said kindly.'),
+      'wheel.won.again': toastLine(40, 'After the spin-again wedge.'),
+      'wheel.won.pot': toastLine(50, 'After the pot wedge: {n} is the whole pot, now in the wallet.', holdsAll('n')),
+      'wheel.full': toastLine(100, 'After an item wedge when the pocket already holds the most of that kind: Spinner pays {n} coins instead.', holdsAll('n')),
+      'wheel.funds': toastLine(60, 'A paid spin with too few coins; {n} is the price, {have} the wallet.', holdsAll('n', 'have')),
+      'wheel.cap': toastLine(100, 'The last paid spin of the day has been used; the free one comes back.'),
+      'wheel.busy': toastLine(80, 'The spin did not reach the server: nothing was spent.'),
+      'wheel.keep': toastLine(90, 'A device with no Banana Pass cannot spin, because spins are kept on the pass.'),
+      'wheel.keepLink': { kind: 'label', max: 18, note: 'The link to the pass page under that line.' },
+      'wheel.potWon': toastLine(90, 'What everybody on the square reads when {name} wins the pot of {n} coins.', holdsAll('name', 'n')),
+      'wheel.potWonAnon': toastLine(90, 'The same when the winner has no name on their pass.', holdsAll('n')),
+      'exchange.title': { kind: 'label', max: 20, note: 'The Exchange card’s heading.' },
+      'exchange.goods.eggs': { kind: 'label', max: 10, note: 'A row’s name for eggs.' },
+      'exchange.goods.milk': { kind: 'label', max: 10, note: 'A row’s name for milk.' },
+      'exchange.goods.wool': { kind: 'label', max: 10, note: 'A row’s name for wool.' },
+      'exchange.things.eggs': { kind: 'label', max: 18, note: 'Eggs, counted, inside a sentence (“12 eggs”).' },
+      'exchange.things.milk': { kind: 'label', max: 18, note: 'Milk, counted, inside a sentence.' },
+      'exchange.things.wool': { kind: 'label', max: 18, note: 'Wool, counted, inside a sentence.' },
+      'exchange.each': toastLine(24, 'Beside a good’s name: today’s price; {price} is filled by the game.', holdsAll('price')),
+      'exchange.up': toastLine(30, 'Under it when the price rose since yesterday; {was} is yesterday’s.', holdsAll('was')),
+      'exchange.down': toastLine(30, 'When it fell.', holdsAll('was')),
+      'exchange.same': toastLine(30, 'When it did not move.'),
+      'exchange.have': toastLine(20, 'How many the farm has to sell.', holdsAll('n')),
+      'exchange.sell': { kind: 'label', max: 12, note: 'The row’s button: sell all {n}.', ...holdsAll('n') },
+      'exchange.sold': { kind: 'label', max: 10, note: 'The button after the sale.' },
+      'exchange.total': toastLine(40, 'Under the rows: what everything would fetch today.', holdsAll('n')),
+      'exchange.rumourUp': toastLine(80, 'Bean’s rumour that eggs go up tomorrow. Never a rate.'),
+      'exchange.rumourDown': toastLine(80, 'Bean’s rumour that eggs drop tomorrow. Never a rate.'),
+      'exchange.paid': toastLine(70, 'After a sale: {coins} paid for {n} of {what}.', holdsAll('coins', 'n', 'what')),
+      'exchange.none': toastLine(120, 'The farm has nothing to sell right now: what makes the goods.'),
+      'exchange.noFarm': toastLine(80, 'A player with no homestead.'),
+      'exchange.cap': toastLine(80, 'Fig Jr. has bought all he takes of that good from one banana today; {what} is the good.', holdsAll('what')),
+      'exchange.busy': toastLine(80, 'The sale did not go through: nothing was sold.'),
+      'exchange.keep': toastLine(90, 'A device with no Banana Pass cannot sell, because sales are kept on the pass.'),
+      'exchange.keepLink': { kind: 'label', max: 18, note: 'The link to the pass page under that line.' },
+    },
+    shape: (d) => {
+      const bad = [];
+      const w = (d.wheel && d.wheel.wedges) || {}, g = (d.exchange && d.exchange.goods) || {}, t = (d.exchange && d.exchange.things) || {};
+      for (const id of ['c5', 'firework', 'peel', 'c20', 'lure', 'again', 'pot']) if (!w[id]) bad.push({ path: 'wheel.wedges.' + id, msg: 'missing — src/data/town/market.js paints a wedge with this id' });
+      for (const id of ['eggs', 'milk', 'wool']) {
+        if (!g[id]) bad.push({ path: 'exchange.goods.' + id, msg: 'missing — src/data/town/market.js sells this good' });
+        if (!t[id]) bad.push({ path: 'exchange.things.' + id, msg: 'missing — the sale line names this good' });
+      }
+      return bad;
+    },
+  },
   'town-fronts': {
     id: 'town-fronts',
     title: 'Banana Town — what the other places say when tapped',
@@ -1931,14 +2007,16 @@ export const JOBS = {
   'beach-toasts': {
     id: 'beach-toasts',
     title: 'Banana Bay — what the beach says back',
-    what: 'The line for the last shell of the set, and what the captain by the wreck says when you walk up: the day’s treasure while it is buried, then his rotation.',
+    what: 'The line for the last shell of the set, what the captain by the wreck says when you walk up (the day’s treasure while it is buried, then his rotation), and the lure arming itself at the pier.',
     approved: 'src/data/copy/beach-toasts.json',
     reads: 'src/scripts/banana-beach.js (a static import)',
-    top: ['shells', 'captain'],
+    top: ['shells', 'captain', 'lure'],
     fields: {
       'shells.all': toastLine(80, 'The last kind of shell found: the collection is complete.'),
       'captain.treasure': toastLine(80, 'The captain, when you walk up while today’s treasure is still buried. The game puts 🗺 in front.'),
       'captain.lines[]': toastLine(80, 'The captain’s rotation once the treasure is found, one line per visit. He talks about the sand and digging, never shells.'),
+      'lure.armed': toastLine(70, 'Over the float when a lure from the pocket arms itself on a cast at the pier: the next bites run bigger. Never a count.'),
+      'lure.spent': toastLine(70, 'Over the float when the armed lure has run out.'),
     },
     shape: (d) => (Array.isArray(d.captain && d.captain.lines) && d.captain.lines.length ? []
       : [{ path: 'captain.lines', msg: 'the captain needs at least one line' }]),

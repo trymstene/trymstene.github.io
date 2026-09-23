@@ -29,6 +29,7 @@ import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 import { SHELLS, SHELL_TIERS, SHELL_TILES } from './shell-data.js';
 import { SHELL_DESC, FISH_DESC } from './beach-flavor.js';
 import BEACH_WORDS from '../data/copy/beach-toasts.json';   // ✍️ the last shell's line and the captain's (src/data/copy)
+import { pocketHave } from '../data/town/market.js';   // 👝 the pocket's balance: a lure comes out of it at the pier
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 
@@ -1473,6 +1474,12 @@ function init() {
     try { localStorage.setItem('bh-fishcoins-v1', JSON.stringify(st)); } catch (e) {}
   };
   let fishing = null, fishBite = false, fishTimer = null, pendingCatch = null;
+  // 🎣 THE LURE (23 Sep 2026): the Wheel of Peel's prize, from the pocket. It arms itself on a cast at the pier and
+  // the next LURE_CASTS bites are always a fish, with the rare end of the sea weighted LURE_BOOST times. The armed
+  // count is this device's; the lure itself left the pocket, which travels (pocket_lure_used).
+  const LURE_CASTS = 5, LURE_BOOST = 3;
+  const lureLeft = () => { try { return Math.max(0, parseInt(localStorage.getItem('bh-lure-v1') || '0', 10) || 0); } catch (e) { return 0; } };
+  const lureSet = (n) => { try { if (n > 0) localStorage.setItem('bh-lure-v1', String(n)); else localStorage.removeItem('bh-lure-v1'); } catch (e) {} };
   let fishRod = null, fishLine = null, fishBob = null;
   const catchPanel = document.getElementById('bhFishCatch');
   const catchBody = document.getElementById('bhCatchBody');
@@ -1492,7 +1499,9 @@ function init() {
       // 🎣 THE CATCH IS ROLLED HERE, NOT ON THE REEL — so the float can
       // TELEGRAPH it. A rare+ thrashes harder with a gold "!", which turns the
       // wait into anticipation instead of a coin flip you only read afterwards.
-      pendingCatch = rollCatch();
+      const lure = lureLeft();
+      pendingCatch = lure ? { kind: 'fish', fish: rollFish(LURE_BOOST), lure: true } : rollCatch();
+      if (lure) lureSet(lure - 1);
       fishBite = true;
       const big = pendingCatch.kind === 'fish'
         && (pendingCatch.fish.tier === 'rare' || pendingCatch.fish.tier === 'legendary');
@@ -1546,6 +1555,12 @@ function init() {
     fishBob.addEventListener('click', (e) => { e.stopPropagation(); reel(); });
     world.appendChild(fishBob);
     scheduleBite();
+    if (!lureLeft() && pocketHave(stats(), 'lure') > 0) {
+      passStat('pocket_lure_used', 1);
+      lureSet(LURE_CASTS);
+      float(bx, by - 30, BEACH_WORDS.lure.armed, true);
+      track('beach_lure');
+    }
     hint(false);
     if (!fishing.greeted) { fishing.greeted = true; float(bx, by - 16, 'line’s in — wait for a bite'); }
     track('beach_fish_start');
@@ -1568,8 +1583,8 @@ function init() {
 
   let fishPity = 0;                 // catches since the last rare-or-better
   const FISH_PITY = 0.09;           // each one nudges rare/legendary weight +9%
-  function rollFish() {
-    const boost = 1 + fishPity * FISH_PITY;
+  function rollFish(extra) {
+    const boost = (1 + fishPity * FISH_PITY) * (extra || 1);
     const w = []; let tot = 0;
     for (const f of FISH) {
       const rare = f.tier === 'rare' || f.tier === 'legendary';
@@ -1635,7 +1650,8 @@ function init() {
           : '<p class="bh-catch__note">you have ' + fishHeld(f.id) + ' · best '
             + Math.max(prev, cm) + ' cm</p>')
         + (won ? '<p class="bh-catch__new">🏅 ledger milestone — <b>+' + won
-                 + ' tickets</b></p>' : '');
+                 + ' tickets</b></p>' : '')
+        + (c.lure && !lureLeft() ? '<p class="bh-catch__note">' + BEACH_WORDS.lure.spent + '</p>' : '');
       // 🪙 the bycatch: sometimes coins come up tangled on the same line
       if (Math.random() < BYCATCH_P) {
         const by = Math.min(2 + Math.floor(Math.random() * 3), fishCoinsLeft());
@@ -3740,6 +3756,8 @@ function init() {
       setPeers: (n) => { peersInCourt = n; },
       // the hut otherwise needs a walk across the bay and a tap on the roof
       hut: openHut,
+      // 🎣 sit down at a dock chair and cast (the lure arms itself here), and how many armed casts are left
+      fishAt: (i) => startFishing(FISH_SPOTS[i | 0]), lureLeft: () => lureLeft(),
       // 🥥 the coconut shy is the FAR end of the pier plus 5 coins, which is a
       // lot of choreography to test one drag. coco() opens it, coco(true) skips
       // straight to a live round with balls in hand.

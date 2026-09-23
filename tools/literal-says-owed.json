@@ -1,6 +1,6 @@
 {
   "_what": "Words typed straight into say/toast/passToast/bigMoment before the gate existed (22 Sep 2026). tools/check-literal-says.mjs lets exactly these through, file by file, word for word — and fails on anything new and on anything here that is no longer in the code. It only ever SHRINKS: move a line into a copy file (src/data/copy, a job in tools/copy-jobs.mjs), then take it off this list.",
-  "_count": 135,
+  "_count": 134,
   "files": {
     "banana-homestead.js": [
       "✅ Banana World has your homestead again",
@@ -141,9 +141,6 @@
       "this room is full (",
       "spots)",
       "the plot is full"
-    ],
-    "park-npc.js": [
-      "🌼 old peel: “"
     ]
   }
 }

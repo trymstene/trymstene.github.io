@@ -17,6 +17,8 @@ import { mountDialogue } from '../lib/world-dialogue.js';
 import { bigMoment } from '../lib/world-moment.js';   // 🎖 the rave's big moment, shared: the town's first is being hired
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 import { fillWords } from '../lib/fill-words.js';   // a copy line with its {holes} filled
+import { passGet, passStat } from '../lib/banana-pass.js';   // already in this bundle through the HUD
+import { POCKET_KINDS, pocketHave, WEDGES } from '../data/town/market.js';   // 📈🎡 the market's one source, shared with worker-pass
 import FRONTS from '../data/copy/town-fronts.json';   // 🏘️ what the hall, the bank, the print shop, the wheel, the exchange and an old cabinet say (the rig's, 22 Sep 2026)
 
 const track = (n, p) => { try { if (window.gtag) window.gtag('event', n, p || {}); } catch (e) {} };
@@ -619,8 +621,7 @@ function openFor(key) {
   if (key === 'clothes') { dressCard(); return true; }
   if (key === 'post') { postCard(); return true; }   // ✉️ your letters, and writing back
   if (key === 'info') { infoCard(); return true; }   // 🗺️ the rack of maps, and the rave's flyer
-  if (key === 'wheel') { wheelCard(); return true; }
-  if (key === 'exchange') { exchangeCard(); return true; }
+  if (key === 'wheel' || key === 'exchange') return marketCard(key);   // 🎡📈 real since 23 Sep 2026 (town-market.js)
   // 🚪 a door with a room behind it. ⚠️ town-room.js gets FIRST refusal above, and it still owns
   // 'store' — a shut front says why, and an open one gives Pip's shelf at the door, which is the
   // plan's rule (docs/town-jobs-plan.md §4: "the room is a gain, never a toll"). The store's room is
@@ -677,122 +678,54 @@ function exitRoom() {
   tgt.x = pos.x; tgt.y = pos.y + 30;
   cam(true);
 }
-// splitmix32 seeded by the UTC day, the daily banana's own rhythm
-function mix32(seed) {
-  let t = seed >>> 0;
-  return () => { t = (t + 0x9e3779b9) >>> 0; let z = t; z = Math.imul(z ^ (z >>> 16), 0x21f0aaad); z = Math.imul(z ^ (z >>> 15), 0x735a2d97); z = z ^ (z >>> 15); return (z >>> 0) / 4294967296; };
-}
-const dayNum = (off) => Math.floor(Date.now() / 86400000) + (off || 0);
 const esc = (v) => String(v == null ? '' : v).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
 
-// ---- 📈 the Exchange: sell what the farm made, at today's price; sell now or hold
-const GOODS = [['eggs', 'Eggs', 3, ['hen']], ['milk', 'Milk', 5, ['goat', 'cow']], ['wool', 'Wool', 8, ['sheep']]];
-function priceOf(day, i) { const r = mix32(day * 7 + i * 131)(); return Math.round(GOODS[i][2] * (0.6 + r) * 10) / 10; }   // 0.6× to 1.6× the base
-function myProduce() {
-  try {
-    const st = JSON.parse(localStorage.getItem('hs-v1') || 'null');
-    const out = [0, 0, 0];
-    for (const a of (st && st.animals) || []) GOODS.forEach((g, i) => { if (g[3].includes(a.sp)) out[i] += Math.floor(a.gs || 0); });
-    return out;
-  } catch (e) { return [0, 0, 0]; }
-}
-function exchangeCard() {
-  const today = dayNum(), have = myProduce();
-  let rows = '', total = 0;
-  GOODS.forEach((g, i) => {
-    const p = priceOf(today, i), y = priceOf(today - 1, i), n = have[i];
-    total += n * p;
-    const move = p > y ? 'up from ' + y + ' yesterday' : p < y ? 'down from ' + y + ' yesterday' : 'same as yesterday';
-    rows += '<div class="tw-row"><div><b>' + g[1] + ' · ' + p + ' coins each</b><small>' + move + ' · you have ' + n + '</small></div><button type="button" data-sell="' + i + '"' + (n ? '' : ' disabled') + '>sell ' + n + '</button></div>';
-  });
-  const up = priceOf(today + 1, 0) > priceOf(today, 0), honest = mix32(today * 3 + 9)() < 0.7;
-  const rumour = (up === honest) ? 'eggs go up tomorrow' : 'eggs drop tomorrow';
-  openCard('<h2>The Exchange</h2><p class="tw-card__sub">' + esc(FRONTS.exchange || '') + '</p>'
-    + '<div class="tw-rows">' + rows + '</div>'
-    + '<p class="tw-result">Everything, today: <b>' + Math.round(total) + ' coins</b></p>'
-    + '<p class="tw-fine">Bean at the café says “' + rumour + '.” He is right seven times in ten.</p>'
-    + '<p class="tw-fine">Prototype: the prices are real for today, the sale is not. Your produce is read from your homestead on this device.</p>');
-  cardBody.querySelectorAll('[data-sell]').forEach((b) => b.addEventListener('click', () => {
-    const i = +b.dataset.sell; b.disabled = true; b.textContent = 'sold';
-    const line = fillWords(lifeWords('toasts').sold, { n: have[i], what: GOODS[i][1].toLowerCase(), coins: Math.round(have[i] * priceOf(today, i)) });
-    say(line);
-  }));
-}
-
-// ---- 🎡 the Wheel of Peel: one free spin, then coins; the pot grows until a wedge takes it
-const WEDGES = [['5 coins', '#ffe135', '#141208'], ['a firework', '#ff8a3d', '#141208'], ['a peel', '#d9d2c6', '#141208'], ['20 coins', '#ffe135', '#141208'],
-  ['a lure', '#7ec8ff', '#141208'], ['spin again', '#c9f26a', '#141208'], ['a peel', '#d9d2c6', '#141208'], ['THE POT', '#ff5c8a', '#fffdf5']];
-let pot = 120 + Math.floor(mix32(dayNum())() * 300), spins = 0, spinning = false, angle = 0;
+// ---- 🎡📈 THE MARKET: the Wheel of Peel's card and the Exchange's live in their own lazy chunk (town-market.js)
+// since 23 Sep 2026, when the server started rolling, charging and paying. The wheel painted on the stall stays
+// here, because it is scenery the square draws at boot.
 // ⚠️ `mini` LEAVES THE WORDS OFF. The same eight wedges are painted on the stall's counter at 30 world
 // px, where a 24-px label is a smear of grey — the shape and the colours are what carry it that small.
-function drawWheel(cv, mini) {
+function drawWheel(cv, mini, labels) {
   const ctx = cv.getContext('2d'), R2 = cv.width / 2, n = WEDGES.length, per = Math.PI * 2 / n;
   ctx.clearRect(0, 0, cv.width, cv.height);
   WEDGES.forEach((w, i) => {
     const a0 = -Math.PI / 2 + i * per, a1 = a0 + per;
     ctx.beginPath(); ctx.moveTo(R2, R2); ctx.arc(R2, R2, R2 - 6, a0, a1); ctx.closePath();
     ctx.fillStyle = w[1]; ctx.fill(); ctx.lineWidth = mini ? 7 : 4; ctx.strokeStyle = '#141208'; ctx.stroke();
-    if (mini) return;
+    if (mini || !labels) return;
     // the label reads upright on both halves: left-side wedges are turned half a circle and drawn from the rim inward
     const mid = a0 + per / 2, left = Math.cos(mid) < 0;
     ctx.save(); ctx.translate(R2, R2); ctx.rotate(left ? mid + Math.PI : mid); ctx.textAlign = left ? 'left' : 'right'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = w[2]; ctx.font = 'bold 24px "Archivo Black", "Arial Black", sans-serif'; ctx.fillText(w[0], left ? -(R2 - 26) : R2 - 26, 0); ctx.restore();
+    ctx.fillStyle = w[2]; ctx.font = 'bold 24px "Archivo Black", "Arial Black", sans-serif'; ctx.fillText(labels[i] || '', left ? -(R2 - 26) : R2 - 26, 0); ctx.restore();
   });
   ctx.beginPath(); ctx.arc(R2, R2, mini ? 22 : 26, 0, Math.PI * 2); ctx.fillStyle = '#141208'; ctx.fill();
   ctx.beginPath(); ctx.arc(R2, R2, mini ? 11 : 14, 0, Math.PI * 2); ctx.fillStyle = '#ffe135'; ctx.fill();
 }
-// ⚠️ CALLED HERE, NOT WHERE IT IS DEFINED. stallWheel() paints with drawWheel(), and drawWheel() reads
-// `WEDGES` — a module-scope `const` declared a few lines above this one. Calling it from up beside the
-// planks threw a ReferenceError out of the temporal dead zone, and a module-scope throw kills every
-// line after it: the whole town booted to an empty green field with no error anyone would look for.
-// (memory: partial-init-trap — consts above init, boot calls last.)
+// ⚠️ CALLED HERE, NOT WHERE IT IS DEFINED. stallWheel() paints with drawWheel(), and a call from up beside the
+// planks once threw out of a temporal dead zone — a module-scope throw kills every line after it, and the whole
+// town booted to an empty green field (memory: partial-init-trap — consts above init, boot calls last).
 stallWheel();
 
-function wheelCard() {
-  openCard('<h2>The Wheel of Peel</h2><p class="tw-card__sub">' + esc(FRONTS.wheel || '') + '</p>'
-    + '<p class="tw-pot">THE POT · <span id="twPot">' + pot + '</span> COINS</p>'
-    + '<div class="tw-wheelwrap"><div class="tw-wheel__pin"></div><canvas class="tw-wheel" id="twWheel" width="440" height="440"></canvas></div>'
-    + '<p class="tw-result" id="twSpinRes"></p>'
-    + '<button class="tw-cta" id="twSpin" type="button"><span class="tw-cta__verb">' + (spins ? 'Spin again' : 'Free spin') + '</span><span class="tw-cta__rew">' + (spins ? '3 coins' : 'today’s free one') + '</span></button>'
-    + '<p class="tw-fine">Prototype: the wheel is real, the coins are not. On the real one the server picks the wedge and the odds stay in the code.</p>');
-  const cv = document.getElementById('twWheel');
-  drawWheel(cv);
-  cv.style.transform = 'rotate(' + angle + 'deg)';
-  document.getElementById('twSpin').addEventListener('click', () => spin(cv));
+let market = null, marketP = null;
+function loadMarket() {
+  if (!marketP) {
+    marketP = import('./town-market.js').then((m) => (market = m.bootMarket({ openCard, closeCard, isOpen: () => !panel.hidden,
+      say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS })));
+    marketP.catch(() => { marketP = null; });
+  }
+  return marketP;
 }
-function spin(cv) {
-  if (spinning) return;
-  spinning = true;
-  const btn = document.getElementById('twSpin'); if (btn) btn.disabled = true;
-  const w = Math.floor(Math.random() * WEDGES.length), per = 360 / WEDGES.length;
-  const want = (360 - (w * per + per / 2) + 360) % 360;          // wedge w under the pin at the top
-  const delta = ((want - (angle % 360)) % 360 + 360) % 360;
-  angle += 5 * 360 + delta;                                        // always forward, never a snap back
-  cv.style.transform = 'rotate(' + angle + 'deg)';
-  if (spins > 0) { pot += 1; const p = document.getElementById('twPot'); if (p) p.textContent = pot; }
-  spins++;
-  setTimeout(() => {
-    spinning = false;
-    const won = WEDGES[w][0], res = document.getElementById('twSpinRes');
-    let line = 'You won ' + won + '.';
-    if (won === 'THE POT') { line = 'THE POT. ' + pot + ' coins, all yours. In the prototype, a very happy nothing.'; pot = 120; }
-    else if (won === 'a peel') line = 'A banana peel. Nothing, but it was a good spin.';
-    else if (won === 'spin again') line = 'Spin again, on the house.';
-    else if (won === 'a firework' || won === 'a lure') { line = 'You won ' + won + '. It goes in your pocket.'; pocketAdd(won === 'a firework' ? 'firework' : 'lure'); }
-    if (res) res.textContent = line;
-    const p = document.getElementById('twPot'); if (p) p.textContent = pot;
-    if (btn) { btn.disabled = false; btn.querySelector('.tw-cta__verb').textContent = 'Spin again'; btn.querySelector('.tw-cta__rew').textContent = won === 'spin again' ? 'free' : '3 coins'; }
-  }, 3500);
-}
+// a card from the market; if the chunk cannot load, the stall says what it is, the way a shut place does
+function marketCard(which) { loadMarket().then((m) => m[which]()).catch(() => say(FRONTS[which] || '')); return true; }
 
 // ---- 🏪 the General Store and the POCKET: buy, carry at most five of three kinds, use where it works
-// 👝 THE POCKET: what the Wheel of Peel's prizes go into (a firework, a lure), carried at most five of a kind.
-// Its words are the rig's (town-life `pocket`). The old General Store card that also filled it was unreachable
-// (the store's room answers the tap first) and went on 22 Sep 2026, with duck bread, which only it sold.
-const pocket = {};     // this session only — the real one is two pass counters per kind
-function pocketAdd(k) { pocket[k] = Math.min(5, (pocket[k] || 0) + 1); pocketPaint(); }
+// 👝 THE POCKET: what the Wheel of Peel's prizes go into (a firework, a lure), at most five of a kind. Since 23 Sep
+// 2026 it is the pass's own: pocket_<kind> counts in (the wheel's wins, written by the pass worker) and
+// pocket_<kind>_used counts out, so a lure won here is still in the pocket at the beach and on your other devices.
+const pocketOf = () => { const s = passGet().stats || {}; const o = {}; for (const k of POCKET_KINDS) { const n = pocketHave(s, k); if (n) o[k] = n; } return o; };
+function pocketAdd(k) { passStat('pocket_' + k, 1); pocketPaint(); }   // 🧪 the QA seam's; a real prize arrives from the pass worker
 function pocketPaint() {
-  const n = Object.values(pocket).reduce((a, b) => a + b, 0);
+  const n = Object.values(pocketOf()).reduce((a, b) => a + b, 0);
   // the bar's verb slot: hidden while empty, the count when not (the park's tool-slot grammar)
   pocketBtn.hidden = !n;
   pocketN.textContent = String(n);
@@ -817,7 +750,7 @@ function toggleTray() {
   const P = lifeWords('pocket');
   // a row = glyph + name; the verb button only where the item works HERE, otherwise one small line
   // saying where it does (a sentence in a button wrapped the row — buttons never line-break)
-  for (const [k, v] of Object.entries(pocket)) if (v) {
+  for (const [k, v] of Object.entries(pocketOf())) if (v) {
     const here = k === 'firework';
     html += '<div class="tw-row"' + (here ? '' : ' data-say="' + k + '" role="button"') + '><div class="tw-row__it">' + iconSvg(POCKET_ICON[k], { size: 22 })
       + '<div><b>' + esc(P[k] || '') + ' ×' + v + '</b>' + (here ? '' : '<small>' + esc(P.lureWhere || '') + '</small>') + '</div></div>'
@@ -826,7 +759,7 @@ function toggleTray() {
   tray.innerHTML = html || '<div class="tw-row"><b>' + esc(P.empty || '') + '</b></div>';
   tray.hidden = false;
   // the tray folds first either way, so the toast never lands on it
-  tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => { tray.hidden = true; cafeYield(false); pocket.firework--; pocketPaint(); firework(); }));
+  tray.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => { tray.hidden = true; cafeYield(false); passStat('pocket_firework_used', 1); pocketPaint(); firework(); }));
   tray.querySelectorAll('[data-say]').forEach((r) => r.addEventListener('click', () => { tray.hidden = true; cafeYield(false); say(lifeWords('toasts').lure); }));
 }
 
@@ -923,6 +856,7 @@ function hiredMoment(at) {
 // heart, the travel door. Every player control lives in one of the two.
 const hud = mountHud({ mount: view, theme: { bg: 'rgba(30, 18, 10, 0.84)', border: 'rgba(255, 200, 120, 0.35)' }, chips: ['lvl', 'coins', 'slot', 'crowd'] });   // the slot carries the town's nightfall clock (town-room.js)
 hud.setCrowd('solo');
+pocketPaint();   // 👝 whatever the pass already carries
 pocketBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleTray(); });
 document.getElementById('twEmote').addEventListener('click', function () {
   // the float rides the button's own pixel heart — one art source (the park's grammar)
@@ -961,7 +895,7 @@ assetsReady().then(() => {
     const qa = /[?&]towntest/.test(location.search);
     if (!qa || /[?&]crowd=1/.test(location.search)) {
       import('./town-crowd.js').then((m) => {
-        crowd = m.bootTownCrowd({ world, W, H, pct, hud, track, pos, outfit: () => ME_DRAW, inRoom: () => inRoom, onBurst: peerFirework,
+        crowd = m.bootTownCrowd({ world, W, H, pct, hud, track, pos, outfit: () => ME_DRAW, inRoom: () => inRoom, onBurst: peerFirework, onPot: (pot, won, name) => { if (market || won) loadMarket().then((m) => m.pot(pot, won, name)).catch(() => {}); },
           name: () => { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } } });
         if (window.__town) window.__town.crowd = crowd.seam;
       }).catch((e) => { console.warn('[town] the crowd did not load', e); });
@@ -998,6 +932,6 @@ assetsReady().then(() => {
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)
-  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: wheelCard, exchange: exchangeCard }, pocket, pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
+  open: (k) => { const ok = openFor(k); if (!ok && ABOUT[k] && ABOUT[k][2]) say(ABOUT[k][2]); return ok; }, dress: () => dress && dress.seam, post: () => post && post.seam, sort: () => sort && sort.seam, sortReady: () => loadSort().then((s) => !!s), startSort, info: () => info && info.seam, OVERLAYS, cards: { wheel: () => marketCard('wheel'), exchange: () => marketCard('exchange') }, market: () => loadMarket().then((m) => m.seam), pocket: () => pocketOf(), pocketAdd: (k) => pocketAdd(k), fx: () => fxRuns, fxLast: () => fxLast, slow: () => slow, wx: (k) => weather.setKind(k), rooms: { enter: enterRoom, exit: exitRoom, now: () => inRoom, of: (k) => ROOMS[k] || null, keys: () => Object.keys(ROOMS) },
     arcade: { enter: () => enterRoom('condo'), exit: exitRoom, inside: () => inRoom === 'condo', spots: () => (ARCADE ? ARCADE.spots : []), box: () => (ARCADE ? ARCADE.box : null), door: () => (ARCADE ? ARCADE.exit : null), game: () => arcGame, play: (k) => gameCard(k || 'g1') } };   // QA seam for the walk
 });

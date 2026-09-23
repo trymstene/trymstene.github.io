@@ -46,6 +46,23 @@ function edit(state, fn) {
   return out;
 }
 
+/** 📈 what the farm holds to sell: the eggs, milk and wool IN HAND (the stall's own stock) — never an animal's `gs`,
+ *  which is her lifetime tally ("she's laid 31 eggs"). null = this device has no homestead. */
+export function goodsInHand(state) {
+  const s = state || readHome();
+  return s && s.claimedAt ? { eggs: Math.max(0, s.eggs | 0), milk: Math.max(0, s.milk | 0), wool: Math.max(0, s.wool | 0) } : null;
+}
+/** 📈 the Exchange took `n` of `good` out of the SAVED farm and moved its stamp (worker-rave /yards/take): this device
+ *  takes them out too, and — only if it was in step with the farm before the sale — steps its own stamp forward, so
+ *  its next save lands on top instead of being stale. A device out of step is stale either way and pulls the count. */
+export function soldFromHome(good, n, yard) {
+  const s = readHome();
+  if (!s || !['eggs', 'milk', 'wool'].includes(good)) return;
+  s[good] = Math.max(0, (s[good] | 0) - (n | 0));
+  if (yard && yard.prev && yard.updated && s.pubUpdated === yard.prev) s.pubUpdated = yard.updated;
+  write(s);
+}
+
 /** the house-ladder gate the shop's stage rule reads (0 = the plot) */
 export function homeStage(state) { const s = state || readHome(); return s ? (s.stage | 0) : 0; }
 export function shedCount(state) { const s = state || readHome(); return s ? withInventory(s).shed.length + withInventory(s).orders.length : 0; }

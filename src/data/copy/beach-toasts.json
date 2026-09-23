@@ -13,5 +13,9 @@
       "one treasure a day, that’s all the sea gives up. the map knows where.",
       "lost a good hat down a hole in ’99. still think about it."
     ]
+  },
+  "lure": {
+    "armed": "Your lure is on the line. The next few bites run bigger.",
+    "spent": "The lure’s worn out. The sea gets its fish back."
   }
 }

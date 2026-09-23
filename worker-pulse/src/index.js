@@ -44,6 +44,8 @@ const LENS_EVENTS = [
   'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_ghost', 'town_object', 'town_merchant',
   // 💼 the jobs, 19 Sep — a boss asked for work, a shift's own chore, and a turn at the café counter
   'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',
+  // 🎡📈 the market, 23 Sep — a spin, THE POT, a sale at the Exchange, and a lure used at the pier
+  'town_wheel', 'town_pot', 'town_sell', 'beach_lure',
   'post_open', 'post_read', 'post_send', 'post_refused', 'post_report', 'post_card',
 ];
 
@@ -600,6 +602,7 @@ const ANALYST_EVENTS = [
   'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
   'post_open', 'post_read', 'post_send', 'post_refused', 'post_report', 'post_card',   // ✉️ the post, 20 Sep
   'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
+  'town_wheel', 'town_pot', 'town_sell', 'beach_lure',   // 🎡📈 the market, 23 Sep: the town's sink and its one risk loop
   // 👕☕ 20 Sep: the dressing room and every cup served. town_cup was tracked for a day with no reader
   // anywhere — the string existed in exactly one place in the whole repo, which is the shape of a
   // surface that is not done (a new event is not done until Pulse READS it, not until it is named).

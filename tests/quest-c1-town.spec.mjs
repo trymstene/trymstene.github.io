@@ -57,7 +57,9 @@ test('a newcomer meets Nib at the fountain, and he walks up to the town hall aft
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/town/?towntest&questreset', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
-  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.life.set(11); });   // a plain morning: nobody is kept in
+  // a plain morning in a lively town, from the start of the beat: nobody is kept in (below Lively the day's seeded
+  // few stay home, and on a day that picked Nib the walk up ended at his door), and the walk ends inside the beat
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); window.__town.life.set(8); });
 
   // ── the chapter claimed him, and the square answered
   await page.waitForFunction(() => window.bwqTalk && window.bwqTalk.who === 'nib' && window.bwqTalk.station === 'fountain', null, { timeout: 15000 });
@@ -123,6 +125,22 @@ test('a newcomer meets Nib at the fountain, and he walks up to the town hall aft
   const there = await nib(page);
   expect(there.place, 'and he is at the hall').toBe('hall');
   expect(errs, 'nothing threw').toEqual([]);
+});
+
+// ⭐ 23 Sep 2026: the day's seeded few who stay indoors once included Nib, and chapter one opened on an empty
+// fountain for every newcomer that day. A place the story INSISTS on beats being kept in; a Curse Night keeps
+// EVERYBODY in, so it proves that on any day rather than only on the days the hash picks him.
+test('a night that keeps the whole town in still leaves the chapter’s Nib at the fountain', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/town/?towntest&questreset', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('deep'); window.__town.life.set(9); });
+  // the night's own chunk loads first, so it takes a moment to send them in
+  await page.waitForFunction(() => window.__town.life.kept().length >= 8, null, { timeout: 15000 });
+  const kept = await page.evaluate(() => window.__town.life.kept());
+  expect(kept, 'but never the one chapter one is waiting with').not.toContain('nib');
+  const n = await nib(page);
+  expect(n && n.place, 'he waits at the fountain').toBe('fountain');
 });
 
 test('a returning newcomer finds him still there, and the town at night keeps him out', async ({ page }) => {

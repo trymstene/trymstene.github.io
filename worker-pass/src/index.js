@@ -35,6 +35,9 @@ import { cleanName } from '../../src/lib/player-name.js';
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
 import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf } from '../../src/data/town/jobs.js';
+// 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
+// the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
+import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
 
 const MAX_BLOB = 2 * 1024 * 1024;   // 🚨 6 Sep 2026: 256 KB refused every veteran phone (a big shelf) silently, forever — see the mint
 const MAX_TOKENS = 10;
@@ -46,7 +49,7 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(rollupTick(env).catch(() => {}));
   },
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
       if (request.method === 'OPTIONS') return new Response(null, { headers: cors(env, request) });
@@ -76,6 +79,9 @@ export default {
       if (url.pathname === '/job/chore') return jobChore(request, env);
       if (url.pathname === '/job/pay') return jobPay(request, env);
       if (url.pathname === '/job/view') return jobViewRoute(request, env);
+      if (url.pathname === '/town/wheel') return townWheel(request, env, ctx);
+      if (url.pathname === '/town/sell') return townSell(request, env);
+      if (url.pathname === '/town/pot') return townPot(request, env);
       if (url.pathname === '/citizen') return citizen(request, env);
       if (url.pathname === '/arcade/board') return arcadeBoard(request, env, url);
       if (url.pathname === '/arcade/score') return arcadeScore(request, env);
@@ -1294,6 +1300,13 @@ function jobView(j, now) {
     nudge: !!(at && DUTIES[at] && dow >= NUDGE_DAY && share === 0),
     fired: j.fired || null };
 }
+// 🪪 A KEPT PASS (23 Sep 2026). An email or a passkey that JOINS an anonymous pass is a pointer to that home, and the
+// home kept its `anon` mark forever — so every /job/* call from a pass kept the normal way was refused 'keep', and
+// the desk counted it anonymous. The mark is cleared where a pointer attaches (mailUse, register) and here, lazily,
+// for the homes attached before this.
+const keptPass = (R) => !R.home.anon || (R.ownKey !== R.homeKey && !!(R.own.mail || R.own.pk));
+function unmarkKept(R) { if (R.home.anon && keptPass(R)) { delete R.home.anon; R.home.keptAt = Date.now(); } }
+
 // ---------- POST /job/view — the job as it stands, marking nothing (the duties chip's read) ----------
 async function jobViewRoute(request, env) {
   const bad = guard(env, request);
@@ -1302,7 +1315,7 @@ async function jobViewRoute(request, env) {
   try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
   const R = await tokenRec(env, b.credId, b.token);
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-  if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+  if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
   const j = jobRec(R.home, false);
   const now = Date.now();
   return json({ ok: true, job: jobView(j || { at: '', since: 0, wk: {}, paid: {} }, now) }, 200, cors(env, request));
@@ -1319,7 +1332,8 @@ async function jobTake(request, env) {
   return retrying(async () => {
     const R = await tokenRec(env, b.credId, b.token);
     if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-    if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+    if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
+    unmarkKept(R);
     const now = Date.now();
     const j = jobRec(R.home, true);
     // ⭐ ONE AT A TIME. Taking a second job is leaving the first, and the weeks already worked stay
@@ -1341,7 +1355,8 @@ async function jobChore(request, env) {
   return retrying(async () => {
     const R = await tokenRec(env, b.credId, b.token);
     if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-    if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+    if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
+    unmarkKept(R);
     const j = jobRec(R.home, true);
     if (!j.at) return json({ error: 'no job' }, 409, cors(env, request));
     const now = Date.now(), wk = jobWeek(now);
@@ -1374,7 +1389,8 @@ async function jobPay(request, env) {
   return retrying(async () => {
     const R = await tokenRec(env, b.credId, b.token);
     if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
-    if (R.home.anon) return json({ error: 'keep' }, 403, cors(env, request));
+    if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
+    unmarkKept(R);
     const j = jobRec(R.home, true);
     const now = Date.now();
     const paid = [];
@@ -1405,37 +1421,229 @@ async function jobPay(request, env) {
       j.paid[wk] = coins;                       // marked even at zero, so a quiet week is never re-walked
       total += coins;
     }
-    if (total > 0) {
-      // ⚠️ THE LEDGER SLOT, NEVER THE SHARED SCALAR — the same rule the admin grant follows: a
-      // device pushes its own slots and max-merges the scalar, so a wage written to the scalar
-      // could be flattened by an older client's copy. `job` is the server's own slot and the
-      // client never writes it, which is also why a max-merge of it is safe.
-      const blob = R.home.blob || (R.home.blob = {});
-      const p = blob.pass || (blob.pass = { created: now, patches: {}, stats: {}, days: [] });
-      if (!p.base) p.base = { ...(p.stats || {}) };
-      const led = p.led || (p.led = {});
-      led.coins_earned = led.coins_earned || {};
-      led.coins_earned.job = (+led.coins_earned.job || 0) + total;
-      // 💰 …AND THE SERVER WALLET MOVES WITH IT. ⚠️ THE SLOT ALONE IS NOT MONEY: once a device has
-      // pushed once the wallet is frozen, and from then on coinsNow() reads walletBal — base +
-      // earned + refunded − spent — which a ledger slot is no part of. A cheque that only wrote the
-      // slot paid coins the player could never see or spend (found 19 Sep, the day after it shipped;
-      // the test is jobs.test.mjs §8). adminGrant has said "a slot alone never moves it" all along.
-      // Paying twice is already impossible: j.paid[wk] is marked above, even at zero.
-      if (R.home.wallet) {
-        R.home.wallet.earned += total;
-        R.home.wallet.seq = (R.home.wallet.seq || 0) + 1;
-        R.home.wallet.at = now;
-        const log = R.home.log || (R.home.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
-        log.ev.push({ id: bufToHex(crypto.getRandomValues(new Uint8Array(4))), t: now, k: 'coins_earned', d: total, a: 'town', s: 'job', at: now });
-        log.n = (log.n || 0) + 1;
-        if (log.ev.length > LOG_CAP) log.ev.splice(0, log.ev.length - LOG_CAP);
-      }
-    }
+    // 💰 the server's own ledger slot `job` AND the wallet (a slot alone paid coins nobody could spend — found
+    // 19 Sep, jobs.test.mjs §8). Paying twice is already impossible: j.paid[wk] is marked above, even at zero.
+    if (total > 0) serverCoins(R.home, 'coins_earned', 'job', total, 'job', now);
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
     return json({ ok: true, paid, total, job: jobView(j, now) }, 200, cors(env, request));
   });
+}
+
+// ---------- 🎡📈 THE MARKET (23 Sep 2026): the Wheel of Peel and the Exchange, made real ----------
+// Trym, 23 Sep 2026: "I wanr the exchange and wheel, real now" — and, asked whether the Exchange should really
+// buy what the farm made after it was set aside on 12 Sep: "yes build the exchange too".
+// ⚠️ THE MONEY IS THE SERVER'S, BOTH WAYS. A spin is charged and paid here, and a sale is paid here only after the
+// neighbourhood has taken the goods out of the saved farm — no coin in this section is a client's claim, so neither
+// needs a RULES entry (a forged town/wheel or town/exchange event is refused 'src' like any other).
+// The numbers both sides print are src/data/town/market.js; the wheel's odds live only here.
+// Per 10 000 spins. A paid spin returns about nine coins in ten (the town is the economy's sink); items are the bonus.
+const WHEEL_W = { c5: 2200, firework: 700, peel: 5600, c20: 300, lure: 400, again: 775, pot: 25 };
+const WHEEL_PAY = { c5: 5, c20: 20 };
+const POCKET_FULL_PAY = 5;   // an item wedge with that pocket already full pays this instead
+const POT_KEY = 'town/wheel-pot.json';
+
+// the wedge, drawn from the weights with no modulo lean; the two peels share one weight
+function wheelRoll() {
+  const ids = Object.keys(WHEEL_W), tot = ids.reduce((a, k) => a + WHEEL_W[k], 0);
+  const lim = Math.floor(0x100000000 / tot) * tot;
+  const u = new Uint32Array(1);
+  do crypto.getRandomValues(u); while (u[0] >= lim);
+  let r = u[0] % tot, id = ids[ids.length - 1];
+  for (const k of ids) { if (r < WHEEL_W[k]) { id = k; break; } r -= WHEEL_W[k]; }
+  const at = WEDGES.map((w, i) => (w[0] === id ? i : -1)).filter((i) => i >= 0);
+  return at[Math.floor(u[0] / tot) % at.length];
+}
+// the day's wheel, on the RECORD (server-owned state never lives in blob.pass). A won spin-again outlives midnight.
+function wheelRec(home, day) {
+  const w = home.wheel || (home.wheel = { d: '', free: 0, paid: 0, again: 0, n: 0, won: 0 });
+  if (w.d !== day) { w.d = day; w.free = 0; w.paid = 0; }
+  return w;
+}
+const wheelKind = (w) => (w.again ? 'again' : !w.free ? 'free' : 'paid');
+async function potRead(env) {
+  const o = await env.PASSES.get(POT_KEY);
+  let v = null;
+  try { v = o ? await o.json() : null; } catch (e) { v = null; }
+  return remember(v && typeof v === 'object' ? v : { pot: POT_SEED, spins: 0, wins: 0 }, o);
+}
+// ⚠️ THE POT MOVES IN ITS OWN CONDITIONAL WRITE, once per spin and before the player's record: two bananas
+// spinning at once both land, and a spin whose record write conflicts re-applies the SAME outcome rather than
+// turning the wheel again.
+async function potMove(env, paid, win) {
+  return retrying(async () => {
+    const v = await potRead(env);
+    let won = 0;
+    if (paid) v.pot = (v.pot | 0) + POT_FEED;
+    if (win) { won = v.pot | 0; v.pot = POT_SEED; v.wins = (v.wins | 0) + 1; v.lastWin = Date.now(); }
+    v.spins = (v.spins | 0) + 1;
+    v.at = Date.now();
+    const etag = v[ETAG];
+    const res = await env.PASSES.put(POT_KEY, JSON.stringify(v), { httpMetadata: { contentType: 'application/json' }, ...(etag ? { onlyIf: { etagMatches: etag } } : {}) });
+    if (res === null) throw new Conflict(POT_KEY);
+    return { pot: v.pot, won };
+  });
+}
+function serverPass(home, now) {
+  const blob = home.blob || (home.blob = {});
+  const p = blob.pass || (blob.pass = { created: now, patches: {}, stats: {}, days: [] });
+  if (!p.base) p.base = { ...(p.stats || {}) };
+  if (!p.led) p.led = {};
+  return p;
+}
+// 💰 A SERVER-AUTHORED COIN MOVE — the cheque's three steps in one place: the server's own ledger slot (a device
+// never writes it, which is why max-merging it is safe), the wallet (the slot alone is never money), a tape row.
+// ⚠️ no wallet yet (the pass never pushed): only the slot, and the first push counts it into the opening base.
+function serverCoins(home, key, slot, d, s, now) {
+  if (!(d > 0)) return;
+  const led = serverPass(home, now).led;
+  led[key] = led[key] || {};
+  led[key][slot] = (+led[key][slot] || 0) + d;
+  if (!home.wallet) return;
+  if (key === 'coins_spent') home.wallet.spent += d; else home.wallet.earned += d;
+  home.wallet.seq = (home.wallet.seq || 0) + 1;
+  home.wallet.at = now;
+  const log = home.log || (home.log = { ev: [], n: 0, seen: [], drop: 0, pushes: 0, unsure: 0, drift: {} });
+  log.ev.push({ id: bufToHex(crypto.getRandomValues(new Uint8Array(4))), t: now, k: key, d, a: 'town', s, at: now });
+  log.n = (log.n || 0) + 1;
+  if (log.ev.length > LOG_CAP) log.ev.splice(0, log.ev.length - LOG_CAP);
+}
+// the server's own slots an answer carries back, so the device holds them before its next pull
+function slotsOut(home, keys, slot) {
+  const led = (home.blob && home.blob.pass && home.blob.pass.led) || {};
+  const o = {};
+  for (const k of keys) { const v = led[k] && led[k][slot]; if (v) o[k] = { [slot]: v }; }
+  return o;
+}
+const marketOut = (home, keys, slot) => ({ ...walletOut(home), seen: (home.log && home.log.seen) || [], slots: slotsOut(home, keys, slot) });
+const WHEEL_KEYS = ['coins_earned', 'coins_spent', ...POCKET_KINDS.map((k) => 'pocket_' + k)];
+async function squarePot(env, pot, won, own) {
+  try {
+    if (env.RAVE) await env.RAVE.fetch(new Request('https://internal/square/pot', { method: 'POST', body: JSON.stringify({ pot, won, own }) }));
+  } catch (e) {}
+}
+
+// ---------- GET /town/pot — what the pot holds, for a device that cannot spin yet ----------
+async function townPot(request, env) {
+  const v = await potRead(env);
+  return json({ pot: v.pot | 0 }, 200, { ...cors(env, request), 'Cache-Control': 'public, max-age=15' });
+}
+
+// ---------- POST /town/wheel — a spin of the Wheel of Peel (with view: 1, how it stands) ----------
+async function townWheel(request, env, ctx) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const nonce = typeof b.n === 'string' && /^[a-z0-9]{6,24}$/i.test(b.n) ? b.n : '';
+  const R0 = await tokenRec(env, b.credId, b.token);
+  if (!R0) return json({ error: 'not linked' }, 403, cors(env, request));
+  const day = utcDay(Date.now());
+  const w0 = wheelRec(R0.home, day);
+  const answer = (R, out) => json({ ...out, ...marketOut(R.home, WHEEL_KEYS, 'wheel') }, 200, cors(env, request));
+  if (b.view) {
+    const v = await potRead(env);
+    return answer(R0, { ok: true, pot: v.pot | 0, next: wheelKind(w0), left: Math.max(0, SPIN_CAP - (w0.paid | 0)), cost: SPIN_COST });
+  }
+  // ↩️ the same spin asked twice (its answer was lost on the way): the first answer again, never a second turn
+  if (nonce && w0.last && w0.last.n === nonce) return answer(R0, { ...w0.last.out, repeat: 1 });
+  const kind = wheelKind(w0);
+  if (kind === 'paid') {
+    if ((w0.paid | 0) >= SPIN_CAP) return json({ error: 'cap' }, 409, cors(env, request));
+    const bal = R0.home.wallet ? walletBal(R0.home.wallet) : ledgerBalance(R0.home.blob);
+    if (bal < SPIN_COST) return json({ error: 'funds', bal, cost: SPIN_COST }, 409, cors(env, request));
+  }
+  const i = wheelRoll(), id = WEDGES[i][0];
+  let pm;
+  try { pm = await potMove(env, kind === 'paid', id === 'pot'); } catch (e) { return json({ error: 'busy' }, 503, cors(env, request)); }
+  const now = Date.now();
+  const res = await retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return null;
+    const w = wheelRec(R.home, day);
+    if (nonce && w.last && w.last.n === nonce) return { R, out: { ...w.last.out, repeat: 1 } };
+    if (kind === 'paid') { serverCoins(R.home, 'coins_spent', 'wheel', SPIN_COST, 'wheel', now); w.paid = (w.paid | 0) + 1; }
+    else if (kind === 'free') w.free = 1;
+    else w.again = 0;
+    const out = { ok: true, i, id, kind, coins: 0, item: '', full: false, pot: pm.pot };
+    if (WHEEL_PAY[id]) out.coins = WHEEL_PAY[id];
+    else if (id === 'pot') out.coins = pm.won;
+    else if (id === 'again') w.again = 1;
+    else if (POCKET_KINDS.includes(id)) {
+      const p = serverPass(R.home, now), k = 'pocket_' + id;
+      if (statTotal(p, k) - statTotal(p, k + '_used') >= POCKET_MAX) { out.full = true; out.coins = POCKET_FULL_PAY; }
+      else { p.led[k] = p.led[k] || {}; p.led[k].wheel = (+p.led[k].wheel || 0) + 1; out.item = id; }
+    }
+    if (out.coins) serverCoins(R.home, 'coins_earned', 'wheel', out.coins, 'wheel', now);
+    const p = serverPass(R.home, now);
+    p.stats = statsOf(p);
+    w.n = (w.n | 0) + 1;
+    w.won = (w.won | 0) + out.coins;
+    out.next = wheelKind(w);
+    out.left = Math.max(0, SPIN_CAP - (w.paid | 0));
+    w.last = { n: nonce, out, t: now };
+    await saveKey(env, R.homeKey, R.home);
+    return { R, out };
+  });
+  if (!res) return json({ error: 'not linked' }, 403, cors(env, request));
+  // 📣 the square hears the pot, and who took it — never holding up the answer
+  const tell = squarePot(env, pm.pot, id === 'pot' ? pm.won : 0, id === 'pot' ? await worldGid(env, res.R.homeKey) : '');
+  if (ctx && ctx.waitUntil) ctx.waitUntil(tell); else await tell;
+  return answer(res.R, res.out);
+}
+
+// ---------- POST /town/sell — Fig Jr. buys what the farm made, at today's price ----------
+function marketRec(home, day) {
+  const m = home.market || (home.market = { d: '', sold: {}, n: 0, coins: 0 });
+  if (m.d !== day) { m.d = day; m.sold = {}; }
+  return m;
+}
+async function townSell(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const gi = goodIndex(String((b && b.good) || ''));
+  const n = Math.max(0, Math.min(999, Math.floor(+(b && b.n) || 0)));
+  if (gi < 0 || !n) return json({ error: 'bad sale' }, 400, cors(env, request));
+  const good = GOODS[gi][0];
+  const R0 = await tokenRec(env, b.credId, b.token);
+  if (!R0) return json({ error: 'not linked' }, 403, cors(env, request));
+  const now = Date.now(), day = utcDay(now);
+  const room = Math.max(0, SELL_CAP - ((marketRec(R0.home, day).sold[good]) | 0));
+  if (!room) return json({ error: 'cap', good }, 409, cors(env, request));
+  if (!env.RAVE) return json({ error: 'busy' }, 503, cors(env, request));
+  // 1 · the neighbourhood takes the goods out of the SAVED farm, and moves its stamp so no device's older
+  // save can bring them back (worker-rave /yards/take)
+  let t = null;
+  try {
+    const r = await env.RAVE.fetch(new Request('https://internal/yards/take', { method: 'POST',
+      body: JSON.stringify({ pass: await worldGid(env, R0.homeKey), aliases: R0.home.aliases || [], good, n: Math.min(n, room) }) }));
+    t = await r.json();
+  } catch (e) { t = null; }
+  if (t && t.err === 'nofarm') return json({ error: 'nofarm' }, 404, cors(env, request));
+  if (!t || !t.ok) return json({ error: 'busy' }, 503, cors(env, request));
+  const took = Math.max(0, t.took | 0);
+  const coins = saleOf(dayOf(now), gi, took);
+  // 2 · and only then the coins
+  const R = await retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return null;
+    if (took) {
+      const m = marketRec(R.home, day);
+      m.sold[good] = (m.sold[good] | 0) + took;
+      m.n = (m.n | 0) + 1;
+      m.coins = (m.coins | 0) + coins;
+      serverCoins(R.home, 'coins_earned', 'exchange', coins, 'exchange', now);
+      const p = serverPass(R.home, now);
+      p.stats = statsOf(p);
+      await saveKey(env, R.homeKey, R.home);
+    }
+    return R;
+  });
+  if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+  return json({ ok: true, good, took, coins, left: t.left | 0, room: Math.max(0, room - took), yard: { updated: t.updated || 0, prev: t.prev || 0 },
+    ...marketOut(R.home, ['coins_earned'], 'exchange') }, 200, cors(env, request));
 }
 
 async function citizen(request, env) {
@@ -2471,6 +2679,7 @@ async function register(request, env) {
     const F = await tokenRec(env, b.fromCredId, b.fromToken);
     if (F && F.home.anon && F.homeKey === F.ownKey) {
       F.home.blob = takeBlob(F.home, blob);
+      delete F.home.anon; F.home.keptAt = Date.now();   // 🪪 kept now (see keptPass)
       const ptr = { pk, alg, tokens: {}, link: F.homeKey };
       const tk = await mintToken(ptr);
       await saveKey(env, F.homeKey, F.home);
@@ -2776,6 +2985,7 @@ async function mailUse(request, env, url) {
   await saveKey(env, key, rec);
   const R = await resolve(env, credId);
   if (ticket.qa && R && R.home && !R.home.qa) { R.home.qa = 1; await saveKey(env, R.homeKey, R.home); }
+  if (attached && R && R.home && R.home.anon) { unmarkKept(R); await saveKey(env, R.homeKey, R.home); }   // 🪪 kept now
   // 🫧 a KNOWN address arriving on a device that holds an anonymous pass:
   // that world folds into this one (see foldAnon) instead of being left behind
   const folded = !attached && R && R.home

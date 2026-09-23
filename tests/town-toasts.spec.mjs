@@ -1,7 +1,7 @@
 // 🗣 THE TOWN'S TOASTS ARE THE RIG'S (22 Sep 2026).
 //
 // CLAUDE.md: "CLAUDE WRITES CODE. GPT WRITES THE WORDS". A handful of toasts in the town were still typed into
-// say('…') — the road home, the Exchange's sell button, a lure in the pocket, a cabinet that will not load, the
+// say('…') — the road home, a lure in the pocket, a cabinet that will not load, the
 // arcade's prize and new-best lines — and tools/check-literal-says.mjs now refuses that in every script. This walk
 // proves the other half on the built site: each of those moments says the approved line (town-life `toasts`,
 // `pocket`), filled with the game's own numbers, and none of them prints a {placeholder}.
@@ -43,19 +43,7 @@ test('the pocket tray and a lure in it speak the rig’s words', async ({ page }
   expect(errs).toEqual([]);
 });
 
-test('the Exchange shows what the eggs would fetch, and says nothing changed hands', async ({ page }) => {
-  // a homestead with a hen that has laid three eggs: the Exchange reads the yard on this device
-  const errs = await town(page, () => { try { localStorage.setItem('hs-v1', JSON.stringify({ slug: 'ada-yard', claimedAt: Date.now(), animals: [{ id: 'h1', sp: 'hen', gs: 3 }] })); } catch (e) {} });
-  await page.evaluate(() => window.__town.open('exchange'));
-  await page.waitForSelector('#twCardBody [data-sell="0"]:not([disabled])', { timeout: 5000 });
-  await page.locator('#twCardBody [data-sell="0"]').click();
-  await page.waitForTimeout(150);
-  const said = await toast(page);
-  expect(said, 'the rig’s line, filled: ' + said).toMatch(shaped(T.sold));
-  expect(said.startsWith('3 eggs'), 'with the count and the goods the game knows').toBe(true);
-  expect(said, 'and no hole left open').not.toMatch(/\{\w+\}/);
-  expect(errs).toEqual([]);
-});
+// (the Exchange's "would fetch" line went with the prototype on 23 Sep 2026 — the real sale is tests/town-market.spec.mjs)
 
 test('walking off by the south road says where you are going', async ({ page }) => {
   const errs = await town(page);

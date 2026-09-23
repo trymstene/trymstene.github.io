@@ -1,0 +1,68 @@
+{
+  "wheel": {
+    "title": "The Wheel of Peel",
+    "pot": "The pot: {n} coins",
+    "wedges": {
+      "c5": "5 coins",
+      "firework": "a firework",
+      "peel": "a peel",
+      "c20": "20 coins",
+      "lure": "a lure",
+      "again": "spin again",
+      "pot": "THE POT"
+    },
+    "free": "Free spin",
+    "freeNote": "today’s free one",
+    "again": "Spin again",
+    "againNote": "on the house",
+    "paid": "Spin",
+    "paidNote": "{n} coins",
+    "wait": "Spinning…",
+    "won": {
+      "coins": "You won {n} coins.",
+      "firework": "You won a firework. It’s in your pocket: launch it here on the square.",
+      "lure": "You won a lure. It’s in your pocket, and it works at the beach pier.",
+      "peel": "A banana peel. Nothing, but it was a good spin.",
+      "again": "Spin again, on the house.",
+      "pot": "THE POT! {n} coins, all yours."
+    },
+    "full": "Your pocket already holds five of those, so Spinner pays you {n} coins instead.",
+    "funds": "A spin costs {n} coins, and you have {have}.",
+    "cap": "That’s all the spins Spinner takes from you today. Your free one is back tomorrow.",
+    "busy": "The wheel stuck. Nothing was spent, so try again in a moment.",
+    "keep": "Spins are kept on your Banana Pass, and this device doesn’t have one yet.",
+    "keepLink": "Get your pass",
+    "potWon": "{name} just won THE POT at the Wheel of Peel: {n} coins.",
+    "potWonAnon": "Somebody just won THE POT at the Wheel of Peel: {n} coins."
+  },
+  "exchange": {
+    "title": "The Exchange",
+    "goods": {
+      "eggs": "Eggs",
+      "milk": "Milk",
+      "wool": "Wool"
+    },
+    "things": {
+      "eggs": "eggs",
+      "milk": "bottles of milk",
+      "wool": "bundles of wool"
+    },
+    "each": "{price} coins each",
+    "up": "up from {was} yesterday",
+    "down": "down from {was} yesterday",
+    "same": "same as yesterday",
+    "have": "you have {n}",
+    "sell": "Sell {n}",
+    "sold": "Sold",
+    "total": "All of it, today: {n} coins",
+    "rumourUp": "Bean at the café says eggs go up tomorrow. He is usually right.",
+    "rumourDown": "Bean at the café says eggs drop tomorrow. He is usually right.",
+    "paid": "Fig Jr. paid you {coins} coins for {n} {what}.",
+    "none": "Nothing to sell yet. Your homestead’s hens, goats, cows and sheep make the eggs, milk and wool Fig Jr. buys.",
+    "noFarm": "Fig Jr. buys what a homestead makes, and you don’t have one yet.",
+    "cap": "Fig Jr. has bought all the {what} he can take from you today.",
+    "busy": "The sale didn’t go through. Nothing was sold, so try again in a moment.",
+    "keep": "Sales are kept on your Banana Pass, and this device doesn’t have one yet.",
+    "keepLink": "Get your pass"
+  }
+}

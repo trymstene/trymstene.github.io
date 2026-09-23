@@ -814,6 +814,25 @@ export function buffSet(fx, mins) {
 // park"): park crop harvests pocket a seed, the homestead bed spends it.
 // Same additive ledger shape as the wallet — blob stats merge by MAX, so
 // both sides only ever increment and the pouch follows you across devices.
+// 🎡 THE SERVER'S OWN SLOTS, as a market answer carries them ({ key: { slot: n } } — worker-pass /town/wheel,
+// /town/sell): kept by MAX, the merge's own rule, so this device holds a prize before its next pull. Only the
+// server's named slots are taken — never a device's.
+const SERVER_SLOTS = new Set(['wheel', 'exchange', 'job']);
+export function passServerSlots(slots) {
+  if (!slots || typeof slots !== 'object') return;
+  const raw = readRaw();
+  let moved = false;
+  for (const [k, row] of Object.entries(slots)) {
+    if (!row || typeof row !== 'object') continue;
+    for (const [slot, v] of Object.entries(row)) {
+      const n = +v || 0;
+      if (!SERVER_SLOTS.has(slot) || !(n > 0)) continue;
+      raw.led[k] = raw.led[k] || {};
+      if (n > (+raw.led[k][slot] || 0)) { raw.led[k][slot] = n; moved = true; }
+    }
+  }
+  if (moved) { writeRaw(raw); try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {} }
+}
 export function seedGain(crop) { return passStat('seedg_' + crop, 1); }
 export function seedUse(crop) { return passStat('seedu_' + crop, 1); }
 export function seedCount(crop) {

@@ -53,8 +53,12 @@ r = await J(await hit(`/mail/use?t=${t1}&credId=${encodeURIComponent(a.credId)}&
 ok('the ticket opens like an inbox link: attached, same gid', r.status === 200 && r.attached === true && r.gid === a.gid, r);
 const credA = r.credId, tokA = r.token;
 ok('the mail credential is in the mail namespace', typeof credA === 'string' && credA.startsWith('m:'), credA);
-let home = recs().find(([, v]) => !v.link && v.anon);
-ok('the home (phone A\'s anon record) is stamped qa', !!home && home[1].qa === 1, home && home[1]);
+// found through the ticket's pointer: since 23 Sep 2026 a pointer that joins an anonymous home KEEPS it, so the
+// home no longer carries the `anon` mark once the ticket has attached (keptPass in worker-pass)
+const ptr0 = recs().find(([, v]) => v.link && v.mail);
+let home = ptr0 ? recs().find(([k]) => k === 'pass/' + ptr0[1].link + '.json') : null;
+ok('the home (phone A\'s once-anonymous record) is stamped qa', !!home && home[1].qa === 1, home && home[1]);
+ok('…and the ticket kept it: the anonymous mark is gone', !!home && !home[1].anon, home && home[1].anon);
 let ptr = recs().find(([, v]) => v.link && v.mail);
 ok('the mail pointer is stamped qa too', !!ptr && ptr[1].qa === 1, ptr && ptr[1]);
 r = await J(await hit(`/mail/use?t=${t1}`));

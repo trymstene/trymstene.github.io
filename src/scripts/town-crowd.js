@@ -18,7 +18,7 @@ const WS = 'wss://banana-rave.trymstene.workers.dev/town';
 const CV = 150;
 
 export function bootTownCrowd(ctx) {
-  const { world, W, H, pct, hud, track, pos, outfit, name, inRoom, onBurst } = ctx;
+  const { world, W, H, pct, hud, track, pos, outfit, name, inRoom, onBurst, onPot } = ctx;
   const peers = new Map();   // id → { el, ctx, outfit, name, x, y, room, lastF }
   let myId = null, sendAt = 0, sawPeer = false, sentRoom = '';
   const lastSent = { x: -1, y: -1 };
@@ -85,6 +85,7 @@ export function bootTownCrowd(ctx) {
       } else if (m.t === 'leave') dropPeer(m.id);
       // 🎆 somebody's firework: where the room says they stood, with the room's copy of their name
       else if (m.t === 'burst' && onBurst && !here()) onBurst(fromPX(m.x), fromPY(m.y), m.name || '');
+      else if (m.t === 'pot' && onPot) onPot(m.pot | 0, m.won | 0, m.name || '');   // 🎡 the Wheel of Peel's pot moved, or somebody took it
     },
     onDown: () => { peers.forEach((p) => p.el.remove()); peers.clear(); refreshCrowd(); },
   });

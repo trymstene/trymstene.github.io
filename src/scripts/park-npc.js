@@ -123,7 +123,7 @@ export function initOldPeel(ctx) {
     if (window.bwqTend) return false;   // quest chores own the bed right now
     // outside the quest the bed only answers with Peel fussing — a TOAST,
     // because his bench (and his bubble) is half a park away from the bed
-    ctx.toast('🌼 old peel: “' + PEEL_BED_LINES[peelBedIdx++ % PEEL_BED_LINES.length] + '”', 3600);
+    ctx.toast('🌼 ' + OLD_NAME + ': “' + PEEL_BED_LINES[peelBedIdx++ % PEEL_BED_LINES.length] + '”', 3600);
     return true;
   }
 

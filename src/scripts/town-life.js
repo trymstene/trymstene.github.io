@@ -308,7 +308,7 @@ export function initLife({ world, W, H, pct }) {
     const odd0 = overrideFn && overrideFn(n, beat);
     // 🕯 an override may INSIST ({ place, always }): the chapter's Nib waits at the fountain through the night too
     const odd = odd0 && odd0.place ? odd0.place : odd0, insist = !!(odd0 && odd0.always);
-    if (odd && ST[odd] && (act !== 'home' || insist)) { const p = ST[odd][0]; return { place: odd, act: 'stand', face: p[0] > 1100 ? 'left' : 'right', lines, x: p[0], y: p[1], loop: null }; }
+    if (odd && ST[odd] && (act !== 'home' || insist)) { const p = ST[odd][0]; return { place: odd, act: 'stand', face: p[0] > 1100 ? 'left' : 'right', lines, x: p[0], y: p[1], loop: null, insist }; }
     const loop = PATHS[n.key + '|' + beat] || null;
     if (loop) return { place, act, face, lines, x: loop[0][0], y: loop[0][1], loop };
     if (act === 'home') { const d = HOME[n.home]; return { place, act, face, lines, x: d[0], y: d[1], loop: null }; }
@@ -347,7 +347,9 @@ export function initLife({ world, W, H, pct }) {
     for (const n of res) {
       const st = stationFor(n, beat);
       // 🏘️ kept in: they go home (walking, if they are out) and stay there behind a dark window
-      n.kept = !!(keepFn && keepFn(n, beat) && st.act !== 'home');
+      // 🕯 …except a place the story INSISTS on: the day's seeded few once picked the chapter's Nib, and chapter one
+      // opened on an empty fountain (23 Sep 2026)
+      n.kept = !!(keepFn && keepFn(n, beat) && st.act !== 'home' && !st.insist);
       if (n.kept) {
         n.beat = beat; n.place = 'home'; n.act = 'home'; n.lines = st.lines; n.loop = null; n.marks = []; n.drift = null;
         if (walk && !n.hidden) { const d = HOME[n.home]; n.path = route([n.x, n.y], [d[0], d[1]]); n.wait = 400 + h01(n.idx + 1, beat + 1, 7) * 12000; n.walking = false; }

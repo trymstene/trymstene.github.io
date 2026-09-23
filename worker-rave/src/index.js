@@ -402,6 +402,18 @@ export default {
         { headers: { 'x-internal': '1' } }));
     }
 
+    // 🎡📈 THE MARKET'S TWO CALLS (23 Sep 2026): the pass worker tells the square what the Wheel of Peel's pot
+    // is now (and who won it), and takes what the Exchange bought out of a saved farm. The pass worker holds the
+    // money, so only it may do either — same internal-hostname gate as /wt/verify, and each room checks the header.
+    if (url.hostname === 'internal' && url.pathname === '/square/pot' && request.method === 'POST') {
+      return env.SQUARE.get(env.SQUARE.idFromName('the-square')).fetch(new Request('https://room/pot',
+        { method: 'POST', body: await request.text(), headers: { 'x-internal': '1' } }));
+    }
+    if (url.hostname === 'internal' && url.pathname === '/yards/take' && request.method === 'POST') {
+      return env.YARDS.get(env.YARDS.idFromName('the-neighbourhood')).fetch(new Request('https://room/take',
+        { method: 'POST', body: await request.text(), headers: { 'x-internal': '1' } }));
+    }
+
     const room = env.RAVE.get(env.RAVE.idFromName('main-floor'));
     if (url.pathname === '/ws') {
       const allowed = (env.ALLOWED_ORIGIN || '').split(',').map((s) => s.trim());
@@ -3032,6 +3044,22 @@ export class SquareRoom {
     const url = new URL(request.url);
     if (url.pathname === '/count') { this.reapStale(); return new Response(JSON.stringify({ count: this.roster().length })); }
     if (url.pathname === '/rosternames') return new Response(JSON.stringify({ names: this.roster().filter((a) => a.name).map((a) => a.name) }));
+    // 🎡 THE POT, TOLD TO THE SQUARE (23 Sep 2026). The pass worker keeps the Wheel of Peel's pot and pays it; this
+    // room only tells everyone here what it is now and who just won it. Internal only: the public /town route hands
+    // this room its own path. The winner's name is the one THIS ROOM holds for them (filtered at join), found by the
+    // world id the pass worker sends — never a name carried in the message.
+    if (url.pathname === '/pot' && request.method === 'POST') {
+      if (request.headers.get('x-internal') !== '1') return new Response('no', { status: 404 });
+      let b = {};
+      try { b = await request.json(); } catch (e) {}
+      const pot = Math.max(0, Math.floor(+b.pot || 0)), won = Math.max(0, Math.floor(+b.won || 0));
+      const own = typeof b.own === 'string' ? b.own.slice(0, 24) : '';
+      // the winner's own screen is celebrating already (their spin's answer), so their socket is spared the news
+      let winWs = null, who = null;
+      if (won && own) for (const ws of this.state.getWebSockets()) { let a = null; try { a = ws.deserializeAttachment(); } catch (e) {} if (a && !a.dead && a.own === own) { winWs = ws; who = a; break; } }
+      this.broadcast({ t: 'pot', pot, won, name: (who && who.name) || '' }, winWs);
+      return new Response(JSON.stringify({ ok: 1, heard: this.roster().length }), { headers: { 'Content-Type': 'application/json' } });
+    }
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('expected websocket', { status: 426 });
     this.reapStale();
     if (this.roster().length >= SQUARE_CAP) return new Response('square full', { status: 503 });
@@ -3672,6 +3700,34 @@ export class YardRoom {
         // the player's own things — a visitor at /yard never sees these
         goods: st.goods, pantry: st.pantry, shed: st.shed,
       });
+    }
+
+    // 📈 THE EXCHANGE TAKES WHAT IT BOUGHT (23 Sep 2026). The pass worker pays for the goods, so only it may take
+    // them: internal only (the public /yards/* forwarder sets no header, so this answers 404 there). The yard is
+    // found the way /save finds it — the world id the pass worker mints tokens for, plus the aliases it vouches for.
+    // ⚠️ THE STAMP MOVES. doc.state is the owner's wholesale save, so a count changed here would be overwritten by
+    // the next save from any device still holding the old eggs. A newer `updated` makes every such save stale (409)
+    // and the client's yardResync pulls this count down; the device that sold fast-forwards to it (`prev`).
+    if (path === '/take' && request.method === 'POST') {
+      if (request.headers.get('x-internal') !== '1') return json({ err: 'no' }, 404);
+      const good = ['eggs', 'milk', 'wool'].includes(body.good) ? body.good : '';
+      const want = Math.max(0, Math.min(999, Math.floor(+body.n || 0)));
+      if (!good || !want || !pass) return json({ err: 'bad' }, 400);
+      const ids = Array.isArray(body.aliases) ? body.aliases.map((a) => yStrip(a, 64)).filter(Boolean).slice(0, 12) : [];
+      const slug = await this.ownSlug(pass, '', ids);
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc || !doc.state) return json({ err: 'nofarm' }, 404);
+      const goods = doc.state.goods || {};
+      const have = Math.max(0, Math.floor(+goods[good] || 0));
+      const took = Math.min(want, have);
+      const prev = doc.updated || 0;
+      if (!took) return json({ ok: 1, took: 0, left: have, updated: prev, prev });
+      doc.state.goods = { ...goods, [good]: have - took };
+      doc.updated = Math.max(prev + 1, Date.now());
+      doc.mark = undefined;   // no device's save made this stamp
+      await this.state.storage.put('y:' + slug, doc);
+      await this.indexUpsert(doc);
+      return json({ ok: 1, took, left: have - took, updated: doc.updated, prev });
     }
 
     // 📊 the HQ world desk: how many homesteads exist and how fresh they are

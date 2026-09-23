@@ -1109,7 +1109,7 @@ export function bootTownLife(ctx) {
   const overrideFor = (n2, beat) => {
     if (n2.key === 'nib') {
       if (nibSt) return { place: nibSt, always: true };
-      if (nibHallBeat === beat && beat !== 5) return 'hall';
+      if (nibHallBeat === beat && beat !== 5) return { place: 'hall', always: true };   // insists: never kept in on the walk up
     }
     // 🧍 A BOSS STEPS ASIDE WHILE YOU WORK THEIR PLACE (Trym, 22 Sep: "their default position while you work at their
     // workplace should be a bit away from the workplace so they dont distort the queue that lines up or is in the way
