@@ -618,9 +618,9 @@ const cafeFields = {
   front: { kind: 'prose', aim: 90, max: 130, note: 'What the Coffee Cup says when a player who does NOT work there taps it. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is Bean’s coffee kiosk; ask Bean for a job and you can serve coffee here for tips. ⚠️ it replaces a hand-written “Not built yet.” that shipped in code and was false — the café is open, Bean is behind it, and the counter is simply Bean’s until Bean hands it over. So: what the place IS, and that the counter belongs to somebody. It must not instruct and must not name a price or a condition — Bean’s own card is where a job is asked for.' },
   idle: { kind: 'prose', aim: 40, max: 54, note: 'The small line ON THE TRAY when you are behind the counter and there is nobody at the rope yet. ⚠️ it is the only thing on an otherwise empty tray, so it has a job: it tells the player the counter is working and simply quiet, rather than broken. Never a wait time and never “soon” — the mystery rule. Never an instruction either: not “wait for a customer”.' },
   leave: { kind: 'label', aim: 10, max: 12, note: '⭐ THE WAY OUT OF A SHIFT (Trym, 22 Sep: "better to lock it and have a button for leave work"): while you work, your banana is held at the counter and this is the ONE button that ends the shift, on the tray’s strip. A VERB first, two words at most, at most 12 characters, never wraps: the plain thing it does — leave work, step away.' },
-  'go.grind': { kind: 'label', aim: 8, max: 12, note: 'The word on the tray’s one button while the GRINDER is running: a needle sweeps a bar and the thumb stops it. A single word for the THING BEING DONE — it is a label on a control, not an instruction, so no “tap” and no “now”. Short enough that it can never wrap.' },
-  'go.pour': { kind: 'label', aim: 8, max: 12, note: 'The same button while the POUR is running: hold it down and the cup fills, let go at the right moment. One word, the thing being done.' },
-  'go.milk': { kind: 'label', aim: 8, max: 12, note: 'The same button at the MILK: three taps on a swelling pulse. One word, the thing being done.' },
+  'go.grind': { kind: 'label', aim: 12, max: 16, note: 'The tray’s one button while the GRINDER runs: a needle sweeps the bar and ONE TAP stops it. Trym, 23 Sep 2026: “it isnt obvious that you have to press the button on mobile” — the button NAMES THE GESTURE: it starts with “Tap” (a tap step) — e.g. “Tap to grind”. Never wraps on a 360-wide phone.' },
+  'go.pour': { kind: 'label', aim: 12, max: 16, note: 'The same button while the POUR runs: HOLD it down and the cup fills, let go in the band. The café’s one HELD step, and the one a phone player could not tell was held. Trym, 23 Sep 2026: “it isnt obvious that you have to press the button on mobile” — the button NAMES THE GESTURE: it starts with “Hold”.' },
+  'go.milk': { kind: 'label', aim: 12, max: 16, note: 'The same button at the MILK: three taps on a swelling pulse. It starts with “Tap” (a tap step).' },
   'drinks.short': { kind: 'label', aim: 10, max: 16, note: 'The smallest drink’s NAME, one or two words, for the receipt only — the ticket on the tray is pictures. It should sound like this town, not like a chain: nobody here says “grande”.' },
   'drinks.tall': { kind: 'label', aim: 10, max: 16, note: 'The middle drink’s name, same rules.' },
   'drinks.double': { kind: 'label', aim: 10, max: 16, note: 'The strongest drink’s name, same rules.' },
@@ -644,16 +644,24 @@ const lemonFields = {
   front: { kind: 'prose', aim: 90, max: 130, note: 'What the lemonade stand says when a player who does NOT work there taps it. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is Fig Jr.’s lemonade stand; ask Fig Jr. for a job and you can pour lemonade here for tips. ⚠️ it replaces a hand-written line ending “Not built yet.” which is false — the stand is open and Fig Jr. is behind it. What the place IS and whose it is; never an instruction, never a price, never how to get a job (Fig Jr.’s own card asks that).' },
   idle: { kind: 'prose', aim: 40, max: 54, note: 'The small line ON THE TRAY when you are behind the counter and there is nobody at the front yet: the only thing on an otherwise empty tray, so it says the stand is open and simply quiet, never broken. Never a wait time, never “soon”, never an instruction.' },
   leave: { kind: 'label', aim: 10, max: 12, note: '⭐ THE WAY OUT OF A SHIFT (Trym, 22 Sep: "better to lock it and have a button for leave work"): while you work, your banana is held at the counter and this is the ONE button that ends the shift, on the tray’s strip. A VERB first, two words at most, at most 12 characters, never wraps: the plain thing it does — leave work, step away.' },
-  'go.squeeze': { kind: 'label', aim: 8, max: 12, note: 'The word on the tray’s one button while the LEMON is held and let go: a single word for the THING BEING DONE, a label on a control, never “tap here”. Never wraps on a 360-wide phone.' },
-  'go.ice': { kind: 'label', aim: 8, max: 12, note: 'The same button at the ICE: three taps on a pulse. One word, the thing being done.' },
-  'go.pour': { kind: 'label', aim: 8, max: 12, note: 'The same button while the water is POURED to the line under a sweeping needle. One word, the thing being done.' },
+  'go.squeeze': { kind: 'label', aim: 12, max: 16, note: 'The tray’s one button while the LEMON is squeezed: HOLD it down, let go in the band. The stand’s one HELD step. Trym, 23 Sep 2026: “it isnt obvious that you have to press the button on mobile” — the button NAMES THE GESTURE: it starts with “Hold”. Never wraps on a 360-wide phone.' },
+  'go.ice': { kind: 'label', aim: 12, max: 16, note: 'The same button at the ICE: three taps on a pulse. It starts with “Tap” (a tap step).' },
+  'go.pour': { kind: 'label', aim: 12, max: 16, note: 'The same button while the water is POURED: one tap stops a sweeping needle at the line. It starts with “Tap” (a tap step) — never the café’s held “pour”.' },
   'drinks.still': { kind: 'label', aim: 10, max: 16, note: 'The plain lemonade’s NAME — over ice, nothing else — one or two words, for the receipt only. It should sound like a kid’s stand in this town, not a menu.' },
   'drinks.minty': { kind: 'label', aim: 10, max: 16, note: 'The one with a mint leaf in it, same rules.' },
   'drinks.pink': { kind: 'label', aim: 10, max: 16, note: 'The pink one, same rules.' },
 };
 const LEMON_CAFE = /\b(propeller|apron|barista|coffee|espresso|foam|milk|grind|grinder|rope|cups?)\b/i;
+// 🫳 THE BUTTON NAMES ITS GESTURE (Trym, 23 Sep 2026: “it isnt obvious that you have to press the button on mobile” — the button NAMES THE GESTURE). Which steps are held and which are tapped is the decks' own
+// (town-cafe.js STATIONS, town-lemon.js LEMON_DECK): a held step says Hold, a tapped one says Tap, so the words can
+// never drift back to naming the thing instead of the thumb.
+function gestureLabels(bad, go, held, tapped) {
+  for (const k of held) if (!/^hold\b/i.test(String((go || {})[k] || ''))) bad.push({ path: 'go.' + k, msg: 'is a HELD step: its button starts with “Hold”', rule: 'shape' });
+  for (const k of tapped) if (!/^tap\b/i.test(String((go || {})[k] || ''))) bad.push({ path: 'go.' + k, msg: 'is a TAPPED step: its button starts with “Tap”', rule: 'shape' });
+}
 function lemonShape(data) {
-  const bad = cafeRules(data);   // the same mechanical rules: decks are decks, nobody is asked a question, {drink} is there
+  const bad = cafeRules(data);
+  gestureLabels(bad, data.go, ['squeeze'], ['ice', 'pour']);   // the same mechanical rules: decks are decks, nobody is asked a question, {drink} is there
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });
   const walk = (v, path) => {
     if (Array.isArray(v)) v.forEach((x, i) => walk(x, path + '[' + i + ']'));
@@ -710,6 +718,7 @@ function cafeRules(data) {
 // the café's own shape: the shared rules, then its front names the Coffee Cup (the stand shares the rules, not the name)
 function cafeShape(data) {
   const bad = cafeRules(data);
+  gestureLabels(bad, data.go, ['pour'], ['grind', 'milk']);
   plainPlace(bad, 'front', data.front, ['coffee cup', 'kiosk', 'café', 'cafe'], ['job', 'work', 'serve', 'tips']);
   return bad;
 }

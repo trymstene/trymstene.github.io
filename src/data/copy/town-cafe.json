@@ -14,9 +14,9 @@
   "idle": "The rope is clear; the counter is open.",
   "front": "Bean’s coffee kiosk. Ask Bean for a job to serve coffee here for tips.",
   "go": {
-    "grind": "Grinding",
-    "pour": "Pouring",
-    "milk": "Foaming"
+    "grind": "Tap to grind",
+    "pour": "Hold to pour",
+    "milk": "Tap to foam"
   },
   "cup": {
     "perfect": [

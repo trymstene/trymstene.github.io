@@ -15,9 +15,9 @@
     "back": "Close"
   },
   "go": {
-    "squeeze": "Squeezing",
-    "ice": "Icing",
-    "pour": "Pouring"
+    "squeeze": "Hold to squeeze",
+    "ice": "Tap for ice",
+    "pour": "Tap to pour"
   },
   "cup": {
     "perfect": [

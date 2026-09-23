@@ -118,8 +118,10 @@ export function press(cup, now) {
 // a HOLD, and nothing on a phone can tell a thumb which is which — the tray's one button looks the
 // same either way. A quick tap used to land a release at v ≈ 0.02, which graded WRONG and silently
 // ruined the cup with no way to know what had gone wrong. A release this early is a slip, not a play:
-// it puts the cup back to an unpoured state and grades nothing, so the bar simply refills and the
-// gesture teaches itself. There is no line of copy anywhere in this — the brief forbids instructing.
+// it puts the cup back to an unpoured state and grades nothing, so the bar simply refills. And the
+// button SAYS it is held (Trym, 23 Sep 2026: "it isnt obvious that you have to press the button on
+// mobile"): every station's word names its gesture, "Hold to pour" or "Tap to grind" — a rule the copy
+// gate holds (tools/copy-jobs.mjs gestureLabels).
 const POUR_MIN = 0.08;
 export function release(cup, now) {
   const key = stationOf(cup);
