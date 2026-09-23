@@ -2,7 +2,7 @@
 import NOTES from '../data/copy/homestead-notes.json';   // the sign's line before the story gives you the place (the rig's)
 import POSTCOPY from '../data/copy/homestead-post.json';   // what the world writes to you (the rig's)
 import DUTYCOPY from '../data/copy/town-duties.json';      // 💼 the duty labels the payslip prints (the work note's own words)
-import { PAY_BACK } from '../data/town/jobs.js';           // 💼 how many whole weeks a cheque may still reach back
+import { PAY_BACK, rankOf } from '../data/town/jobs.js';   // 💼 how many whole weeks a cheque may still reach back; 🪜 the rank a boss's news is about
 import pxEdit from '../icons/pixelart/edit.svg?raw';
 import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
@@ -2923,8 +2923,8 @@ function init(visitDoc, visitMiss) {
     // 💼 a cheque is keyed by the WEEK it paid for, so its words cannot live under a fixed id the
     // way the five occasion letters do — they come from POSTCOPY.wage and carry the amount.
     const wage = String(m.id || '').indexOf('wage:') === 0;
-    // 💼 a boss's letter: nudge:<week>:<at> or fired:<week>:<at> — the words by workplace (POSTCOPY.bosses)
-    const bossKind = /^(nudge|fired):/.test(String(m.id || '')) ? String(m.id).split(':')[0] : '';
+    // 💼 a boss's letter: nudge:<week>:<at>, fired:<week>:<at> or 🪜 news:<rank>:<at> — the words by workplace (POSTCOPY.bosses)
+    const bossKind = /^(nudge|fired|news):/.test(String(m.id || '')) ? String(m.id).split(':')[0] : '';
     const w = wage ? (POSTCOPY.wage || {}) : bossKind ? (((POSTCOPY.bosses || {})[bossKind] || {})[m.at || String(m.id).split(':')[2]] || {}) : ((POSTCOPY.letters || {})[m.id] || {});
     // 📄 A WEEK THAT PAID NOTHING has its own line and its own stamp: "PAID" over nothing would be untrue
     const nil = wage && !(m.n | 0);
@@ -3084,6 +3084,13 @@ function init(visitDoc, visitMiss) {
     const jv = res.job || {};
     if (jv.nudge && jv.at && jv.week) {
       const id = 'nudge:' + jv.week + ':' + jv.at;
+      if (!(state.mail || []).some((m) => m.id === id)) { (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, at: jv.at }); n++; }
+    }
+    // 🪜 THE BOSS HAS NEWS, AND YOU HAVE NOT COME BY (Trym, 23 Sep 2026: promotion happens at the boss, with a note in the
+    // mailbox if you do not come). One letter per rank waiting, keyed by it; the promotion itself still happens at the boss.
+    const lad = jv.lad;
+    if (lad && lad.news && jv.at) {
+      const id = 'news:' + rankOf(jv.at, lad.xp | 0) + ':' + jv.at;
       if (!(state.mail || []).some((m) => m.id === id)) { (state.mail || (state.mail = [])).unshift({ id, t: Date.now(), read: 0, at: jv.at }); n++; }
     }
     if (jv.fired && jv.fired.at && jv.fired.week) {

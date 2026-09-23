@@ -9,6 +9,7 @@
     "none": "The counter kept its company; the cups stayed stacked and dry.",
     "capped": "The cups went down the lane; today’s tips have already gone home.",
     "best": "A warm {drink} crosses the rope.",
+    "xp": "Work XP earned: {n}.",
     "back": "Return"
   },
   "idle": "The rope is clear; the counter is open.",

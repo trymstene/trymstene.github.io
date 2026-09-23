@@ -930,28 +930,10 @@ export function bootTownLife(ctx) {
       pos: ctx.pos,   // ☕ the counter mark is a DISTANCE: step off it and the tray folds
       inside,   // ☕ walking into a shop is walking away from the counter
       shutHere: () => shutNow('cafe') || hoardNow('cafe'),   // ☕ a front that closes under a running shift
-      openCard, closeCard, esc,
-      // ⭐ THE TILL, and it reads the cap BEFORE it pays. RULES.town.tips allows 12 a cup and 120 a
-      // day per person, and a faucet over its cap is refused WHOLE — so a counter that just handed
-      // over its total would watch the coins evaporate at the next ack. It pays what today still
-      // allows, through coinsPaid() so a stew buff shows the doubled number it will actually get.
-      // ⚠️ AND THE RULE IS PER EVENT (the jobs audit, 22 Sep 2026): RULES.town.tips refuses any ONE event over 12,
-      // whole — and a shift was paid as one event, so every shift worth more than 12 (6 with the stew buff, which
-      // doubles after the check) was taken back at the next ack while the receipt still said it was paid. So the
-      // till pays in pieces the rule accepts, counts the day's room in the coins that will LAND (the buff
-      // included, which is what the tape and the server both count), and says what landed.
-      pay: (n, how) => {
-        const x = coinsPaid(1) > 1 ? 2 : 1;          // what one coin becomes on its way in
-        let room = 120;
-        try { const u = ruleUsed('town:tips'); room = Math.max(0, 120 - (u.used | 0)); } catch (e) {}
-        const give = Math.min(n | 0, Math.floor(room / x));
-        const each = Math.floor(12 / x);              // the most one event may carry once the buff has doubled it
-        for (let left = give; left > 0; left -= each) passStat('coins_earned', Math.min(each, left), 'tips');
-        const landed = give * x;
-        if (landed > 0) { float(ctx.pos.x, ctx.pos.y - 40, '+' + landed); if (hud && hud.refresh) hud.refresh(); }
-        track('town_shift', { at, step: 'paid', n: landed, cups: (how && how.cups) | 0 });
-        return landed;
-      },
+      openCard, closeCard, esc, hud,
+      // ⭐ THE TILL lives in town-cafe.js since 23 Sep 2026 (the rank's tips cap); the counter reads the job mirror for
+      // the rank and hands the shift's cups to the week's sheet as one chore
+      job: ctx.job, chore: ctx.chore,
       // ⚠️ GETTERS, not values: this file reassigns every one of them
       band: () => band, life: () => L, problems: () => problems, curse: () => curse };
   }

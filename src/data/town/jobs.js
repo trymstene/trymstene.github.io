@@ -14,8 +14,37 @@
 // payslip prints the counts so the reasoning is on the paper. `days` is a duty the worker counts by
 // itself (days you turned up); every other kind is a chore the town reports as it is done.
 
-export const JOB_PAY = { store: 90, condo: 60, post: 75, cafe: 0, stand: 0 };   // the café and the lemonade stand pay tips per glass instead of a cheque; the post office's 75 sits between the two (settled as built, Trym 22 Sep)
-export const TIPS_DAY = 120;   // the most tips one banana earns in a day — worker-pass RULES.town.tips.day, which refuses the rest; the staff card and the work note show it
+// 🪜 THE LADDER (23 Sep 2026; the plan https://claude.ai/artifact/BN3XdtMec5Q4BkvVh7FBht). Trym, 22 Sep: "you can level
+// up and get promoted in all workplaces — some more than others … lemonade stand is the 'lowest' jobtype, then coffee
+// shop, then arcade, then general store, and then post office". His four calls, 23 Sep: ANY boss hires (no gate) ·
+// ranks 3·4·5·5·6 · ONE PAY SCALE · promotion AT THE BOSS.
+//   `at`   the work XP each rank begins at (rank 1 at 0); the server counts the XP, the boss tells you the rank
+//   `day`  the most work XP one day at that workplace can earn, so a little every day beats a grind
+//   `week` what "a full week" is worth at rank 1 — every duty met, or a full tips cap on five days — and it rises
+//          RISE a rank. The payslip jobs pay it as their cheque; the tips jobs' daily cap is a fifth of it.
+export const LADDER = {
+  stand: { at: [0, 200, 600], day: 60, week: 60 },
+  cafe: { at: [0, 250, 750, 1500], day: 80, week: 90 },
+  condo: { at: [0, 300, 900, 1800, 3000], day: 100, week: 120 },
+  store: { at: [0, 300, 900, 1800, 3000], day: 100, week: 150 },
+  post: { at: [0, 350, 1000, 2000, 3400, 5200], day: 120, week: 180 },
+};
+export const RISE = 1.2;        // each rank pays a fifth more than the one below it
+export const TIPS_JOBS = ['cafe', 'stand'];   // paid a glass at a time, never by cheque
+export const TIPS_DAYS = 5;     // a full tips cap on five days is a full week
+export const DAY_XP = 10;       // turning up, once a day, at every workplace
+// the work XP a verb earns: an array is by the cup's grade (wrong · fine · perfect); a number is the most it can earn,
+// and a chore that reports a `g` earns that much of it (a round of sorting reports its points: roundXp below)
+export const XP = {
+  stand: { cup: [0, 2, 4] },
+  cafe: { cup: [0, 3, 6] },
+  condo: { sweep: 15, fix: 45 },   // three pieces of litter and a cabinet woken fill the arcade's day
+  store: { restock: 45 },          // the delivery's two faces fill the store's
+  post: { sort: 60 },              // two good rounds fill the post office's
+};
+export const roundXp = (right, late) => Math.min(XP.post.sort, (right | 0) * 5 + (late | 0) * 2);
+
+export const JOB_PAY = { store: 150, condo: 120, post: 180, cafe: 0, stand: 0 };   // the cheque for a full week at rank 1 (LADDER.week); the café and the stand pay tips per glass instead
 export const PAY_BACK = 2;                                  // whole weeks a cheque may walk back
 
 // the week's work, per payslip job: [kind, target]. A job with no entry pays by tips (the café).
@@ -36,7 +65,25 @@ export function shareOf(at, done) {
   for (const [k, n] of d) { got += Math.min(n, ((done && done[k]) | 0)); of += n; }
   return of ? got / of : 0;
 }
-// what a week of that work pays: the rate, scaled — and rounded once, so the slip's total is the ledger's
-export const payOf = (at, done) => Math.round((JOB_PAY[at] || 0) * shareOf(at, done));
+// ---- the ladder's arithmetic ----
+export const ranksOf = (at) => (LADDER[at] ? LADDER[at].at.length : 0);
+// the rank this much XP has EARNED (1 at 0). The rank you HOLD is the one your boss has told you: see worker-pass.
+export function rankOf(at, xp) { let r = 0; for (const t of (LADDER[at] || {}).at || []) if ((xp || 0) >= t) r++; return r; }
+// the XP a rank begins at, or null past the top
+export const xpAt = (at, rank) => { const a = (LADDER[at] || {}).at || []; return rank >= 1 && rank <= a.length ? a[rank - 1] : null; };
+// a full week at a rank; a tips job's cheque is still 0 — this is its yardstick
+export const weekPay = (at, rank) => Math.round(((LADDER[at] || {}).week || 0) * Math.pow(RISE, Math.max(1, rank | 0) - 1));
+// the most tips one banana takes home in a day at a rank — worker-pass RULES.town.tips refuses the rest
+export const tipsCap = (at, rank) => (TIPS_JOBS.includes(at) ? Math.round(weekPay(at, rank) / TIPS_DAYS) : 0);
+// the work XP one chore is worth, before the day's cap
+export function xpFor(at, kind, g) {
+  const v = (XP[at] || {})[kind];
+  if (Array.isArray(v)) return v[Math.max(0, Math.min(v.length - 1, g | 0))] | 0;
+  if (typeof v !== 'number') return 0;
+  return g == null ? v : Math.max(0, Math.min(v, Math.round(+g) || 0));
+}
+
+// what a week of that work pays: the rank's full week, scaled — and rounded once, so the slip's total is the ledger's
+export const payOf = (at, done, rank) => (JOB_PAY[at] ? Math.round(weekPay(at, rank) * shareOf(at, done)) : 0);
 // the rows a chip or a payslip prints: kind · done · of
 export const rowsOf = (at, done) => dutiesOf(at).map(([k, n]) => ({ kind: k, done: Math.min(n, ((done && done[k]) | 0)), of: n }));

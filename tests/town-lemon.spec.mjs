@@ -16,7 +16,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const COPY = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-lemon.json'), 'utf8'));
 const DUTY = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-duties.json'), 'utf8'));
 const STAFF = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-staff.json'), 'utf8'));
-import { TIPS_DAY } from '../src/data/town/jobs.js';
+import { tipsCap } from '../src/data/town/jobs.js';
 
 async function square(page) {
   const errors = [];
@@ -177,7 +177,7 @@ test('Fig Jr. steps to the orchard while his stand is worked, and the work note 
   // week's counts (23 Sep 2026: a tips job's note had no numbers at all until the staff card)
   await page.evaluate(() => window.__town.work.set({ at: 'stand', pay: 0 }));
   await page.waitForFunction((l) => window.__town.duties.line() === l, DUTY.duty.stand, { timeout: 5000 });
-  expect(await page.evaluate(() => window.__town.duties.top()), 'today’s tips, not the week’s counts').toBe(DUTY.tips + ' 0/' + TIPS_DAY);
+  await page.waitForFunction((t) => window.__town.duties.top() === t, STAFF.ranks.stand[0] + ' · ' + DUTY.tips + ' 0/' + tipsCap('stand', 1), { timeout: 5000 });   // 🪜 your title, and the rank's cap (12 at the stand)
   await page.evaluate(() => window.__town.work.turnUp());
   await page.waitForFunction((l) => window.__town.duties.line() === l, DUTY.standDone, { timeout: 5000 });
   expect(await page.evaluate(() => window.__town.duties.html()), 'no number anywhere on a tips job').not.toMatch(/<b>\d/);

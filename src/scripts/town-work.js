@@ -15,7 +15,7 @@
 // the server's answer corrects the mirror. The mirror never decides money — it only decides which
 // of four already-approved lines the boss says.
 import { passPost } from '../lib/banana-pass.js';
-import { rowsOf, payOf, shareOf } from '../data/town/jobs.js';   // 💼 the one arithmetic the cheque uses (22 Sep 2026)
+import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor } from '../data/town/jobs.js';   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
 
 const MIRROR = 'tw-job-v1';
 // which resident runs which building, and the prop key their work is at
@@ -38,6 +38,11 @@ export function bootTownWork(ctx) {
   const { pos, PROPS, say, track, copy } = ctx;
   const W = () => copy() || {};
   let job = readJob();
+  // 🪜 THE LADDER'S WORDS — the ranks' titles and each boss's promotion line (src/data/copy/town-staff.json, the staff
+  // card's own file). Loaded only for somebody who holds a job: a visitor who never asks a boss downloads none of it.
+  let LW = null, lwP = null;
+  const loadWords = () => { if (!lwP) lwP = import('../data/copy/town-staff.json').then((m) => { LW = m.default || m; notify(); return LW; }).catch(() => { lwP = null; return null; }); return lwP; };
+  const titleOf = (at, rank) => (((LW && LW.ranks) || {})[at] || [])[Math.max(1, rank | 0) - 1] || '';
   let toldDay = '';   // the day we last said the quiet line, so it is said once
   const todayKey = () => new Date().toISOString().slice(0, 10);
   // 💼 the duties chip listens (town-duties.js): every landing, take or QA set says so
@@ -50,12 +55,16 @@ export function bootTownWork(ctx) {
     if (!res || res.error) return res;
     if (res.job) {
       const was = job.at || '';
+      const l = res.job.lad;
       job = { ...job, at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0, pay: res.job.pay | 0, sofar: res.job.sofar | 0, owed: res.job.owed | 0,
-        duties: Array.isArray(res.job.duties) ? res.job.duties : [], share: +res.job.share || 0, nudge: !!res.job.nudge, fired: res.job.fired || null };
+        duties: Array.isArray(res.job.duties) ? res.job.duties : [], share: +res.job.share || 0, nudge: !!res.job.nudge, fired: res.job.fired || null,
+        // 🪜 the ladder at the job you hold: XP, the rank your boss has told you, today's XP (worker-pass ladderOf)
+        lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey() } : null };
       if (was !== job.at) job.up = '';
       // 💼 a job that is gone is REMEMBERED for a while: the homestead still asks for the payslip it owes
       if (was && !job.at) { job.was = was; job.wasT = Date.now(); }
       writeJob(job);
+      if (job.at) loadWords();
     }
     notify();
     return res;
@@ -64,17 +73,34 @@ export function bootTownWork(ctx) {
   // (and once a day for a job you no longer hold, so the sack still reaches the note)
   function view() { if (!job.at && !job.fired) return; passPost('/job/view', {}).then(land); }
   view();
+  if (job.at) loadWords();
   // 💼 A CHORE, BY KIND (docs/town-jobs-plan.md §12): the town says "swept", "fixed", "restocked" as it
   // happens. The mirror moves at once (the chip must answer the broom in the same beat), the server's
   // count replaces it when the answer lands — the same optimism a take has, corrected the same way.
-  function chore(kind) {
+  // 🪜 AND IT EARNS WORK XP (23 Sep 2026): `g` is the cup's grade, a round's points, or a counter's whole shift as a list of
+  // grades. The mirror adds what the server will (the verb's worth, the day's ten, up to the day's cap), so the note and
+  // the receipt move with the broom; the server's answer is the truth. Returns the XP the mirror predicted.
+  function chore(kind, g) {
     if (!job.at) return Promise.resolve(null);
     const rows = Array.isArray(job.duties) && job.duties.length ? job.duties : rowsOf(job.at, {});
     const done = {}; for (const r of rows) done[r.kind] = r.done | 0;
     if (kind in done) done[kind] = done[kind] + 1;
-    job = { ...job, duties: rowsOf(job.at, done), share: shareOf(job.at, done), sofar: payOf(job.at, done), up: todayKey() };
+    const lad = ladder(), fresh = job.up !== todayKey();
+    let add = fresh ? DAY_XP : 0;
+    for (const x of Array.isArray(g) ? g : [g]) add += xpFor(job.at, kind, x);
+    const got = Math.max(0, Math.min(add, ((LADDER[job.at] || {}).day || 0) - lad.today));
+    job = { ...job, duties: rowsOf(job.at, done), share: shareOf(job.at, done), sofar: payOf(job.at, done, lad.rank), up: todayKey(),
+      lad: { xp: lad.xp + got, rank: lad.rank, today: lad.today + got, d: todayKey() } };
     writeJob(job); notify();
-    return passPost('/job/chore', { kind }).then(land);
+    const p = passPost('/job/chore', g == null ? { kind } : { kind, g }).then(land);
+    p.got = got;
+    return p;
+  }
+  // 🪜 the ladder at the job you hold, as the mirror knows it: today's XP resets with the day
+  function ladder() {
+    const l = job.lad || {};
+    const xp = l.xp | 0, rank = Math.max(1, l.rank | 0), today = l.d === todayKey() ? (l.today | 0) : 0;
+    return { at: job.at || '', xp, rank, today, earned: job.at ? rankOf(job.at, xp) : 0, news: !!job.at && rankOf(job.at, xp) > rank };
   }
 
   // ---- the question on a boss's card ------------------------------------------------------
@@ -121,7 +147,8 @@ export function bootTownWork(ctx) {
           if (res && res.error === 'keep') { job = { ...job, at: before }; writeJob(job); if (w.keep) say(w.keep); }
         });
         // optimistic, and honestly so: if the server refuses, the line above corrects it
-        job = { ...job, at, up: '' };
+        job = { ...job, at, up: '', lad: null };   // 🪜 a new workplace's ladder comes back with the server's answer
+        loadWords();
         writeJob(job);
         notify();
         return line;
@@ -147,8 +174,33 @@ export function bootTownWork(ctx) {
       },
     };
   }
-  // every topic a boss's card carries for you: the job question, and the way out while the job is yours
-  const topicsFor = (key) => [topicFor(key), quitFor(key)].filter(Boolean);
+  // 🪜 THE BOSS HAS NEWS (23 Sep 2026; Trym: promotion happens AT THE BOSS). XP past the next rank's line puts this topic
+  // FIRST on your own boss's card. The boss tells you in their own words, the card closes itself, and then PROMOTED goes up
+  // over the square — the hire's own order (world-dialogue.js `after`). The rank is the one the XP has earned, however
+  // many lines you crossed while you stayed away; /job/promote makes it yours on the server, and its answer corrects this.
+  function promoFor(key) {
+    const at = BOSS[key], l = ladder(), w = W();
+    const line = LW && LW.promo && LW.promo[key];
+    if (!at || job.at !== at || !l.news || !line || !LW.promoQ) return null;
+    let told = 0;
+    return {
+      news: true,   // banana-town puts it first on the card
+      q: LW.promoQ,
+      after: () => (told && typeof ctx.promoted === 'function' ? () => { if (job.at === at) ctx.promoted(at, told); } : null),
+      a: () => {
+        const n = ladder();
+        if (!n.news) return w.already || '';
+        told = n.earned;
+        track('town_promo', { at, rank: told });
+        passPost('/job/promote', { at }).then(land);
+        job = { ...job, lad: { xp: n.xp, rank: told, today: n.today, d: todayKey() } };
+        writeJob(job); notify();
+        return line.replace('{title}', titleOf(at, told));
+      },
+    };
+  }
+  // every topic a boss's card carries for you: the news first, the job question, and the way out while the job is yours
+  const topicsFor = (key) => [promoFor(key), topicFor(key), quitFor(key)].filter(Boolean);
   // ⚠️ the building's name comes from the RIG, not from the sign plank: the planks shout (“ARCADE”)
   // and two of the three are empty because the sprite carries its own sign. work.at holds the three
   // names written to sit inside a sentence, article and all.
@@ -184,10 +236,15 @@ export function bootTownWork(ctx) {
       job: () => ({ ...job }),
       bosses: () => ({ ...BOSS }),
       // ⚠️ the walk's door: it cannot keep a pass, so it drives the module rather than the server
-      set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', duties: [], share: 0, nudge: false, fired: null, ...(j || {}) }; if (job.at && !(job.duties || []).length) job.duties = rowsOf(job.at, {}); writeJob(job); notify(); },
+      set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', duties: [], share: 0, nudge: false, fired: null, ...(j || {}) }; if (job.at && !(job.duties || []).length) job.duties = rowsOf(job.at, {}); writeJob(job); notify(); if (job.at) loadWords(); },
       // 💼 for the work note: the mirror as one plain object, plus whether you have turned up today
       state: () => ({ at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey(),
-        duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null }),
+        duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null, lad: ladder() }),
+      // 🪜 the ladder: where you stand, the words it is told in (null until they land), and a title by rank
+      ladder, words: () => LW, title: titleOf, wordsReady: loadWords,
+      // ⚠️ the walk's door to the ladder: XP and a told rank, as the server would have answered them
+      setLad: (l) => { job = { ...job, lad: { xp: (l && l.xp) | 0, rank: Math.max(1, (l && l.rank) | 0), today: (l && l.today) | 0, d: todayKey() } }; writeJob(job); notify(); return ladder(); },
+      promote: (key) => { const t = promoFor(key); return t ? { q: t.q, a: t.a() } : null; },
       turnUp: () => { job.up = todayKey(); job.days = (job.days | 0) + 1; writeJob(job); notify(); },   // QA: the day counted
       chore,
       onChange: (fn) => { if (typeof fn === 'function') listeners.push(fn); },

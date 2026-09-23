@@ -34,7 +34,7 @@ import { levelFor } from '../../src/lib/pass-defs.js';
 import { cleanName } from '../../src/lib/player-name.js';
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
-import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf } from '../../src/data/town/jobs.js';
+import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor } from '../../src/data/town/jobs.js';
 // 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
 // the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
 import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
@@ -79,6 +79,7 @@ export default {
       if (url.pathname === '/job/chore') return jobChore(request, env);
       if (url.pathname === '/job/pay') return jobPay(request, env);
       if (url.pathname === '/job/view') return jobViewRoute(request, env);
+      if (url.pathname === '/job/promote') return jobPromote(request, env);
       if (url.pathname === '/town/wheel') return townWheel(request, env, ctx);
       if (url.pathname === '/town/sell') return townSell(request, env);
       if (url.pathname === '/town/pot') return townPot(request, env);
@@ -1277,6 +1278,35 @@ function doneOf(j, wk) {
   const at = d.at || j.at || '';
   return { ...d, at, days: jobDays(j.wk && j.wk[wk], at) };
 }
+// 🪜 THE LADDER (23 Sep 2026, src/data/town/jobs.js LADDER). Three things per workplace, on the record beside the week:
+//   j.xp[at]  the work XP ever earned there — never lost, not by quitting, not by the sack, not by three weeks away
+//   j.rk[at]  the rank the boss has TOLD you (1 until the first promotion). Trym, 23 Sep: promotion happens AT THE BOSS,
+//             so XP that crosses a line is NEWS until you walk over, and the pay rises when you have heard it
+//   j.xd      today's XP per workplace ({d, n}), for the day's cap
+// ⚠️ THE XP IS CLIENT-REPORTED, like the chores: a cup's grade and a round's points are the device's word. The bound is
+// the day's cap per workplace (LADDER[at].day), so a forged client climbs no faster than a player who fills the bar every
+// day — the same exposure the duties have, said out loud rather than called proof.
+const toldOf = (j, at) => Math.max(1, ((j && j.rk && j.rk[at]) | 0));
+const xpToday = (j, at, now) => (j && j.xd && j.xd.d === utcDay(now) ? ((j.xd.n || {})[at] | 0) : 0);
+function ladderOf(j, at, now) {
+  if (!at || !LADDER[at]) return null;
+  const xp = ((j.xp || {})[at]) | 0, rank = toldOf(j, at);
+  return { xp, rank, today: xpToday(j, at, now), news: rankOf(at, xp) > rank };
+}
+// the XP a chore earns, after the day's cap — and the day's own ten the first time you turn up
+function xpAdd(j, add, now) {
+  const at = j.at, L = LADDER[at];
+  if (!L || !(add > 0)) return 0;
+  const d = utcDay(now);
+  if (!j.xd || j.xd.d !== d) j.xd = { d, n: {} };
+  const got = Math.min(add, Math.max(0, L.day - ((j.xd.n[at]) | 0)));
+  if (!got) return 0;
+  j.xd.n[at] = ((j.xd.n[at]) | 0) + got;
+  (j.xp || (j.xp = {}))[at] = (((j.xp[at]) | 0) + got);
+  return got;
+}
+// ☕ the day's tips cap is the RANK's (one pay scale): the higher of the two tips jobs at the rank you were told there
+const tipsDay = (home) => Math.max(...TIPS_JOBS.map((at) => tipsCap(at, toldOf(home.job, at))));
 function jobView(j, now) {
   const wk = jobWeek(now);
   const dn = doneOf(j, wk);
@@ -1290,16 +1320,22 @@ function jobView(j, now) {
     if (!(j.wk && j.wk[w0]) && !(j.done && j.done[w0])) continue;
     if (j.paid && j.paid[w0] != null) continue;
     const d0 = doneOf(j, w0);
-    owed += payOf(d0.at, d0);
+    owed += payOf(d0.at, d0, weekRank(j, d0));
   }
   const at = j.at || '';
   const share = shareOf(at, dn);
   const dow = (new Date(now).getUTCDay() + 6) % 7;
-  return { at, since: j.since || 0, week: wk, days: dn.days | 0, pay: JOB_PAY[at] || 0,
-    duties: rowsOf(at, dn), share, sofar: payOf(at, dn), owed,
+  const rank = weekRank(j, dn);
+  return { at, since: j.since || 0, week: wk, days: dn.days | 0, pay: JOB_PAY[at] ? weekPay(at, rank) : 0,
+    duties: rowsOf(at, dn), share, sofar: payOf(at, dn, rank), owed,
     nudge: !!(at && DUTIES[at] && dow >= NUDGE_DAY && share === 0),
-    fired: j.fired || null };
+    fired: j.fired || null,
+    lad: ladderOf(j, at, now) };   // 🪜 your XP and rank at the job you hold, and whether the boss has news
 }
+// 🪜 the rank a week pays at: the highest you were told while you worked it (`r` on its sheet, set by every chore and by
+// a promotion), else the one you hold there now — so a promotion on a Thursday pays that whole week at the new rank, and
+// last week's cheque stays at last week's
+const weekRank = (j, dn) => ((dn && dn.r) | 0) || (dn && dn.at ? toldOf(j, dn.at) : 1);
 // 🪪 A KEPT PASS (23 Sep 2026). An email or a passkey that JOINS an anonymous pass is a pointer to that home, and the
 // home kept its `anon` mark forever — so every /job/* call from a pass kept the normal way was refused 'keep', and
 // the desk counted it anonymous. The mark is cleared where a pointer attaches (mailUse, register) and here, lazily,
@@ -1364,6 +1400,7 @@ async function jobChore(request, env) {
     // however many times the client says so, and switching jobs twice in an afternoon overwrites the
     // day rather than buying a second one.
     const w = j.wk[wk] || (j.wk[wk] = {});
+    const firstToday = w[jobDay(now)] !== j.at;   // 🪜 the day's own XP, once
     w[jobDay(now)] = j.at;
     // 💼 A CHORE BY KIND (22 Sep 2026): the town says "swept", "fixed", "restocked" as it happens, and the
     // week counts it up to the duty's target and no further — so the ceiling a forged client can reach is
@@ -1374,9 +1411,44 @@ async function jobChore(request, env) {
     let dn = j.done[wk];
     if (!dn || dn.at !== j.at) dn = j.done[wk] = { at: j.at };   // a fresh sheet for this job's week
     if (duty) dn[kind] = Math.min(duty[1], ((dn[kind] | 0) + 1));
+    dn.r = Math.max(dn.r | 0, toldOf(j, j.at));   // 🪜 the rank this week is worked at
+    // 🪜 WORK XP (23 Sep 2026): the day's ten the first time you turn up, and the verb's own worth — a cup by its grade,
+    // a round by its points (`g`), litter, a cabinet or a crate flat — up to the workplace's cap for the day. A counter
+    // reports its whole shift at clock-out as a LIST of grades (one request a shift, not one a cup).
+    const gs = Array.isArray(b.g) ? b.g.slice(0, 60) : [b.g];
+    let add = firstToday ? DAY_XP : 0;
+    if (kind) for (const g of gs) add += xpFor(j.at, kind, g == null ? null : +g);
+    const xp = xpAdd(j, add, now);
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
-    return json({ ok: true, job: jobView(j, now), counted: !!duty }, 200, cors(env, request));
+    return json({ ok: true, job: jobView(j, now), counted: !!duty, xp }, 200, cors(env, request));
+  });
+}
+
+// ---------- POST /job/promote — the boss tells you (23 Sep 2026) ----------
+// 🪜 Trym, 23 Sep: promotion happens AT THE BOSS. The XP has already earned the rank; this is you walking over and
+// hearing it, and only then does the rank — its title, its pay, its tips cap — become yours. One conversation
+// tells you the rank you have earned, however many lines you crossed while you stayed away.
+async function jobPromote(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const at = String((b && b.at) || '');
+  return retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+    if (!keptPass(R)) return json({ error: 'keep' }, 403, cors(env, request));
+    const j = jobRec(R.home, false);
+    if (!j || !j.at || j.at !== at) return json({ error: 'not yours' }, 409, cors(env, request));
+    const now = Date.now();
+    const was = toldOf(j, at), to = rankOf(at, (j.xp || {})[at] | 0);
+    if (to <= was) return json({ ok: true, promoted: null, job: jobView(j, now) }, 200, cors(env, request));
+    (j.rk || (j.rk = {}))[at] = to;
+    const dn = j.done && j.done[jobWeek(now)];
+    if (dn && dn.at === at) dn.r = Math.max(dn.r | 0, to);   // this week pays at the new rank
+    await saveKey(env, R.homeKey, R.home);
+    return json({ ok: true, promoted: { at, from: was, to }, job: jobView(j, now) }, 200, cors(env, request));
   });
 }
 
@@ -1405,8 +1477,9 @@ async function jobPay(request, env) {
       const dn = doneOf(j, wk), at = dn.at;
       // ⭐ THE CHEQUE IS THE RATE SCALED BY THE WEEK'S WORK (docs/town-jobs-plan.md §12): the counts
       // ride the row, so the payslip prints the reasoning — "floor swept 1/3, machines fixed 0/3".
-      const coins = payOf(at, dn);
-      const row = { week: wk, at, days: dn.days | 0, coins, pay: JOB_PAY[at] || 0, duties: rowsOf(at, dn), share: shareOf(at, dn) };
+      const rank = weekRank(j, dn);   // 🪜 a cheque pays the rank the week was worked at
+      const coins = payOf(at, dn, rank);
+      const row = { week: wk, at, days: dn.days | 0, coins, pay: JOB_PAY[at] ? weekPay(at, rank) : 0, rank, duties: rowsOf(at, dn), share: shareOf(at, dn) };
       // 🪓 TWO EMPTY WEEKS AND THE BOSS LETS YOU GO — only while you still hold that job, and only for
       // a job that has duties to neglect. Asking again rehires you (/job/take clears the count).
       if (DUTIES[at] && DUTIES[at].length) {
@@ -2322,10 +2395,11 @@ const RULES = {
   town: {
     fix:    { max: 12,  day: 120 },
     object: { max: 80,  day: 240 },
-    // ☕ the Coffee Cup's tips (19 Sep 2026): 2–6 a cup, doubled by the homestead buff, and a busy
-    // shift is about twenty cups. ⚠️ the weekly CHEQUE is NOT here — it is paid server-side by
-    // /job/pay into the ledger slot `job`, so there is no faucet for a client to forge.
-    tips:   { max: 12,  day: 120 },
+    // ☕ the counters' tips (19 Sep 2026): a glass or a cup at a time, doubled by the homestead buff.
+    // ⚠️ the weekly CHEQUE is NOT here — it is paid server-side by /job/pay into the ledger slot `job`,
+    // so there is no faucet for a client to forge. 🪜 The DAY is the rank's (23 Sep 2026, one pay scale:
+    // a fifth of a full week, src/data/town/jobs.js tipsCap) — 18 at the Coffee Cup's first rank.
+    tips:   { max: 12,  day: tipsDay },
     qa:     { deny: 1 },              // ?towntest shim coins
   },
   // 🎫 the pass page — the questline's finale pays there (bootQuest area 'pass')
@@ -2379,7 +2453,8 @@ function ruleGate(home, row, strict, log) {
   const day = utcDay(row.t || Date.now());
   if (day > (st.d || '')) { st.pd = st.d || ''; st.pused = st.used || 0; st.d = day; st.used = 0; }
   const bucket = day === st.d ? 'used' : day === (st.pd || '') ? 'pused' : '';
-  if (rule.day != null && bucket && (st[bucket] || 0) + row.d > rule.day) return 'day';
+  const dayCap = typeof rule.day === 'function' ? rule.day(home) : rule.day;   // 🪜 a cap that depends on who you are (the tips: your rank)
+  if (dayCap != null && bucket && (st[bucket] || 0) + row.d > dayCap) return 'day';
   if (rule.total != null && st.total + row.d > rule.total) return 'total';
   if (rule.count != null && (st.n || 0) + 1 > rule.count) return 'total';   // a lifetime NUMBER of payouts
   if (bucket) st[bucket] = (st[bucket] || 0) + row.d;

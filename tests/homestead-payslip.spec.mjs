@@ -132,3 +132,38 @@ test('a week that paid nothing is a slip too: NIL, Nib’s line for it, and the 
   await page.screenshot({ path: 'test-results/homestead-payslip-nil.png' });
   expect(errs, 'nothing threw').toEqual([]);
 });
+
+// 🪜 THE BOSS HAS NEWS, AND YOU HAVE NOT COME BY (23 Sep 2026; Trym: promotion happens AT THE BOSS, with a note in the
+// mailbox if you don't come). The job view every /job/pay carries says the XP has crossed the line; the homestead drops
+// the boss's letter once per rank waiting — and the letter only asks you over: the promotion is still told in person.
+test('a promotion waiting at the boss is a letter from the boss, once per rank', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"letters":[],"unread":0,"knocks":0}' }));
+  const lad = { xp: 260, rank: 1, today: 0, news: true };
+  await page.route('**/job/pay', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, total: 0, paid: [], job: { at: 'cafe', week: '2026-W39', days: 1, pay: 0, duties: [], share: 0, sofar: 0, owed: 0, nudge: false, fired: null, lad } }) }));
+  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); localStorage.setItem('tw-job-v1', JSON.stringify({ at: 'cafe' })); } catch (e) {} });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/homestead/?hstest=claimed', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.mail && window.__hs.wage, null, { timeout: 30000 });
+  await page.evaluate(() => window.__hs.slug('my-yard'));
+  await page.evaluate(() => window.__hs.wage());
+  await page.waitForTimeout(500);
+  let mail = await page.evaluate(() => window.__hs.mailOf());
+  expect(mail.filter((m) => m.id.startsWith('news:')).map((m) => m.id), 'Bean’s letter, keyed by the rank that waits').toEqual(['news:2:cafe']);
+  await page.evaluate(() => window.__hs.wage());
+  await page.waitForTimeout(400);
+  mail = await page.evaluate(() => window.__hs.mailOf());
+  expect(mail.filter((m) => m.id.startsWith('news:')).length, 'and only once').toBe(1);
+  await page.evaluate(() => window.__hs.post());
+  await page.waitForSelector('#hsLetters .tw-post__env[data-id="w:news:2:cafe"]', { timeout: 15000 });
+  await page.locator('#hsLetters .tw-post__env[data-id="w:news:2:cafe"]').click();
+  await page.waitForSelector('#hsLetters .tw-post__world .bw-paper', { timeout: 5000 });
+  const paper = await page.evaluate(() => { const p = document.querySelector('#hsLetters .tw-post__world .bw-paper'); return { text: p.textContent, from: (p.querySelector('.bw-paper__from') || {}).textContent || '', wage: p.classList.contains('bw-paper--wage') }; });
+  expect(paper.text, 'in Bean’s own words').toContain(COPY.bosses.news.cafe.line);
+  expect(paper.from, 'signed by Bean').toBe(COPY.bosses.news.cafe.from);
+  expect(paper.wage, 'on the ordinary paper, not a payslip').toBe(false);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'test-results/homestead-news-letter.png' });
+  expect(errs, 'nothing threw').toEqual([]);
+});

@@ -44,6 +44,7 @@
       "title": "Sorting Receipt",
       "take": "{n} of {of} cards went straight to their holes.",
       "counted": "Stamp has this round on the week’s sheet.",
+      "xp": "Work XP earned: {n}.",
       "short": "This round is not on the sheet. The counter will be ready again.",
       "back": "Put away"
     }

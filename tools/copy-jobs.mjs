@@ -9,6 +9,10 @@
 
 // one schema property, described for the model in the same words the gate uses
 const str = (note) => ({ type: 'string', description: note });
+// 🪜 the ladder's ranks per workplace — src/data/town/jobs.js LADDER, mirrored here because this file runs in a throwaway copy
+// of tools/ for the lock test (no src/ there). tests/jobs-maths.spec.mjs holds the two equal.
+export const LADDER_RANKS = { stand: 3, cafe: 4, condo: 5, store: 5, post: 6 };
+const ranksOf = (k) => LADDER_RANKS[k] | 0;
 
 export const BEATS = ['dawn', 'morning', 'noon', 'afternoon', 'evening', 'night'];
 
@@ -610,6 +614,7 @@ const cafeFields = {
   'receipt.line': { kind: 'prose', aim: 66, max: 88, note: 'The single line under the take: the terrace as you left it, the cups still warm, the quiet after a rush. It notices the ROOM, never the player’s performance, and never a number.' },
   'receipt.none': { kind: 'prose', aim: 62, max: 84, note: 'Shown INSTEAD of the take when the shift served nothing at all. Contented, never a telling-off — standing behind a counter on a slow afternoon is a perfectly good thing to have done.' },
   'receipt.capped': { kind: 'prose', aim: 66, max: 88, note: 'Shown INSTEAD of the take when cups WENT OUT but today’s tips are already spent — the work happened and the coins did not. ⚠️ it is not a refusal and not a telling-off: the day’s coin is done, the coffee was not for nothing. Never a number, never a cap, never “come back tomorrow” as an instruction.' },
+  'receipt.xp': { kind: 'prose', aim: 22, max: 32, holds: ['{n}'], needs: [[/\{n\}/, 'must carry {n} — the game fills it']], note: '🪜 Under the result: the work XP this shift earned toward the next rank (23 Sep 2026, the job ladder). MUST contain {n} — the game prints the number. Plain, a label in a sentence: never praise, never “reward” or “bonus”.' },
   'receipt.best': { kind: 'prose', aim: 58, max: 78, holds: ['{drink}'], note: 'One line under the take, shown only when at least one cup came out RIGHT, naming it: MUST contain {drink} — the game puts the drink’s own name there. It notices the cup, not the player. Never a count, never a grade, never the word perfect.' },
   'receipt.back': { kind: 'label', aim: 12, max: 18, note: 'The button that closes the receipt. A VERB first, and short enough that it can never wrap onto two lines.' },
   'cup.perfect[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 town toasts for a cup that came out right, one picked per cup. Notice the CUP, or the customer taking it — never praise the player, never say “perfect”. Warm, brief, a little pleased with itself.' },
@@ -636,6 +641,7 @@ const lemonFields = {
   'receipt.line': { kind: 'prose', aim: 66, max: 88, note: 'The single line under the take: the stand as you left it — the jug, the lane, the sun on the awning. It notices the PLACE, never the player’s performance, and never a number.' },
   'receipt.none': { kind: 'prose', aim: 62, max: 84, note: 'Shown INSTEAD of the take when the shift served nothing at all. Contented, never a telling-off — standing behind a lemonade stand on a slow afternoon is a perfectly good thing to have done.' },
   'receipt.capped': { kind: 'prose', aim: 66, max: 88, note: 'Shown INSTEAD of the take when glasses WENT OUT but today’s tips are already spent — the work happened and the coins did not. Not a refusal, not a telling-off, never a number, never a cap, never “come back tomorrow” as an instruction.' },
+  'receipt.xp': { kind: 'prose', aim: 22, max: 32, holds: ['{n}'], needs: [[/\{n\}/, 'must carry {n} — the game fills it']], note: '🪜 Under the result: the work XP this shift earned toward the next rank (23 Sep 2026, the job ladder). MUST contain {n} — the game prints the number. Plain, a label in a sentence: never praise, never “reward” or “bonus”.' },
   'receipt.best': { kind: 'prose', aim: 58, max: 78, holds: ['{drink}'], note: 'One line under the take, shown only when at least one glass came out RIGHT, naming it: MUST contain {drink} — the game puts the drink’s own name there. It notices the glass, not the player; never the word perfect.' },
   'receipt.back': { kind: 'label', aim: 12, max: 18, note: 'The button that closes the receipt. A VERB first, short enough that it can never wrap onto two lines.' },
   'cup.perfect[]': { kind: 'prose', aim: 56, max: 76, note: 'A deck of 3–4 town toasts for a glass that came out right, one picked per glass. Notice the GLASS, or the customer taking it — never praise the player, never say “perfect”. A glass, ice, a lemon, a straw, the sun: not a cup, not foam, not a propeller.' },
@@ -678,8 +684,8 @@ const lemonSchema = {
   properties: {
     leave: str(lemonFields.leave.note),
     on: str(lemonFields.on.note), off: str(lemonFields.off.note), idle: str(lemonFields.idle.note), front: str(lemonFields.front.note), left: str(lemonFields.left.note),
-    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'back'],
-      properties: { title: str(lemonFields['receipt.title'].note), take: str(lemonFields['receipt.take'].note), line: str(lemonFields['receipt.line'].note), none: str(lemonFields['receipt.none'].note), capped: str(lemonFields['receipt.capped'].note), best: str(lemonFields['receipt.best'].note), back: str(lemonFields['receipt.back'].note) } },
+    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'xp', 'back'],
+      properties: { xp: str(lemonFields['receipt.xp'].note), title: str(lemonFields['receipt.title'].note), take: str(lemonFields['receipt.take'].note), line: str(lemonFields['receipt.line'].note), none: str(lemonFields['receipt.none'].note), capped: str(lemonFields['receipt.capped'].note), best: str(lemonFields['receipt.best'].note), back: str(lemonFields['receipt.back'].note) } },
     go: { type: 'object', additionalProperties: false, required: ['squeeze', 'ice', 'pour'], properties: { squeeze: str(lemonFields['go.squeeze'].note), ice: str(lemonFields['go.ice'].note), pour: str(lemonFields['go.pour'].note) } },
     cup: { type: 'object', additionalProperties: false, required: ['perfect', 'fine', 'wrong'],
       properties: { perfect: { type: 'array', minItems: 3, maxItems: 4, items: str(lemonFields['cup.perfect[]'].note) }, fine: { type: 'array', minItems: 3, maxItems: 4, items: str(lemonFields['cup.fine[]'].note) }, wrong: { type: 'array', minItems: 3, maxItems: 4, items: str(lemonFields['cup.wrong[]'].note) } } },
@@ -729,8 +735,8 @@ const cafeSchema = {
     leave: str(cafeFields.leave.note),
     on: str(cafeFields.on.note),
     off: str(cafeFields.off.note),
-    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'back'],
-      properties: { title: str(cafeFields['receipt.title'].note), take: str(cafeFields['receipt.take'].note), line: str(cafeFields['receipt.line'].note), none: str(cafeFields['receipt.none'].note), capped: str(cafeFields['receipt.capped'].note), best: str(cafeFields['receipt.best'].note), back: str(cafeFields['receipt.back'].note) } },
+    receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'line', 'none', 'capped', 'best', 'xp', 'back'],
+      properties: { xp: str(cafeFields['receipt.xp'].note), title: str(cafeFields['receipt.title'].note), take: str(cafeFields['receipt.take'].note), line: str(cafeFields['receipt.line'].note), none: str(cafeFields['receipt.none'].note), capped: str(cafeFields['receipt.capped'].note), best: str(cafeFields['receipt.best'].note), back: str(cafeFields['receipt.back'].note) } },
     idle: str(cafeFields.idle.note),
     front: str(cafeFields.front.note),
     go: { type: 'object', additionalProperties: false, required: ['grind', 'pour', 'milk'],
@@ -850,6 +856,7 @@ const postFields = {
   'round.far': { kind: 'prose', aim: 50, max: 70, note: 'The town’s toast when the round is asked for and the banana is not at the counter (the walk from the card stopped short): the counter is a step away and waits. It notices, it never instructs — no “walk”, “go”, “tap” — and no number.' },
   'round.receipt.title': { kind: 'prose', aim: 16, max: 24, note: 'The heading on the card the counter hands you at the end of a round: a NAME for that paper, two or three words, not a sentence.' },
   'round.receipt.take': { kind: 'prose', aim: 44, max: 64, holds: ['{n}', '{of}'], note: 'The one line with the round’s result. MUST contain {n} (how many cards went straight to the right hole) and {of} (the size of the pile) exactly once each, and no other number — something like: how many of the pile went where they were going.' },
+  'round.receipt.xp': { kind: 'prose', aim: 22, max: 32, holds: ['{n}'], needs: [[/\{n\}/, 'must carry {n} — the game fills it']], note: '🪜 Under the result: the work XP this shift earned toward the next rank (23 Sep 2026, the job ladder). MUST contain {n} — the game prints the number. Plain, a label in a sentence: never praise, never “reward” or “bonus”. Shown only for a round that made the sheet.' },
   'round.receipt.counted': { kind: 'prose', aim: 50, max: 72, note: 'Under the result when enough of the pile went to the right hole: this round is on the week’s sheet, Stamp has it down. No numbers, never “reward”, never “bonus”.' },
   'round.receipt.short': { kind: 'prose', aim: 56, max: 80, note: 'Under the result when too little of the pile went to the right hole: this round is NOT on the week’s sheet, and the counter is there again in a moment. Never cruel, never a lecture, no numbers.' },
   'round.leave': { kind: 'label', aim: 10, max: 12, note: '⭐ THE WAY OUT OF A SHIFT (Trym, 22 Sep: "better to lock it and have a button for leave work"): while you work, your banana is held at the counter and this is the ONE button that ends the shift, on the tray’s strip. A VERB first, two words at most, at most 12 characters, never wraps: the plain thing it does — leave work, step away. Here it ends the sorting round; the receipt follows.' },
@@ -956,7 +963,7 @@ const postSchema = {
         holes: { type: 'object', additionalProperties: false, required: ['park', 'beach', 'home', 'rave'],
           properties: { park: str(postFields['round.holes.park'].note), beach: str(postFields['round.holes.beach'].note), home: str(postFields['round.holes.home'].note), rave: str(postFields['round.holes.rave'].note) } },
         receipt: { type: 'object', additionalProperties: false, required: ['title', 'take', 'counted', 'short', 'back'],
-          properties: { title: str(postFields['round.receipt.title'].note), take: str(postFields['round.receipt.take'].note), counted: str(postFields['round.receipt.counted'].note), short: str(postFields['round.receipt.short'].note), back: str(postFields['round.receipt.back'].note) } },
+          properties: { xp: str(postFields['round.receipt.xp'].note), title: str(postFields['round.receipt.title'].note), take: str(postFields['round.receipt.take'].note), counted: str(postFields['round.receipt.counted'].note), short: str(postFields['round.receipt.short'].note), back: str(postFields['round.receipt.back'].note) } },
       },
     },
     // 📮 the postcard: a heading, the three place names, the deck of eight, and the two words
@@ -1432,7 +1439,7 @@ function dutyShape(data) {
     const v = String(v0 || '');
     if (!v) { say(p, 'is empty'); continue; }
     // a note to yourself starts small — unless it starts with somebody's name (Spinner's letter…)
-    if (/^[A-Z]/.test(v) && !/^(Spinner|Pip|Bean|Nib|Stamp)/.test(v)) say(p, 'starts with a capital, and a note to yourself starts small');
+    if (/^[A-Z]/.test(v) && !/^(Spinner|Pip|Bean|Nib|Stamp|Fig Jr\.)/.test(v)) say(p, 'starts with a capital, and a note to yourself starts small');
     if (DUTY_UI.test(v)) say(p, 'names a control; a chip says what the place wants, never which button');
     if (DUTY_PAY.test(v)) say(p, 'calls a wage or a tip a reward');
     if (/\d/.test(v.replace(/\{coins\}|\{days\}/g, ''))) say(p, 'carries a number of its own \u2014 the game prints the numbers');
@@ -1605,10 +1612,23 @@ export const JOBS = {
     what: 'The card a worker opens at their own workplace or from the work note: where they work and for whom, their title, today’s tips or the week’s work and wage, today’s calls, and the buttons (go to work, answer the calls, the place’s other use).',
     approved: 'src/data/copy/town-staff.json',
     reads: 'src/scripts/town-staff.js (through a glob inside the card’s own lazy chunk)',
-    top: ['of', 'title', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut'],
+    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut'],
     fields: {
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`of.${k}`, { kind: 'label', max: 40, note: 'Small capitals over the title: the workplace, then whose staff you are.' }])),
-      ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`title.${k}`, { kind: 'label', max: 20, note: 'The card’s heading: what you are called at this workplace.' }])),
+      // 🪜 THE LADDER (23 Sep 2026; Trym's calls: ranks 3·4·5·5·6, promotion at the boss). A title per rank, bottom first —
+      // the card's heading, the work note's first words and the promotion's big line. Rank 1 is what you are called on the day you are hired.
+      ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`ranks.${k}[]`, { kind: 'label', max: 20, note: 'The titles at this workplace, rank 1 first, one per rank (src/data/town/jobs.js LADDER): what you are called there. Each rank a step up; plain enough to read on the work note.' }])),
+      rank: toastLine(24, 'Beside the rank pips: which rank you hold; {n} is it and {of} how many there are.', { ...holdsAll('n', 'of'), ...NO_MARKUP }),
+      xp: { kind: 'label', max: 14, note: 'Over your work XP at this workplace; the game prints the number and the next rank’s line.' },
+      today: toastLine(40, 'Under the XP bar: today’s work XP against the day’s cap; {n} and {cap} are numbers.', { ...holdsAll('n', 'cap'), ...NO_MARKUP }),
+      nextWeek: toastLine(64, 'What the next rank gives at a payslip job: its title, and what a full week pays there.', { ...holdsAll('title', 'coins'), ...NO_MARKUP }),
+      nextTips: toastLine(64, 'What the next rank gives at a tips job: its title, and the day’s tips cap there.', { ...holdsAll('title', 'cap'), ...NO_MARKUP }),
+      top: toastLine(40, 'Instead of that line at the top rank.', NO_MARKUP),
+      ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`news.${k}`, toastLine(64, 'Over the XP once it has crossed the next rank’s line — and the WORK NOTE’s green line too (town-duties.js reads it from here): the boss has news, and you hear it by talking to them (promotion happens at the boss). Starts with the boss’s name. Never the word promoted, never a title or a number.', { ...NO_MARKUP, forbids: [[/[<>&]/, 'markup or an entity'], [/promot|\d/i, 'the word promoted or a number — the news is said in person']] })])),
+      promoQ: { kind: 'prose', aim: 22, max: 32, note: 'The PLAYER’s question on their own boss’s card when the boss has news: the player’s voice, a question with a question mark (the job question’s sibling).' },
+      ...Object.fromEntries(['bean', 'figjr', 'spinner', 'pip', 'stamp'].map((k) => [`promo.${k}`, { kind: 'prose', aim: 72, max: 96, holds: ['{title}'], needs: [[/\{title\}/, 'must carry {title} — the new rank’s title']], note: 'The boss telling the player they are promoted, in the boss’s own voice (Bean reads cups, Fig Jr. talks like a company, Spinner is a showman, Pip keeps last ones, Stamp weighs things and says Noted). MUST contain {title}, the new title, inside a sentence. No number, no pay.' }])),
+      promoMoment: { kind: 'label', max: 10, note: 'The BIG word over the square once the boss’s card has closed on a promotion — the hire’s HIRED, for a new rank. Capitals, one word.' },
+      promoLine: { kind: 'prose', aim: 30, max: 52, holds: ['{title}', '{where}'], needs: [[/\{title\}/, 'must carry {title}'], [/\{where\}/, 'must carry {where}']], note: 'The small line under it: the new title and where. {where} is lower case with its article (“the Coffee Cup”), so never first. The screen sets it in capitals.' },
       tips: { kind: 'label', max: 14, note: 'Over today’s tips (café, stand); the game prints the number and the cap beside it.' },
       tipsCap: toastLine(50, 'Under the tips bar: the most tips one banana can earn in a day; {cap} is the number.', { ...holdsAll('cap'), ...NO_MARKUP }),
       week: { kind: 'label', max: 14, note: 'Over the week’s duties (post office, arcade, store).' },
@@ -1631,8 +1651,15 @@ export const JOBS = {
       const bad = [];
       for (const k of ['cafe', 'stand', 'post', 'condo', 'store']) {
         if (!(d.of || {})[k]) bad.push({ path: 'of.' + k, msg: 'missing — every workplace has a staff card' });
-        if (!(d.title || {})[k]) bad.push({ path: 'title.' + k, msg: 'missing — every workplace has a staff card' });
+        const r = (d.ranks || {})[k] || [];
+        if (r.length !== ranksOf(k)) bad.push({ path: 'ranks.' + k, msg: `${r.length} titles, and the ladder has ${ranksOf(k)} ranks here (src/data/town/jobs.js LADDER)` });
+        if (new Set(r).size !== r.length) bad.push({ path: 'ranks.' + k, msg: 'two ranks share a title' });
+        if (!(d.news || {})[k]) bad.push({ path: 'news.' + k, msg: 'missing — every workplace has a boss with news' });
       }
+      for (const k of ['bean', 'figjr', 'spinner', 'pip', 'stamp']) if (!(d.promo || {})[k]) bad.push({ path: 'promo.' + k, msg: 'missing — every boss promotes' });
+      if (!/^[A-Z]+$/.test(String(d.promoMoment || ''))) bad.push({ path: 'promoMoment', msg: 'one word in capitals' });
+      if (/^\{where\}/.test(String(d.promoLine || ''))) bad.push({ path: 'promoLine', msg: 'starts with {where}, which is lower case' });
+      if (!/\?$/.test(String(d.promoQ || ''))) bad.push({ path: 'promoQ', msg: 'is a question, with a question mark' });
       for (const k of ['sweep', 'fix', 'restock']) if (!(d.call || {})[k]) bad.push({ path: 'call.' + k, msg: 'missing — src/scripts/town-staff.js lists this call' });
       for (const k of ['post', 'store', 'condo']) if (!(d.second || {})[k]) bad.push({ path: 'second.' + k, msg: 'missing — this workplace has another use' });
       return bad;
@@ -1907,6 +1934,8 @@ export const JOBS = {
       'bosses.nudge.post.line': { kind: 'prose', aim: 100, max: 140, note: 'Stamp\u2019s letter when Thursday has come and nothing has been done at the post office that week: is the player coming in? The pile on the counter is his subject. Warm, dry, a little pointed, never a threat, never a number, at most 140 characters. May use {home}.' },
       'bosses.fired.post.from': { kind: 'prose', aim: 5, max: 20, note: 'Who signs it: Stamp.' },
       'bosses.fired.post.line': { kind: 'prose', aim: 100, max: 140, note: 'Stamp\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number, at most 140 characters.' },
+      // 🪜 the boss has news and you have not come by (23 Sep 2026: promotion happens at the boss, a letter if you do not come)
+      ...Object.fromEntries(['cafe', 'stand', 'condo', 'store', 'post'].flatMap((k) => [[`bosses.news.${k}.from`, { kind: 'prose', aim: 6, max: 20, note: 'Who signs it: the boss at this workplace.' }], [`bosses.news.${k}.line`, { kind: 'prose', aim: 90, max: 140, note: 'The boss’s letter when the player’s work XP has earned a promotion and they have not come by: come and see me, I have news. In the boss’s own voice. Never the word promoted, never a title, never a number — the news is said in person.' }]])),
       'bosses.fired.store.line': { kind: 'prose', aim: 100, max: 140, note: 'Pip\u2019s letter with the last payslip after two finished weeks with nothing done: he has taken the player off the book; the door is open if they ask again. Never cruel, never a lecture, never a number.' },
       'wage.at.store': { kind: 'prose', aim: 17, max: 24, note: 'The General Store as it is printed on a payslip: lower case, with its article.' },
       'wage.at.condo': { kind: 'prose', aim: 10, max: 24, note: 'The Arcade as it is printed on a payslip: lower case, with its article.' },
@@ -1941,6 +1970,13 @@ export const JOBS = {
       if ((slip.match(/\{pct\}/g) || []).length !== 1) say('wage.slip', 'must contain {pct} exactly once');
       if ((slip.match(/\{rate\}/g) || []).length !== 1) say('wage.slip', 'must contain {rate} exactly once');
       const bo = data.bosses || {};
+      for (const k of ['cafe', 'stand', 'condo', 'store', 'post']) {
+        const b = (bo.news || {})[k] || {};
+        if (!String(b.from || '')) say('bosses.news.' + k + '.from', 'is empty');
+        const l = String(b.line || '');
+        if (!l) say('bosses.news.' + k + '.line', 'is empty');
+        if (/\d|promot/i.test(l)) say('bosses.news.' + k + '.line', 'names a number or the promotion — the news is said in person');
+      }
       for (const kind of ['nudge', 'fired']) for (const k of ['condo', 'store', 'post']) {
         const b = (bo[kind] || {})[k] || {};
         if (!String(b.from || '')) say('bosses.' + kind + '.' + k + '.from', 'is empty');
@@ -1959,7 +1995,8 @@ export const JOBS = {
       return bad;
     },
     schema: { type: 'object', additionalProperties: false, required: ['letters', 'wage', 'bosses'], properties: {
-      bosses: { type: 'object', additionalProperties: false, required: ['nudge', 'fired'], properties: {
+      bosses: { type: 'object', additionalProperties: false, required: ['nudge', 'fired', 'news'], properties: {
+        news: { type: 'object', additionalProperties: false, required: ['cafe', 'stand', 'condo', 'store', 'post'], properties: Object.fromEntries(['cafe', 'stand', 'condo', 'store', 'post'].map((k) => [k, { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'The boss.' }, line: { type: 'string', description: 'Come and see me, I have news (a promotion, said in person).' } } }])) },
         nudge: { type: 'object', additionalProperties: false, required: ['condo', 'store', 'post'], properties: {
           post: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Stamp.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the post office that week: is the player coming in? The pile on the counter is his subject. Warm, dry, a little pointed, never a threat, never a number, at most 140 characters. May use {home}.' } } },
           condo: { type: 'object', additionalProperties: false, required: ['from', 'line'], properties: { from: { type: 'string', description: 'Spinner.' }, line: { type: 'string', description: 'Thursday has come and nothing has been done at the Arcade this week: is the player coming in? Warm, dry, a little pointed, never a threat, never a number, at most 140 characters.' } } },

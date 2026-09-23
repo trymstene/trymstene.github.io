@@ -12,6 +12,7 @@
     "none": "The jug kept cool company beneath the striped awning.",
     "capped": "Glasses went down the lane; the day’s tips are already spent.",
     "best": "A {drink} glass went down the lane with ice clicking.",
+    "xp": "Work XP earned: {n}.",
     "back": "Close"
   },
   "go": {

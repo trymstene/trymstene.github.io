@@ -6,13 +6,64 @@
     "condo": "The Arcade · Spinner’s staff",
     "store": "Pip’s General Store · Pip’s staff"
   },
-  "title": {
-    "cafe": "Barista",
-    "stand": "Lemonade seller",
-    "post": "Post sorter",
-    "condo": "Arcade attendant",
-    "store": "Shop assistant"
+  "ranks": {
+    "stand": [
+      "Lemonade seller",
+      "Senior squeezer",
+      "Deputy manager"
+    ],
+    "cafe": [
+      "Barista",
+      "Senior barista",
+      "Head barista",
+      "Café keyholder"
+    ],
+    "condo": [
+      "Arcade attendant",
+      "Cabinet tech",
+      "Cabinet keeper",
+      "Floor manager",
+      "Night manager"
+    ],
+    "store": [
+      "Shop assistant",
+      "Counter clerk",
+      "Window dresser",
+      "Stock buyer",
+      "Deputy storekeeper"
+    ],
+    "post": [
+      "Post sorter",
+      "Senior sorter",
+      "Parcel clerk",
+      "Postal clerk",
+      "Letter carrier",
+      "Deputy postmaster"
+    ]
   },
+  "rank": "Rank {n} of {of}",
+  "xp": "Work XP",
+  "today": "Today: {n} of {cap} XP.",
+  "nextWeek": "Next: {title}, with {coins} coins for a full week.",
+  "nextTips": "Next: {title}, with tips up to {cap} coins a day.",
+  "top": "The top rank here.",
+  "news": {
+    "cafe": "Bean has news for you. Talk to Bean to hear it.",
+    "stand": "Fig Jr. has news for you. Talk to Fig Jr. to hear it.",
+    "condo": "Spinner has news for you. Talk to Spinner to hear it.",
+    "store": "Pip has news for you. Talk to Pip to hear it.",
+    "post": "Stamp has news for you. Talk to Stamp to hear it."
+  },
+  "promoQ": "You wanted to see me?",
+  "promo": {
+    "bean": "Three turns of your last cup say {title}. The grounds never flatter.",
+    "figjr": "Review complete. Effective today, you are {title}. Division approves.",
+    "spinner": "Drumroll! Our newest {title} is you! The cabinets are applauding.",
+    "pip": "You are {title} now. It was the last one on the shelf, and it fits you.",
+    "stamp": "I weighed your work. It came to exactly {title}. Noted."
+  },
+  "promoMoment": "PROMOTED",
+  "promoLine": "Now {title} at {where}",
   "tips": "Tips today",
   "tipsCap": "Tips stop at {cap} coins a day.",
   "week": "This week",

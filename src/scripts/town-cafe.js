@@ -24,6 +24,8 @@
 // eager-globbed into town-room.js and would have spent two kilobytes of the 2 447 B that chunk has
 // left. The counter runs wordless until the rig approves them, the way every surface in this world
 // does, and no player who never works a shift downloads a byte of them.
+import { passStat, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
+import { tipsCap, xpAt } from '../data/town/jobs.js';   // 🪜 the rank's tips cap and the shift's work XP (23 Sep 2026)
 const COPY_MODS = import.meta.glob('../data/copy/town-cafe.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
 // a deck line, picked by a number the caller already has, so the same cup never says two things
@@ -153,10 +155,11 @@ function land(cup, now, key) {
 }
 
 // ⭐ THE CHORE PAYS IN THE ROOM; THE COUNTER PAYS IN TIPS (docs/town-jobs-plan.md §3). A cup is a
-// tip, not a wage — and 4 + 1 is the ceiling on purpose, because 6 is where the stew buff would push
-// a cup into a whole refusal.
-export const TIP = [0, 2, 4];
-export const tipFor = (grade, quick) => TIP[grade | 0] + (quick && grade ? 1 : 0);
+// tip, not a wage. 🪜 ONE PAY SCALE (Trym, 23 Sep 2026): a day's tips stop at a fifth of the rank's full week —
+// 12 at the stand's first rank, 18 at the café's — so a cup is 1 or 2 and a shift fills the day in a handful of
+// good cups; after that the cups earn work XP alone (src/data/town/jobs.js tipsCap, XP).
+export const TIP = [0, 1, 2];
+export const tipFor = (grade) => TIP[grade | 0] || 0;
 
 // ---- the tray: the one thing in here that knows about a screen ---------------------------------
 const el = (tag, cls, host) => { const e = document.createElement(tag); if (cls) e.className = cls; if (host) host.appendChild(e); return e; };
@@ -455,7 +458,7 @@ const NEXT = [5200, 12000];      // the gap between arrivals, while you are behi
 const NEAR = 120, AWAY = 420, STAY = 8000;
 
 export function bootTownCafe(ctx, cfg0) {
-  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, pay, openCard, closeCard, esc, inside, shutHere, pos, float } = ctx;
+  const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, openCard, closeCard, esc, inside, shutHere, pos, float, hud } = ctx;
   // ⭐ ONE COUNTER ENGINE, TWO COUNTERS (22 Sep 2026): the queue, the patience, the cup, the tips and the till are
   // the same at the lemonade stand as here, so the stand CONFIGURES this rather than copying it — its own deck,
   // rope, words, held item, mark and way of standing behind the counter (town-lemon.js). The café's own are the
@@ -470,6 +473,7 @@ export function bootTownCafe(ctx, cfg0) {
   let away = 0;   // the moment the player stepped off the counter mark; 0 while they are on it
   let held = false;   // something else asked for the bottom of the screen (the pocket): the tray yields
   let lastBest = '';   // which drink the last right cup was, for the receipt to name
+  let grades = [], xpGot = 0;   // 🪜 the shift's cups by grade, reported once at clock-out, and the XP they came to
   // the mark is the workplace's own front, the same point town-work.js measures turning up against
   const mark = cfg.mark || (() => { const p = PROPS && PROPS.cafe; return p ? { x: p.x + p.w / 2, y: p.base } : null; });
 
@@ -576,9 +580,9 @@ export function bootTownCafe(ctx, cfg0) {
   }
   function onCup(c) {
     const row = c.row, i = line.indexOf(row);
-    const quick = row && row.at && (performance.now() - row.at) < PATIENCE / 2;
-    const n = tipFor(c.grade, quick);
-    tips += n; served++;
+    // 🪜 a tip only while today's cap has room: past it the cup still counts — for its work XP — and floats nothing
+    const n = Math.min(tipFor(c.grade), Math.max(0, left() - tips));
+    tips += n; served++; grades.push(c.grade | 0);
     // 🪙 THE TIP IS SEEN THE MOMENT IT IS EARNED (Trym, 21 Sep: "its not very obvious how i make tips while
     // working, so there needs to be some system to visualize how im making a couple of coins per coffee").
     // A +n floats up from the hatch, and the tray's own counter keeps the shift's total — numbers and the
@@ -601,7 +605,7 @@ export function bootTownCafe(ctx, cfg0) {
   function clockIn(host) {
     if (on) return false;
     on = true;
-    served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0;
+    served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0; grades = []; xpGot = 0;
     standIn();
     if (!tray) tray = mountCounter(host || world.parentElement, { onCup, deck: cfg.deck, label: (k) => (WORDS.go || {})[k] || '', idle: () => WORDS.idle || '', leave: WORDS.leave || '', onLeave: () => clockOut() });
     if (tray.tips) tray.tips(0);
@@ -623,9 +627,39 @@ export function bootTownCafe(ctx, cfg0) {
     // ⭐ THE TILL. Paid ONCE, at the end, through the only faucet the server knows — and `pay` reads
     // what today's cap still allows BEFORE it hands anything over, so the counter stops paying rather
     // than paying coins that evaporate at the next ack.
-    const paid = tips > 0 && pay ? pay(tips, { cups: served, best }) : 0;
+    const paid = tips > 0 ? pay(tips, { cups: served, best }) : 0;
+    // 🪜 the shift's cups go on the ladder in ONE report (a list of grades), and the receipt shows what they earned
+    xpGot = 0;
+    if (grades.length && ctx.chore) { const p = ctx.chore('cup', grades.slice(0, 60)); xpGot = (p && p.got) | 0; }
     receipt(paid);
     return true;
+  }
+  // ⭐ THE TILL — moved here from town-room.js's context on 23 Sep 2026 (that chunk is at its cap, and the till is the
+  // counter's own business). It reads the cap BEFORE it pays: RULES.town.tips allows 12 an event and, per day, the
+  // RANK's cap (a fifth of its full week) — and a faucet over its cap is refused WHOLE, so a counter that just handed
+  // over its total would watch the coins evaporate at the next ack. It pays in pieces the rule accepts, counts the
+  // day's room in the coins that will LAND (the stew buff doubles them on the way in), and says what landed.
+  const rank = () => { const j = ctx.job ? ctx.job() : null; return Math.max(1, ((j && j.lad && j.lad.rank) | 0)); };
+  const buff = () => (coinsPaid(1) > 1 ? 2 : 1);
+  function room() { let used = 0; try { used = ruleUsed('town:tips').used | 0; } catch (e) {} return Math.max(0, tipsCap(cfg.at, rank()) - used); }
+  const left = () => Math.floor(room() / buff());   // today's room in the tips a cup is counted in
+  function pay(n, how) {
+    const x = buff();
+    const give = Math.min(n | 0, left());
+    const each = Math.floor(12 / x);              // the most one event may carry once the buff has doubled it
+    for (let k = give; k > 0; k -= each) passStat('coins_earned', Math.min(each, k), 'tips');
+    const landed = give * x;
+    if (landed > 0) { float(pos.x, pos.y - 40, '+' + landed); if (hud && hud.refresh) hud.refresh(); }
+    track('town_shift', { at: cfg.at, step: 'paid', n: landed, cups: (how && how.cups) | 0 });
+    return landed;
+  }
+  // 🪜 the ladder as the receipt draws it: this shift's XP, and a bar from this rank's line to the next one's
+  function ladderHtml(w) {
+    const j = ctx.job ? ctx.job() : null, l = j && j.lad;
+    if (!w.xp || !l || !grades.length) return '';
+    const a = xpAt(cfg.at, l.rank) | 0, b = xpAt(cfg.at, l.rank + 1);
+    const k = b == null ? 1 : Math.max(0, Math.min(1, ((l.xp | 0) - a) / (b - a)));
+    return '<p class="tw-cup__xp">' + esc(w.xp.replace('{n}', String(xpGot))) + '</p><div class="tw-cup__xpbar"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>';
   }
   // ⭐ THE RECEIPT is a card, and a card is right HERE and nowhere else in the café: the shift is over,
   // so the square no longer has to be visible behind it. ⚠️ it shows WHAT THE CAP ALLOWED, not what the
@@ -648,6 +682,7 @@ export function bootTownCafe(ctx, cfg0) {
       + '<h2>' + esc(w.title) + '</h2>'
       + (line ? '<p class="tw-cup__take">' + esc(line) + '</p>' : '')
       + (good ? '<p class="tw-cup__best">' + esc(good) + '</p>' : '')
+      + ladderHtml(w)
       + (w.line ? '<p class="tw-card__sub">' + esc(w.line) + '</p>' : '')
       + (w.back ? '<button class="tw-cta" id="twTillX" type="button"><span class="tw-cta__verb">' + esc(w.back) + '</span></button>' : '')
       + '</div>');
@@ -745,7 +780,8 @@ export function bootTownCafe(ctx, cfg0) {
       // every frame, so poking the rung directly is undone before the next paint.
       rung: (k) => { const n = performance.now(), f = [0, 0.65, 0.85][k | 0] || 0; line.forEach((q) => { if (q.at) q.at = n - PATIENCE * f; }); patienceTick(n); return line.length; },
       take: () => ({ served, tips, best }),
-      tip: (n) => { tips += n | 0; served++; return tips; },   // QA: a long shift's takings without forty real cups
+      tip: (n, g) => { tips += n | 0; served++; grades.push(g == null ? 2 : g | 0); return tips; },   // QA: a long shift's takings without forty real cups
+      grades: () => grades.slice(), xp: () => xpGot, left,   // 🪜 the shift's cups by grade, the XP the receipt showed, today's room
       receipt: (n) => receipt(n | 0),
       gest: () => (tray ? tray.seam : null),   // the tray’s own thumb-door, so a walk can make a real cup
     },

@@ -547,7 +547,8 @@ function npcCard(key) {
   // 💼 a boss can be asked for a job, and the question sits with the two they already answer
   const jobQs = work && work.topicsFor ? work.topicsFor(key) : [];   // the job question, and the way out while the job is yours
   dialog = mountDialogue(cardBody, {
-    name: d.name, line: d.line, topics: jobQs.length ? [...d.topics, ...jobQs] : d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
+    // 🪜 a boss's NEWS (a promotion waiting) is the first question on the card; the job's others follow the resident's own
+    name: d.name, line: d.line, topics: jobQs.length ? [...jobQs.filter((t) => t.news), ...d.topics, ...jobQs.filter((t) => !t.news)] : d.topics,   // no role line: the name and the portrait are the header (Trym, 12 Sep)
     // ⚠️ A PORTRAIT IS A FACE, NOT A FULL LENGTH. `extras` holds exactly the resident's HELD TOOL
     // (town-life.js builds it as { [r.tool]: true }), and a wide one paints straight over the name
     // beside it — Pip's rubber chicken covered the P in "Pip" entirely, on the very card you tap to
@@ -580,7 +581,7 @@ const working = () => !!(room && room.seam && room.seam.working && room.seam.wor
 function loadSort() {
   if (!sortP) {
     sortP = import('./town-sort.js')
-      .then((m) => { sort = m.bootTownSort({ host: view, PROPS, pos, say, track, openCard, closeCard, esc, world, W, H, inside: () => !!inRoom, chore: (k) => (work && work.seam.chore ? work.seam.chore(k) : null) }); return sort; })
+      .then((m) => { sort = m.bootTownSort({ host: view, PROPS, pos, say, track, openCard, closeCard, esc, world, W, H, inside: () => !!inRoom, chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null), job: () => (work ? work.seam.job() : null) }); return sort; })
       .catch((e) => { sortP = null; console.warn('[town] the sorting counter did not load', e); return null; });
   }
   return sortP;
@@ -929,6 +930,14 @@ function hiredMoment(at) {
   const start = (w.start || {})[at];
   if (start) setTimeout(() => say(start), 4400);
 }
+// 🪜 PROMOTED (23 Sep 2026): the hire's own moment, for a rank the boss has just told you — the card has closed by now,
+// and the square says what you are and where. The words are the staff card's (town-staff.json), loaded with the job.
+function promotedMoment(at, rank) {
+  const L = (work && work.seam.words()) || {};
+  const where = (lifeWords('work').at || {})[at] || '';
+  burstAt(pos.x, pos.y, '', true);
+  if (L.promoMoment) bigMoment(view, L.promoMoment, (L.promoLine || '').replace('{title}', work.seam.title(at, rank)).replace('{where}', where));
+}
 
 // ---- boot: the engine's assets first, then the people, then the walk
 // the world HUD, both halves (design library §15): the strip up top — level,
@@ -965,7 +974,7 @@ assetsReady().then(() => {
       then: (fn) => { arriveThen = fn || null; },
       job: () => (work ? work.seam.job() : null),   // 💼 what the room may ask of you depends on who you work for
       sortOn: () => !!(sort && sort.on()),   // ✉️ the sorting round is on: Stamp steps aside
-      chore: (k) => (work && work.seam.chore ? work.seam.chore(k) : null),   // 💼 …and what you did there counts on the week's sheet
+      chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null),   // 💼 …and what you did there counts on the week's sheet (🪜 and earns work XP by its grade)
       outfit: () => ME_DRAW,   // ☕ the café draws YOUR banana in its window, in one locked pose
       others: () => (crowd ? crowd.others() : []),   // 👥 other players' bananas on the square (the ghosts keep away from them)
       drawMe: (ctx, size, frame, outfit) => drawComposite(ctx, size, frame, outfit), mountDialogue });
@@ -988,6 +997,7 @@ assetsReady().then(() => {
         pos, PROPS, say, track,
         copy: () => (room && room.seam.copyOf ? room.seam.copyOf('work') : null),
         hired: (at) => hiredMoment(at),
+        promoted: (at, rank) => promotedMoment(at, rank),   // 🪜 the boss told you: PROMOTED over the square
       });
       if (window.__town) window.__town.work = work.seam;
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)

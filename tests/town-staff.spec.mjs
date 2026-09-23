@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { TIPS_DAY } from '../src/data/town/jobs.js';
+import { tipsCap } from '../src/data/town/jobs.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STAFF = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-staff.json'), 'utf8'));
@@ -72,8 +72,8 @@ test('your own workplace answers a real tap with your staff card; a stranger’s
   const c = await card(page);
   expect(c.kind, 'the café is a round you play').toBe('shift');
   expect(c.text, 'where, and for whom').toContain(STAFF.of.cafe.toUpperCase());
-  expect(c.text, 'what you are called here').toContain(STAFF.title.cafe);
-  expect(c.text, 'today’s tips against the day’s cap').toContain('/ ' + TIPS_DAY);
+  expect(c.text, 'what you are called here').toContain(STAFF.ranks.cafe[0]);
+  expect(c.text, 'today’s tips against the rank’s cap').toContain('/ ' + tipsCap('cafe', 1));
   expect(c.go).toBe(STAFF.go);
   expect(c.second, 'the café has no other use').toBe('');
   expect(await page.evaluate(() => window.__town.room.cafe().on()), 'looking is not working').toBe(false);
@@ -208,7 +208,7 @@ test('the work note opens the staff card from anywhere in the square, and only i
 
   // ── a café worker's note has today's tips on it at last
   await page.evaluate(() => window.__town.work.set({ at: 'cafe' }));
-  await page.waitForFunction((t) => window.__town.duties.top() === t, DUTY.tips + ' 0/' + TIPS_DAY, { timeout: 5000 });
+  await page.waitForFunction((t) => window.__town.duties.top() === t, STAFF.ranks.cafe[0] + ' · ' + DUTY.tips + ' 0/' + tipsCap('cafe', 1), { timeout: 5000 });
   expect(errs).toEqual([]);
 });
 
@@ -222,7 +222,7 @@ test('a shut workplace still opens the card, and its button says why it cannot t
   await page.evaluate(() => window.__town.open('cafe'));
   await waitCard(page, 'cafe');
   const c = await card(page);
-  expect(c.text, 'your progress is still yours').toContain(STAFF.title.cafe);
+  expect(c.text, 'your progress is still yours').toContain(STAFF.ranks.cafe[0]);
   expect(c.text, 'and it says why').toContain(STAFF.shut);
   expect(c.goOff, 'Go to work cannot be pressed').toBe(true);
   expect(errs).toEqual([]);

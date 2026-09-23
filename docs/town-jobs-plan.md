@@ -1015,3 +1015,49 @@ worker in-process) found three problems under every job and several per workplac
 day one while fixing needs three days; the arcade and the store have no end-of-day moment; the stand and café
 are the only jobs with skill yet pay the most (up to 120 a day against 60–90 a week); a quit has no
 confirmation and does not name pay owed; the round's receipt says "on the sheet" at 3/3.
+
+## 15. The ladder, slice 1: work XP, ranks, promotion at the boss, one pay scale (23 Sep 2026)
+
+The plan: https://claude.ai/artifact/BN3XdtMec5Q4BkvVh7FBht. Trym's four calls for slice 1, all as recommended:
+**any boss hires** (no gate; references come later) · **ranks 3·4·5·5·6** (stand · café · arcade · store · post) ·
+**one pay scale** · **promotion at the boss**. Decisions 5–7 (mementos, which skill first, the post office carrying
+real post) belong to later slices and are still his.
+
+| Workplace | Ranks (titles) | XP a day | Ranks begin at | A full week at rank 1 → top |
+|---|---|---|---|---|
+| Lemonade stand | Lemonade seller · Senior squeezer · Deputy manager | 60 | 0 · 200 · 600 | 60 → 86 (tips: 12 → 17 a day) |
+| Coffee Cup | Barista · Senior barista · Head barista · Café keyholder | 80 | 0 · 250 · 750 · 1500 | 90 → 156 (tips: 18 → 31 a day) |
+| Arcade | Arcade attendant · Cabinet tech · Cabinet keeper · Floor manager · Night manager | 100 | 0 · 300 · 900 · 1800 · 3000 | 120 → 249 |
+| General store | Shop assistant · Counter clerk · Window dresser · Stock buyer · Deputy storekeeper | 100 | same | 150 → 311 |
+| Post office | Post sorter · Senior sorter · Parcel clerk · Postal clerk · Letter carrier · Deputy postmaster | 120 | 0 · 350 · 1000 · 2000 · 3400 · 5200 | 180 → 448 |
+
+- **One source:** `src/data/town/jobs.js` — `LADDER`, `RISE` (a fifth more a rank), `XP` (a glass 0/2/4, a cup 0/3/6,
+  litter 15, a cabinet 45, a crate 45, a round its points: `roundXp` = 5 a card fresh, 2 late, at most 60), `DAY_XP`
+  10 for turning up, `rankOf`, `xpAt`, `weekPay`, `tipsCap` (a fifth of the rank's full week a day), `payOf(at, done, rank)`.
+  `JOB_PAY` is rank 1 of the same scale (arcade 60 → 120, store 90 → 150, post 75 → 180; the stand's tips 120 → 12 a day).
+- **Server (worker-pass):** on the record, never the blob — `j.xp[at]` (never lost), `j.rk[at]` (the rank the boss has
+  TOLD you), `j.xd` (today's XP per workplace, for the cap). `/job/chore {kind, g}` adds the verb's XP (+ the day's ten
+  the first time you turn up) up to the day's cap; a counter reports its whole shift at clock-out as ONE chore with a
+  list of grades. `/job/view` carries `lad {xp, rank, today, news}`. **`POST /job/promote {at}`** makes the earned rank
+  yours (409 `not yours` at another boss; `promoted: null` when there is nothing to tell). A cheque pays the rank the
+  week was worked at (`r` on the week's sheet). `RULES.town.tips.day` is a FUNCTION now: `tipsDay(home)` = the higher
+  of the two tips jobs' caps at the rank you were told. ⚠️ XP is client-reported like the chores: the day's cap is the bound.
+- **The ceremony:** XP past the line is NEWS — the work note turns GREEN (the quest's note is yellow, the pager amber)
+  and names the boss; the staff card shows the same line over the XP. On the boss's card the news is the FIRST question
+  ("You wanted to see me?"); the boss says it in their own words (`town-staff.json promo.*`), the card closes itself,
+  then PROMOTED + "Now {title} at {where}" (design library §27, the hire's order). Not coming by: the boss's letter in
+  the homestead mailbox, once per rank (`news:<rank>:<at>`, `homestead-post.json bosses.news.*`) — it only asks you over.
+- **Where it shows:** the staff card (title by rank, pips, XP against the next line, today against the cap, what the
+  next rank brings); the work note (your title leads it, a thin XP bar along its foot, the rank's tips cap); the café's,
+  the stand's and the round's receipts ("Work XP earned", a bar).
+- **The till moved** from town-room.js's context into town-cafe.js (the room chunk was at its cap), and a tip is 0/1/2
+  a cup now with no quick bonus: the day's tips fill in a handful of good cups, and the cups after that earn XP alone.
+- **Pulse:** `town_promo` {at, rank}; `town_duty` kind `news`.
+- **Proof:** worker-pass/test/jobs.test.mjs §11–12 (XP, the cap, forged grades, news, promote, tips cap by rank, a
+  week paid at its rank), tests/jobs-maths.spec.mjs (the table), tests/town-ladder.spec.mjs (the card, the news, the
+  promotion at Bean in order, at 360 and 393), town-cafe (18 a day at rank 1, XP on the receipt), town-sort (the
+  round's XP), homestead-payslip (the boss's letter).
+- ⚠️ **Deviation from the plan, said out loud:** the arcade and the store have no end-of-shift receipt. They are
+  on-call jobs with no shift to end; their XP shows on the note's bar as it happens and on the card's "today" line.
+- **Next:** slice 2 (a skill for the middle rungs — decision 6 is Trym's), then the unlocks rank by rank, then the
+  social top (references, mementos, staff of the week).

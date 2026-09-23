@@ -27,6 +27,28 @@
         "from": "Pip",
         "line": "I have taken your name off the store book. If you want work again, come ask me; the bell is still there."
       }
+    },
+    "news": {
+      "cafe": {
+        "from": "Bean",
+        "line": "Come to the Coffee Cup when you can. I have news, and your last cup already knew it."
+      },
+      "stand": {
+        "from": "Fig Jr.",
+        "line": "Please report to the lemonade stand. Management has news regarding your position."
+      },
+      "condo": {
+        "from": "Spinner",
+        "line": "Come and see me at the arcade! I have news, and the cabinets are sworn to secrecy."
+      },
+      "store": {
+        "from": "Pip",
+        "line": "Come by the store when the bell is quiet. I have news that will not keep on a shelf."
+      },
+      "post": {
+        "from": "Stamp",
+        "line": "Come by the post office when you can. I have news, and it has been weighed."
+      }
     }
   },
   "wage": {

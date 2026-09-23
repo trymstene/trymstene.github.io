@@ -13,6 +13,7 @@
 //   · THE POUR IS A HOLD, and a hold on a control inside anything scrollable dies to `pointercancel`
 //     after two moves. The tray takes the pointer outright; a real press-and-hold proves it.
 import { test, expect } from '@playwright/test';
+import COPY from '../src/data/copy/town-cafe.json' with { type: 'json' };
 
 const SHOT = 'test-results/cafe-';
 
@@ -107,7 +108,7 @@ test('a PERFECT cup is reachable on an 8× throttled phone', async ({ page, brow
   expect(got, 'a cup was actually finished').toBeTruthy();
   expect(got.marks, 'grind, pour and milk all perfect at 8× CPU').toEqual([2, 2, 2]);
   expect(got.grade).toBe('perfect');
-  expect(got.tip, 'and it pays the top tip').toBe(5);
+  expect(got.tip, 'and it pays the top tip (2 since the ladder’s one pay scale, 23 Sep 2026)').toBe(2);
   expect(errors).toEqual([]);
 });
 
@@ -458,15 +459,19 @@ test('a served cup pays tips at clock-out, once, through the faucet the server k
 // 🪙 A LONG SHIFT'S TIPS LAND (the jobs audit, 22 Sep 2026). A shift used to be paid as ONE event, and the
 // server refuses any one tips event over 12 whole — so every shift worth more than 12 (6 with the stew buff)
 // was taken back at the next ack while the receipt said it was paid. It is paid in pieces now.
+// 🪜 and since the ladder (23 Sep 2026) the day's tips stop at the RANK's cap: the Coffee Cup's top rank (31 a day)
+// is where a shift big enough to need pieces can still land whole.
 for (const buffed of [false, true]) {
-  test(`a forty-coin shift is paid in pieces the server accepts${buffed ? ', with the stew buff' : ''}`, async ({ page }) => {
+  test(`a big shift at the top rank is paid in pieces the server accepts${buffed ? ', with the stew buff' : ''}`, async ({ page }) => {
     if (buffed) await page.addInitScript(() => { try { localStorage.setItem('hs-buff-v1', JSON.stringify({ fx: 'coins2', until: Date.now() + 36e5 })); } catch (e) {} });
     const errors = await shift(page);
-    await page.evaluate(() => { const c = window.__town.room.cafe(); for (let i = 0; i < 10; i++) c.tip(4); });
+    await page.evaluate(() => window.__town.work.setLad({ xp: 1500, rank: 4 }));
+    await page.evaluate(() => { const c = window.__town.room.cafe(); for (let i = 0; i < 10; i++) c.tip(2); });
     await page.evaluate(() => window.__town.room.cafe().clockOut());
     await page.waitForTimeout(400);
     const paid = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').map((e) => e.d); } catch (e) { return []; } });
-    const want = buffed ? 80 : 40;
+    // twenty tips: all twenty land unbuffed (under 31); with the buff doubling them, the cap lets fifteen through as thirty
+    const want = buffed ? 30 : 20;
     expect(Math.max(...paid), '⭐ no one event is over the server’s max of 12').toBeLessThanOrEqual(12);
     expect(paid.reduce((a, b) => a + b, 0), 'and together they are the whole shift' + (buffed ? ', doubled' : '')).toBe(want);
     const card = await page.evaluate(() => (document.getElementById('twCardBody') || {}).textContent || '');
@@ -474,6 +479,28 @@ for (const buffed of [false, true]) {
     expect(errors).toEqual([]);
   });
 }
+
+// 🪜 ONE PAY SCALE (Trym, 23 Sep 2026: "yes, one pay scale"): a day's tips stop at a fifth of the rank's full week — 18 at
+// the Coffee Cup's first rank. The cups past the cap still count, for their work XP, and the receipt says how much.
+test('at the first rank the day’s tips stop at 18, and the shift’s cups still earn work XP', async ({ page }) => {
+  const errors = await shift(page);
+  expect(await page.evaluate(() => window.__town.room.cafe().left()), 'a fresh day: eighteen to earn').toBe(18);
+  await page.evaluate(() => { const c = window.__town.room.cafe(); for (let i = 0; i < 12; i++) c.tip(2, 2); });
+  await page.evaluate(() => window.__town.room.cafe().clockOut());
+  await page.waitForTimeout(400);
+  const paid = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('pass-ev-v1') || '[]') || []).filter((e) => e.s === 'tips').map((e) => e.d); } catch (e) { return []; } });
+  expect(paid.reduce((a, b) => a + b, 0), '⭐ twenty-four tips earned, eighteen paid: the rank’s cap').toBe(18);
+  expect(await page.evaluate(() => window.__town.room.cafe().left()), 'and nothing is left today').toBe(0);
+  // the twelve perfect cups went on the ladder as one report: ten for the day and six a cup, up to the day's eighty
+  expect(await page.evaluate(() => window.__town.room.cafe().xp()), 'the shift’s work XP: the day’s cap at the Coffee Cup').toBe(80);
+  expect(await page.evaluate(() => window.__town.work.ladder().today), 'and the ladder has it').toBe(80);
+  const card = await page.evaluate(() => (document.getElementById('twCardBody') || {}).textContent || '');
+  expect(card, 'the receipt names the take').toContain('18');
+  expect(card, '⭐ and the XP the shift earned').toContain(COPY.receipt.xp.replace('{n}', '80'));
+  expect(await page.evaluate(() => !!document.querySelector('.tw-cup__xpbar i')), 'with a bar to the next rank').toBe(true);
+  await page.locator('.tw-card').screenshot({ path: 'test-results/cafe-receipt-ladder.png' });
+  expect(errors).toEqual([]);
+});
 
 // ⚠️ THE EDGES OF A SHIFT, all four found by probing rather than by reading (20 Sep).
 test('a shift ends when you walk away, and cannot be started twice or behind a shut door', async ({ page }) => {

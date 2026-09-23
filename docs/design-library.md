@@ -828,6 +828,9 @@ dialogue popup should close first, then splash."*
   below the work note that appears in the same beat).
   ⚠️ **Owed:** the rave's `.rv-bigmoment` and the park's one-size-down copy still run their own CSS; they
   move onto this layer the next time either is touched.
+- **Its second beat: PROMOTED (23 Sep 2026, the job ladder).** A boss tells you your new rank in their own card,
+  the card closes itself, then PROMOTED and "Now {title} at {where}" (`town-staff.json promoMoment/promoLine`).
+  The same order, the same layer; the work note turns GREEN while the news waits (yellow is the quest, amber the pager).
 - **The order is the rule, and the dialogue template holds it.** A topic in `mountDialogue` may carry
   `after`, read once its answer is chosen: a function handed back means the answer types as usual, the
   card holds it 1.2 s, closes itself, and THEN the function runs — the world's moment happens on a clear

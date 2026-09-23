@@ -18,7 +18,7 @@
 // ⚠️ THE WORDS ARE THE COPY FILE'S (src/data/copy/town-staff.json). No words, no card: the town's own tap stands.
 import DUTY from '../data/copy/town-duties.json';
 import { ruleUsed } from '../lib/banana-pass.js';
-import { TIPS_DAY } from '../data/town/jobs.js';
+import { tipsCap, weekPay, xpAt, ranksOf, LADDER } from '../data/town/jobs.js';   // 🪜 the ladder (23 Sep 2026)
 import { daysToPayday } from './town-duties.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-staff.json', { eager: true, import: 'default' });
 const COPY = Object.values(COPY_MODS)[0] || null;
@@ -51,6 +51,12 @@ const CSS = `
 .tws-quiet { margin:0.1rem 0 0; font-size:0.84rem; font-weight:700; opacity:0.85; }
 .tws-shut { margin:0; font-size:0.8rem; font-weight:700; color:#ffb347; }
 .tws .tw-cta, .tws .tw-btn--in { margin-top:0.15rem; }
+.tws-rank { display:flex; align-items:center; gap:0.5rem; font-size:0.72rem; font-weight:800; opacity:0.9; }
+.tws-pips { display:flex; gap:3px; }
+.tws-pips i { width:10px; height:10px; border:2px solid #000; background:#2a1a10; }
+.tws-pips i.is-on { background:#ffe135; }
+.tws-xp .tws-bar i { background:linear-gradient(#a8e08a,#6fbf4a); }
+.tws-news { margin:0; padding:0.4rem 0.6rem; border:2px solid #000; background:#b5de86; color:#1e3310; font-size:0.82rem; font-weight:800; box-shadow:2px 2px 0 rgba(0,0,0,0.45); }
 `;
 let styled = false;
 function injectCss() { if (styled) return; styled = true; const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st); }
@@ -77,9 +83,9 @@ export function bootTownStaff(ctx) {
       + '<div class="tws-wage"><span>' + esc(COPY.wage) + '</span><b>' + (s.sofar | 0) + '</b></div>'
       + (COPY.payday && days ? '<p class="tws-note">' + esc(fill(COPY.payday, { days })) + '</p>' : '');
   }
-  function tipsHtml() {
+  function tipsHtml(at, rank) {
     let got = 0; try { got = ruleUsed('town:tips').used | 0; } catch (e) {}
-    const cap = TIPS_DAY, used = Math.min(cap, got);
+    const cap = tipsCap(at, rank), used = Math.min(cap, got);
     const k = cap ? Math.max(0, Math.min(1, used / cap)) : 0;
     return '<section><span class="tws-lab">' + esc(COPY.tips) + '</span>'
       + '<div class="tws-stat"><b>' + used + '</b>' + (cap ? '<small>/ ' + cap + '</small>' : '') + '</div>'
@@ -93,21 +99,39 @@ export function bootTownStaff(ctx) {
       + calls.map((c) => '<li data-call="' + c.kind + '"><span>' + esc((COPY.call || {})[c.kind] || c.kind) + '</span>' + ((c.n | 0) > 1 ? '<b>' + (c.n | 0) + '</b>' : '') + '</li>').join('')
       + '</ul>' + (COPY.until ? '<p class="tws-note">' + esc(COPY.until) + '</p>' : '') + '</section>';
   }
+  // 🪜 THE LADDER, on the card (23 Sep 2026): the rank you hold as pips, your work XP against the next rank's line, today's
+  // XP against the day's cap, and what the next rank gives — or the boss's news once the XP has crossed the line
+  function ladderHtml(at, l) {
+    const of = ranksOf(at), a = xpAt(at, l.rank) | 0, b = xpAt(at, l.rank + 1);
+    const k = b == null ? 1 : Math.max(0, Math.min(1, (l.xp - a) / (b - a)));
+    let pips = '';
+    for (let i = 1; i <= of; i++) pips += '<i' + (i <= l.rank ? ' class="is-on"' : '') + '></i>';
+    const next = COPY.ranks[at][l.rank];
+    const nextLine = !next ? COPY.top : TIPS.includes(at) ? fill(COPY.nextTips, { title: next, cap: tipsCap(at, l.rank + 1) }) : fill(COPY.nextWeek, { title: next, coins: weekPay(at, l.rank + 1) });
+    return '<div class="tws-rank"><span class="tws-pips">' + pips + '</span><span>' + esc(fill(COPY.rank, { n: l.rank, of })) + '</span></div>'
+      + (l.news && (COPY.news || {})[at] ? '<p class="tws-news">' + esc(COPY.news[at]) + '</p>' : '')
+      + '<section class="tws-xp"><span class="tws-lab">' + esc(COPY.xp) + '</span>'
+      + '<div class="tws-stat"><b>' + l.xp + '</b>' + (b != null ? '<small>/ ' + b + '</small>' : '') + '</div>'
+      + '<div class="tws-bar"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>'
+      + '<p class="tws-note">' + esc(fill(COPY.today, { n: l.today, cap: (LADDER[at] || {}).day | 0 })) + '</p>'
+      + (nextLine ? '<p class="tws-note">' + esc(nextLine) + '</p>' : '') + '</section>';
+  }
   const cta = (id, verb, off) => '<button type="button" class="tw-cta" id="' + id + '"' + (off ? ' disabled' : '') + '><span class="tw-cta__verb">' + esc(verb) + '</span></button>';
   const plain = (id, label) => '<button type="button" class="tw-btn--in" id="' + id + '">' + esc(label) + '</button>';
 
   // open(at, door): the card for the workplace `at`, opened from `door` ('place' | 'note')
   function open(at, door) {
-    if (!WORKPLACES.includes(at) || !(COPY.title || {})[at]) return false;
+    if (!WORKPLACES.includes(at) || !((COPY.ranks || {})[at] || []).length) return false;
     const s = ctx.job ? ctx.job() : { at: '' };
     if (s.at !== at) return false;   // only your own workplace has a staff card for you
+    const l = s.lad && s.lad.at === at ? s.lad : { xp: 0, rank: 1, today: 0, news: false };
     const shut = !!(ctx.shut && ctx.shut(at));
     const kind = SHIFT.includes(at) ? 'shift' : 'oncall';
     const calls = kind === 'oncall' ? callsOf(at) : [];
     const second = (COPY.second || {})[at] || '';
     let body = '';
     if (kind === 'shift') {
-      body += TIPS.includes(at) ? tipsHtml() : weekHtml(s);
+      body += TIPS.includes(at) ? tipsHtml(at, l.rank) : weekHtml(s);
       if (shut && COPY.shut) body += '<p class="tws-shut">' + esc(COPY.shut) + '</p>';
       body += cta('twsGo', COPY.go, shut);
     } else {
@@ -121,13 +145,14 @@ export function bootTownStaff(ctx) {
     if (second && !shut) body += plain('twsSecond', second);
     openCard('<div class="tws" data-at="' + at + '" data-kind="' + kind + '">'
       + '<p class="tws-of">' + esc((COPY.of || {})[at] || '') + '</p>'
-      + '<h2>' + esc(COPY.title[at]) + '</h2>'
+      + '<h2>' + esc(COPY.ranks[at][l.rank - 1] || COPY.ranks[at][0]) + '</h2>'
+      + ladderHtml(at, l)
       + body + '</div>');
     const go = document.getElementById('twsGo'), sec = document.getElementById('twsSecond');
     const verb = kind === 'shift' ? 'go' : 'answer';
     if (go) go.addEventListener('click', () => { if (go.disabled) return; closeCard(); track('town_staff', { at, door, act: verb }); if (ctx.act) ctx.act(at, verb); });
     if (sec) sec.addEventListener('click', () => { closeCard(); track('town_staff', { at, door, act: 'second' }); if (ctx.act) ctx.act(at, 'second'); });
-    last = { at, door, kind, shut, calls: calls.map((c) => ({ ...c })), go: !!go && !go.disabled, second: !!sec };
+    last = { at, door, kind, shut, calls: calls.map((c) => ({ ...c })), go: !!go && !go.disabled, second: !!sec, rank: l.rank, xp: l.xp, news: !!l.news, title: COPY.ranks[at][l.rank - 1] || '' };
     track('town_staff', { at, door, act: 'open', calls: calls.length });
     return true;
   }

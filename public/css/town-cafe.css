@@ -233,6 +233,10 @@
 .tw-cup__take { margin: 0 0 0.4rem; font-size: 1.05rem; font-weight: 800; color: #ffe135; }
 /* the one cup that came out right, named. The only place the three drinks' names are ever read. */
 .tw-cup__best { margin: 0 0 0.4rem; font-size: 0.86rem; font-weight: 700; color: #a8e08a; }
+/* 🪜 the shift's work XP and the bar to the next rank (23 Sep 2026): the staff card's bar, a size down */
+.tw-cup__xp { margin: 0.1rem 0 0.25rem; font-size: 0.8rem; font-weight: 800; color: #ffe135; font-variant-numeric: tabular-nums; }
+.tw-cup__xpbar { height: 8px; border: 2px solid #000; background: #2a1a10; margin: 0 0 0.5rem; overflow: hidden; }
+.tw-cup__xpbar i { display: block; height: 100%; background: linear-gradient(#ffe14d, #f2c012); transform-origin: 0 50%; }
 
 
 /* ---- ✉️ THE SORTING DECK — the post office's round, on the same tray (22 Sep 2026) ------------------

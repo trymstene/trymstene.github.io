@@ -87,6 +87,11 @@ r = await pushEv(a, [ev('coins_earned', 12, 'town', 'wage')]);
 ok('there is NO wage faucet to forge — the cheque is paid server-side', r.wallet.bal === 104, r.wallet);
 r = await pushEv(a, [ev('coins_earned', 5, 'town', 'qa')]);
 ok('the QA top-up is denied in the town', r.wallet.bal === 104, r.wallet);
+// 🪜 the day's tips cap is the RANK's (23 Sep 2026, one pay scale): a fifth of the Coffee Cup's 90-coin week at rank 1
+r = await pushEv(a, [ev('coins_earned', 6, 'town', 'tips')]);
+ok('six more tips reach the day’s cap at the first rank (18)', r.wallet.bal === 110, r.wallet);
+r = await pushEv(a, [ev('coins_earned', 1, 'town', 'tips')]);
+ok('…and a nineteenth coin is refused', r.wallet.bal === 110, r.wallet);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

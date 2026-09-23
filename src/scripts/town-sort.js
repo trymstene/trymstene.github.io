@@ -18,6 +18,7 @@
 // card's freshness is measured from the instant it landed, never from the last painted frame.
 import { iconSvg } from '../lib/pixel-icons.js';
 import { seedRand, burstInto } from '../lib/world.js';
+import { roundXp, xpAt } from '../data/town/jobs.js';   // 🪜 a round's points are its work XP (23 Sep 2026)
 
 // ✉️ THE FIRST ROUND EXPLAINS ITSELF, ONCE (Trym, 22 Sep: "a small one-time notice by the sorting buttons that
 // says something about what to do … Short and sweet"). One line under the pigeonholes through a device's
@@ -232,7 +233,7 @@ const NEAR = 120, AWAY = 420, STAY = 8000;
 
 export function bootTownSort(ctx) {
   const { host, PROPS, pos, say, track, openCard, closeCard, esc, inside, chore, world, W, H } = ctx;
-  let tray = null, on = false, away = 0, held = false, rounds = 0, last = null;
+  let tray = null, on = false, away = 0, held = false, rounds = 0, last = null, xpGot = 0;
   const mark = () => { const p = PROPS && PROPS.post; return p ? { x: p.x + p.w / 2, y: p.base } : null; };
   const seedNow = () => ((Math.floor(Date.now() / 60000) * 2654435761) ^ (rounds * 40503)) >>> 0;
 
@@ -265,7 +266,9 @@ export function bootTownSort(ctx) {
     const ok = counts(last);
     if (last && last.marks.length) setHinted();   // a round has been played through: the notice has done its job
     // 💼 the round is on the week's sheet: the town says "sorted", the pass worker counts it (up to the target)
-    if (ok && chore) chore('sort');
+    // 🪜 …and its points are work XP: five a card sorted fresh, two a card sorted late (roundXp), a round that made the sheet
+    xpGot = 0;
+    if (ok && chore) { const p = chore('sort', roundXp(last.right, last.late)); xpGot = (p && p.got) | 0; }
     if (ok) track('town_chore', { at: 'post', kind: 'sort' });   // 📡 Pulse reads the week's work by kind, as the arcade's chores do
     track('town_shift', { at: 'post', step: 'out', right: last ? last.right : 0, late: last ? last.late : 0, wrong: last ? last.wrong : 0, counted: ok ? 1 : 0 });
     receipt(last, ok);
@@ -293,6 +296,7 @@ export function bootTownSort(ctx) {
       + (take ? '<p class="tw-cup__take">' + esc(take) + '</p>' : '')
       + '<div class="tw-sort__marks" aria-hidden="true">' + marksIn + '</div>'
       + '<p class="' + (ok ? 'tw-cup__best' : 'tw-card__sub') + '">' + esc(ok ? (w.counted || '') : (w.short || '')) + '</p>'
+      + (ok ? ladderHtml(w) : '')
       + (w.back ? '<button class="tw-cta" id="twSortX" type="button"><span class="tw-cta__verb">' + esc(w.back) + '</span></button>' : '')
       + '</div>');
     const b = document.getElementById('twSortX');
@@ -304,6 +308,14 @@ export function bootTownSort(ctx) {
       burstInto(world, 'tw-burst', m.x / W * 100, (m.y - 64) / H * 100, ok ? 18 : 10);
       if (ok) setTimeout(() => burstInto(world, 'tw-burst', (m.x + 40) / W * 100, (m.y - 96) / H * 100, 14), 260);
     }
+  }
+  // 🪜 the ladder as the receipt draws it: this round's XP, and a bar from this rank's line to the next one's
+  function ladderHtml(w) {
+    const j = ctx.job ? ctx.job() : null, l = j && j.lad;
+    if (!w.xp || !l) return '';
+    const a = xpAt('post', l.rank) | 0, b = xpAt('post', l.rank + 1);
+    const k = b == null ? 1 : Math.max(0, Math.min(1, ((l.xp | 0) - a) / (b - a)));
+    return '<p class="tw-cup__xp">' + esc(w.xp.replace('{n}', String(xpGot))) + '</p><div class="tw-cup__xpbar"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>';
   }
   // a round that ends with the page ends with its receipt written up — a counted round still counts
   const onHide = () => { if (on) clockOut(); };
@@ -335,7 +347,7 @@ export function bootTownSort(ctx) {
     seam: {
       on: () => on, clockIn, clockOut,
       round: () => { const r = tray && tray.round(); return r ? { i: r.i, cards: r.cards.slice(), marks: r.marks.slice(), right: r.right, late: r.late, wrong: r.wrong, done: r.done, at: r.at, t0: r.t0 } : null; },
-      last: () => (last ? { right: last.right, late: last.late, wrong: last.wrong, marks: last.marks.slice(), counted: counts(last), timeUp: !!last.timeUp } : null),
+      last: () => (last ? { right: last.right, late: last.late, wrong: last.wrong, marks: last.marks.slice(), counted: counts(last), timeUp: !!last.timeUp, xp: xpGot } : null),
       card: () => (tray ? tray.seam.card() : ''),
       sort: (mark2, t) => (tray ? tray.seam.sort(mark2, t) : null),
       step: (t) => (tray ? tray.seam.step(t) : null),

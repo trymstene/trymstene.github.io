@@ -13,8 +13,8 @@ import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const COPY = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-duties.json'), 'utf8'));
-const POST = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'homestead-post.json'), 'utf8'));
-import { TIPS_DAY } from '../src/data/town/jobs.js';
+const STAFF = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'copy', 'town-staff.json'), 'utf8'));
+import { tipsCap } from '../src/data/town/jobs.js';
 const strip = (s) => String(s).replace(/\{(coins|days)\}/g, '').replace(/\s+/g, ' ').trim();
 
 const town = async (page) => {
@@ -35,8 +35,10 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   // ── hired at the arcade, a week half done: the counts, and the wage so far
   await page.evaluate(() => window.__town.work.set({ at: 'condo', pay: 60, sofar: 30, share: 0.5, owed: 0, duties: [{ kind: 'sweep', done: 2, of: 3 }, { kind: 'fix', done: 1, of: 3 }] }));
   await page.waitForFunction(() => !window.__town.duties.hidden(), null, { timeout: 5000 });
+  // 🪜 the note leads with your title (the ladder, 23 Sep 2026) once the ladder's words have landed with the job
+  await page.waitForFunction((t) => window.__town.duties.top().indexOf(t) === 0, STAFF.ranks.condo[0], { timeout: 5000 });
   let c = await chip(page);
-  expect(c.top, 'the workplace, as the payslip prints it').toContain(POST.wage.at.condo);
+  expect(c.top, 'your title first').toContain(STAFF.ranks.condo[0]);
   expect(c.top, 'floor swept 2/3').toContain(COPY.kinds.sweep + ' 2/3');
   expect(c.top, 'machines fixed 1/3').toContain(COPY.kinds.fix + ' 1/3');
   const payday = (7 - ((new Date().getUTCDay() + 6) % 7)) % 7 || 7;
@@ -70,8 +72,9 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   // ── the store: its own two duties
   await page.evaluate(() => window.__town.work.set({ at: 'store', pay: 90, sofar: 45, share: 0.5, owed: 0, duties: [{ kind: 'restock', done: 3, of: 3 }, { kind: 'days', done: 0, of: 3 }] }));
   await page.waitForFunction(() => !window.__town.duties.hidden(), null, { timeout: 5000 });
+  await page.waitForFunction((t) => window.__town.duties.top().indexOf(t) === 0, STAFF.ranks.store[0], { timeout: 5000 });
   c = await chip(page);
-  expect(c.top, 'the store').toContain(POST.wage.at.store);
+  expect(c.top, 'the store’s first title').toContain(STAFF.ranks.store[0]);
   expect(c.top, 'shelf restocked 3/3').toContain(COPY.kinds.restock + ' 3/3');
   expect(c.top, 'turned up 0/3').toContain(COPY.kinds.days + ' 0/3');
 
@@ -79,7 +82,7 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   // all for a tips job), then its duty, then its after-line — never the week's counts
   await page.evaluate(() => window.__town.work.set({ at: 'cafe', pay: 0 }));
   await waitLine(page, COPY.duty.cafe);
-  expect((await chip(page)).top, 'today’s tips, not the week’s counts').toBe(COPY.tips + ' 0/' + TIPS_DAY);
+  expect((await chip(page)).top, 'today’s tips against the RANK’s cap, not the week’s counts').toBe(STAFF.ranks.cafe[0] + ' · ' + COPY.tips + ' 0/' + tipsCap('cafe', 1));
   await page.evaluate(() => window.__town.work.turnUp());
   await waitLine(page, COPY.cafeDone);
   expect((await chip(page)).html, 'no number anywhere on a tips job').not.toMatch(/<b>\d/);

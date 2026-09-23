@@ -11,13 +11,12 @@
 // stand) has today's tips over its own line. A tap opens the staff card (town-staff.js); the briefcase
 // badge folds it like the quest chip's, and it sits under the quest chip when both are up.
 //
-// ⚠️ THE WORDS ARE THE RIG'S (src/data/copy/town-duties.json; the workplace names are the payslip's,
-// src/data/copy/homestead-post.json). No words, no chip. ⚠️ THE NUMBERS ARE THE PASS WORKER'S: the counts
+// ⚠️ THE WORDS ARE THE COPY FILE'S (src/data/copy/town-duties.json; your title and the boss's news are the staff card's,
+// src/data/copy/town-staff.json, which town-work.js loads with the job). No words, no chip. ⚠️ THE NUMBERS ARE THE PASS WORKER'S: the counts
 // and the wage come from its job view (src/data/town/jobs.js is the one arithmetic); payday is Monday,
 // counted here from the UTC clock. The chip never promises a coin the cheque will not pay.
-import POST from '../data/copy/homestead-post.json';
 import { ruleUsed } from '../lib/banana-pass.js';
-import { TIPS_DAY } from '../data/town/jobs.js';
+import { tipsCap, xpAt } from '../data/town/jobs.js';
 import { calls as callsAt, ONCALL_JOBS } from '../lib/work-calls.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-duties.json', { eager: true, import: 'default' });
 const COPY = Object.values(COPY_MODS)[0] || null;
@@ -33,7 +32,9 @@ const CASE_SVG = '<svg viewBox="0 0 16 14" aria-hidden="true">'
 // ⚠️ NO COMMENTS INSIDE THE STRING: they ship to every visitor of the town. So, out here: a tap on the paper opens the
 // staff card (23 Sep) and the briefcase badge folds it and brings it back; `top` transitions so the column re-stacks in
 // one small move; and INSIDE your own workplace the note stays up, because the arcade and the store are where the
-// week's work is (the jobs audit, 22 Sep 2026) — that is the .is-here rule.
+// week's work is (the jobs audit, 22 Sep 2026) — that is the .is-here rule. 🪜 The ladder (23 Sep): a thin bar along the
+// note's foot is your work XP to the next rank, and the note turns GREEN when your boss has news (the quest's note is
+// the yellow one, the pager the amber).
 const CSS = `
 .twd-chip {
   position:absolute; left:18px; top:48px; z-index:10; max-width:62%;
@@ -58,6 +59,9 @@ const CSS = `
 .twd-chip--nudge { background:linear-gradient(#ffe8c2,#f2c98a); }
 .twd-chip--fired { background:linear-gradient(#e8dcd2,#cdbcae); }
 .twd-chip--call { background:linear-gradient(#ffc36b,#f29a2e); color:#2a1606; }
+.twd-chip--news { background:linear-gradient(#e2f5c4,#b5de86); color:#1e3310; }
+.has-xp:not(.is-min) { padding-bottom:11px; }
+.has-xp:not(.is-min)::after { content:''; position:absolute; left:22px; right:11px; bottom:4px; height:3px; background:linear-gradient(90deg,#6fbf4a var(--xp),rgba(58,42,28,0.2) 0); }
 .twd-chip--call.is-min .twd-chip__badge { background:#f29a2e; }
 .twd-chip.is-ring:not(.is-min), .twd-chip.is-ring .twd-chip__badge { animation:twdRing 0.8s ease-out; }
 @keyframes twdRing { 20% { transform:rotate(-6deg) scale(1.08); } 45% { transform:rotate(5deg) scale(1.08); } 70% { transform:rotate(-3deg); } }
@@ -152,12 +156,15 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
   }
 
   // the counts line: the workplace as the payslip prints it, then each duty as done — "floor swept 1/3"
+  // 🪜 the counts and the tips lead with your TITLE (the ladder, 23 Sep 2026: it replaced the payslip's workplace name,
+  // and with it the whole homestead-post.json this chunk used to carry for three words); nothing until the words land
+  const head = (s) => { const t = work.seam.title && work.seam.title(s.at, s.lad.rank); return t ? '<i>' + esc(t) + '</i> · ' : ''; };
   function countsFor(s) {
-    const names = (POST.wage && POST.wage.at) || {};
     const rows = (s.duties || []).map((r) => esc(COPY.kinds[r.kind] || r.kind) + ' <b>' + (r.done | 0) + '/' + (r.of | 0) + '</b>');
-    if (!rows.length) return '';
-    return (names[s.at] ? '<i>' + esc(names[s.at]) + '</i> · ' : '') + rows.join(' · ');
+    return rows.length ? head(s) + rows.join(' · ') : '';
   }
+  // 🪜 the boss has a promotion to tell you: the staff card's own line (town-staff.json, loaded with the job) — one line, two surfaces
+  const newsOf = (s) => (s.lad && s.lad.news && ((work.seam.words && work.seam.words()) || {}).news || {})[s.at] || '';
   function saysFor(s) {
     if (!s) return null;
     // 🪓 the sack: the note says so for a few days after, whatever job you hold now (none, usually)
@@ -169,8 +176,10 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
     // and its after-line once you have.
     if (TIPS.includes(s.at)) {
       const d = COPY.duty && COPY.duty[s.at], after = COPY[s.at + 'Done'];
-      let used = 0; try { used = Math.min(TIPS_DAY, ruleUsed('town:tips').used | 0); } catch (e) {}
-      const tipsTop = COPY.tips ? esc(COPY.tips) + ' <b>' + used + '</b>/' + TIPS_DAY : '';
+      const cap = tipsCap(s.at, s.lad.rank);
+      let used = 0; try { used = Math.min(cap, ruleUsed('town:tips').used | 0); } catch (e) {}
+      const tipsTop = COPY.tips ? head(s) + esc(COPY.tips) + ' <b>' + used + '</b>/' + cap : '';
+      if (newsOf(s)) return { top: tipsTop, line: esc(newsOf(s)), kind: 'news' };
       if (!s.turnedUp) return d ? { top: tipsTop, line: esc(d), kind: 'duty' } : null;
       return after ? { top: tipsTop, line: esc(after), kind: 'wage' } : null;
     }
@@ -181,6 +190,7 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
     const cs = ONCALL_JOBS[s.at] ? callsAt(s.at) : [];
     const ring = cs.find((c) => c.open);
     if (ring && COPY.call && COPY.call[ring.kind]) return { top, line: esc(COPY.call[ring.kind]), kind: 'call' };
+    if (newsOf(s)) return { top, line: esc(newsOf(s)), kind: 'news' };
     if (s.nudge && COPY.nudge && COPY.nudge[s.at]) return { top, line: esc(COPY.nudge[s.at]), kind: 'nudge' };
     if (cs.length && cs.every((c) => c.done) && COPY.answered) return { top, line: esc(COPY.answered), kind: 'answered' };
     if (s.share >= 1 && COPY.done) return { top, line: esc(COPY.done), kind: 'done' };
@@ -199,6 +209,7 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       text.innerHTML = says.line;
       el.classList.toggle('twd-chip--nudge', says.kind === 'nudge');
       el.classList.toggle('twd-chip--fired', says.kind === 'fired');
+      el.classList.toggle('twd-chip--news', says.kind === 'news');
       // 📟 a call is amber, and a NEW call rings the note once — its badge too, if you folded it — and tells the town, so
       // a room you are standing in draws the work it just brought (no sound: nowhere outside the rave has any, or a mute)
       el.classList.toggle('twd-chip--call', says.kind === 'call');
@@ -209,6 +220,10 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       const pk = today() + ':' + at + ':' + says.kind;
       if (work.seam.told() !== pk) { work.seam.tell(pk); track('town_duty', { at, kind: says.kind }); }
     }
+    // 🪜 the thin bar: your work XP from this rank's line to the next one's (full at the top rank)
+    const l = s.lad, b = l && s.at ? xpAt(s.at, l.rank + 1) : null, a = l && s.at ? xpAt(s.at, l.rank) | 0 : 0;
+    el.classList.toggle('has-xp', !!(l && s.at));
+    if (l && s.at) el.style.setProperty('--xp', (b == null ? 100 : Math.max(0, Math.min(100, (l.xp - a) / (b - a) * 100))).toFixed(1) + '%');
     el.hidden = false;
     fold();
     place();
@@ -223,7 +238,8 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       top: () => top.textContent,
       line: () => text.textContent,
       html: () => text.innerHTML,
-      kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : el.classList.contains('twd-chip--call') ? 'call' : ''),
+      kind: () => (el.classList.contains('twd-chip--nudge') ? 'nudge' : el.classList.contains('twd-chip--fired') ? 'fired' : el.classList.contains('twd-chip--call') ? 'call' : el.classList.contains('twd-chip--news') ? 'news' : ''),
+      xp: () => (el.classList.contains('has-xp') ? el.style.getPropertyValue('--xp') : ''),
       rang: () => el.classList.contains('is-ring'),
       folded: () => el.classList.contains('is-min'),
       offset: () => el.style.top,

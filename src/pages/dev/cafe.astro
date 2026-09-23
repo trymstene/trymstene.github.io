@@ -165,10 +165,10 @@ const description = 'Internal bench for the Coffee Cup counter. Not a public pag
       onStep: (r) => { if (r.more) say(`  ${r.key}: ${GRADES[r.g]}`); },
       onCup: (cup) => {
         // ⚠️ the walk reads THIS, not the log: a log line is prose and prose is the rig's to change
-        window.__cafe.last = { grade: GRADES[cup.grade], marks: cup.marks.slice(), tip: tipFor(cup.grade, true) };
+        window.__cafe.last = { grade: GRADES[cup.grade], marks: cup.marks.slice(), tip: tipFor(cup.grade) };
         // ⭐ the approved words, from the rig — the deck a cup lands in is the whole feedback
         say(deckLine(GRADES[cup.grade], cup.n) || GRADES[cup.grade]);
-        say(`   [${GRADES[cup.grade]} · ${cup.marks.map((m) => GRADES[m][0]).join('')} · tip ${tipFor(cup.grade, true)}]`);
+        say(`   [${GRADES[cup.grade]} · ${cup.marks.map((m) => GRADES[m][0]).join('')} · tip ${tipFor(cup.grade)}]`);
         counter.idle(COPY.receipt ? COPY.receipt.back : 'next');
         if (bodies[0]) { bodies[0].born = performance.now() + 99999; }
       },

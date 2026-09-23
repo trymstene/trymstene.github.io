@@ -8,6 +8,7 @@
 // sheet; too few and it is not, and the receipt says so either way. Off the mark the tray folds and the
 // pile keeps its clock; far away the round ends.
 import { test, expect } from '@playwright/test';
+import { JOB_PAY } from '../src/data/town/jobs.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -55,7 +56,7 @@ test('the staff’s mailbox has the round; it starts when the banana reaches the
 
   // ── the post office's own staff: their staff card first (23 Sep 2026), and the mailbox — its other use — still
   // carries the round's own button, in the rig's word
-  await page.evaluate(() => window.__town.work.set({ at: 'post', pay: 75 }));
+  await page.evaluate(() => window.__town.work.set({ at: 'post', pay: 180 }));
   await stand(page, 1450, 600);   // on Hall Street, a clear walk east to the counter (the planters south of it block a straight line — the walk stops there, and the counter says so)
   await page.evaluate(() => window.__town.open('post'));
   await page.waitForFunction(() => !!document.querySelector('.tws[data-at="post"] #twsGo'), null, { timeout: 20000 });
@@ -145,13 +146,16 @@ test('the staff’s mailbox has the round; it starts when the banana reaches the
   expect(till, 'the result line, with the round’s own figures').toContain(R.receipt.take.replace('{n}', '9').replace('{of}', '12'));
   expect(till, 'and the line that says it is on the sheet').toContain(R.receipt.counted);
   expect(till).not.toContain(R.receipt.short);
+  // 🪜 and the work XP it earned: five a card sorted fresh, two a late one, and the day’s ten for turning up (the ladder, 23 Sep 2026)
+  expect(till, 'the round’s work XP').toContain(R.receipt.xp.replace('{n}', String(9 * 5 + 1 * 2 + 10)));
+  expect(await page.evaluate(() => !!document.querySelector('.tw-sort__till .tw-cup__xpbar i')), 'with a bar to the next rank').toBe(true);
   expect(await page.locator('.tw-sort__till .tw-sort__mark').count(), 'the twelve marks on the paper').toBe(12);
   expect(await page.locator('.tw-sort__till .tw-sort__mark.is-g2').count()).toBe(9);
   await page.waitForTimeout(1400);   // the marks arrive one by one and the seal slams at 720 ms: the picture is of the settled paper
   await page.screenshot({ path: 'test-results/town-sort-receipt.png' });
   const st = await page.evaluate(() => window.__town.work.state());
   expect(st.duties.find((d) => d.kind === 'sort').done, 'post sorted 1/3').toBe(1);
-  expect(st.sofar, 'a sixth of the week’s work is a sixth of the rate').toBe(Math.round(75 / 6));
+  expect(st.sofar, 'a sixth of the week’s work is a sixth of the rate').toBe(Math.round(JOB_PAY.post / 6));
   expect(await page.evaluate(() => window.__town.duties.top()), 'and the work note says so').toMatch(/1\/3/);
 
   // ── Pulse heard the round, card by card
@@ -167,7 +171,7 @@ test('a round that goes wrong is not on the sheet; off the mark the tray folds a
   test.setTimeout(90000);
   const errs = await town(page);
   await page.evaluate((far) => { window.__R_FAR = far; }, R.far);
-  await page.evaluate(() => window.__town.work.set({ at: 'post', pay: 75 }));
+  await page.evaluate(() => window.__town.work.set({ at: 'post', pay: 180 }));
   await atCounter(page);
   expect(await page.evaluate(() => window.__town.sortReady()), 'the round’s chunk arrives').toBe(true);
   expect(await S(page, (s) => s.clockIn()), 'the round starts at the counter').toBe(true);
