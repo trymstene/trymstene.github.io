@@ -16,6 +16,7 @@ import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
 import { bigMoment } from '../lib/world-moment.js';   // 🎖 the rave's big moment, shared: the town's first is being hired
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
+import { fillWords } from '../lib/fill-words.js';   // a copy line with its {holes} filled
 import FRONTS from '../data/copy/town-fronts.json';   // 🏘️ what the hall, the bank, the print shop, the wheel, the exchange and an old cabinet say (the rig's, 22 Sep 2026)
 
 const track = (n, p) => { try { if (window.gtag) window.gtag('event', n, p || {}); } catch (e) {} };
@@ -893,8 +894,6 @@ function firework() {
 }
 // the town's world-voice words (town-life.json) live in the room chunk; before it lands there are none
 const lifeWords = (k) => (room && room.seam && room.seam.copyOf ? room.seam.copyOf(k) : null) || {};
-// a rig line with its holes filled — fillWords(T.sold, { n: 3, what: 'eggs', coins: 9 }); a hole with no value stays visible
-const fillWords = (t, v) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 // 👥 somebody else's firework, where they stood. The toast is the same line the launcher's own names
 // them with, so a burst off the edge of your view is still news; a nameless one just bursts.
 function peerFirework(wx, wy, name) {

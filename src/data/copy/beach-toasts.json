@@ -1,0 +1,17 @@
+{
+  "shells": {
+    "all": "you found every last one. the sea has nothing left to hide from you."
+  },
+  "captain": {
+    "treasure": "there’s treasure buried on the bay today. dig around and find it.",
+    "lines": [
+      "ahoy. everything worth having on this beach is under it.",
+      "i ran a ship once. now i run a shovel. it’s a shorter commute.",
+      "dark sand means the tide turned something over. that’s where you dig.",
+      "one hole tells you nothing. six holes tell you a story.",
+      "no, we don’t take coins. what would a shipwreck do with coins.",
+      "one treasure a day, that’s all the sea gives up. the map knows where.",
+      "lost a good hat down a hole in ’99. still think about it."
+    ]
+  }
+}

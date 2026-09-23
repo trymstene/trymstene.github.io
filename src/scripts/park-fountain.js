@@ -5,6 +5,7 @@
 import { passStat, coinsPaid } from '../lib/banana-pass.js';
 import { FOUNTAIN } from './park-geo.js';
 import { track } from './park-util.js';
+import PARK_WORDS from '../data/copy/park-toasts.json';   // ✍️ what the fountain says with no coin to toss (src/data/copy)
 
 // ⛲ the fountain's answers — banana-lore wisdom, 8-ball register: warm,
 // cryptic, a little absurd. Lowercase world voice. DRY lines join the pool
@@ -92,7 +93,7 @@ export function initFountain(ctx, garden) {
   }
   function doWish() {
     if (tossBusy) return;
-    if (coinBal() < 1) { toast('no coins — the rave floor drops them'); return; }
+    if (coinBal() < 1) { toast(PARK_WORDS.fountain.broke); return; }
     passStat('coins_spent', 1, 'wish');
     refreshHud();
     if (!tossTracked) { tossTracked = true; track('park_toss'); }

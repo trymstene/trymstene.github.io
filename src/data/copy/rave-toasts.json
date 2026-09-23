@@ -1,0 +1,17 @@
+{
+  "level": {
+    "title": "LEVEL {level}",
+    "next": "the club knows your face — next title at level {at}",
+    "top": "top of the ladder. the club is basically yours.",
+    "remember": "the club remembers. keep dancing."
+  },
+  "stage": {
+    "title": "YOU’RE ON THE STAGE",
+    "downStar": "dance behind the DJ — tap {star} again to come down",
+    "downFloor": "dance behind the DJ — tap the floor to come down"
+  },
+  "jellyBoss": {
+    "title": "THE JELLY BOSS",
+    "sub": "run it down!"
+  }
+}

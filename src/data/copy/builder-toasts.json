@@ -1,0 +1,30 @@
+{
+  "share": {
+    "unfurl": "Link copied — it unfurls with YOUR banana!",
+    "plain": "Share link copied!",
+    "manual": "Copy this URL from the address bar"
+  },
+  "wall": {
+    "undressed": "Dress it up a little first 🍌",
+    "clean": "Let’s keep it family friendly 🍌 — try other words",
+    "unnamed": "Give this banana a name first 🍌",
+    "rendering": "Rendering your banana… 🍌",
+    "sentTitle": "Sent to the banana guy for review!",
+    "sentBody": "The verdict lands on {pass} — usually within 48 hours.",
+    "sentPass": "your Banana Pass",
+    "busy": "The gallery is busy — try again in a bit"
+  },
+  "overlay": {
+    "copied": "Overlay link copied — add it in OBS as a Browser Source!"
+  },
+  "download": {
+    "emoji": "Emoji GIF downloaded!",
+    "meme": "Meme GIF downloaded!",
+    "image": "Image downloaded!",
+    "hiccup": "GIF export hiccup — try again"
+  },
+  "soon": {
+    "named": "{product}s land any day now 🍌 — the sticker’s ready to order today",
+    "unnamed": "This one lands any day now 🍌 — the sticker’s ready to order today"
+  }
+}

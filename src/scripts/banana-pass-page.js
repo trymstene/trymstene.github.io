@@ -15,6 +15,8 @@ import { passkeysSupported, linked, savePass, restorePass, pullLatest,
   startLink, finishLink, mailSignin, mailUse, logout,
   newsJoin, newsConfirm, loggedIn } from '../lib/pass-sync.js';
 import { captionsClean } from '../lib/sticker-core.js';
+import PASS_WORDS from '../data/copy/pass-toasts.json';   // ✍️ what the pass page says back (src/data/copy)
+const PT = PASS_WORDS;
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { worldToken } from '../lib/world.js';
@@ -231,7 +233,8 @@ async function supDo(act, extra = {}) {
   const note = el('psSupNote');
   const say = (m) => { note.textContent = m; note.hidden = !m; };
   yes.disabled = btn.disabled = true;
-  say(act === 'cancel' ? 'Cancelling…' : 'One moment…');
+  const busyLine = act === 'cancel' ? PT.member.cancelling : PT.member.wait;
+  say(busyLine);
   try {
     const d = await supCall(act, extra);
     if (d && d.ok) {
@@ -239,13 +242,14 @@ async function supDo(act, extra = {}) {
       el('psSupAsk').hidden = true;
       el('psSupActs').hidden = false;
       // the line above already carries the date — this only has to say it landed
-      say(act === 'cancel' ? 'Cancelled. Thank you for the months you gave.' : 'Still a member. Nothing changed.');
+      const doneLine = act === 'cancel' ? PT.member.cancelled : PT.member.kept;
+      say(doneLine);
     } else {
       el('psSupActs').hidden = false;
-      say('That did not go through, and nothing was changed. Try again in a moment, or use the Polar link below.');
+      say(PT.member.failed);
     }
   } catch (e) {
-    say('That did not go through. Nothing was changed.');
+    say(PT.member.error);
   }
   yes.disabled = btn.disabled = false;
   SUP.busy = false;
@@ -386,9 +390,7 @@ async function refresh(landing) {
     } catch (e) {
       const slow = e && e.message === 'timeout';
       if (slow) cold = true;           // an expired link is not an unreachable club
-      passToast('⚠️ <b>' + esc(slow
-        ? 'We couldn’t reach the club just now — try that link again in a moment.'
-        : (e && e.message) || 'That link didn’t work.') + '</b>');
+      passToast('⚠️ <b>' + esc(slow ? PT.landing.slow : (e && e.message) || PT.landing.broken) + '</b>');
     }
   }
   if (linked()) {
@@ -716,7 +718,7 @@ function outRow(it, have) {
         sid: [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, '0')).join(''),
       });
       b.disabled = false;
-      say(b, r.ok ? '📮 sent for a look — the name changes if he says yes' : (r.error || 'didn’t send — try again'));
+      say(b, r.ok ? '📮 ' + PT.outbox.sent : (r.error || PT.outbox.unsent));
     });
   }
   act(it.retired ? 'lock' : 'archive', it.retired ? 'Off sale — ask Trym to put it back' : 'Take it off sale', (e) => {
@@ -726,7 +728,7 @@ function outRow(it, have) {
       b.disabled = true;
       const r = await outPost('/catalog/unlist', { id: it.id });
       b.disabled = false;
-      if (r.ok) { it.retired = 1; renderOut(); } else say(b, r.error || 'didn’t work — try again');
+      if (r.ok) { it.retired = 1; renderOut(); } else say(b, r.error || PT.outbox.failed);
     });
   }).disabled = !!it.retired;
   act('undo', 'What it used to look like', async (e) => {
@@ -840,13 +842,13 @@ function wireName() {
         // same letters in the world's own font instead of a fallback-font row.
         const v = cleanName(inp.value);
         if (v && !captionsClean({ top: v })) {
-          passToast('Let’s keep it family friendly 🍌 — try another name');
+          passToast(PT.name.clean);
           inp.focus();
           return;
         }
         try { if (v) localStorage.setItem('ps-name-v1', v); else localStorage.removeItem('ps-name-v1'); } catch (e) {}
         passPush(); // the name rides the sync blob to your other devices
-        if (v && v !== autoName(OUTFIT)) passToast('🎫 <b>' + v.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b> — it’s officially your pass now.');
+        if (v && v !== autoName(OUTFIT)) passToast('🎫 <b>' + v.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b> — ' + PT.name.official);
       }
       closed = true;
       inp.remove();     // renderName() steps aside while the field is open
@@ -1486,7 +1488,7 @@ function initShare() {
       openShareModal(cv);
       if (window.gtag) window.gtag('event', 'pass_share', { method: 'open' });
     } catch (e) {
-      passToast('That didn’t work — try again in a moment.');
+      passToast(PT.share.failed);
     }
     btn.innerHTML = was;
     busy = false;
@@ -1519,7 +1521,7 @@ function wireLink(note) {
     note.textContent = 'Your device will ask to confirm — that is this device’s own passkey…';
     try {
       await finishLink(code);
-      passToast('🔗 <b>DEVICE LINKED</b><br>Same pass, both devices.');
+      passToast('🔗 <b>' + PT.device.title + '</b><br>' + PT.device.body);
       setTimeout(() => location.reload(), 1200);
     } catch (e) {
       note.textContent = e && e.name === 'NotAllowedError'
@@ -1558,7 +1560,7 @@ function initSync() {
     // ⚠️ logging out drops the CREDENTIAL, not the save file — see logout().
     el('psLogout').addEventListener('click', () => {
       logout();
-      passToast('👋 <b>LOGGED OUT</b><br>Your bananas stay on this device — your garden and your home wait on your account until you log back in.');
+      passToast('👋 <b>' + PT.logout.title + '</b><br>' + PT.logout.body);
       setTimeout(() => location.reload(), 900);
     });
     if (passkeysSupported()) {
@@ -1567,7 +1569,7 @@ function initSync() {
         try {
           await savePass();
           initSync();   // the row is linked now — same path, no reload
-          passToast('🔐 <b>SET UP</b> — Face ID or your fingerprint logs you in on this device now.');
+          passToast('🔐 <b>' + PT.passkey.title + '</b> — ' + PT.passkey.body);
         } catch (e) {
           note.textContent = e && e.name === 'NotAllowedError'
             ? 'No worries — nothing was saved. Try again whenever you like.'
@@ -1578,7 +1580,7 @@ function initSync() {
         note.textContent = 'Pick the banana-world passkey on your device…';
         try {
           await restorePass();
-          passToast('🎫 <b>WELCOME BACK</b><br>You’re logged in on this device now.');
+          passToast('🎫 <b>' + PT.welcome.title + '</b><br>' + PT.welcome.body);
           setTimeout(() => location.reload(), 1200); // redraw the card with the merged world
         } catch (e) {
           note.textContent = e && e.name === 'NotAllowedError'
@@ -1700,7 +1702,7 @@ async function runLanding(l) {
   if (l.kind === 'news') {
     await newsConfirm(l.t);
     try { localStorage.setItem(NEWS_KEY, '1'); } catch (e) {}   // the ask has been answered
-    passToast('📣 <b>YOU’RE ON THE LIST</b><br>You’ll hear when the world gets bigger.');
+    passToast('📣 <b>' + PT.news.title + '</b><br>' + PT.news.body);
     return;
   }
   const { attached } = await mailUse(l.t);
@@ -1709,6 +1711,6 @@ async function runLanding(l) {
   // back — the card stamps itself so the login is something you can SEE.
   el('psCard').classList.add('ps-card--stamped');
   passToast(attached
-    ? '✉️ <b>EMAIL ADDED</b><br>You can log in with it on any device now.'
-    : '🎫 <b>LOGGED IN</b><br>Welcome to Banana World.');
+    ? '✉️ <b>' + PT.email.addedTitle + '</b><br>' + PT.email.addedBody
+    : '🎫 <b>' + PT.email.inTitle + '</b><br>' + PT.email.inBody);
 }

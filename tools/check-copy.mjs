@@ -59,7 +59,9 @@ for (const name of readdirSync(join(ROOT, DIR)).filter((f) => f.endsWith('.json'
 // a job whose brief has been deleted cannot be rewritten, and a job with no
 // approved file has nothing for the game to import
 for (const j of jobs()) {
-  if (!existsSync(join(ROOT, j.brief))) problems.push(`${j.id} — its brief ${j.brief} is gone; GPT would be asked to write blind`);
+  // a brief was the GPT rig's prompt; since 23 Sep 2026 Claude writes the words, so a new file needs none — but one
+  // that is named must still be there
+  if (j.brief && !existsSync(join(ROOT, j.brief))) problems.push(`${j.id} — its brief ${j.brief} is named but gone`);
   const has = existsSync(join(ROOT, j.approved));
   // ⏳ A NEW JOB WAITING ON TRYM is not a broken one. A job is registered, briefed and
   // drafted before he has read it, and the draft is gitignored, so "no approved file" is
@@ -68,7 +70,7 @@ for (const j of jobs()) {
   // `awaiting: true` says that out loud, and the flag cannot be left behind: the moment
   // the approved file appears, the gate fails until somebody removes it.
   if (!has && j.awaiting) console.log(`⏳ ${j.id}: no approved copy yet — the draft is on Trym's desk at /dev/copy/. Nothing imports ${j.approved} until he says so.`);
-  else if (!has) problems.push(`${j.id} — no approved copy at ${j.approved} (write one with \`node tools/copy.mjs ${j.id}\`, review at /dev/copy/, then --approve)`);
+  else if (!has) problems.push(`${j.id} — no copy at ${j.approved}: write the words there (docs/voice.md), or drop the entry`);
   else if (j.awaiting) problems.push(`${j.id} — ${j.approved} exists now, so drop \`awaiting: true\` from its entry in tools/copy-jobs.mjs`);
 }
 

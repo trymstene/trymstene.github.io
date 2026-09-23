@@ -1,0 +1,52 @@
+{
+  "member": {
+    "cancelling": "Cancelling…",
+    "wait": "One moment…",
+    "cancelled": "Cancelled. Thank you for the months you gave.",
+    "kept": "Still a member. Nothing changed.",
+    "failed": "That did not go through, and nothing was changed. Try again in a moment, or use the Polar link below.",
+    "error": "That did not go through. Nothing was changed."
+  },
+  "landing": {
+    "slow": "We couldn’t reach the club just now — try that link again in a moment.",
+    "broken": "That link didn’t work."
+  },
+  "outbox": {
+    "sent": "sent for a look — the name changes if he says yes",
+    "unsent": "didn’t send — try again",
+    "failed": "didn’t work — try again"
+  },
+  "name": {
+    "clean": "Let’s keep it family friendly 🍌 — try another name",
+    "official": "it’s officially your pass now."
+  },
+  "share": {
+    "failed": "That didn’t work — try again in a moment."
+  },
+  "device": {
+    "title": "DEVICE LINKED",
+    "body": "Same pass, both devices."
+  },
+  "logout": {
+    "title": "LOGGED OUT",
+    "body": "Your bananas stay on this device — your garden and your home wait on your account until you log back in."
+  },
+  "passkey": {
+    "title": "SET UP",
+    "body": "Face ID or your fingerprint logs you in on this device now."
+  },
+  "welcome": {
+    "title": "WELCOME BACK",
+    "body": "You’re logged in on this device now."
+  },
+  "news": {
+    "title": "YOU’RE ON THE LIST",
+    "body": "You’ll hear when the world gets bigger."
+  },
+  "email": {
+    "addedTitle": "EMAIL ADDED",
+    "addedBody": "You can log in with it on any device now.",
+    "inTitle": "LOGGED IN",
+    "inBody": "Welcome to Banana World."
+  }
+}

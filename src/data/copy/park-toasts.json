@@ -1,0 +1,50 @@
+{
+  "garden": {
+    "miss": "the garden didn’t hear you — try again",
+    "takenBorder": "somebody beat you to this spot",
+    "takenPost": "somebody beat you to this post",
+    "takenPatch": "somebody beat you to this patch",
+    "groundBroken": "the ground is already broken",
+    "bedOpen": "the bed is open — eight new slots, for anyone",
+    "borderPlanted": "{what} planted — the road just got prettier",
+    "alreadyCleared": "somebody already cleared it",
+    "potCleared": "cleared — the spot is free to plant again",
+    "houseRaised": "birdhouse raised — the birds moved straight in. stock it daily to keep them.",
+    "stockedToday": "already stocked today — once a day per banana",
+    "stocked": "stocked — the birds are staying another day",
+    "roots": "something under the roots — +{n}",
+    "eggGone": "someone got it first",
+    "eggGolden": "THE GOLDEN EGG — +{coins} coins, +{tickets} beach tickets!",
+    "eggTickets": "{tickets} beach tickets in an egg?! the pier takes those",
+    "eggCoins": "+{coins} coins — fresh from the hens",
+    "ripenedOne": "a plant of yours ripened while you were away — the park picked it for you",
+    "ripenedMany": "{n} of your plants ripened while you were away — the park picked them for you",
+    "ripenedRep": "+{rep} rep",
+    "plantedDays": "{what} planted — day 1 of {days}",
+    "plantedOneDay": "{what} planted — water it tomorrow and pick it",
+    "wateredToday": "already watered today — once a day per banana",
+    "notYours": "this one is somebody else’s — only its grower can pick it",
+    "notReady": "not ready yet — it grows on the days you water it",
+    "notQuite": "not quite ready yet",
+    "bare": "the patch is bare",
+    "harvested": "{what} harvested — +{rep} rep!",
+    "fruitAgain": "The bush will fruit again",
+    "seedHome": "A seed for your homestead",
+    "harvestedWear": "{what} harvested — saved to your pass! A seed for your homestead",
+    "gardenerLevel": "gardener lvl {lvl} — new seeds in the sheet!",
+    "bedCleared": "cleared — the bed is free to plant again"
+  },
+  "birds": {
+    "spotted": "spotted! a {bird} — {tier}",
+    "already": "a {bird} — already on today’s list",
+    "tiers": {
+      "common": "common",
+      "uncommon": "uncommon",
+      "rare": "rare",
+      "legend": "very rare"
+    }
+  },
+  "fountain": {
+    "broke": "no coins — the rave floor drops them"
+  }
+}

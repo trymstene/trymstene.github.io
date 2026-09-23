@@ -19,6 +19,8 @@ import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { initTravel } from './world-travel.js';
 import PRODUCTS from '../../shared/products.js';
+import RAVE_WORDS from '../data/copy/rave-toasts.json';   // ✍️ the big moments' words (src/data/copy)
+import { fillWords } from '../lib/fill-words.js';
 
 // the sticker's price, read from the ONE manifest every surface prices from.
 // ⚠️ Declared up here with the other module consts — the rave's rule: anything
@@ -1327,11 +1329,11 @@ function init() {
       // bracket titles get the big on-floor moment
       const rk = rankFor(lv.level), rkWas = rankFor(was.level);
       if (rk.id !== rkWas.id) {
-        bigMoment('LEVEL ' + lv.level + ' 🎖 ' + rk.title.toUpperCase(), nextRank(lv.level)
-          ? 'the club knows your face — next title at level ' + nextRank(lv.level).at
-          : 'top of the ladder. the club is basically yours.');
+        const nx = nextRank(lv.level);
+        bigMoment(fillWords(RAVE_WORDS.level.title, { level: lv.level }) + ' 🎖 ' + rk.title.toUpperCase(),
+          nx ? fillWords(RAVE_WORDS.level.next, { at: nx.at }) : RAVE_WORDS.level.top);
       } else {
-        passToast('🎖 <b>LEVEL ' + lv.level + '</b> — the club remembers. keep dancing.');
+        passToast('🎖 <b>' + fillWords(RAVE_WORDS.level.title, { level: lv.level }) + '</b> — ' + RAVE_WORDS.level.remember);
       }
       const lvlRow = el('rvLvlRow');
       if (lvlRow) { lvlRow.classList.remove('rv-mixer__lvl--pop'); void lvlRow.offsetWidth; lvlRow.classList.add('rv-mixer__lvl--pop'); }
@@ -3122,7 +3124,7 @@ function init() {
           el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
           // the join needs a MOMENT — wife-test: tapped the button, nothing
           // seemed to happen (the banana quietly teleported to a tiny row)
-          bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap ⭐ again to come down');
+          bigMoment(RAVE_WORDS.stage.title + ' 🔥', fillWords(RAVE_WORDS.stage.downStar, { star: '⭐' }));
         }
       }
       else if (m.t === 'lvl') {
@@ -3665,7 +3667,7 @@ function init() {
               b.drop = null;
               b.im = Date.now() + 900;
               pickupPop(b.x, b.y); pickupPop(b.x - 5, b.y + 2); pickupPop(b.x + 5, b.y + 2);
-              bigMoment('THE JELLY BOSS 🫧', 'run it down!');
+              bigMoment(RAVE_WORDS.jellyBoss.title + ' 🫧', RAVE_WORDS.jellyBoss.sub);
             }
             b.el.style.left = b.x + '%';
             b.el.style.top = b.y + '%';
@@ -4290,7 +4292,7 @@ function init() {
         const sr = ravers.get(myId);
         if (sr) showBubble('⭐ ' + dispName(sr) + ' takes the stage!', false, 4000);
         el('rvStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        bigMoment('YOU’RE ON THE STAGE 🔥', 'dance behind the DJ — tap the floor to come down');
+        bigMoment(RAVE_WORDS.stage.title + ' 🔥', RAVE_WORDS.stage.downFloor);
       }
     }
     track(want ? 'rave_stage_join' : 'rave_stage_leave');

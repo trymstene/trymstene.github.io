@@ -14,7 +14,7 @@ import { jobs, lockedTops, isLocked, topOf, mergeLocked } from '../../../tools/c
 import { faults, overAim, strings, patternOf, indexOf, checkFile } from '../../../tools/copy-rules.mjs';
 
 const ROOT = process.cwd();
-const load = (rel) => (existsSync(join(ROOT, rel)) ? JSON.parse(readFileSync(join(ROOT, rel), 'utf8')) : null);
+const load = (rel) => (rel && existsSync(join(ROOT, rel)) ? JSON.parse(readFileSync(join(ROOT, rel), 'utf8')) : null);   // a job written by Claude (since 23 Sep 2026) has no draft path
 
 // one row per string: where it lives, what it says now, what the draft says.
 // ⚠️ The rows come from the LIVE file normally, but a brand-new job has no live file at
@@ -146,7 +146,7 @@ const title = '✍️ The copy desk — drafts beside the live copy';
         <h2>{d.job.title}</h2>
         <p class="cp-meta">
           {d.job.what}<br />
-          brief <code>{d.job.brief}</code> · approved <code>{d.job.approved}</code> · the game reads it through <code>{d.job.reads}</code>
+          {d.job.brief ? <>brief <code>{d.job.brief}</code> · </> : null}approved <code>{d.job.approved}</code> · the game reads it through <code>{d.job.reads}</code>
         </p>
         <div class="cp-tags">
           <span class={'cp-tag ' + (d.counts.bad ? 'cp-tag--bad' : 'cp-tag--ok')}>
@@ -162,7 +162,7 @@ const title = '✍️ The copy desk — drafts beside the live copy';
           {lockedTops(d.job).map((k) => <span class="cp-tag cp-tag--lock">🔒 {k} is yours, not the writer’s</span>)}
         </div>
 
-        {!d.live && !d.draft && <p class="cp-empty">Nothing written yet. Run <code>node tools/copy.mjs {d.job.id}</code>.</p>}
+        {!d.live && !d.draft && <p class="cp-empty">Nothing written yet. The words go in <code>{d.job.approved}</code>.</p>}
         {!d.live && d.draft && <p class="cp-empty">⏳ <b>First draft — nothing is approved yet.</b> Every line below is new. Ship it with <code>node tools/copy.mjs --approve {d.job.id}</code>.</p>}
 
         {d.groups.map((g) => (

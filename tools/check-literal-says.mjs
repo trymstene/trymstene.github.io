@@ -1,7 +1,7 @@
 // 🗣🚦 NO WORDS TYPED INTO A TOAST (22 Sep 2026).
 //
-// CLAUDE.md: "CLAUDE WRITES CODE. GPT WRITES THE WORDS" — every line a player reads comes through the copy rig
-// (node tools/copy.mjs <job>, approved into src/data/copy/*.json). The rule held for cards and dialogue and
+// CLAUDE.md: every line a player reads lives in src/data/copy/*.json and the code imports it (GPT drafted those
+// lines from 12 to 23 Sep 2026; Claude writes them since). The rule held for cards and dialogue and
 // slipped for the smallest surface: a toast. Lines went straight into say('…') and toast('…'), including one a
 // session added to banana-town.js on the day the rule was 10 days old. A rule that slips twice becomes a check.
 //
@@ -222,8 +222,8 @@ for (const f of new Set([...Object.keys(found), ...Object.keys(owed.files || {})
 if (bad.length || stale.length) {
   if (bad.length) {
     console.error('✗ words typed straight into a toast (' + bad.length + '):\n  ' + bad.join('\n  '));
-    console.error('  → put the line in a copy job (tools/copy-jobs.mjs + a brief), run node tools/copy.mjs <job>, approve,');
-    console.error('    and pass the approved words in: say(W.line), toast(fill(W.x, { name })). CLAUDE.md: GPT writes the words.');
+    console.error('  → put the line in a copy file (src/data/copy/<job>.json, its rules in tools/copy-jobs.mjs) and pass the');
+    console.error('    words in: say(W.line), toast(fillWords(W.x, { name })) — src/lib/fill-words.js. The /copy skill has the steps.');
   }
   if (stale.length) {
     console.error('✗ owed lines that are no longer in the code — take them off tools/literal-says-owed.json (' + stale.length + '):\n  ' + stale.join('\n  '));

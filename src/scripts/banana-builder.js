@@ -25,6 +25,9 @@ import { memeGif } from '../lib/meme-gif.js';
 import { offerAfterDownload } from '../lib/make-it-real.js'; // 🛍 the moment the wish is granted
 import { wearToCustom } from '../lib/wear-render.js'; // community-item wear payload → engine custom channel
 import { loadCatalog as loadDropCatalog, catAnchorOf, anchorSlot } from '../lib/drops.js';
+import BUILDER_WORDS from '../data/copy/builder-toasts.json';   // ✍️ what the builder says back (src/data/copy)
+import { fillWords } from '../lib/fill-words.js';
+const BT = BUILDER_WORDS;
 
 const SPD_MIN = 0.35, SPD_MAX = 1.6;
 // FEET slot = footwear, a SINGLE-SELECT group (one pair at a time). Stored in
@@ -790,8 +793,9 @@ function init() {
     } catch (e) { /* plain fallback stands */ }
     try {
       await navigator.clipboard.writeText(copied);
-      toast(mode === 'unfurl' ? 'Link copied — it unfurls with YOUR banana!' : 'Share link copied!');
-    } catch (e) { toast('Copy this URL from the address bar'); }
+      const said = mode === 'unfurl' ? BT.share.unfurl : BT.share.plain;
+      toast(said);
+    } catch (e) { toast(BT.share.manual); }
     track('share_link_copy', { design: designStr(), mode });
     saveToShelf(mode === 'unfurl' ? (copied.split('/s/')[1] || null) : null);
     passPatch('spreader');
@@ -800,8 +804,8 @@ function init() {
   // signature (free text is fine here — it rides Trym's human review gate)
   el('bbWallSubmit').onclick = () => {
     sync();
-    if (!location.search.slice(1)) { toast('Dress it up a little first 🍌'); return; }
-    if (!captionsClean(state)) { toast('Let’s keep it family friendly 🍌 — try other words'); return; }
+    if (!location.search.slice(1)) { toast(BT.wall.undressed); return; }
+    if (!captionsClean(state)) { toast(BT.wall.clean); return; }
     const row = el('bbSignRow');
     row.hidden = !row.hidden;
     if (!row.hidden) {
@@ -826,12 +830,12 @@ function init() {
     // banana" because the title silently defaulted (Trym)
     const title = el('bbSignTitle').value.trim().slice(0, 60);
     if (!title || /^custom dancing banana$/i.test(title)) {
-      toast('Give this banana a name first 🍌');
+      toast(BT.wall.unnamed);
       el('bbSignTitle').focus();
       return;
     }
     el('bbSignRow').hidden = true;
-    toast('Rendering your banana… 🍌');
+    toast(BT.wall.rendering);
     try {
       // submissions carry the REAL rendered GIF (the same pixels the meme
       // download makes) — approved ones go straight onto /banana-memes/
@@ -853,12 +857,12 @@ function init() {
         } catch (e) {}
         // passToast (not the builder's plain toast): renders the pass link +
         // stays up long enough to read the expectation-setting line
-        passToast('🖼 <b>Sent to the banana guy for review!</b><br>The verdict lands on <a href="/pass/">your Banana Pass</a> — usually within 48 hours.', 9000);
+        passToast('🖼 <b>' + BT.wall.sentTitle + '</b><br>' + fillWords(BT.wall.sentBody, { pass: '<a href="/pass/">' + BT.wall.sentPass + '</a>' }), 9000);
         passPatch('exhibitor');
       } else {
-        toast('The gallery is busy — try again in a bit');
+        toast(BT.wall.busy);
       }
-    } catch (e) { toast('The gallery is busy — try again in a bit'); }
+    } catch (e) { toast(BT.wall.busy); }
     track('gallery_submit', { kind: 'banana', signed: by ? 1 : 0, design: designStr() });
   };
 
@@ -868,7 +872,7 @@ function init() {
     // every day) — NOT the banana being built here. Bare /overlay/ resolves to
     // the daily outfit; so the streamer sets it once and it changes on its own.
     const url = location.origin + '/overlay/';
-    try { await navigator.clipboard.writeText(url); toast('Overlay link copied — add it in OBS as a Browser Source!'); }
+    try { await navigator.clipboard.writeText(url); toast(BT.overlay.copied); }
     catch (e) { toast(url); }
     track('overlay_link_copy');
   };
@@ -1216,10 +1220,10 @@ function init() {
       passPatch('emoji'); passPatch('maker'); passStat('builds');
       offerIt('gif', () => {
         download(URL.createObjectURL(blob), 'my-dancing-banana-trymstene.com.gif');
-        toast('Emoji GIF downloaded!');
+        toast(BT.download.emoji);
         track('gif_download', { file: 'builder-emoji.gif', design: designStr() });
       });
-    } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
+    } catch (e) { toast(BT.download.hiccup); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
 
@@ -1242,10 +1246,10 @@ function init() {
       passPatch('maker'); passStat('builds');
       offerIt('meme', () => {
         download(URL.createObjectURL(blob), 'my-dancing-banana-meme-trymstene.com.gif');
-        toast('Meme GIF downloaded!');
+        toast(BT.download.meme);
         track('gif_download', { file: 'builder-meme.gif', design: designStr() });
       });
-    } catch (e) { toast('GIF export hiccup — try again'); console.error(e); }
+    } catch (e) { toast(BT.download.hiccup); console.error(e); }
     finally { btn.disabled = false; btn.textContent = label; }
   };
 
@@ -1268,7 +1272,7 @@ function init() {
     passPatch('maker'); passStat('builds');
     offerIt('png', () => {
       download(png, 'my-dancing-banana-trymstene.com.png');
-      toast('Image downloaded!');
+      toast(BT.download.image);
       track('png_download', { file: 'builder-meme.png', design: designStr() });
     });
   };
@@ -1301,8 +1305,8 @@ function init() {
     const prod = tile.dataset.prod;
     track('product_tile_click', withSecs({ product: prod }));
     if (tile.hasAttribute('data-soon')) { // teaser product — not sellable yet
-      const name = (tile.querySelector('.bb-ptile__name') || {}).textContent || 'That one';
-      toast(name + 's land any day now \u{1F34C} — the sticker’s ready to order today');
+      const name = (tile.querySelector('.bb-ptile__name') || {}).textContent;
+      toast(name ? fillWords(BT.soon.named, { product: name }) : BT.soon.unnamed);
       return;
     }
     goToProduct(prod);

@@ -28,6 +28,7 @@ import { WEARABLE_PACKS } from '../data/wearables.js';
 import { FISH, TREASURE, TIERS, FISH_TILES } from './fish-data.js';
 import { SHELLS, SHELL_TIERS, SHELL_TILES } from './shell-data.js';
 import { SHELL_DESC, FISH_DESC } from './beach-flavor.js';
+import BEACH_WORDS from '../data/copy/beach-toasts.json';   // ✍️ the last shell's line and the captain's (src/data/copy)
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 
@@ -1032,7 +1033,7 @@ function init() {
         shellPickFloat(s.x, s.y - 8, shellName(s.id), xp, isNew, tier);
         track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0, xp });
         if (isNew && haveCount() === SHELL_IDS.length) {
-          say('you found every last one. the sea has nothing left to hide from you.', 6000);
+          say(BEACH_WORDS.shells.all, 6000);
           track('beach_shells_complete');
         }
       }
@@ -1220,7 +1221,7 @@ function init() {
       shellPickFloat(d.x, d.y - 10, shellName(id), xp, isNew, tier);
       track('beach_drift', { find: 'shell', shell: id });
       if (isNew && haveCount() === SHELL_IDS.length) {
-        say('you found every last one. the sea has nothing left to hide from you.', 6000);
+        say(BEACH_WORDS.shells.all, 6000);
         track('beach_shells_complete');
       }
     } else if (roll < 70) {
@@ -1349,15 +1350,7 @@ function init() {
   // ⚠️ HIS LINES USED TO BE ABOUT SHELLS — which is exactly why the wreck read
   // as a second Shelly. He talks about the SAND now: what's buried, where the
   // map points, what a good dig looks like. Shells never come up.
-  const CAP_LINES = [
-    'ahoy. everything worth having on this beach is under it.',
-    'i ran a ship once. now i run a shovel. it’s a shorter commute.',
-    'dark sand means the tide turned something over. that’s where you dig.',
-    'one hole tells you nothing. six holes tell you a story.',
-    'no, we don’t take coins. what would a shipwreck do with coins.',
-    'one treasure a day, that’s all the sea gives up. the map knows where.',
-    'lost a good hat down a hole in ’99. still think about it.',
-  ];
+  const CAP_LINES = BEACH_WORDS.captain.lines;
   let capTimer = null, capIdx = 0, capGreeted = false;
   function say(text, ms) {
     // 🕯 quiet under a quest marker (see shellySay)
@@ -1374,7 +1367,7 @@ function init() {
       // 🗺 the treasure is buried somewhere on today's bay — his map pieces
       // (next milestone) narrow it down; for now he just points you at the sand.
       say(!treasureFound()
-        ? '🗺 there’s treasure buried on the bay today. dig around and find it.'
+        ? '🗺 ' + BEACH_WORDS.captain.treasure
         : CAP_LINES[capIdx++ % CAP_LINES.length], 6000);
       track('beach_captain');
     } else if (!near && capGreeted && Math.hypot(pos.x - BAR.x, pos.y - BAR.y) > BAR.r + 40) {

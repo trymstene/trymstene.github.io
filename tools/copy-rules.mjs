@@ -53,13 +53,15 @@ export function faults(value, spec = {}) {
   if (spec.kind === 'prose') {
     if (value.includes("'")) say('apostrophe', 'a straight apostrophe — the house uses ’');
     if (value.includes('"')) say('apostrophe', 'a straight double quote — the house uses “ ”');
-    if (/\p{Extended_Pictographic}/u.test(value)) say('emoji', 'an emoji in a spoken line');
+    // emojiOk: a site toast where the emoji is part of the sentence (the builder's banana), never a spoken line
+    if (!spec.emojiOk && /\p{Extended_Pictographic}/u.test(value)) say('emoji', 'an emoji in a spoken line');
     const brace = /\{[^}]*\}/g;
     // a field may declare its own placeholders (the stand's sold line holds {item}); {name} is
     // universal, and anything else is a brace the game would print raw
     const ok = new Set(['{name}', ...(spec.holds || [])]);
     for (const m of value.match(brace) || []) if (!ok.has(m)) say('placeholder', `${m} is not a placeholder the game fills here — allowed: ${[...ok].join(', ')}`);
-    if (DIGIT_CLOCK.test(value) || WORD_CLOCK.test(value)) say('clock', 'a published interval — name the rhythm, never the number');
+    // clockOk: a real promise about a person's turnaround (the review lands within a couple of days), not a game's timer
+    if (!spec.clockOk && (DIGIT_CLOCK.test(value) || WORD_CLOCK.test(value))) say('clock', 'a published interval — name the rhythm, never the number');
     if (/\bclone of\b/i.test(value)) say('name', '"clone of" — ours has a banana name and one real twist');
     const low = value.toLowerCase();
     const allow = (spec.allowBrands || []).map((b) => b.toLowerCase());
@@ -96,7 +98,7 @@ export function checkFile(job, data, { draft = false } = {}) {
   // so a tracked file carrying one means somebody copied a draft by hand.
   const top = Object.keys(data);
   for (const k of top) {
-    if (k === '_meta') { if (!draft) flag('_meta', 'meta', 'a tracked copy file must not carry _meta — approve it with `node tools/copy.mjs --approve ' + job.id + '`'); continue; }
+    if (k === '_meta') { if (!draft) flag('_meta', 'meta', 'a tracked copy file must not carry _meta (a GPT draft receipt) — remove it'); continue; }
     if (!job.top.includes(k)) flag(k, 'shape', `unknown top-level field "${k}" — this job writes ${job.top.join(', ')}`);
   }
   if (draft && !data._meta) flag('_meta', 'meta', 'a draft must carry _meta (job, model, when)');

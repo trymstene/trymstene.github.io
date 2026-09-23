@@ -16,14 +16,17 @@ import { seedRand } from '../lib/world.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
 import { track, PARK_TEST } from './park-util.js';
 import { BIRD_SPOTS, BIRD_SPECIES, PLAZA, BOUND, OVERLAYS, TREE_OVS } from './park-geo.js';
+import PARK_WORDS from '../data/copy/park-toasts.json';   // ✍️ what a spotted bird says back, and the tiers' names (src/data/copy)
+import { fillWords } from '../lib/fill-words.js';
+const BW = PARK_WORDS.birds;
 
 // 🔭 THE FOUR TIERS — the whole birdwatching payout. rep on the FIRST spot of
 // a species each day; the tier also caps who can show up at all.
 const TIERS = [
-  { id: 'common', rep: 1, label: 'common' },
-  { id: 'uncommon', rep: 2, label: 'uncommon' },
-  { id: 'rare', rep: 4, label: 'rare' },
-  { id: 'legend', rep: 8, label: 'very rare' },
+  { id: 'common', rep: 1 },
+  { id: 'uncommon', rep: 2 },
+  { id: 'rare', rep: 4 },
+  { id: 'legend', rep: 8 },
 ];
 const TIER_OF = {
   'house-finch': 0, chickadee: 0, 'red-robin': 0, crow: 0,
@@ -432,10 +435,10 @@ export function initBirds(ctx) {
       if (!((passGet().stats || {})['bird_' + best.sp])) passStat('bird_' + best.sp, 1);
       refreshHud();
       float(best.x, best.y - best.alt - 40, '+' + t.rep);
-      toast('🔭 spotted! a ' + name + ' — ' + t.label, 3600);
+      toast('🔭 ' + fillWords(BW.spotted, { bird: name, tier: BW.tiers[t.id] }), 3600);
       if (!birdTracked) { birdTracked = true; track('park_bird', { species: best.sp, tier: t.id }); }
     } else {
-      toast('🔭 a ' + name + ' — already on today’s list');
+      toast('🔭 ' + fillWords(BW.already, { bird: name }));
     }
     startle(best);
     return true;

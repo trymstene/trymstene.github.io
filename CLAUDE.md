@@ -3,44 +3,26 @@
 Astro SSG on GitHub Pages, one solo dev (Trym Stene). Cloudflare Workers behind it.
 This file is loaded at the start of every session in this repo. Keep it short.
 
-## ⭐ CLAUDE WRITES CODE. GPT WRITES THE WORDS.
+## ⭐ CLAUDE WRITES THE WORDS TOO (since 23 Sep 2026)
 
-Trym, 12 Sep 2026: *"i want to use GPT LLM for copy and text-content, and you can
-concentrate on code."*
+Trym, 23 Sep 2026: *"change of rule - dont go throught ChatGPT for copy anymore - Claude
+writes copy aswell"*. (From 12 to 23 Sep a GPT rig, `tools/copy.mjs`, drafted every line; it
+is retired and kept only in case he wants it back.)
 
-**Never hand-write player-facing words.** Not NPC lines, card copy, headlines,
-buttons, toasts, labels, quest text, page prose or product copy. Route them
-through the copy rig:
-
-```
-node tools/copy.mjs <job>          # GPT drafts it into tools/copy-out/
-node tools/copy.mjs <job> --dry    # see the prompt, call nothing
-node tools/check-copy.mjs          # the rules gate (also runs in CI)
-node tools/check-literal-says.mjs  # no words typed into say/toast/passToast/bigMoment (older ones owed: tools/literal-says-owed.json)
-node tools/copy.mjs <job> --approve # Trym has read it: move it into src/data/copy/
-```
-
-- The house voice is **`docs/voice.md`** — the writer gets it every time. Read it
-  before you touch anything about wording.
-- A new writing job = a brief in `tools/copy-briefs/` + an entry in
-  `tools/copy-jobs.mjs`. Then run the rig. Do not shortcut it by writing the
-  copy yourself "just this once".
-- Approved copy lives in **`src/data/copy/*.json`** and the code imports it.
-  Code holds mechanics, never prose.
-- Drafts ship through `--approve`. Since 15 Sep 2026 Claude runs it (Trym: *"why do i have to
-  approve town life all the time - just do it"*) and shows the changed lines in the reply, so
-  Trym reads them there and rejects after if he wants. Nothing is hand-typed on the way: the
-  rig writes, the gate checks, the receipt is proven.
-- 🔒 **Some sections are Trym's own words and the rig will not write them.** They
-  carry a `locked` entry in `tools/copy-jobs.mjs` — today that is **Old Peel** in
-  `park-npcs`. Locked copy is cut out of the model's schema, spliced back on
-  `--approve`, and the gate proves it by running a real `--approve` every time. Run
-  the job all you like; never remove a lock unless Trym asks for it by name.
-- ✋ **Editing `src/data/copy/*.json` directly is blocked** (`tools/guard-copy.mjs`,
-  a PreToolUse hook). Being denied there is the rule working — use the rig. And
-  `--approve` refuses any draft with no `_meta` receipt, so a hand-typed draft
-  cannot ship either.
-- The skill `/copy` has the full procedure.
+- Player-facing words still live in **`src/data/copy/*.json`** and the code imports them —
+  code holds mechanics, the copy files hold the words. Write them there yourself, in the house
+  voice: **`docs/voice.md`** (read it before you touch wording).
+- Each copy file has an entry in `tools/copy-jobs.mjs`: its fields, their limits and the
+  placeholders the game fills. A new file = a new entry. Then:
+  ```
+  node tools/check-copy.mjs          # every line against its limits and the voice rules (also in CI)
+  node tools/check-literal-says.mjs  # no words typed into say/toast/passToast/bigMoment (older ones owed: tools/literal-says-owed.json, which only shrinks)
+  ```
+- Show Trym the changed lines in the reply whenever you add or change words.
+- 🔒 **Old Peel is Trym's own writing** (`locked` in `park-npcs`): never rewrite it, and never
+  remove a lock unless he asks by name. `tools/guard-copy.mjs` (a PreToolUse hook) refuses any
+  edit that would change a locked section.
+- The skill `/copy` has the procedure.
 
 ## ⭐ A RULE TRYM STATES TWICE BECOMES A CHECK, NOT A PARAGRAPH
 

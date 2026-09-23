@@ -11,6 +11,9 @@ import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
 import { track, PARK_TEST, R, SVG, esc, PHASE_STARTS } from './park-util.js';
 import { hasVoucher, setVoucher, VOUCHER_MAX } from './park-fountain.js';
 import { askName } from '../lib/banana-id.js';   // 🪪 the naming moment
+import PARK_WORDS from '../data/copy/park-toasts.json';   // ✍️ what the garden says back (src/data/copy)
+import { fillWords } from '../lib/fill-words.js';
+const GW = PARK_WORDS.garden;
 
 // ?phase=0..4 — bookmarkable phase-view links (Trym): forces that phase's
 // full visual state (plates/trees/critters/fountain/pill) RENDER-ONLY; the
@@ -439,7 +442,7 @@ export function initGarden(ctx) {
   // ⭐ DID THE ROOM ACTUALLY DO IT? Every reply carries ok on success and err
   // on a miss; a dead fetch is null. Anything else is a miss.
   const gDone = (r) => !!r && !!r.ok && !r.err;
-  const MISS_LINE = 'the garden didn’t hear you — try again';
+  const MISS_LINE = GW.miss;
   // 🪙 THE MISS — a buy the room never confirmed. The coins come back through
   // passRefund (a ledger slot must never take a negative delta) and nothing is
   // toasted as done. ⚠️ this used to fire only on 'taken', so a null reply
@@ -447,7 +450,8 @@ export function initGarden(ctx) {
   function gMiss(res, refund, taken, src) {
     if (refund) passRefund(refund, src);
     refreshHud();
-    toast(res && res.err === 'taken' ? taken : MISS_LINE, 3600);
+    const line = res && res.err === 'taken' ? taken : MISS_LINE;
+    toast(line, 3600);
     applyGarden(res);
   }
   // watered today? (UTC day, matching the server's wday math)
@@ -667,7 +671,7 @@ export function initGarden(ctx) {
     const p = bedPending;
     if (!p) return;
     const r = await gFetch('/bedbreak', { pass: myShort, bed: p.bed });
-    if (!r || r.err) { if (r && r.err) toast('the ground is already broken'); applyGarden(r); return; }
+    if (!r || r.err) { if (r && r.err) toast(GW.groundBroken); applyGarden(r); return; }
     passStat('rep', BED_DIG_REP);
     refreshHud();
     const m = bedMid(p.bed);
@@ -687,7 +691,7 @@ export function initGarden(ctx) {
         r.opened ? '🪓 the bed is open' : '⛏ ' + (p2 ? p2.digs + '/' + p2.need : '') + ' turned',
         '+' + BED_DIG_REP);
     }
-    if (r.opened) toast('🪓 the bed is open — eight new slots, for anyone', 5000);
+    if (r.opened) toast('🪓 ' + GW.bedOpen, 5000);
     if (!bedTracked) { bedTracked = true; track('park_bedbreak'); }
     if (r.opened) track('park_bedopen');
     applyGarden(r);
@@ -837,11 +841,11 @@ export function initGarden(ctx) {
     refreshHud();
     closeGarden();
     const res = await gFetch('/border', { spot: i, kind: kindId, name: ctx.parkName });
-    if (!gDone(res)) { gMiss(res, BORDER_PRICE, 'somebody beat you to this spot', 'border'); return; }
+    if (!gDone(res)) { gMiss(res, BORDER_PRICE, GW.takenBorder, 'border'); return; }
     applyGarden(res);
     const kd = borderKind(kindId);
     float(BORDER_SPOTS[i][0], BORDER_SPOTS[i][1] - 6, kd.emoji);
-    toast(kd.emoji + ' ' + kd.name + ' planted — the road just got prettier');
+    toast(kd.emoji + ' ' + fillWords(GW.borderPlanted, { what: kd.name }));
     if (!borderTracked) { borderTracked = true; track('park_border', { kind: kindId }); }
   }
   function openBorderCard(i) {
@@ -857,7 +861,7 @@ export function initGarden(ctx) {
     const f = bSpots[i];
     if (!f || !f.rot) return;
     const res = await gFetch('/clearpot', { spot: i });
-    if (!gDone(res)) { applyGarden(res); toast(res ? 'somebody already cleared it' : MISS_LINE); return; }
+    if (!gDone(res)) { applyGarden(res); toast(res ? GW.alreadyCleared : MISS_LINE); return; }
     applyGarden(res);
     const [sx, sy] = BORDER_SPOTS[i];
     poofInto(world, 'pk-poof', sx / W * 100, (sy - 12) / H * 100);
@@ -865,7 +869,7 @@ export function initGarden(ctx) {
     refreshHud();
     float(sx, sy - 20, '+2');
     if (!potClearedOnce) { potClearedOnce = true; track('park_clearpot'); }
-    toast('cleared — the spot is free to plant again', 3200);
+    toast(GW.potCleared, 3200);
   }
   let potClearedOnce = false;
   function borderAct(i) {
@@ -1046,10 +1050,10 @@ export function initGarden(ctx) {
     refreshHud();
     closeGarden();
     const res = await gFetch('/bhbuild', { spot: i, name: ctx.parkName });
-    if (!gDone(res)) { gMiss(res, BH_PRICE, 'somebody beat you to this post', 'birdhouse'); return; }
+    if (!gDone(res)) { gMiss(res, BH_PRICE, GW.takenPost, 'birdhouse'); return; }
     applyGarden(res);
     float(BIRD_SPOTS[i][0], BIRD_SPOTS[i][1] - 80, '🐦');
-    toast('🐦 birdhouse raised — the birds moved straight in. stock it daily to keep them.', 4600);
+    toast('🐦 ' + GW.houseRaised, 4600);
     if (!bhBuildTracked) { bhBuildTracked = true; track('park_birdhouse', { act: 'build' }); }
     offerName('Your birdhouse is up.', 'park_birdhouse');
   }
@@ -1058,12 +1062,12 @@ export function initGarden(ctx) {
     if (!h) return;
     closeGarden();
     const res = await gFetch('/bhstock', { spot: i, name: ctx.parkName });
-    if (res && res.err === 'stocked today') { toast('already stocked today — once a day per banana'); applyGarden(res); return; }
+    if (res && res.err === 'stocked today') { toast(GW.stockedToday); applyGarden(res); return; }
     if (!gDone(res)) { applyGarden(res); if (!res) toast(MISS_LINE); return; }
     applyGarden(res);
     float(BIRD_SPOTS[i][0], BIRD_SPOTS[i][1] - 80, '🌾');
     if (!gMine(h)) { passStat('rep', 2); refreshHud(); }
-    toast('🌾 stocked — the birds are staying another day');
+    toast('🌾 ' + GW.stocked);
     if (!bhStockTracked) { bhStockTracked = true; track('park_birdhouse', { act: 'stock' }); }
   }
   function openHouseCard(i) {
@@ -1268,7 +1272,7 @@ export function initGarden(ctx) {
       const n = 1 + Math.floor(Math.random() * 3);
       passStat('coins_earned', n, PARK_TEST ? 'qa' : 'weed');
       float(w2.x + 18, w2.y - 34, '+' + coinsPaid(n) + ' 🪙');
-      toast('🪙 something under the roots — +' + coinsPaid(n), 2600);
+      toast('🪙 ' + fillWords(GW.roots, { n: coinsPaid(n) }), 2600);
     }
     refreshHud();
     float(w2.x, w2.y - 20, '+1');
@@ -1321,7 +1325,7 @@ export function initGarden(ctx) {
     eggBusy = false;
     if (!res) return;
     applyGarden(res);
-    if (res.err) { toast('🥚 someone got it first'); return; }
+    if (res.err) { toast('🥚 ' + GW.eggGone); return; }
     passStat('eggs_found', 1);              // the park-day card's ledger
     const r = res.reward || {};
     if (r.coins) passStat('coins_earned', r.coins, PARK_TEST ? 'qa' : 'egg');
@@ -1330,11 +1334,11 @@ export function initGarden(ctx) {
     float(e.x, e.y - 14, r.golden ? '✨' : '+' + (r.coins ? coinsPaid(r.coins) : r.tickets));
     if (r.golden) {
       confettiAt(e.x, e.y);
-      toast('🥚✨ THE GOLDEN EGG — +' + coinsPaid(r.coins) + ' coins, +' + r.tickets + ' beach tickets!', 4600);
+      toast('🥚✨ ' + fillWords(GW.eggGolden, { coins: coinsPaid(r.coins), tickets: r.tickets }), 4600);
     } else if (r.tickets) {
-      toast('🥚 ' + r.tickets + ' beach tickets in an egg?! the pier takes those', 4200);
+      toast('🥚 ' + fillWords(GW.eggTickets, { tickets: r.tickets }), 4200);
     } else {
-      toast('🥚 +' + coinsPaid(r.coins) + ' coins — fresh from the hens');
+      toast('🥚 ' + fillWords(GW.eggCoins, { coins: coinsPaid(r.coins) }));
     }
     if (!eggTracked) { eggTracked = true; track('park_egg', { golden: r.golden ? 1 : 0 }); }
   }
@@ -1442,9 +1446,8 @@ export function initGarden(ctx) {
     passStat('garden_harvests', n);
     if (rep) passStat('rep', rep);
     refreshHud();
-    toast('🌱 ' + (n === 1 ? 'a plant of yours ripened' : n + ' of your plants ripened')
-      + ' while you were away — the park picked '
-      + (n === 1 ? 'it' : 'them') + ' for you' + (rep ? '. +' + rep + ' rep' : ''), 5200);
+    const ripe = n === 1 ? GW.ripenedOne : fillWords(GW.ripenedMany, { n });
+    toast('🌱 ' + ripe + (rep ? '. ' + fillWords(GW.ripenedRep, { rep }) : ''), 5200);
     track('park_compost', { n: n });
   }
 
@@ -1577,15 +1580,14 @@ export function initGarden(ctx) {
     // planted nothing, and still toasted "day 1 of 4"
     if (!gDone(res)) {
       if (free) setVoucher(true);           // the blessing survives the miss
-      gMiss(res, free ? 0 : cost, 'somebody beat you to this patch', 'seed');
+      gMiss(res, free ? 0 : cost, GW.takenPatch, 'seed');
       return;
     }
     applyGarden(res);
     float(PLOTS[i][0], PLOTS[i][1] - 6, '🌱');
     // 🧬 a ONE-day crop has no "day 1 of 1" to report — that reads as finished.
     // Say the thing the player needs to do next instead.
-    toast(sd.emoji + ' ' + sd.name + ' planted — '
-      + (sd.days === 1 ? 'water it tomorrow and pick it' : 'day 1 of ' + sd.days));
+    toast(sd.emoji + ' ' + fillWords(sd.days === 1 ? GW.plantedOneDay : GW.plantedDays, { what: sd.name, days: sd.days }));
     // 📊 held + paid ride the event: without them the price curve is
     // invisible in GA4 and the next tuning round is guesswork
     if (!plantTracked) {
@@ -1650,7 +1652,7 @@ export function initGarden(ctx) {
     const res = await gFetch('/water', { slot: i, name: ctx.parkName });
     if (!gDone(res)) {                      // ⚠️ a dead reply is a miss, not a drink
       if (!res) { s.lastWater = wasWet; renderGarden(); toast(MISS_LINE); }
-      else if (res.err === 'watered today') toast('already watered today — once a day per banana');
+      else if (res.err === 'watered today') toast(GW.wateredToday);
       applyGarden(res);
       return;
     }
@@ -1679,8 +1681,8 @@ export function initGarden(ctx) {
     // "I can't harvest the plants I planted" — the game simply did not answer.
     // (The cause is fixed: ownership is per PERSON now, not per browser. This
     // can still fire on somebody ELSE'S plant, and it must still say why.)
-    if (!gMine(s)) { toast('this one is somebody else’s — only its grower can pick it', 4600); return; }
-    if (!gReady(s)) { toast('not ready yet — it grows on the days you water it'); return; }
+    if (!gMine(s)) { toast(GW.notYours, 4600); return; }
+    if (!gReady(s)) { toast(GW.notReady); return; }
     const sd = SEED_BY[s.seed] || SEEDS[0];
     const res = await gFetch('/harvest', { slot: i });
     // ⚠️ a null reply is NOT a harvest: it used to pay the rep, bank the
@@ -1689,10 +1691,11 @@ export function initGarden(ctx) {
       // ⚠️ only apply a reply that actually CARRIES a garden — the 403 comes
       // back as a bare {err} with no slots, and applying that blanked the beds.
       if (res && res.slots) applyGarden(res);
-      toast(!res || !res.err ? MISS_LINE
-        : res.err === 'still growing' ? 'not quite ready yet'
-        : res.err === 'not yours' ? 'this one is somebody else’s — only its grower can pick it'
-        : 'the patch is bare', 4600);
+      const why = !res || !res.err ? MISS_LINE
+        : res.err === 'still growing' ? GW.notQuite
+        : res.err === 'not yours' ? GW.notYours
+        : GW.bare;
+      toast(why, 4600);
       return;
     }
     applyGarden(res);
@@ -1711,14 +1714,14 @@ export function initGarden(ctx) {
       refreshHud();
       float(PLOTS[i][0], PLOTS[i][1] - 20, '+' + (sd.stars * 8));
       const again = sd.regrow && gSlots[i];   // the room kept the bush — more picks coming
-      toast(sd.emoji + ' ' + sd.name + ' harvested — +' + (sd.stars * 8) + ' rep!'
-        + (again ? ' The bush will fruit again 🍓' : ' A seed for your homestead 🌱'), 4200);
+      toast(sd.emoji + ' ' + fillWords(GW.harvested, { what: sd.name, rep: sd.stars * 8 })
+        + ' ' + (again ? GW.fruitAgain + ' 🍓' : GW.seedHome + ' 🌱'), 4200);
     } else {
       passStat('own_' + sd.wearable, 1); // the wearable's earned-gate proof
-      toast(sd.emoji + ' ' + sd.wearLabel + ' harvested — saved to your pass! A seed for your homestead 🌱', 4200);
+      toast(sd.emoji + ' ' + fillWords(GW.harvestedWear, { what: sd.wearLabel }) + ' 🌱', 4200);
     }
     const gl = gardenerLvl();
-    if (gl.lvl > before) setTimeout(() => toast('🧑‍🌾 gardener lvl ' + gl.lvl + ' — new seeds in the sheet!', 4600), 1500);
+    if (gl.lvl > before) setTimeout(() => toast('🧑‍🌾 ' + fillWords(GW.gardenerLevel, { lvl: gl.lvl }), 4600), 1500);
     else if (gl.nextAt != null) setTimeout(() => float(PLOTS[i][0], PLOTS[i][1] - 56, '🧑‍🌾 ' + gl.n + '/' + gl.nextAt), 900);
     if (!harvestTracked) { harvestTracked = true; track('park_harvest', { seed: s.seed, level: gl.lvl }); }
   }
@@ -1726,14 +1729,14 @@ export function initGarden(ctx) {
     const s = gSlots[i];
     if (!s || !s.rot) return;
     const res = await gFetch('/clear', { slot: i });
-    if (!gDone(res)) { applyGarden(res); toast(res ? 'somebody already cleared it' : MISS_LINE); return; }
+    if (!gDone(res)) { applyGarden(res); toast(res ? GW.alreadyCleared : MISS_LINE); return; }
     applyGarden(res);
     poofInto(world, 'pk-poof', PLOTS[i][0] / W * 100, (PLOTS[i][1] - 12) / H * 100);
     passStat('rep', 2);
     refreshHud();
     float(PLOTS[i][0], PLOTS[i][1] - 20, '+2');
     if (!clearedOnce) { clearedOnce = true; track('park_clear'); }
-    toast('cleared — the bed is free to plant again', 3200);
+    toast(GW.bedCleared, 3200);
   }
   let clearedOnce = false;
   function gardenAct(i) {
