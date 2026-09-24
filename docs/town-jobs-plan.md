@@ -1296,5 +1296,11 @@ to display it in the town or by the actual shops, and not in the park."*
   and the town's mirror keeps it (`work.seam.state().sotw`).
 - **To build with the visuals** (Trym's call on the look): a plaque by each shop (the week's name and banana, from
   `/staff`), the boss's line to last week's winner (the `sotw.last` moment, like the promotion), and HQ's read of it.
+- ✅ **Built 24 Sep: the telling** (no new art — the promotion's grammar). While a crown waits to be told, the work note
+  and the staff card say the boss has news (`news.*`); the boss's card leads with `promoQ`, the boss says `sotw.<boss>`,
+  the card closes by itself, then STAFF OF THE WEEK goes up (`sotwMoment`, `sotwLine` / `sotwAgain` with the count). Told
+  once a crown per device (`tw-sotw-v1` = the week it was told in). The staff card keeps the count (`sotwCard` /
+  `sotwCardOne`). town-work `sotwFor`, banana-town `crownedMoment`; walk: tests/town-sotw.spec.mjs. Still Trym's: the
+  plaque's look, and whether HQ reads the crowns.
 
 Proof: worker-pass/test/staff.test.mjs (13), jobs.test.mjs §27.

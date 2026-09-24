@@ -1624,7 +1624,7 @@ export const JOBS = {
     what: 'The card a worker opens at their own workplace or from the work note: where they work and for whom, their title, today’s tips or the week’s work and wage, today’s calls, and the buttons (go to work, answer the calls, the place’s other use).',
     approved: 'src/data/copy/town-staff.json',
     reads: 'src/scripts/town-staff.js (through a glob inside the card’s own lazy chunk)',
-    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'wordQ', 'word', 'warn', 'demoted', 'warnCard', 'last', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut', 'unlock', 'told', 'ref', 'refCard', 'memento', 'mementoFull'],
+    top: ['of', 'ranks', 'rank', 'xp', 'today', 'nextWeek', 'nextTips', 'top', 'news', 'promoQ', 'promo', 'promoMoment', 'promoLine', 'wordQ', 'word', 'warn', 'demoted', 'warnCard', 'last', 'tips', 'tipsCap', 'week', 'wage', 'payday', 'calls', 'call', 'until', 'go', 'answer', 'quiet', 'second', 'shut', 'unlock', 'told', 'ref', 'refCard', 'memento', 'mementoFull', 'sotw', 'sotwMoment', 'sotwLine', 'sotwAgain', 'sotwCard', 'sotwCardOne'],
     fields: {
       ...Object.fromEntries(['cafe', 'stand', 'post', 'condo', 'store'].map((k) => [`of.${k}`, { kind: 'label', max: 40, note: 'Small capitals over the title: the workplace, then whose staff you are.' }])),
       // 🪜 THE LADDER (23 Sep 2026; Trym's calls: ranks 3·4·5·5·6, promotion at the boss). A title per rank, bottom first —
@@ -1661,6 +1661,14 @@ export const JOBS = {
       'last.poor': toastLine(60, 'On the staff card: last week’s review was poor, and {xp} work XP was taken back.', { ...holdsAll('xp'), ...NO_MARKUP }),
       'last.empty': toastLine(64, '↕ On the staff card after a week with nothing done here (a strike toward the sack): the next empty week loses the job. Said before it bites (design library §30.1). Plain.', NO_MARKUP),
       'last.poorCups': toastLine(64, '↕ On the staff card of the café or the stand after a poor week — for a counter that means most drinks missed the green band, not undone duties — and {xp} work XP was taken back.', { ...holdsAll('xp'), ...NO_MARKUP }),
+      // 🏆 STAFF OF THE WEEK, TOLD BY THE BOSS (24 Sep 2026; docs/town-jobs-plan.md §25): the promotion's own grammar — the note
+      // says the boss has news (news.*), the card leads with it (promoQ), the boss says it, STAFF OF THE WEEK goes up after.
+      ...Object.fromEntries(['bean', 'figjr', 'spinner', 'pip', 'stamp'].map((k) => [`sotw.${k}`, { kind: 'prose', aim: 70, max: 90, note: 'The boss tells you that you were last week’s staff of the week at this workplace — the most work done there, a real week. In the boss’s own voice (town-personas), one breath; no number, no prize (there is none: the name is the prize).' }])),
+      sotwMoment: { kind: 'label', max: 18, note: 'The BIG words over the square once the boss’s card has closed on the crown — the promotion’s PROMOTED, for staff of the week. Capitals.' },
+      sotwLine: { kind: 'prose', aim: 26, max: 40, holds: ['{where}'], needs: [[/\{where\}/, 'must carry {where}']], note: 'Under it, the first time: when and where. {where} is lower case with its article, so never first. The screen sets it in capitals.' },
+      sotwAgain: { kind: 'prose', aim: 26, max: 40, holds: ['{n}', '{where}'], needs: [[/\{n\}/, 'must carry {n}'], [/\{where\}/, 'must carry {where}']], note: 'Under it, a second crown or more: {n} is how many weeks in all. {where} never first.' },
+      sotwCard: toastLine(44, 'On the staff card, for a worker crowned here more than once: {n} is how many weeks.', { ...holdsAll('n'), ...NO_MARKUP }),
+      sotwCardOne: toastLine(44, 'The same, crowned here once.', NO_MARKUP),
       promoMoment: { kind: 'label', max: 10, note: 'The BIG word over the square once the boss’s card has closed on a promotion — the hire’s HIRED, for a new rank. Capitals, one word.' },
       promoLine: { kind: 'prose', aim: 30, max: 52, holds: ['{title}', '{where}'], needs: [[/\{title\}/, 'must carry {title}'], [/\{where\}/, 'must carry {where}']], note: 'The small line under it: the new title and where. {where} is lower case with its article (“the Coffee Cup”), so never first. The screen sets it in capitals.' },
       tips: { kind: 'label', max: 14, note: 'Over today’s tips (café, stand); the game prints the number and the cap beside it.' },
@@ -1698,6 +1706,9 @@ export const JOBS = {
       if (!/^[A-Z]+$/.test(String(d.promoMoment || ''))) bad.push({ path: 'promoMoment', msg: 'one word in capitals' });
       if (/^\{where\}/.test(String(d.promoLine || ''))) bad.push({ path: 'promoLine', msg: 'starts with {where}, which is lower case' });
       if (!/\?$/.test(String(d.promoQ || ''))) bad.push({ path: 'promoQ', msg: 'is a question, with a question mark' });
+      for (const k of ['bean', 'figjr', 'spinner', 'pip', 'stamp']) if (!(d.sotw || {})[k]) bad.push({ path: 'sotw.' + k, msg: 'missing — every boss can crown their staff' });
+      if (!/^[A-Z ]+$/.test(String(d.sotwMoment || ''))) bad.push({ path: 'sotwMoment', msg: 'in capitals' });
+      for (const p of ['sotwLine', 'sotwAgain']) if (/^\{where\}/.test(String(d[p] || ''))) bad.push({ path: p, msg: 'starts with {where}, which is lower case' });
       for (const k of ['sweep', 'fix', 'restock', 'serve']) if (!(d.call || {})[k]) bad.push({ path: 'call.' + k, msg: 'missing — src/scripts/town-staff.js lists this call' });
       for (const k of ['post', 'store', 'condo']) if (!(d.second || {})[k]) bad.push({ path: 'second.' + k, msg: 'missing — this workplace has another use' });
       return bad;

@@ -261,7 +261,23 @@ export function bootTownWork(ctx) {
   }
   // every topic a boss's card carries for you: the news first (a promotion, or the boss's word), the job question, and the way out
   // your own boss's card does not ask for the job you already have (24 Sep 2026, the QA sweep): news or a word, and the way out
-  const topicsFor = (key) => [promoFor(key) || wordFor(key), job.at && job.at === BOSS[key] ? null : topicFor(key), quitFor(key)].filter(Boolean);
+  // 🏆 STAFF OF THE WEEK, TOLD BY YOUR BOSS (24 Sep 2026; docs/town-jobs-plan.md §25). Monday's lap crowns the week's best at
+  // each workplace (worker-pass staffFinals) and the view says `sotw: { last, weeks }` for the job you hold. The boss tells it
+  // the way they tell a promotion: the note says they have news, their card leads with it, and STAFF OF THE WEEK goes up
+  // once the card has closed (§27). Told once a crown on this device (tw-sotw-v1: the week it was told in).
+  const sotwDue = () => { try { return !!(job.at && job.sotw && job.sotw.last && job.week && localStorage.getItem('tw-sotw-v1') !== job.week); } catch (e) { return false; } };
+  function sotwFor(key) {
+    const at = BOSS[key], line = LW && LW.sotw && LW.sotw[key];
+    if (!at || job.at !== at || !line || !LW.promoQ || !sotwDue()) return null;
+    const weeks = (job.sotw.weeks | 0) || 1;
+    return {
+      news: true,
+      q: LW.promoQ,
+      after: () => (typeof ctx.crowned === 'function' ? () => { if (job.at === at) ctx.crowned(at, weeks); } : null),
+      a: () => { try { localStorage.setItem('tw-sotw-v1', job.week); } catch (e) {} notify(); return line; },
+    };
+  }
+  const topicsFor = (key) => [promoFor(key) || sotwFor(key) || wordFor(key), job.at && job.at === BOSS[key] ? null : topicFor(key), quitFor(key)].filter(Boolean);
   // ⚠️ the building's name comes from the RIG, not from the sign plank: the planks shout (“ARCADE”)
   // and two of the three are empty because the sprite carries its own sign. work.at holds the three
   // names written to sit inside a sentence, article and all.
@@ -301,7 +317,7 @@ export function bootTownWork(ctx) {
       set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', duties: [], share: 0, nudge: false, fired: null, ...(j || {}) }; if (job.at && !(job.duties || []).length) job.duties = rowsOf(job.at, {}); writeJob(job); notify(); if (job.at) loadWords(); },
       // 💼 for the work note: the mirror as one plain object, plus whether you have turned up today
       state: () => (held > Date.now() ? { at: '', days: 0, pay: 0, sofar: 0, owed: 0, turnedUp: false, duties: [], share: 0, nudge: false, fired: null, lad: null, sotw: null } : { at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey(),
-        duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null, lad: ladder(), sotw: job.sotw || null }),
+        duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null, lad: ((l) => (sotwDue() && !l.news ? { ...l, news: true } : l))(ladder()), sotw: job.sotw || null }),   // 🏆 a crown to be told is the boss's news
       // 🪜 the ladder: where you stand, the words it is told in (null until they land), and a title by rank
       ladder, words: () => LW, title: titleOf, wordsReady: loadWords,
       // ⚠️ the walk's door to the ladder: XP and a told rank, as the server would have answered them

@@ -163,6 +163,7 @@ export function bootTownStaff(ctx) {
       + '<p class="tws-of">' + esc((COPY.of || {})[at] || '') + '</p>'
       + '<h2>' + esc(COPY.ranks[at][l.rank - 1] || COPY.ranks[at][0]) + '</h2>'
       + ladderHtml(at, l)
+      + (((s.sotw || {}).weeks | 0) > 0 ? '<p class="tws-note">' + esc(s.sotw.weeks > 1 ? fill(COPY.sotwCard, { n: s.sotw.weeks }) : COPY.sotwCardOne || '') + '</p>' : '')   // 🏆 how often you were its staff of the week
       + body + '</div>');
     const go = document.getElementById('twsGo'), sec = document.getElementById('twsSecond');
     const verb = kind === 'shift' ? 'go' : 'answer';

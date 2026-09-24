@@ -1104,6 +1104,14 @@ function promotedMoment(at, rank, from) {
   if (rank >= ranksOf(at) && work && work.seam.memento) setTimeout(() => { work.seam.memento(at).then((m) => { if (m) sayNext(m); }); }, u ? 4400 + us.length * 4600 : 4400);
 }
 
+// 🏆 STAFF OF THE WEEK (24 Sep 2026): the promotion's own moment, for last week's best at your workplace, once the boss's card has closed
+function crownedMoment(at, weeks) {
+  const L = (work && work.seam.words()) || {};
+  const where = (lifeWords('work').at || {})[at] || '';
+  burstAt(pos.x, pos.y, '', true);
+  if (L.sotwMoment) bigMoment(view, L.sotwMoment, String((weeks > 1 ? L.sotwAgain : L.sotwLine) || '').replace('{n}', String(weeks)).replace('{where}', where));
+}
+
 // ---- boot: the engine's assets first, then the people, then the walk
 // the world HUD, both halves (design library §15): the strip up top — level,
 // coins, the crowd chip that is also the save ask (no room yet, so it reads
@@ -1164,8 +1172,9 @@ assetsReady().then(() => {
         copy: () => (room && room.seam.copyOf ? room.seam.copyOf('work') : null),
         hired: (at) => hiredMoment(at),
         promoted: (at, rank, from) => promotedMoment(at, rank, from),   // 🪜 the boss told you: PROMOTED over the square
+        crowned: (at, weeks) => crownedMoment(at, weeks),   // 🏆 …or STAFF OF THE WEEK
       });
-      if (window.__town) { window.__town.work = work.seam; window.__town.moment = { hired: hiredMoment, promoted: promotedMoment }; }   // 🧪 the walks' doors to the two moments
+      if (window.__town) { window.__town.work = work.seam; window.__town.moment = { hired: hiredMoment, promoted: promotedMoment, crowned: crownedMoment }; }   // 🧪 the walks' doors to the two moments
       // 📜 a top-rank memento the shed had no room for is given on a later visit, once the job's words are in to say so
       if (work.seam.mementoDue) work.seam.wordsReady().then(() => { if (work.seam.mementoDue()) setTimeout(() => { work.seam.memento(work.seam.job().at).then((m) => { if (m) say(m); }); }, 6000); });
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)

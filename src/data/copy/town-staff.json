@@ -171,5 +171,17 @@
     "store": "Pip gives you a display cabinet for your homestead. It is in your shed.",
     "post": "Stamp gives you a grandfather clock for your homestead. It is in your shed."
   },
-  "mementoFull": "Your boss has a gift for your homestead, but the shed is full. Make room."
+  "mementoFull": "Your boss has a gift for your homestead, but the shed is full. Make room.",
+  "sotw": {
+    "bean": "The grounds spelled your name all last week. Staff of the week: you.",
+    "figjr": "Weekly results are in. Staff of the week: you. Division is drafting a memo.",
+    "spinner": "Drumroll! Staff of the week is you! The cabinets want an encore.",
+    "pip": "Staff of the week: you. The last one of those, and it went to you.",
+    "stamp": "I weighed last week. The heaviest work was yours. Staff of the week. Noted."
+  },
+  "sotwMoment": "STAFF OF THE WEEK",
+  "sotwLine": "Last week, at {where}",
+  "sotwAgain": "{n} weeks now, at {where}",
+  "sotwCard": "Staff of the week here {n} times.",
+  "sotwCardOne": "Staff of the week here once."
 }
