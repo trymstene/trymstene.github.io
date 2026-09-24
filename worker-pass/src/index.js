@@ -85,6 +85,7 @@ export default {
       if (url.pathname === '/town/sell') return townSell(request, env);
       if (url.pathname === '/town/pot') return townPot(request, env);
       if (url.pathname === '/citizen') return citizen(request, env);
+      if (url.pathname === '/staff') return staffBoard(request, env);
       if (url.pathname === '/arcade/board') return arcadeBoard(request, env, url);
       if (url.pathname === '/arcade/score') return arcadeScore(request, env);
       if (url.pathname === '/admin/arcade') return adminArcade(request, env, url);
@@ -1083,6 +1084,78 @@ async function citFinals(env, st, rows, week) {
   await env.PASSES.put(CIT_LATEST, JSON.stringify(file));
   return file;
 }
+// ---------- 💼 STAFF OF THE WEEK (24 Sep 2026) ----------
+// Trym: "we can build the logic for staff for the week, but implement it visually later … i think it makes the most sense
+// to display it in the town or by the actual shops, and not in the park". So: ONE PER WORKPLACE, crowned on the first lap
+// after a week ends (the citizens' own lap, so every pass is scored alike), from what the server saw on the job's sheet:
+//   score      the WORK XP earned at that workplace that week (the sheet's `xp`, bounded every day by the rank's day cap —
+//              so a banana who shows up often beats one who grinds once), then days turned up, then the rank
+//   a real week  the review's own verdict full or ok (never poor, never empty), and at least a day's work there (LADDER.day):
+//              a workplace nobody really worked names nobody
+//   who        a name for the plaque, a KEPT pass (a job needs one anyway), never a QA home
+// No four-week rest like the citizens: the one banana who keeps the stand going IS its staff, every week, and the plaque
+// counts the weeks. The crown lands on the job record (`j.sotw`, server-owned), and the view says it (`sotw`) so the shop's
+// plaque and the boss can show it — the visuals are to come.
+export const STAFF_FROM = '2026-W40';   // the first week whose sheets count their work XP (dn.xp, from 24 Sep 2026)
+const STAFF_LIVE = 'staff/live.json', STAFF_LATEST = 'staff/latest.json';
+const staffFinalKey = (wk) => 'staff/final-' + wk + '.json';
+function staffSheet(rec, wk) {
+  const j = rec && rec.job, d = j && j.done && j.done[wk];
+  if (!d || !d.at || !LADDER[d.at]) return null;
+  const dn = sheetOf(j, wk);
+  return { at: dn.at, xp: dn.xp | 0, days: dn.days | 0, r: dn.r | 0, v: reviewOf(dn.at, dn) };
+}
+const staffRank = (k) => (a, b) => (b[k].xp - a[k].xp) || (b[k].days - a[k].days) || (b[k].r - a[k].r) || (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0);
+const staffOk = (st, r, k) => !!(r.name && !r.qa && r[k] && keptOf(st, r));
+function staffLive(rows, week, st) {
+  const top = {};
+  for (const at of Object.keys(LADDER)) {
+    top[at] = rows.filter((r) => staffOk(st, r, 'sw') && r.sw.at === at && r.sw.xp > 0).sort(staffRank('sw')).slice(0, 3)
+      .map((r) => ({ name: r.name, tag: r.tag, look: r.look || null, xp: r.sw.xp, days: r.sw.days }));
+  }
+  return { week: week.id, from: week.from, to: week.to, top, at: Date.now() };
+}
+async function staffFinals(env, st, rows, week) {
+  if (week.id < STAFF_FROM) return null;   // a week whose sheets never counted their XP names nobody
+  const staff = {};
+  for (const at of Object.keys(LADDER)) {
+    const w = rows.filter((r) => staffOk(st, r, 'swPrev') && r.swPrev.at === at && (r.swPrev.v === 'full' || r.swPrev.v === 'ok') && r.swPrev.xp >= (LADDER[at].day | 0))
+      .sort(staffRank('swPrev'))[0];
+    if (!w) continue;
+    let weeks = 1;
+    // the crown lands on the job record — a conditional write, like every other
+    try {
+      await retrying(async () => {
+        const rec = await loadKey(env, w.home);
+        if (!rec || rec.link || !rec.job) return;
+        const s = rec.job.sotw || (rec.job.sotw = []);
+        if (!s.some((x) => x.week === week.id && x.at === at)) s.push({ week: week.id, at });
+        rec.job.sotw = s.slice(-40);
+        weeks = rec.job.sotw.filter((x) => x.at === at).length;
+        await saveKey(env, w.home, rec);
+      });
+    } catch (e) {}
+    staff[at] = { name: w.name, tag: w.tag, look: w.look || null, xp: w.swPrev.xp, days: w.swPrev.days, rank: w.swPrev.r || 1, weeks };
+  }
+  const file = { week: week.id, from: week.from, to: week.to, staff, at: Date.now() };
+  await env.PASSES.put(staffFinalKey(week.id), JSON.stringify(file));
+  await env.PASSES.put(STAFF_LATEST, JSON.stringify(file));
+  return file;
+}
+// the job view's word on it: were you last week's staff of the week at the job you hold, and how many weeks in all there
+function staffOf(j, at, now) {
+  const s = ((j && j.sotw) || []).filter((x) => x.at === at);
+  if (!at || !s.length) return null;
+  return { last: s[s.length - 1].week === jobWeek(now - 7 * DAY), weeks: s.length };
+}
+// the public board: names, tags, looks and the week's work — never an id, never a key
+async function staffBoard(request, env) {
+  let live = null, last = null;
+  try { const o = await env.PASSES.get(STAFF_LIVE); live = o ? await o.json() : null; } catch (e) {}
+  try { const o = await env.PASSES.get(STAFF_LATEST); last = o ? await o.json() : null; } catch (e) {}
+  return json({ live, last }, 200, { ...cors(env, request), 'Cache-Control': 'public, max-age=300' });
+}
+
 // the public board: names, tags, looks and scores — never an id, never a key
 // ---------- 🕹 THE ARCADE BOARDS (12 Sep 2026) ----------
 // One board PER GAME, never per place: the machine is the door to the board wherever it
@@ -1336,6 +1409,7 @@ function jobView(j, now) {
     duties: rowsOf(at, dn), share, sofar: payOf(at, dn, rank), owed,
     nudge: !!(at && dow >= NUDGE_DAY && judged(j, at, weekOf(now)) && reviewOf(at, dn) === 'empty'),   // ↕ the tips jobs too; never about a week the review will not judge
     fired: j.fired || null,
+    sotw: staffOf(j, at, now),   // 💼 staff of the week at this workplace: last week's crown, and how many weeks in all
     lad: ladderOf(j, at, now) };   // 🪜 your XP and rank at the job you hold, and whether the boss has news
 }
 // 🪜 the rank a week pays at: the highest you were told while you worked it (`r` on its sheet, set by every chore and by
@@ -1514,6 +1588,7 @@ async function jobChore(request, env) {
     let add = firstToday ? DAY_XP : 0;
     if (kind) for (const g of gs) add += xpFor(j.at, kind, g == null ? null : +g);
     const xp = xpAdd(j, add, now);
+    if (xp) dn.xp = (dn.xp | 0) + xp;   // 💼 the week's work XP at this workplace: what staff of the week is scored on
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
     return json({ ok: true, job: jobView(j, now), counted: !!duty, xp }, 200, cors(env, request));
@@ -1996,6 +2071,7 @@ async function peopleFold(env, st, k, rec) {
     const gid = await worldGid(env, row.home);
     row.wk = scorecard(rec, st.cit.cur.from, st.cit.cur.to, st.cit.hoodCur, gid);
     row.wkPrev = scorecard(rec, st.cit.prev.from, st.cit.prev.to, st.cit.hoodPrev, gid);
+    row.sw = staffSheet(rec, st.cit.cur.id); row.swPrev = staffSheet(rec, st.cit.prev.id);   // 💼 the job's sheets, this week and last
   }
   st.rows.push(row);
 }
@@ -2052,6 +2128,12 @@ async function rollupTick(env) {
       if (st.citFinal !== st.cit.prev.id) {
         await citFinals(env, st, scored, st.cit.prev);
         st.citFinal = st.cit.prev.id;
+      }
+      // 💼 staff of the week rides the same lap: the running board every lap, last week crowned once
+      await env.PASSES.put(STAFF_LIVE, JSON.stringify(staffLive(scored, st.cit.cur, st)));
+      if (st.staffFinal !== st.cit.prev.id) {
+        await staffFinals(env, st, scored, st.cit.prev);
+        st.staffFinal = st.cit.prev.id;
       }
     }
     st.rows = []; st.ptr = {}; st.laps = (st.laps || 0) + 1; st.peopleAt = file.at;

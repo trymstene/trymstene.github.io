@@ -633,6 +633,19 @@ console.log('\n26. 🔴 registered post: a sealed card on time earns its XP agai
   ok('and it is not a round on the sheet', v.job.duties.find((r) => r.kind === 'sort').done === 1, v.job.duties);
 }
 
+console.log('\n27. 💼 staff of the week: the week’s sheet counts the work XP it is scored on');
+{
+  CLOCK += 7 * DAY;
+  const P = as(await kept('sheetxp@example.com'));
+  await P('/job/take', { at: 'condo' });
+  await P('/job/chore', { kind: 'sweep' });
+  const v = await P('/job/chore', { kind: 'fix', g: 2 });
+  let sheet = null;
+  for (const raw of env.PASSES._m.values()) { const rec = JSON.parse(raw); const d = rec && rec.job && rec.job.done; if (d && rec.job.at === 'condo' && rec.job.xp && rec.job.xp.condo === v.job.lad.xp) sheet = Object.values(d).find((x) => x.at === 'condo'); }
+  ok('⭐ the sheet’s XP is the week’s work there: the day’s ten, a sweep’s 45, a perfect fix’s 45', sheet && sheet.xp === 100 && v.job.lad.xp === 100, { sheet, lad: v.job.lad });
+  ok('and nobody has been staff of the week here yet', v.job.sotw === null, v.job.sotw);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

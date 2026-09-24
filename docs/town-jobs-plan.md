@@ -1277,3 +1277,24 @@ worker-pass jobs.test.mjs §21–24.
 - Registered post's double is its own chore (`reg`, 5 a sealed card, `XP.post.reg` 15), outside the round's cap of 60.
 - The memento goes into the shed first and back out if the pass worker says it was given elsewhere.
 - A hire in flight: the turn-up chore waits, and a 409 'no job' cannot undo it on the device.
+
+## 25. Staff of the week — the logic (24 Sep 2026; the visuals come later)
+
+Trym: *"we can build the logic for staff for the week, but implement it visually later, i think it makes the most sense
+to display it in the town or by the actual shops, and not in the park."*
+
+- **One per workplace**, crowned on the first lap after a week ends — the citizens' own lap (worker-pass `rollupTick`), so
+  every pass is scored alike. Files: `staff/live.json` (this week's top three per workplace, every lap),
+  `staff/final-<week>.json` and `staff/latest.json`; public route `GET /staff` → `{ live, last }` (names, tags, looks and
+  the week's work — never a key).
+- **Score**: the WORK XP earned at that workplace that week (`dn.xp` on the week's sheet, counted from 24 Sep; bounded every
+  day by the rank's day cap, so turning up often beats one grind), then days turned up, then the rank.
+- **A real week only**: the review's verdict full or ok, and at least a day's work (`LADDER[at].day`). A named, kept pass;
+  never a QA home. No four-week rest (unlike the citizens): the one banana who keeps the stand going IS its staff, and the
+  plaque counts the weeks (`weeks`). The first week that can be crowned is `STAFF_FROM` = 2026-W40 (crowned Mon 5 Oct).
+- **On the record**: `j.sotw` [{week, at}], server-owned; the job view says `sotw: { last, weeks }` for the job you hold,
+  and the town's mirror keeps it (`work.seam.state().sotw`).
+- **To build with the visuals** (Trym's call on the look): a plaque by each shop (the week's name and banana, from
+  `/staff`), the boss's line to last week's winner (the `sotw.last` moment, like the promotion), and HQ's read of it.
+
+Proof: worker-pass/test/staff.test.mjs (13), jobs.test.mjs §27.

@@ -62,6 +62,7 @@ export function bootTownWork(ctx) {
       const l = res.job.lad;
       job = { ...job, at: res.job.at || '', week: res.job.week || '', days: res.job.days | 0, pay: res.job.pay | 0, sofar: res.job.sofar | 0, owed: res.job.owed | 0,
         duties: Array.isArray(res.job.duties) ? res.job.duties : [], share: +res.job.share || 0, nudge: !!res.job.nudge, fired: res.job.fired || null,
+        sotw: res.job.sotw || null,   // 💼 staff of the week at this workplace (the pass worker's crown): the shop's plaque reads it, later
         // 🪜 the ladder at the job you hold: XP, the rank your boss has told you, today's XP (worker-pass ladderOf)
         lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey(),
           warn: !!l.warn, talk: l.talk || '', last: l.last || null, mem: l.mem | 0 } : null };   // ↕ the weekly review: warned, the boss's word waiting, last week
@@ -272,7 +273,7 @@ export function bootTownWork(ctx) {
       set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', duties: [], share: 0, nudge: false, fired: null, ...(j || {}) }; if (job.at && !(job.duties || []).length) job.duties = rowsOf(job.at, {}); writeJob(job); notify(); if (job.at) loadWords(); },
       // 💼 for the work note: the mirror as one plain object, plus whether you have turned up today
       state: () => ({ at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey(),
-        duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null, lad: ladder() }),
+        duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null, lad: ladder(), sotw: job.sotw || null }),
       // 🪜 the ladder: where you stand, the words it is told in (null until they land), and a title by rank
       ladder, words: () => LW, title: titleOf, wordsReady: loadWords,
       // ⚠️ the walk's door to the ladder: XP and a told rank, as the server would have answered them
