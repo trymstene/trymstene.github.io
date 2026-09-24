@@ -785,22 +785,6 @@ function init() {
   initTravel({ here: 'rave', mount: document.querySelector('.rv-emotes'),
     btnClass: 'rv-emote-btn', track });
 
-  const zoomBtn = el('rvZoom');
-  // pixel magnifiers, Pillow-verified (scratchpad zoom-icons): + = zoom in on
-  // you, − = pull back to the whole floor. The label is the ACTION, not the
-  // state; small screens are icon-only ("users click stuff to see what it
-  // does" — Trym), and the corner gets freed.
-  const ZOOM_IN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90" shape-rendering="crispEdges"><rect x="20" y="0" width="30" height="10" fill="#fffdf5"/><rect x="10" y="10" width="10" height="10" fill="#fffdf5"/><rect x="50" y="10" width="10" height="10" fill="#fffdf5"/><rect x="0" y="20" width="10" height="10" fill="#fffdf5"/><rect x="30" y="20" width="10" height="10" fill="#ffe135"/><rect x="60" y="20" width="10" height="10" fill="#fffdf5"/><rect x="0" y="30" width="10" height="10" fill="#fffdf5"/><rect x="20" y="30" width="30" height="10" fill="#ffe135"/><rect x="60" y="30" width="10" height="10" fill="#fffdf5"/><rect x="0" y="40" width="10" height="10" fill="#fffdf5"/><rect x="30" y="40" width="10" height="10" fill="#ffe135"/><rect x="60" y="40" width="10" height="10" fill="#fffdf5"/><rect x="10" y="50" width="10" height="10" fill="#fffdf5"/><rect x="50" y="50" width="20" height="10" fill="#fffdf5"/><rect x="20" y="60" width="30" height="10" fill="#fffdf5"/><rect x="60" y="60" width="20" height="10" fill="#fffdf5"/><rect x="70" y="70" width="20" height="10" fill="#fffdf5"/><rect x="80" y="80" width="20" height="10" fill="#fffdf5"/></svg>';
-  const ZOOM_OUT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90" shape-rendering="crispEdges"><rect x="20" y="0" width="30" height="10" fill="#fffdf5"/><rect x="10" y="10" width="10" height="10" fill="#fffdf5"/><rect x="50" y="10" width="10" height="10" fill="#fffdf5"/><rect x="0" y="20" width="10" height="10" fill="#fffdf5"/><rect x="60" y="20" width="10" height="10" fill="#fffdf5"/><rect x="0" y="30" width="10" height="10" fill="#fffdf5"/><rect x="20" y="30" width="30" height="10" fill="#ffe135"/><rect x="60" y="30" width="10" height="10" fill="#fffdf5"/><rect x="0" y="40" width="10" height="10" fill="#fffdf5"/><rect x="60" y="40" width="10" height="10" fill="#fffdf5"/><rect x="10" y="50" width="10" height="10" fill="#fffdf5"/><rect x="50" y="50" width="20" height="10" fill="#fffdf5"/><rect x="20" y="60" width="30" height="10" fill="#fffdf5"/><rect x="60" y="60" width="20" height="10" fill="#fffdf5"/><rect x="70" y="70" width="20" height="10" fill="#fffdf5"/><rect x="80" y="80" width="20" height="10" fill="#fffdf5"/></svg>';
-  function refreshZoomBtn() {
-    zoomBtn.hidden = false;
-    const small = matchMedia('(max-width: 640px)').matches;
-    zoomBtn.innerHTML = (cam.on ? ZOOM_OUT_SVG : ZOOM_IN_SVG) + (small ? '' : '<span>' + (cam.on ? 'whole floor' : 'follow me') + '</span>');
-    zoomBtn.setAttribute('aria-label', cam.on ? 'Show the whole floor' : 'Follow my banana');
-  }
-  refreshZoomBtn();
-  zoomBtn.addEventListener('click', () => { cam.on = !cam.on; refreshZoomBtn(); track('rave_zoom', { on: cam.on }); });
-
   let camLastTx = null, camLastTy = null;
   function updateCam() {
     if (tourActive) return; // the tour drives the camera itself
@@ -842,7 +826,7 @@ function init() {
       y: clamp(((cy - rect.top - cam.ty) / (rect.height * cam.s)) * 100, topClamp, 92),
     };
   };
-  const NOT_A_WALK = (t) => t.closest('.rv-zoom') || t.closest('.rv-quest') || t.closest('.rv-mixer') || t.closest('.rv-exitdoor') || t.closest('.rv-stagepop'); // buttons, the quest chip, the JELLY meter + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
+  const NOT_A_WALK = (t) => t.closest('.rv-quest') || t.closest('.rv-mixer') || t.closest('.rv-exitdoor') || t.closest('.rv-stagepop'); // buttons, the quest chip, the JELLY meter + the EXIT door are not walk orders (the door sets its OWN doorstep target — the bubbled click was overriding it and disarming the exit)
   floor.addEventListener('click', (e) => {
     if (NOT_A_WALK(e.target)) return;
     if (Date.now() - steerEndAt < 400) return; // a finished steer is not a walk order
@@ -3349,7 +3333,6 @@ function init() {
     // (and the club's very top hides under the sticky nav on mobile)
     const hud = document.querySelector('.rv-hud');
     el('rvTourBand').style.bottom = ((hud ? hud.offsetHeight : 60) + 14) + 'px';
-    el('rvZoom').hidden = true; // the camera toggle isn't part of the show
     track('rave_tour_start');
     tourNext();
   }
@@ -3379,7 +3362,6 @@ function init() {
     // Respect an explicit mute (rv-sound '0'): the ❓ replay never forces sound.
     cam.on = false;
     try { if (localStorage.getItem('rv-sound') !== '0' && !audioOn && !audioLoading) audioStart(); } catch (e) {}
-    refreshZoomBtn(); // the camera toggle gets its corner back
     track(skipped ? 'rave_tour_skip' : 'rave_tour_done', { step: tourStep });
     // the patch waits its turn — the welcome + tour own the first minutes,
     // so the PATCH EARNED toast lands 10s after the lesson (idempotent: ❓

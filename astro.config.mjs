@@ -1,5 +1,27 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { transformWithEsbuild } from 'vite';
+import { stripCssStrings } from './tools/css-strings.mjs';
+
+// ✂️ public/js/*.js is copied into dist/ exactly as written, comments and all: main.js rides EVERY page and shop.js
+// the product pages. Minified after the build (24 Sep 2026, the budget trim; 33 KB → 15 KB) so the source stays
+// readable. es2020 like the rest of the bundle: the minifier must never write newer syntax than it was given.
+const minifyPublicJs = {
+  name: 'minify-public-js',
+  hooks: {
+    'astro:build:done': async ({ dir, logger }) => {
+      const js = new URL('js/', dir);
+      for (const f of (await readdir(js)).filter((x) => x.endsWith('.js'))) {
+        const p = fileURLToPath(new URL(f, js)), src = await readFile(p, 'utf8');
+        const out = await transformWithEsbuild(src, f, { minify: true, charset: 'utf8', target: 'es2020', legalComments: 'none' });
+        await writeFile(p, out.code);
+        logger.info('/js/' + f + ' ' + Buffer.byteLength(src) + ' → ' + Buffer.byteLength(out.code) + ' B');
+      }
+    },
+  },
+};
 
 // Static site for trymstene.com — deploys to GitHub Pages.
 // trailingSlash 'always' + 'directory' format keeps the EXACT current URLs
@@ -11,6 +33,14 @@ export default defineConfig({
   site: 'https://trymstene.com',
   trailingSlash: 'always',
   build: { format: 'directory' },
+  integrations: [minifyPublicJs],
+  // ✂️ the comments inside CSS that scripts carry as strings come out at build time (tools/css-strings.mjs)
+  vite: { plugins: [{ name: 'css-strings', apply: 'build', enforce: 'pre',
+    transform(code, id) {
+      if (!/\/src\/.*\.js$/.test(id.split('?')[0]) || !code.includes(' = `')) return null;
+      const out = stripCssStrings(code);
+      return out === code ? null : { code: out, map: null };
+    } }] },
   // /make/ was a fork page (builder vs forge) — now both live in the top nav,
   // so the middle step is gone. Keep old links/bookmarks alive → the builder.
   redirects: {

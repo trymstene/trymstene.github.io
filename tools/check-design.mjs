@@ -394,6 +394,19 @@ for (const f of files) {
   }
 }
 
+// ✂️ THE ICONS A SCRIPT CANNOT ASK FOR (24 Sep 2026, the budget trim): src/lib/pixel-icons.js leaves the icons only
+// <PixelArtIcon> draws out of the client bundle. An iconSvg('…') of one of them would draw nothing, silently.
+{
+  const pi = readFileSync(join(SRC, 'lib', 'pixel-icons.js'), 'utf8');
+  const m = /'!\.\.\/icons\/pixelart\/\{([^}]*)\}\.svg'/.exec(pi);
+  const out = m ? m[1].split(',') : [];
+  if (!m) problems.push(['src/lib/pixel-icons.js', 'the server-only icon list is not where this gate reads it — keep it as one !{a,b,…}.svg pattern']);
+  for (const f of files) {
+    const s = readFileSync(f, 'utf8');
+    for (const n of out) if (s.includes("iconSvg('" + n + "'")) problems.push([relative(ROOT, f).replace(/\\/g, '/'), "iconSvg('" + n + "') — that icon is left out of the client bundle (src/lib/pixel-icons.js): take it off the list there"]);
+  }
+}
+
 let cssN = 0;
 for (const f of walkCss(join(ROOT, 'public/css'))) {
   cssN++;

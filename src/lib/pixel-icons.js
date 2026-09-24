@@ -5,7 +5,12 @@
 //
 // Only the icons in src/icons/pixelart/ are bundled (the full paid pack is
 // gitignored — never redistribute it). Add an icon = copy its SVG into that dir.
-const raw = import.meta.glob('../icons/pixelart/*.svg', { query: '?raw', import: 'default', eager: true });
+// ✂️ …minus the ones only <PixelArtIcon> draws, on the server (24 Sep 2026, the budget trim: 7 KB every script-carrying
+// page paid for nothing). A script that wants one of these takes it off this list — tools/check-design.mjs fails an
+// iconSvg('…') of a name that is still on it.
+const raw = import.meta.glob(['../icons/pixelart/*.svg',
+  '!../icons/pixelart/{arrow-down,arrow-left,arrow-right,arrow-up,bird-solid,camera,check-double,chevron-left,clipboard,duplicate,external-link,eye,flip-horizontal,flip-vertical,folder,image-plus,menu,minus,paint-bucket,pipette,plus,prev,redo,shirt,shopping-bag,sliders,user}.svg'],
+{ query: '?raw', import: 'default', eager: true });
 const ICONS = {};
 for (const p in raw) ICONS[p.split('/').pop().replace('.svg', '')] = raw[p];
 
