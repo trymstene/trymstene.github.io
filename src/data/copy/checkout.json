@@ -1,0 +1,23 @@
+{
+  "title": {
+    "item": "Getting your {product} ready",
+    "order": "Getting your order ready",
+    "add": "Adding your {product} to the cart"
+  },
+  "step": {
+    "design": "Saving your design",
+    "cart": "Adding it to your cart",
+    "checkout": "Opening secure checkout"
+  },
+  "secure": "Secure checkout by Shopify",
+  "slow": "Still working. A slow connection can take a little longer.",
+  "stuck": "Checkout is taking a while to open.",
+  "open": "Open checkout",
+  "fail": {
+    "title": "That didn’t work",
+    "design": "Your design didn’t save. Check your connection, then try again.",
+    "cart": "The shop didn’t answer, and nothing was charged. Try again in a moment."
+  },
+  "retry": "Try again",
+  "close": "Close"
+}

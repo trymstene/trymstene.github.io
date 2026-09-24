@@ -124,6 +124,18 @@ message, and the cost is not confusion: they take a **destructive action**
 Anything that can exceed roughly a second gets this: a login, a pull, a
 checkout hand-off, a render.
 
+**The checkout hand-off is ONE card** (24 Sep 2026; Trym: *"it can take from
+3-6-7 seconds before anything happens and youre sent to the checkout page"*).
+`src/lib/checkout-veil.js` serves every road to Shopify's checkout — the
+official shop's Buy, Make a Banana's Order and its add-to-cart, the cart
+drawer's Checkout: what is being bought, the steps ticked off as they really
+happen, a bar the dancing banana walks along, and "Secure checkout by Shopify"
+because the next page is on another address. It stays up until the page
+leaves, fails into Try again / Close (and says nothing was charged), and a page
+that will not leave gets its own link. A new buy road uses it — `openVeil`
+from a module, `window.__bbVeil` from a page that cannot import — never a
+button whose words change. `tests/checkout-veil.spec.mjs` walks every state.
+
 ### 3e. Concrete, not clever
 
 Trym, 4 Sep 2026, on a note that said *"add your email in My Pass to take it

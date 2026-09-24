@@ -16,6 +16,7 @@ import {
   localizedPrice, uploadAndCheckout, addToOrder, refreshOrderCart, stickerCaptions, stickerEffect, TEE_QUADS,
   ensureCaptionFont,
 } from '../lib/sticker-core.js';
+import { openVeil, painted, warm } from '../lib/checkout-veil.js';   // 🛒 the card over the page while the order is prepared
 
 const el = (id) => document.getElementById(id);
 const track = (name, p) => { if (window.gtag) window.gtag('event', name, p || {}); };
@@ -562,10 +563,15 @@ if (el('pdpAddMore')) el('pdpAddMore').onclick = async () => {
   busy = true;
   const btn = el('pdpAddMore'); const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Adding your ' + product.name.toLowerCase() + '…';
+  // 🛒 the card first, painted before the print render holds the page (design library §3d)
+  const veil = openVeil({ title: 'add', product: product.name.toLowerCase(), steps: ['design', 'cart'], art: el('pdpMock') });
+  veil.step('design');
   try {
+    await painted();
     await ensureCaptionFont(state);
     await artReady(customArts());   // a community item's art must be IN the print
-    const c = await addToOrder(renderPrintFile(state, product), product, sel);
+    const c = await addToOrder(renderPrintFile(state, product), product, sel, veil.step);
+    veil.done();
     track('pdp_add_to_order', withSecs({ product: product.key, n: c.n, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
     btn.textContent = '✓ in the cart';
     if (window.__bbCart) window.__bbCart.open();
@@ -573,12 +579,15 @@ if (el('pdpAddMore')) el('pdpAddMore').onclick = async () => {
   } catch (e) {
     console.error(e);
     track('sticker_order_fail', { message: String((e && e.message) || e).slice(0, 90), stage: 'add' });
+    const m = String((e && e.message) || e);
+    veil.fail(/upload|render/.test(m) ? 'design' : 'cart', () => el('pdpAddMore').click());
     const st = el('pdpStock'); st.textContent = 'Hmm, that didn’t work — give it another try?';
     st.className = 'pdp-stock pdp-stock--no';
     btn.disabled = false; btn.textContent = label; busy = false;
   }
 };
 let busy = false;
+if ('requestIdleCallback' in window) requestIdleCallback(warm); else setTimeout(warm, 2500);
 // backing out of the Shopify checkout restores this page from bfcache with
 // busy=true and a stuck button — reload wipes the trap (state rides the URL)
 window.addEventListener('pageshow', (e) => { if (e.persisted && busy) location.reload(); });
@@ -594,14 +603,19 @@ if (el('pdpBuy')) el('pdpBuy').onclick = async () => {
   btn.disabled = true; btn.textContent = `Preparing your ${product.name.toLowerCase()}…`;
   el('pdpStock').textContent = '';
   track('sticker_pdp_checkout', withSecs({ product: product.key, value: PRICE.amount, currency: PRICE.currency, design: designStr(state) }));
+  // 🛒 THE CARD, FIRST (24 Sep 2026, Trym: "3-6-7 seconds before anything happens"): their banana, the three steps as they
+  // happen, and it stays up until Shopify's checkout has the page. Painted before the print render holds the main thread.
+  const veil = openVeil({ title: 'item', product: product.name.toLowerCase(), steps: ['design', 'cart', 'checkout'], art: el('pdpMock') });
+  veil.step('design');
   try {
+    await painted();
     await ensureCaptionFont(state); // Anton must be decoded before we bake the print
     await artReady(customArts());   // a community item's art must be IN the print
-    const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state, product), product, sel);
+    const { checkoutUrl } = await uploadAndCheckout(renderPrintFile(state, product), product, sel, veil.step);
     // secs_since_prev here = upload+cart pipeline latency (ORDER click -> redirect)
     track('checkout_redirect', withSecs({ value: PRICE.amount, currency: PRICE.currency }));
     passPatch('patron', { quiet: true }); // pass badge for ordering — celebrate on return, not mid-redirect
-    window.location.href = checkoutUrl;
+    veil.go(checkoutUrl);
   } catch (e) {
     console.error(e);
     const msg = String((e && e.message) || e);
@@ -611,6 +625,7 @@ if (el('pdpBuy')) el('pdpBuy').onclick = async () => {
       : msg.includes('render') ? 'render' : msg.includes('not available') ? 'product' : 'other';
     track('sticker_order_fail', { message: msg.slice(0, 90), stage });
     track('sticker_order_fail_' + stage, { message: msg.slice(0, 90) });
+    veil.fail(stage === 'upload' || stage === 'render' ? 'design' : 'cart', () => el('pdpBuy').click());
     const s = el('pdpStock'); s.textContent = 'Hmm, that didn’t work — give it another try?';
     s.className = 'pdp-stock pdp-stock--no';
     btn.disabled = false; btn.textContent = label; busy = false;

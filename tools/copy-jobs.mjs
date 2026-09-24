@@ -2290,6 +2290,36 @@ export const JOBS = {
     },
     shape: () => [],
   },
+  // 🛒 THE CHECKOUT HAND-OFF (24 Sep 2026). Trym: *"it can take from 3-6-7 seconds before anything happens and youre sent
+  // to the checkout page … should we have a better loading popup"*. One card over the page for every road to Shopify's
+  // checkout (the official shop's Buy, Make a Banana's Order and its add-to-cart, the cart drawer's Checkout), naming each
+  // step as it happens (design library §3d: one word held for seven seconds reads as stalled). Site words: plain.
+  'checkout': {
+    id: 'checkout',
+    title: 'The checkout hand-off — the card while an order is prepared',
+    what: 'The card that covers the page between a buy button and Shopify’s checkout: its heading, the steps it ticks off, the secure-checkout line, what it says when the wait runs long, when the page will not leave, and when something failed.',
+    approved: 'src/data/copy/checkout.json',
+    reads: 'src/lib/checkout-veil.js (a static import; the veil is its own lazy chunk)',
+    top: ['title', 'step', 'secure', 'slow', 'stuck', 'open', 'fail', 'retry', 'close'],
+    fields: {
+      'title.item': { kind: 'prose', aim: 30, max: 38, ...holdsAll('product'), note: 'The card’s heading when Make a Banana’s Order sends THEIR design to checkout; {product} is the product in lower case (sticker, magnet, tee, sticker sheet). What is happening, in their words.' },
+      'title.order': { kind: 'prose', aim: 26, max: 32, note: 'The heading when the official shop’s Buy or the cart drawer’s Checkout sends the whole cart to checkout.' },
+      'title.add': { kind: 'prose', aim: 34, max: 42, ...holdsAll('product'), note: 'The heading when Make a Banana’s add-to-cart puts their design in the cart (no checkout: the cart drawer opens after).' },
+      'step.design': { kind: 'label', aim: 22, max: 28, note: 'Step one of a custom order: the print file is rendered and uploaded. Shown with a box that ticks when it is done; the card adds the ellipsis while it runs.' },
+      'step.cart': { kind: 'label', aim: 22, max: 28, note: 'The item goes into the shared cart (for a custom design, the per-order product is made first so checkout shows their banana).' },
+      'step.checkout': { kind: 'label', aim: 24, max: 28, note: 'The page is on its way to Shopify’s checkout. Stays up until the page leaves.' },
+      secure: { kind: 'label', aim: 26, max: 32, note: 'Small, under the bar, beside a lock the code draws: the next page is Shopify’s, on another address, so it is said before they land there.' },
+      slow: { kind: 'prose', aim: 56, max: 70, note: 'Appears under the bar when one step has run long: still working, and the likely reason. Never a number of seconds.' },
+      stuck: { kind: 'prose', aim: 36, max: 48, note: 'Appears when the page has been told to go to checkout and has not left: an in-app browser can hold it. The open button below is the way through.' },
+      open: { kind: 'label', aim: 13, max: 16, note: 'The button under stuck: a plain link to the checkout address.' },
+      'fail.title': { kind: 'prose', aim: 16, max: 22, note: 'The heading when a step failed.' },
+      'fail.design': { kind: 'prose', aim: 60, max: 76, note: 'The render or the upload failed: what did not happen, and what to do. No blame.' },
+      'fail.cart': { kind: 'prose', aim: 66, max: 80, note: 'The shop (Shopify’s cart) did not answer: nothing was charged — the one worry at a payment step — and try again.' },
+      retry: { kind: 'label', aim: 9, max: 14, note: 'The button that runs the whole thing again from the start.' },
+      close: { kind: 'label', aim: 5, max: 10, note: 'The button that closes the card after a failure: “Close”, the word every card on the site closes with.' },
+    },
+    shape: () => [],
+  },
   'pass-toasts': {
     id: 'pass-toasts',
     title: 'My Pass — what the pass page says back',

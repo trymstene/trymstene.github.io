@@ -77,8 +77,12 @@ function ensureDrawer() {
   $('#bbCartClose').addEventListener('click', close);
   $('#bbCartBackdrop').addEventListener('click', close);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
-  $('#bbCartCheckout').addEventListener('click', () => {
+  $('#bbCartCheckout').addEventListener('click', (e) => {
     if (window.gtag) window.gtag('event', 'begin_checkout', { from: 'cart_drawer' });
+    const href = e.currentTarget.getAttribute('href');
+    if (!href || href === '#' || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;   // a new tab keeps this page as it is
+    e.preventDefault();
+    veilLater({ title: 'order', steps: ['checkout'] }).go(href);
   });
 }
 
@@ -266,6 +270,19 @@ async function mutateLine(cartId, lineId, quantity) {
   } finally { mutating = false; }
 }
 
+// 🛒 THE CHECKOUT CARD for every road to checkout (src/lib/checkout-veil.js, 24 Sep 2026): its own chunk, so a visitor who
+// never buys downloads none of it. Handed out from here because the nav is on every page and public/js/shop.js cannot
+// import: a handle comes back at once and its calls wait for the card — except go(), which never waits: the page leaves
+// now, and a card still on its way shows the last step when it lands.
+function veilLater(o) {
+  let h = null;
+  const q = [];
+  import('./checkout-veil.js').then((m) => { h = m.openVeil(o); for (const [k, a] of q) h[k](...a); }).catch(() => {});
+  const call = (k) => (...a) => { if (h) h[k](...a); else q.push([k, a]); };
+  return { step: call('step'), done: call('done'), fail: call('fail'), close: call('close'),
+    go: (url) => { if (h) h.go(url); else { q.push(['step', ['checkout']]); location.href = url; } } };
+}
+
 export function initCartUi() {
   const btn = $('#navCartBtn');
   if (!btn) return;
@@ -297,4 +314,10 @@ export function initCartUi() {
   }
   // surfaces that can't import modules (public/js/shop.js) call these
   window.__bbCart = { open, refresh };
+  window.__bbVeil = veilLater;
+  // a page with a buy button fetches the card while its visitor reads, so the first tap shows it at once
+  if (document.querySelector('.pdp-buy')) {
+    const warm = () => import('./checkout-veil.js').then((m) => m.warm()).catch(() => {});
+    if ('requestIdleCallback' in window) window.requestIdleCallback(warm); else setTimeout(warm, 2500);
+  }
 }

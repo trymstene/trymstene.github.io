@@ -242,10 +242,15 @@
     if (!v || !v.available) return;
     buyBtn.disabled = true;
     var orig = buyBtn.textContent; buyBtn.textContent = 'Opening checkout…';
+    // 🛒 the checkout card (src/lib/checkout-veil.js, handed out by the nav's cart as window.__bbVeil): the product, the steps
+    // as they happen, and it stays up until Shopify's checkout has the page (24 Sep 2026; design library §3d)
+    var veil = window.__bbVeil ? window.__bbVeil({ title: 'order', steps: ['cart', 'checkout'], art: mainImg ? (mainImg.currentSrc || mainImg.src) : '' }) : null;
+    if (veil) veil.step('cart');
     cartAddLine({ merchandiseId: v.id, quantity: 1, attributes: trackIds() }).then(function (c) {
       if (window.gtag) gtag('event', 'begin_checkout', withSecs({ items: [{ item_name: DATA.title, item_variant: selColor + ' / ' + selSize }] }));
-      window.location.href = c.checkoutUrl;
+      if (veil) veil.go(c.checkoutUrl); else window.location.href = c.checkoutUrl;
     }).catch(function () {
+      if (veil) veil.fail('cart', function () { buyBtn.click(); });
       buyBtn.disabled = false; buyBtn.textContent = orig;
       stockEl.textContent = 'Couldn’t start checkout — please try again.';
       stockEl.className = 'pdp-stock pdp-stock--no';

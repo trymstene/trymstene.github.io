@@ -727,13 +727,15 @@ function metaIds() {
 // design attributes; the fulfilment webhook already prints per line.
 export const orderCart = cartRead;
 
-// upload the print + mint the per-order variant → one ready CartLineInput
-async function prepareLine(printCanvas, product, selection) {
+// upload the print + mint the per-order variant → one ready CartLineInput. `onStep` hears 'cart' once the design is up
+// (the checkout card ticks "Saving your design" off then — src/lib/checkout-veil.js)
+async function prepareLine(printCanvas, product, selection, onStep) {
   const blob = await new Promise((r) => printCanvas.toBlob(r, 'image/png'));
   if (!blob) throw new Error('render failed: toBlob returned null'); // iOS under memory pressure does this silently
   const up = await fetch(SHOP.workerBase + '/upload', { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
   if (!up.ok) throw new Error('upload failed: ' + up.status);
   const { key, url } = await up.json();
+  if (onStep) onStep('cart');
 
   const attributes = [
     { key: '_design_key', value: key },   // machine-readable, hidden in checkout
@@ -780,9 +782,9 @@ async function prepareLine(printCanvas, product, selection) {
 
 // Add THIS design to the cart (creating one if none). Returns
 // { checkoutUrl, n, key, url }. shop-config owns the cart mechanics.
-export async function addToOrder(printCanvas, product = getProduct('sticker'), selection = null) {
+export async function addToOrder(printCanvas, product = getProduct('sticker'), selection = null, onStep = null) {
   if (!product || !product.shopifyVariantGid) throw new Error('product not available for sale');
-  const { line, key, url } = await prepareLine(printCanvas, product, selection);
+  const { line, key, url } = await prepareLine(printCanvas, product, selection, onStep);
   const c = await addMinted(line, product.shopifyVariantGid);
   return { ...c, key, url };
 }
@@ -818,6 +820,6 @@ export async function refreshOrderCart() {
 
 // The ORDER button: everything waiting in the order plus this design, then to
 // checkout. Same contract as always — returns { checkoutUrl, key, url }.
-export async function uploadAndCheckout(printCanvas, product = getProduct('sticker'), selection = null) {
-  return addToOrder(printCanvas, product, selection);
+export async function uploadAndCheckout(printCanvas, product = getProduct('sticker'), selection = null, onStep = null) {
+  return addToOrder(printCanvas, product, selection, onStep);
 }
