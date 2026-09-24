@@ -136,7 +136,7 @@ for (const [key, spot] of Object.entries(SPOTS)) {
   // the stand's sign clocked a worker in where they stood, from across the square, or out in the middle of a shift)
   p.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (working()) return;
+    if (working() || sceneOn()) return;
     const wasIn = inRoom;
     if (!openFor(key)) say(a[2]);
     if (inRoom === wasIn) { tgt.x = spot.x; tgt.y = spot.y + 30; }
@@ -419,7 +419,7 @@ let work = null;         // 💼 src/scripts/town-work.js, once the square stand
 let crowd = null;        // 👥 src/scripts/town-crowd.js — the other players, once the square stands (22 Sep 2026)
 let duties = null;       // 💼 src/scripts/town-duties.js — the work note, once the jobs are up (22 Sep 2026)
 view.addEventListener('pointerdown', (e) => {
-  if (!panel.hidden) return;   // 🃏 a card is open: it owns every tap until it closes
+  if (!panel.hidden || sceneOn()) return;   // 🃏 a card is open: it owns every tap until it closes
   if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup, .bwq-hint, .twd-chip')) return;   // 📎 the two notes fold on a tap; they never walk   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
   if (working()) return;   // 🔒 held at the counter: the tray's Leave button is the way out
   arriveThen = null;   // a new tap cancels a pending cabinet
@@ -801,7 +801,12 @@ function staffAct(at, what) {
 const INSIDES = ['store', 'condo'];
 const DOOR_CARD = ['cafe', 'stand', 'post'];   // 💼 the workplaces with no inside answer their staff with the staff card
 const barred = (key) => !!(room && ((room.seam.shutNow && room.seam.shutNow(key)) || (room.seam.hoardNow && room.seam.hoardNow(key))));
+// 🕯 THE CHAPTER'S SCENE OWNS THE SCREEN (24 Sep 2026, the newcomer walk): its splash plays for four seconds before Nib's sheet,
+// and a tap on a building in those seconds opened the town's card UNDER the sheet — two cards stacked on a newcomer's first
+// minute. While the splash or the sheet is up, no place opens and nobody walks.
+const sceneOn = () => !!document.querySelector('.bwq-dlg, .bwq-intro');   // the splash from the moment it exists: it waits up to 0.8 s for its font before it shows
 function openFor(key) {
+  if (sceneOn()) return true;   // answered: the scene is speaking
   if (!inRoom && INSIDES.includes(key) && ROOMS[key] && !barred(key)) {
     arriveThen = () => { if (!inRoom) enterRoom(key); };
     return true;

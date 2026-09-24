@@ -487,7 +487,7 @@ export function bootTownCafe(ctx, cfg0) {
   let lastBest = '';   // which drink the last right cup was, for the receipt to name
   let grades = [], xpGot = 0;   // 🪜 the shift's cups by grade, reported once at clock-out, and the XP they came to
   let bigSaid = false, bigNext = null, jug = 0, jugSaid = false, specialSaid = false, specialNext = null;   // 🍋 the first big glass of a shift is announced, the rest are not; a walk may order the next one
-  let saidGrade = {}, tipsAllSaid = false, cappedHit = false;   // 🗣 the first good and first spot-on cup of a shift speak; the day's last tip is said once
+  let saidGrade = {}, tipsAllSaid = false, cappedHit = false, qaQuiet = false;   // qaQuiet: a walk holds the ordinary arrivals   // 🗣 the first good and first spot-on cup of a shift speak; the day's last tip is said once
   // ☕ THE RUSH (the café's rank 2, 23 Sep 2026; the ladder's slice 3). Once a day, a little way into a shift, the customers
   // stop leaving gaps: RUSH_N come one straight after another, and serving every one of them is a bonus on top of the
   // cups (jobs.js XP.cafe.rush). ⚠️ NOT "THREE AT ONCE", which the plan said: the rope holds two because a third customer
@@ -814,7 +814,7 @@ export function bootTownCafe(ctx, cfg0) {
     }
     if (!rush && served >= RUSH_AFTER && !line.length && !cup && unlocked(cfg.at, 'rush', rank()) && !rushed()) rushStart();
     if (rush && rush.left > 0) { if (callOne(now, true)) rush.left--; }
-    else if (!rush && now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
+    else if (!rush && !qaQuiet && now > nextAt) { nextAt = now + NEXT[0] + Math.random() * (NEXT[1] - NEXT[0]); callOne(now); }
     patienceTick(now);
     serveNext();
     if (!cup && !rush && jug === 0 && jugOn() && !line.some((q) => q.at)) jugOffer();   // 🍋 nobody waiting: the jug
@@ -862,6 +862,7 @@ export function bootTownCafe(ctx, cfg0) {
       // ☕ the walk cannot stand at a counter for two minutes waiting for a queue to form
       line: () => line.map((q) => ({ drink: q.drink, waiting: !!q.at, x: Math.round(q.v.x), y: Math.round(q.v.y) })),
       call: () => { callOne(performance.now()); return line.length; },
+      quiet: (v) => { qaQuiet = !!v; return qaQuiet; },   // QA: nobody comes unless the walk calls them
       arrive: () => { line.forEach((q) => { if (!q.at) { q.at = performance.now(); q.v.path = []; q.v.job = 'queue'; } }); return line.length; },
       cup: () => (tray ? tray.cup() : null),
       serve: () => { serveNext(); return !!(tray && tray.cup()); },

@@ -324,7 +324,7 @@ test('🍋 the stand’s rank 3: the jug — offered when nobody waits, stepping
   await page.screenshot({ path: 'test-results/unlock-jug-offer.png' });
   // ── a customer reaches the front: the untouched jug steps aside for them
   await page.evaluate(() => window.__town.room.folk().fill(6, performance.now()));
-  await page.evaluate(() => { const l = window.__town.room.lemon(); l.bigNext(false); l.call(); l.arrive(); });
+  await page.evaluate(() => { const l = window.__town.room.lemon(); l.quiet(true); l.bigNext(false); l.call(); l.arrive(); });   // one customer, and only the one the walk calls
   await page.waitForFunction(() => { const o = window.__town.room.lemon().order(); return o && o[0] === 'squeeze'; }, null, { timeout: 8000 });
   await finishOne(page, 'lemon', ['squeeze', 'fill']);
   // ── the rope clear again: the jug, filled
@@ -719,5 +719,26 @@ test('👻 the arcade’s rank 5: a ghost caught on the square at night counts a
     again = (await events(page, 'town_ghost')).filter((p) => p && p.caught).length > n0;
   }
   if (again) expect(await page.evaluate(() => window.__town.work.ladder().xp), 'caught again: no second repair').toBe(before + DAY_XP + xpFor('condo', 'ghost'));
+  expect(errs).toEqual([]);
+});
+
+test('✉️ the satchel always holds three letters for three doors, on every day of the year — and none is for Stamp', async ({ page }) => {
+  const errs = await town(page);
+  await hire(page, 'post', 5, 3500);
+  await page.waitForFunction(() => !!window.__town.deliver, null, { timeout: 10000 });
+  // the draw is seeded by the day: walk a year of days through it (a stride that shared a factor with the pool reached
+  // only three names on some days, and two could share a door)
+  const bad = await page.evaluate(() => {
+    const out = [], real = Date.now, R = window.__town.deliver.run('round');
+    try {
+      for (let d = 0; d < 366; d++) {
+        Date.now = () => real() + d * 864e5;
+        const to = R.to(), doors = new Set(R.doors().map(String));
+        if (to.length !== 3 || doors.size !== 3 || to.includes('stamp')) out.push(d + ':' + to.join('/'));
+      }
+    } finally { Date.now = real; }
+    return out;
+  });
+  expect(bad, 'every day: three letters, three different doors, none for Stamp').toEqual([]);
   expect(errs).toEqual([]);
 });

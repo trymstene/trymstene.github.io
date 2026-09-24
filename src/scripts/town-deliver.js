@@ -24,7 +24,7 @@ const GRAB = 34, ARRIVE = 64;   // how near a foot must come to a thing, and to 
 const IMG = { parcel: '/assets/town/s-box1-0.png', round: '/assets/town/s-letterseal-0.png', bus: '/assets/town/s-bag2-0.png' };
 export const RUNS = {
   parcel: { at: 'store', unlock: 'deliver', from: { room: 'store', xy: [560, 884] }, pool: TO, salt: 0, chore: 'deliver' },
-  round: { at: 'post', unlock: 'round', handed: true, pool: [...TO, 'pip'], salt: 7, n: 3, chore: 'letter' },
+  round: { at: 'post', unlock: 'round', handed: true, pool: [...TO.filter((k) => k !== 'stamp'), 'pip'], salt: 7, n: 3, chore: 'letter' },   // never Stamp: the satchel leaves HIS counter
   bus: { at: 'post', unlock: 'bus', from: { room: '', xy: [1962, 392] }, pool: ['stamp'], salt: 0, n: 1, chore: 'bag', morning: true },
 };
 
@@ -60,8 +60,11 @@ export function bootTownDeliver(ctx) {
   // the day's recipients for a run: its own draw, the same all day, each for a different door
   function recipients(run) {
     const R = RUNS[run], n = R.n || (unlocked('store', 'second', rank()) ? 2 : 1), seed = (today() * 2654435761 + R.salt * 40503) >>> 0, out = [];
-    for (let i = 0; out.length < n && i < R.pool.length * 2; i++) {
-      const k = R.pool[(seed + i * 3) % R.pool.length];
+    // ⚠️ A STRIDE THAT SHARES NO FACTOR WITH THE POOL (24 Sep 2026): stepping by 3 through nine names only ever reached three
+    // of them, and two could share a door — a satchel of two letters on some days. Every name is reachable now.
+    const L = R.pool.length, gcd = (a, b) => (b ? gcd(b, a % b) : a), stride = [3, 5, 7, 1].find((v) => gcd(v, L) === 1);
+    for (let i = 0; out.length < n && i < L; i++) {
+      const k = R.pool[(seed + i * stride) % L];
       if (!out.includes(k) && !out.some((o) => doorKey(o) === doorKey(k))) out.push(k);
     }
     return out;

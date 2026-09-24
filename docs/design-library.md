@@ -914,3 +914,15 @@ The same rule, applied to what the counters said on every cup (the review read e
   a poor week IS. A rule the player is judged by is not a mystery (voice.md's mystery rule is for timetables and odds).
 - **The first line after HIRED names the button that starts the work** ("Tap the Coffee Cup, then Go to work"), and a
   button says what it does ("Stop serving", then a toast: no more customers until you step out and back in).
+
+## §31 THE FIRST FRAME IS THE REAL ONE, AND A SCENE OWNS THE SCREEN (24 Sep 2026, the newcomer walk)
+
+- **A newcomer sees the town as it loads, so a walk must too.** Every town walk pinned the hour first, and that second
+  placement hid a first-load bug for weeks: seven of nine residents stood at their front doors and chapter one's "!" hung
+  over an empty fountain for up to a minute. `tests/town-first-frame.spec.mjs` loads the town AS IT COMES (no `life.set`).
+  A new world or area needs the same kind of walk.
+- **A scene owns the screen.** While chapter one's splash or sheet is up, no place opens a card and nobody walks
+  (banana-town `sceneOn`): a tap during the four-second splash used to open the town's card UNDER Nib's sheet. One card at
+  a time, and the story's card first.
+- **The first instruction names the action.** The quest chip's first line says what to do and where ("talk to nib at the
+  fountain in banana town"), not only a place.

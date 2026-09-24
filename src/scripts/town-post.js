@@ -457,7 +457,7 @@ export function bootTownPost(ctx) {
     // tapping “Write a letter” landed you on a page headed “Your Mailbox” — the wrong name over the
     // right thing, which is the one mistake the world's naming rule is about.
     const head = (folk ? (w.folk || {}).title : '') || w.title;
-    return '<div class="tw-post">' + (head ? '<h2>' + esc(head) + '</h2>' : '') + body + front + '</div>';
+    return '<div class="tw-post">' + (head ? '<h2>' + esc(head) + '</h2>' : '') + front + body + '</div>';
   }
 
   function render() {

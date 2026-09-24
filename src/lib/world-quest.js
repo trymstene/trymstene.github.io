@@ -1482,6 +1482,11 @@ export async function bootQuest() {
   function advance() {
     const cur = STEPS[S.s];
     track('quest_step', { id: cur && cur.id, done: 1 });
+    // 📊 THE FUNNEL, READABLE BY EVENT NAME (24 Sep 2026): 14 players a week met Nib and one finished the chapter, and
+    // nobody could say where the other thirteen stopped — the step rides in quest_step's `id`, which GA4 never registered.
+    // One event per step, named for it (quest_step_c1_peel_hi, …): totalUsers per name is the funnel (tools/ga4-chapter-funnel.py).
+    // ⚠️ the prefix is quest_step_, never quest_: chapter two has a step called c2_done, and quest_c2_done is the chapter's finish.
+    if (cur && cur.id) track('quest_step_' + cur.id, {});
     // 🚧 A SIGNATURE. The front this step certified goes into bwq-c2.open, which town-room.js's
     // openedSet() already reads — the lock half shipped on 19 Sep and has been waiting for this
     // one line. ⚠️ additive and de-duplicated: the list only ever grows, like the step index, so a

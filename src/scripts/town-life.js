@@ -356,7 +356,7 @@ export function initLife({ world, W, H, pct }) {
         else { n.path = []; n.walking = false; n.wait = 0; goHome(n); }
         continue;
       }
-      n.beat = beat; n.place = st.place; n.act = st.act; n.face = st.face; n.lines = st.lines; n.loop = st.loop; n.li = 0; n.ldir = 1;
+      n.beat = beat; n.place = st.place; n.act = st.act; n.face = st.face; n.lines = st.lines; n.loop = st.loop; n.li = 0; n.ldir = 1; n.st = [st.x, st.y];
       n.lastWater = 0;
       n.marks = marksFor(n, st, beat); n.mi = 0; n.drift = null;
       n.dwell = DWELL_MIN + h01(n.idx + 1, beat + 1, 11) * DWELL_VAR;
@@ -369,8 +369,12 @@ export function initLife({ world, W, H, pct }) {
         n.walking = false;
       } else {
         n.path = []; n.walking = false; n.wait = 0;
-        n.x = st.x; n.y = st.y;
-        if (st.act === 'home') goHome(n); else leaveHome(n);
+        // ⚠️ OUT OF THE HOUSE FIRST, THEN TO THE PLACE (24 Sep 2026). Everyone is made hidden, and leaveHome() puts a
+        // hidden resident on their DOORSTEP — so taking the place first and leaving home second stood seven of nine at
+        // their front doors on every real first load (Bean not at his counter, Nib not at the fountain under the
+        // newcomer's "!"), each then waiting up to 74 s to walk out. Every walk pinned the hour first, and a second
+        // placement found them visible — so no walk saw it; tests/town-first-frame.spec.mjs loads the town as it comes.
+        if (st.act === 'home') { n.x = st.x; n.y = st.y; goHome(n); } else { leaveHome(n); n.x = st.x; n.y = st.y; }
       }
     }
     if (mayorEl) mayorEl.hidden = beat !== 4;
@@ -561,7 +565,7 @@ export function initLife({ world, W, H, pct }) {
     glows: () => res.filter((n) => n.glow && !n.glow.hidden).map((n) => n.key),
     beat: () => curBeat,
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
-    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
+    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
     flyers: () => flyers.filter((f) => !f.gone).map((f) => ({ i: f.i, x: f.x, y: f.y })),
     rung,
