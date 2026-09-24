@@ -1,6 +1,6 @@
-# The job — the words for nine residents of Banana Town
+# The job — the words for the residents of Banana Town
 
-These nine already live here. Their names, jobs, hours and routes are fixed and are not yours to
+These ten already live here. Their names, jobs, hours and routes are fixed and are not yours to
 change. What is yours is everything they say. Same people, better lines.
 
 ## What each line is for
@@ -51,7 +51,7 @@ that station — so each one is a thought from the middle of that task. Do not n
 thing the task made them think.
 
 
-## The nine
+## The ten
 
 ### `nib` — Nib, the Town Hall clerk
 
@@ -63,7 +63,7 @@ Weighs everything and tells you the number, because accuracy is how she shows af
 
 ### `moss` — Moss, the street sweeper
 
-Blew in with the autumn and stayed, found a broom leaning on the hall and considered the matter settled. Two or three words, then one long plain sentence that arrives like a bus. Never asks a question. Lives above the arcade next to Spinner, who practises Pong through the wall. Keeps the best flyer of each week under her mattress and has told nobody. Warm underneath, never soft on top.
+Blew in with the autumn and stayed, found a broom leaning on the hall and considered the matter settled. Two or three words, then one long plain sentence that arrives like a bus. Never asks a question. Lived above the arcade next to Spinner, who practises Pong through the wall, and moved to the back room of the clothes shop for the quiet. Keeps the best flyer of each week under her mattress and has told nobody. Warm underneath, never soft on top.
 
 ### `pip` — Pip, the general store
 
@@ -77,9 +77,9 @@ Opened the kiosk because the building already said COFFEE. Reads a fortune in ev
 
 Gran Fig's grandson, running a one-cup stand like a corporation: boardroom words, a confident opening, then the honest number. Calls his grandmother 'the supplier'. Waters her trees before dawn and lets her think it was rain. Wheels the cart into the square at noon and calls it expansion. Walks her to her bench every evening and calls it on the way; it is not on the way.
 
-### `spinner` — Spinner, the Wheel of Peel, and the arcade Pong paddle
+### `spinner` — Spinner, the Arcade
 
-A showman with three bells on his hat, shouting to a square that is usually empty. One free spin a day and a pot that grows until somebody hits it. Loud, generous, delighted by his own patter. ⚠️ He refers to himself in the third person but NOT in every line — it is a tic he falls into, not a speech impediment; most lines are plain. Quietly, he lets every kid win at Pong by exactly one point and would rather nobody knew.
+A showman with three bells on his hat, and the Arcade is his: five cabinets that play for prizes, four old ones by the walls that do not, a counter with the high-score book, and a Pong paddle nobody else may hold. Half his day is out on the arcade's step, half inside on its floor; he lives upstairs. Loud, generous, delighted by his own patter. ⚠️ He refers to himself in the third person but NOT in every line — it is a tic he falls into, not a speech impediment; most lines are plain. Quietly, he lets every kid win at Pong by exactly one point and would rather nobody knew.
 
 ### `dot` — Dot, the info kiosk, keeper of the town’s wants
 
@@ -89,9 +89,13 @@ Writes down what everyone in town is looking for. Speaks almost entirely in ques
 
 Grows everything the Figs sell, waters the beds before the sun sees. Remembers everyone's name, and their mother's, and what their mother's hat looked like. Speaks in short imperatives and old gossip, decides about people quickly and tells them so. Repainted the stand's sign overnight when her grandson tried to rename it. Keeps a second chair by her bench, for guests, and it is usually empty.
 
+### `twirl` — Twirl, the Wheel of Peel
+
+Came in on the mail bus with a painted wheel strapped to the roof and stopped where it seemed to want to stop. One free spin a day, paid spins for coins, and a pot that grows until one wedge wins it. Calm and unhurried, short sentences; talks about the wheel as if it has moods, taps its rim twice before every spin and says good morning to it at any hour. Never gives odds, never promises a prize. Lodges at Dot's print shop. Lunches at the fruit cart. Waves twice to Spinner across the square in the evening, and he waves back twice.
+
 ## Return
 
-Every one of the nine, with all five greetings, the tap line, the want, and three lines for each of
+Every one of the ten, with all five greetings, the tap line, the want, and three lines for each of
 the six beats in the order above. Keys and names exactly as written here.
 
 ## Moss and the nights — `ask.curse` and `curse` (Moss only)

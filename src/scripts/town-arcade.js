@@ -15,6 +15,9 @@ import { arrived as callIn } from '../lib/work-calls.js';
 const ARC_KEY = 'tw-arcade-v1';
 const ARC_LITTER = [[430, 470], [590, 404], [700, 500]];   // floor spots inside the arcade, off every collider
 const ARC_CABS = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'g9'];
+// 🕹 what goes DARK on a dead cabinet is its LIGHTS — marquee, screen, buttons — measured off in-arcade.png (24 Sep 2026: a box
+// over the whole machine read as a black block, not as a cabinet with its power off). The back row is one model.
+const LIGHTS = { g6: [331, 387, 367, 423], g7: [331, 459, 367, 507], g8: [809, 387, 845, 423], g9: [809, 459, 845, 507] };
 
 export function bootTownArcade(ctx) {
   const { world, W, H, pct, sprite, kill, burst, mark, h, dayNum, track } = ctx;
@@ -26,7 +29,7 @@ export function bootTownArcade(ctx) {
   const arcDeadKey = () => arcForce || ARC_CABS[Math.floor(h(dayNum(), 77, 1) * ARC_CABS.length) % ARC_CABS.length];
 
   function clear() {
-    arcLitter.forEach((l) => kill(l.s)); arcLitter = [];
+    arcLitter.forEach((l) => { kill(l.s); l.m.remove(); }); arcLitter = [];
     if (arcDead) { arcDead.el.remove(); arcDead.m.remove(); arcDead = null; }
     if (arcLit) { arcLit.remove(); arcLit = null; }
   }
@@ -40,8 +43,11 @@ export function bootTownArcade(ctx) {
     const li = Math.floor(h(dayNum(), 55, 2) * ARC_LITTER.length) % ARC_LITTER.length;
     ARC_LITTER.forEach(([x, y], i) => {
       if (i !== li || a.swept.includes(i) || !sweepIn) return;
-      const s = sprite(['trash1', 'trash2', 'trash3'][i % 3], x, y, { z: 2000 + y, cls: 'is-in' });
-      if (s) arcLitter.push({ i, s, x, y });
+      // the square's own grammar for a thing to pick up: the halo on it and the mark over it (24 Sep 2026: bare, it read as a speck)
+      const s = sprite(['trash1', 'trash2', 'trash3'][i % 3], x, y, { z: 2000 + y, cls: 'is-in is-todo' });
+      if (!s) return;
+      const m = mark(x, y, 40, 2001 + y); m.classList.add('is-in');
+      arcLitter.push({ i, s, m, x, y });
     });
     if (a.lit) litShow(a.lit);   // 🕹 the cabinet a perfect repair lit today (rank 2)
     const key = arcDeadKey();
@@ -59,7 +65,7 @@ export function bootTownArcade(ctx) {
     const i = arcLitter.findIndex((l) => Math.hypot(l.x - x, l.y - y) < 40);
     if (i < 0) return false;
     const l = arcLitter.splice(i, 1)[0];
-    kill(l.s); burst(l.x, l.y - 6);
+    kill(l.s); l.m.remove(); burst(l.x, l.y - 6);
     const a = arcRead(); a.swept.push(l.i); arcWrite(a);
     ctx.chore('sweep');
     track('town_chore', { at: 'condo', kind: 'sweep' });
@@ -75,10 +81,10 @@ export function bootTownArcade(ctx) {
   // a box over a cabinet's own spot: the dark one, or 🕹 one a perfect repair lit for the rest of the day (rank 2)
   function cabBox(k, cls) {
     const sp = ARCADE.spots.find((q) => q[0] === k); if (!sp) return null;
-    const [, x0, y0, x1, y1] = sp, el = document.createElement('i');
+    const [x0, y0, x1, y1] = cls !== 'tw-dead' ? sp.slice(1) : LIGHTS[k] || [sp[1] + 6, 178, sp[1] + 42, 254], el = document.createElement('i');
     el.className = cls + ' is-in';
     el.style.left = pct(x0, W); el.style.top = pct(y0, H); el.style.width = pct(x1 - x0, W); el.style.height = pct(y1 - y0, H);
-    el.style.zIndex = String(2001 + y1);
+    el.style.zIndex = String(2001 + sp[4]);
     world.appendChild(el);
     return el;
   }

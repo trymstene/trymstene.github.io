@@ -268,6 +268,15 @@ const pos = { x: SPAWN.x, y: SPAWN.y }, tgt = { x: SPAWN.x, y: SPAWN.y };
 // your own at a counter — in the band between the top notes (and a toast's place under them, three lines of it) and the
 // tray. MEASURED, never a number per counter: the notes fold and unfold, the strip grows a line, the tray is its own height.
 // A counter the world's edge will not let the camera reach (the café's hatch, low in the world) simply stays where it is.
+// how far down the view the notes along its top reach (the HUD strip, the quest note, the work note), measured and kept 250 ms
+let notesAt = -1e9, notesLow = 0;
+function notesBottom(now) {
+  if (now - notesAt < 250) return notesLow;
+  notesAt = now; notesLow = 0;
+  const v = view.getBoundingClientRect();
+  for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top && r.top < v.top + v.height / 2) notesLow = Math.max(notesLow, r.bottom - v.top); }
+  return notesLow;
+}
 let frameAt = -1e9, frameY = null;
 function shiftFrameY(now) {
   if (now - frameAt < 250) return frameY;
@@ -276,9 +285,7 @@ function shiftFrameY(now) {
   const tray = [...view.querySelectorAll('.tw-cup')].find((e) => !e.hidden && !e.classList.contains('is-folded'));
   const fig = world.querySelector('.tw-atwork') || me;
   if (!tray || !fig) return null;
-  const v = view.getBoundingClientRect(), wr = world.getBoundingClientRect(), f = fig.getBoundingClientRect(), cs = getComputedStyle(toastEl);
-  let low = 0;
-  for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); }
+  const v = view.getBoundingClientRect(), wr = world.getBoundingClientRect(), f = fig.getBoundingClientRect(), cs = getComputedStyle(toastEl), low = notesBottom(now);
   const top = Math.max(14, low + 10) + (parseFloat(cs.lineHeight) || 18) * 3 + (parseFloat(cs.paddingTop) || 8) * 2 + 14, bot = tray.getBoundingClientRect().top - v.top - 8;
   const y0 = f.top - wr.top, y1 = f.bottom - wr.top;   // the figure, in the world's own scaled pixels
   frameY = bot - top >= y1 - y0 ? (y0 + y1) / 2 - (top + bot) / 2 : y0 - top;   // centred in the band, or its top at the band's top
@@ -323,8 +330,12 @@ function camTarget() {
   const b = roomNow() && roomNow().box;
   if (b) {
     const a = b[0] * scale, n = b[2] * scale;
+    // ⬇️ …and BELOW THE NOTES along the view's top (24 Sep 2026, walking the arcade as its staff: the work note and the quest
+    // note sat over the back row of cabinets, and a tap meant for the dark one opened the staff card). The room sits in the
+    // band from the notes' bottom to the view's: centred when it fits, following the banana between its top and bottom when not.
+    const hi = b[1] * scale - notesBottom(performance.now()) - 8, lo = (b[1] + b[3]) * scale - viewH + 8;
     // indoors the framing may pass the world's edge: outside the room is dark already (§22), as it is beside a centred room
-    return { x: n <= viewW ? a - (viewW - n) / 2 : Math.max(a, Math.min(a + n - viewW, pos.x * scale - viewW / 2)), y: fy != null ? fy : Math.max(0, Math.min(Math.max(0, H * scale - viewH), pos.y * scale - viewH * 0.58)) };
+    return { x: n <= viewW ? a - (viewW - n) / 2 : Math.max(a, Math.min(a + n - viewW, pos.x * scale - viewW / 2)), y: fy != null ? fy : lo <= hi ? (lo + hi) / 2 : Math.max(hi, Math.min(lo, pos.y * scale - viewH * 0.58)) };
   }
   return {
     x: Math.max(0, Math.min(Math.max(0, W * scale - viewW), pos.x * scale - viewW / 2)),
@@ -387,6 +398,7 @@ function blocked(x, y) {
 function thingAt(wx, wy) {
   const rm = roomNow();
   if (rm) {   // 🚪 indoors ONLY the room's own fittings exist — the early return is what stops a tap
+    const lk = life.at(wx, wy); if (lk) return lk;   // 🕹 …and its own people: Spinner on the arcade's floor (24 Sep 2026)
     for (const [key, x0, y0, x1, y1] of rm.spots) if (wx >= x0 && wx <= x1 && wy >= y0 && wy <= y1) return ['spot', key];
     return null;   // falling through here would find the shopfront under the store's own plate
   }
@@ -867,6 +879,7 @@ function openPlain(key) {
 function enterRoom(key) {
   const rm = ROOMS[key]; if (!rm || inRoom) return;
   inRoom = key;
+  life.setRoom(key);   // 🕹 who is home in here shows on its floor
   world.classList.add('is-inside');
   world.dataset.room = key;   // 💼 which room: the work note stays up inside your own workplace
   if (duties) duties.render();
@@ -899,6 +912,7 @@ function exitRoom() {
   const key = inRoom; if (!key) return;
   if (serve) serve.leave();   // 🛒 customers belong to the shop
   inRoom = '';
+  life.setRoom('');
   if (room && room.roomShow) room.roomShow('');
   world.classList.remove('is-inside');
   delete world.dataset.room;

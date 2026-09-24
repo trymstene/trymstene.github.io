@@ -28,7 +28,7 @@
       "key": "moss",
       "name": "Moss",
       "temper": "steady",
-      "born": "She blew in with the autumn leaves, saw a broom leaning against Town Hall, and swept the square before anyone could object. She rented the room above the arcade beside Spinner.",
+      "born": "She blew in with the autumn leaves, saw a broom leaning against Town Hall, and swept the square before anyone could object. She rents the back room of the clothes shop, far from Spinner’s Pong.",
       "loves": "The first hard rain after a dry week, when the cobbles turn nearly black.",
       "hates": "The arcade Pong beep before dawn.",
       "interest": "She makes a pencil map of every crack that crosses the square, then updates it after rain.",
@@ -76,9 +76,9 @@
       "key": "spinner",
       "name": "Spinner",
       "temper": "ecstatic",
-      "born": "He arrived with three bells, a Pong paddle, and a wagon of prize tickets. The arcade gave him a corner, and the Wheel of Peel gave him a reason to ring at the sky.",
-      "loves": "The whole square cheering when the Wheel of Peel lands on a prize.",
-      "hates": "A prize bell that rings once and then stops.",
+      "born": "He arrived with three bells, a Pong paddle and a wagon of prize tickets, and talked his way into the empty arcade. He lives above it and runs it from the door.",
+      "loves": "A new name going into the high-score book, in his own best handwriting.",
+      "hates": "A cabinet that goes dark in the middle of somebody’s best game.",
       "interest": "He builds tiny grandstands from used arcade tickets and assigns every empty seat a champion.",
       "quirk": "He tests the three bells on his hat one at a time, then nods to each as if it answered.",
       "voice": "Use energetic bursts, exclamations, and proud announcements. Slip into third person occasionally, especially when excited. Never mention letting anyone win.",
@@ -107,6 +107,18 @@
       "quirk": "She measures the statue’s plinth with a tape measure whenever she crosses the square.",
       "voice": "Use short imperatives and blunt verdicts about everybody’s work. Give orders instead of advice. Never reminisce, soften criticism, or call anything “good enough.”",
       "soft": "She wants Fig Jr. to take the business farther than her orchard can reach, but she keeps raising the bar so he will stop asking permission."
+    },
+    {
+      "key": "twirl",
+      "name": "Twirl",
+      "temper": "steady",
+      "born": "She came in on the mail bus with a painted wheel strapped to its roof, walked it round the square twice, and stopped where it seemed to want to stop. She lodges at Dot’s print shop.",
+      "loves": "The last slow tick of the Wheel of Peel before it settles.",
+      "hates": "Anyone who spins the wheel backwards to see what happens.",
+      "interest": "She keeps a notebook of which way the fountain splashes each morning and reads it like a weather report for luck.",
+      "quirk": "She taps the wheel’s rim twice before every spin and says good morning to it, whatever the hour.",
+      "voice": "Calm and unhurried. Short sentences, often four or five words. Talks about the wheel as if it has moods. Never gives odds, never promises a prize, never raises her voice.",
+      "soft": "She is not sure the wheel is lucky at all. She keeps it turning because people smile at it, and she likes standing near that."
     }
   ]
 }

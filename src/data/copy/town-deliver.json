@@ -4,12 +4,13 @@
   "to": {
     "nib": "Nib at the town hall",
     "stamp": "Stamp at the post office",
-    "moss": "Moss at the arcade",
+    "moss": "Moss at the clothes shop",
     "bean": "Bean at the Coffee Cup",
     "figjr": "Fig Jr. in the garden",
     "spinner": "Spinner at the arcade",
     "dot": "Dot at the print shop",
     "granfig": "Gran Fig in the garden",
+    "twirl": "Twirl at the print shop",
     "pip": "Pip at the general store"
   },
   "pickedTwo": "Two parcels: for {to} and for {to2}. The markers are over their doors.",

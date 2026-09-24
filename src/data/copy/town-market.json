@@ -26,9 +26,9 @@
       "again": "Spin again, on the house.",
       "pot": "THE POT! {n} coins, all yours."
     },
-    "full": "Your pocket already holds five of those, so Spinner pays you {n} coins instead.",
+    "full": "Your pocket already holds five of those, so Twirl pays you {n} coins instead.",
     "funds": "A spin costs {n} coins, and you have {have}.",
-    "cap": "That’s all the spins Spinner takes from you today. Your free one is back tomorrow.",
+    "cap": "That’s all the spins Twirl takes from you today. Your free one is back tomorrow.",
     "busy": "The wheel stuck. Nothing was spent, so try again in a moment.",
     "keep": "Spins are kept on your Banana Pass, and this device doesn’t have one yet.",
     "keepLink": "Get your pass",

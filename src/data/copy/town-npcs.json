@@ -204,7 +204,7 @@
           "beat": "night",
           "lines": [
             "Last pass. The broom bristles catch softly on the dry joints between stones.",
-            "Spinner is practicing Pong through the wall. One beep, then another.",
+            "Quiet room. The back of the clothes shop has no Pong beeping through the wall.",
             "The square is clear enough to leave alone until dawn."
           ]
         }
@@ -423,15 +423,15 @@
     {
       "key": "spinner",
       "name": "Spinner",
-      "role": "Wheel of Peel host and arcade Pong keeper with one free daily spin.",
-      "tap": "I run the Wheel of Peel and Pong! One free spin waits at the wheel each day.",
-      "want": "I want someone beside the Wheel of Peel when its bells ring.",
+      "role": "Runs the Arcade: five cabinets that play for prizes, and a counter that keeps the scores.",
+      "tap": "Spinner’s Arcade! Five cabinets, and each one keeps a prize for a big enough score!",
+      "want": "Someone at the next cabinet when a high score goes up! Cheering is better in pairs!",
       "hi": [
-        "Welcome to the Wheel of Peel! The first spin is free.",
-        "Back again! The wheel has excellent memory for applause.",
-        "{name}, the Wheel of Peel stands beside the fountain.",
-        "Bellringer, {name}, you always arrive when the wheel is polished!",
-        "{name}, I build grandstands from old tickets so the empty seats have champions."
+        "Welcome to the Arcade! Pick a cabinet, any cabinet, they all beep!",
+        "You again! The cabinets remember you. Spinner remembers you louder!",
+        "{name}, the five cabinets along the back wall are the ones that play.",
+        "High Score {name}! All three bells rang when you walked in!",
+        "{name}, some nights I play both paddles of Pong so the arcade never sounds empty."
       ],
       "ask": {
         "doing": "What are you up to?",
@@ -443,48 +443,48 @@
         {
           "beat": "dawn",
           "lines": [
-            "Three bells checked! Spinner’s hat is ready before the square is ready!",
-            "The Wheel of Peel is polished. It deserves to see itself shine.",
-            "Pong beeps from the arcade. The paddle is warming up without me."
+            "Three bells checked! The Arcade opens the moment the square wakes up!",
+            "Door propped open! Beeps travel better in fresh air!",
+            "I sweep the Arcade step myself! Moss says that is her job. Moss is wrong!"
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "A free spin waits at the wheel! The pot waits beside it, growing patient!",
-            "I tested the prize bell. It rang twice, which is how a bell apologizes.",
-            "The square has room for a crowd. I have announced this to it."
+            "Every cabinet switched on, one at a time. Each one gets a hello!",
+            "Pong is warming up. The paddle and I have an understanding!",
+            "Spinner polishes the high-score book. The top names deserve to shine!"
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "The wheel catches the fountain light! A dramatic improvement!",
-            "I built a grandstand from six old tickets. Front row is already cheering!",
-            "Pong has started up in the arcade. The paddle wants a champion."
+            "Out on the step for the noon crowd! The cabinets can mind themselves!",
+            "I count prize tickets by the door. They make a very fine audience!",
+            "A ticket blew out the door. It will come back. They always come back!"
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "Spin, bell, prize! The wheel has rehearsed the whole afternoon!",
-            "One empty seat in my ticket grandstand has the best view of the counter.",
-            "Spinner says the prize bell needs a second ring. The first is only hello!"
+            "The afternoon rush! One cabinet beeps, and then they all want to!",
+            "A new name almost made the high-score book. Almost is still thrilling!",
+            "Spinner is testing every joystick. Spinner approves of all of them!"
           ]
         },
         {
           "beat": "evening",
           "lines": [
+            "Twirl waves from the wheel! I wave back twice. That is our rule!",
             "The hall window is lit! Even the Mayor enjoys a proper announcement, probably!",
-            "I count the prize tickets by the arcade door. They make a fine audience.",
-            "The Wheel of Peel slows beautifully when the square goes gold."
+            "The cabinets glow better when the square goes gold. I checked each one!"
           ]
         },
         {
           "beat": "night",
           "lines": [
             "Last bell check! One, two, three: the hat remains in business!",
-            "The arcade Pong screen glows. It refuses to call this a quiet night.",
+            "I read the high-score book in bed. Every name gets a quiet cheer!",
             "I folded the ticket grandstand taller. Tomorrow needs more champions!"
           ]
         }
@@ -626,6 +626,76 @@
             "Count the crates. A tight pack sleeps better than a loose one.",
             "I wrote the Town Hall another note about that statue. Sensible reading.",
             "Check the garden gate. A rabbit would be trouble, if we had rabbits."
+          ]
+        }
+      ]
+    },
+    {
+      "key": "twirl",
+      "name": "Twirl",
+      "role": "Keeps the Wheel of Peel: one free spin a day, paid spins for coins, and a pot that grows.",
+      "tap": "The Wheel of Peel. One free spin a day. It likes to be asked nicely.",
+      "want": "Someone beside me when the pot is finally won. It should be seen.",
+      "hi": [
+        "Hello. The wheel keeps one free spin a day for everybody.",
+        "You came back. The wheel noticed first.",
+        "{name}, every paid spin feeds the pot. One wedge wins all of it.",
+        "Lucky {name}. I say it out loud so the wheel hears.",
+        "{name}, I do not know if the wheel is lucky. I spin it because people smile."
+      ],
+      "ask": {
+        "doing": "What are you up to?",
+        "want": "Need anything?",
+        "curse": ""
+      },
+      "curse": "",
+      "beats": [
+        {
+          "beat": "dawn",
+          "lines": [
+            "Good morning, wheel. Two taps on the rim. Now it is awake.",
+            "I wipe the dew off each wedge. The pot wedge first, out of respect.",
+            "The fountain splashed left this morning. I have written it down."
+          ]
+        },
+        {
+          "beat": "morning",
+          "lines": [
+            "The free spin is ready. The wheel does not rush, and neither do I.",
+            "Someone spun it backwards once. It sulked all day. We do not speak of it.",
+            "The pot is a little heavier than yesterday. The wheel is pleased."
+          ]
+        },
+        {
+          "beat": "noon",
+          "lines": [
+            "Lunch at the fruit cart. Fig Jr. calls it expansion. I call it a pear.",
+            "Away from the wheel for a moment. It does better when nobody watches.",
+            "I eat facing the wheel, so it knows I have not gone far."
+          ]
+        },
+        {
+          "beat": "afternoon",
+          "lines": [
+            "Afternoon spins are slower. The light is heavier, and the wheel feels it.",
+            "The peel wedge came up again. The wheel has a sense of humour.",
+            "Two taps on the rim between spins. It keeps the wedges honest."
+          ]
+        },
+        {
+          "beat": "evening",
+          "lines": [
+            "Spinner waved from the arcade step. I waved back twice. That is our rule.",
+            "The wheel slows beautifully when the square goes gold.",
+            "The hall window is lit. I tell the wheel, so it knows it is evening."
+          ]
+        },
+        {
+          "beat": "night",
+          "lines": [
+            "Home at Dot’s print shop. She asks where the wheel sleeps. Where it stands.",
+            "I read my fountain notebook by the lamp. Tomorrow looks lucky. It always does.",
+            "Good night, wheel. I say it from here. It hears me across the square."
           ]
         }
       ]

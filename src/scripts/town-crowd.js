@@ -7,9 +7,9 @@
 //
 // ⚠️ THE WIRE IS IN PERCENT of the town plate (W 2200 × H 1300), the park's convention: the room clamps
 // it, so a client can never place a banana off the map. ⚠️ A banana INDOORS (the arcade, the store) is
-// on another plate: it rides the wire with its `room`, and it is not drawn on the square — nor is anybody
-// drawn while YOU are indoors. Others inside the same room with you is a later refinement; today the
-// square is what is shared.
+// on another plate: it rides the wire with its `room`, and you see it where YOU are — on the square from
+// the square, on the arcade's floor from inside the arcade (24 Sep 2026, Trym: "seeing other players in
+// the store and arcade"). A room is a plate in the same world, so its floor's x/y are world x/y already.
 // Fails silently by design: no socket, no crowd, the town works solo exactly as it did.
 import { presenceRoom, poofInto } from '../lib/world.js';
 import { drawComposite, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
@@ -28,7 +28,7 @@ export function bootTownCrowd(ctx) {
   const fromPX = (x) => (Number(x) || 50) / 100 * W, fromPY = (y) => (Number(y) || 90) / 100 * H;
   const fit = (o) => ({ ...(o || {}), top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
   const here = () => (inRoom && inRoom()) || '';
-  const visible = (p) => !p.room && !here();
+  const visible = (p) => p.room === here();   // the same place as you: the square, or the same room
 
   function refreshCrowd() { if (hud && hud.setCrowd) hud.setCrowd(peers.size ? String(peers.size + 1) : 'solo'); }
   function drawPeer(p, force) {
@@ -40,7 +40,8 @@ export function bootTownCrowd(ctx) {
   function placePeer(p) {
     p.el.style.left = pct(p.x, W);
     p.el.style.top = pct(p.y, H);
-    p.el.style.zIndex = String(100 + Math.round(p.y));   // the square's own depth: z = 100 + y
+    p.el.style.zIndex = String((p.room ? 2100 : 100) + Math.round(p.y));   // the square's own depth: z = 100 + y; indoors, the player's own layer
+    p.el.classList.toggle('is-in', !!p.room);   // a thing of the room (town.astro hides the square's while you are in)
     p.el.hidden = !visible(p);
   }
   function addPeer(d) {
@@ -78,7 +79,13 @@ export function bootTownCrowd(ctx) {
       else if (m.t === 'join') addPeer(m.p);
       else if (m.t === 'move') {
         const p = peers.get(m.id);
-        if (p) { p.x = fromPX(m.x); p.y = fromPY(m.y); p.room = m.room || ''; placePeer(p); }
+        if (!p) return;
+        // through a door they APPEAR: no glide across the wall from where they stood on the square
+        const door = (m.room || '') !== p.room;
+        p.x = fromPX(m.x); p.y = fromPY(m.y); p.room = m.room || '';
+        if (door) p.el.style.transition = 'none';
+        placePeer(p);
+        if (door) { void p.el.offsetWidth; p.el.style.transition = ''; }
       } else if (m.t === 'outfit') {
         const p = peers.get(m.id);
         if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); }
@@ -102,7 +109,7 @@ export function bootTownCrowd(ctx) {
 
   return {
     tick,
-    // 🚪 through a door, either way: everybody on the square hides or shows again at once
+    // 🚪 through a door, either way: whoever is where you now are shows, everybody else hides, at once
     rooms: () => { for (const p of peers.values()) placePeer(p); },
     outfit: () => { if (room.live) room.send({ t: 'outfit', outfit: outfit() }); },
     // 🎆 my firework, out to everyone on the square (the room drops one sent from indoors)

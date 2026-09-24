@@ -176,10 +176,12 @@ for (const f of files) {
   // flyer is swept on, so his route is load-bearing. One banana with a broom is character.
   if (rel === 'src/scripts/town-life.js') {
     const mech = (code.split('const MECH = [')[1] || '').split('\n];')[0];
-    for (const m of mech.matchAll(/\{ key: '(\w+)'[\s\S]*?day: \[([\s\S]*?)\] \},/g)) {
-      const who = m[1];
+    for (const m of mech.matchAll(/\{ key: '(\w+)'([\s\S]*?)day: \[([\s\S]*?)\] \},/g)) {
+      const who = m[1], home = (/home: '(\w+)'/.exec(m[2]) || [])[1];
       if (who === 'moss') continue;
-      const places = [...m[2].matchAll(/\['(\w+)',/g)].map((p) => p[1]);
+      // 🕹 a DAYTIME home beat is spent IN their own place (Spinner on the arcade's floor, §34, 24 Sep 2026: "walk in and out,
+      // look busy there"): stepping through their own door is not a walk across the town
+      const places = [...m[3].matchAll(/\['(\w+)',/g)].map((p, i, all) => (p[1] === 'home' && i < all.length - 1 ? home : p[1]));
       let walks = 0;
       for (let i = 1; i < places.length; i++) if (places[i] !== places[i - 1]) walks++;
       if (walks > 4) problems.push([rel, `${who} walks ${walks} times a day (${places.join(' → ')}) — a resident stands by their own shop: post, post, a break, post, post, home. The visitors are the traffic (town-folk.js), see design library §23`]);

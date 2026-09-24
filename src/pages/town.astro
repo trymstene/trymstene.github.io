@@ -162,7 +162,7 @@ const description = PAGE.description;
     .tw-inshade { position: absolute; inset: 0; z-index: 2000; background: #0d0b14; pointer-events: none; }
     .tw-room { position: absolute; z-index: 2010; background-size: 100% 100%; image-rendering: pixelated; pointer-events: none; }
     /* 🕹 a cabinet gone dark, for the arcade's own staff: the screen off, until it is woken (a repair) */
-    .tw-dead { position: absolute; pointer-events: none; background: rgba(8, 6, 18, 0.66); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.5); }
+    .tw-dead { position: absolute; pointer-events: none; background: rgba(12, 10, 24, 0.86); }   /* over the cabinet's LIGHTS only: its power is off (town-arcade.js LIGHTS) */
     /* 🕹 a cabinet a perfect repair lit today (the arcade's rank 2): a gold edge and a warm glow, breathing on opacity alone */
     .tw-lit { position: absolute; pointer-events: none; background: rgba(255, 214, 90, 0.14); box-shadow: inset 0 0 0 2px rgba(255, 214, 90, 0.95), 0 0 16px 4px rgba(255, 196, 60, 0.55); animation: twLit 1.8s ease-in-out infinite; }
     @keyframes twLit { 50% { opacity: 0.55; } }

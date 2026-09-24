@@ -3,7 +3,8 @@
 // Two phones in the town at once, against the REAL room (worker-rave SquareRoom, the park's rail) — the
 // same doctrine as tests/two-devices.spec.mjs: presence cannot be proven on a stub. Each sees the other's
 // banana on the square with its name over its head, the crowd chip counts both, a walk moves the other
-// one's copy, a door hides it, and leaving takes it away.
+// one's copy, a door hides it — until the other walks through it too: inside the arcade they see each other
+// again, on its floor (24 Sep 2026) — and leaving takes it away.
 // ⚠️ the QA shim keeps every OTHER town walk out of the live room; this one asks for it (?crowd=1).
 import { test, expect } from '@playwright/test';
 
@@ -62,7 +63,22 @@ test('two bananas in the square see each other, walk, go indoors, and leave', as
   // ── B steps into the arcade: A no longer draws B on the square (another plate), and knows why
   await b.evaluate(() => window.__town.arcade.enter());
   await a.waitForFunction(() => { const p = window.__town.crowd.peers().find((q) => q.name === 'QA Bravo'); return p && p.room === 'condo' && p.hidden; }, null, { timeout: 10000 });
+  // ── 🕹 A follows B in: on the arcade's floor they see each other again, and a step inside travels (24 Sep 2026)
+  await a.evaluate(() => window.__town.arcade.enter());
+  await a.waitForFunction(() => { const p = window.__town.crowd.peers().find((q) => q.name === 'QA Bravo'); return p && p.room === 'condo' && !p.hidden; }, null, { timeout: 10000 });
+  await b.waitForFunction(() => { const p = window.__town.crowd.peers().find((q) => q.name === 'QA Alpha'); return p && p.room === 'condo' && !p.hidden; }, null, { timeout: 10000 });
+  const inside = await a.evaluate(() => { const e = [...document.querySelectorAll('.tw-peer')].find((x) => (x.textContent || '').includes('QA Bravo')); return { cls: e.className, z: +e.style.zIndex, vis: getComputedStyle(e).visibility }; });
+  expect(inside.cls, 'a thing of the room').toContain('is-in');
+  expect(inside.vis, 'drawn over the room').toBe('visible');
+  expect(inside.z, 'on the players’ own layer indoors').toBeGreaterThan(2100);
+  await b.evaluate(() => { const t = window.__town; t.pos.x = t.tgt.x = 700; t.pos.y = t.tgt.y = 440; });
+  await a.waitForFunction(() => { const p = window.__town.crowd.peers().find((q) => q.name === 'QA Bravo'); return p && Math.abs(p.x - 700) < 12 && Math.abs(p.y - 440) < 12; }, null, { timeout: 10000 });
+  await a.waitForTimeout(400);
+  await a.screenshot({ path: 'test-results/town-crowd-a-sees-b-in-the-arcade.png' });
+  // B goes back out: A, still inside, no longer sees B; out on the square, A does again
   await b.evaluate(() => window.__town.arcade.exit());
+  await a.waitForFunction(() => { const p = window.__town.crowd.peers().find((q) => q.name === 'QA Bravo'); return p && !p.room && p.hidden; }, null, { timeout: 10000 });
+  await a.evaluate(() => window.__town.arcade.exit());
   await a.waitForFunction(() => { const p = window.__town.crowd.peers().find((q) => q.name === 'QA Bravo'); return p && !p.room && !p.hidden; }, null, { timeout: 10000 });
 
   // ── B leaves: A's square is its own again

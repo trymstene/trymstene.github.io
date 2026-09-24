@@ -1099,13 +1099,14 @@ export function bootTownLife(ctx) {
     // 🧍 A BOSS STEPS ASIDE WHILE YOU WORK THEIR PLACE (Trym, 22 Sep: "their default position while you work at their
     // workplace should be a bit away from the workplace so they dont distort the queue that lines up or is in the way
     // visually"): Bean to the terrace, Fig Jr. to the phone box, Stamp to the monument lane, Pip to the bank's step,
-    // Spinner to the fruit cart — for as long as the shift, the round, or your time in their room lasts. They still
-    // potter about their aside as they would about any station; only the station moved.
+    // Spinner out on the arcade's step — for as long as the shift, the round, or your time in their room lasts. They still
+    // potter about their aside as they would about any station; only the station moved. 🕹 Spinner's INSISTS: his day
+    // is half spent on the arcade's floor (a home beat, which an aside never moves), and the floor is yours while you work it.
     const wa = workingAt();
     if (wa && n2.key === ASIDE_BOSS[wa] && beat !== 5) return ASIDE[n2.key];
     return oddKey && n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null;
   };
-  const ASIDE = { bean: 'terrace', figjr: 'booth', stamp: 'monument', pip: 'bank', spinner: 'cart' };
+  const ASIDE = { bean: 'terrace', figjr: 'booth', stamp: 'monument', pip: 'bank', spinner: { place: 'condo', always: true } };
   const ASIDE_BOSS = { cafe: 'bean', stand: 'figjr', post: 'stamp', store: 'pip', condo: 'spinner' };
   // which workplace of yours is being worked right now: a counter's shift, the post office's round, or your own boss's room
   const workingAt = () => {
@@ -1261,7 +1262,7 @@ export function bootTownLife(ctx) {
     // a shop, a front closing, or the page going away. One poll is cheaper than five call sites agreeing.
     shiftOn = !!(cafe && cafe.on()); standOn = !!(lemon && lemon.on());
     const wa = workingAt();
-    if (wa !== workingWas) { workingWas = wa; life.setOverride(overrideFor); }   // 🧍 the boss steps aside, or comes back
+    if (wa !== workingWas) { workingWas = wa; life.setOverride(overrideFor); if (wa) life.nudge(ASIDE_BOSS[wa]); }   // 🧍 the boss steps aside at once (not a minute into your work, 25 Sep 2026), or comes back in their own time
     const c = curseNow(), cType = c === 'none' ? null : c;
     const om0 = !curse && !!omenNow();
     const beat = life.beat();

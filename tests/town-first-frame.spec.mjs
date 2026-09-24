@@ -7,7 +7,7 @@
 // spent in Banana World. This walk never calls life.set: whatever the real hour, a resident who is out is at their place.
 import { test, expect } from '@playwright/test';
 
-const HOME = { hall: [1100, 590], post: [1700, 590], condo: [480, 592], store: [480, 1068], cafe: [1770, 1068], print: [1620, 1068], garden_w: [520, 704] };
+const HOME = { hall: [1100, 590], post: [1700, 590], condo: [480, 592], store: [480, 1068], cafe: [1770, 1068], print: [1620, 1068], garden_w: [520, 704], clothes: [154, 590] };
 const FOUNTAIN = [1160, 985];
 
 test('a real first load: every resident who is out stands at their place, and Nib waits at the fountain under the "!"', async ({ page }) => {

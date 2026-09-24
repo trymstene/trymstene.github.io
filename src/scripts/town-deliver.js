@@ -19,7 +19,7 @@ import { unlocked } from '../data/town/jobs.js';
 const COPY_MODS = import.meta.glob('../data/copy/town-deliver.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
 
-export const TO = ['nib', 'stamp', 'moss', 'bean', 'figjr', 'spinner', 'dot', 'granfig'];   // everybody but Pip, whose store it is
+export const TO = ['nib', 'stamp', 'moss', 'bean', 'figjr', 'spinner', 'dot', 'granfig', 'twirl'];   // everybody but Pip, whose store it is
 const GRAB = 34, ARRIVE = 64;   // how near a foot must come to a thing, and to a door
 const IMG = { parcel: '/assets/town/s-box1-0.png', round: '/assets/town/s-letterseal-0.png', bus: '/assets/town/s-bag2-0.png' };
 export const RUNS = {

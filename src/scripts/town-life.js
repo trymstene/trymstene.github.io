@@ -65,12 +65,18 @@ const COPY_P = import('../data/copy/town-npcs.json').then((m) => m.default || m)
 // ⚠️ MOSS IS THE EXCEPTION AND HAS TO BE. He is the sweeper: his beats 0, 1 and 3 are written into
 // LITTER's fourth column, which is the beat each flyer is swept on. Pin Moss and the flyers stop
 // being collected. One banana crossing the square with a broom is character, not chaos.
+//
+// 🕹 AND SPINNER KEEPS THE ARCADE, TWIRL THE WHEEL (24 Sep 2026, Trym: "Spinner should hang around the arcade, walk in
+// and out, look busy there - not stand by the wheel of peel - someone else should stand and be responsible for the wheel
+// of peel"). Spinner's day is out on the arcade's step and IN the arcade by turns: a home beat in a home with a room
+// (INSIDE) is spent on that room's floor. Twirl is the tenth resident and runs the wheel. Moss moved out from over the
+// arcade to the back of the clothes shop — she stood on Spinner in front of the arcade door (Trym, same day).
 const MECH = [
   { key: 'nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall',
     day: [['hall', 'counter', 'front'], ['hall', 'counter', 'front'], ['bench_e', 'bench', 'front'], ['hall', 'counter', 'front'], ['hall', 'counter', 'front'], ['home', 'home', 'front']] },
   { key: 'stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post',
     day: [['bus', 'stand', 'right'], ['post', 'counter', 'front'], ['post', 'counter', 'front'], ['post', 'counter', 'front'], ['terrace', 'bench', 'front'], ['home', 'home', 'front']] },
-  { key: 'moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'condo',
+  { key: 'moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'clothes',
     day: [['square', 'sweep', 'left'], ['hall', 'sweep', 'right'], ['bench_w', 'bench', 'front'], ['cafe', 'sweep', 'left'], ['square', 'stand', 'front'], ['home', 'home', 'front']] },
   { key: 'pip', hat: 'backwardscap', glasses: '', tool: 'rubberchicken', home: 'store',
     day: [['store', 'stand', 'front'], ['store', 'counter', 'front'], ['bank', 'stand', 'front'], ['store', 'counter', 'front'], ['store', 'counter', 'front'], ['home', 'home', 'front']] },
@@ -78,12 +84,14 @@ const MECH = [
     day: [['cafe', 'counter', 'front'], ['cafe', 'counter', 'front'], ['terrace', 'bench', 'front'], ['cafe', 'counter', 'front'], ['cafe', 'counter', 'front'], ['home', 'home', 'front']] },
   { key: 'figjr', hat: 'cowboy', glasses: 'shades', tool: 'lemonjug', home: 'garden_w',
     day: [['stand', 'counter', 'front'], ['stand', 'counter', 'front'], ['orchard', 'water', 'right'], ['stand', 'counter', 'front'], ['stand', 'counter', 'front'], ['home', 'home', 'front']] },
-  { key: 'spinner', hat: 'jester', glasses: '', tool: 'balloons', home: 'condo',
-    day: [['wheel', 'counter', 'front'], ['wheel', 'counter', 'front'], ['cart', 'stand', 'front'], ['wheel', 'counter', 'front'], ['condo', 'stand', 'front'], ['home', 'home', 'front']] },
+  { key: 'spinner', hat: 'jester', glasses: '', tool: 'boingball', home: 'condo',
+    day: [['condo', 'stand', 'front'], ['home', 'home', 'front'], ['condo', 'stand', 'front'], ['home', 'home', 'front'], ['condo', 'stand', 'front'], ['home', 'home', 'front']] },
   { key: 'dot', hat: '', glasses: '', tool: '', home: 'print',
     day: [['print', 'stand', 'front'], ['print', 'stand', 'front'], ['bench_e', 'bench', 'front'], ['print', 'stand', 'front'], ['print', 'stand', 'front'], ['home', 'home', 'front']] },
   { key: 'granfig', hat: 'snailhat', glasses: 'nerd', tool: 'wateringcan', home: 'garden_w',
     day: [['garden_w', 'water', 'left'], ['garden_w', 'water', 'left'], ['bench_w', 'bench', 'front'], ['orchard', 'water', 'right'], ['garden_w', 'bench', 'front'], ['home', 'home', 'front']] },
+  { key: 'twirl', hat: 'party', glasses: 'monocle', tool: 'balloons', home: 'print',
+    day: [['wheel', 'counter', 'front'], ['wheel', 'counter', 'front'], ['cart', 'stand', 'front'], ['wheel', 'counter', 'front'], ['wheel', 'counter', 'front'], ['home', 'home', 'front']] },
 ];
 // the words, by key. A resident the copy file has never heard of would be a nameless banana standing
 // in the square with nothing to say, so it is named out loud here — the copy gate makes it impossible
@@ -115,7 +123,7 @@ const ST = {
   booth: [[770, 604]],   // 🍋 beside the phone box on Hall Street: Fig Jr.'s aside while you work his stand, off the queue's line
   // the lunch pairs stand just behind their bench (feet above its top edge: nothing overlaps), each pair framed by its own
   square: [[1100, 990], [1000, 950], [1200, 950]], bench_w: [[935, 992], [995, 992]], bench_e: [[1215, 992], [1275, 992]],
-  condo: [[480, 592], [562, 592]], wheel: [[1400, 802]], exchange: [[800, 802]],
+  condo: [[572, 598]], wheel: [[1400, 802]], exchange: [[800, 802]],   // 🕹 the arcade's step: right of its door (x 444-479), off the way in
   // 🕯 where Nib waits for a newcomer while chapter one's first scene is open (world-quest.js step 0 —
   // its ! is anchored to this exact point, so the two change together): just east of the fountain's
   // foot, facing it, off the lunch pair's marks
@@ -135,8 +143,13 @@ const PATHS = {
 // 120 s beat, so for most of the morning Bean stood squarely in the hatch with his z above the barista's.
 // Trym, 20 Sep: "he stood in front of the window when my banana went into the window so i couldnt see
 // that i entered the shop." At 1770 his drawn box ends at 1801 and the window is clear.
-const HOME = { hall: [1100, 590], post: [1700, 590], condo: [480, 592], store: [480, 1068], cafe: [1770, 1068], print: [1620, 1068], garden_w: [520, 704] };
-const GLOW = { hall: [[1098, 468]], post: [[1694, 215]], condo: [[435, 400], [525, 400]], store: [[516, 1006]], cafe: [[1837, 1012]], print: [[1656, 1000]] };   // no glow for garden_w: a garden has no window (Trym, 15 Sep: "a glow under the bench")
+const HOME = { hall: [1100, 590], post: [1700, 590], condo: [480, 592], store: [480, 1068], cafe: [1770, 1068], print: [1620, 1068], garden_w: [520, 704], clothes: [154, 590] };
+const GLOW = { hall: [[1098, 468]], post: [[1694, 215]], condo: [[435, 400], [525, 400]], store: [[516, 1006]], cafe: [[1837, 1012]], print: [[1656, 1000]], clothes: [[226, 520]] };
+// 🕹 A HOME WITH A ROOM: a resident home in the DAY is in this room, on its floor — drawn only while the player is inside,
+// pottering between these marks (feet; clear of every cabinet's tap box, the litter and the way in), in and out through
+// its doorway. At night they are upstairs like everybody else.
+const INSIDE = { condo: { door: [588, 540], marks: [[752, 392, 'front'], [660, 388, 'left'], [470, 394, 'right']] } };
+const roomFor = (n, beat) => beat !== 5 && INSIDE[n.home];   // no glow for garden_w: a garden has no window (Trym, 15 Sep: "a glow under the bench")
 const MAYOR = [1098, 468];
 // the beds a waterer sprinkles, per place
 const BEDS = { garden_w: [[440, 748], [530, 748]], orchard: [[690, 336], [900, 336], [790, 222]] };
@@ -263,6 +276,7 @@ export function initLife({ world, W, H, pct }) {
   // stands somewhere odd today, and how much litter the streets carry. Set from town-room.js;
   // null = the town as it always was.
   let keepFn = null, glowFn = null, overrideFn = null, litterLevel = 0;
+  let roomNow = '';   // 🕹 the room the player stands in ('' = the square)
 
   // the residents: one .tw-npc each (a canvas; no name over the head — a name is read on the card when you
   // walk up and talk, Trym 15 Sep) and their home's window glow
@@ -286,7 +300,7 @@ export function initLife({ world, W, H, pct }) {
   const glowCount = {};
   for (const n of res) {
     const pts = GLOW[n.home] || [], k = glowCount[n.home] || 0; glowCount[n.home] = k + 1;
-    const g = pts[Math.min(k, pts.length - 1)];
+    const g = pts[k];   // Twirl lodges at Dot's print shop: one shop window, one glow
     if (!g) continue;
     const el = document.createElement('div');
     el.className = 'tw-glow'; el.hidden = true;
@@ -328,12 +342,25 @@ export function initLife({ world, W, H, pct }) {
     }
     return { place, act, face: f, lines, x, y, loop: null, paired: group.length > 1 && pts.length > 1 };
   }
-  function goHome(n) {
+  function goHome(n, walked) {
+    const room = roomFor(n, n.beat);
+    if (room) { goIn(n, room, walked); return; }
+    goOut(n);
     n.hidden = true; n.el.hidden = true;
     // the window lights when they are home for the NIGHT; a resident kept in by the day (or
     // a Curse Night) sits behind a dark window, and a low town leaves some windows dark
     if (n.glow) n.glow.hidden = !!n.kept || !!(glowFn && !glowFn(n));
   }
+  // 🕹 into the room of their home: at its doorway and a walk to the first mark if they came in the door, on the mark if placed
+  function goIn(n, room, walked) {
+    n.inside = true; n.hidden = false; n.el.classList.add('is-in'); n.el.hidden = roomNow !== n.home; n.px = NaN;
+    if (n.glow) n.glow.hidden = true;   // downstairs at work: the flat's window stays dark
+    const m = room.marks[0];
+    n.marks = room.marks; n.mi = 0; n.drift = null; n.face = m[2];
+    if (walked) { n.x = room.door[0]; n.y = room.door[1]; n.path = [[m[0], m[1]]]; n.wait = 0; } else { n.x = m[0]; n.y = m[1]; n.path = []; }
+  }
+  function goOut(n) { if (!n.inside) return; n.inside = false; n.el.classList.remove('is-in'); n.px = NaN; }
+  function leaveRoom(n) { goOut(n); const d = HOME[n.home]; n.x = d[0]; n.y = d[1]; n.el.hidden = false; }   // through the room's doorway, out of the street door
   function leaveHome(n) {
     if (!n.hidden) return;
     const d = HOME[n.home];
@@ -351,8 +378,10 @@ export function initLife({ world, W, H, pct }) {
       // opened on an empty fountain (23 Sep 2026)
       n.kept = !!(keepFn && keepFn(n, beat) && st.act !== 'home' && !st.insist);
       if (n.kept) {
-        n.beat = beat; n.place = 'home'; n.act = 'home'; n.lines = st.lines; n.loop = null; n.marks = []; n.drift = null;
-        if (walk && !n.hidden) { const d = HOME[n.home]; n.path = route([n.x, n.y], [d[0], d[1]]); n.wait = 400 + h01(n.idx + 1, beat + 1, 7) * 12000; n.walking = false; }
+        n.beat = beat; n.place = 'home'; n.act = 'home'; n.lines = st.lines; n.loop = null; n.drift = null;
+        if (!n.inside) n.marks = [];
+        if (n.inside) { n.path = []; n.wait = 0; }   // 🕹 kept in, and in already: at work indoors
+        else if (walk && !n.hidden) { const d = HOME[n.home]; n.path = route([n.x, n.y], [d[0], d[1]]); n.wait = 400 + h01(n.idx + 1, beat + 1, 7) * 12000; n.walking = false; }
         else { n.path = []; n.walking = false; n.wait = 0; goHome(n); }
         continue;
       }
@@ -361,9 +390,17 @@ export function initLife({ world, W, H, pct }) {
       n.marks = marksFor(n, st, beat); n.mi = 0; n.drift = null;
       n.dwell = DWELL_MIN + h01(n.idx + 1, beat + 1, 11) * DWELL_VAR;
       n.sway = SWAY_MIN + h01(n.idx + 1, beat + 1, 12) * SWAY_VAR;
+      const room = st.act === 'home' && roomFor(n, beat);
+      if (n.inside && room) { n.marks = room.marks; n.path = []; n.wait = 0; n.walking = false; continue; }   // 🕹 in, and staying in
       if (walk) {
-        if (st.act !== 'home' || !n.hidden) leaveHome(n);
-        n.path = route([n.x, n.y], [st.x, st.y]);
+        // 🚪 THE WAIT IS SPENT INDOORS (24 Sep 2026). leaveHome() used to stand them on the doorstep the moment the beat turned
+        // and they waited THERE, up to 74 s — so housemates stood on each other at one door (Moss on Spinner at the arcade's,
+        // Trym: "its hard to interact with Spinner when moss is placed on top of him"). Now they come out when it is time to go.
+        if (n.inside) n.path = [[...INSIDE[n.home].door, 'out'], ...(st.act === 'home' ? [] : route(HOME[n.home], [st.x, st.y]))];
+        else {
+          if (n.hidden && st.act !== 'home') { const d = HOME[n.home]; n.x = d[0]; n.y = d[1]; }
+          n.path = route([n.x, n.y], [st.x, st.y]);
+        }
         // ⏳ their OWN moment to set off: up to two thirds of the beat, so the town never migrates at once
         n.wait = 400 + h01(n.idx + 1, beat + 1, 5) * 74000;
         n.walking = false;
@@ -374,14 +411,14 @@ export function initLife({ world, W, H, pct }) {
         // their front doors on every real first load (Bean not at his counter, Nib not at the fountain under the
         // newcomer's "!"), each then waiting up to 74 s to walk out. Every walk pinned the hour first, and a second
         // placement found them visible — so no walk saw it; tests/town-first-frame.spec.mjs loads the town as it comes.
-        if (st.act === 'home') { n.x = st.x; n.y = st.y; goHome(n); } else { leaveHome(n); n.x = st.x; n.y = st.y; }
+        if (st.act === 'home') { n.x = st.x; n.y = st.y; goHome(n); } else { goOut(n); leaveHome(n); n.el.hidden = false; n.x = st.x; n.y = st.y; }
       }
     }
     if (mayorEl) mayorEl.hidden = beat !== 4;
   }
   function arrive(n) {
     n.walking = false; n.path = [];
-    if (n.act === 'home') goHome(n);
+    if (n.act === 'home' && !n.inside) goHome(n, true);
   }
 
   // ---- litter
@@ -457,7 +494,7 @@ export function initLife({ world, W, H, pct }) {
   function placeEl(n) {
     if (n.x === n.px && n.y === n.py) return;
     n.px = n.x; n.py = n.y;
-    n.el.style.left = pct(n.x, W); n.el.style.top = pct(n.y, H); n.el.style.zIndex = String(100 + Math.round(n.y));
+    n.el.style.left = pct(n.x, W); n.el.style.top = pct(n.y, H); n.el.style.zIndex = String((n.inside ? 2100 : 100) + Math.round(n.y));   // 🕹 in a room: the player's own layer
   }
   function step(n, tx, ty, dt) {   // one step toward (tx, ty); true when there
     const dx = tx - n.x, dy = ty - n.y, d = Math.hypot(dx, dy), s = WALK * dt;
@@ -477,9 +514,10 @@ export function initLife({ world, W, H, pct }) {
       if (n.path.length) {
         if (n.wait > 0) { n.wait -= dt * 1000; frame = standFrame(n, now); }   // still at their post, not posing
         else {
+          if (n.hidden && n.act !== 'home') leaveHome(n);   // 🚪 out of the door now that it is time
           n.walking = true;
           const p = n.path[0];
-          if (step(n, p[0], p[1], dt)) { n.path.shift(); if (!n.path.length) arrive(n); }
+          if (step(n, p[0], p[1], dt)) { n.path.shift(); if (p[2]) leaveRoom(n); if (!n.path.length) arrive(n); }
           frame = (n.dir === 'left' ? 4 : n.dir === 'right' ? 0 : 2) + bob;
         }
       } else if (n.loop && !n.hidden) {
@@ -514,6 +552,7 @@ export function initLife({ world, W, H, pct }) {
         }
       }
       if (n.hidden) continue;
+      if (n.inside) { const off = roomNow !== n.home; if (n.el.hidden !== off) n.el.hidden = off; if (off) continue; }
       draw(n, frame);
       placeEl(n);
       // the act
@@ -535,8 +574,10 @@ export function initLife({ world, W, H, pct }) {
 
   // ---- hit-testing for the tap handler: a flyer first (small), then a resident
   function at(wx, wy) {
+    const hit = (n) => Math.abs(wx - n.x) < 34 && wy < n.y + 6 && wy > n.y - 90;
+    if (roomNow) { for (const n of res) if (n.inside && n.home === roomNow && hit(n)) return ['npc', n.key]; return null; }
     for (const f of flyers) if (!f.gone && Math.abs(wx - f.x) < 26 && wy < f.y + 8 && wy > f.y - 40) return ['flyer', f.i];
-    for (const n of res) if (!n.hidden && Math.abs(wx - n.x) < 34 && wy < n.y + 6 && wy > n.y - 90) return ['npc', n.key];
+    for (const n of res) if (!n.hidden && !n.inside && hit(n)) return ['npc', n.key];
     return null;
   }
   const flyer = (i) => { const f = flyers.find((q) => q.i === i && !q.gone); return f ? { x: f.x, y: f.y } : null; };
@@ -558,6 +599,9 @@ export function initLife({ world, W, H, pct }) {
   // right for a beat and wrong for Nib the second the chapter lets him go — "he walks up to the town
   // hall" has to be what you see, not what happens a minute after you looked away
   const nudge = (key) => { const n = byKey(key); if (n && n.path.length) n.wait = Math.min(n.wait, 500); };
+  // 🕹 banana-town.js, on every door. Placed and drawn AT ONCE: unhidden and left for the next frame, they stood a frame at
+  // the world's corner with no depth (a walk caught z 0)
+  const setRoom = (k) => { roomNow = k || ''; for (const n of res) if (n.inside) { n.el.hidden = roomNow !== n.home; if (!n.el.hidden) { placeEl(n); draw(n, standFrame(n, performance.now())); } } };
   const setLitter = (level) => { const l = Math.max(0, Math.min(2, level | 0)); if (l === litterLevel) return; litterLevel = l; if (ready) spawnLitter(curBeat, true); };
   const seam = {
     hour: () => hourNow(),
@@ -565,15 +609,15 @@ export function initLife({ world, W, H, pct }) {
     glows: () => res.filter((n) => n.glow && !n.glow.hidden).map((n) => n.key),
     beat: () => curBeat,
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
-    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
+    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden || (!!n.inside && roomNow !== n.home), inside: !!n.inside, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
     flyers: () => flyers.filter((f) => !f.gone).map((f) => ({ i: f.i, x: f.x, y: f.y })),
     rung,
     talk,
-    facing: () => res.filter((n) => !n.hidden).map((n) => ({ key: n.key, face: n.face, place: n.place })),
+    facing: () => res.filter((n) => !n.hidden && !n.inside).map((n) => ({ key: n.key, face: n.face, place: n.place })),
     pick,
     mayor: () => !!(mayorEl && !mayorEl.hidden),
   };
   COPY_P.then((COPY) => applyCopy(res, COPY)).catch((e) => console.error('town-life: the words did not load', e));
-  return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, setKeep, setGlow, setOverride, nudge, setLitter, route, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
+  return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, setKeep, setGlow, setOverride, nudge, setLitter, setRoom, route, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; } };
 }

@@ -1,4 +1,4 @@
-# The job — who the nine residents of Banana Town actually are
+# The job — who the residents of Banana Town actually are
 
 This is not dialogue. Nobody reads these words in the game. This is the **character bible** the
 writer is handed every single time it writes a line for one of these nine, so that the lines come
@@ -51,7 +51,7 @@ The town runs on a twelve-minute day: dawn, morning, noon, afternoon, evening, n
 somewhere to be in each of them. Nobody shouts across the square — they work in silence and talk
 when you walk up to them.
 
-## The nine, as they stand today
+## The ten, as they stand today
 
 **Their keys, names and jobs are FIXED.** Everything else here is the seed: it is what the town
 already knows about them, and your job is to deepen it into a full person, not to replace it with
@@ -67,7 +67,7 @@ someone new. Keep every fact below true.
   it. Clipped. "Noted."
 - `moss` — **Moss**, the street sweeper. Blew in with the autumn, found a broom leaning on the hall
   and considered the matter settled. Two or three words, then one long plain sentence that arrives
-  like a bus. Never asks a question. Lives above the arcade next to Spinner. Keeps the best flyer of
+  like a bus. Never asks a question. Moved from above the arcade to the back room of the clothes shop, away from Spinner’s Pong. Keeps the best flyer of
   each week under her mattress and has told nobody.
 - `pip` — **Pip**, the general store. Inherited it from an uncle whose only note said *everything is
   the last one*, took it as a sales method, and now believes it. Restocks before dawn so it is true
@@ -79,8 +79,8 @@ someone new. Keep every fact below true.
   one-cup stand like a corporation. Calls his grandmother "the supplier". Waters her trees before
   dawn and lets her think it was rain. Walks her to her bench every evening and calls it *on the
   way*; it is not on the way.
-- `spinner` — **Spinner**, the Wheel of Peel and the arcade Pong paddle. Three bells on his hat,
-  shouting to a square that is usually empty. Falls into the third person as a tic, not in every
+- `spinner` — **Spinner**, the Arcade: its cabinets, its high-score book and its Pong paddle. Three bells
+  on his hat, shouting from the arcade's step to a square that is usually empty. Falls into the third person as a tic, not in every
   line. Lets every kid win at Pong by exactly one point and would rather nobody knew.
 - `dot` — **Dot**, the info kiosk, keeper of the town's wants. Writes down what everyone is looking
   for. Speaks almost entirely in questions, stacked, and does not wait for answers. Is looking for a
@@ -148,4 +148,8 @@ sentence would fit two of them, rewrite it.
 
 ## Return
 
-All nine, keyed and named exactly as above, in that order.
+- `twirl` — **Twirl**, the Wheel of Peel. Came on the mail bus with a painted wheel on the roof. Calm,
+  unhurried, superstitious about the wheel; taps its rim twice and says good morning to it at any hour.
+  Lodges at Dot's print shop.
+
+All ten, keyed and named exactly as above, in that order.

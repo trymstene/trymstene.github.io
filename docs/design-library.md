@@ -1001,3 +1001,25 @@ job, counter or chore that puts a body or a thing on the floor:
 - **A carried thing rides a hand.** The engine's glove anchors (`wearAnchor(frame, 'hand', side)`, the dance clock's frame)
   put it in the right hand — a second thing in the left — and it pumps with the dance like every held wearable. Never the belly.
 - `tests/town-serve.spec.mjs` checks each: the walking frames, no card, the glow, the hand, the square, the lesson.
+
+## §34 A ROOM SHOWS WHO IS IN IT, BELOW THE NOTES (24 Sep 2026, the arcade walk)
+
+Trym: *"Spinner should hang around the arcade, walk in and out, look busy there - not stand by the wheel of peel … in the
+few moments Spinner stands in front of the arcade - Moss comes around and stand on top of Spinner"*, and then *"seeing
+other players in the store and arcade"*. The rules it left, for any room a player walks into:
+
+- **A keeper keeps their place.** A resident whose home is a room spends their daytime home beats IN it (town-life.js
+  `INSIDE`): drawn on its floor while you are inside, pottering between marks that never stand in front of a tappable
+  fitting, the litter or the way in, and in and out through its doorway. A tap on them in there is the same card as outside.
+  One place, one keeper: the Wheel of Peel has its own (Twirl), so the arcade's boss is never found at the wheel.
+- **Nobody loiters on a doorstep.** The wait before a walk is spent indoors: a resident steps out of the door when it is time
+  to go, never the moment the beat turns. Two residents never stand stacked on one step (Moss stood on Spinner).
+- **Other players are where you are.** On the square you see the square's; inside a room, that room's, on the players' own
+  layer (2100 + y). Through a door they appear — no glide across a wall (town-crowd.js).
+- **The room sits below the notes.** Indoors the camera frames the room in the band between the lowest note along the top
+  (the HUD strip, the quest note, the work note) and the view's bottom: centred when it fits, following the banana when it
+  does not. A fitting under a note cannot be tapped, so it must not be under one (a tap on the dark cabinet opened the staff card).
+- **A thing to do indoors looks like one outdoors.** Litter on a room's floor wears the square's halo (`is-todo`) and its mark;
+  a dead cabinet dims its LIGHTS (marquee, screen, buttons), never a black box over the machine.
+- Walked by `tests/town-spinner.spec.mjs` (the keeper, the doorstep), `tests/town-crowd.spec.mjs` (two phones meet in the
+  arcade, on the real room) and `tests/town-arcade-chores.spec.mjs`.

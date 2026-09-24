@@ -16,11 +16,12 @@ const ranksOf = (k) => LADDER_RANKS[k] | 0;
 
 export const BEATS = ['dawn', 'morning', 'noon', 'afternoon', 'evening', 'night'];
 
-// The nine residents, by the key the game uses. The NAMES ARE FIXED — a rewrite
+// The residents, by the key the game uses. The NAMES ARE FIXED — a rewrite
 // gives the same cast new words, never a new cast, and this is what pins that.
 export const TOWN_CAST = [
   ['nib', 'Nib'], ['stamp', 'Stamp'], ['moss', 'Moss'], ['pip', 'Pip'], ['bean', 'Bean'],
   ['figjr', 'Fig Jr.'], ['spinner', 'Spinner'], ['dot', 'Dot'], ['granfig', 'Gran Fig'],
+  ['twirl', 'Twirl'],   // 🎡 the tenth (24 Sep 2026): the Wheel of Peel's keeper, when Spinner went back to his arcade
 ];
 
 // --- town-npcs ---------------------------------------------------------------
@@ -47,7 +48,7 @@ const townFields = {
   'residents[].beats[].lines[]': { kind: 'prose', aim: 90, max: 95, note: 'What they are doing at this station at this time of day. Nobody hears it out loud; it is read off their dialogue card later. Three per beat, and one may hint at another resident.' },
 };
 
-// the shape the game needs, checked after the field walk: the same nine, all six
+// the shape the game needs, checked after the field walk: the same cast, all six
 // beats in order, five rungs, and {name} only where they know your name
 function townShape(data) {
   const bad = [];
@@ -79,7 +80,7 @@ function townShape(data) {
       if (n < 3 || n > 4) say(`${at}.beats[${k}].lines`, `${n} lines at this station; three is the shape (a fourth is allowed where the town already has one)`);
     });
   }
-  for (const r of list) if (!TOWN_CAST.some(([k]) => k === r.key)) say(`residents[${r && r.key}]`, `"${r && r.key}" is not one of the nine — the cast is fixed`, 'cast');
+  for (const r of list) if (!TOWN_CAST.some(([k]) => k === r.key)) say(`residents[${r && r.key}]`, `"${r && r.key}" is not one of the cast — the cast is fixed`, 'cast');
   if (list.length !== TOWN_CAST.length) say('residents', `${list.length} residents; the town has ${TOWN_CAST.length}`);
   return bad;
 }
@@ -94,7 +95,7 @@ const townSchema = {
   properties: {
     residents: {
       type: 'array',
-      description: 'All nine residents, in the order the brief lists them.',
+      description: 'All the residents, in the order the brief lists them.',
       items: {
         type: 'object',
         additionalProperties: false,
@@ -177,7 +178,7 @@ function personaShape(data) {
     if (i == null) { say(`residents[${key}]`, `"${key}" (${name}) has no persona — the cast is fixed`, 'cast'); continue; }
     if (list[i].name !== name) say(`residents[${i}].name`, `this resident is ${name}; the name is not the writer's to change`, 'cast');
   }
-  for (const r of list) if (!TOWN_CAST.some(([k]) => k === r.key)) say(`residents[${r && r.key}]`, `"${r && r.key}" is not one of the nine`, 'cast');
+  for (const r of list) if (!TOWN_CAST.some(([k]) => k === r.key)) say(`residents[${r && r.key}]`, `"${r && r.key}" is not one of the cast`, 'cast');
 
   // 🌡 THE RANGE. Nine agreeable people is not a town, and it is exactly what a writer
   // produces when nobody asks otherwise. These four checks are Trym's "some grumpy, some
@@ -185,11 +186,11 @@ function personaShape(data) {
   const tempers = list.map((r) => r && r.temper).filter(Boolean);
   const distinct = new Set(tempers);
   if (distinct.size < 5) {
-    say('residents[].temper', `only ${distinct.size} temperaments across the nine (${[...distinct].join(', ')}) — the town needs at least five different ones`, 'range');
+    say('residents[].temper', `only ${distinct.size} temperaments across the cast (${[...distinct].join(', ')}) — the town needs at least five different ones`, 'range');
   }
   for (const t of distinct) {
     const n = tempers.filter((x) => x === t).length;
-    if (n > 3) say('residents[].temper', `${n} of the nine are "${t}" — no more than three may share a temperament`, 'range');
+    if (n > 3) say('residents[].temper', `${n} of the cast are "${t}" — no more than three may share a temperament`, 'range');
   }
   if (!tempers.some((t) => SOUR.includes(t))) say('residents[].temper', `nobody here is ${SOUR.join(' or ')} — at least one resident is genuinely hard work`, 'range');
   if (!tempers.some((t) => BRIGHT.includes(t))) say('residents[].temper', `nobody here is ${BRIGHT.join(' or ')} — at least one resident runs hot`, 'range');
@@ -200,7 +201,7 @@ function personaShape(data) {
     list.forEach((r, i) => {
       const v = String((r && r[field]) || '').trim().toLowerCase();
       if (!v) return;
-      if (byValue.has(v)) say(`residents[${i}].${field}`, `the same ${field} as ${list[byValue.get(v)].name} — each of the nine needs their own`, 'range');
+      if (byValue.has(v)) say(`residents[${i}].${field}`, `the same ${field} as ${list[byValue.get(v)].name} — each resident needs their own`, 'range');
       else byValue.set(v, i);
     });
   }
@@ -214,7 +215,7 @@ const personaSchema = {
   properties: {
     residents: {
       type: 'array',
-      description: 'All nine residents, in the order the brief lists them.',
+      description: 'All the residents, in the order the brief lists them.',
       items: {
         type: 'object',
         additionalProperties: false,
@@ -1734,9 +1735,9 @@ export const JOBS = {
       'bus.waiting': toastLine(64, '🚌 Said once, the first time in a day the mail bag is waiting at the bus stop (rank 6): the bus has left the post.', NO_MARKUP),
       'bus.picked': toastLine(60, '🚌 Said when the bag is picked up: carry it to the post office.', NO_MARKUP),
       'bus.delivered': toastLine(60, '🚌 The bag brought to the post office door: the town’s post is in.', NO_MARKUP),
-      ...Object.fromEntries(['nib', 'stamp', 'moss', 'bean', 'figjr', 'spinner', 'dot', 'granfig', 'pip'].map((k) => ['to.' + k, { kind: 'label', max: 30, note: 'The resident and their place, as the parcel line names them: “Name at the place”. The place is where their door is on the square.' }])),
+      ...Object.fromEntries(TOWN_CAST.map(([k]) => ['to.' + k, { kind: 'label', max: 30, note: 'The resident and their place, as the parcel line names them: “Name at the place”. The place is where their door is on the square.' }])),
     },
-    shape: (d) => Object.keys((d && d.to) || {}).length === 9 ? [] : [{ path: 'to', msg: 'every resident needs a line: a parcel or a letter can be for any of them' }],
+    shape: (d) => Object.keys((d && d.to) || {}).length === TOWN_CAST.length ? [] : [{ path: 'to', msg: 'every resident needs a line: a parcel or a letter can be for any of them' }],
   },
   'town-serve': {
     id: 'town-serve',
@@ -1964,7 +1965,7 @@ export const JOBS = {
   },
   'town-personas': {
     id: 'town-personas',
-    title: 'Banana Town — who the nine residents are',
+    title: 'Banana Town — who the residents are',
     what: 'The character bible: temperament, where they came from, what they love and hate, their interest, quirk, voice and the thing underneath.',
     brief: 'tools/copy-briefs/town-personas.md',
     out: 'tools/copy-out/town-personas.json',
@@ -1978,7 +1979,7 @@ export const JOBS = {
   },
   'town-npcs': {
     id: 'town-npcs',
-    title: 'Banana Town — the nine residents',
+    title: 'Banana Town — the residents',
     what: 'Everything the town’s residents say: the meeting ladder, the tap line, their day, their want.',
     brief: 'tools/copy-briefs/town-npcs.md',
     out: 'tools/copy-out/town-npcs.json',
