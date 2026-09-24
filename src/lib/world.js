@@ -130,13 +130,17 @@ export function worldToken() {
 // ⚠️ NEVER PAST THE CEILING. Each world has a "must fit" bound (the plaza, the yard); a snap that
 // would break it takes the step below instead, and if no whole-pixel step fits in [lo, hi] at all
 // (a narrow DPR-1 window) the free scale stands: crisp when it can be, framed always.
+// ⚠️ AND NEVER ZERO (24 Sep 2026). The homestead's build mode asks for (fit, 0, fit): at DPR 1 a fit under one
+// device pixel has no whole step below it but 0, and 0 was "in range" — the world was drawn 0×0 and build mode
+// showed a dark empty screen on every desktop (Trym). A step that is not a real size never counts.
 export function snapScale(scale, lo, hi) {
   const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
   const step = 1 / dpr;
+  const ok = (v) => v > 0 && v >= lo - 1e-9 && v <= hi + 1e-9;
   const k = Math.round(scale / step) * step;
-  if (k >= lo - 1e-9 && k <= hi + 1e-9) return k;
+  if (ok(k)) return k;
   const below = Math.floor(scale / step) * step;
-  if (below >= lo - 1e-9 && below <= hi + 1e-9) return below;
+  if (ok(below)) return below;
   return scale;
 }
 
