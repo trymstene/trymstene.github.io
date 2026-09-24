@@ -1744,12 +1744,17 @@ export const JOBS = {
     what: 'What the store says while its staff serve a customer: the line under the ticket (what to do, the thing picked up, the wrong face), handing it over (fine and quick), a customer who gives up, and the tray’s way out.',
     approved: 'src/data/copy/town-serve.json',
     reads: 'src/scripts/town-serve.js (through a glob inside its own lazy chunk)',
-    top: ['find', 'got', 'wrong', 'basket', 'one', 'more', 'served', 'late', 'leave', 'stopped'],
+    top: ['find', 'got', 'wrong', 'basket', 'one', 'more', 'served', 'late', 'leave', 'stopped', 'learnFind', 'learnGive'],
     fields: {
-      find: toastLine(60, 'Under the ticket, as the customer comes in (and again if you tap the till with empty hands): find the thing on the shelves and bring it to the till. The one instruction, plain.', NO_MARKUP),
-      got: toastLine(50, 'Under the ticket once you picked the right thing off the shelf: now to the till.', NO_MARKUP),
-      wrong: toastLine(60, 'Under the ticket when you tapped a face with something else on it. Kind, plain, points at the ticket.', NO_MARKUP),
-      basket: toastLine(60, 'Under the ticket when a customer wants TWO things (the rank-2 basket): bring both to the till. Plain.', NO_MARKUP),
+      // ⚠️ NEVER "THE TILL" (24 Sep 2026, Trym: "'Till' is a weird word - clear language is always preferred. I didnt understand if
+      // i was supposed to put the object on the counter, or give it straight to the customer"). What they want GLOWS on the shelf
+      // (no picture on the tray), and you give it to the CUSTOMER — say those two things, in those words.
+      find: toastLine(60, 'Under the ticket, as the customer comes in (and again if you tap them with empty hands): take the glowing thing from the shelf to the customer. The one instruction, plain; never “till”.', { ...NO_MARKUP, forbids: [...NO_MARKUP.forbids, [/\btill\b/i, 'never “till” — say the customer']] }),
+      got: toastLine(50, 'Under the ticket once you picked the right thing off the shelf: now give it to the customer.', { ...NO_MARKUP, forbids: [...NO_MARKUP.forbids, [/\btill\b/i, 'never “till” — say the customer']] }),
+      wrong: toastLine(60, 'Under the ticket when you tapped a face with something else on it. Kind, plain; the right one is the one that glows.', NO_MARKUP),
+      basket: toastLine(66, 'Under the ticket when a customer wants TWO things (the rank-2 basket): both glow; take both to the customer. Plain.', { ...NO_MARKUP, forbids: [...NO_MARKUP.forbids, [/\btill\b/i, 'never “till” — say the customer']] }),
+      learnFind: toastLine(72, 'The FIRST customer this device ever sees: what a customer is, that what they want glows on the shelf, and tap it. A bouncing pointer stands over the glowing thing while this shows.', NO_MARKUP),
+      learnGive: toastLine(50, 'The first time you pick the thing up: tap the customer to give it to them. The pointer moves over the customer and a lit square stands under them.', NO_MARKUP),
       one: toastLine(50, 'Under the ticket once you hold the first of the two things: now the other one.', NO_MARKUP),
       more: toastLine(50, 'Under the ticket when you reach the till holding only one of the two things. Never a telling-off.', NO_MARKUP),
       'served.fine': toastLine(60, 'Handed over in time. The customer leaves content.', NO_MARKUP),

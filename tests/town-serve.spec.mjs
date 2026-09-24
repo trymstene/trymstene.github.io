@@ -1,9 +1,11 @@
 // 🛒 THE STORE'S CUSTOMERS (23 Sep 2026; the job ladder's slice 2 — Trym: "do the store's customer requests next").
 //
-// On a day the town calls for it, customers come into Pip's store while its staff are inside: one walks to the till and
-// wants a thing off the shelves. The ticket shows what and how long they will wait, every stocked face wears a picture of
-// what is on it, and the worker finds it, carries it to the till and hands it over — a customer on the week's sheet.
-// Played here with real taps on the store's own plate, the way a thumb plays it.
+// On a day the town calls for it, customers come into Pip's store while its staff are inside: one WALKS up to the counter
+// and wants a thing off the shelves. What they want GLOWS on its shelf (the tray keeps only its name and the wait), the
+// worker takes it — it rides their right hand — and gives it to the CUSTOMER (a lit square stands under them while you
+// carry), and the customer walks out: a customer on the week's sheet. 24 Sep 2026, Trym testing it: the stiff slide, the
+// white squares round the wares, the tray's tiny icon, the word "till" and the thing on the belly are all gone. Played
+// here with real taps on the store's own plate, the way a thumb plays it.
 import { test, expect } from '@playwright/test';
 import SERVE from '../src/data/copy/town-serve.json' with { type: 'json' };
 import DUTY from '../src/data/copy/town-duties.json' with { type: 'json' };
@@ -23,7 +25,15 @@ async function town(page, width) {
   return errs;
 }
 // the day's calls, pinned: the customers' call, in already
-const pin = (page, kinds) => page.evaluate(([k, d]) => { localStorage.setItem('tw-calls-v1', JSON.stringify({ d, t0: Date.now() - 36e5, qa: k })); localStorage.removeItem('tw-serve-v1'); }, [kinds, DAY()]);
+const pin = (page, kinds, learnt = true) => page.evaluate(([k, d, l]) => { localStorage.setItem('tw-calls-v1', JSON.stringify({ d, t0: Date.now() - 36e5, qa: k })); localStorage.removeItem('tw-serve-v1'); if (l) localStorage.setItem('tw-once-v1', JSON.stringify({ 'serve:learn': 1 })); else localStorage.removeItem('tw-once-v1'); }, [kinds, DAY(), learnt]);
+// a real tap on the customer themselves — their body, the middle of it, the way a thumb gives a thing to somebody
+async function tapCust(page) {
+  const p = await page.evaluate(() => {
+    const c = window.__town.serve.want(), w = document.getElementById('twWorld'), sc = parseFloat(w.style.getPropertyValue('--ws')), r = w.getBoundingClientRect();
+    return { x: r.left + c.x * sc, y: r.top + (c.y - 40) * sc };
+  });
+  await page.mouse.click(p.x, p.y);
+}
 const want = (page) => page.evaluate(() => window.__town.serve && window.__town.serve.want());
 const toast = (page, line) => page.waitForFunction((l) => (document.getElementById('twToast').textContent || '').trim() === l, line, { timeout: 8000 });
 const chores = (page) => page.evaluate(() => window.__ev.filter((e) => e[0] === 'town_chore').map((e) => e[1]));
@@ -41,7 +51,7 @@ async function tapSpot(page, key) {
 }
 const faceOfItem = (page, id) => page.evaluate((i) => { const s = window.__town.room.shelf(), f = window.__town.rooms.of('store').full; return f[s.indexOf(i)][0]; }, id);
 
-test('a customer walks to the till and wants a thing: find it by its picture, carry it over, and the week counts it', async ({ page }) => {
+test('a customer walks up to the counter and wants a thing: it glows on the shelf, you carry it in your hand, give it to them, and the week counts it', async ({ page }) => {
   test.setTimeout(120000);
   const errs = await town(page);
 
@@ -67,12 +77,16 @@ test('a customer walks to the till and wants a thing: find it by its picture, ca
   const tray = await page.evaluate(() => window.__town.serve.tray());
   expect(tray.shown, '🎟 the ticket is up').toBe(true);
   expect(tray.name, 'with the thing’s name on it').toBeTruthy();
-  expect(tray.img, 'and its picture').toMatch(/\.png|\.webp|\.gif/);
+  expect(await page.locator('.tw-serve__want img').count(), 'no picture on the tray: the shelf is the pointer (Trym: "better than adding more icons")').toBe(0);
+  expect(await page.evaluate(() => window.__town.serve.glowing()), 'what they want glows on its shelf — and only that').toEqual([w1.face]);
+  expect(w1.frame, 'they walked in and now stand facing you').toBe(2);
   expect(tray.note, 'and what to do').toBe(SERVE.find);
   expect(await page.evaluate(() => document.getElementById('twToast').hidden), 'the store’s welcome gave way to the ticket: nothing sits on the shelves').toBe(true);
   const tags = await page.evaluate(() => window.__town.serve.tags());
   expect(tags.length, 'every stocked face wears a picture of what is on it').toBe(shelf.length);
   expect(tags, 'the right one among them').toContain(w1.face);
+  const card = await page.evaluate(() => { const t = getComputedStyle(document.querySelector('.tw-serve__tag')); return { bg: t.backgroundColor, border: t.borderTopWidth }; });
+  expect(card, 'the thing itself, no white card round it').toEqual({ bg: 'rgba(0, 0, 0, 0)', border: '0px' });
   // ⚠️ and painted OVER the goods on its face: under the shelf's own sprite a ticket is there and nobody sees it
   const buried = await page.evaluate(() => [...document.querySelectorAll('.tw-serve__tag')].filter((t) => {
     const b = t.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top + b.height / 2, z = +t.style.zIndex;
@@ -96,17 +110,24 @@ test('a customer walks to the till and wants a thing: find it by its picture, ca
   await tapSpot(page, await faceOfItem(page, w1.id));
   await page.waitForFunction((id) => window.__town.serve.carrying() === id, w1.id, { timeout: 10000 });
   expect((await page.evaluate(() => window.__town.serve.tray())).note, 'the ticket says where to next').toBe(SERVE.got);
-  expect(await page.locator('.tw-serve__held.is-in').count(), 'drawn over the banana’s head').toBe(1);
+  expect(await page.locator('.tw-serve__held.is-in').count(), 'one thing in hand').toBe(1);
+  const hand = await page.evaluate(() => { const h = document.querySelector('.tw-serve__held').getBoundingClientRect(), m = document.querySelector('.tw-me').getBoundingClientRect(); return { held: h.left + h.width / 2, me: m.left + m.width / 2, top: h.top, meTop: m.top, meBottom: m.bottom }; });
+  expect(hand.held, 'in the RIGHT hand, not on the belly').toBeGreaterThan(hand.me + 8);
+  expect(hand.top > hand.meTop && hand.top < hand.meBottom, 'at the height of a hand').toBe(true);
+  expect(await page.evaluate(() => window.__town.serve.glowing()), 'what you hold no longer glows').toEqual([]);
+  expect(await page.evaluate(() => window.__town.serve.spot()), 'a lit square under the customer: bring it here').toBe(true);
   await page.screenshot({ path: 'test-results/serve-carrying.png' });
 
-  // ── the till: handed over, the customer goes, the sheet and the XP move
-  await tapSpot(page, 'till');
+  // ── the customer themselves: handed over, they walk out, the sheet and the XP move
+  await tapCust(page);
   await page.waitForFunction(() => window.__town.serve.served() === 1, null, { timeout: 10000 });
   const c1 = (await chores(page)).find((c) => c.kind === 'serve');
   expect(c1, 'Pulse hears a customer served').toMatchObject({ at: 'store', kind: 'serve' });
   expect([1, 2], 'with the grade the wait earned').toContain(c1.g);
   await toast(page, SERVE.served[c1.g === 2 ? 'perfect' : 'fine']);
   expect(await want(page), 'they have gone').toBeFalsy();
+  expect(await page.evaluate(() => window.__town.serve.leaving()), 'walking back out of the door').toBe(1);
+  expect(await page.evaluate(() => window.__town.serve.spot()), 'and the square comes down').toBe(false);
   expect(await page.evaluate(() => window.__town.serve.carrying()), 'hands empty').toBe('');
   expect(await page.locator('.tw-serve__tag').count(), 'the tickets come down with them').toBe(0);
   expect(await page.evaluate(() => window.__town.serve.tray().shown), 'and the ticket').toBe(false);
@@ -171,4 +192,47 @@ test('the customer, the tickets and the ticket tray fit a small phone', async ({
   expect(box.cust.t >= box.view.t && box.cust.b <= box.view.b, 'the customer is on screen').toBe(true);
   await page.screenshot({ path: 'test-results/serve-360.png' });
   expect(errs, 'nothing threw').toEqual([]);
+});
+
+test('the first customer ever: a pointer over the glowing thing, then over the customer, and two plain lines — once', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await town(page);
+  await page.evaluate(() => window.__town.work.set({ at: 'store' }));
+  await pin(page, ['serve'], false);
+  await page.evaluate(() => window.__town.rooms.enter('store'));
+  await page.waitForFunction(() => { const w = window.__town.serve && window.__town.serve.want(); return w && w.waiting; }, null, { timeout: 10000 });
+  const w1 = await want(page);
+  expect(w1.learn, 'the first one ever').toBe(true);
+  expect((await page.evaluate(() => window.__town.serve.tray())).note).toBe(SERVE.learnFind);
+  expect(await page.evaluate(() => window.__town.serve.point()), 'a pointer over what they want').toBe(true);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'test-results/serve-learn-1.png' });
+  await tapSpot(page, await faceOfItem(page, w1.id));
+  await page.waitForFunction((id) => window.__town.serve.carrying() === id, w1.id, { timeout: 10000 });
+  expect((await page.evaluate(() => window.__town.serve.tray())).note).toBe(SERVE.learnGive);
+  expect(await page.evaluate(() => window.__town.serve.point()), 'the pointer moves over the customer').toBe(true);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'test-results/serve-learn-2.png' });
+  await tapCust(page);
+  await page.waitForFunction(() => window.__town.serve.served() === 1, null, { timeout: 10000 });
+  expect(await page.evaluate(() => window.__town.serve.point()), 'the lesson is over').toBe(false);
+  // the next customer: the plain line, no pointer
+  await page.evaluate(() => window.__town.serve.arriveNow());
+  await page.waitForFunction(() => { const w = window.__town.serve.want(); return w && w.waiting; }, null, { timeout: 12000 });
+  expect((await want(page)).learn, 'once').toBe(false);
+  expect((await page.evaluate(() => window.__town.serve.tray())).note).toBe(SERVE.find);
+  expect(await page.evaluate(() => window.__town.serve.point())).toBe(false);
+  expect(errs).toEqual([]);
+});
+
+test('the customer walks in on their feet: two frames that change as they go, never one still picture sliding', async ({ page }) => {
+  test.setTimeout(60000);
+  const errs = await town(page);
+  await page.evaluate(() => window.__town.work.set({ at: 'store' }));
+  await pin(page, ['serve']);
+  await page.evaluate(() => window.__town.rooms.enter('store'));
+  await page.waitForFunction(() => !!(window.__town.serve && window.__town.serve.want()), null, { timeout: 10000 });
+  const frames = await page.evaluate(async () => { const seen = new Set(); const t0 = performance.now(); while (performance.now() - t0 < 1200) { const w = window.__town.serve.want(); if (w && !w.waiting) seen.add(w.frame); await new Promise((r) => setTimeout(r, 40)); } return [...seen]; });
+  expect(frames.sort(), 'the walking pair, stepping').toEqual([0, 1]);
+  expect(errs).toEqual([]);
 });

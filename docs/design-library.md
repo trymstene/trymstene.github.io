@@ -983,3 +983,21 @@ pass worker, every line recorded with its time) found what no stubbed walk could
 - **A new job unfolds the note.** A fold belongs to the job it was folded on; a hire is when the note has the most to say.
 - **Nobody says a shop is open unless it always is.** Pip's first greeting said "General store open" beside a taped-shut
   store. A resident's line about a front that can close must be true on the day it shuts.
+
+## §33 A JOB'S PEOPLE AND THINGS MOVE LIKE THE WORLD'S (24 Sep 2026, Trym testing the store)
+
+Trym, on the store's customers: *"the idea and mechanisms are OK"* — and the visuals were not. The rules it left, for any
+job, counter or chore that puts a body or a thing on the floor:
+
+- **A banana walks on its feet.** Anybody who comes or goes steps on the town's own two-frame walk (town-folk's pairs:
+  right 0/1, left 4/5, front 2 — the engine's `face` labels are inverted), never one still picture sliding. A customer who
+  has waited long shifts their weight (2/3). They walk back OUT too; nobody blinks away where they stood.
+- **The thing itself, no card.** Wares on a shelf are their own sprite with a thin shadow — never a white square round them.
+- **Point at the world, not at a picture of it.** What is wanted GLOWS where it is (a static glow whose opacity breathes,
+  §21.4), instead of an icon on the tray: one less thing to read, and the eye is already on the shelf.
+- **The goal is a person, said as a person.** "Give it to the customer", never a trade word ("till"). The customer is
+  tappable themselves, and a lit square stands under them while you carry — so "the counter or the customer?" never comes
+  up. The first time ever, a pointer walks the player through it with two plain lines (lib/once.js); after that, none.
+- **A carried thing rides a hand.** The engine's glove anchors (`wearAnchor(frame, 'hand', side)`, the dance clock's frame)
+  put it in the right hand — a second thing in the left — and it pumps with the dance like every held wearable. Never the belly.
+- `tests/town-serve.spec.mjs` checks each: the walking frames, no card, the glow, the hand, the square, the lesson.

@@ -64,11 +64,11 @@ const makeOne = (page, which, hold) => page.evaluate(async ([w, hs]) => {
   return true;
 }, [which, hold]);
 
-test('🧺 the store’s rank 2: a basket — two things on the ticket, a stack of two, and one till for both', async ({ page }) => {
+test('🧺 the store’s rank 2: a basket — two things glow, one in each hand, and the customer takes both', async ({ page }) => {
   test.setTimeout(120000);
   const errs = await town(page);
   await hire(page, 'store', 2, 320);
-  await page.evaluate((d) => { localStorage.setItem('tw-calls-v1', JSON.stringify({ d, t0: Date.now() - 36e5, qa: ['serve'] })); localStorage.removeItem('tw-serve-v1'); }, DAY());
+  await page.evaluate((d) => { localStorage.setItem('tw-calls-v1', JSON.stringify({ d, t0: Date.now() - 36e5, qa: ['serve'] })); localStorage.removeItem('tw-serve-v1'); localStorage.setItem('tw-once-v1', JSON.stringify({ 'serve:learn': 1 })); }, DAY());   // the first-customer lesson has its own walk
   await page.evaluate(() => window.__town.rooms.enter('store'));
   await page.waitForFunction(() => !!window.__town.serve, null, { timeout: 10000 });
   await page.evaluate(() => window.__town.serve.basket(true));   // the draw makes about one customer in two a basket; the walk asks for one
@@ -78,7 +78,8 @@ test('🧺 the store’s rank 2: a basket — two things on the ticket, a stack 
   expect(new Set(w.ids).size, 'of two different things').toBe(2);
   expect(w.wait, 'and a longer wait for it').toBe(36000);
   const tray = await page.evaluate(() => window.__town.serve.tray());
-  expect(tray.basket && !!tray.img2, '🎟 the ticket shows both pictures').toBe(true);
+  expect(tray.basket, '🎟 a basket ticket').toBe(true);
+  expect((await page.evaluate(() => window.__town.serve.glowing())).sort(), 'both glow on their shelves').toEqual(w.faces.slice().sort());
   expect(tray.name, 'and both names').toContain(' + ');
   expect(tray.note, 'and says there are two').toBe(SERVE.basket);
   await page.screenshot({ path: 'test-results/unlock-basket-ticket.png' });
@@ -92,13 +93,13 @@ test('🧺 the store’s rank 2: a basket — two things on the ticket, a stack 
   await tapSpot(page, 'till');
   await page.waitForFunction((l) => window.__town.serve.tray().note === l, SERVE.more, { timeout: 10000 });
   expect(await page.evaluate(() => window.__town.serve.served()), 'nothing handed over').toBe(0);
-  // ── the second thing stacks on the first
+  // ── the second thing goes in the other hand
   await tapSpot(page, await faceOf(w.ids[1]));
   await page.waitForFunction((ids) => window.__town.serve.carrying() === ids.join('+'), w.ids, { timeout: 10000 });
   expect((await page.evaluate(() => window.__town.serve.tray())).note, 'both in hand: to the till').toBe(SERVE.got);
   const stack = await page.evaluate(() => window.__town.serve.stack());
-  expect(stack.length, 'two things over the banana’s head').toBe(2);
-  expect(stack[1].top, 'the second stacked above the first').toBeLessThan(stack[0].top);
+  expect(stack.length, 'two things in hand').toBe(2);
+  expect((stack[1].left + stack[1].right) / 2, 'the second in the LEFT hand, the first in the right').toBeLessThan((stack[0].left + stack[0].right) / 2);
   await page.screenshot({ path: 'test-results/unlock-basket-stack.png' });
   // ── one till, both handed over: a customer served, a basket's XP
   await tapSpot(page, 'till');
@@ -314,6 +315,9 @@ test('🍋 the stand’s rank 3: the jug — offered when nobody waits, stepping
   await hire(page, 'stand', 3, 650);
   await page.evaluate(() => window.__town.room.folkReady());
   expect(await page.evaluate(() => window.__town.room.lemonReady())).toBe(true);
+  // ⚠️ quiet BEFORE the shift starts: the stand calls its first customer the moment it opens, and one already on the way was
+  // marked arrived by the walk's own arrive() below — a second glass where the jug should be (it failed that way on 24 Sep)
+  await page.evaluate(() => window.__town.room.lemon().quiet(true));
   await page.evaluate(() => window.__town.room.open('stand'));
   await page.waitForFunction(() => window.__town.room.lemon() && window.__town.room.lemon().on(), null, { timeout: 30000 });
   // ── nobody at the rope yet: the tray offers the jug, and says so under it

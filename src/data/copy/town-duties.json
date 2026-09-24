@@ -35,7 +35,7 @@
     "sweep": "Spinner calls: litter on the arcade floor, open for the rest of the day.",
     "fix": "Spinner calls: a cabinet has gone dark, open for the rest of the day.",
     "restock": "Pip calls: crates wait for the empty shelves, open for the rest of the day.",
-    "serve": "Pip calls: customers need serving at the till, open for the rest of the day.",
+    "serve": "Pip calls: customers are waiting in the store, open for the rest of the day.",
     "deliver": "Pip calls: a parcel at the store to deliver, open for the rest of the day."
   },
   "answered": "every call today is answered; nothing more is wanted until tomorrow.",

@@ -426,6 +426,7 @@ view.addEventListener('pointerdown', (e) => {
   arriveThen = null; legs = [];   // a new tap cancels a pending cabinet, and a walk to work
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
+  if (inRoom === 'store' && serve && serve.at && serve.at(wx, wy) && serve.tap('cust')) return;   // 🙋 the customer themselves: give it to them
   const hit = thingAt(wx, wy);
   if (hit) {
     // 🕹 …and a DARK cabinet is any of the nine: the day's dark one is drawn from all of them, and on the four old

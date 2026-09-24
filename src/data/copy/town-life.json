@@ -99,7 +99,7 @@
       "The info point is Dot’s map kiosk and is shut today. Fix the dead inside light to open it again."
     ],
     "store": [
-      "The general store is Pip’s shop and is shut today. Fix the jammed till to open it again.",
+      "The general store is Pip’s shop and is shut today. Fix the jammed cash register to open it again.",
       "The general store is Pip’s shop and is shut today. Fix the fallen shelf to open it again.",
       "The general store is Pip’s shop and is shut today. Fix the blocked cellar hatch to open it again."
     ]
@@ -111,7 +111,7 @@
   ],
   "work": {
     "crate": "That crate is heavier than it looks, which is saying something.",
-    "stocked": "There it is: a full shelf, and the till knows what it is.",
+    "stocked": "There it is: a full shelf, ready for the customers.",
     "full": "Every shelf is full. Leave them looking pleased.",
     "at": {
       "post": "the Post Office",
@@ -135,7 +135,7 @@
       "stand": "Tap the lemonade stand, then Go to work. Customers come to you.",
       "cafe": "Tap the Coffee Cup, then Go to work. Customers come to you.",
       "condo": "Inside the arcade: sweep up litter and fix dark cabinets.",
-      "store": "Inside Pip’s store: fill shelves from the crates, serve customers at the till.",
+      "store": "Inside Pip’s store: fill shelves from the crates and serve the customers.",
       "post": "Tap the post office, then Go to work to sort the post."
     },
     "paidHere": "Payday: {coins} coins for last week’s work, paid into your pass."

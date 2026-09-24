@@ -396,16 +396,29 @@
 
 /* ---- 🛒 THE STORE'S CUSTOMERS (23 Sep 2026): the ticket is the till's own picture of the thing, the bar is their
  * patience running down, and every stocked face wears a little picture of what is on it (town-serve.js) ---------------- */
-.tw-serve__want { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 800; font-size: 0.82rem; }
-.tw-serve__want img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; background: #fff8e6; border: 2px solid #000; padding: 2px; flex: none; }
-.tw-serve__want { min-width: 0; }
+.tw-serve__want { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 800; font-size: 0.82rem; min-width: 0; }
 .tw-serve__want b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tw-serve__want img + img { margin-left: -0.2rem; }   /* 🧺 a basket: the two pictures side by side */
 .tw-cup--serve .tw-cup__fill { background: linear-gradient(#bfe89a 0 7px, #7bc35e 7px); transform-origin: 0 50%; transition: transform 200ms linear; }
 .tw-cup--serve.is-late .tw-cup__fill { background: linear-gradient(#ffd89a 0 7px, #e8902a 7px); }
-.tw-serve__tag { position: absolute; width: 1.7%; transform: translate(-50%, -100%); pointer-events: none; background: #fff8e6; border: 2px solid #000; padding: 1px; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45); line-height: 0; }
+/* 🛒 the wares on the shelf: the thing itself, no card round it (Trym, 24 Sep: "surrounded by a big white square … remove that") —
+   and what the customer wants GLOWS and bobs (a static glow under it whose opacity breathes: motion is transform + opacity, §21.4) */
+.tw-serve__tag { position: absolute; width: 1.7%; transform: translate(-50%, -100%); pointer-events: none; line-height: 0; }
+.tw-serve__tag img { filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6)); }
+.tw-serve__tag.is-want { animation: twServeBob 0.9s ease-in-out infinite; }
+.tw-serve__tag.is-want::before { content: ''; position: absolute; inset: -55%; background: radial-gradient(closest-side, rgba(255, 236, 110, 0.95), rgba(255, 225, 53, 0.5) 55%, rgba(255, 225, 53, 0)); opacity: 0.45; animation: twServeGlow 0.9s ease-in-out infinite; }
+.tw-serve__tag img { position: relative; }
+@keyframes twServeBob { 50% { transform: translate(-50%, calc(-100% - 5px)); } }
+@keyframes twServeGlow { 50% { opacity: 1; } }
 .tw-serve__tag img, .tw-serve__held img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
-.tw-serve__held { position: absolute; width: 1.3%; transform: translate(-50%, -100%); pointer-events: none; line-height: 0; }
+/* the thing in your hand hangs from the glove: its top third at the hand's centre */
+.tw-serve__held { position: absolute; width: 1.3%; transform: translate(-50%, -30%); pointer-events: none; line-height: 0; }
+/* where to bring it: a lit square on the floor under the customer, while you carry */
+.tw-serve__spot { position: absolute; width: 5.6%; height: 2.6%; transform: translate(-50%, -62%); pointer-events: none; border: 3px solid #ffe135; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(0, 0, 0, 0.35); background: rgba(255, 225, 53, 0.16); animation: twServeSpot 0.9s ease-in-out infinite; }
+@keyframes twServeSpot { 50% { opacity: 0.45; } }
+/* the first customer's pointer: over what they want, then over them */
+.tw-serve__point { position: absolute; width: 0; height: 0; transform: translate(-50%, -100%); pointer-events: none; border: 11px solid transparent; border-top: 15px solid #ffe135; border-bottom: 0; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 -1px 0 #000); animation: twServePoint 0.7s ease-in-out infinite; }
+@keyframes twServePoint { 50% { transform: translate(-50%, calc(-100% - 8px)); } }
+@media (prefers-reduced-motion: reduce) { .tw-serve__tag.is-want, .tw-serve__tag.is-want::before, .tw-serve__spot, .tw-serve__point { animation: none; } .tw-serve__tag.is-want::before { opacity: 0.85; } }
 .tw-serve__cust.is-gone { opacity: 0; transition: opacity 500ms ease-out; }
 /* 📦 THE STORE'S PARCEL (rank 3): on the floor, over your head, and a marker bouncing over the door it is for */
 .tw-deliver__box, .tw-deliver__held, .tw-deliver__to { position: absolute; transform: translate(-50%, -100%); pointer-events: none; line-height: 0; }

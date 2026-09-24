@@ -1,9 +1,9 @@
 {
-  "find": "Find it on the shelves and bring it to the till.",
-  "got": "Got it. Now to the till.",
-  "wrong": "Not that one. Check the picture on the ticket.",
-  "basket": "Two things this time. Bring both to the till.",
-  "one": "One down. Now find the other one.",
+  "find": "Take the glowing thing from the shelf to the customer.",
+  "got": "Got it. Now give it to the customer.",
+  "wrong": "Not that one. Take the one that glows.",
+  "basket": "Two things this time: take both glowing things to the customer.",
+  "one": "One down. Now the other one that glows.",
   "more": "Not yet. They wanted two things.",
   "served": {
     "fine": "Handed over. The customer nods and heads out.",
@@ -11,5 +11,7 @@
   },
   "late": "The customer gives up waiting and leaves.",
   "leave": "Stop serving",
-  "stopped": "No more customers until you step out and back in."
+  "stopped": "No more customers until you step out and back in.",
+  "learnFind": "A customer! What they want glows on the shelf. Tap it to pick it up.",
+  "learnGive": "Now tap the customer to give it to them."
 }
