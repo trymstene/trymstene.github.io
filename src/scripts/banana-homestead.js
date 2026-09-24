@@ -1237,13 +1237,19 @@ function init(visitDoc, visitMiss) {
   const seedsHeld = () => CROPS.reduce((n, c) => n + seedCount(c.id), 0);
   const bareSoil = () => (state.soil || []).filter((c) => !c.crop);
   let pendCell = null;   // bare soil tapped from afar: the seeds open on arrival, not on a second tap
-  // 🌱 …and on arrival: once a day, what you hold and the one thing to tap — the hammer glows until build mode opens
+  // ☝ TAUGHT ONCE (Trym, 24 Sep: "Only once i hope? It takes a lot of attention to address just one of the many mechanisms
+  // in the homestead view, and in the builder-mode which consists of several tools"). Each line is said the first time it
+  // applies on this device and never again; build mode opens on the soil tool only from the glowing hammer; and the soil
+  // stops glowing once a first seed has been planted. After that, seeds are one quiet mechanism among the others.
+  const lesson = (() => { try { return JSON.parse(localStorage.getItem('hs-seedhint-v1') || '{}') || {}; } catch (e) { return {}; } })();
+  const taught = (k) => !!lesson[k];
+  const teach = (k) => { if (lesson[k]) return false; lesson[k] = 1; try { localStorage.setItem('hs-seedhint-v1', JSON.stringify(lesson)); } catch (e) {} return true; };
+  // 🌱 …and on arrival, the first time: what you hold and the one thing to tap — the hammer glows until build mode opens
   function seedArrival() {
     if (visiting || inside || state.stage < 1 || panelOpen() || document.querySelector('.bwt-veil')) return;   // the tour speaks first
     const n = seedsHeld();
     if (!n) return;
-    const d = new Date().toISOString().slice(0, 10);
-    try { if ((JSON.parse(localStorage.getItem('hs-seedhint-v1') || '{}') || {}).d === d) return; localStorage.setItem('hs-seedhint-v1', JSON.stringify({ d })); } catch (e) { return; }
+    if (!teach('arrive')) return;
     const bare = bareSoil().length, A = SEEDW.arrive || {};
     const line = bare ? (n === 1 ? A.plantOne : A.plantMany) : (n === 1 ? A.digOne : A.digMany);
     if (line) toast('🌱 ' + String(line).replace('{n}', n), 6000);
@@ -1252,7 +1258,7 @@ function init(visitDoc, visitMiss) {
   const soilEls = new Map();
   function refreshSoil() {
     const seen = new Set();
-    const glow = !visiting && !planner && seedsHeld() > 0;   // lit = tap me, the world's own grammar
+    const glow = !visiting && !planner && seedsHeld() > 0 && !taught('planted');   // lit = tap me, until you have done it once
     state.soil.forEach((c) => {
       const key = c.i + ',' + c.j;
       seen.add(key);
@@ -2518,8 +2524,9 @@ function init(visitDoc, visitMiss) {
     toolS.setAttribute('aria-pressed', String(digging));
     toolC.setAttribute('aria-pressed', String(clearing));
     toolM.setAttribute('aria-pressed', String(arranging));
+    const lessonSoil = digging && seedsHeld() > 0 && teach('soil');   // 🌱 what soil is for, the first time only
     toast(fencing ? '🪵 tap your land (the lit grid) to build fence — tap a piece to take it down'
-      : digging && seedsHeld() > 0 ? '⛏️ ' + SEEDW.soil
+      : lessonSoil ? '⛏️ ' + SEEDW.soil
       : digging ? '⛏️ tap your land to till soil — tap soil to fill it back'
       : clearing ? '🧹 tap anything to clear it — decor goes safely to the shed'
       : '✥ tap a thing to lift it — decor, house, mailbox or sign', 3400);
@@ -2594,8 +2601,9 @@ function init(visitDoc, visitMiss) {
     }
     toolF.style.display = toolS.style.display = toolC.style.display = '';
     planOverlay();
+    const sent = buildBtn.classList.contains('is-hint');   // the arrival line pointed here: the spade first, this once
     buildBtn.classList.remove('is-hint');
-    setTool(seedsHeld() > 0 && !bareSoil().length ? 'soil' : 'fence');   // 🌱 seeds and nowhere to plant them: the spade first
+    setTool(sent && seedsHeld() > 0 && !bareSoil().length ? 'soil' : 'fence');
     refreshSoil();
     // ⚠️ OPEN ON YOUR OWN LAND, not on the middle of the max deed. The frame is
     // still tier 3 so growth stays visible, but once the phone zooms in you can
@@ -2630,7 +2638,7 @@ function init(visitDoc, visitMiss) {
     layout();
     camSnap();
     refreshSoil();
-    if (!visiting && !inside && seedsHeld() > 0 && bareSoil().length) toast('🌱 ' + SEEDW.done, 4200);   // 🌱 the next step, now it can be taken
+    if (!visiting && !inside && seedsHeld() > 0 && bareSoil().length && teach('done')) toast('🌱 ' + SEEDW.done, 4200);   // 🌱 the next step, the first time it can be taken
   }
   buildBtn.addEventListener('click', () => {
     if (visiting) { toast('build at your own homestead'); return; }
@@ -4405,6 +4413,7 @@ function init(visitDoc, visitMiss) {
       row.addEventListener('click', () => {
         if (!seedCount(c.id)) return;
         seedUse(c.id);
+        teach('planted');   // the lesson is over: the soil stops glowing
         cell.crop = c.id; cell.waters = 0; cell.last = ''; cell.planted = dayStr();
         save(); refreshSoil();
         seedEl.hidden = true; syncLock();
@@ -4709,7 +4718,7 @@ function init(visitDoc, visitMiss) {
           && cb > state.home.y - floorOf(sd.h) && cb < state.home.y + 30) { toast('not under the house'); return; }
         state.soil.push({ i, j });
         float(cx, cb - 20, '⛏️');
-        if (seedsHeld() > 0 && bareSoil().length === 1) toast('⛏️ ' + SEEDW.dug, 4200);
+        if (seedsHeld() > 0 && bareSoil().length === 1 && teach('dug')) toast('⛏️ ' + SEEDW.dug, 4200);
         track('homestead_dig', { n: state.soil.length });
       }
       save(); refreshSoil();

@@ -908,9 +908,11 @@ of it."* The rules the jobs' unlocks settled on, for every new mechanic in the w
 - **A thing earned in one place and used in another is told at BOTH ends** (24 Sep 2026 — Be, a player: "Where do I find
   my harvested seeds from the park and how do I plant them?"; Trym: "nothing says that you can plant seeds on that
   dirt"). Where it is earned, the line names where it goes ("a seed to plant at your homestead") and nothing talks over
-  it. Where it is used, arriving says what you hold and the one thing to tap, once a day, while that thing glows; each
-  later step (the soil tool, the first patch, done) says the next step when it can be taken; and the place to use it is
-  lit while there is something to use. A far tap on it walks there AND does it. No new button for it: an action bar
+  it. Where it is used, arriving says what you hold and the one thing to tap while that thing glows; each later step
+  (the soil tool, the first patch, done) says the next step when it can be taken; the place to use it is lit; a far tap on
+  it walks there AND does it. ☝ ALL OF IT ONCE (Trym: "Only once i hope? It takes a lot of attention to address just one of
+  the many mechanisms"): each line the first time it applies on the device, the hammer's detour into the soil tool only
+  from the glowing hammer, the glow until the first seed is planted — then it is one quiet mechanism among the others. No new button for it: an action bar
   that is full stays full (Trym) — the steps point at the buttons that already exist. `tests/homestead-seeds.spec.mjs`.
 
 ### §30.1 The counter's cups, the day's last tip, and the stakes (24 Sep 2026, the copy review)

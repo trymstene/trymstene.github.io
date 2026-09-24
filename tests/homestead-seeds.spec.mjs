@@ -5,6 +5,8 @@
 // A banana arrives home with two seeds from the park and no soil. Each step is told when it applies: the arrival line and a
 // glowing hammer; build mode opening on the soil tool with what soil is for; the first patch saying press done; done saying
 // tap your soil, which now glows; and one tap on far soil walking there and opening the seeds. Pictures in test-results/.
+// ☝ And ONCE (Trym: "Only once i hope? It takes a lot of attention to address just one of the many mechanisms"): after
+// the first seed is planted, nothing of it is said again, build mode opens on its usual tool, and the soil stops glowing.
 import { test, expect } from '@playwright/test';
 import W from '../src/data/copy/homestead-seeds.json' with { type: 'json' };
 
@@ -71,21 +73,44 @@ test('two seeds from the park, no soil: the homestead walks you from the hammer 
   await page.locator('#hsSeedList button').first().click();
   await expect(page.locator('#hsSeed')).toBeHidden();
   await expect(page.locator('.hs-crop')).toHaveCount(1);
+
+  // ── and it is over: one seed still in the pouch, a new patch dug — and nothing is said, nothing glows
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.signGeo, null, { timeout: 30000 });
+  await page.waitForTimeout(4500);
+  expect(await page.locator('#hsBuild.is-hint').count(), 'no glowing hammer the second time').toBe(0);
+  expect(await page.textContent('#hsToast'), 'no arrival line the second time').not.toContain(W.arrive.digOne);
+  await page.click('#hsBuild');
+  await expect(page.locator('#hsToolFence'), 'build mode opens on its usual tool').toHaveAttribute('aria-pressed', 'true');
+  await page.click('#hsToolSoil');
+  await page.waitForTimeout(300);
+  expect(await page.textContent('#hsToast'), 'the soil tool says only what it does').not.toContain(W.soil);
+  const two = await screenOf(page, 1176, 696);
+  await page.mouse.click(two.x, two.y);
+  await page.waitForTimeout(400);
+  expect(await page.textContent('#hsToast')).not.toContain(W.dug);
+  await page.click('#hsPlanDone');
+  await page.waitForTimeout(400);
+  expect(await page.textContent('#hsToast')).not.toContain(W.done);
+  // (?hstest=tent lays the test yard afresh on every load, so this is the only patch now — bare, with a seed to plant in it)
+  await expect(page.locator('.hs-soil'), 'the new patch').toHaveCount(1);
+  await expect(page.locator('.hs-soil.is-hint'), 'and it does not glow: the lesson is over').toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
-test('the arrival line is said once a day, not every visit', async ({ page }) => {
+test('a device that has heard the lesson hears nothing of it, even with seeds and no soil', async ({ page }) => {
   test.setTimeout(60000);
   await page.addInitScript(() => {
     try {
       localStorage.setItem('pass-v1', JSON.stringify({ created: Date.now(), patches: {}, stats: { seedg_sunflower: 1 }, days: [] }));
-      localStorage.setItem('hs-seedhint-v1', JSON.stringify({ d: new Date().toISOString().slice(0, 10) }));
+      localStorage.setItem('hs-seedhint-v1', JSON.stringify({ arrive: 1 }));
     } catch (e) {}
   });
   await page.goto('/homestead/?hstest=tent', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__hs && window.__hs.signGeo, null, { timeout: 30000 });
   await page.waitForTimeout(5000);
-  const said = await page.evaluate((l) => (document.querySelector('.hs-toast, #hsToast') || {}).textContent || '', W.arrive.digOne);
-  expect(said.includes(W.arrive.digOne), 'already said today').toBe(false);
+  expect(await page.textContent('#hsToast')).not.toContain(W.arrive.digOne);
   expect(await page.locator('#hsBuild.is-hint').count()).toBe(0);
+  await page.click('#hsBuild');
+  await expect(page.locator('#hsToolFence'), 'no hammer sent you: the usual tool').toHaveAttribute('aria-pressed', 'true');
 });
