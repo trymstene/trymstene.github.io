@@ -924,7 +924,7 @@ export function bootTownLife(ctx) {
   // counter's weight would be downloaded by a banana who only ever restocks Pip's shelves.
   let cafe = null, cafeP = null;
   function cafeCtx(at = 'cafe') {
-    return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track, float, hush: ctx.hush,
+    return { world, view, W, H, pct, PROPS, CAFE_WIN, drawMe, say, track, float, hush: ctx.hush, sayNext: ctx.sayNext,
       outfit: ctx.outfit || (() => ({})),
       folk: () => folk,   // ☕ the counter borrows its customers from the town's own visitors
       pos: ctx.pos,   // ☕ the counter mark is a DISTANCE: step off it and the tray folds
@@ -1616,8 +1616,8 @@ export function bootTownLife(ctx) {
     return callsAt(at).filter((c) => c.open).map((c) => ({ kind: c.kind, n: c.left }));   // 📟 the calls that have come in and are not yet answered
   };
   seam.clockIn = (at) => {
-    if (at === 'cafe') { loadCafe().then((c) => { if (c && !c.on()) c.clockIn(view); }); return true; }
-    if (at === 'stand') { loadLemon().then((l) => { if (l && !l.on()) l.clockIn(view); }); return true; }
+    if (at === 'cafe') { loadCafe().then((c) => { if (c && !c.on()) c.clockIn(view, true); }); return true; }   // walked: the counter checks you got there
+    if (at === 'stand') { loadLemon().then((l) => { if (l && !l.on()) l.clockIn(view, true); }); return true; }
     return false;
   };
   seam.hoardNow = hoardNow;

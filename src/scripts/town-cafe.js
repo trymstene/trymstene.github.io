@@ -25,6 +25,7 @@
 // left. The counter runs wordless until the rig approves them, the way every surface in this world
 // does, and no player who never works a shift downloads a byte of them.
 import { passStat, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
+import { once } from '../lib/once.js';
 import { tipsCap, xpAt, unlocked } from '../data/town/jobs.js';   // 🪜 the rank's tips cap and the shift's work XP (23 Sep 2026)
 const COPY_MODS = import.meta.glob('../data/copy/town-cafe.json', { eager: true, import: 'default' });
 export const COPY = Object.values(COPY_MODS)[0] || {};
@@ -471,6 +472,7 @@ const NEAR = 120, AWAY = 420, STAY = 8000;
 
 export function bootTownCafe(ctx, cfg0) {
   const { world, W, H, pct, PROPS, CAFE_WIN, drawMe, outfit, say, track, folk, openCard, closeCard, esc, inside, shutHere, pos, float, hud } = ctx;
+  const later = ctx.sayNext || say;   // a one-time line waits for the line on screen (banana-town sayNext)
   // ⭐ ONE COUNTER ENGINE, TWO COUNTERS (22 Sep 2026): the queue, the patience, the cup, the tips and the till are
   // the same at the lemonade stand as here, so the stand CONFIGURES this rather than copying it — its own deck,
   // rope, words, held item, mark and way of standing behind the counter (town-lemon.js). The café's own are the
@@ -503,7 +505,7 @@ export function bootTownCafe(ctx, cfg0) {
     cup = c;
     tray.serve(c, (WORDS.go || {})[cfg.jug.station] || '');
     // ⚠️ said ONCE a shift, as the town's line — not under the tray: a tray with an order on it has no room for a note (150 px)
-    if (!jugSaid && (WORDS.jug || {}).offer) { jugSaid = true; say(WORDS.jug.offer); }
+    if (!jugSaid && (WORDS.jug || {}).offer) { jugSaid = true; later(WORDS.jug.offer); }
   }
   // ☕ SPECIAL ORDERS (the café's rank 3): some orders add a syrup step, read off the ticket's own pictures, and tip a little more
   const specialOn = () => !!cfg.special && unlocked(cfg.at, 'special', rank());
@@ -516,7 +518,7 @@ export function bootTownCafe(ctx, cfg0) {
     rush = { left: RUSH_N, got: 0, lost: 0 };
     rushDay = today();
     try { localStorage.setItem('tw-rush-v1', JSON.stringify({ d: today() })); } catch (e) {}
-    if ((WORDS.rush || {}).on) say(WORDS.rush.on);
+    if ((WORDS.rush || {}).on) later(WORDS.rush.on);
     track('town_cup', { at: cfg.at, r: 'rush' });
   }
   function rushCheck() {
@@ -634,11 +636,11 @@ export function bootTownCafe(ctx, cfg0) {
     if (cup || !row) return;
     const c = newCup(row.drink, served, row.seed, cfg.deck);
     c.row = row; c.big = !!row.big;
-    if (c.big && !bigSaid) { bigSaid = true; if (WORDS.big) say(WORDS.big); }
+    if (c.big && !bigSaid) { bigSaid = true; if (WORDS.big) later(WORDS.big); }
     if (jug > 0 && cfg.jug && !c.big) { c.order = cfg.deck.order.filter((k) => k !== cfg.jug.skip); c.fromJug = true; }   // 🍋 poured from the jug
     if (row.special) {
       c.order = [...cfg.deck.order, cfg.special.station]; c.pips = [...(cfg.deck.drinks[c.drink] || []), cfg.special.station]; c.special = true;
-      if (!specialSaid) { specialSaid = true; if (WORDS.special) say(WORDS.special); }
+      if (!specialSaid) { specialSaid = true; if (WORDS.special) later(WORDS.special); }
     }
     cup = c;
     // ⚠️ NOT THE DRINK'S NAME. The ticket on the tray is pictures and the names are for the
@@ -690,8 +692,13 @@ export function bootTownCafe(ctx, cfg0) {
     tray.idle('');
   }
 
-  function clockIn(host) {
+  function clockIn(host, walked) {
     if (on) return false;
+    // ⚠️ NOT SHORT OF THE COUNTER (24 Sep 2026, the job QA — the post office's own rule, town-sort.js). "Go to work" walks the
+    // banana here, and a walk can stop at a wall: a shift begun there is off its mark from its first frame and ends itself
+    // eight seconds later with an empty receipt. So a walked clock-in that is not at the counter says so, and waits.
+    const m = walked ? mark() : null;
+    if (m && pos && Math.hypot(pos.x - m.x, pos.y - m.y) > NEAR) { if (WORDS.far) say(WORDS.far); return false; }
     on = true;
     saidGrade = {}; tipsAllSaid = false; cappedHit = false;
     served = 0; tips = 0; best = 0; lastBest = ''; shiftAt = performance.now(); nextAt = 0; line = []; away = 0; grades = []; xpGot = 0; bigSaid = false; rush = null; rushXp = 0; jug = 0; jugSaid = false; specialSaid = false;
@@ -701,7 +708,7 @@ export function bootTownCafe(ctx, cfg0) {
     if (tray.jugs) tray.jugs(0);
     tray.show();
     tray.idle('');
-    if (WORDS.on) say(WORDS.on);
+    if (WORDS.on && once(cfg.at + ':on')) say(WORDS.on);   // the first shift here says where you are and what to do; the tray says the rest
     track('town_shift', { at: cfg.at, step: 'in' });
     return true;
   }

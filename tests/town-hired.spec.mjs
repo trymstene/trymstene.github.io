@@ -39,12 +39,14 @@ async function toBean(page, w, h) {
 }
 // the moment's clock, read in the page: when the card went away, and when the big words came up
 const watch = (page) => page.evaluate(() => {
-  const t0 = performance.now(), seen = { closed: 0, moment: 0 };
+  const t0 = performance.now(), seen = { closed: 0, moment: 0, note: 0 };
   const panel = document.getElementById('twPanel');
   const tick = () => {
     if (!seen.closed && panel.hidden) seen.closed = performance.now() - t0;
     if (!seen.moment && document.querySelector('.wm-moment')) seen.moment = performance.now() - t0;
-    if (!seen.closed || !seen.moment) requestAnimationFrame(tick);
+    const n = document.querySelector('.twd-chip');
+    if (!seen.note && n && !n.hidden) seen.note = performance.now() - t0;   // 💼 when the work note first showed the job
+    if (!seen.closed || !seen.moment || !seen.note) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
   window.__hiredSeen = seen;
@@ -67,6 +69,9 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     const seen = await seam(page, () => window.__hiredSeen);
     expect(seen.closed, 'the card closed').toBeGreaterThan(0);
     expect(seen.moment, '⭐ the dialogue closes FIRST, then the splash').toBeGreaterThan(seen.closed);
+    // 💼 and the work note arrives WITH the hire, never under the boss's yes while it types (24 Sep 2026, the live job journey)
+    await page.waitForFunction(() => window.__hiredSeen.note > 0, null, { timeout: 8000 });
+    expect((await seam(page, () => window.__hiredSeen)).note, 'the note shows the job only once the card has closed').toBeGreaterThanOrEqual(seen.closed);
     const m = await page.evaluate(() => {
       const e = document.querySelector('.wm-moment'), v = document.getElementById('twView').getBoundingClientRect(), r = e.getBoundingClientRect();
       const b = e.querySelector('b');

@@ -17,6 +17,7 @@
 // ⚠️ THE THUMB IS JUDGED ON ITS OWN TIMESTAMP (the café's lesson): a tap carries an exact `now`, and a
 // card's freshness is measured from the instant it landed, never from the last painted frame.
 import { iconSvg } from '../lib/pixel-icons.js';
+import { once } from '../lib/once.js';
 import { seedRand, burstInto } from '../lib/world.js';
 import { roundXp, xpAt, unlocked } from '../data/town/jobs.js';   // 🪜 a round's points are its work XP (23 Sep 2026)
 
@@ -308,7 +309,7 @@ export function bootTownSort(ctx) {
     // the first round on this device carries its notice under the holes; every later one runs wordless
     if (!hinted() && COPY.hint && !tray.seam.note()) tray.say(COPY.hint, true); else if (!tray.seam.note()) tray.say('');   // a sealed card's or a parcel's own one-time line is not overwritten
     if (!held) tray.show();
-    if (COPY.on) say(COPY.on);
+    if (COPY.on && once('post:on')) say(COPY.on);   // the first round says what the tray is; the tray says the rest
     track('town_shift', { at: 'post', step: 'in' });
     return true;
   }
@@ -334,8 +335,7 @@ export function bootTownSort(ctx) {
   }
   function clockOut() {
     if (!on) return false;
-    finish(tray && tray.round());
-    if (COPY.off) say(COPY.off);
+    finish(tray && tray.round());   // the receipt IS the end of the round: nothing is said after it opens (§30.1)
     return true;
   }
   // ⭐ THE RECEIPT is a card, and a card is right HERE and nowhere else in the round: it is over, so the

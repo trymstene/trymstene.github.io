@@ -646,6 +646,21 @@ console.log('\n27. 💼 staff of the week: the week’s sheet counts the work XP
   ok('and nobody has been staff of the week here yet', v.job.sotw === null, v.job.sotw);
 }
 
+console.log('\n28. ⚖️ one empty week on the record: the stake is said from Monday, not Thursday');
+{
+  CLOCK = monday(CLOCK + 7 * DAY);
+  const P = as(await kept('strike@example.com'));
+  await P('/job/take', { at: 'condo' });
+  let v = await P('/job/view');
+  ok('a fresh hire on a Monday is not nudged', v.job.nudge === false, v.job);
+  CLOCK = monday(CLOCK) + 3600000;   // the next Monday: the first week was empty — one strike
+  v = await P('/job/view');
+  ok('⭐ a strike on the record and nothing done yet this week: the nudge is up on Monday', v.job.nudge === true, v.job);
+  await P('/job/chore', { kind: 'sweep' });
+  v = await P('/job/view');
+  ok('and a piece of work done takes it down', v.job.nudge === false, v.job);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

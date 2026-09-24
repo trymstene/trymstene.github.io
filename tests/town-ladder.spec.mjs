@@ -183,7 +183,7 @@ test('a warning, then a demotion, heard at Bean — and the card and the note sa
   expect(c.title, 'still the rank you hold').toBe(STAFF.ranks.cafe[1]);
   expect(c.text, 'the boss’s word waits').toContain(STAFF.word.cafe);
   expect(c.text, 'the warning stands').toContain(STAFF.warnCard);
-  expect(c.text, 'and last week is on the card').toContain(STAFF.last.poor.replace('{xp}', '80'));
+  expect(c.text, 'and last week is on the card, in a counter’s words: its drinks, not its duties').toContain(STAFF.last.poorCups.replace('{xp}', '80'));
   expect(c.text, 'the XP counts toward climbing back over your own rank’s line').toContain('/ ' + xpAt('cafe', 2));
   expect(await page.evaluate(() => !!document.querySelector('#twCardBody .tws-xp .tws-bar.is-under')), 'on an amber bar').toBe(true);
   expect(c.news, 'no promotion').toBe(false);

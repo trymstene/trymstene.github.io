@@ -167,6 +167,7 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
   const newsOf = (s) => (s.lad && s.lad.news && ((work.seam.words && work.seam.words()) || {}).news || {})[s.at] || '';
   // ↕ …or a word to hear (a warning, a demotion: the weekly review), in the nudge's colour
   const wordOf = (s) => (s.lad && s.lad.talk && ((work.seam.words && work.seam.words()) || {}).word || {})[s.at] || '';
+  const home = () => { try { return !!(JSON.parse(localStorage.getItem('hs-v1') || '{}') || {}).claimedAt; } catch (e) { return false; } };   // no homestead: the town pays (town-work)
   function saysFor(s) {
     if (!s) return null;
     // 🪓 the sack: the note says so for a few days after, whatever job you hold now (none, usually)
@@ -189,12 +190,12 @@ export function bootTownDuties({ view, work, track, open, onCall }) {
       return after ? { top: tipsTop, line: esc(after), kind: 'wage' } : null;
     }
     const top = countsFor(s);
-    if (s.owed > 0 && COPY.payslip) return { top, line: esc(COPY.payslip), kind: 'payslip' };
     // 📟 THE PAGER (slice 0b): at the arcade and the store the town CALLS you, and the note is where the call lands —
     // amber (the quest's note is the gold one), the call's own line, until it is answered; then the next one; then one line for a day's calls all answered
     const cs = ONCALL_JOBS[s.at] ? callsAt(s.at) : [];
     const ring = cs.find((c) => c.open);
     if (ring && COPY.call && COPY.call[ring.kind]) return { top, line: esc(COPY.call[ring.kind]), kind: 'call' };
+    if (s.owed > 0 && COPY.payslip && home()) return { top, line: esc(COPY.payslip), kind: 'payslip' };   // an open call first: it is today's; the payslip waits
     if (newsOf(s)) return { top, line: esc(newsOf(s)), kind: 'news' };
     if (wordOf(s)) return { top, line: esc(wordOf(s)), kind: 'word' };
     if (s.nudge && COPY.nudge && COPY.nudge[s.at]) return { top, line: esc(COPY.nudge[s.at]), kind: 'nudge' };

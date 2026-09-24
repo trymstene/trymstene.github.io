@@ -15,6 +15,7 @@
 // the server's answer corrects the mirror. The mirror never decides money — it only decides which
 // of four already-approved lines the boss says.
 import { passPost } from '../lib/banana-pass.js';
+import { ONCALL_JOBS, hired as callsHired } from '../lib/work-calls.js';   // 🧑‍🔧 the hire day's calls
 import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor, COUNTS_AS, dayCap, MEMENTO, ranksOf } from '../data/town/jobs.js';
 import { grantToShed, takeFromShed, canHold } from '../lib/homestead-inventory.js';   // 📜 a boss's memento goes to your homestead's shed   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
 
@@ -53,6 +54,11 @@ export function bootTownWork(ctx) {
   // the server's answer is the truth; the mirror follows it. ⚠️ `up`, `hm` and `told` are the
   // DEVICE's own (turned up today, the chip folded, what the chip has said) and ride along untouched.
   let taking = 0;   // takes on the wire: a hire or a quit the server has not answered yet
+  // 💼 THE NOTE ARRIVES WITH THE HIRE (24 Sep 2026, the live job journey): the mirror takes the job the moment you ask, and
+  // the work note rendered it then — "Pip calls: crates wait…" over the card while Pip was still typing "Gladly", before the
+  // HIRED moment. The note reads the job through state(), and state() holds it back until the moment (or 20 s, or a refusal).
+  let held = 0;
+  const release = () => { if (held) { held = 0; notify(); } };
   function land(res) {
     // a refusal can still carry the job as it stands (the server's 409 'no job' does): the mirror lands it, so a job the
     // server has let go of stops being answered as held
@@ -66,7 +72,9 @@ export function bootTownWork(ctx) {
         // 🪜 the ladder at the job you hold: XP, the rank your boss has told you, today's XP (worker-pass ladderOf)
         lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey(),
           warn: !!l.warn, talk: l.talk || '', last: l.last || null, mem: l.mem | 0 } : null };   // ↕ the weekly review: warned, the boss's word waiting, last week
-      if (was !== job.at) job.up = '';
+      // 💼 a new workplace unfolds the note (24 Sep 2026, the job QA): a fold is for the job you folded it on, and a hire is
+      // the moment the note has the most to say
+      if (was !== job.at) { job.up = ''; job.hm = 0; }
       // 💼 a job that is gone is REMEMBERED for a while: the homestead still asks for the payslip it owes
       if (was && !job.at) { job.was = was; job.wasT = Date.now(); }
       writeJob(job);
@@ -77,7 +85,24 @@ export function bootTownWork(ctx) {
   }
   // the job as it stands, marking nothing — on boot, so the chip can speak before you turn up
   // (and once a day for a job you no longer hold, so the sack still reaches the note)
-  function view() { if (!job.at && !job.fired) return; passPost('/job/view', {}).then(land); }
+  function view() { if (!job.at && !job.fired && !(job.was && Date.now() - (+job.wasT || 0) < 21 * 864e5)) return; passPost('/job/view', {}).then(land).then(payHere); }   // …and for three weeks after leaving: a week you worked is still owed
+  // 💼 PAYDAY WITHOUT A HOMESTEAD (24 Sep 2026, the job QA): the cheque is collected by the homestead's mailbox, so a worker
+  // with no claimed homestead was told "go home and open your payslip" — and was never paid; the week fell away after two.
+  // Such a worker is paid here, the first time the town sees a finished week owing, and told so in one line.
+  let paying = false;
+  function payHere() {
+    let home = false;
+    try { home = !!(JSON.parse(localStorage.getItem('hs-v1') || '{}') || {}).claimedAt; } catch (e) {}
+    if (paying || home || !(job.owed > 0)) return;
+    paying = true;
+    passPost('/job/pay', {}).then((res) => {
+      paying = false;
+      if (!res || res.error) return;
+      if (res.job) land({ job: res.job });
+      const n = res.total | 0, w = W();
+      if (n > 0 && w.paidHere) say(w.paidHere.replace('{coins}', String(n)));
+    });
+  }
   view();
   if (job.at) loadWords();
   // 💼 A CHORE, BY KIND (docs/town-jobs-plan.md §12): the town says "swept", "fixed", "restocked" as it
@@ -129,7 +154,7 @@ export function bootTownWork(ctx) {
       // 💼 THE MOMENT YOU ARE HIRED (Trym, 22 Sep: "the dialogue window should close … then splash"): on a yes the
       // boss's card closes itself after their line, and then the world celebrates — only if the job is still
       // yours by then (a take the server refused has already been rolled back)
-      after: () => (asked === 'took' && typeof ctx.hired === 'function' ? () => { if (job.at === at) ctx.hired(at); } : null),
+      after: () => (asked === 'took' && typeof ctx.hired === 'function' ? () => { release(); if (job.at === at) ctx.hired(at); } : null),
       a: () => {
         // ⭐ answered from what this device already knows, because the card types a string NOW.
         // The only answer the server could still overturn is `keep`, and that one the device can
@@ -155,10 +180,12 @@ export function bootTownWork(ctx) {
           // the one case the device could not know: a link that is still an unkept pass
           // ⚠️ AND THE OPTIMISM IS ROLLED BACK. Without this the mirror kept a job the server refused,
           // so every later ask answered 'already' about work nobody had given you.
-          if (res && res.error === 'keep') { job = { ...job, at: before }; writeJob(job); if (w.keep) say(w.keep); }
+          if (res && res.error === 'keep') { job = { ...job, at: before }; writeJob(job); release(); if (w.keep) say(w.keep); }
         });
         // optimistic, and honestly so: if the server refuses, the line above corrects it
         job = { ...job, at, up: '', lad: null, ref: '' };   // a reference is this hire's alone: the next take starts without one   // 🪜 a new workplace's ladder comes back with the server's answer
+        if (ONCALL_JOBS[at]) callsHired(at);   // 🧑‍🔧 the hire day of an on-call job has its work waiting (work-calls.js)
+        held = Date.now() + 20000; setTimeout(release, 20000);
         loadWords();
         writeJob(job);
         notify();
@@ -194,15 +221,15 @@ export function bootTownWork(ctx) {
     const at = BOSS[key], l = ladder(), w = W();
     const line = LW && LW.promo && LW.promo[key];
     if (!at || job.at !== at || !l.news || !line || !LW.promoQ) return null;
-    let told = 0;
+    let told = 0, was = 0;
     return {
       news: true,   // banana-town puts it first on the card
       q: LW.promoQ,
-      after: () => (told && typeof ctx.promoted === 'function' ? () => { if (job.at === at) ctx.promoted(at, told); } : null),
+      after: () => (told && typeof ctx.promoted === 'function' ? () => { if (job.at === at) ctx.promoted(at, told, was); } : null),
       a: () => {
         const n = ladder();
         if (!n.news) return w.already || '';
-        told = n.earned;
+        told = n.earned; was = n.rank;
         track('town_promo', { at, rank: told });
         passPost('/job/promote', { at }).then(land);
         job = { ...job, lad: { ...(job.lad || {}), xp: n.xp, rank: told, today: n.today, d: todayKey(), warn: false, talk: '' } };   // the promotion overtakes a waiting word
@@ -258,8 +285,9 @@ export function bootTownWork(ctx) {
       land(res);
       if (res && res.error) return;
       toldDay = day;
-      const w = W();
-      if (w.day) say(w.day);
+      // 🤫 COUNTED, NOT ANNOUNCED (24 Sep 2026, the live job journey): "You turned up for work today" fired the moment you
+      // reached your workplace — over the HIRED moment's start line, over a shift's opening line, over a round's. The day
+      // still counts on the server and the work note's counters move; nothing needs saying.
     });
   }
 
@@ -272,7 +300,7 @@ export function bootTownWork(ctx) {
       // ⚠️ the walk's door: it cannot keep a pass, so it drives the module rather than the server
       set: (j) => { job = { at: '', week: '', days: 0, pay: 0, sofar: 0, owed: 0, up: '', duties: [], share: 0, nudge: false, fired: null, ...(j || {}) }; if (job.at && !(job.duties || []).length) job.duties = rowsOf(job.at, {}); writeJob(job); notify(); if (job.at) loadWords(); },
       // 💼 for the work note: the mirror as one plain object, plus whether you have turned up today
-      state: () => ({ at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey(),
+      state: () => (held > Date.now() ? { at: '', days: 0, pay: 0, sofar: 0, owed: 0, turnedUp: false, duties: [], share: 0, nudge: false, fired: null, lad: null, sotw: null } : { at: job.at || '', days: job.days | 0, pay: job.pay | 0, sofar: job.sofar | 0, owed: job.owed | 0, turnedUp: !!job.at && job.up === todayKey(),
         duties: Array.isArray(job.duties) ? job.duties : [], share: +job.share || 0, nudge: !!job.nudge, fired: job.fired || null, lad: ladder(), sotw: job.sotw || null }),
       // 🪜 the ladder: where you stand, the words it is told in (null until they land), and a title by rank
       ladder, words: () => LW, title: titleOf, wordsReady: loadWords,

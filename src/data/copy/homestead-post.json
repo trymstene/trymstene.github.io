@@ -3,45 +3,45 @@
     "nudge": {
       "post": {
         "from": "Stamp",
-        "line": "The sorting pile is still on the counter. Come sort it before it learns the alphabet."
+        "line": "The sorting pile is still on the counter. Come in this week: two empty weeks in a row and the job is gone."
       },
       "condo": {
         "from": "Spinner",
-        "line": "The arcade floor and machines are waiting. Come in when you can; neither has improved itself."
+        "line": "The arcade floor and machines are waiting. Come in this week: two empty weeks in a row and the job is gone."
       },
       "store": {
         "from": "Pip",
-        "line": "The store shelf needs restocking. Come in when you can; the empty spaces have become very confident."
+        "line": "The shelves need restocking. Come in this week: two empty weeks in a row and the job is gone."
       },
       "cafe": {
         "from": "Bean",
-        "line": "The counter has been quiet without you this week. Come and pour a few cups when you can."
+        "line": "The counter has been quiet without you. Come in this week: two empty weeks in a row and the job is gone."
       },
       "stand": {
         "from": "Fig Jr.",
-        "line": "The stand reports low staffing this week. Please report for a shift at your earliest convenience."
+        "line": "The stand reports low staffing. Please report this week: two empty weeks in a row vacate the position."
       }
     },
     "fired": {
       "post": {
         "from": "Stamp",
-        "line": "You stopped coming in, so you are off the book. Ask again and you start at the first pile. Noted."
+        "line": "Two weeks with no sorting, so you are off the book. Ask again and you start at the first pile. Noted."
       },
       "condo": {
         "from": "Spinner",
-        "line": "You stopped coming, so your name is off the arcade book. Ask again and you start from the first rung."
+        "line": "Two weeks with no work done, so your name is off the arcade book. Ask again and you start from the first rung."
       },
       "store": {
         "from": "Pip",
-        "line": "You stopped coming, so your name is off the store book. Ask again and you start as new."
+        "line": "Two weeks with nothing done, so your name is off the store book. Ask again and you start as new."
       },
       "cafe": {
         "from": "Bean",
-        "line": "Your cups went cold, so you are off the Coffee Cup book. Ask again and you start from the first cup."
+        "line": "Two weeks without a cup, so you are off the Coffee Cup book. Ask again and you start from the first cup."
       },
       "stand": {
         "from": "Fig Jr.",
-        "line": "Attendance review complete: your position is vacated. You may reapply, starting again at entry level."
+        "line": "Review complete: two weeks without a glass, so your position is vacated. You may reapply at entry level."
       }
     },
     "news": {

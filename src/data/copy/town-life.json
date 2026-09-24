@@ -129,7 +129,6 @@
     "quitDone": "Of course. Your rank here waits for you if you come back.",
     "keep": "I can only take you on once your pass is saved. Save it, then ask me again.",
     "keepCta": "Save my pass",
-    "day": "You turned up for work today. That counts toward your week.",
     "moment": "HIRED",
     "momentLine": "YOU WORK AT {where} NOW",
     "start": {
@@ -138,7 +137,8 @@
       "condo": "Inside the arcade: sweep up litter and fix dark cabinets.",
       "store": "Inside Pip’s store: fill shelves from the crates, serve customers at the till.",
       "post": "Tap the post office, then Go to work to sort the post."
-    }
+    },
+    "paidHere": "Payday: {coins} coins for last week’s work, paid into your pass."
   },
   "locks": {
     "store": "Pip’s General Store will have the last one of everything.",
@@ -148,8 +148,8 @@
     "step": "Story steps: {n} of {of}"
   },
   "rooms": {
-    "condo": "Spinner’s Arcade. Tap a cabinet to play; scores earn prizes to wear.",
-    "store": "Pip’s general store. Today’s shelves and counter sell homestead things."
+    "condo": "Spinner’s Arcade. Tap a cabinet to play for prizes to wear, or ask Spinner for a job.",
+    "store": "Pip’s general store: homestead things for sale at the counter. Ask Pip for a job here."
   },
   "objects": [
     {

@@ -57,9 +57,12 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   await waitLine(page, COPY.nudge.condo);
   expect((await chip(page)).kind, 'the note wears the nudge’s colour').toBe('nudge');
 
-  // ── a cheque paid while you were away: the letterbox line wins, whatever the week
+  // ── a cheque paid while you were away, to a worker with a homestead: the mailbox line wins over the nudge (an open call
+  // would still come first — tests/town-payday.spec.mjs; a worker with NO homestead is paid in the town instead)
+  await page.evaluate(() => localStorage.setItem('hs-v1', JSON.stringify({ claimedAt: Date.now() - 864e5, slug: 'testy' })));
   await page.evaluate(() => window.__town.work.set({ at: 'condo', pay: 60, sofar: 0, share: 0, owed: 40, nudge: true, duties: [{ kind: 'sweep', done: 0, of: 3 }, { kind: 'fix', done: 0, of: 3 }] }));
   await waitLine(page, COPY.payslip);
+  await page.evaluate(() => localStorage.removeItem('hs-v1'));
 
   // ── let go: no job any more, and the note says so for a few days
   await page.evaluate(() => window.__town.work.set({ at: '', fired: { at: 'condo', week: 'w', t: Date.now() } }));

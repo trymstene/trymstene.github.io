@@ -289,8 +289,8 @@ function shiftFrameY(now) {
 //   🕹 the arcade's rank 3: a lamp put right on the square is one of Spinner's repairs; rank 4: litter picked up is its sweeping
 //   ☕ the café's rank 4 (keyholder): a good shift ends with the nearest mess on the square put right — the town's health rises
 // Each says so ONCE a day (design library §30): after that the work note's bar moving is enough.
-const toldToday = {};
-const tell = (k) => { const L = (work && work.seam.words()) || {}, d = Math.floor(Date.now() / 864e5); if ((L.told || {})[k] && toldToday[k] !== d) { toldToday[k] = d; say(L.told[k]); } };
+// said once a DAY, kept on the device (tw-told-v1): in memory it was once a page load, and a reload said it again
+const tell = (k) => { const L = (work && work.seam.words()) || {}, d = Math.floor(Date.now() / 864e5); let t = {}; try { t = JSON.parse(localStorage.getItem('tw-told-v1') || '{}') || {}; } catch (e) {} if (t.d !== d) t = { d }; if ((L.told || {})[k] && !t[k]) { t[k] = 1; try { localStorage.setItem('tw-told-v1', JSON.stringify(t)); } catch (e) {} say(L.told[k]); } };
 // 👻 each ghost is one repair a day: a caught ghost forms again a few seconds later, and walking into it again is not work
 const ghostFirst = (id) => { const d = Math.floor(Date.now() / 864e5); let g = null; try { g = JSON.parse(localStorage.getItem('tw-ghost-v1') || 'null'); } catch (e) {} if (!g || g.d !== d || !Array.isArray(g.ids)) g = { d, ids: [] }; if (g.ids.includes(String(id))) return false; g.ids.push(String(id)); try { localStorage.setItem('tw-ghost-v1', JSON.stringify(g)); } catch (e) {} return true; };
 let tidyNext = null;   // ☕ the keyholder's tidy waits for the receipt to close (§27: the moment comes after the card)
@@ -415,6 +415,7 @@ let dress = null;        // 👕 the clothes shop's dressing room, once its chun
 let post = null;         // ✉️ the post office's mailbox, once its chunk is in
 let info = null;         // 🗺️ the kiosk's rack of maps, once its chunk is in
 let arriveThen = null;   // 🕹 a cabinet opens when the banana reaches it, not on the tap (a walk behind an open card reads as a bug)
+let legs = [];           // 💼 the rest of a walk along the streets (walkThen), one point at a time
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 let crowd = null;        // 👥 src/scripts/town-crowd.js — the other players, once the square stands (22 Sep 2026)
 let duties = null;       // 💼 src/scripts/town-duties.js — the work note, once the jobs are up (22 Sep 2026)
@@ -422,7 +423,7 @@ view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden || sceneOn()) return;   // 🃏 a card is open: it owns every tap until it closes
   if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup, .bwq-hint, .twd-chip')) return;   // 📎 the two notes fold on a tap; they never walk   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
   if (working()) return;   // 🔒 held at the counter: the tray's Leave button is the way out
-  arriveThen = null;   // a new tap cancels a pending cabinet
+  arriveThen = null; legs = [];   // a new tap cancels a pending cabinet, and a walk to work
   const r = view.getBoundingClientRect();
   const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
   const hit = thingAt(wx, wy);
@@ -476,6 +477,10 @@ let toastT = 0;
 // keeps its z over the veil and moves out of the card's rectangle: below it when there is room, above
 // it when there is not. ⚠️ run from BOTH doors — a toast said while a card is open, and a card opened
 // while a toast is up (the café's "off" line lands a beat before its receipt does).
+// 📎 …and a note that GROWS while the line is up moves it too (the job QA, 24 Sep 2026: the café's first shift said its opening
+// line in the same beat the work note grew a third line, and the toast sat on the note's foot)
+const noteSeen = new WeakSet();
+const noteRO = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { if (!toastEl.hidden && toastEl.classList.contains('is-above-tray')) placeToast(); }) : null;
 function placeToast(opening) {
   toastEl.style.top = ''; toastEl.style.bottom = '';
   // ☕✉️ A COUNTER'S TRAY IS UP: the toast stands at the top of the view — under the HUD strip, AND under the
@@ -485,7 +490,7 @@ function placeToast(opening) {
   if (toastEl.classList.contains('is-above-tray')) {
     const v = view.getBoundingClientRect();
     let low = 0;
-    for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); }
+    for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); if (noteRO && !noteSeen.has(el)) { noteSeen.add(el); noteRO.observe(el); } }
     toastEl.style.setProperty('--tw-toast-top', Math.max(14, Math.round(low) + 10) + 'px');
   }
   if (toastEl.hidden || !panel || panel.hidden) return;
@@ -502,8 +507,24 @@ function placeToast(opening) {
 }
 // the toast taken down at once: a card that ENDS something (a counter's receipt) must not sit over a line about what it ended
 function hush() { clearTimeout(toastT); toastEl.hidden = true; }
+// 🗣 A ONE-TIME LINE WAITS ITS TURN (24 Sep 2026, the job QA): the big glass, the special order, the rush and the jug are
+// each said once — and each landed in the same frame as the last cup's line, wiping it (a wrong cup's "no tip" among
+// them). sayNext() lets the line on screen be read for its first 2.4 s, then says the new one — and two that arrive together
+// (a rush starting as a big glass is ordered) queue, rather than the second wiping the first.
+let toastAt = 0, sayQT = 0;
+const sayQ = [];
+function sayNext(text) { if (text) { sayQ.push(text); if (!sayQT) sayPump(); } }
+function sayPump() {
+  sayQT = 0;
+  if (!sayQ.length) return;
+  const left = toastEl.hidden ? 0 : 2400 - (performance.now() - toastAt);
+  if (left > 0) { sayQT = setTimeout(sayPump, left); return; }
+  say(sayQ.shift());
+  if (sayQ.length) sayQT = setTimeout(sayPump, 2400);
+}
 function say(text) {
   if (!text) return;   // a line the rig has not written (or a chunk not landed yet) says nothing, never an empty box
+  toastAt = performance.now();
   toastEl.textContent = text;
   toastEl.hidden = false;
   placeToast();
@@ -552,7 +573,7 @@ function tick(now) {
   if (kb && (keys.arrowright || keys.d)) dx += 1;
   if (kb && (keys.arrowup || keys.w)) dy -= 1;
   if (kb && (keys.arrowdown || keys.s)) dy += 1;
-  if (dx || dy) { tgt.x = pos.x; tgt.y = pos.y; const n = Math.hypot(dx, dy); dx /= n; dy /= n; }
+  if (dx || dy) { tgt.x = pos.x; tgt.y = pos.y; legs = []; const n = Math.hypot(dx, dy); dx /= n; dy /= n; }
   else { const ex = tgt.x - pos.x, ey = tgt.y - pos.y, d = Math.hypot(ex, ey); if (d > 2) { dx = ex / d; dy = ey / d; } }
   if (dx || dy) {
     const step = SPEED * dt * slowNow();
@@ -568,6 +589,7 @@ function tick(now) {
   }
   // ⚠️ and a pending arrival does NOT fire while a card is up: freezing the target would otherwise read
   // as "arrived" on the very next frame and open a second card over the first.
+  if (!frozen && legs.length && Math.hypot(tgt.x - pos.x, tgt.y - pos.y) <= 2) { const p = legs.shift(); tgt.x = p[0]; tgt.y = p[1]; }   // 💼 the next stretch of street
   if (!frozen && arriveThen && Math.hypot(tgt.x - pos.x, tgt.y - pos.y) <= 2) { const f = arriveThen; arriveThen = null; f(); }   // arrived, or stuck: the cabinet opens
   me.style.left = pct(pos.x, W); me.style.top = pct(pos.y, H); me.style.zIndex = String((inRoom ? 2100 : 100) + Math.round(pos.y));
   cam(false);
@@ -778,12 +800,18 @@ function walkThen(at, fn) {
   if (inRoom && inRoom !== at) exitRoom();
   const s = SPOTS[at];
   if (inRoom === at || !s || Math.hypot(pos.x - s.x, pos.y - (s.y + 30)) <= 12) { fn(); return; }
-  tgt.x = s.x; tgt.y = s.y + 30; arriveThen = fn;
+  // 💼 ALONG THE STREETS, the way the residents walk (24 Sep 2026, the job QA). A straight line stops at the first wall, and
+  // a stop reads as arrival: "Go to work" pressed from the far side of the Exchange clocked a worker in 300 px short of the
+  // café's window, and the counter ended the shift 8 s later for being off its mark. town-life's street graph goes round.
+  const to = [s.x, s.y + 30];
+  legs = life.route ? life.route([pos.x, pos.y], to) : [to];
+  const p = legs.shift() || to;
+  tgt.x = p[0]; tgt.y = p[1]; arriveThen = fn;
 }
 function staffAct(at, what) {
   if (what === 'go') {
     if (at === 'post') { if (inRoom) exitRoom(); startSort(); return; }   // ✉️ the round walks you to its own counter
-    walkThen(at, () => { if (room && room.seam.clockIn) room.seam.clockIn(at); });   // ☕🍋 the shift starts at the counter
+    walkThen(at, () => { if (room && room.seam.clockIn) room.seam.clockIn(at); });   // ☕🍋 at the counter — and if the walk stopped short, the counter says so (town-cafe.js clockIn)
     return;
   }
   if (what === 'answer' || (what === 'second' && at === 'condo')) { walkThen(at, () => { if (inRoom !== at) enterRoom(at); }); return; }
@@ -863,7 +891,7 @@ function enterRoom(key) {
   cam(true);
   if (room && room.roomShow) room.roomShow(key);   // 🧺 what the room shows of itself: the store's shelves fill with the town's health
   const rw = room && room.seam && room.seam.copyOf ? room.seam.copyOf('rooms') : null;   // the words are the rig's
-  if (rw && rw[key]) say(rw[key]);
+  if (rw && rw[key] && !(work && (work.seam.job() || {}).at === key)) say(rw[key]);   // the place's own staff are not greeted like its customers
   if (key === 'store' && work && (work.seam.job() || {}).at === 'store') loadServe().then((c) => { if (c && inRoom === 'store') c.enter(); });   // 🛒 the store's own staff: customers may come in
 }
 function exitRoom() {
@@ -1051,22 +1079,29 @@ function hiredMoment(at) {
   burstAt(pos.x, pos.y, '', true);
   if (w.moment) bigMoment(view, w.moment, (w.momentLine || '').replace('{where}', where));
   const start = (w.start || {})[at];
-  if (start) setTimeout(() => say(start), 4400);
-  // 📜 a reference started you higher: said after the start line, once the server has answered
-  setTimeout(() => { const j = work && work.seam.job(), L = (work && work.seam.words()) || {}; if (j && j.at === at && j.ref && (L.ref || {})[at]) say(L.ref[at]); }, 9000);
+  // …and not to a player who has already found it: at work, or with a card open (the job QA, 24 Sep 2026)
+  // ⚠️ and a workplace shut TODAY says so instead — its own front's line, how to open it — rather than sending you in (the live
+  // job journey, 24 Sep 2026: Pip hired a player on the day his store was taped shut, and the start line said to go inside)
+  if (start) setTimeout(() => { if (working() || !panel.hidden) return; if (room && room.seam.shutNow && room.seam.shutNow(at) && room.openFor) { room.openFor(at); return; } say(start); }, 4400);
+  // 📜 a reference started you higher: said after the start line, once the server has answered — and the rank it starts
+  // you at brings its own new thing, which nobody would otherwise ever tell you
+  setTimeout(() => { const j = work && work.seam.job(), L = (work && work.seam.words()) || {}; if (j && j.at === at && j.ref && (L.ref || {})[at]) { say(L.ref[at]); const u = unlocksAt(at, 2).map((k) => ((L.unlock || {})[at] || {})[k]).filter(Boolean)[0]; if (u) setTimeout(() => sayNext(u), 4400); } }, 9000);
 }
 // 🪜 PROMOTED (23 Sep 2026): the hire's own moment, for a rank the boss has just told you — the card has closed by now,
 // and the square says what you are and where. The words are the staff card's (town-staff.json), loaded with the job.
-function promotedMoment(at, rank) {
+function promotedMoment(at, rank, from) {
   const L = (work && work.seam.words()) || {};
   const where = (lifeWords('work').at || {})[at] || '';
   burstAt(pos.x, pos.y, '', true);
   if (L.promoMoment) bigMoment(view, L.promoMoment, (L.promoLine || '').replace('{title}', work.seam.title(at, rank)).replace('{where}', where));
-  // 🔓 and, once it has gone up, what the new rank lets you do (the ladder's slice 3) — the hire's own beat for its start line
-  const u = unlocksAt(at, rank).map((k) => ((L.unlock || {})[at] || {})[k]).filter(Boolean)[0];
-  if (u) setTimeout(() => say(u), 4400);
+  // 🔓 and, once it has gone up, what the new rank lets you do (the ladder's slice 3) — the hire's own beat for its start line.
+  // A promotion that crossed two ranks (a player away for a while) says each rank's new thing, one after the other.
+  const lo = Math.max(1, Math.min(rank, (from | 0) || rank - 1));
+  const us = []; for (let r = lo + 1; r <= rank; r++) unlocksAt(at, r).forEach((k) => { const t = ((L.unlock || {})[at] || {})[k]; if (t) us.push(t); });
+  const u = us[0];
+  us.forEach((t, i) => setTimeout(() => (i ? sayNext(t) : say(t)), 4400 + i * 4600));
   // 📜 the top rank: the boss's memento, a beat after the new thing has been said
-  if (rank >= ranksOf(at) && work && work.seam.memento) setTimeout(() => { work.seam.memento(at).then((m) => { if (m) say(m); }); }, u ? 9000 : 4400);
+  if (rank >= ranksOf(at) && work && work.seam.memento) setTimeout(() => { work.seam.memento(at).then((m) => { if (m) sayNext(m); }); }, u ? 4400 + us.length * 4600 : 4400);
 }
 
 // ---- boot: the engine's assets first, then the people, then the walk
@@ -1095,7 +1130,7 @@ assetsReady().then(() => {
   // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
   import('./town-room.js').then((m) => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
-      hud, esc, track: roomTrack, hush, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
+      hud, esc, track: roomTrack, hush, sayNext, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
       setSlow: (v) => { slowRoom = +v > 0 ? +v : 1; },
       nibStation,   // 🕯 where chapter one wants Nib right now ('fountain' while its first scene is open)
       // ⭐ WALK TO IT, THEN IT HAPPENS — the grammar every other reachable thing in this world already
@@ -1128,7 +1163,7 @@ assetsReady().then(() => {
         pos, PROPS, say, track,
         copy: () => (room && room.seam.copyOf ? room.seam.copyOf('work') : null),
         hired: (at) => hiredMoment(at),
-        promoted: (at, rank) => promotedMoment(at, rank),   // 🪜 the boss told you: PROMOTED over the square
+        promoted: (at, rank, from) => promotedMoment(at, rank, from),   // 🪜 the boss told you: PROMOTED over the square
       });
       if (window.__town) { window.__town.work = work.seam; window.__town.moment = { hired: hiredMoment, promoted: promotedMoment }; }   // 🧪 the walks' doors to the two moments
       // 📜 a top-rank memento the shed had no room for is given on a later visit, once the job's words are in to say so

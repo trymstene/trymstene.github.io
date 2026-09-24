@@ -222,15 +222,17 @@ test('a round that goes wrong is not on the sheet; off the mark the tray folds a
   expect(await S(page, (s) => s.on()), 'and no round began').toBe(false);
   expect(await page.evaluate(() => { const t = window.__town; return Math.hypot(t.tgt.x - t.pos.x, t.tgt.y - t.pos.y) <= 2; }), 'the walk stopped (a slide that goes nowhere is a stop)').toBe(true);
 
-  // ── back at the counter, a fresh round — wordless now, the notice was for the first — and the Leave button ends it with the counter's own line
+  // ── back at the counter, a fresh round — wordless now, the notice was for the first — and the Leave button ends it with its receipt
   await atCounter(page);
   expect(await S(page, (s) => s.clockIn())).toBe(true);
   await page.waitForTimeout(200);
   expect(await S(page, (s) => s.hint()), 'the second round carries no notice').toBe(false);
   await page.click('.tw-cup--sort .tw-cup__leave');
   await page.waitForFunction(() => !window.__town.sort().on(), null, { timeout: 4000 });
-  const said = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
-  expect(said, 'the town says the round ended').toBe(R.off);
+  // the receipt IS the end of the round (§30.1): it opens, and nothing is said over it
+  await page.waitForSelector('#twSortX', { timeout: 4000 });
+  const said = await page.evaluate(() => { const t = document.getElementById('twToast'); return t.hidden ? '' : (t.textContent || '').trim(); });
+  expect(said, 'no line is said over the receipt').not.toBe(R.on);
   expect(await page.evaluate(() => document.querySelector('.tw-cup--sort').hidden), 'and the tray is down').toBe(true);
   expect((await events(page, 'town_shift')).map((p) => p.step)).toEqual(['in', 'out', 'in', 'out']);
   expect(errs, 'nothing threw').toEqual([]);

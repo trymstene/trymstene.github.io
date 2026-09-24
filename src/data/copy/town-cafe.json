@@ -41,8 +41,9 @@
   "left": "Somebody got tired of waiting and walked off without a cup.",
   "rush": {
     "on": "A rush: customers back to back. Serve every one for extra work XP.",
-    "done": "Every one served: extra work XP. Bean nods from the grinder."
+    "done": "Every one served: extra work XP for the rush."
   },
   "special": "A special order: a syrup step on top, and a better tip for it.",
-  "tipsAll": "That’s today’s tips all earned. Cups still count for work XP."
+  "tipsAll": "That’s today’s tips all earned. Cups still count for work XP.",
+  "far": "Walk right up to the Coffee Cup’s window, then try again."
 }

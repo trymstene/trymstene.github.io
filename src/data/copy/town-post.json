@@ -30,7 +30,6 @@
     "leave": "Leave work",
     "start": "Start sorting",
     "on": "A tray of post is on the counter, with the pigeonholes open behind it.",
-    "off": "The tray is put away. The counter is clear again.",
     "far": "Walk right up to the post office counter, then try again.",
     "hint": "Each card goes in the pigeonhole with the same picture.",
     "stamp": "SORTED",

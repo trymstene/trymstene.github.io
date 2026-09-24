@@ -1407,7 +1407,7 @@ function jobView(j, now) {
   const rank = weekRank(j, dn);
   return { at, since: j.since || 0, week: wk, days: dn.days | 0, pay: JOB_PAY[at] ? weekPay(at, rank) : 0,
     duties: rowsOf(at, dn), share, sofar: payOf(at, dn, rank), owed,
-    nudge: !!(at && dow >= NUDGE_DAY && judged(j, at, weekOf(now)) && reviewOf(at, dn) === 'empty'),   // ↕ the tips jobs too; never about a week the review will not judge
+    nudge: !!(at && (dow >= NUDGE_DAY || (j.zero | 0) >= 1) && judged(j, at, weekOf(now)) && reviewOf(at, dn) === 'empty'),   // ↕ the tips jobs too; never about a week the review will not judge. ⚠️ one empty week already on the record: from Monday, not Thursday — the next one is the sack (the job QA, 24 Sep 2026)
     fired: j.fired || null,
     sotw: staffOf(j, at, now),   // 💼 staff of the week at this workplace: last week's crown, and how many weeks in all
     lad: ladderOf(j, at, now) };   // 🪜 your XP and rank at the job you hold, and whether the boss has news

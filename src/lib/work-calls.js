@@ -56,11 +56,20 @@ function got(kind, day) {
   if (!a || a.d !== day) return 0;
   return ((kind === 'sweep' ? a.swept : a.fixed) || []).length;
 }
+// 🧑‍🔧 THE FIRST DAY HAS ITS WORK WAITING (24 Sep 2026, the live job journey). A new hire is told "Inside Pip's store: fill
+// shelves from the crates, serve customers at the till" — and the calls came one to eight minutes after the day's first
+// visit, or not at all on the week's quiet days, so the new hire walked in and found NOTHING to do. On the day you are hired
+// at an on-call workplace (hired() below, written by the take), every call its rank brings is in from the moment of the hire.
+export function hired(at, now = Date.now()) {
+  try { localStorage.setItem('tw-calls-v1', JSON.stringify({ d: dayOf(now), t0: now, h: at })); } catch (e) {}
+}
 // every call today at `at`, with where it stands: arrived, answered (done), open (arrived and not done), and how much is left
 export function calls(at, now = Date.now()) {
   if (!ONCALL_JOBS[at]) return [];
   const day = dayOf(now), c = dayStart(now);
-  const plan = QA() && Array.isArray(c.qa) ? c.qa.map((k) => ({ kind: k, after: 0 })) : schedule(at, day, who());
+  const plan = QA() && Array.isArray(c.qa) ? c.qa.map((k) => ({ kind: k, after: 0 }))
+    : c.h === at ? ONCALL_JOBS[at].map((k) => ({ kind: k, after: 0 }))   // the hire day: all of it, at once
+      : schedule(at, day, who());
   // 🔓 a call a rank brings comes only once the rank is held (the store's parcel, rank 3) — a walk's own pin excepted
   const rk = Math.max(1, (((get(() => localStorage.getItem('tw-job-v1')) || {}).lad || {}).rank) | 0);
   return plan.filter((p) => NEEDS[p.kind] && (QA() && Array.isArray(c.qa) || !RANKED[p.kind] || unlocked(at, RANKED[p.kind], rk))).map((p) => {

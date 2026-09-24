@@ -926,3 +926,39 @@ The same rule, applied to what the counters said on every cup (the review read e
   a time, and the story's card first.
 - **The first instruction names the action.** The quest chip's first line says what to do and where ("talk to nib at the
   fountain in banana town"), not only a place.
+
+## §32 A JOB IS TOLD IN ITS ORDER (24 Sep 2026, the job QA — a real saved pass walked through all five workplaces)
+
+Trym: *"are we giving the proper messages to users before, while, and after users gets a job? … i need you to atleast have
+high confidence that this will feel good for players"*. The live journey (tests/job-journey.spec.mjs, a QA pass on the live
+pass worker, every line recorded with its time) found what no stubbed walk could, and these are the rules it left:
+
+- **A job's first minute delivers the loop.** The hire day of an on-call job has all its calls in at once (work-calls.js
+  `hired`): the new hire was told "Inside Pip's store: fill shelves…" and walked into a store with nothing to do, because
+  calls came one to eight minutes later. What a start line promises must be there when the player gets there.
+- **Counted is not announced.** Turning up counts on the server and moves the note's counters; nothing is said. The old
+  "You turned up for work today" landed on top of the hire's start line, a shift's opening line, a round's.
+- **One line, then the next.** A one-time line (the big glass, the special order, the rush, the jug) waits for the line on
+  screen to be read (`sayNext`, 2.4 s) instead of wiping it — a wrong cup's "no tip" was being wiped by the next order's news.
+- **An opening line is for the first time.** A counter's "Behind the counter…" and the post office's "A tray of post…" are
+  said at a player's first shift there (lib/once.js); after that the tray says the rest. A receipt is the end: nothing is
+  said over it (the round's "The tray is put away" is gone).
+- **Money always arrives.** A worker with no homestead is paid in the town ("Payday: {coins} coins…") — before, they were
+  told to open a payslip they had no mailbox for, and the week fell away unpaid. With a homestead, the payslip ritual stays.
+- **Today's thing comes first.** On the work note an open call outranks the payslip (the payslip waits; the call closes).
+- **A consequence is said before it bites.** One empty week on the record: the stake ("two empty weeks in a row and the job
+  is gone") is on the note from Monday, and the staff card says last week was empty. The sack's letter says what it was for —
+  no work done — never "you stopped coming".
+- **A place greets strangers, not its own staff** — and to strangers it says it hires.
+- **"Go to work" walks the streets, and a counter is only worked at the counter.** The player's banana walks straight lines
+  and a walk that meets a wall stops — and a stop counts as arrival. From the corner by the Exchange, "Go to work" on the
+  note's staff card clocked a worker in 300 px short of the café's window, and the counter ended the shift 8 s later for
+  being off its mark, with an empty receipt. A walk to work now follows town-life's street graph (`walkThen` → `life.route`,
+  the residents' own), and a counter reached short of its mark says "Walk right up to…, then try again" instead of starting
+  (town-cafe.js `clockIn(host, walked)`, the post office's rule). Any deed that needs you AT a place must check you are there
+  when it fires, never trust "arrived" — `tests/town-go-to-work.spec.mjs` holds a shift past the 8 s.
+- **A shut workplace says so at the hire.** A hire on the day its front is taped shut hears the front's own line (what is
+  wrong, and that fixing it opens the door), not a start line that sends you inside.
+- **A new job unfolds the note.** A fold belongs to the job it was folded on; a hire is when the note has the most to say.
+- **Nobody says a shop is open unless it always is.** Pip's first greeting said "General store open" beside a taped-shut
+  store. A resident's line about a front that can close must be true on the day it shuts.

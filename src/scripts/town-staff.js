@@ -105,6 +105,8 @@ export function bootTownStaff(ctx) {
   }
   // 🪜 THE LADDER, on the card (23 Sep 2026): the rank you hold as pips, your work XP against the next rank's line, today's
   // XP against the day's cap, and what the next rank gives — or the boss's news once the XP has crossed the line
+  // ↕ last week's verdict in words true for this workplace: a counter's poor week is its spoiled drinks, not its duties
+  const lastKey = (at, v) => (v === 'poor' && TIPS.includes(at) ? 'poorCups' : v);
   function ladderHtml(at, l) {
     const of = ranksOf(at), a = xpAt(at, l.rank) | 0;
     // ↕ a poor week can leave you UNDER your own rank's line: then the bar is the climb back over it, in amber
@@ -123,7 +125,7 @@ export function bootTownStaff(ctx) {
       + '<div class="tws-stat"><b>' + l.xp + '</b>' + (b != null ? '<small>/ ' + b + '</small>' : '') + '</div>'
       + '<div class="tws-bar' + (under ? ' is-under' : '') + '"><i style="transform:scaleX(' + k.toFixed(3) + ')"></i></div>'
       + '<p class="tws-note">' + esc(fill(COPY.today, { n: l.today, cap: dayCap(at, l.rank) })) + '</p>'
-      + (l.last && (COPY.last || {})[l.last.v] ? '<p class="tws-note">' + esc(fill(COPY.last[l.last.v], { xp: Math.abs(l.last.xp | 0) })) + '</p>' : '')
+      + (l.last && (COPY.last || {})[lastKey(at, l.last.v)] ? '<p class="tws-note">' + esc(fill(COPY.last[lastKey(at, l.last.v)], { xp: Math.abs(l.last.xp | 0) })) + '</p>' : '')
       + (nextLine ? '<p class="tws-note">' + esc(nextLine) + '</p>' : '')
       // 🔓 and what the next rank lets you DO (the ladder's slice 3): the reason to climb, in the card's own words
       + unlocksAt(at, l.rank + 1).map((k) => ((COPY.unlock || {})[at] || {})[k]).filter(Boolean).map((u) => '<p class="tws-note tws-unlock">' + esc(u) + '</p>').join('')

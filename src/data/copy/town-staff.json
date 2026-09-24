@@ -112,7 +112,9 @@
   "warnCard": "Another poor week here costs you a rank.",
   "last": {
     "full": "Last week was a full week: {xp} work XP extra.",
-    "poor": "Under half last week’s work done: {xp} work XP taken back."
+    "poor": "Under half last week’s work done: {xp} work XP taken back.",
+    "empty": "Nothing done here last week: another empty week loses the job.",
+    "poorCups": "Most of last week’s drinks missed: {xp} work XP taken back."
   },
   "unlock": {
     "stand": {

@@ -957,6 +957,9 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   expect(hired.a, 'the building is named as the rig writes it, not as the sign plank shouts it').toContain('General Store');
   expect(hired.a).not.toContain('{where}');
   expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'store' });
+  // 🧑‍🔧 the hire day of an on-call job has its work waiting: the store's calls are in from the moment of the hire (the job QA,
+  // 24 Sep 2026 — they came one to eight minutes later, and a new hire walked in to find nothing to do)
+  expect((await page.evaluate(() => window.__town.room.calls('store'))).map((c) => c.kind).sort(), 'every call the first rank brings, at once').toEqual(['restock', 'serve']);
 
   expect((await seam(page, () => window.__town.work.ask('pip'))).a, 'asking again is not a second job').toBe((await seam(page, () => window.__town.work.ask('pip'))).a);
   // 💼 ONE JOB AT A TIME, SAID OUT LOUD (Trym, 22 Sep): a second boss names the place you already work at and

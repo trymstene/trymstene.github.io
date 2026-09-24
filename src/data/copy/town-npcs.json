@@ -217,7 +217,7 @@
       "tap": "I run the general store: jars, twine, fireworks. Each shelf holds its last one.",
       "want": "I would like someone to keep me company when the store bell is quiet.",
       "hi": [
-        "General store open: jars, twine, fireworks. Last ones, naturally.",
+        "General store: jars, twine, fireworks. Last ones, naturally.",
         "Back for another look? The bell remembers you.",
         "{name}, the store bell is straight, as it should be.",
         "Last-Stopper, {name}, you always browse the final shelf.",
