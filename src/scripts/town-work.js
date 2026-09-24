@@ -201,6 +201,9 @@ export function bootTownWork(ctx) {
     if (!at || !w.quit || !w.quitDone || job.at !== at) return null;
     return {
       q: w.quit,
+      // 🚪 the goodbye ends the talk: the card closes by itself a beat after it (24 Sep 2026, Trym: "i can still click May i stop
+      // working here. When i do that i just get an empty dialogue window") — the question list it came from is stale now
+      after: () => () => {},
       a: () => {
         if (job.at !== at) return w.already ? '' : '';
         track('town_job', { at, r: 'quit' });
@@ -247,6 +250,7 @@ export function bootTownWork(ctx) {
     return {
       news: true,
       q: LW.wordQ,
+      after: () => () => {},   // the boss's word ends the talk, as a promotion does: nothing to ask twice
       a: () => {
         const n = ladder(), k = n.talk;
         const line = k && (LW[k] || {})[key];

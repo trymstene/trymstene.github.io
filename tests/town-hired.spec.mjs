@@ -118,3 +118,38 @@ test('a boss who says no, or already has you, never sets off the moment', async 
   expect(await page.evaluate(() => document.getElementById('twPanel').hidden), 'and the card stays open for the next question').toBe(false);
   expect(errors).toEqual([]);
 });
+
+// 🚪 24 Sep 2026, Trym: "I click May i stop working here, and after the click it probably confirms, but i can still click May i stop
+// working here. When i do that i just get an empty dialogue window". The goodbye ends the talk: the card closes by itself a beat
+// after it, and the next time the question is not there to ask.
+test('asking to stop working: the boss says goodbye, the card closes by itself, and the question is gone', async ({ page }) => {
+  test.setTimeout(60000);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); localStorage.removeItem('tw-job-v1'); } catch (e) {} });
+  await page.route('**/job/take', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, job: { at: '', week: '2026-W39', days: 0, pay: 0, duties: [], share: 0, sofar: 0, owed: 0, nudge: false, fired: null } }) }));
+  await page.route('**/job/view', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, job: { at: 'cafe', week: '2026-W39', days: 1, pay: 0, duties: [], share: 0, sofar: 0, owed: 0 } }) }));
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band() && window.__town.work, null, { timeout: 30000 });
+  await seam(page, () => { window.__town.room.curse('none'); window.__town.life.set(12); });
+  await seam(page, () => window.__town.work.set({ at: 'cafe' }));
+  const tapBean = async () => {
+    const at = await seam(page, () => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
+    await stand(page, at.x + 40, at.y + 20);
+    await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k="bean"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
+    await page.waitForTimeout(400);
+    const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
+    await page.mouse.click(hit.x, hit.y);
+    await page.waitForSelector('#twCardBody .wd-q button', { timeout: 10000 });
+  };
+  await tapBean(page);
+  await page.evaluate((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].find((b) => b.textContent === q).click(), LIFE.work.quit);
+  await page.waitForFunction((t) => (document.querySelector('#twCardBody .wd-box p') || {}).textContent === t, LIFE.work.quitDone, { timeout: 8000 });
+  await page.waitForFunction(() => document.getElementById('twPanel').hidden, null, { timeout: 5000 });   // ⭐ by itself
+  expect(await seam(page, () => window.__town.work.job().at), 'the job is let go').toBe('');
+  await tapBean(page);
+  const qs = await page.evaluate(() => [...document.querySelectorAll('#twCardBody .wd-q button')].map((b) => b.textContent));
+  expect(qs, 'nothing left to quit').not.toContain(LIFE.work.quit);
+  expect(errors).toEqual([]);
+});

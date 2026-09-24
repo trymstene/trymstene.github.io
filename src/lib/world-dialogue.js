@@ -150,6 +150,9 @@ export function mountDialogue(host, opts) {
     if (t.seq && t.seq.length) { seq = t.seq; seqAt = 0; type(seq[0]); return; }
     seq = null;
     const said = typeof t.a === 'function' ? t.a() : t.a;
+    // ⚠️ AN ANSWER WITH NOTHING TO SAY IS NO ANSWER (24 Sep 2026): a question asked a second time after its answer changed
+    // the world (quitting a job) typed an EMPTY box. Never an empty line: the card stays on its questions.
+    if (!t.seq && !String(said == null ? '' : said).trim()) { back(); return; }
     // ⚠️ AFTER the answer, because a() is what decides whether the door is needed at all
     const d = typeof t.cta === 'function' ? t.cta() : t.cta;
     cta.hidden = !(d && d.href && d.label);
