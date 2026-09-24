@@ -29,8 +29,8 @@
     "bare": "the patch is bare",
     "harvested": "{what} harvested — +{rep} rep!",
     "fruitAgain": "The bush will fruit again",
-    "seedHome": "A seed for your homestead",
-    "harvestedWear": "{what} harvested — saved to your pass! A seed for your homestead",
+    "seedHome": "A seed to plant at your homestead",
+    "harvestedWear": "{what} harvested — saved to your pass! A seed to plant at your homestead",
     "gardenerLevel": "gardener lvl {lvl} — new seeds in the sheet!",
     "bedCleared": "cleared — the bed is free to plant again"
   },

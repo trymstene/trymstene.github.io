@@ -1721,7 +1721,9 @@ export function initGarden(ctx) {
       toast(sd.emoji + ' ' + fillWords(GW.harvestedWear, { what: sd.wearLabel }) + ' 🌱', 4200);
     }
     const gl = gardenerLvl();
-    if (gl.lvl > before) setTimeout(() => toast('🧑‍🌾 ' + fillWords(GW.gardenerLevel, { lvl: gl.lvl }), 4600), 1500);
+    // ⚠️ after the harvest line, never over it: 1.5 s in it replaced "a seed to plant at your homestead" with the park's own
+    // seed sheet — the one pointer home, gone before it was read (24 Sep 2026, a player's letter)
+    if (gl.lvl > before) setTimeout(() => toast('🧑‍🌾 ' + fillWords(GW.gardenerLevel, { lvl: gl.lvl }), 4600), 4400);
     else if (gl.nextAt != null) setTimeout(() => float(PLOTS[i][0], PLOTS[i][1] - 56, '🧑‍🌾 ' + gl.n + '/' + gl.nextAt), 900);
     if (!harvestTracked) { harvestTracked = true; track('park_harvest', { seed: s.seed, level: gl.lvl }); }
   }

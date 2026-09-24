@@ -1,5 +1,6 @@
 // ✏️ one bundled pixel icon (the full pack is gitignored — never a pack URL)
 import NOTES from '../data/copy/homestead-notes.json';   // the sign's line before the story gives you the place (the rig's)
+import SEEDW from '../data/copy/homestead-seeds.json';   // 🌱 the seeds' way home: each step said when it applies
 import POSTCOPY from '../data/copy/homestead-post.json';   // what the world writes to you (the rig's)
 import DUTYCOPY from '../data/copy/town-duties.json';      // 💼 the duty labels the payslip prints (the work note's own words)
 import { PAY_BACK, rankOf } from '../data/town/jobs.js';   // 💼 how many whole weeks a cheque may still reach back; 🪜 the rank a boss's news is about
@@ -1227,9 +1228,31 @@ function init(visitDoc, visitMiss) {
     const col = !w2 ? 'l' : (e2 ? (row === 'm' ? 'c' : 'm') : 'r');
     return row + col;
   }
+  // 🌱 THE SEEDS' WAY HOME (24 Sep 2026). Be, a player, in a letter: "Where do I find my harvested seeds from the park and how
+  // do I plant them?" — and Trym: "nothing says that you can plant seeds on that dirt". The pouch was said nowhere until you
+  // tapped dug soil, which nobody knew to dig. Now each step is said when it applies (design library §30): arriving with
+  // seeds, the hammer glows and one line says to dig; build mode opens on the soil tool and says what soil is for; the first
+  // patch says press done; done says tap your soil; bare soil glows while there are seeds; a tap on far soil walks there and
+  // opens the seeds. No new button: the action bar is full (Trym).
+  const seedsHeld = () => CROPS.reduce((n, c) => n + seedCount(c.id), 0);
+  const bareSoil = () => (state.soil || []).filter((c) => !c.crop);
+  let pendCell = null;   // bare soil tapped from afar: the seeds open on arrival, not on a second tap
+  // 🌱 …and on arrival: once a day, what you hold and the one thing to tap — the hammer glows until build mode opens
+  function seedArrival() {
+    if (visiting || inside || state.stage < 1 || panelOpen() || document.querySelector('.bwt-veil')) return;   // the tour speaks first
+    const n = seedsHeld();
+    if (!n) return;
+    const d = new Date().toISOString().slice(0, 10);
+    try { if ((JSON.parse(localStorage.getItem('hs-seedhint-v1') || '{}') || {}).d === d) return; localStorage.setItem('hs-seedhint-v1', JSON.stringify({ d })); } catch (e) { return; }
+    const bare = bareSoil().length, A = SEEDW.arrive || {};
+    const line = bare ? (n === 1 ? A.plantOne : A.plantMany) : (n === 1 ? A.digOne : A.digMany);
+    if (line) toast('🌱 ' + String(line).replace('{n}', n), 6000);
+    if (!bare) buildBtn.classList.add('is-hint');
+  }
   const soilEls = new Map();
   function refreshSoil() {
     const seen = new Set();
+    const glow = !visiting && !planner && seedsHeld() > 0;   // lit = tap me, the world's own grammar
     state.soil.forEach((c) => {
       const key = c.i + ',' + c.j;
       seen.add(key);
@@ -1244,6 +1267,7 @@ function init(visitDoc, visitMiss) {
         world.appendChild(e.soil);
         soilEls.set(key, e);
       }
+      e.soil.classList.toggle('is-hint', glow && !c.crop);
       const st = c.crop ? cropStage(c) : 0;
       const sig = (c.crop || '') + st + soilPieceFor(c);
       if (e.pc !== soilPieceFor(c)) {
@@ -2495,6 +2519,7 @@ function init(visitDoc, visitMiss) {
     toolC.setAttribute('aria-pressed', String(clearing));
     toolM.setAttribute('aria-pressed', String(arranging));
     toast(fencing ? '🪵 tap your land (the lit grid) to build fence — tap a piece to take it down'
+      : digging && seedsHeld() > 0 ? '⛏️ ' + SEEDW.soil
       : digging ? '⛏️ tap your land to till soil — tap soil to fill it back'
       : clearing ? '🧹 tap anything to clear it — decor goes safely to the shed'
       : '✥ tap a thing to lift it — decor, house, mailbox or sign', 3400);
@@ -2569,7 +2594,9 @@ function init(visitDoc, visitMiss) {
     }
     toolF.style.display = toolS.style.display = toolC.style.display = '';
     planOverlay();
-    setTool('fence');
+    buildBtn.classList.remove('is-hint');
+    setTool(seedsHeld() > 0 && !bareSoil().length ? 'soil' : 'fence');   // 🌱 seeds and nowhere to plant them: the spade first
+    refreshSoil();
     // ⚠️ OPEN ON YOUR OWN LAND, not on the middle of the max deed. The frame is
     // still tier 3 so growth stays visible, but once the phone zooms in you can
     // only see a slice of it — and centring that slice on ground you don't own
@@ -2581,7 +2608,7 @@ function init(visitDoc, visitMiss) {
     camSnap();
     alignFrame(true);   // the tool bar docks at the bottom in portrait — keep it clear
     // one toast, not two: replaces setTool's when there is anything to pan to
-    if (W * scale > viewW + 8) {
+    if (W * scale > viewW + 8 && !digging) {   // the soil tool's own line stands when it opened on soil
       toast('🪵 tap the lit grid to build fence · swipe to look across your land', 4200);
     }
     track('homestead_planner');
@@ -2602,6 +2629,8 @@ function init(visitDoc, visitMiss) {
     view.classList.toggle('is-placing', !!placing);
     layout();
     camSnap();
+    refreshSoil();
+    if (!visiting && !inside && seedsHeld() > 0 && bareSoil().length) toast('🌱 ' + SEEDW.done, 4200);   // 🌱 the next step, now it can be taken
   }
   buildBtn.addEventListener('click', () => {
     if (visiting) { toast('build at your own homestead'); return; }
@@ -4360,6 +4389,7 @@ function init(visitDoc, visitMiss) {
     // an always-on label on the bed answers it before anyone has wondered, and
     // it does not link out: you came to the homestead to be here.
     if (!pouch.length) { toast('no seeds yet — harvest a crop in the park 🌱', 3600); return; }
+    toastEl.classList.remove('is-on');   // the card answers the line that sent you here: it does not sit over it
     const note = document.getElementById('hsSeedNote');
     note.textContent = pouch.length === 1
       ? 'one kind in the pouch — plant it and it grows on watered days.'
@@ -4472,6 +4502,7 @@ function init(visitDoc, visitMiss) {
     const wy = (e.clientY - r.top + camY) / scale;
     moved = true; hint(false);
     clearChip(); clearBedChip();
+    pendCell = null;   // a new tap is a new plan
     if (placing) return;   // pointerdown/drag owns the ghost
     if (inside) {          // indoors: the stove answers, furniture chats, else walks
       if (arranging && !visiting) {   // ✥ build mode: tap a piece, lift it
@@ -4678,6 +4709,7 @@ function init(visitDoc, visitMiss) {
           && cb > state.home.y - floorOf(sd.h) && cb < state.home.y + 30) { toast('not under the house'); return; }
         state.soil.push({ i, j });
         float(cx, cb - 20, '⛏️');
+        if (seedsHeld() > 0 && bareSoil().length === 1) toast('⛏️ ' + SEEDW.dug, 4200);
         track('homestead_dig', { n: state.soil.length });
       }
       save(); refreshSoil();
@@ -4737,7 +4769,7 @@ function init(visitDoc, visitMiss) {
       const c = cellAt(wx, wy);
       if (c) {
         if (Math.hypot(pos.x - cellCx(c), pos.y - cellBase(c)) < 130) cellTap(c);
-        else { tgt.x = cellCx(c); tgt.y = cellBase(c) + 10; }
+        else { tgt.x = cellCx(c); tgt.y = cellBase(c) + 10; if (!c.crop) pendCell = c; }
         return;
       }
     }
@@ -4918,7 +4950,7 @@ function init(visitDoc, visitMiss) {
     if (!seen || document.hidden) return;
     const kx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
-    if (kx || ky) { tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30; moved = true; hint(false); }
+    if (kx || ky) { tgt.x = pos.x + kx * 30; tgt.y = pos.y + ky * 30; moved = true; hint(false); pendCell = null; }
     // ⭐ NOTHING MOVES BEHIND AN OPEN POPUP (Trym, 20 Sep 2026: "when a user opens a popup in
     // bananaworld, all movement in the background should be locked. it keeps happening that when i click
     // on content in a popup my banana moves in the background").
@@ -4951,6 +4983,10 @@ function init(visitDoc, visitMiss) {
       }
       pos.x = Math.max(12, Math.min(W - 12, pos.x));
       pos.y = Math.max(12, Math.min(H - 12, pos.y));
+    }
+    if (pendCell && !panelOpen() && !planner && Math.hypot(pos.x - cellCx(pendCell), pos.y - cellBase(pendCell)) < 130) {
+      const c = pendCell; pendCell = null;
+      if (state.soil.includes(c) && !c.crop) cellTap(c);   // 🌱 arrived at the soil you tapped: the seeds
     }
     if (pos.x !== meWX || pos.y !== meWY) {
       meWX = pos.x; meWY = pos.y;
@@ -5235,6 +5271,7 @@ function init(visitDoc, visitMiss) {
         }).catch(() => {});
       }
     }
+    setTimeout(seedArrival, 3200);   // 🌱 after the arrival toasts, never over them
     drawMe();
     place(meEl, pos.x, pos.y, ME_ANCHOR);
     depth(meEl, pos.y);

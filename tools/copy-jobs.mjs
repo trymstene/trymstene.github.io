@@ -2021,6 +2021,27 @@ export const JOBS = {
   },
   // 📬 THE WORLD'S OWN POST (19 Sep 2026): the letters the town writes to a player's homestead
   // mailbox. One per occasion, ever. src/scripts/banana-homestead.js holds WHEN; this holds WHAT.
+  // 🌱 THE SEEDS' WAY HOME (24 Sep 2026). Be, a player, in a letter: "Where do I find my harvested seeds from the park and how
+  // do I plant them?" — and Trym: "nothing says that you can plant seeds on that dirt". Each step of the way is said at the
+  // moment it applies (design library §30), in plain site words: what you have, then the one thing to tap.
+  'homestead-seeds': {
+    id: 'homestead-seeds',
+    title: 'The Homestead — planting the seeds from the park',
+    what: 'The lines that walk a player from seeds in the pouch to a planted seed: arriving with seeds, the soil tool, the first patch dug, and leaving build mode.',
+    approved: 'src/data/copy/homestead-seeds.json',
+    reads: 'src/scripts/banana-homestead.js (a static import)',
+    top: ['arrive', 'soil', 'dug', 'done'],
+    fields: {
+      'arrive.digOne': toastLine(80, 'Arriving at your own homestead (once a day) with ONE seed from the park and no soil dug yet. The hammer button glows while it shows. What you have, then the action. The game puts 🌱 in front.'),
+      'arrive.digMany': toastLine(84, 'The same with several seeds; {n} is how many.', holdsAll('n')),
+      'arrive.plantOne': toastLine(70, 'Arriving with ONE seed and bare soil already dug: the soil glows while there are seeds.'),
+      'arrive.plantMany': toastLine(72, 'The same with several seeds; {n} is how many.', holdsAll('n')),
+      soil: toastLine(80, 'Build mode’s soil tool picked (or opened on) while you hold seeds: what soil is for, and the two steps after digging. The game puts ⛏️ in front.'),
+      dug: toastLine(60, 'The first bare patch dug while you hold seeds: the next step. The game puts ⛏️ in front.'),
+      done: toastLine(44, 'Leaving build mode with seeds and bare soil: the one thing to do. The game puts 🌱 in front.'),
+    },
+    shape: () => [],
+  },
   'homestead-post': {
     id: 'homestead-post',
     title: 'The homestead — the world’s post',

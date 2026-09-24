@@ -1,0 +1,11 @@
+{
+  "arrive": {
+    "digOne": "You have a seed from the park. Tap the hammer and dig soil to plant it.",
+    "digMany": "You have {n} seeds from the park. Tap the hammer and dig soil to plant them.",
+    "plantOne": "You have a seed from the park. Tap your soil to plant it.",
+    "plantMany": "You have {n} seeds from the park. Tap your soil to plant one."
+  },
+  "soil": "Tap the lit grid to dig soil, then press done and tap your soil to plant.",
+  "dug": "Soil dug. Press done, then tap it to plant a seed.",
+  "done": "Tap your soil to plant a seed."
+}
