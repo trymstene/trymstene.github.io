@@ -77,7 +77,6 @@ export const KEYS = {
   'bh-lure-v1': { travels: 'no', why: 'casts left on the lure armed at the pier on this device; the lure itself left the pocket, which travels (pocket_lure_used)' },
   'tw-fixed-v1': { travels: 'no', why: 'which of today\'s town problems this device has put right. The problems themselves are seeded per person per day, the coins are capped per person on the pass worker and the contribution per person on the TownRoom — so a second device seeing them unfixed again costs nothing but a repeat' },
   'rv-fq-slot': { travels: 'no', why: 'which half-hour floor-quest slot this device has played' },
-  'pk-seed-voucher': { travels: 'no', why: 'a one-shot free seed from the fountain' },
   'hs-buff-v1': { travels: 'no', why: 'the stew buff, a short timer; it expires long before it would matter elsewhere' },
   'bh-rally-best': { travels: 'no', why: 'the old per-device volleyball best; read once and removed, the record now lives in pass-best-v1' },
 

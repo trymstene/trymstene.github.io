@@ -11,7 +11,7 @@ export const PATCHES = [
   { id: 'maker',     icon: 'palette',  title: 'Maker',          hint: 'Take your first banana home from the workshop.' },
   // 🏆 the weekly plaques (6 Sep 2026) — stamped by the server on Monday's first walk, never by a phone.
   // ⚠️ icons come from PixelIcon.astro's own hand-drawn set (frame, sparkle, heart, burger, flame, tag), not the pixelarticons pack
-  { id: 'wk-citizen',   icon: 'frame',    title: 'Citizen of the Week', hint: 'The widest week in Banana World, on a kept pass.' },
+  { id: 'wk-citizen',   icon: 'frame',    title: 'Citizen of the Week', hint: 'Did the most different things in Banana World this week, with a saved pass.' },
   { id: 'wk-gardener',  icon: 'sparkle',  title: 'Gardener of the Week', hint: 'The park\'s best week: harvests, weeds, eggs.' },
   { id: 'wk-neighbour', icon: 'heart',    title: 'Neighbour of the Week', hint: 'Hugs, feeds and waterings in other people\'s yards.' },
   { id: 'wk-farmer',    icon: 'burger',   title: 'Farmer of the Week', hint: 'The homestead\'s best week.' },
@@ -30,7 +30,7 @@ export const PATCHES = [
   { id: 'patron',    icon: 'tag',      title: 'Sticker Patron', hint: 'Your banana, on real vinyl.' },
   { id: 'golden',    icon: 'sparkle',  title: 'The Golden One', hint: 'Once in a golden while, something rare hits the floor. Be there.' },
   { id: 'chain',     icon: 'link',     title: 'Chain Chaser',   hint: 'Keep a ten-pickup chain alive on the dance floor.' },
-  { id: 'hype',      icon: 'bolt',     title: 'Full of Jelly',  hint: 'Fill the JELLY meter and drop the floor yourself.' },
+  { id: 'hype',      icon: 'bolt',     title: 'Full of Jelly',  hint: 'Fill the JELLY meter and start jelly time yourself.' },
   // 'night1' (The First Shift) retired 19 Jul with the quest/nights mothball —
   // it was the only night-only badge; revive it alongside Act One if nights return.
   { id: 'og',        icon: 'banana',   title: 'OG',             hint: 'Was here before the world arrived.' },

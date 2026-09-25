@@ -2,7 +2,7 @@
   "on": "The back panel comes off: a loose screw, a scorched wire, a dead switch.",
   "go": {
     "unscrew": "Tap to unscrew",
-    "solder": "Hold to solder",
+    "solder": "Hold to fix wire",
     "power": "Tap to power up"
   },
   "leave": "Leave it",

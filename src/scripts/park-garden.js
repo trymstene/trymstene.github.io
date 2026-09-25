@@ -9,7 +9,6 @@ import { iconSvg } from '../lib/pixel-icons.js';
 import { PLOTS, BEDS, CORE_BEDS, GROW_DITCHES, BED_SOLID, BORDER_SPOTS,
   ALGAE_SPOTS, BIRD_SPOTS, POND } from './park-geo.js';
 import { track, PARK_TEST, R, SVG, esc, PHASE_STARTS } from './park-util.js';
-import { hasVoucher, setVoucher, VOUCHER_MAX } from './park-fountain.js';
 import { askName } from '../lib/banana-id.js';   // 🪪 the naming moment
 import PARK_WORDS from '../data/copy/park-toasts.json';   // ✍️ what the garden says back (src/data/copy)
 import { fillWords } from '../lib/fill-words.js';
@@ -1040,7 +1039,7 @@ export function initGarden(ctx) {
       + '<i>🐦</i><span class="pk-seedrow__txt"><b>raise a birdhouse</b>'
       + '<small>built once · stocked daily</small></span>'
       + coinChip(BH_PRICE) + '</button>'
-      + (bal < BH_PRICE ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
+      + (bal < BH_PRICE ? '<p class="pk-seedpoor">no coins — you earn them dancing at the rave</p>' : '');
     const bb = document.getElementById('pkBhBuild');
     if (bb) bb.addEventListener('click', () => buildHouse(i));
     gardenPanel.hidden = false;
@@ -1378,8 +1377,8 @@ export function initGarden(ctx) {
     const short = Math.max(0, Math.ceil(open * BED_FULL_UI) - taken);
     const bedGoal = bedPending ? 'fresh ground is marked out — grab the spade'
       : bedsOpen.size >= BEDS.length ? 'every bed is open'
-      : short === 0 ? 'new ground is due on the next visit'
-      : short + ' more opens new ground';
+      : short === 0 ? 'a new bed opens on your next visit'
+      : short + ' more plants open a new bed';
     gardenBody.innerHTML = '<div class="whg">'
       + '<p class="whg__label">park health</p>'
       + '<p class="whg__num" id="pkBnum">' + Math.round(v) + '%</p>'
@@ -1502,17 +1501,17 @@ export function initGarden(ctx) {
   // re-reading a shelf they already know
   passNoticeAdd({
     id: 'exotic-tier-2808', icon: '🌵',
-    text: '<b>The exotic tier is open!</b> Gardener level 5 (30 harvests) now unlocks the grapevine, the pineapple and the prickly pear — the grapevine regrows like the strawberry. The ladder goes higher.',
+    text: '<b>New seeds at gardener level 5!</b> After 30 harvests you can plant the grapevine, the pineapple and the prickly pear. The grapevine grows back after picking, like the strawberry.',
     link: '/park/',
   });
   passNoticeAdd({
     id: 'radish-3008', icon: '🥬',
-    text: '<b>The radish is in the seed sheet.</b> Five coins, and it is ready the <b>next day</b> — plant it, water it once, pick it. The fastest thing in the garden.',
+    text: '<b>The radish is in the seed list.</b> Five coins, and it is ready the <b>next day</b> — plant it, water it once, pick it. The fastest thing in the garden.',
     link: '/park/',
   });
   passNoticeAdd({
     id: 'seed-drop-2808', icon: '🍓',
-    text: '<b>New seeds at the park!</b> Carrot, strawberry, sweetcorn and rare watermelon just landed in the seed sheet — and the strawberry <b>regrows</b>: pick it and the bush fruits again, three harvests per plant.',
+    text: '<b>New seeds at the park!</b> Carrot, strawberry, sweetcorn and rare watermelon are in the seed list now — and the strawberry <b>grows back</b>: pick it and the bush gives fruit again, three times per plant.',
     link: '/park/',
   });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !gardenPanel.hidden) closeGarden(); });
@@ -1532,33 +1531,31 @@ export function initGarden(ctx) {
     // Without this, opening the seeds and walking away is invisible, so the
     // one number that matters (how many look vs how many plant) cannot exist.
     track('park_seedshop', { lvl: gl.lvl, coins: bal });
-    const blessed = hasVoucher();   // ⛲ a fountain voucher: one small seed free
     // locked seeds stay VISIBLE (aspiration) — greyed, with the level they need
     const lvlFor2 = (sd) => 1 + GLVL_STARS.findIndex((mx) => sd.stars <= mx);
     gardenBody.innerHTML = '<h2>an empty patch</h2>'
       + '<p class="pk-glvl">🧑‍🌾 gardener lvl ' + gl.lvl + ' · ' + gl.n + ' harvest' + (gl.n === 1 ? '' : 's') + '</p>'
       + '<p class="pk-panel__sub">plant a seed — it grows on real days, even while you’re gone. '
-      + 'water it or it wilts away (higher ⭐ holds out longer). ⭐ feed the park’s health while it lives.</p>'
+      + 'water it or it wilts (more ⭐ lasts longer without water). while it grows, it adds to the park’s health.</p>'
       + [...SEEDS].sort((a, b) => a.stars - b.stars || a.price - b.price).map((sd) => {
         const locked = sd.stars > gl.stars;
         const cost = priceNow(sd);
-        const free = blessed && !locked && sd.price <= VOUCHER_MAX;
         return '<button class="pk-seedrow' + (locked ? ' pk-seedrow--lock' : '') + '" type="button"'
-          + ' data-seed="' + sd.id + '"' + (locked || (!free && bal < cost) ? ' disabled' : '') + '>'
+          + ' data-seed="' + sd.id + '"' + (locked || bal < cost ? ' disabled' : '') + '>'
           + '<i>' + sd.emoji + '</i>'
           + '<span class="pk-seedrow__txt"><b>' + sd.name + (sd.rare ? ' <em>rare</em>' : '') + '</b>'
           + '<small>' + starStr(sd.stars) + ' · ' + sd.days + (sd.days === 1 ? ' day → ' : ' days → ')
           + (locked ? '🔒 gardener lvl ' + lvlFor2(sd)
             : sd.wearable ? 'the ' + sd.wearLabel
-              : '+' + (sd.stars * 8) + ' rep' + (sd.regrow ? ' · fruits ' + sd.regrow + '×' : '')) + '</small></span>'
-          + (free ? '<span class="pk-seedcost pk-seedcost--free">🎁 blessed — free</span>' : coinChip(cost))
+              : '+' + (sd.stars * 8) + ' XP' + (sd.regrow ? ' · fruits ' + sd.regrow + '×' : '')) + '</small></span>'
+          + coinChip(cost)
           + '</button>';
       }).join('')
       + (myPlants() > 1
         ? '<p class="pk-seedtax">🌱 you are tending ' + myPlants() + ' plants — seeds cost ×'
           + (Math.round(seedMult(myPlants()) * 10) / 10) + ' while you do. Harvest some and they get cheap again.</p>'
         : '')
-      + (bal < priceNow(SEEDS[0]) && !blessed ? '<p class="pk-seedpoor">no coins — the rave floor drops them</p>' : '');
+      + (bal < priceNow(SEEDS[0]) ? '<p class="pk-seedpoor">no coins — you earn them dancing at the rave</p>' : '');
     gardenBody.querySelectorAll('.pk-seedrow').forEach((b) => {
       b.addEventListener('click', () => plantSeed(i, b.dataset.seed));
     });
@@ -1567,20 +1564,15 @@ export function initGarden(ctx) {
   async function plantSeed(i, seedId) {
     const sd = SEED_BY[seedId];
     if (!sd || sd.stars > gardenerLvl().stars) return;
-    // ⛲ the fountain's voucher pays for small seeds; it spends HERE, on the
-    // plant itself — and comes back whenever the seed does not land
     const cost = priceNow(sd);
-    const free = hasVoucher() && sd.price <= VOUCHER_MAX;
-    if (free) setVoucher(false);
-    else if (!passSpend(cost, 'seed')) return;      // 💰 the spend IS the balance check
+    if (!passSpend(cost, 'seed')) return;      // 💰 the spend IS the balance check
     refreshHud();
     closeGarden();
     const res = await gFetch('/plant', { slot: i, seed: seedId, name: ctx.parkName });
     // ⚠️ EVERY miss pays back, not only 'taken' — a null reply kept the coins,
     // planted nothing, and still toasted "day 1 of 4"
     if (!gDone(res)) {
-      if (free) setVoucher(true);           // the blessing survives the miss
-      gMiss(res, free ? 0 : cost, GW.takenPatch, 'seed');
+      gMiss(res, cost, GW.takenPatch, 'seed');
       return;
     }
     applyGarden(res);
@@ -1625,7 +1617,7 @@ export function initGarden(ctx) {
           : elsewhere ? 'GROWN ON YOUR OTHER DEVICE'
           : '✨ READY TO PICK — waiting for ' + (s.name ? esc(s.name) : 'its grower')) + '</p>'
         : '')
-      + (elsewhere ? '<p class="pk-gsaved">Sign in there too and this row comes home. '
+      + (elsewhere ? '<p class="pk-gsaved">Log in on that device too, and this plant joins your pass. '
         + '<a href="/pass/">My&nbsp;Pass&nbsp;→</a></p>' : '')
       // 💧 a READY plant is past watering — the moisture bar and water button
       // bow out and the harvest line is the hero (they confused everyone:
@@ -1635,7 +1627,7 @@ export function initGarden(ctx) {
       + tallyBtn('pkWho', '💧', s.waterers || 0, s.wlast)
       + (ready ? '' : actionBtn('pkWaterBtn', '💧 water it', mine ? '' : '+2 REP'))
       + (mine ? '<p class="pk-gsaved">' + (sd.wearable
-        ? '💾 saved to your pass' : '🌾 harvest pays +' + (sd.stars * 8) + ' rep'
+        ? '💾 saved to your pass' : '🌾 harvest pays +' + (sd.stars * 8) + ' XP'
           + (sd.regrow ? ' · fruits ' + (sd.regrow - (s.picks || 0)) + '× more' : '')) + '</p>' : '');
     wireTally('pkWho');
     const wb = document.getElementById('pkWaterBtn');

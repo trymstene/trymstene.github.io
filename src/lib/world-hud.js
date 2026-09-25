@@ -283,7 +283,7 @@ export function gardenerCardHtml(g) {
     + '<p class="whg__label">gardener</p>'
     + '<p class="whg__num">' + g.lvl + '</p>'
     + (top
-      ? '<p class="whg__next">top of the ladder — every seed is yours</p>'
+      ? '<p class="whg__next">top gardener level — every seed is yours</p>'
       : '<div class="whg__bar"><i style="width:' + pct + '%"></i></div>'
         + '<p class="whg__count">' + g.n + ' / ' + g.nextAt + ' harvests</p>'
         + '<p class="whg__next">next: ' + (nextIsExotic ? 'the exotic tier'

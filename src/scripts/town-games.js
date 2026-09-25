@@ -41,7 +41,7 @@ export function openGame(key, api) {
     + '<div class="tw-arc__hud"><span id="twArcScore">0</span><span id="twArcBest">best ' + (bests[key] || 0) + '</span></div></div>'
     + '<div class="tw-board" id="twBoard"><div class="tw-board__tabs"><button type="button" class="is-on" data-t="top">All time</button><button type="button" data-t="week">This week</button></div>'
     + '<ol class="tw-board__list" id="twBoardList"><li class="tw-board__empty">reading the board…</li></ol><p class="tw-board__me" id="twBoardMe"></p></div>'
-    + '<p class="tw-fine">' + (PRIZE[key] ? PRIZE[key][1] + ' on this board wins ' + PRIZE[key][0] + '. ' : '') + 'A score on every cabinet wins the Trophy; a top three, the Medal. No coins move.</p>');
+    + '<p class="tw-fine">' + (PRIZE[key] ? PRIZE[key][1] + ' on this board wins ' + PRIZE[key][0] + '. ' : '') + 'A score on every cabinet wins the Trophy; a top three, the Medal. Playing is free.</p>');
   const cv = document.getElementById('twArc');
   const scoreEl = document.getElementById('twArcScore'), bestEl = document.getElementById('twArcBest');
   const banana = api.bananaCanvas();
@@ -76,7 +76,7 @@ export function openGame(key, api) {
     if (res && res.ok) {
       const r = view === 'week' ? res.wrank : res.rank;
       me.textContent = 'you: best ' + res.best + (r ? ' · #' + r + (view === 'week' ? ' this week' : ' of ' + res.players) : '');
-    } else if (!link()) me.textContent = 'your best stays on this phone until you keep your pass';
+    } else if (!link()) me.textContent = 'your best is only on this phone until you save your pass';
     else me.textContent = b.players ? b.players + ' bananas on this board' : '';
   }
   async function submit(k, score, dur) {

@@ -1645,11 +1645,11 @@ function init() {
       body = '<i class="bh-catch__fish" style="background-position:' + tilePos(f.i) + '"></i>'
         + '<span class="bh-tierpill" style="--tier:' + tier.color + '">' + tier.label + '</span>'
         + '<p><b>' + f.name + '</b> · ' + cm + ' cm</p>'
-        + (isNew ? '<p class="bh-catch__new">★ NEW — into the ledger it goes</p>'
+        + (isNew ? '<p class="bh-catch__new">★ NEW — it goes in your fish book</p>'
           : record ? '<p class="bh-catch__new">📏 personal best! (was ' + prev + ' cm)</p>'
           : '<p class="bh-catch__note">you have ' + fishHeld(f.id) + ' · best '
             + Math.max(prev, cm) + ' cm</p>')
-        + (won ? '<p class="bh-catch__new">🏅 ledger milestone — <b>+' + won
+        + (won ? '<p class="bh-catch__new">🏅 fish book reward — <b>+' + won
                  + ' tickets</b></p>' : '')
         + (c.lure && !lureLeft() ? '<p class="bh-catch__note">' + BEACH_WORDS.lure.spent + '</p>' : '');
       // 🪙 the bycatch: sometimes coins come up tangled on the same line
@@ -1720,10 +1720,10 @@ function init() {
   let gilTimer = null, gilGreeted = false, gilIdx = 0;
   const GIL_LINES = [
     'the sea keeps her books. i just copy them out.',
-    'four kinds of fish out there. commons you\'ll get today. the rest… we\'ll see.',
+    'four kinds of fish out there. the common ones you\'ll catch today. the rest… we\'ll see.',
     'every fish has a size. i write down your best one. that\'s the fun of it.',
     'pearls, coral, sand dollars — bring those to me, they\'re worth tickets.',
-    'a gold thrash on the float means something big. don\'t blink.',
+    'if the float flashes gold, it\'s something big. don\'t blink.',
   ];
   function gilSay(text, ms) {
     gilBubble.textContent = text;
@@ -1737,11 +1737,11 @@ function init() {
       gilGreeted = true;
       const have = fishSpecies(), left = FISH.length - have;
       gilSay(have === 0
-        ? 'first time? sit on a dock chair and cast. i\'ll keep the ledger.'
+        ? 'first time? sit on a dock chair and cast. i\'ll write down what you catch.'
         : have === FISH.length
           ? 'every last one of them. nobody\'s done that before. nobody.'
           : left <= 3
-            ? 'ledger\'s nearly full — ' + left + ' to go. i can taste it.'
+            ? 'your fish book is nearly full — ' + left + ' to go. i can taste it.'
             : have + ' of ' + FISH.length + ' logged. ' + GIL_LINES[gilIdx++ % GIL_LINES.length],
         6000);
       track('beach_gil');
@@ -1770,7 +1770,7 @@ function init() {
     const next = FISH_MILES[Math.min(claimed, FISH_MILES.length - 1)];
     document.getElementById('bhLedgerNext').innerHTML =
       claimed >= FISH_MILES.length
-        ? '🏅 every milestone claimed. the ledger is complete.'
+        ? '🏅 every reward claimed. your fish book is complete.'
         : '🏅 next reward at <b>' + next.n + '</b> species — <b>+' + next.t + ' tickets</b>';
   }
   function openLedger() { renderLedger(); ledgerPanel.hidden = false; track('beach_ledger_open'); }
@@ -1794,7 +1794,7 @@ function init() {
       t = TIERS[f.tier]; have = fishHeld(id); missing = have === 0;
       img = 'fish.png'; tiles = FISH_TILES; i = f.i;
       name = missing ? '???' : f.name;
-      haveLine = missing ? 'not in your ledger yet'
+      haveLine = missing ? 'not in your fish book yet'
                          : have + ' logged · best ' + fishBest(id) + ' cm';
       desc = missing ? 'sit on a dock chair and cast — Gil logs the ones you land.' : (FISH_DESC[id] || '');
     } else {
@@ -1803,7 +1803,7 @@ function init() {
       img = 'shells.png'; tiles = SHELL_TILES; i = s.i;
       name = missing ? '???' : s.name;
       haveLine = missing ? 'not on your shelf yet' : have + ' on your shelf';
-      desc = missing ? 'keep combing the wet sand — this one still eludes you.' : (SHELL_DESC[id] || '');
+      desc = missing ? 'keep searching the wet sand — you haven’t found this one yet.' : (SHELL_DESC[id] || '');
     }
     dCard.style.setProperty('--tier', t.color);
     dCard.classList.toggle('is-locked', missing);
@@ -4037,7 +4037,7 @@ function init() {
         dayStatsEl.innerHTML =
           stat('⏱', vals[0], 'how long you have been on the beach today', 'is-time')
           + stat('🐚', vals[1], 'shell species in your collection')
-          + stat('🐟', vals[2], 'fish species in the ledger')
+          + stat('🐟', vals[2], 'kinds of fish you have caught')
           + stat('🎟', vals[3], 'tickets for the pier midway')
           + stat('🏐', vals[4], 'your best volleyball rally')
           + '<p class="bh-statcap" id="bhStatCap">' + STAT_HINT + '</p>';

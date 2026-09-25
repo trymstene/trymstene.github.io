@@ -1,0 +1,11 @@
+{
+  "saveFailed": "Your homestead couldn’t be saved online. You’re seeing the copy on this device.",
+  "notYourPhone": "that’s {name}’s phone, not yours",
+  "soilTool": "tap your land to dig soil — tap soil to fill it back",
+  "tentFirst": "pitch your tent first — tap its outline on your land",
+  "landGrows": "your land grows with it — place it anywhere on your bigger plot",
+  "fedWatered": "fed & watered — your animals give double tomorrow",
+  "wateredNeighbour": "you watered {name}’s beds — they grow overnight",
+  "groundDug": "that ground is dug up — fill it first",
+  "theirMailbox": "this is {name}’s mailbox"
+}

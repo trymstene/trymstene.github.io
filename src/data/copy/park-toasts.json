@@ -4,7 +4,7 @@
     "takenBorder": "somebody beat you to this spot",
     "takenPost": "somebody beat you to this post",
     "takenPatch": "somebody beat you to this patch",
-    "groundBroken": "the ground is already broken",
+    "groundBroken": "this ground is already dug",
     "bedOpen": "the bed is open — eight new slots, for anyone",
     "borderPlanted": "{what} planted — the road just got prettier",
     "alreadyCleared": "somebody already cleared it",
@@ -19,7 +19,7 @@
     "eggCoins": "+{coins} coins — fresh from the hens",
     "ripenedOne": "a plant of yours ripened while you were away — the park picked it for you",
     "ripenedMany": "{n} of your plants ripened while you were away — the park picked them for you",
-    "ripenedRep": "+{rep} rep",
+    "ripenedRep": "+{rep} XP",
     "plantedDays": "{what} planted — day 1 of {days}",
     "plantedOneDay": "{what} planted — water it tomorrow and pick it",
     "wateredToday": "already watered today — once a day per banana",
@@ -27,11 +27,11 @@
     "notReady": "not ready yet — it grows on the days you water it",
     "notQuite": "not quite ready yet",
     "bare": "the patch is bare",
-    "harvested": "{what} harvested — +{rep} rep!",
+    "harvested": "{what} harvested — +{rep} XP!",
     "fruitAgain": "The bush will fruit again",
     "seedHome": "A seed to plant at your homestead",
     "harvestedWear": "{what} harvested — saved to your pass! A seed to plant at your homestead",
-    "gardenerLevel": "gardener lvl {lvl} — new seeds in the sheet!",
+    "gardenerLevel": "gardener level {lvl} — new seeds to plant!",
     "bedCleared": "cleared — the bed is free to plant again"
   },
   "birds": {
@@ -43,8 +43,5 @@
       "rare": "rare",
       "legend": "very rare"
     }
-  },
-  "fountain": {
-    "broke": "no coins — the rave floor drops them"
   }
 }

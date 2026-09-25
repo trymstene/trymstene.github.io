@@ -1,7 +1,7 @@
 {
-  "title": "Mirror Nook",
-  "line": "The clothes shop has no keeper. Try on hats and glasses; dimmed things show where to find them.",
+  "title": "Changing Room",
+  "line": "Try on your hats and glasses here. Tap a greyed-out one to go where you can get it.",
   "alt": "A banana stands in a lit changing room between two tall mirrors.",
   "confirm": "Step Out",
-  "locked": "Catch this one at {where}."
+  "locked": "Get this one at {where}."
 }

@@ -300,7 +300,7 @@ const C1_STEPS = [
 
   { id: 'c1_peel_tin', area: 'park', kind: 'talk', who: 'peel', turnin: 1, at: { sel: '.pk-old', x: 50, y: 40 },
     lines: [
-      ['peel', '(he opens the box, slow as Sunday)'],
+      ['peel', '(he opens the box, very slowly)'],
       ['peel', '…A photograph. That’s Plot 11 alright. But look — there’s a little house on it.'],
       // 🖼 SHOW the photo (Trym: show, don't tell) — the player sees the
       // house and the lit window BEFORE Peel says it can't exist
@@ -309,7 +309,7 @@ const C1_STEPS = [
       ['peel', 'And underneath it… a fishing lure. Old. Carved by hand.'],
       ['peel', 'So THAT’s what the stranger did at the Bay every morning. Fished off the pier. And came home with an empty bucket, every single time.'],
       ['you', 'Who fishes every morning and never catches anything?'],
-      ['peel', 'Exactly. Somebody who isn’t fishing for fish. Take the lure — cast where that banana cast, off the pier. I’d wager there’s something still down there.'],
+      ['peel', 'Exactly. Somebody who isn’t fishing for fish. Take the lure — cast where that banana cast, off the pier. I bet there’s something still down there.'],
     ],
     reward: { coins: 10, note: '🎣 the stranger’s hand-carved lure — keep it safe' },
     hint: 'fish off the pier at the Bay — cast at the stranger’s spot' },
@@ -1944,7 +1944,7 @@ export async function bootQuest() {
         const short = 50 - coinBal();
         if (short > 0) {
           payReward({ coins: short,
-            note: '🪙 Nib’s relocation grant — “it’s a fund. i invented it today.”' }, step.id);
+            note: '🪙 Nib’s welcome gift — “it’s a fund. i invented it today.”' }, step.id);
         }
       }
       watchTimer = setInterval(() => {

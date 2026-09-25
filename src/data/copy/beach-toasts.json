@@ -15,7 +15,7 @@
     ]
   },
   "lure": {
-    "armed": "Your lure is on the line. The next few bites run bigger.",
-    "spent": "The lure’s worn out. The sea gets its fish back."
+    "armed": "Your lure is on the line: the next few fish will be bigger.",
+    "spent": "Your lure is used up."
   }
 }

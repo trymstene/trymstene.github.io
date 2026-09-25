@@ -377,7 +377,7 @@ function steps(rm) {
         + '<small>trymstene.com</small>'
         + '</div></div>'
         + '<p class="bwt-sub" style="margin:0.7rem 0 0; text-align:center">'
-        + 'Nib is waiting outside with your first quest — and new things land every week. '
+        + 'Nib is waiting at the fountain in Banana Town with your first quest — and new things arrive every week. '
         + 'The Discord hears about them first.</p>'
         + '<a class="bwt-disc" href="' + DISCORD + '" target="_blank" rel="noopener">' + DISCORD_SVG + ' join the Discord ↗</a>',
       og: true,

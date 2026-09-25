@@ -64,3 +64,17 @@ what just happened and what it did for the player, in the names the screen uses 
 "the pigeonhole"), never the code's ("the rope", "the lane"). A rule the player is judged by is said plainly before it
 bites ("two empty weeks in a row and the job is gone"): the mystery rule is for timetables and odds, not for rules.
 When to say a line at all is docs/design-library.md §30.
+
+## Plain words (25 Sep 2026)
+
+Trym asked for an audit of every line for "jargon and strange language the user will struggle to understand", and all
+216 changes went in. What it left:
+
+- **A quirk colours a line; it never renames a real thing.** Fig Jr. may talk like a company, but his grandmother is Gran
+  Fig, not "the supplier". Dot keeps a list of lost things, not "the wants". Stamp weighs in grams and kilos, not "marks".
+- **Say the thing, then the joke.** A promotion says the new title first; a fortune says what it foretells. A riddle may
+  follow a fact, never replace it.
+- **No trade or office words** a child would stumble on: ledger, deed, till, reference, vacate, entry level, on the house.
+  Game words are the ones the screen already uses: XP (never "rep"), today's tasks (never "calls").
+- `tools/copy-rules.mjs` JARGON fails the copy gate on any of these, with the plain word to use instead. Add a word there
+  when you replace one.

@@ -928,39 +928,6 @@ const faq = {
     .pk-coin--20 { width: 2.14%; aspect-ratio: 59 / 43; background-image: url('/assets/banana-stand/stack-spark.png'); background-size: 400% 100%; animation: pkCoinTw 2.6s steps(4) infinite; }
     @keyframes pkCoinTw { to { background-position-x: 133.34%; } }
     @media (prefers-reduced-motion: reduce) { .pk-coin { animation: none; } }
-    /* the wash-up splash — three droplets, fountain-water blue */
-    .pk-splash { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
-    .pk-splash i {
-      position: absolute; width: 4px; height: 4px; background: #bfe8ff;
-      animation: pkSplashUp 0.7s ease-out forwards;
-    }
-    .pk-splash i:nth-child(1) { left: -9px; animation-delay: 0.05s; }
-    .pk-splash i:nth-child(2) { left: 0; height: 5px; background: #e8f7ff; }
-    .pk-splash i:nth-child(3) { left: 9px; animation-delay: 0.1s; }
-    @keyframes pkSplashUp {
-      0% { transform: translateY(0); opacity: 1; }
-      60% { transform: translateY(-14px); opacity: 1; }
-      100% { transform: translateY(-4px); opacity: 0; }
-    }
-    @media (prefers-reduced-motion: reduce) { .pk-splash { display: none; } }
-
-    /* 🪙 the tossed coin — left/top glide + an inner lift = the arc */
-    .pk-coinfly {
-      position: absolute; pointer-events: none;
-      transition: left 0.7s linear, top 0.7s ease-in;
-    }
-    .pk-coinfly img {
-      display: block;
-      animation: pkCoinArc 0.7s ease-out forwards;
-    }
-    @keyframes pkCoinArc {
-      0% { transform: translateY(0) rotate(0); }
-      45% { transform: translateY(-46px) rotate(180deg); }
-      100% { transform: translateY(0) rotate(360deg); }
-    }
-    .pk-act--toss { background: #ffe135; color: #10240f; padding: 0.55rem 1.05rem; }
-    .pk-act--toss[hidden] { display: none; }
-
     /* the big-moment toast */
     .pk-toast {
       position: absolute; left: 50%; top: 18%; transform: translate(-50%, 0) scale(0.9);
@@ -1119,23 +1086,7 @@ const faq = {
       font-weight: 800; font-size: 0.82rem; color: #ffe135;
     }
     .pk-seedcost img { display: block; }   /* smooth downscale of the 44px coin */
-    .pk-seedcost--free { color: #8de08d; font-size: 0.7rem; }
     .pk-seedpoor { margin: 0.2rem 0 0; font-size: 0.72rem; opacity: 0.7; }
-    /* ⛲ the wish card's 8-ball reveal — the answer fades in for ceremony */
-    .pk-wishline {
-      margin: 0.45rem 0 0.35rem; min-height: 1.5em; font-size: 0.94rem;
-      line-height: 1.5; font-style: italic; color: #cfe8ff;
-      opacity: 0; transition: opacity 0.9s ease;
-    }
-    .pk-wishline.is-on { opacity: 1; }
-    .pk-wishbless {
-      margin: 0.25rem 0 0.15rem; font-size: 0.84rem; font-weight: 800; color: #ffd98a;
-      opacity: 0; transition: opacity 0.9s ease;
-    }
-    .pk-wishbless.is-on { opacity: 1; }
-    @media (prefers-reduced-motion: reduce) {
-      .pk-wishline, .pk-wishbless { transition: none; }
-    }
     .pk-gplant { margin: -0.1rem 0 0.35rem; font-size: 0.82rem; font-weight: 800; color: #8de08d; }
 
     /* 🌿 weeds — server-placed entropy on the lawns; a pull shakes then poofs */

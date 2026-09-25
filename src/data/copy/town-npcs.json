@@ -7,11 +7,11 @@
       "tap": "I keep the town record proper. The big book is here for names, plots and arrivals.",
       "want": "I would appreciate someone sitting in the hall while I finish the day’s entries.",
       "hi": [
-        "Good day. State your name when you are ready.",
+        "Good day. I am Nib, the town clerk. Every name in town goes in my big book.",
         "You have returned. That is now recorded.",
         "{name}, the fountain statue still has no plaque.",
         "Margin Reader, {name}, you always arrive before I close the book.",
-        "{name}, my next-of-kin field is blank. I leave it blank on purpose."
+        "{name}, the family line on my own form is empty. I leave it empty on purpose."
       ],
       "ask": {
         "doing": "What are you up to?",
@@ -32,14 +32,14 @@
           "beat": "morning",
           "lines": [
             "This arrival is entered in black ink. Blue is for corrections.",
-            "A plot number requires all its digits. Basically is not a digit.",
+            "Someone gave me a plot number with basically in it. That is not a number.",
             "The mail bus has passed the hall. Its route is not part of this book."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Dot reads the wants clearly. I record only what is requested.",
+            "Dot reads me her list of lost things. I write down only what is asked.",
             "The next page lies flat. This is an excellent administrative condition.",
             "The Mayor’s door remains closed. That is its established procedure."
           ]
@@ -47,7 +47,7 @@
         {
           "beat": "afternoon",
           "lines": [
-            "A capital R from an old notice has a decisive leg.",
+            "I am copying the capital R from an old notice. It has a very confident leg.",
             "This plot transfer requires one line, not an exciting one.",
             "The fountain pen has behaved properly all afternoon."
           ]
@@ -63,7 +63,7 @@
         {
           "beat": "night",
           "lines": [
-            "The blank next-of-kin field remains blank. The form permits it.",
+            "The family line on my form is still empty. The form allows it.",
             "I have copied three capital Rs. One is nearly acceptable.",
             "The hall is quiet enough to hear the fountain outside."
           ]
@@ -79,7 +79,7 @@
       "hi": [
         "Post office is open. Keep wet paper away from the scale.",
         "You came back. Noted.",
-        "{name}, the scale reads three marks before it settles.",
+        "{name}, my scale wobbles three times before it settles.",
         "Bus Stop, {name}, you arrive with the morning traffic.",
         "{name}, I wrote a card saying I arrived safely. It is still in my drawer."
       ],
@@ -101,15 +101,15 @@
         {
           "beat": "morning",
           "lines": [
-            "The bus door opens with rain on the paper smell.",
-            "This sack weighs eight marks. The bus did its part.",
+            "The bus doors open, and the mail smells of rain.",
+            "This mail sack weighs eight kilos. The bus did its part.",
             "I checked for a card with my name. None today. Noted."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "My lunch weighs two marks. I checked before eating.",
+            "My lunch weighs two hundred grams. I checked before eating.",
             "Bean has coffee on the terrace. We are both busy being quiet.",
             "One postcard corner is damp. It will not improve."
           ]
@@ -117,8 +117,8 @@
         {
           "beat": "afternoon",
           "lines": [
-            "This parcel weighs six marks. The string adds almost nothing.",
-            "The labels are sorted by legibility. Sentiment has no column.",
+            "This parcel weighs six hundred grams. The string adds almost nothing.",
+            "I sort the labels by how easy they are to read. Feelings do not count.",
             "Three paper buses are parked behind the post office."
           ]
         },
@@ -133,9 +133,9 @@
         {
           "beat": "night",
           "lines": [
-            "My unposted card weighs less than one mark.",
+            "My unposted card weighs almost nothing. It still feels heavy.",
             "The scale pan is clean. It dislikes crumbs.",
-            "I put the card back in the drawer. Address unresolved."
+            "I put the card back in the drawer. I still don’t know where to send it."
           ]
         }
       ]
@@ -158,7 +158,7 @@
         "want": "Need anything?",
         "curse": "What happens here at night?"
       },
-      "curse": "Some nights the square is cursed. Ghosts undo the day’s work; walk into one and it goes off. Dark things appear, and picked-up ones are yours, though they affect you for a while; the night stall pays coin.",
+      "curse": "Some nights the square is cursed. Ghosts undo the day’s fixes; walk into one to chase it off. Cursed things appear: pick one up to keep it, though it changes you a while. The night stall buys them.",
       "beats": [
         {
           "beat": "dawn",
@@ -189,7 +189,7 @@
           "lines": [
             "Round again. A clean square collects new leaves with professional speed.",
             "The arcade door has ticket scraps at its threshold. They travel in packs.",
-            "I found a flyer by the notice board. It goes under the mattress later."
+            "I found a flyer by the fountain. It goes under my mattress later."
           ]
         },
         {
@@ -217,7 +217,7 @@
       "tap": "I run the general store: jars, twine, fireworks. Each shelf holds its last one.",
       "want": "I would like someone to keep me company when the store bell is quiet.",
       "hi": [
-        "General store: jars, twine, fireworks. Last ones, naturally.",
+        "General store: jars, twine, fireworks. Each one is the last one!",
         "Back for another look? The bell remembers you.",
         "{name}, the store bell is straight, as it should be.",
         "Last-Stopper, {name}, you always browse the final shelf.",
@@ -287,8 +287,8 @@
       "tap": "I keep coffee at the kiosk. Turn the cup three times, then the grounds speak plainly.",
       "want": "I would like someone to sit at the terrace while I take my lunch.",
       "hi": [
-        "Coffee is hot. The counter is dry for now.",
-        "You are back. Your cup has a familiar shape.",
+        "Coffee is hot. When you finish, I can read your future in the cup.",
+        "You are back. I remember how you take your coffee.",
         "{name}, three clean cups are drying on the counter.",
         "Three-Turn, {name}, you wait while I turn each cup.",
         "{name}, I once saw a goodbye in a cup and rinsed it away unread."
@@ -303,9 +303,9 @@
         {
           "beat": "dawn",
           "lines": [
-            "The first cup says the day begins before the sugar packets wake.",
+            "The first cup of the day says: an early start, then a busy noon.",
             "I wiped the counter dry. Rain likes this corner too much.",
-            "Three turns. The grounds settle without argument."
+            "I turn each cup three times, then read the grounds. Today they look calm."
           ]
         },
         {
@@ -337,7 +337,7 @@
           "lines": [
             "This cup says the hall window comes on before the coffee cools.",
             "I press an orchard leaf in a clean napkin between orders.",
-            "The last cup has a tidy ring. Someone will sleep without counting things."
+            "The last cup has a tidy ring. Someone will sleep well tonight."
           ]
         },
         {
@@ -354,14 +354,14 @@
       "key": "figjr",
       "name": "Fig Jr.",
       "role": "Lemonade stand manager and fruit-cart operator for the west orchard.",
-      "tap": "I manage lemonade and fruit-cart expansion. The supplier grows it; I move it.",
-      "want": "I would welcome company while I take the supplier to her bench.",
+      "tap": "I run the lemonade stand and the fruit cart. Gran Fig grows the fruit; I sell it.",
+      "want": "I would welcome company while I walk Gran Fig to her bench.",
       "hi": [
-        "Lemonade division is open. Fruit-cart expansion follows at noon.",
-        "You are back. Repeat foot traffic supports the operation.",
+        "The lemonade stand is open for business! At noon, the fruit cart opens in the square.",
+        "You are back! Returning customers are good for business.",
         "{name}, the lemonade sign faces the square, not the orchard.",
-        "Market Analyst, {name}, you inspect the cart before expansion.",
-        "{name}, I water the orchard before dawn so the supplier can call it rain."
+        "Market Analyst {name}, you always check the cart before it opens.",
+        "{name}, I water the orchard before dawn so Gran Fig thinks it rained."
       ],
       "ask": {
         "doing": "What are you up to?",
@@ -373,23 +373,23 @@
         {
           "beat": "dawn",
           "lines": [
-            "Orchard support is underway. The trees receive water before the sun audits me.",
+            "I am watering Gran Fig’s trees before the sun comes up.",
             "I counted twelve lemon halves, then added one for morale.",
-            "The supplier will find wet roots and draw her own conclusions."
+            "Gran Fig will find wet roots and decide it rained."
           ]
         },
         {
           "beat": "morning",
           "lines": [
-            "Lemonade inventory is one jug, clean cups, and a sign with no homemade on it.",
-            "The supplier inspected the lemons. Her approval remains under review.",
-            "A full cup is a strong opening. The honest number is one cup."
+            "Stock check: one jug, clean cups, and a sign without the word homemade.",
+            "Gran Fig checked the lemons. She has not said yes yet.",
+            "Sales are strong today. Honestly: one cup so far."
           ]
         },
         {
           "beat": "noon",
           "lines": [
-            "Expansion begins now. The cart has reached the square without incident.",
+            "The fruit cart is in the square now. Business is growing!",
             "I set the fruit crate beside the fountain. Visibility is our biggest asset.",
             "One lemon half rolled away. I counted it as marketing."
           ]
@@ -397,17 +397,17 @@
         {
           "beat": "afternoon",
           "lines": [
-            "The cart wheel squeaks during expansion. It is announcing growth.",
+            "The cart wheel squeaks. I call it free advertising.",
             "Lemonade demand is steady: one cup, then another cup if destiny allows.",
-            "The supplier’s fruit is arranged by ripeness. Colour has no authority here."
+            "Gran Fig sorts her fruit by ripeness, never by colour. Her rule."
           ]
         },
         {
           "beat": "evening",
           "lines": [
-            "I am walking the supplier to her bench. It is operationally on the way.",
+            "I am walking Gran Fig to her bench. I tell her it is on my way.",
             "Her second chair is empty. I have noted the available seating.",
-            "The cart is parked. Expansion can rest until noon returns."
+            "The cart is parked until noon tomorrow."
           ]
         },
         {
@@ -415,7 +415,7 @@
           "lines": [
             "I rehearsed an award speech at the fountain. The water gave no applause.",
             "Tomorrow’s lemons are counted. One extra remains for morale.",
-            "The orchard is quiet. The supplier prefers it that way."
+            "The orchard is quiet. Gran Fig likes it that way."
           ]
         }
       ]
@@ -494,13 +494,13 @@
       "key": "dot",
       "name": "Dot",
       "role": "Info kiosk keeper who records the things Banana Town residents are seeking.",
-      "tap": "I keep the wants at the kiosk. Who needs what, and where might it be?",
+      "tap": "I keep a list of things people are looking for. Who needs what, and where might it be?",
       "want": "I would like someone to sit by the fountain and watch for a real fish with me.",
       "hi": [
         "Looking for something? Lost it nearby, or far from the fountain?",
-        "Back again? Did another want find you first?",
+        "Back again? Are you looking for something today?",
         "{name}, the fountain water reaches the cobbles at noon. Have you seen it?",
-        "List-Walker, {name}, you always stop where the wants are posted. What brings you?",
+        "List-Walker {name}, you always stop to read my list. What brings you?",
         "{name}, I keep the fish first on my list because I still think it is nearby."
       ],
       "ask": {
@@ -513,7 +513,7 @@
         {
           "beat": "dawn",
           "lines": [
-            "Who needs a want before breakfast? Who lost a thing before the square opened?",
+            "Who lost something before breakfast? Who is already looking for it?",
             "I folded a new slip twice. Does it fit behind my left ear? It does.",
             "Could a fish arrive before the mail bus? Would it use the fountain?"
           ]
@@ -522,7 +522,7 @@
           "beat": "morning",
           "lines": [
             "The bus has come. Did it bring a missing thing? Did it bring directions?",
-            "This want says near the fountain. Which side of the fountain, exactly?",
+            "This note says near the fountain. Which side of the fountain, exactly?",
             "Who needs a paper bus? Stamp has several, but are they truly missing?"
           ]
         },
@@ -530,14 +530,14 @@
           "beat": "noon",
           "lines": [
             "Does the fountain water make the cobbles move, or only look busy?",
-            "I read the wants to Nib. Is the fish first? It is always first.",
+            "I read my list to Nib. Is the fish first? It is always first.",
             "Could a fish see itself in this water? Would it approve of the view?"
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "Who left this want at the kiosk? Who will recognize the handwriting?",
+            "Who left this note at the kiosk? Who knows this handwriting?",
             "I drew a fish in the margin. Does it need a hat? This one does not.",
             "What is the shortest route from the arcade to the orchard? Not near the fountain."
           ]
@@ -553,7 +553,7 @@
         {
           "beat": "night",
           "lines": [
-            "Which wants can wait until morning? Which ones refuse to?",
+            "Which lost things can wait until morning? Which ones can’t?",
             "I tucked the last slip behind my ear. Is there room for one more?",
             "Is the fountain quiet enough for a fish tonight? Could it be listening?"
           ]
@@ -565,7 +565,7 @@
       "name": "Gran Fig",
       "role": "Orchard grower and west garden keeper who supplies the town’s fruit.",
       "tap": "I grow the orchard and west garden. Take ripe fruit seriously, or leave it alone.",
-      "want": "Bring yourself to the second chair by my bench and sit a spell.",
+      "want": "Come and sit in the second chair by my bench for a while.",
       "hi": [
         "Mind the beds. The roots work harder than you do.",
         "Back again. Do not sort fruit by colour.",

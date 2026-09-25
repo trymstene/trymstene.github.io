@@ -104,7 +104,7 @@ test('a cheque in the box is a payslip with the week’s counts and the share; t
 
 // 📄 A WEEK THAT PAID NOTHING ARRIVES TOO (22 Sep 2026, the jobs audit): the counts are the reason, on paper, before
 // the boss ever writes about letting you go. "PAID" over nothing would be untrue, so it has its own stamp and line.
-test('a week that paid nothing is a slip too: NIL, Nib’s line for it, and the counts that explain it', async ({ page }) => {
+test('a week that paid nothing is a slip too: its NONE stamp, Nib’s line for it, and the counts that explain it', async ({ page }) => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"letters":[],"unread":0,"knocks":0}' }));

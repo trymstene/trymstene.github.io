@@ -1,6 +1,6 @@
 {
   "share": {
-    "unfurl": "Link copied — it unfurls with YOUR banana!",
+    "unfurl": "Link copied — it shows YOUR banana when you share it!",
     "plain": "Share link copied!",
     "manual": "Copy this URL from the address bar"
   },
@@ -10,7 +10,7 @@
     "unnamed": "Give this banana a name first 🍌",
     "rendering": "Rendering your banana… 🍌",
     "sentTitle": "Sent to the banana guy for review!",
-    "sentBody": "The verdict lands on {pass} — usually within 48 hours.",
+    "sentBody": "You’ll see the answer on {pass}, usually within 48 hours.",
     "sentPass": "your Banana Pass",
     "busy": "The gallery is busy — try again in a bit"
   },

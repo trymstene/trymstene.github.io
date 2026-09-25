@@ -2041,6 +2041,28 @@ export const JOBS = {
   // 🌱 THE SEEDS' WAY HOME (24 Sep 2026). Be, a player, in a letter: "Where do I find my harvested seeds from the park and how
   // do I plant them?" — and Trym: "nothing says that you can plant seeds on that dirt". Each step of the way is said at the
   // moment it applies (design library §30), in plain site words: what you have, then the one thing to tap.
+  // 🏡 the homestead’s toasts that were reworded in the plain-words pass (25 Sep 2026) — a changed line may not stay typed
+  // into the code (tools/check-literal-says.mjs), so these nine moved here; the rest of the yard’s older toasts are still owed
+  'homestead-toasts': {
+    id: 'homestead-toasts',
+    title: 'The Homestead — what the yard says back',
+    what: 'Toasts in the homestead: a save that failed, a neighbour’s phone and mailbox, build mode’s soil tool and the ground it digs, the tent that comes first, land that grows, a full trough, and watering a neighbour’s beds.',
+    approved: 'src/data/copy/homestead-toasts.json',
+    reads: 'src/scripts/banana-homestead.js (a static import)',
+    top: ['saveFailed', 'notYourPhone', 'soilTool', 'tentFirst', 'landGrows', 'fedWatered', 'wateredNeighbour', 'groundDug', 'theirMailbox'],
+    fields: {
+      saveFailed: toastLine(100, 'The homestead could not be saved online after several tries: it is safe on this device and that is what you see. Plain, no server talk. The game puts ⚠️ in front.'),
+      notYourPhone: toastLine(48, 'Tapping the Banana Phone while visiting somebody else’s homestead: it is theirs. {name} is the owner.', holdsAll('name')),
+      soilTool: toastLine(64, 'Build mode’s soil tool picked (no seeds in hand): tap to dig soil, tap soil to fill it back. The game puts ⛏️ in front.'),
+      tentFirst: toastLine(60, 'Opening build mode before the tent is up: the tent comes first, and where to tap for it.'),
+      landGrows: toastLine(72, 'Placing a new house that makes your land bigger: place it anywhere on the bigger plot.'),
+      fedWatered: toastLine(60, 'The trough filled on a day the animals are fed: they give double tomorrow. The game puts 💧 in front.'),
+      wateredNeighbour: toastLine(60, 'Watering the beds at a neighbour’s homestead: {name} is the neighbour; the beds grow overnight. The game puts 💧 in front.', holdsAll('name')),
+      groundDug: toastLine(48, 'Trying to build on soil that is dug up: fill it in first.'),
+      theirMailbox: toastLine(40, 'Tapping the mailbox at somebody else’s homestead: it is {name}’s. The game puts 📬 in front.', holdsAll('name')),
+    },
+    shape: () => [],
+  },
   'homestead-seeds': {
     id: 'homestead-seeds',
     title: 'The Homestead — planting the seeds from the park',
@@ -2211,11 +2233,11 @@ export const JOBS = {
   // Claude writes them (the rule changed on 23 Sep 2026). Icons and markup stay in the code, the words here.
   'park-toasts': {
     id: 'park-toasts',
-    title: 'The Park — what the garden, the birds and the fountain say back',
-    what: 'The toasts of the park’s garden (planting, watering, picking, the border, the birdhouses, the eggs, a miss), the birdwatching line and the tiers’ names, and the fountain with no coin to toss.',
+    title: 'The Park — what the garden and the birds say back',
+    what: 'The toasts of the park’s garden (planting, watering, picking, the border, the birdhouses, the eggs, a miss), the birdwatching line and the tiers’ names.',
     approved: 'src/data/copy/park-toasts.json',
-    reads: 'src/scripts/park-garden.js + src/scripts/park-birds.js + src/scripts/park-fountain.js (static imports)',
-    top: ['garden', 'birds', 'fountain'],
+    reads: 'src/scripts/park-garden.js + src/scripts/park-birds.js (static imports)',
+    top: ['garden', 'birds'],   // ⛲ the wishing fountain came out 25 Sep 2026 (its picture stays)
     fields: {
       'garden.miss': toastLine(60, 'The garden’s room never answered (offline, a hiccup): nothing happened, and any coins came back. Try again.'),
       'garden.takenBorder': toastLine(50, 'Somebody planted that border spot a moment before you; the coins came back.'),
@@ -2256,7 +2278,6 @@ export const JOBS = {
       'birds.tiers.uncommon': { kind: 'label', max: 16, note: 'The second tier.' },
       'birds.tiers.rare': { kind: 'label', max: 16, note: 'The third tier.' },
       'birds.tiers.legend': { kind: 'label', max: 16, note: 'The rarest birds.' },
-      'fountain.broke': toastLine(60, 'Making a wish with no coins: where coins come from.'),
     },
     shape: (d) => ['common', 'uncommon', 'rare', 'legend']
       .filter((k) => !(d.birds && d.birds.tiers && d.birds.tiers[k]))

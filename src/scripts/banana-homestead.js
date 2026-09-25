@@ -1,6 +1,8 @@
 // ✏️ one bundled pixel icon (the full pack is gitignored — never a pack URL)
 import NOTES from '../data/copy/homestead-notes.json';   // the sign's line before the story gives you the place (the rig's)
-import SEEDW from '../data/copy/homestead-seeds.json';   // 🌱 the seeds' way home: each step said when it applies
+import SEEDW from '../data/copy/homestead-seeds.json';
+import HW from '../data/copy/homestead-toasts.json';   // 🏡 the yard’s toasts, in plain words (25 Sep 2026)
+import { fillWords } from '../lib/fill-words.js';   // 🌱 the seeds' way home: each step said when it applies
 import POSTCOPY from '../data/copy/homestead-post.json';   // what the world writes to you (the rig's)
 import DUTYCOPY from '../data/copy/town-duties.json';      // 💼 the duty labels the payslip prints (the work note's own words)
 import { PAY_BACK, rankOf } from '../data/town/jobs.js';   // 💼 how many whole weeks a cheque may still reach back; 🪜 the rank a boss's news is about
@@ -488,7 +490,7 @@ function init(visitDoc, visitMiss) {
       // browser id this yard was claimed under (the pre-token shape, still honoured)
       try { await pullIfStale(0); } catch (x) {}
       yPlain = true;
-      syncSay('token', '⚠️ your pass could not be proven — saving with this phone’s own id instead');
+      syncSay('token', '⚠️ we couldn’t check your pass — your homestead is saved on this phone for now');
       return true;
     }
     if (why === 'unclaimed' && state.claimedAt) {
@@ -510,7 +512,7 @@ function init(visitDoc, visitMiss) {
       return false;
     }
     if (why === 'offline') { syncSay('offline', '⚠️ Banana World can’t be reached from this phone — your homestead is safe here and syncs when it can'); return false; }
-    if (why === 'forbidden') { syncSay('forbidden', '⚠️ Banana World refused this phone — your homestead is safe here'); return false; }
+    if (why === 'forbidden') { syncSay('forbidden', '⚠️ couldn’t save to Banana World from this phone — your homestead is safe here'); return false; }
     syncSay('other', '⚠️ saving to Banana World failed (' + ((e && e.status) || 'no answer') + ') — your homestead is safe on this phone');
     return false;
   }
@@ -589,7 +591,7 @@ function init(visitDoc, visitMiss) {
       } catch (e) {}
       if (rs >= 2) {
         try { localStorage.removeItem('hs-pullbudget'); } catch (e) {}
-        toast('⚠️ Could not save your homestead — the server keeps refusing it. Showing what is saved on this device.', 8000);
+        toast('⚠️ ' + HW.saveFailed, 8000);
         console.warn('[homestead] resync loop stopped', { slug: state.slug, updated: r.updated });
         return;
       }
@@ -2074,7 +2076,7 @@ function init(visitDoc, visitMiss) {
     });
     const growLine = !(gradN || leftMin < 9) ? '' : gradN
       ? '🎉 ' + (gradName || 'the little one') + (gradN > 1 ? ' & co' : '')
-        + ' — all grown up. The mornings start paying tomorrow'
+        + ' — all grown up. It starts giving you things tomorrow morning'
       : '🐣 the little ones grew — fill the trough ' + leftMin
         + ' more morning' + (leftMin === 1 ? '' : 's');
     // 💔 THE OBLIGATION (Trym, 2 Sep: "you should hug your animals — a
@@ -2486,7 +2488,7 @@ function init(visitDoc, visitMiss) {
       document.body.appendChild(veil);
     }
     veil.innerHTML = '<div class="hs-card">' + gardenerCardHtml(gl)
-      + '<p style="margin:0.9rem 0 0;text-align:center"><a class="hs-btn" href="/park/?world">the ladder climbs in the park garden →</a></p></div>';
+      + '<p style="margin:0.9rem 0 0;text-align:center"><a class="hs-btn" href="/park/?world">more seeds unlock as you garden in the park →</a></p></div>';
     veil.hidden = false;
   }
   const refreshHud = () => hud && hud.refresh();
@@ -2496,7 +2498,7 @@ function init(visitDoc, visitMiss) {
     float(pos.x, pos.y - 44, s ? s.cloneNode(true) : '❤️');
   });
   document.getElementById('hsBag').addEventListener('click', () => {
-    if (visiting) { toast('that’s ' + state.name + '’s number, not yours'); return; }
+    if (visiting) { toast(fillWords(HW.notYourPhone, { name: state.name })); return; }
     // ⚠️ THE GATE THIS ASKED FOR DOES NOT EXIST. This refused to open until
     // `claimedAt`, and `claimedAt` is set in exactly one place — offerClaim(),
     // whose only caller runs AFTER the 50-coin tent is placed. The tent is
@@ -2527,7 +2529,7 @@ function init(visitDoc, visitMiss) {
     const lessonSoil = digging && seedsHeld() > 0 && teach('soil');   // 🌱 what soil is for, the first time only
     toast(fencing ? '🪵 tap your land (the lit grid) to build fence — tap a piece to take it down'
       : lessonSoil ? '⛏️ ' + SEEDW.soil
-      : digging ? '⛏️ tap your land to till soil — tap soil to fill it back'
+      : digging ? '⛏️ ' + HW.soilTool
       : clearing ? '🧹 tap anything to clear it — decor goes safely to the shed'
       : '✥ tap a thing to lift it — decor, house, mailbox or sign', 3400);
     penTint();   // existing pens light up the moment the tool is in hand
@@ -2642,7 +2644,7 @@ function init(visitDoc, visitMiss) {
   }
   buildBtn.addEventListener('click', () => {
     if (visiting) { toast('build at your own homestead'); return; }
-    if (state.stage < 1) { toast('pitch your tent first — tap its shadow on the deed'); return; }
+    if (state.stage < 1) { toast(HW.tentFirst); return; }
     if (planner) exitPlanner(); else enterPlanner();
   });
   toolF.addEventListener('click', () => setTool('fence'));
@@ -3287,7 +3289,7 @@ function init(visitDoc, visitMiss) {
           ? ' hugged one of your animals while you were away'
           : ' hugged ' + hugged + ' of your animals while you were away'));
       }
-      if (fedBy) msgs.push('🌾 ' + (fname || 'a neighbour') + ' filled your trough — the morning pays double');
+      if (fedBy) msgs.push('🌾 ' + (fname || 'a neighbour') + ' filled your trough — your animals give double tomorrow');
       if (n.signs && n.signs.length) {
         msgs.push(n.signs.length === 1
           ? '✍️ ' + (n.signs[0].n || 'someone') + ' signed your guestbook'
@@ -4033,7 +4035,7 @@ function init(visitDoc, visitMiss) {
     requestAnimationFrame(() => alignFrame(true));   // the ✓ bar must not open under the cookie banner
     moved = true; hint(false);
     toast(placing.toStage > state.stage
-      ? 'your land grows with it — place it anywhere on the new deed'
+      ? HW.landGrows
       : 'choose where it stands — drag to look, tap to try', 3600);
   }
   function confirmHome() {
@@ -4284,7 +4286,7 @@ function init(visitDoc, visitMiss) {
       const fd = document.createElement('button');
       fd.className = 'hs-btn';
       if (fedToday()) {
-        fd.textContent = '💧 full — tomorrow pays double';
+        fd.textContent = '💧 full — your animals give double tomorrow';
         fd.disabled = true;
       } else {
         fd.textContent = '💧 fill the trough';
@@ -4293,7 +4295,7 @@ function init(visitDoc, visitMiss) {
           clearChip();
           refreshItems();                    // the water appears
           hens.forEach((h) => float(h.x, h.y - 40, '❤️'));
-          toast('💧 fed & watered — everything pays double tomorrow', 3600);
+          toast('💧 ' + HW.fedWatered, 3600);
           track1('homestead_feed');
         });
       }
@@ -4349,7 +4351,7 @@ function init(visitDoc, visitMiss) {
       state.soil.forEach((c) => {
         if (c.crop && cropStage(c) < 4) float(cellCx(c), cellBase(c) - 44, '💧');
       });
-      toast('💧 you watered ' + state.name + ' — it counts overnight');
+      toast('💧 ' + fillWords(HW.wateredNeighbour, { name: state.name }));
       track('homestead_neighbor_water');
     }).catch(() => toast('the watering can is empty — try again in a bit'));
   }
@@ -4683,7 +4685,7 @@ function init(visitDoc, visitMiss) {
         float(cx, cb - 24, '🪵');
       } else {
         if (state.fence.length >= FENCE_CAP) { toast(FENCE_CAP + ' pieces is the whole lumber yard'); return; }
-        if (state.soil.some((s2) => s2.i === i && s2.j === j)) { toast('that ground is tilled — fill it first'); return; }
+        if (state.soil.some((s2) => s2.i === i && s2.j === j)) { toast(HW.groundDug); return; }
         const sd = structDims();
         if (state.stage >= 1 && cx > state.home.x - sd.w * 0.52 - 20 && cx < state.home.x + sd.w * 0.52 + 20
           && cb > state.home.y - floorOf(sd.h) && cb < state.home.y + 30) { toast('not through the house'); return; }
@@ -4748,7 +4750,7 @@ function init(visitDoc, visitMiss) {
     // the mailbox: near = open, far = walk to it
     if (Math.hypot(wx - state.mailAt.x, wy - (state.mailAt.y - 20)) < 46) {
       if (Math.hypot(pos.x - state.mailAt.x, pos.y - state.mailAt.y) < 110) {
-        if (visiting) { toast('📬 answers only to ' + state.name); return; }
+        if (visiting) { toast('📬 ' + fillWords(HW.theirMailbox, { name: state.name })); return; }
         // 📬 A MAILBOX IS A MAILBOX (Trym, 19 Sep): orders on the way live on the banana phone, where
         // they are already listed, and moving a fixture is build mode's job — both used to be here.
         clearChip();

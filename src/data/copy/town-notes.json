@@ -14,17 +14,17 @@
     },
     {
       "key": "bean",
-      "text": "The new sign means a clear morning. A warm cup follows."
+      "text": "I saw your new sign. Welcome! Come by the Coffee Cup for a warm cup."
     }
   ],
   "quiet": [
     {
       "key": "nib",
-      "text": "The upper hall window was lit after sunset. I entered it in the margin, where proper occurrences go."
+      "text": "The upper window of the hall was lit after sunset again. I wrote it down in my big book."
     },
     {
       "key": "stamp",
-      "text": "I weighed three parcels before noon. One was lighter than its string."
+      "text": "Three parcels on my scale this morning. None for you yet. Noted."
     },
     {
       "key": "moss",
@@ -32,7 +32,7 @@
     },
     {
       "key": "bean",
-      "text": "The queue reaches the fountain today. The last cup in line stays warm."
+      "text": "The queue at my counter reached the fountain today. Come by for a cup."
     }
   ],
   "first": [
@@ -42,7 +42,7 @@
     },
     {
       "key": "stamp",
-      "text": "I weighed your post as it passed the scale. It had the useful weight of a parcel with no parcel."
+      "text": "Your first letter went over my scale today. Light, but it counts. Noted."
     },
     {
       "key": "moss",
@@ -50,7 +50,7 @@
     },
     {
       "key": "bean",
-      "text": "Over the counter, I heard your post had gone out. The cups are expecting a little more traffic."
+      "text": "I heard at my counter that your first letter went out. Write more, and come by for a cup."
     }
   ],
   "cabin": [
@@ -68,7 +68,7 @@
     },
     {
       "key": "bean",
-      "text": "From the counter, I heard about the cabin on the road out of town. Cups travel faster than feet."
+      "text": "Everyone at my counter is talking about your new cabin on the road out of town."
     }
   ],
   "house": [
@@ -78,7 +78,7 @@
     },
     {
       "key": "stamp",
-      "text": "The house on the road out of town has some weight to it. The scale would approve, if it could see."
+      "text": "A whole house on the road out of town now. A heavy step up from a cabin. Noted."
     },
     {
       "key": "moss",
@@ -86,7 +86,7 @@
     },
     {
       "key": "bean",
-      "text": "At the counter, I heard the house is on the road out of town. A cup says the road looks fuller."
+      "text": "My customers tell me you built a house on the road out of town. The road looks busier already."
     }
   ],
   "fixed": [
@@ -114,7 +114,7 @@
     },
     {
       "key": "stamp",
-      "text": "The night left the square looking like a parcel dropped in a puddle. I checked it against the scale. Uneven."
+      "text": "The night left the square like a parcel dropped in a puddle. It needs fixing today. Noted."
     },
     {
       "key": "moss",
@@ -122,7 +122,7 @@
     },
     {
       "key": "bean",
-      "text": "From the counter, I heard about the night in the square. The cups are rattling less now."
+      "text": "Everyone at my counter talked about last night. It’s calmer now. Come by for a warm cup."
     }
   ]
 }

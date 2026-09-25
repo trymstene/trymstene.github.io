@@ -2173,7 +2173,7 @@ function init() {
       + (cls ? ' ' + cls : '') + '" data-cap="' + cap + '"><i>' + icon + '</i><b>' + val + '</b></button>';
     s.innerHTML =
       stat('⏱', clubTime(), 'how long you have been on the floor', 'is-time')
-      + stat('🍮', tonight.jelly, 'jelly you have caught tonight — the floor’s own XP')
+      + stat('🍮', tonight.jelly, 'jelly you have caught tonight — the rave’s own points')
       + stat('🎁', tonight.pickups, 'items you picked up off the floor')
       + stat('👊', tonight.fives, 'fistbumps with other bananas')
       + stat('🕺', tonight.jellytimes, 'jelly times you danced through')
@@ -3297,7 +3297,7 @@ function init() {
       world.style.transform = '';
       mixerEl.classList.add('rv-mixer--tour');
       setTimeout(() => {
-        if (tourActive && tourStep === 4) tourBox(mixerEl, 'THE JELLY METER', 'everything you do fills it with JELLY. when it’s FULL it starts flashing — tap the meter and the floor drops, just for you.', { noPool: true });
+        if (tourActive && tourStep === 4) tourBox(mixerEl, 'THE JELLY METER', 'everything you do fills it with JELLY. when it’s FULL it starts flashing — tap the meter to start JELLY TIME, just for you.', { noPool: true });
       }, 550);
     },
     () => { // the floor itself: full-floor pool, caption pinned up top like a subtitle

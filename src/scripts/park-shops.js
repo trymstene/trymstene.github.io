@@ -417,7 +417,7 @@ export function initShops(ctx) {
         id: d.id, label: d.label, slot: d.slot === 'glasses' ? 'face' : d.slot,
         price: ST_BACKCAT_PRICE, back: true, flag: d.flag,
         artHtml: ART[d.art] || '',
-        desc: (d.by ? 'from ' + d.by + '’s booth. ' : '') + 'you missed the drop night. money fixes that.',
+        desc: (d.by ? 'from ' + d.by + '’s booth. ' : '') + 'you missed it at the rave. coins fix that.',
       })));
     fetch('https://banana-share.trymstene.workers.dev/catalog/items.json')
       .then((r) => (r.ok ? r.json() : []))
@@ -532,7 +532,7 @@ export function initShops(ctx) {
     if (ME_DRAW.hat === i) ME_DRAW.hat = 'none';
     if (ME_DRAW.glasses === i) ME_DRAW.glasses = 'none';
     if (ME_DRAW.extras && ME_DRAW.extras[i]) delete ME_DRAW.extras[i];
-    standSay(r === 'funds' ? 'the till bounced that one — not enough in the purse.'
+    standSay(r === 'funds' ? 'not enough coins for that one.'
       : r === 'owned' ? 'you already had it. no double dipping.'
       : 'the price tag changed under you — refresh and try again.');
     refreshHud(); refreshStandWallet(); stUpdateTiles(); if (stPicked) stUpdateSpot(stPicked);

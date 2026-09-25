@@ -3,7 +3,7 @@
     "sweep": "floor swept",
     "fix": "machines fixed",
     "restock": "shelf restocked",
-    "days": "turned up",
+    "days": "days worked",
     "sort": "post sorted",
     "serve": "customers served"
   },
@@ -14,30 +14,30 @@
   "wage": "wage so far {coins}; days to payday: {days}.",
   "done": "the week’s work is done: a full wage. Extra work still earns XP.",
   "nudge": {
-    "condo": "Spinner asks you in this week: two empty weeks in a row and the job is gone.",
-    "store": "Pip asks you in this week: two empty weeks in a row and the job is gone.",
-    "post": "Stamp asks you in this week: two empty weeks in a row and the job is gone.",
-    "cafe": "Bean asks you in this week: two empty weeks in a row and the job is gone.",
-    "stand": "Fig Jr. asks you in this week: two empty weeks in a row and the job is gone."
+    "condo": "Spinner hasn’t seen you this week. Two empty weeks in a row and the job is gone.",
+    "store": "Pip hasn’t seen you this week. Two empty weeks in a row and the job is gone.",
+    "post": "Stamp hasn’t seen you this week. Two empty weeks in a row and the job is gone.",
+    "cafe": "Bean hasn’t seen you this week. Two empty weeks in a row and the job is gone.",
+    "stand": "Fig Jr. hasn’t seen you this week. Two empty weeks in a row and the job is gone."
   },
   "fired": {
     "condo": "Spinner has let you go; ask again and you start from the first rank.",
     "store": "Pip has let you go; ask again and you start from the first rank.",
     "post": "Stamp let you go after empty weeks; ask again and you start at the first rank.",
-    "cafe": "Bean has let you go; ask again and you start from the first cup.",
-    "stand": "Fig Jr. has let you go; reapply and you start again at entry level."
+    "cafe": "Bean has let you go; ask again and you start from the first rank.",
+    "stand": "Fig Jr. has let you go; ask again and you start from the first rank."
   },
   "cafeDone": "tips add up on the tray as you pour; paid when you leave work.",
   "standDone": "tips add up on the tray glass by glass; paid when you leave work.",
   "payslip": "go home and open your payslip in your homestead mailbox.",
   "tips": "tips today",
   "call": {
-    "sweep": "Spinner calls: litter on the arcade floor, open for the rest of the day.",
-    "fix": "Spinner calls: a cabinet has gone dark, open for the rest of the day.",
-    "restock": "Pip calls: crates wait for the empty shelves, open for the rest of the day.",
-    "serve": "Pip calls: customers are waiting in the store, open for the rest of the day.",
-    "deliver": "Pip calls: a parcel at the store to deliver, open for the rest of the day."
+    "sweep": "Spinner needs you: litter on the arcade floor. Any time today.",
+    "fix": "Spinner needs you: a cabinet has gone dark. Any time today.",
+    "restock": "Pip needs you: crates for the empty shelves. Any time today.",
+    "serve": "Pip needs you: customers are waiting in the store. Any time today.",
+    "deliver": "Pip needs you: a parcel at the store to deliver. Any time today."
   },
-  "answered": "every call today is answered; nothing more is wanted until tomorrow.",
+  "answered": "all of today’s tasks are done; more come tomorrow.",
   "tipsAll": "today’s tips are all earned; shifts still earn work XP."
 }

@@ -64,12 +64,12 @@
       "key": "figjr",
       "name": "Fig Jr.",
       "temper": "sunny",
-      "born": "Gran Fig raised him among the west orchard trees. When her knees began complaining, he took the lemonade stand and fruit cart, calling her the supplier as if they ran a large company.",
+      "born": "Gran Fig raised him among the west orchard trees. When her knees began complaining, he took the lemonade stand and fruit cart, and runs them as if they were a large company.",
       "loves": "Gran Fig asleep in the second chair by her bench, with her hat over one eye.",
       "hates": "The word homemade written on his lemonade sign.",
       "interest": "He rehearses award speeches to his reflection in the fountain, accepting prizes nobody has announced.",
       "quirk": "He counts every lemon half aloud, then quietly adds one more to the total for morale.",
-      "voice": "Use brisk business language for tiny tasks: supplier, inventory, expansion. Keep the affection hidden under efficiency. Never calls Gran Fig grandmother.",
+      "voice": "Brisk business talk for tiny tasks, in words a child knows: business, customers, sales, stock. Calls his grandmother Gran Fig, never a job title. Keeps the affection hidden under efficiency.",
       "soft": "He waters the orchard before dawn so Gran Fig can still believe the trees wake up for her."
     },
     {
@@ -91,8 +91,8 @@
       "born": "She came through town carrying a notebook of lost things and stopped at the empty info kiosk to ask who kept the answers. Nobody did, so she opened the notebook there.",
       "loves": "The fountain basin at noon, when the water makes the cobbles look like they are moving.",
       "hates": "Directions that end with, near the fountain.",
-      "interest": "She draws every fish described to her in the margins of her wants book, including the ones with impossible hats.",
-      "quirk": "She writes a new want, tears off the slip, folds it twice, and tucks it behind her left ear.",
+      "interest": "She draws every fish described to her in the margins of her book of lost things, including the ones with impossible hats.",
+      "quirk": "She writes down a new lost thing, tears off the slip, folds it twice, and tucks it behind her left ear.",
       "voice": "Write stacked questions, usually two or three, without waiting for answers. Keep them practical and eager. Never say she is disappointed. Mention the fish naturally.",
       "soft": "She wants a real fish because finding one would prove that something can be missing for years and still be waiting nearby."
     },

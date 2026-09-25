@@ -39,10 +39,30 @@ const oddChar = (s) => [...s].some((c) => { const n = c.codePointAt(0); return O
 
 /** Every mechanical fault in one line, in the order they matter. `spec` carries
  *  the field's own limits; pass none and only the universal rules run. */
+// 🗣 PLAIN WORDS (Trym, 22 Sep 2026: "clear and concrete messages like this please"; 25 Sep: an audit of every line for
+// "jargon and strange language the user will struggle to understand"). The words the game made up or borrowed from a
+// trade, each with the plain word that replaced it. A character's quirk may colour a line; it never renames a real thing.
+export const JARGON = [
+  [/\bthe supplier\b/i, '“the supplier”: Fig Jr.’s grandmother is Gran Fig'],
+  [/\b(the|another) wants?\b|\ba want\b|\bthis want\b/i, '“the wants” as a thing: Dot keeps a list of what people are looking for'],
+  [/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten) marks?\b/i, 'a weight in “marks”, a unit the game made up: grams and kilos'],
+  [/\bledger\b/i, '“ledger”: Gil keeps a fish book'],
+  [/\brep\b/i, '“rep”: the points behind LVL are XP'],
+  [/\b(today’s|answer the|every) calls?\b/i, 'the job’s “calls”: they are today’s tasks'],
+  [/\btill(ed)? (the )?soil\b|\btilled\b/i, '“till”: dig'],
+  [/\b(the|new) deed\b/i, '“the deed”: your land, your plot'],
+  [/\bon the house\b/i, '“on the house”: free'],
+  [/\breference\b/i, '“reference”: a good word'],
+  [/\b(vacate|vacated|entry level|reapply)\b/i, 'office words: the job is gone; ask again and you start from the first rank'],
+];
 export function faults(value, spec = {}) {
   const out = [];
   const say = (rule, msg) => out.push({ rule, msg });
   if (typeof value !== 'string') { say('type', 'not a string'); return out; }
+  if (spec.kind === 'prose' || spec.kind === 'label') {
+    const words = value.replace(/\{[^}]*\}/g, ' ');   // a placeholder's own name ({rep}) is the game's, not a word on screen
+    for (const [re, why] of JARGON) if (re.test(words)) say('plain', why);
+  }
   const max = limitOf(spec, 'max');
   if (spec.kind !== 'key' && !value.trim()) { if (spec.emptyOk) return out; say('empty', 'the field is empty'); }   // emptyOk: a key the shape demands of everyone that only one resident fills (Moss's nights)
   if (max && value.length > max) say('length', `${value.length} characters, the limit is ${max}`);

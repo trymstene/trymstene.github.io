@@ -19,29 +19,29 @@
       },
       "stand": {
         "from": "Fig Jr.",
-        "line": "The stand reports low staffing. Please report this week: two empty weeks in a row vacate the position."
+        "line": "The stand is short of staff. Please come in this week: two empty weeks in a row and the job is gone."
       }
     },
     "fired": {
       "post": {
         "from": "Stamp",
-        "line": "Two weeks with no sorting, so you are off the book. Ask again and you start at the first pile. Noted."
+        "line": "Two weeks with no sorting, so the job is gone. Ask again and you start from the first rank. Noted."
       },
       "condo": {
         "from": "Spinner",
-        "line": "Two weeks with no work done, so your name is off the arcade book. Ask again and you start from the first rung."
+        "line": "Two weeks with no work done, so the arcade job is gone. Ask again and you start from the first rank."
       },
       "store": {
         "from": "Pip",
-        "line": "Two weeks with nothing done, so your name is off the store book. Ask again and you start as new."
+        "line": "Two weeks with nothing done, so the store job is gone. Ask again and you start from the first rank."
       },
       "cafe": {
         "from": "Bean",
-        "line": "Two weeks without a cup, so you are off the Coffee Cup book. Ask again and you start from the first cup."
+        "line": "Two weeks without a cup, so the job is gone. Ask again and you start from the first rank."
       },
       "stand": {
         "from": "Fig Jr.",
-        "line": "Review complete: two weeks without a glass, so your position is vacated. You may reapply at entry level."
+        "line": "Review complete: two weeks without a glass, so the job is gone. Ask again and you start from the first rank."
       }
     },
     "news": {
@@ -69,11 +69,11 @@
   },
   "wage": {
     "from": "Nib",
-    "line": "I have filed {n} coins for the work you finished. They waited in the folder, as folders do.",
+    "line": "Your pay is here: {n} coins for the work you finished. I filed it myself.",
     "stamp": "PAID",
     "slip": "{pct} of the full week at {rate}",
-    "none": "Nothing was entered on the work list, so nothing was filed. I have kept the blank space tidy.",
-    "void": "NIL",
+    "none": "No work was done last week, so there is no pay this time.",
+    "void": "NONE",
     "at": {
       "store": "the general store",
       "condo": "the arcade",
@@ -101,11 +101,11 @@
     },
     "shed": {
       "from": "Pip",
-      "line": "I hear your shed is filling up. Good. A thing on a shelf is a thing with plans."
+      "line": "I hear your shed is filling up. Good. Now take things out and place them around your yard."
     },
     "week": {
       "from": "Nib",
-      "line": "The big book says {home} has been yours for one week. I thought you should know; it rarely volunteers."
+      "line": "The big book says {home} has been yours for one week now. Happy first week."
     }
   }
 }

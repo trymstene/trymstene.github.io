@@ -75,7 +75,7 @@ Opened the kiosk because the building already said COFFEE. Reads a fortune in ev
 
 ### `figjr` — Fig Jr., the lemonade stand and the fruit cart
 
-Gran Fig's grandson, running a one-cup stand like a corporation: boardroom words, a confident opening, then the honest number. Calls his grandmother 'the supplier'. Waters her trees before dawn and lets her think it was rain. Wheels the cart into the square at noon and calls it expansion. Walks her to her bench every evening and calls it on the way; it is not on the way.
+Gran Fig's grandson, running a one-cup stand like a corporation: boardroom words, a confident opening, then the honest number. Calls his grandmother Gran Fig, never a job title. Waters her trees before dawn and lets her think it was rain. Wheels the cart into the square at noon and calls it expansion. Walks her to her bench every evening and calls it on the way; it is not on the way.
 
 ### `spinner` — Spinner, the Arcade
 

@@ -1,27 +1,27 @@
 {
   "front": "This is Stamp’s post office. Your mailbox is here, with letters to read, replies to write, and sorting work from Stamp.",
   "title": "Your Mailbox",
-  "empty": "No letters in your mailbox. Its corners are very orderly.",
-  "noaddress": "Post goes to a house with a sign name. Your homestead fence has no name on it yet.",
-  "shut": "The post counter is closed. The scale is having a quiet moment.",
+  "empty": "No letters in your mailbox yet.",
+  "noaddress": "Post needs an address. Put a name on your homestead’s sign first.",
+  "shut": "The post counter is closed right now.",
   "from": "From {who}",
   "back": "Go back",
   "report": "Report this letter",
-  "reported": "The letter has left your mailbox. It will be read.",
+  "reported": "The letter is gone from your mailbox. Someone will check it.",
   "reply": "Write back",
   "sheet": "Writing to {who}",
   "send": "Send letter",
   "sent": "The letter is sent.",
-  "nopass": "The counter cannot find your house name yet. Your letter waits in the writing tray.",
-  "refused": "This letter stays in the writing tray.",
+  "nopass": "Your letter can’t go yet: save your pass first. What you wrote is kept.",
+  "refused": "This letter can’t be sent.",
   "drawers": {
-    "fresh": "Fresh",
+    "fresh": "New",
     "kept": "Kept",
-    "none": "Nothing new has come in. Opened post waits in Kept."
+    "none": "No new letters. Letters you have opened are in Kept."
   },
   "knock": {
     "line": "A knock from {who}",
-    "about": "Post from a new house waits at the door. Let them in to read it; later post comes straight in.",
+    "about": "A letter from someone new is at the door. Let them in to read it; their next letters come straight in.",
     "in": "Let in",
     "away": "Turn away",
     "gone": "The knock is gone. That house will not knock again."
@@ -63,11 +63,11 @@
       "This made me think of you.",
       "Wish you were here.",
       "I was here, briefly.",
-      "The view is doing most of the work.",
+      "Look where I am!",
       "I picked this spot on purpose.",
-      "Standing here seemed like a plan.",
+      "Having a great day here.",
       "Nothing urgent. Just a postcard.",
-      "The stamp has been given a job."
+      "Hello from Banana World!"
     ],
     "send": "Send postcard",
     "sent": "The postcard joins the outgoing mail.",
@@ -78,7 +78,7 @@
     "write": "Write a letter",
     "find": "A name or house name",
     "wait": "The book is opening.",
-    "empty": "Nobody is about just now. The book rests open.",
+    "empty": "Nobody is around right now.",
     "none": "That name or house name is not in the book."
   }
 }

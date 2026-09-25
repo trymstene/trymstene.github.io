@@ -4,7 +4,7 @@
 // P5 SPLIT: this file is the CHASSIS (camera, plates/phases, walking, doors,
 // HUD, the rAF loop, multiplayer, boot). The sections live in their own
 // modules — park-garden.js · park-critters.js · park-shops.js · park-npc.js ·
-// park-fountain.js · park-share.js — each exporting init<Section>(ctx) wired through ONE
+// park-share.js — each exporting init<Section>(ctx) wired through ONE
 // shared ctx object (live values like phase/pSpeed/camera cross as getters).
 // All imports are static → still one page bundle.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
@@ -29,7 +29,6 @@ import {
 import { initCritters } from './park-critters.js';
 import { initBirds } from './park-birds.js';
 import { initOldPeel, PEEL_BED_SOLID } from './park-npc.js';
-import { initFountain } from './park-fountain.js';
 import { initShops } from './park-shops.js';
 import { initGarden } from './park-garden.js';
 import { initShare } from './park-share.js';
@@ -344,7 +343,7 @@ function init() {
     for (const [p, title] of CIT_PLAQUES) {
       const w = wins[p] || null;
       out += '<div class="pk-cit__item">' + citFrame(p, title, w);
-      if (unkept[p] && !w) out += '<p class="pk-cit__note">' + citEsc(unkept[p].name) + ' led, but was not logged in.</p>';
+      if (unkept[p] && !w) out += '<p class="pk-cit__note">' + citEsc(unkept[p].name) + ' was ahead, but was not logged in, so it doesn’t count.</p>';
       out += '</div>';
     }
     out += '</div>';
@@ -898,7 +897,6 @@ function init() {
   ctx.weather = weather;   // the garden poll hands it the storm stamp
   const npc = initOldPeel(ctx);
   ctx.npc = npc;           // the weather gives him something to say
-  const fountain = initFountain(ctx, garden);
   const shops = initShops(ctx);
 
   view.addEventListener('click', (e) => {
@@ -908,7 +906,6 @@ function init() {
     const wy = (e.clientY - r.top + camY) / scale;
     hint(false);
     shops.clearPending();
-    fountain.clearPending();
     npc.clearPending();
     garden.clearPending();
     if (garden.tapEgg(wx, wy)) return;
@@ -933,7 +930,6 @@ function init() {
     if (garden.tapPost(wx, wy)) return;
     if (shops.tapShop(wx, wy)) return;
     if (shops.tapStand(wx, wy)) return;
-    if (fountain.tapFountain(wx, wy)) return;
     tgt.x = wx;
     tgt.y = wy;
   });
@@ -943,7 +939,7 @@ function init() {
     view,
     blocked: (e) => inside() || onChrome(e),
     toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
-    onArm: () => { hint(false); shops.clearPending(); fountain.clearPending(); npc.clearPending(); garden.clearPending(); },
+    onArm: () => { hint(false); shops.clearPending(); npc.clearPending(); garden.clearPending(); },
     onMove: (w) => { tgt.x = w.x; tgt.y = w.y; },
     first: () => track('park_steer'),
   });
@@ -1018,8 +1014,6 @@ function init() {
     critters.animalTick(dt);
     birds.birdTick(dt, now);
     critters.sqTick(dt);
-    fountain.tossTick();
-    fountain.coinWinTick();
     shops.cartTick(now);
     shops.standTick(now);
     garden.gardenTick();

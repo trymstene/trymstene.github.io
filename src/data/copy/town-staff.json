@@ -56,11 +56,11 @@
   },
   "promoQ": "You wanted to see me?",
   "promo": {
-    "bean": "Three turns of your last cup say {title}. The grounds never flatter.",
-    "figjr": "Review complete. Effective today, you are {title}. Division approves.",
+    "bean": "You are {title} now. I read it in your last cup, and the grounds never lie.",
+    "figjr": "Review complete. From today, you are {title}. Management approves.",
     "spinner": "Drumroll! Our newest {title} is you! The cabinets are applauding.",
     "pip": "You are {title} now. It was the last one on the shelf, and it fits you.",
-    "stamp": "I weighed your work. It came to exactly {title}. Noted."
+    "stamp": "I weighed your work. You are {title} now. Noted."
   },
   "promoMoment": "PROMOTED",
   "promoLine": "Now {title} at {where}",
@@ -69,7 +69,7 @@
   "week": "This week",
   "wage": "Wage so far",
   "payday": "Days to payday: {days}.",
-  "calls": "Today’s calls",
+  "calls": "Today’s tasks",
   "call": {
     "sweep": "Litter on the arcade floor",
     "fix": "A cabinet has gone dark",
@@ -77,9 +77,9 @@
     "serve": "Customers waiting",
     "deliver": "A parcel to deliver"
   },
-  "until": "Calls stay open for the rest of the day.",
+  "until": "Today’s tasks stay open until midnight.",
   "go": "Go to work",
-  "answer": "Answer the calls",
+  "answer": "Do today’s tasks",
   "quiet": "Nothing needs you right now.",
   "second": {
     "post": "Open your mailbox",
@@ -104,17 +104,17 @@
   },
   "demoted": {
     "bean": "The cups have spoken. You are {title} again; a better week wins the rank back.",
-    "figjr": "Restructuring. Effective today, you are {title}. Upward remains open.",
+    "figjr": "Restructuring. From today, you are {title} again. A better week moves you back up.",
     "spinner": "Not every show is a hit. You are {title} again; the stage is still yours.",
     "pip": "You are {title} again. Your old badge waits on the shelf until you earn it back.",
-    "stamp": "I weighed the last two weeks. You are {title} again. Noted, not for ever."
+    "stamp": "I weighed the last two weeks. You are {title} again. A better week wins it back."
   },
   "warnCard": "Another poor week here costs you a rank.",
   "last": {
     "full": "Last week was a full week: {xp} work XP extra.",
     "poor": "Under half last week’s work done: {xp} work XP taken back.",
     "empty": "Nothing done here last week: another empty week loses the job.",
-    "poorCups": "Most of last week’s drinks missed: {xp} work XP taken back."
+    "poorCups": "Most drinks missed the green band: {xp} work XP taken back."
   },
   "unlock": {
     "stand": {
@@ -127,7 +127,7 @@
       "keys": "Keys to the café: after a good shift you tidy the square nearest the café."
     },
     "condo": {
-      "streak": "Gold cabinets: a perfect repair glows gold all day, and runs are counted.",
+      "streak": "Gold cabinets: a perfect repair turns the cabinet gold all day.",
       "lamps": "The square’s lamps: one you put right counts as a repair for Spinner.",
       "litter": "The square’s litter: what you pick up out there counts as sweeping for Spinner.",
       "ghosts": "The night shift: a ghost you catch on the square counts as a repair for Spinner."
@@ -141,8 +141,8 @@
     "post": {
       "fifth": "A fifth pigeonhole for Banana Town’s own post, and the cards come faster.",
       "parcel": "Parcels: sort them, then weigh them on the post office scale.",
-      "registered": "Registered post: a red seal. On time, its XP counts twice; late, it is wrong.",
-      "round": "The satchel: when a round of sorting counts, carry three letters to their doors.",
+      "registered": "Registered post: red seals. Sort at once for double XP, or it counts as wrong.",
+      "round": "The satchel: after a good sorting round, carry three letters to their doors.",
       "bus": "The morning post: the mail bus leaves a bag at the bus stop for you to bring in."
     }
   },
@@ -153,16 +153,16 @@
     "ghost": "Spinner counts that ghost as one of your repairs."
   },
   "ref": {
-    "cafe": "Fig Jr.’s reference counts: the Coffee Cup starts you at its second rank.",
-    "condo": "Bean’s reference counts: the arcade starts you at its second rank.",
-    "store": "Spinner’s reference counts: the store starts you at its second rank.",
-    "post": "Pip’s reference counts: the post office starts you at its second rank."
+    "cafe": "Fig Jr. put in a good word: the Coffee Cup starts you at its second rank.",
+    "condo": "Bean put in a good word: the arcade starts you at its second rank.",
+    "store": "Spinner put in a good word: the store starts you at its second rank.",
+    "post": "Pip put in a good word: the post office starts you at its second rank."
   },
   "refCard": {
-    "stand": "Fig Jr.’s reference: the Coffee Cup would start you at its second rank.",
-    "cafe": "Bean’s reference: the arcade would start you at its second rank.",
-    "condo": "Spinner’s reference: the store would start you at its second rank.",
-    "store": "Pip’s reference: the post office would start you at its second rank."
+    "stand": "Fig Jr.’s good word would start you at the Coffee Cup’s second rank.",
+    "cafe": "Bean’s good word would start you at the arcade’s second rank.",
+    "condo": "Spinner’s good word would start you at the store’s second rank.",
+    "store": "Pip’s good word would start you at the post office’s second rank."
   },
   "memento": {
     "stand": "Fig Jr. gives you an apple crate for your homestead. It is in your shed.",

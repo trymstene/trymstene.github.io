@@ -28,7 +28,7 @@
   ],
   "store": {
     "greet": "Buy things for your homestead here. Tomorrow the shelf has different ones.",
-    "shut": "The bell is quiet, the shutters are down, and Pip has taken the shelf indoors.",
+    "shut": "Pip’s shelf is empty for now. It fills up again when the square is in better shape.",
     "needs": "House needs another room",
     "van": "Comes by van",
     "sold": [
@@ -44,7 +44,7 @@
   },
   "board": {
     "title": "Square Report",
-    "intro": "Things break in this shared square. Walk up to fix one; every fix lifts it for everyone.",
+    "intro": "Every player shares this square, and things in it break. Walk up to a broken thing to fix it; every fix helps everyone.",
     "todo": "Needs doing",
     "nothing": "All fixed today. More tomorrow.",
     "fixes": "Things fixed today",
@@ -52,16 +52,16 @@
     "found": "Cursed things found",
     "next": "Next",
     "health": "town health",
-    "omen": "Crows fill every perch, a ghost walks by daylight, and the sky is wrong at the edges.",
-    "night": "Keep to the lit lamps. The night stall trades, and anything lying about may be taken.",
-    "after": "The curse left dark lamps, shut doors and litter. The square needs hands today."
+    "omen": "A cursed night is coming: crows on every bench, and a ghost out in daylight.",
+    "night": "It’s a cursed night. Stay near the lit lamps. Cursed things you find are yours, and the night stall buys them.",
+    "after": "Last night’s curse left dark lamps, shut doors and litter. Help fix them today."
   },
   "merchant": {
     "name": "Fine Goods",
-    "greet": "Rare pieces cost extra coins. They have travelled farther than the fountain water.",
+    "greet": "Rare things from far away. They cost a few more coins than Pip’s.",
     "lines": [
       "{item} has crossed several cobbles to meet you.",
-      "A costly piece, but the crate was exceptionally stubborn.",
+      "A costly piece, but worth every coin.",
       "{item} is wrapped up. The wrapping is complimentary.",
       "That one does not visit Pip’s shelf.",
       "Coins well spent. The stall approves."
@@ -69,7 +69,7 @@
   },
   "vendor": {
     "name": "Night Trading",
-    "greet": "The dark makes a tidy shop. These pieces are waiting quietly.",
+    "greet": "I buy the cursed things you find, and I sell a few of my own.",
     "bought": "{item} is back where it can misbehave politely.",
     "lines": [
       "{item} prefers the dark, but it will manage indoors.",
@@ -110,9 +110,9 @@
     "This shop cannot open while the square is broken. Fix things in the square and it opens again."
   ],
   "work": {
-    "crate": "That crate is heavier than it looks, which is saying something.",
+    "crate": "A heavy crate: you walk slower while you carry it.",
     "stocked": "There it is: a full shelf, ready for the customers.",
-    "full": "Every shelf is full. Leave them looking pleased.",
+    "full": "Every shelf is full. Nothing more to stock today.",
     "at": {
       "post": "the Post Office",
       "stand": "the lemonade stand",
@@ -210,12 +210,12 @@
   },
   "toasts": {
     "road": "Heading south to the park.",
-    "lure": "Lures work at the beach pier, where they arm for casts. Nothing to do here.",
+    "lure": "Lures only work when you fish at the beach pier. Nothing to do with one here.",
     "warming": "warming up",
     "asleep": "This cabinet is not answering. Try again in a moment.",
     "prize": "You won {prizes}. It is in your wardrobe now.",
     "best": "New best: {best}. #{rank} of {players} this week.",
-    "haunt": "A cold wind crosses the square. Tonight is haunted."
+    "haunt": "Tonight is haunted: bolder ghosts, and a cursed thing to find."
   },
   "pocket": {
     "firework": "Firework",
@@ -242,8 +242,8 @@
       "{n} open dumpsters"
     ],
     "graffiti": [
-      "a shopfront tag",
-      "{n} shopfront tags"
+      "graffiti on a shop",
+      "graffiti on {n} shops"
     ],
     "fountain": [
       "a dry fountain",

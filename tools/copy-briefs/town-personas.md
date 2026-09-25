@@ -76,7 +76,7 @@ someone new. Keep every fact below true.
   fortune in every cup, flat present tense, small and usually true. Once read a cup, went quiet,
   rinsed it, and has never read her own since. Lunches with Stamp, both saying nothing.
 - `figjr` — **Fig Jr.**, the lemonade stand and the fruit cart. Gran Fig's grandson, running a
-  one-cup stand like a corporation. Calls his grandmother "the supplier". Waters her trees before
+  one-cup stand like a corporation. Calls his grandmother Gran Fig, never a job title. Waters her trees before
   dawn and lets her think it was rain. Walks her to her bench every evening and calls it *on the
   way*; it is not on the way.
 - `spinner` — **Spinner**, the Arcade: its cabinets, its high-score book and its Pong paddle. Three bells
@@ -91,7 +91,7 @@ someone new. Keep every fact below true.
   waters before dawn, remembers whose mother wore which hat, and keeps an empty chair for somebody
   who used to sit in it. Every one of those is the park elder's, and Trym said so.
   What is FIXED: she is old, she owns the orchard and the west garden, she is Fig Jr.'s grandmother
-  and his supplier. **Everything else is open, and should be the opposite of a gentle elder.**
+  and grows the fruit he sells. **Everything else is open, and should be the opposite of a gentle elder.**
   She does not have to love the trees. She does not have to be sentimental about the past — the most
   useful version of her may be the only person in town who refuses to look backwards at all. She does
   not need a memorial object, and she must not have one. Give her something she WANTS, not something

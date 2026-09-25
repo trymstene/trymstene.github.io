@@ -1,6 +1,7 @@
 // 🪧 the homestead's claim waits for the story (Trym, 18 Sep 2026): a new banana is not asked to name the place;
 // the sign's hint is hidden and a tap on the sign says why; at the story's move-in the sign asks, and the card closes.
 import { test, expect } from '@playwright/test';
+import NOTES from '../src/data/copy/homestead-notes.json' with { type: 'json' };
 
 // a real tap on the sign: stand beside it, then click the sign sprite itself (the proof's locator), a
 // few times if need be — a far tap only walks the banana there
@@ -36,7 +37,7 @@ test('a new banana is not asked to name the homestead until the story moves them
   // the sign, tapped early: a word, no card
   await tapSign(page);
   expect(await page.locator('#hsClaim').isHidden()).toBe(true);
-  await expect(page.getByText('start with Nib')).toBeVisible();
+  await expect(page.getByText(NOTES.signEarly), 'the sign says where the story starts, in the copy file’s words').toBeVisible();
   // the story's move-in: the hint shows, the sign asks, and the card can be closed
   await page.evaluate(() => localStorage.setItem('bwq-c1', JSON.stringify({ s: 15, k: {}, res: 0, done: 0, resSet: 1 })));
   await page.reload({ waitUntil: 'domcontentloaded' });

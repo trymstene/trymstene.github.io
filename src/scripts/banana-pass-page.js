@@ -480,7 +480,7 @@ function paint() {
   const rk = rankFor(lv.level);
   el('psRank').innerHTML = '<span class="ps-rankchip">' + (rep ? 'LVL ' + lv.level + ' · ' : '') + rk.title.toUpperCase() + '</span>'
     + (rep ? '<span class="ps-rankbar"><i style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></i></span>'
-      + '<span class="ps-ranknote">' + lv.into + ' / ' + lv.need + ' rep — what you get for showing up</span>' : '');
+      + '<span class="ps-ranknote">' + lv.into + ' / ' + lv.need + ' XP — what you get for showing up</span>' : '');
 
   // — patches: light the earned, pin the first few to the card —
   // ⚠️ clear first: on the repaint these classes and tiles are already there
@@ -1177,9 +1177,9 @@ function renderNews() {
   el('psNewsH').hidden = !news;
   el('psNotices').innerHTML =
     (pend ? '<p class="ps-pendingline">' + pend + (pend === 1 ? ' banana is' : ' bananas are')
-      + ' with the banana guy for review — the verdict usually lands within 48 hours.</p>' : '')
+      + ' waiting for review — you’ll usually hear back within 48 hours.</p>' : '')
     + (catPend ? '<p class="ps-pendingline">' + catPend + (catPend === 1 ? ' item is' : ' items are')
-      + ' with the club for review — approved pieces go on sale with your name on them.</p>' : '')
+      + ' waiting for review — approved pieces go on sale with your name on them.</p>' : '')
     + list.filter((n) => !n.read || ++k <= 2)
       .map((n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
         + '<span class="ps-notice__icon">' + n.icon + '</span>'
