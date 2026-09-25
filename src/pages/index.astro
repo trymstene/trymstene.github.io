@@ -49,14 +49,15 @@ import citizens from '../data/citizen.json';
 
 // 🎉 THE HERO (26 Sep 2026). Trym: "hello there, and welcome to BANANA WORLD … small text on top and banana world in
 // a slight arc and big text", "some movement and animations are nice and lively overall", the buttons with "no icons".
-// The party: rays turning behind a spotlit banana, confetti, a crew in builder outfits dancing on the same beat (rows
-// of /assets/hero/dancers.png, tools/build-hero-dancers.py), a coin for every tap on a dancer. The words are
-// src/data/copy/home-hero.json. The rules it paid for (whole-pixel crew, clip not hide, the pill never over the banana,
-// numbers that count what the line says) are design library §38; the page's inline CSS keeps only labels, because it
-// ships to every visitor as written.
+// The party: rays turning behind a spotlit banana, confetti, a crew in builder outfits dancing on the same beat (one
+// strip each, the builder's own render resized once: tools/build-hero-dancers.py). The words are
+// src/data/copy/home-hero.json. The rules it paid for (the builder's render never resampled, clip not hide, numbers that
+// count what the line says) are design library §38; the page's inline CSS keeps only labels, because it ships to every
+// visitor as written.
 import W from '../data/copy/home-hero.json';
 import homeStats from '../data/home-stats.json';
 import { cleanName } from '../lib/player-name.js';
+import CREW from '../data/hero-dancers.json';
 // the name on its arch, a letter at a time: --t runs -1..1 across the whole name (one line), --tw across its own word
 // (the two lines of a phone)
 const NAME = W.title.split(' ');
@@ -67,8 +68,8 @@ const LETTERS = NAME.map((w) => {
   at += w.length + 1;
   return row;
 });
-// the crew by sheet row, nearest the banana first: party, sombrero, duck, viking | crown, cowboy, propeller, top hat
-const CREW_L = [0, 1, 2, 3], CREW_R = [4, 5, 6, 7];
+// the crew, nearest the banana first: party, sombrero, duck, viking | crown, cowboy, propeller, top hat
+const CREW_L = CREW.crew.slice(0, 4), CREW_R = CREW.crew.slice(4, 8);
 const CONF_COLORS = ['#ff4d6d', '#55aaff', '#111111', '#fffdf5', '#58c05c', '#ff7bac'];
 const CONFETTI = Array.from({ length: 24 }, (_, i) => `left:${(i * 37 + 11) % 100}%;background:${CONF_COLORS[i % CONF_COLORS.length]};`
   + `animation-duration:${(6 + (i % 5) * 1.6).toFixed(1)}s;animation-delay:-${((i * 1.37) % 9).toFixed(2)}s`);
@@ -122,11 +123,11 @@ const FEATURES = [
   <style is:inline slot="head">
     /* the hero: design library §38 */
     .hw {
-      --hs: var(--hs2, 2);
+      --ax: 2;
       position: relative; overflow: hidden; overflow: clip; isolation: isolate; text-align: center;
       background: var(--banana); padding: 1.1rem 1rem 2.6rem;
     }
-    @media (min-width: 900px) { .hw { --hs: var(--hs3, 3); padding-top: 1.4rem; } }
+    @media (min-width: 900px) { .hw { --ax: 3; padding-top: 1.4rem; } }
     .hw__conf { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
     .hw__conf b { position: absolute; top: -14px; width: 9px; height: 9px; animation: hwFall linear infinite; }
     .hw__conf b:nth-child(3n) { width: 7px; height: 12px; }
@@ -143,11 +144,11 @@ const FEATURES = [
     .hw__name {
       display: block; margin: 0 auto 0.12em; text-transform: uppercase; color: var(--paper);
       font-size: clamp(2.6rem, 16.5vw, 4.6rem); font-size: clamp(2.6rem, min(16.5vw, 8.4svh), 4.6rem); line-height: 1.02; letter-spacing: 0.01em;
-      -webkit-text-stroke: 0.055em var(--ink); paint-order: stroke fill; text-shadow: 0.055em 0.075em 0 var(--hot);
+      -webkit-text-stroke: 0.055em var(--ink); paint-order: stroke fill;
     }
     .hw__word { display: block; white-space: nowrap; }
     .hw__l { --u: var(--tw); display: inline-block; transform: translateY(calc(var(--u) * var(--u) * 0.2em)) rotate(calc(var(--u) * 7deg)); }
-    .hw__l > span { display: inline-block; animation: hwPop 0.6s cubic-bezier(0.3, 1.7, 0.5, 1) calc(var(--k) * 45ms) backwards, hwWave 2.4s ease-in-out calc(var(--k) * -0.14s) infinite; }
+    .hw__l > span { display: inline-block; filter: drop-shadow(0.05em 0.07em 0 var(--ink)); animation: hwPop 0.6s cubic-bezier(0.3, 1.7, 0.5, 1) calc(var(--k) * 45ms) backwards, hwWave 2.4s ease-in-out calc(var(--k) * -0.14s) infinite; }
     @keyframes hwPop { from { scale: 0.3; } }
     @keyframes hwWave { 50% { translate: 0 -0.07em; } }
     @media (min-width: 700px) {
@@ -177,64 +178,21 @@ const FEATURES = [
       border-radius: 50%; background: rgba(60, 40, 0, 0.18);
     }
     .hw__banana { position: relative; display: block; width: 100%; height: auto; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-    .hw__crew { position: absolute; bottom: 4%; display: flex; align-items: flex-end; gap: calc(5px * var(--hs)); pointer-events: none; }
+    .hw__crew { position: absolute; bottom: 4%; display: flex; align-items: flex-end; gap: calc(var(--ax) * 5px); pointer-events: none; }
     .hw__crew--l { right: 86%; flex-direction: row-reverse; }
     .hw__crew--r { left: 86%; }
-    .hw__d {
-      position: relative; flex: none; overflow: hidden; overflow: clip; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent;
-      width: calc(35px * var(--hs)); height: calc(51px * var(--hs));
-    }
+    .hw__d { position: relative; flex: none; overflow: hidden; overflow: clip; width: calc(var(--cols) * var(--ax) * 1px); height: calc(var(--rows) * var(--ax) * 1px); }
     .hw__d::before {
-      content: ''; position: absolute; left: 0; top: 0; width: calc(280px * var(--hs)); height: 100%;
-      background: url(/assets/hero/dancers.png) 0 calc(-51px * var(--hs) * var(--row)) / calc(280px * var(--hs)) calc(408px * var(--hs)) no-repeat;
-      image-rendering: pixelated; animation: hwDance 0.8s steps(8) infinite;
+      content: ''; position: absolute; left: 0; top: 0; width: calc(var(--cols) * var(--ax) * 8px); height: 100%;
+      background: var(--img) 0 0 / 100% 100% no-repeat; animation: hwDance 0.8s steps(8) infinite;
     }
-    @keyframes hwDance { to { transform: translateX(calc(-280px * var(--hs))); } }
+    @keyframes hwDance { to { transform: translateX(calc(var(--cols) * var(--ax) * -8px)); } }
     .hw__crew--r .hw__d { scale: -1 1; }
-    .hw__d.is-hop { animation: hwHop 0.45s cubic-bezier(0.3, 0.7, 0.4, 1); }
-    @keyframes hwHop { 40% { translate: 0 -30%; } 70% { translate: 0 0; scale: var(--flip, 1) 0.9; } }
-    .hw__crew--r .hw__d.is-hop { --flip: -1; }
-    .hw__d:nth-child(n+2 of .hw__d) { display: none; }
-    @media (min-width: 560px) { .hw__d:nth-child(n+2 of .hw__d) { display: block; } .hw__d:nth-child(n+3 of .hw__d) { display: none; } }
-    @media (min-width: 1100px) { .hw__d:nth-child(n+3 of .hw__d) { display: block; } .hw__d:nth-child(n+4 of .hw__d) { display: none; } }
-    @media (min-width: 1300px) { .hw__d:nth-child(n+4 of .hw__d) { display: block; } }
+    .hw__d:nth-of-type(n+2) { display: none; }
+    @media (min-width: 560px) { .hw__d:nth-of-type(n+2) { display: block; } .hw__d:nth-of-type(n+3) { display: none; } }
+    @media (min-width: 1100px) { .hw__d:nth-of-type(n+3) { display: block; } .hw__d:nth-of-type(n+4) { display: none; } }
+    @media (min-width: 1300px) { .hw__d:nth-of-type(n+4) { display: block; } }
 
-    /* the "tap a dancer" sticker: on a phone it starts past the big banana's hand */
-    .hw__hint {
-      position: absolute; bottom: calc(100% - 11px * var(--hs)); left: 12px; z-index: 2; white-space: nowrap; pointer-events: none;
-      font-weight: 800; font-size: 0.78rem; background: var(--paper); border: 3px solid var(--ink); padding: 0.1rem 0.45rem;
-      box-shadow: 3px 3px 0 var(--ink); transform: rotate(3deg);
-      animation: hwHintIn 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 2.2s backwards, hwBob 1.6s ease-in-out 2.7s infinite;
-    }
-    .hw__hint::after {
-      content: ''; position: absolute; left: 14px; top: 100%; border: 7px solid transparent; border-top-color: var(--ink);
-    }
-    @media (min-width: 560px) {
-      .hw__hint { left: calc(17.5px * var(--hs)); font-size: 0.85rem; padding: 0.15rem 0.55rem; transform: translateX(-50%) rotate(3deg); }
-      .hw__hint::after { left: 50%; margin-left: -7px; }
-    }
-    @keyframes hwHintIn { from { opacity: 0; scale: 0.4; } }
-    @keyframes hwBob { 50% { translate: 0 -5px; } }
-    .hw.is-played .hw__hint { display: none; }
-
-    /* the coin pill, in the flow under the stage (never over the banana) */
-    .hw__coins {
-      position: relative; z-index: 2; display: flex; align-items: center; gap: 0.4rem; width: max-content; max-width: calc(100% - 0.5rem);
-      margin: 0.5rem auto -0.3rem; text-align: left; line-height: 1.2; text-decoration: none; color: var(--ink);
-      background: var(--paper); border: 3px solid var(--ink); border-radius: 1.3rem; padding: 0.25rem 0.8rem 0.25rem 0.4rem;
-      box-shadow: 3px 3px 0 var(--ink); font-weight: 800; font-size: 0.95rem;
-    }
-    .hw__coin { width: 22px; height: 22px; flex: none; background: url(/assets/banana-stand/coin.png) 0 0 / 100% 100%; }
-    .hw__coins.is-bump { animation: hwBump 0.3s ease-out; }
-    @keyframes hwBump { 40% { scale: 1.15; } }
-    .hw__done { display: none; align-items: center; padding-left: 0.5rem; border-left: 2px solid var(--ink); }
-    .hw__coins.is-done { background: var(--ink); color: var(--banana); animation: hwBump 0.4s ease-out; }
-    .hw__coins.is-done .hw__done { display: inline-flex; border-left-color: var(--banana); }
-    .hw__fly {
-      position: absolute; z-index: 4; width: 26px; height: 26px; margin-left: -13px; pointer-events: none;
-      background: url(/assets/banana-stand/coin-spin.png) 0 0 / 600% 100%; animation: hwCoin 0.5s steps(6) infinite;
-    }
-    @keyframes hwCoin { to { background-position: 120% 0; } }
     .hw__bit { position: absolute; z-index: 4; width: 9px; height: 9px; pointer-events: none; }
 
     /* the line and the two doors: no icons, a drawn arrow */
@@ -255,7 +213,7 @@ const FEATURES = [
     .hw--rest *, .hw--rest *::before, .hw--rest *::after { animation-play-state: paused !important; }
     @media (prefers-reduced-motion: reduce) {
       .hw__conf { display: none; }
-      .hw__rays, .hw__l > span, .hw__d::before, .hw__hint, .hw__go::after, .hw__arrow { animation: none; }
+      .hw__rays, .hw__l > span, .hw__d::before, .hw__go::after, .hw__arrow { animation: none; }
     }
 
     /* the ticker */
@@ -364,8 +322,7 @@ const FEATURES = [
   </div>
 
   {/* 🎉 the hero: the hello, the arched name, the banana and its crew, the two doors */}
-  <section class="hw" id="hero">
-    <script is:inline>(function(){var d=window.devicePixelRatio||1,s=document.documentElement.style;s.setProperty('--hs2',Math.max(1,Math.round(2*d))/d);s.setProperty('--hs3',Math.max(1,Math.round(3*d))/d);})();</script>
+  <section class="hw" id="hero" style={`--cols:${CREW.cols};--rows:${CREW.rows}`}>
     <div class="hw__conf" aria-hidden="true">{CONFETTI.map((s) => <b style={s}></b>)}</div>
     <h1 class="hw__title">
       <span class="kicker hw__kicker">{W.kicker}</span>
@@ -375,15 +332,11 @@ const FEATURES = [
     </h1>
     <div class="hw__stage">
       <div class="hw__rays" aria-hidden="true"></div>
-      <div class="hw__crew hw__crew--l" aria-hidden="true">{CREW_L.map((r) => <i class="hw__d" style={`--row:${r}`}></i>)}</div>
+      <div class="hw__crew hw__crew--l" aria-hidden="true">{CREW_L.map((n) => <i class="hw__d" style={`--img:url(/assets/hero/dancer-${n}.webp)`}></i>)}</div>
       <img class="hw__banana" src="/assets/dancing-banana-transparent.gif" alt={W.alt}
            width="500" height="500" fetchpriority="high" draggable="false">
-      <div class="hw__crew hw__crew--r" aria-hidden="true">
-        <span class="hw__hint">{W.play.hint}</span>
-        {CREW_R.map((r) => <i class="hw__d" style={`--row:${r}`}></i>)}
-      </div>
+      <div class="hw__crew hw__crew--r" aria-hidden="true">{CREW_R.map((n) => <i class="hw__d" style={`--img:url(/assets/hero/dancer-${n}.webp)`}></i>)}</div>
     </div>
-    <a class="hw__coins" href="/town/" data-place="hero-game" hidden><i class="hw__coin" aria-hidden="true"></i><b>0</b><span class="hw__done">{W.play.done}<span class="hw__arrow" aria-hidden="true">→</span></span></a>
     <p class="hw__tag">{W.tag}</p>
     {/* 🌍 ONE DOOR (Trym, 13 Aug): the per-area buttons collapsed into a
          single entrance — the world is one place now and the town is its
@@ -566,63 +519,28 @@ const FEATURES = [
       }, 4200);
     }
 
-    // 🎉 THE HERO: tap a dancer and a coin flies into the pill under the banana (at five it becomes a door into the
-    // town, where coins are kept; these are not), tap the banana and it throws confetti. Counted as hero_play (the
-    // first tap) and hero_play_5 (the fifth coin); the pill's own tap is a world_door from "hero-game" (main.js).
+    // 🎉 THE HERO: tap the banana and it throws confetti, counted once a page view as hero_play
     const hero = document.getElementById('hero');
     const send = (name) => { try { if (window.gtag) window.gtag('event', name); } catch (e) { /* analytics never breaks the toy */ } };
     if (hero) {
-      const pill = hero.querySelector('.hw__coins');
-      const count = pill.querySelector('b');
       const banana = hero.querySelector('.hw__banana');
-      let coins = 0;
-      const play = () => { if (hero.classList.contains('is-played')) return; hero.classList.add('is-played'); send('hero_play'); };
-      const spot = (x, y) => { const h = hero.getBoundingClientRect(); return [x - h.left, y - h.top]; };
-      const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
       const COLS = ['#ff4d6d', '#55aaff', '#111111', '#fffdf5', '#58c05c', '#ff7bac'];
-      hero.addEventListener('click', (e) => {
-        const d = e.target.closest('.hw__d');
-        if (d) {
-          play();
-          restart(d, 'is-hop');
-          pill.hidden = false;
-          const r = d.getBoundingClientRect(), p = count.getBoundingClientRect();
-          const [x, y] = spot(r.left + r.width / 2, r.top + r.height * 0.1);
-          const [px, py] = spot(p.left + p.width / 2, p.top + p.height / 2);
-          const c = document.createElement('i');
-          c.className = 'hw__fly';
-          c.style.left = x + 'px';
-          c.style.top = y + 'px';
-          hero.appendChild(c);
-          c.animate([
-            { transform: 'translate(0, 0) scale(0.6)' },
-            { transform: 'translate(0, -50px) scale(1.25)', offset: 0.35 },
-            { transform: `translate(${px - x}px, ${py - y - 11}px) scale(0.8)` },
-          ], { duration: 720, easing: 'ease-in-out' }).onfinish = () => {
-            c.remove();
-            count.textContent = String(++coins);
-            restart(pill, 'is-bump');
-            if (coins === 5) { pill.classList.add('is-done'); send('hero_play_5'); }
-          };
-          return;
-        }
-        if (e.target === banana) {
-          play();
-          banana.animate([{ scale: '1' }, { scale: '1.07' }, { scale: '1' }], { duration: 320, easing: 'ease-out' });
-          const [x, y] = spot(e.clientX, e.clientY);
-          for (let i = 0; i < 18; i++) {
-            const b = document.createElement('b');
-            b.className = 'hw__bit';
-            b.style.cssText = `left:${x}px;top:${y}px;background:${COLS[i % COLS.length]}`;
-            hero.appendChild(b);
-            const a = (i / 18) * Math.PI * 2 + Math.random() * 0.35, v = 80 + Math.random() * 90;
-            const dx = Math.cos(a) * v, dy = Math.sin(a) * v - 40;
-            b.animate([
-              { transform: 'translate(-50%, -50%) rotate(0deg)', opacity: 1 },
-              { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${220 + i * 25}deg)`, opacity: 1, offset: 0.55 },
-              { transform: `translate(calc(-50% + ${dx * 1.25}px), calc(-50% + ${dy + 150}px)) rotate(${420 + i * 35}deg)`, opacity: 0 },
-            ], { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)' }).onfinish = () => b.remove();
-          }
+      banana.addEventListener('click', (e) => {
+        if (!hero.classList.contains('is-played')) { hero.classList.add('is-played'); send('hero_play'); }
+        banana.animate([{ scale: '1' }, { scale: '1.07' }, { scale: '1' }], { duration: 320, easing: 'ease-out' });
+        const h = hero.getBoundingClientRect(), x = e.clientX - h.left, y = e.clientY - h.top;
+        for (let i = 0; i < 18; i++) {
+          const b = document.createElement('b');
+          b.className = 'hw__bit';
+          b.style.cssText = `left:${x}px;top:${y}px;background:${COLS[i % COLS.length]}`;
+          hero.appendChild(b);
+          const a = (i / 18) * Math.PI * 2 + Math.random() * 0.35, v = 80 + Math.random() * 90;
+          const dx = Math.cos(a) * v, dy = Math.sin(a) * v - 40;
+          b.animate([
+            { transform: 'translate(-50%, -50%) rotate(0deg)', opacity: 1 },
+            { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${220 + i * 25}deg)`, opacity: 1, offset: 0.55 },
+            { transform: `translate(calc(-50% + ${dx * 1.25}px), calc(-50% + ${dy + 150}px)) rotate(${420 + i * 35}deg)`, opacity: 0 },
+          ], { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)' }).onfinish = () => b.remove();
         }
       });
       // every loop in the hero rests while it is off screen

@@ -5,10 +5,6 @@
   "alt": "The Dancing Banana GIF, created by Trym Stene in 1999",
   "enter": "Enter Banana World",
   "make": "Make a banana",
-  "play": {
-    "hint": "tap a dancer",
-    "done": "Nice moves. In Banana Town you keep the coins"
-  },
   "ticker": {
     "world": "{n} bananas in Banana World right now",
     "worldOne": "1 banana in Banana World right now",

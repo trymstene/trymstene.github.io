@@ -32,11 +32,10 @@ async function tap(page, selector) {
   return (await doors(page)).slice(before);
 }
 
-test('the frontpage: each door into the town is one world_door — hero, the dancers’ coin pill, doors, nav — and another area still counts once', async ({ page }) => {
+test('the frontpage: each door into the town is one world_door — hero, doors, nav — and another area still counts once', async ({ page }) => {
   const errs = await open(page, '/');
   const cases = [
     ['.hw__go', { area: 'town', from: 'hero' }],
-    ['.hw__coins', { area: 'town', from: 'hero-game' }],
     ['.bwl-hero__cta', { area: 'town', from: 'doors' }],
     ['.bwl-card[href="/town/"]', { area: 'town', from: 'doors' }],
     ['.bwl-cta a[href="/town/"]', { area: 'town', from: 'doors' }],

@@ -720,7 +720,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | — | No front-facing standing pose | the town walk's `standingPose` check (⚠️ it compared a `"frame:tool"` string to numbers and could not fail until 25 Sep 2026) |
 | 23 | A resident at their post is never a statue: sway, glance, dance, talk | the town walk's `lively` check (`tests/town-life.spec.mjs`) |
 | 37 | Every area explains itself under its frame, on the one sheet | `check-design.mjs` (an area page without `id="what"` and `id="do"`, without `/css/area-guide.css`, or styling a guide class of its own fails) + `tests/town-guide.spec.mjs` (the town's windows fill their box at whole pixels) |
-| 38 | The front page's party clips (never scrolls), its crew is whole device pixels, its coin pill never covers the banana, its ticker's numbers are the stats file's read low and its live lines come only when the world answers | `tests/home-hero.spec.mjs` (a CSS property cannot be grepped for a meaning, so the walk asserts the outcome at 360–1440 px) |
+| 38 | The front page's party clips (never scrolls), its crew is the builder's strips on whole CSS pixels with nothing to tap, the name's shadow is a black drop-shadow, its ticker's numbers are the stats file's read low and its live lines come only when the world answers | `tests/home-hero.spec.mjs` (a CSS property cannot be grepped for a meaning, so the walk asserts the outcome at 360–1440 px) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1150,21 +1150,30 @@ hero buttons *"not a big fan of the emojis / icons … maybe its better with no 
 based on popularity"*. Built in `src/pages/index.astro`, words in `src/data/copy/home-hero.json`.
 
 - **The party is transform and opacity only, and it rests.** Rays turn behind a spotlit banana, confetti falls, the
-  name bobs a letter at a time, a crew in builder outfits dances either side on the GIF's 0.8 s beat
-  (`/assets/hero/dancers.png`, `tools/build-hero-dancers.py`, composed exactly like the builder). All of it pauses
+  name bobs a letter at a time, a crew in builder outfits dances either side on the GIF's 0.8 s beat. All of it pauses
   while the hero is off screen (`.hw--rest`) and stands still under reduced motion.
-- **The crew is whole device pixels (§6, §25).** A one-line script before the hero sets `--hs2`/`--hs3` to 2 and 3
-  snapped to k/devicePixelRatio; the strip steps by `transform` inside a clipped box of whole width, never by
-  `background-position`.
+- **The crew is the builder's own render, resized ONCE.** `tools/build-hero-dancers.py` draws every frame through
+  `tools/banana_render.py` (drawComposite's mirror, the one the print-parity rig holds to the builder) at the builder's
+  native 469×498, crops all 64 frames on one box snapped to the banana's 13 px grid, and resizes each frame once with an
+  area filter to exactly 6 px an art pixel; the page shows 2 or 3 CSS px an art pixel, one file pixel per device pixel
+  on a 3× phone and a 2× laptop. The first build sampled every frame back onto the banana's art grid, and every hat —
+  which the builder places by its anchor, not on that grid — lost cells (Trym: *"many pixel errors and looks a bit
+  broken in the details … Better to take the pure exports and resizing them"*). **Never resample the builder's art onto
+  a grid it was not drawn on.** One lossless WebP strip per outfit, 4–5 KB each, so a phone loads two; the strip steps
+  by `transform` inside a clipped box of whole CSS width, never by `background-position` (§6).
+- **The name's shadow is black, and a drop-shadow on each letter** (Trym: *"black is better"*). WebKit drops a
+  `text-shadow` on text that sets `paint-order` (the outline outside the fill), so the pink first version showed no
+  shadow at all in Safari; `filter: drop-shadow` draws the same in both engines, outline included, and each letter
+  still moves as one layer.
 - **A decorative layer bigger than the page CLIPS, it never HIDES.** The rays are wider than any screen, and
   `overflow: hidden` made the hero a scroll container: scrolling a dancer into view (and so a keyboard focus, or
   find-in-page) slid the whole hero 47 px sideways. `overflow: clip` scrolls nothing. The same rule as `html`/`body`
   in `styles.css` ("CLIP, NOT HIDDEN"), one level down.
 - **Doors have no icons; the arrow is drawn and moves.** Every "Enter Banana World" on the page is the copy file's
   words plus a drawn arrow that nudges — no globe, no palette.
-- **A toy's reward never covers the star.** The coin pill sits IN THE FLOW under the stage (a shift after a tap is
-  not a layout shift) — the first build hung it over the stage and it covered the banana's feet, and on a phone its
-  five-coin line ran off both edges. The hint sticker starts past the big banana's hand on a phone.
+- **No toy on the crew.** A coin for every tap on a dancer, a pill under the banana counting them and a "tap a dancer"
+  sticker were built and taken out the same night (Trym: *"it becomes noise with that extra coin-element underneath"*).
+  A tap on the big banana throws confetti, and that is all the hero does when touched.
 - **The ticker's numbers count what the line says, read low.** All-time floors from GA4
   (`tools/build-home-stats.py` → `src/data/home-stats.json`, two significant figures rounded DOWN, printed with a "+"):
   a line about PEOPLE reads the event's users (`rave_join` fires on every reconnect, so "danced at the rave" is

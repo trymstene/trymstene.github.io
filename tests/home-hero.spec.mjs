@@ -1,13 +1,15 @@
 // 🎉 THE FRONT PAGE'S PARTY (26 Sep 2026). Trym: "hello there, and welcome to BANANA WORLD … small text on top and
 // banana world in a slight arc and big text", "some movement and animations are nice and lively overall", the hero
-// buttons with "no icons", a crew you can tap, and a live ticker of the world's best numbers "based on popularity".
+// buttons with "no icons", a crew either side, and a live ticker of the world's best numbers "based on popularity"; then
+// the crew as "the pure exports", no coin pill ("it becomes noise") and a black shadow on the name ("black is better").
 // Walked on the BUILT page: the words are the copy file's, the main door stays above the fold down to a 360×640 phone,
-// the crew stands at whole device pixels, five coins turn the pill into a door into the town without covering the
-// banana, the ticker's numbers are the stats file's read low, the live lines come only when the world answers, and
-// nothing loops under reduced motion or off screen.
+// the crew is the builder's own strips on whole CSS pixels, a tap on the banana throws confetti and nothing else appears,
+// the ticker's numbers are the stats file's read low, the live lines come only when the world answers, and nothing loops
+// under reduced motion or off screen.
 import { test, expect } from '@playwright/test';
 import W from '../src/data/copy/home-hero.json' with { type: 'json' };
 import STATS from '../src/data/home-stats.json' with { type: 'json' };
+import CREW from '../src/data/hero-dancers.json' with { type: 'json' };
 
 const RAVE = /banana-rave\.trymstene\.workers\.dev\/(count|town-count|park-count|beach-count|town-life)/;
 const POT = /banana-pass\.trymstene\.workers\.dev\/town\/pot/;
@@ -39,6 +41,10 @@ test('the welcome: the hello over the arched name, the line under the dancers, a
   await expect(page.locator('.hw__tag')).toHaveText(W.tag);
   await expect(page.locator('.hw__banana')).toHaveAttribute('alt', W.alt);
   await expect(page.locator('.hw__banana')).toHaveAttribute('src', '/assets/dancing-banana-transparent.gif');
+  // the name's shadow is black, and a drop-shadow (WebKit drops a text-shadow under paint-order)
+  const shade = await page.locator('.hw__l > span').first().evaluate((e) => ({ f: getComputedStyle(e).filter, t: getComputedStyle(e.closest('.hw__name')).textShadow }));
+  expect(shade.f).toMatch(/drop-shadow\(rgb\(17, 17, 17\)/);
+  expect(shade.t).toBe('none');
   // the doors: the words and a drawn arrow, and nothing else — no emoji, no pixel icon, no picture
   const go = page.locator('.hw__go');
   expect((await go.textContent()).trim()).toBe(W.enter + '→');
@@ -64,53 +70,37 @@ for (const [w, h] of [[360, 640], [375, 667], [393, 852], [768, 1024], [1280, 72
   });
 }
 
-test.describe('the crew at a 2.625 phone', () => {
-  test.use({ deviceScaleFactor: 2.625, viewport: { width: 393, height: 852 } });
-  test('one dancer a side on a phone, and every art pixel a whole number of device pixels', async ({ page }) => {
-    await world(page, QUIET);
-    await page.goto('/', { waitUntil: 'load' });
-    const d = await page.evaluate(() => [...document.querySelectorAll('.hw__d')].filter((x) => getComputedStyle(x).display !== 'none')
-      .map((x) => x.getBoundingClientRect().width * devicePixelRatio));
-    expect(d).toHaveLength(2);
-    // 35 art pixels wide: 2 × 2.625 = 5.25 device pixels an art pixel, snapped to 5 (design library §6, §25)
-    for (const px of d) expect(Math.abs(px / 35 - Math.round(px / 35)), `${px} device px is not a whole number per art pixel`).toBeLessThan(0.01);
-  });
+test('a phone: one dancer a side, the builder’s own strip, on whole CSS pixels, and not a button', async ({ page }) => {
+  await world(page, QUIET);
+  await page.goto('/', { waitUntil: 'load' });
+  const d = await page.evaluate(() => [...document.querySelectorAll('.hw__d')].filter((x) => getComputedStyle(x).display !== 'none')
+    .map((x) => ({ w: x.getBoundingClientRect().width, h: x.getBoundingClientRect().height, img: getComputedStyle(x, '::before').backgroundImage, pe: getComputedStyle(x).pointerEvents })));
+  expect(d).toHaveLength(2);
+  for (const x of d) {
+    // 2 CSS px an art pixel on a phone: the strip's 6 file px land one to one on a 3x screen
+    expect(x.w).toBe(CREW.cols * 2);
+    expect(x.h).toBe(CREW.rows * 2);
+    expect(x.img).toMatch(/\/assets\/hero\/dancer-(party|crown)\.webp/);
+    expect(x.pe, 'a dancer is not a button').toBe('none');
+  }
+  // every strip is there to be fetched
+  for (const n of CREW.crew) expect((await page.request.get('/assets/hero/dancer-' + n + '.webp')).status(), n).toBe(200);
+  // no coin, no pill, no sticker: Trym, "it becomes noise"
+  await page.locator('.hw__d:visible').first().click({ force: true });
+  await page.waitForTimeout(300);
+  expect(await page.locator('.hw__coins, .hw__hint, .hw__fly').count()).toBe(0);
 });
 
 test('a wide desk: four dancers a side, all dancing on the banana’s beat', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await world(page, QUIET);
   await page.goto('/', { waitUntil: 'load' });
-  expect(await page.evaluate(() => [...document.querySelectorAll('.hw__d')].filter((x) => getComputedStyle(x).display !== 'none').length)).toBe(8);
+  const crew = await page.evaluate(() => [...document.querySelectorAll('.hw__d')].filter((x) => getComputedStyle(x).display !== 'none').map((x) => x.getBoundingClientRect().width));
+  expect(crew).toHaveLength(8);
+  for (const w of crew) expect(w, '3 CSS px an art pixel on a desk').toBe(CREW.cols * 3);
   const dance = await page.evaluate(() => document.getAnimations().filter((a) => a.animationName === 'hwDance').map((a) => a.effect.getTiming().duration));
   expect(dance.length).toBeGreaterThanOrEqual(8);
   for (const ms of dance) expect(ms, 'eight frames in the GIF’s 0.8 s').toBe(800);
-});
-
-test('five taps on the dancers: the coins land in a pill under the banana, and the fifth makes it a door into the town', async ({ page }) => {
-  await world(page, QUIET);
-  await page.goto('/', { waitUntil: 'load' });
-  const pill = page.locator('.hw__coins');
-  await expect(pill).toBeHidden();
-  const dancers = page.locator('.hw__d:visible');
-  for (let i = 0; i < 5; i++) { await dancers.nth(i % 2).click(); await page.waitForTimeout(120); }
-  await expect(pill.locator('b')).toHaveText('5', { timeout: 4000 });
-  await expect(pill).toHaveClass(/is-done/);
-  await expect(page.locator('.hw__hint'), 'the sticker goes once somebody taps').toBeHidden();
-  await expect(pill).toHaveAttribute('href', '/town/');
-  await expect(pill).toHaveAttribute('data-place', 'hero-game');
-  expect((await pill.locator('.hw__done').textContent()).trim()).toBe(W.play.done + '→');
-  // it sits under the stage, never over the banana's feet, and inside the screen
-  const [p, s] = await Promise.all([pill.boundingBox(), page.locator('.hw__stage').boundingBox()]);
-  expect(p.y, 'the pill is under the banana').toBeGreaterThanOrEqual(s.y + s.height - 1);
-  expect(p.x).toBeGreaterThanOrEqual(0);
-  expect(p.x + p.width).toBeLessThanOrEqual(393);
-  await page.waitForTimeout(900);
-  expect(await page.locator('.hw__fly').count(), 'every flying coin landed and was cleared').toBe(0);
-  // ⚠️ the hero clips, it does not scroll: overflow:hidden made it a scroll container, and bringing a dancer or a door
-  // into view slid the whole party sideways
-  await page.locator('.hw__make').focus();
-  expect(await page.evaluate(() => document.querySelector('#hero').scrollLeft), 'the hero never scrolls sideways').toBe(0);
 });
 
 test('a tap on the banana throws confetti, and the confetti clears itself', async ({ page }) => {
@@ -119,11 +109,15 @@ test('a tap on the banana throws confetti, and the confetti clears itself', asyn
   await page.locator('.hw__banana').click();
   expect(await page.locator('.hw__bit').count()).toBeGreaterThanOrEqual(10);
   await expect(page.locator('.hw__bit')).toHaveCount(0, { timeout: 4000 });
+  // ⚠️ the hero clips, it does not scroll: overflow:hidden made it a scroll container, and bringing a dancer or a door
+  // into view slid the whole party sideways
+  await page.locator('.hw__make').focus();
+  expect(await page.evaluate(() => document.querySelector('#hero').scrollLeft), 'the hero never scrolls sideways').toBe(0);
 });
 
 // ⚠️ GA4 runs on the production host only (main.js returns before it on localhost), so the built site is served as
 // http://trymstene.com here, the tests/world-door.spec.mjs way: every request for it answered by the local preview
-test('the plays are counted once each, on the real analytics path', async ({ page }) => {
+test('the confetti is counted once a page view, on the real analytics path', async ({ page }) => {
   await world(page, QUIET);
   await page.route('http://trymstene.com/**', async (route) => {
     const u = new URL(route.request().url());
@@ -131,13 +125,9 @@ test('the plays are counted once each, on the real analytics path', async ({ pag
   });
   await page.goto('http://trymstene.com/', { waitUntil: 'load' });
   expect(await page.evaluate(() => typeof window.gtag)).toBe('function');
-  const dancers = page.locator('.hw__d:visible');
-  for (let i = 0; i < 6; i++) { await dancers.nth(i % 2).click(); await page.waitForTimeout(120); }
-  await page.locator('.hw__banana').click();
-  await expect(page.locator('.hw__coins b')).toHaveText('6', { timeout: 4000 });
+  for (let i = 0; i < 3; i++) { await page.locator('.hw__banana').click(); await page.waitForTimeout(150); }
   const ev = await page.evaluate(() => (window.dataLayer || []).map((a) => Array.from(a)).filter((a) => a[0] === 'event').map((a) => a[1]));
   expect(ev.filter((e) => e === 'hero_play')).toHaveLength(1);
-  expect(ev.filter((e) => e === 'hero_play_5')).toHaveLength(1);
 });
 
 test('the ticker: the stats file’s numbers read low with a plus, and the live lines in front when the world answers', async ({ page }) => {

@@ -2698,15 +2698,15 @@ export const JOBS = {
     shape: () => [],
   },
   // 🎉 THE HOMEPAGE HERO (26 Sep 2026). Trym: "hello there, and welcome to BANANA WORLD … small text on top and banana
-  // world in a slight arc and big text", the buttons with "no icons", a crew you can tap and a live ticker of the world's
+  // world in a slight arc and big text", the buttons with "no icons", a crew either side and a live ticker of the world's
   // best numbers "based on popularity". Site words: plain. The page draws the arrows, the "+" and the commas.
   'home-hero': {
     id: 'home-hero',
     title: 'The homepage hero — the welcome, the buttons, the dancers and the ticker',
-    what: 'The top of the homepage: the hello over the big arched BANANA WORLD, the line under the dancers, the two buttons, the sticker that says the dancers can be tapped and the link after five coins, and every line of the ticker along the top (the live ones and the all-time numbers).',
+    what: 'The top of the homepage: the hello over the big arched BANANA WORLD, the line under the dancers, the two buttons, and every line of the ticker along the top (the live ones and the all-time numbers).',
     approved: 'src/data/copy/home-hero.json',
     reads: 'src/pages/index.astro (a static import at build time; its script reads the live lines off the page)',
-    top: ['kicker', 'title', 'tag', 'alt', 'enter', 'make', 'play', 'ticker'],
+    top: ['kicker', 'title', 'tag', 'alt', 'enter', 'make', 'ticker'],
     fields: {
       kicker: { kind: 'label', aim: 30, max: 34, forbids: [[/^[A-Z]/, 'lower case: the small hello above the big name']], note: 'The small line above the big BANANA WORLD: a hello that ends where the name begins.' },
       title: { kind: 'label', max: 12, needs: [[/^Banana World$/, 'the name, exactly: Banana World']], note: 'The big arched name. The page sets it in capitals, a letter at a time.' },
@@ -2714,8 +2714,6 @@ export const JOBS = {
       alt: { kind: 'prose', max: 80, needs: [[/Dancing Banana GIF/, 'names the Dancing Banana GIF'], [/Trym Stene/, 'names who made it'], [/1999/, 'says when']], note: 'The big banana’s alt text: what it is, who made it, when.' },
       enter: { kind: 'label', max: 22, note: 'The main button, into Banana Town (the front door of Banana World). No icon; the page draws the arrow.' },
       make: { kind: 'label', max: 18, note: 'The second button, to the banana builder. No icon.' },
-      'play.hint': { kind: 'label', aim: 14, max: 18, forbids: [[/^[A-Z]/, 'lower case, like a sticker']], note: 'The sticker by the dancers until the first tap: they can be tapped.' },
-      'play.done': { kind: 'prose', aim: 52, max: 60, ...NO_MARKUP, note: 'After five coins the coin pill becomes a link into Banana Town. The hero’s coins are for fun and are not kept; the town’s are. Never promises that these carry over. The page draws the arrow.' },
       'ticker.world': toastLine(48, 'Live: the bananas in the town, the park, the bay and the rave right now, added up (two or more).', { ...holdsAll('n'), ...NO_MARKUP }),
       'ticker.worldOne': toastLine(48, 'The same when it is exactly one.', NO_MARKUP),
       'ticker.town': toastLine(64, 'Live: today in Banana Town, the things fixed and by how many bananas (both two or more).', { ...holdsAll('fixes', 'people'), ...NO_MARKUP }),
