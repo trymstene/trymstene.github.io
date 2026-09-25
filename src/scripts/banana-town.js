@@ -933,13 +933,15 @@ const esc = (v) => String(v == null ? '' : v).replace(/[<>&"]/g, (c) => ({ '<': 
 // here, because it is scenery the square draws at boot.
 // ⚠️ `mini` LEAVES THE WORDS OFF. The same eight wedges are painted on the stall's counter at 30 world
 // px, where a 24-px label is a smear of grey — the shape and the colours are what carry it that small.
-function drawWheel(cv, mini, labels) {
+function drawWheel(cv, mini, labels, hi) {
   const ctx = cv.getContext('2d'), R2 = cv.width / 2, n = WEDGES.length, per = Math.PI * 2 / n;
   ctx.clearRect(0, 0, cv.width, cv.height);
   WEDGES.forEach((w, i) => {
     const a0 = -Math.PI / 2 + i * per, a1 = a0 + per;
     ctx.beginPath(); ctx.moveTo(R2, R2); ctx.arc(R2, R2, R2 - 6, a0, a1); ctx.closePath();
     ctx.fillStyle = w[1]; ctx.fill(); ctx.lineWidth = mini ? 7 : 4; ctx.strokeStyle = '#141208'; ctx.stroke();
+    // 🎉 the wedge that won, lit (town-market.js): brighter, with a white rim
+    if (i === hi) { ctx.save(); ctx.globalAlpha = 0.34; ctx.fillStyle = '#fffdf5'; ctx.fill(); ctx.restore(); ctx.lineWidth = 7; ctx.strokeStyle = '#fffdf5'; ctx.stroke(); }
     if (mini || !labels) return;
     // the label reads upright on both halves: left-side wedges are turned half a circle and drawn from the rim inward
     const mid = a0 + per / 2, left = Math.cos(mid) < 0;
@@ -958,7 +960,9 @@ let market = null, marketP = null;
 function loadMarket() {
   if (!marketP) {
     marketP = import('./town-market.js').then((m) => (market = m.bootMarket({ openCard, closeCard, isOpen: () => !panel.hidden,
-      say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS })));
+      say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS,
+      // 🎉 a win flies to where it lands: the HUD's purse, and the pocket on the bar (with its prize's own glyph)
+      hud: () => hud, pocketBtn: () => pocketBtn, pocketIcon: (k) => (POCKET_ICON[k] ? iconSvg(POCKET_ICON[k], { size: 26 }) : '') })));
     marketP.catch(() => { marketP = null; });
   }
   return marketP;

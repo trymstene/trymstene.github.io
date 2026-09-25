@@ -166,8 +166,23 @@ const townFaq = faqLd(G.faq.items);
        now (its mailbox is the letters surface), and a second copy of these rules on that page is the
        thing the design library keeps telling us not to do. Page-specific modifiers stay below. */
     .tw-wheelwrap { position: relative; width: 220px; margin: 0.5rem auto 0.2rem; }
-    .tw-wheel { display: block; width: 220px; height: 220px; border-radius: 50%; box-shadow: 0 0 0 4px #000, 4px 5px 0 4px rgba(0, 0, 0, 0.45); transition: transform 3.4s cubic-bezier(0.12, 0.7, 0.1, 1); }
-    .tw-wheel__pin { position: absolute; left: 50%; top: -8px; z-index: 2; width: 0; height: 0; margin-left: -11px; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 20px solid #ffe135; filter: drop-shadow(0 2px 0 #000); }
+    /* 🌀 the wheel turns frame by frame from town-market.js (it starts on the tap and slows onto the server's wedge),
+       so it has NO transition of its own — one would smear every frame across 3.4 s */
+    .tw-wheel { display: block; width: 220px; height: 220px; border-radius: 50%; box-shadow: 0 0 0 4px #000, 4px 5px 0 4px rgba(0, 0, 0, 0.45); will-change: transform; }
+    .tw-wheel__pin { position: absolute; left: 50%; top: -8px; z-index: 2; width: 0; height: 0; margin-left: -11px; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 20px solid #ffe135; filter: drop-shadow(0 2px 0 #000); transform-origin: 50% 0; }
+    /* 🎉 a win: the rim glows (opacity only), confetti flies off it (.tw-wheelfx), the line pops, the prize flies */
+    .tw-wheelwrap::after { content: ''; position: absolute; left: -9px; top: -9px; width: 238px; height: 238px; border-radius: 50%; pointer-events: none;
+      box-shadow: 0 0 0 4px #ffe135, 0 0 30px 12px rgba(255, 225, 53, 0.7); opacity: 0; }
+    .tw-wheelwrap.is-win::after { animation: tw-winglow 1.8s ease-out; }
+    @keyframes tw-winglow { 0% { opacity: 0; } 12% { opacity: 1; } 35% { opacity: 0.35; } 55% { opacity: 1; } 100% { opacity: 0; } }
+    .tw-wheelfx { position: absolute; left: -70px; top: -70px; width: 360px; height: 360px; pointer-events: none; z-index: 3; }
+    .tw-result.is-pop { animation: tw-pop 0.5s cubic-bezier(0.2, 1.7, 0.4, 1); }
+    @keyframes tw-pop { from { transform: scale(0.55); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .tw-fly { position: fixed; z-index: 99999; width: 26px; height: 26px; pointer-events: none; }
+    .tw-fly--item svg { display: block; width: 26px; height: 26px; filter: drop-shadow(1px 1px 0 #000); }
+    /* the HUD's purse rises out of the card's shade while the coins fly into it (z above .tw-panel's 2100) */
+    .tw-view .wh--overlay.is-lit { z-index: 2150; }
+    @media (prefers-reduced-motion: reduce) { .tw-result.is-pop, .tw-wheelwrap.is-win::after { animation: none; } }
     .tw-pot { text-align: center; font-family: "Archivo Black", sans-serif; color: #ffe135; margin: 0.2rem 0 0; font-size: 0.9rem; letter-spacing: 0.04em; }
     .tw-result { margin: 0.6rem 0 0; font-weight: 800; min-height: 1.3em; font-size: 0.92rem; }
     .tw-rows { display: grid; gap: 0.45rem; margin: 0.5rem 0; }

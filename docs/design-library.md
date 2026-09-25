@@ -949,6 +949,23 @@ The same rule, applied to what the counters said on every cup (the review read e
 - **The first line after HIRED names the button that starts the work** ("Tap the Coffee Cup, then Go to work"), and a
   button says what it does ("Stop serving", then a toast: no more customers until you step out and back in).
 
+### §30.2 A roll answers when it stops, and a win lands where it goes (25 Sep 2026, the Wheel of Peel)
+
+Trym: *"i click the button - it takes 3-4 seconds before anything happens … then if i've won i see my banana coins
+increase before the wheel has given me the result … i get half of the answers on my spin by just watching my banana
+coins in my HUD … if im winning something there should be a bit more 'wow'"*.
+
+- **A tap moves something at once.** A server that rolls takes its second or two while the thing turns; the answer
+  plans the slow-down from wherever it is (`src/scripts/town-market.js`, the spin: wind-up, full speed, a quartic stop
+  onto the wedge the server named). A dark button over a still wheel reads as broken.
+- **Nothing an answer carries shows before the moment that tells it.** The HUD reads the wallet every second, so the
+  wallet (`walletKeep`), the pocket and the pot wait for the wheel to STOP — and a coin win pays its wallet as the first
+  coin lands in the purse. A spin that fails stops on a line between two wedges, never inside one.
+- **A win is sized to the win.** The common "nothing" (a peel: more than half of all spins) is only its line; a
+  spin-again bounces its button; an item or a few coins lights the wedge, throws confetti and flies the prize to where
+  it lands (the pocket on the bar, the HUD's purse — which rises out of the card's shade to catch it); more coins, more
+  of all of it; the pot, then the square's big moment (§27). `tests/town-market.spec.mjs` holds all four.
+
 ## §31 THE FIRST FRAME IS THE REAL ONE, AND A SCENE OWNS THE SCREEN (24 Sep 2026, the newcomer walk)
 
 - **A newcomer sees the town as it loads, so a walk must too.** Every town walk pinned the hour first, and that second
