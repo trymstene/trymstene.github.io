@@ -11,7 +11,7 @@
 //     (what Google Images needs for the Licensable badge)
 //   · every Product has a name, an image and an offer with a price
 //   · every @id on trymstene.com that a page REFERS to is DEFINED on some page (a node with more than an @id)
-//   · every FAQPage question and its answer are on the page as written (FAQ_OWED lists the pages still owed)
+//   · every FAQPage question and its answer are on the page as written
 //
 // Run after `npx astro build`:  node tools/check-structured-data.mjs   (in CI with the other built-site gates)
 import fs from 'node:fs';
@@ -20,11 +20,11 @@ import { fileURLToPath } from 'node:url';
 
 const DIST = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 // ❓ EVERY FAQPage QUESTION, AND ITS ANSWER, IS ON THE PAGE A READER SEES (25 Sep 2026). Search engines ask for FAQ markup
-// that describes what is visible; the rave's markup asked six questions its page never showed, the park's answers were
-// other answers, and the bay's questions were not on screen at all. The areas now build both from one list
-// (src/lib/faq.js). These pages still keep a second, hand-written copy that has drifted — OWED, and the list only
-// shrinks: a page on it that matches again fails too, until it comes off.
-const FAQ_OWED = ['/dancing-banana-emoji/', '/dancing-banana-gif-meme/', '/peanut-butter-jelly-time/', '/guides/'];
+// that describes what is visible, and every page that kept two copies had let them drift: the rave's markup asked six
+// questions its page never showed, the bay's and the size chart's were not on screen at all, and the GIF page's markup
+// still credited the Flash to the band. Every page now builds both from ONE list — src/lib/faq.js faqLd(), drawn by
+// src/components/AreaFaq.astro or through src/components/CopyLine.astro in the page's own FAQ look, the size guides from
+// src/data/guides.js — and this keeps it that way. Nothing is exempt.
 const NAMED = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', mdash: '—', ndash: '–', hellip: '…', middot: '·', times: '×', rarr: '→', larr: '←', darr: '↓', uarr: '↑', copy: '©', reg: '®', trade: '™', deg: '°', eacute: 'é', hearts: '♥', star: '☆', bull: '•' };
 const decode = (s) => s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => (e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1)) : NAMED[e.toLowerCase()] ?? m));
 const said = (s) => decode(String(s)).replace(/\s+/g, ' ').trim();
@@ -86,9 +86,7 @@ for (const f of files) {
     faqPages++;
     const shown = visibleText(html);
     const off = faqQs.filter((q) => !shown.includes(said(q.name)) || !shown.includes(said((q.acceptedAnswer || {}).text || '')));
-    const owed = FAQ_OWED.includes(rel);
-    if (off.length && !owed) problems.push(`${rel} — ${off.length} of its ${faqQs.length} FAQPage questions are not on the page as written (first: “${said(off[0].name).slice(0, 60)}”). Build the markup and the questions from one list: src/lib/faq.js faqLd + src/components/AreaFaq.astro`);
-    if (!off.length && owed) problems.push(`${rel} — its FAQPage matches the page now: take it off FAQ_OWED in this file`);
+    if (off.length) problems.push(`${rel} — ${off.length} of its ${faqQs.length} FAQPage questions are not on the page as written (first: “${said(off[0].name).slice(0, 60)}”). Build the markup and the questions from one list: src/lib/faq.js faqLd, drawn by src/components/AreaFaq.astro or CopyLine.astro`);
   }
   if (/noindex/.test(robots) || redirect) continue;
   pagesChecked++;
@@ -103,4 +101,4 @@ if (problems.length) {
   console.error(`✗ structured data — ${problems.length} problem(s):\n` + [...new Set(problems)].slice(0, 60).map((p) => '  ' + p).join('\n'));
   process.exit(1);
 }
-console.log(`✅ structured data — ${files.length} pages read, ${pagesChecked} indexable each with a page node, every image licensable, every @id defined (${defined.size}), every FAQ on its page (${faqPages} pages; ${FAQ_OWED.length} owed)`);
+console.log(`✅ structured data — ${files.length} pages read, ${pagesChecked} indexable each with a page node, every image licensable, every @id defined (${defined.size}), every FAQ on its page (${faqPages} pages)`);

@@ -6,6 +6,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
 import { GUIDES, CHEATSHEET_EXTRA } from '../../data/guides.js';
+import CopyLine from '../../components/CopyLine.astro';
+import { faqLd } from '../../lib/faq.js';
+import GH from '../../data/copy/guides-page.json';   // ❓ the chart's own question
 
 const title = 'Emoji & Emote Size Chart — Discord, Twitch, Slack & More (2026)';
 const description = 'Every emoji and emote size in one chart: Discord 128px, Twitch 28/56/112px, Slack 128px, Telegram 512px and more — with actual-size previews and free makers.';
@@ -25,15 +28,12 @@ const DEMOS = [
   [56, 'Twitch retina'], [112, 'Twitch large'], [128, 'Discord upload'],
 ];
 
-const faqLD = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'What size are custom emojis on Discord?', acceptedAnswer: { '@type': 'Answer', text: 'Discord custom emojis upload at 128×128 pixels (max 256KB, PNG or GIF) and display at 32×32 in chat.' } },
-    { '@type': 'Question', name: 'What size are Twitch emotes?', acceptedAnswer: { '@type': 'Answer', text: 'Twitch emotes require three sizes: 28×28, 56×56 and 112×112 pixels as transparent PNGs under 1MB each.' } },
-    { '@type': 'Question', name: 'Why do emotes need to be so small?', acceptedAnswer: { '@type': 'Answer', text: 'Emotes render inline with chat text, so platforms display them at 28–32 pixels. Designs with bold shapes and few colors — like pixel art — stay readable at that size.' } },
-  ],
-};
+// ❓ THE QUICK ANSWERS are ONE list, on the page and in its FAQPage (src/lib/faq.js). Two of them are the deep guides'
+// own first answers (src/data/guides.js), so the chart can never disagree with a guide; the third is the chart's.
+// Until 25 Sep 2026 all three lived only in the markup, and none was on the page.
+const firstAnswer = (slug) => { const [q, a] = GUIDES.find((g) => g.slug === slug).faq[0]; return { q, a }; };
+const QUICK = [firstAnswer('discord-emoji-size'), firstAnswer('twitch-emote-size'), ...GH.faq.items];
+const faqLD = faqLd(QUICK);
 const crumbLD = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
@@ -44,6 +44,7 @@ const crumbLD = {
 };
 ---
 <BaseLayout title={title} description={description} pageType="CollectionPage">
+  <link rel="stylesheet" href="/css/guides.css" slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
   <section class="gh">
@@ -92,6 +93,11 @@ const crumbLD = {
       ))}
     </ul>
     <p class="gh-note">More platforms get their own guides as we go — the table above is always the complete picture.</p>
+
+    <h2>{GH.faq.heading}</h2>
+    {QUICK.map((it) => (
+      <div class="gd-gotcha"><h3>{it.q}</h3><p><CopyLine s={it.a} /></p></div>
+    ))}
   </section>
 </BaseLayout>
 

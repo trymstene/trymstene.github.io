@@ -1,0 +1,7 @@
+---
+// ✍️ one copy line, drawn: its [links](/path/), **bold** and *italic* as elements, everything else as text
+// (src/lib/faq.js parts() — the same pieces the FAQPage reads as plain words)
+import { parts } from '../lib/faq.js';
+const { s } = Astro.props;
+---
+{parts(s).map((p) => (p.href ? <a href={p.href}>{p.text}</a> : p.b ? <strong>{p.text}</strong> : p.i ? <em>{p.text}</em> : p.text))}

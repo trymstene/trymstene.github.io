@@ -1,5 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CopyLine from '../components/CopyLine.astro';
+import { faqLd } from '../lib/faq.js';
+import PP from '../data/copy/pbjt-page.json';   // ❓ the questions: on the page and in its FAQPage, one list
 import PixelIcon from '../components/PixelIcon.astro';
 
 const title = "Peanut Butter Jelly Time — the Dancing Banana, Explained";
@@ -35,16 +38,9 @@ const crumbLd = {
   ],
 };
 
-const faq = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type": "Question", "name": "Is the dancing banana the same as the Peanut Butter Jelly Time banana?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The banana dancing in Peanut Butter Jelly Time is the original Dancing Banana, created by Trym Stene in 1999. It predates the song." } },
-    { "@type": "Question", "name": "Who made the Peanut Butter Jelly Time song?", "acceptedAnswer": { "@type": "Answer", "text": "The song Peanut Butter Jelly Time is by The Buckwheat Boyz. The dancing banana paired with it is a separate, earlier creation by Trym Stene." } },
-    { "@type": "Question", "name": "Who made the Peanut Butter Jelly Time banana?", "acceptedAnswer": { "@type": "Answer", "text": "The dancing banana was created by Trym Stene in 1999. Others later set it to The Buckwheat Boyz' song in a Flash animation that went viral." } },
-    { "@type": "Question", "name": "Can I license the Peanut Butter Jelly Time banana?", "acceptedAnswer": { "@type": "Answer", "text": "You can license the Dancing Banana character and animation directly from its creator. The song and the Flash animation are owned by other people and would need separate permission." } }
-  ]
-};
+// ❓ the questions are ONE list (src/data/copy/pbjt-page.json): drawn in the FAQ below and made into the FAQPage here, so
+// what a search engine reads is what is on the page (src/lib/faq.js; tools/check-structured-data.mjs holds it)
+const faq = faqLd(PP.faq.items);
 ---
 <BaseLayout
   title={title}
@@ -119,24 +115,14 @@ const faq = {
 
   <!-- FAQ -->
   <section class="block block--dark">
-    <p class="kicker kicker--light">The usual questions</p>
-    <h2>Peanut Butter Jelly Time FAQ</h2>
-    <div class="faq__item">
-      <h3>Is the dancing banana the same as the Peanut Butter Jelly Time banana?</h3>
-      <p>Yes — same banana. I made it in 1999, and it predates the song.</p>
-    </div>
-    <div class="faq__item">
-      <h3>Who made the Peanut Butter Jelly Time song?</h3>
-      <p>The Buckwheat Boyz — the song is all theirs. The banana was already dancing when it arrived.</p>
-    </div>
-    <div class="faq__item">
-      <h3>Can I license the banana for a project?</h3>
-      <p>The banana, yes — directly from me. The song and the Flash video are owned by others and need separate permission. <a href="/license-the-dancing-banana/">How licensing works →</a></p>
-    </div>
-    <div class="faq__item">
-      <h3>Where's the full story?</h3>
-      <p>Right here: <a href="/dancing-banana-gif-meme/">the Dancing Banana story &amp; download →</a></p>
-    </div>
+    <p class="kicker kicker--light">{PP.faq.kicker}</p>
+    <h2>{PP.faq.heading}</h2>
+    {PP.faq.items.map((it) => (
+      <div class="faq__item">
+        <h3>{it.q}</h3>
+        <p><CopyLine s={it.a} /></p>
+      </div>
+    ))}
   </section>
 
 

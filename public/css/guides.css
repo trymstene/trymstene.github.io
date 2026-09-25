@@ -1,0 +1,6 @@
+/* 📐 THE GUIDES' QUICK ANSWERS — a heading and a paragraph, the way the size guides (src/pages/guides/[guide].astro, for
+   their gotchas and their questions) and the size chart (src/pages/guides/index.astro, for its questions) both show them.
+   One sheet since 25 Sep 2026, when the chart's questions came onto its page (design library §5). */
+.gd-gotcha { margin-bottom: 1rem; }
+.gd-gotcha h3 { font-size: 1.02rem; margin-bottom: 0.25rem; }
+.gd-gotcha p { line-height: 1.55; }

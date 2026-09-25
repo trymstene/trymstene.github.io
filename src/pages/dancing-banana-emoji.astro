@@ -1,22 +1,17 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import CopyLine from '../components/CopyLine.astro';
+import { faqLd } from '../lib/faq.js';
+import EP from '../data/copy/emoji-page.json';   // ❓ the questions: on the page and in its FAQPage, one list
 
 const title = "Dancing Banana Emoji & Sticker — Discord, Slack, Telegram, Twitch";
 const description = "The Dancing Banana as a free emoji and sticker — pre-cropped and sized for Discord, Slack, Telegram, Twitch and Teams. From the meme's creator.";
 const ogDescription = "The original Dancing Banana as a free emoji/sticker — pre-sized for Discord, Slack, Telegram, Twitch and Teams. Grab it or make your own.";
 
-const faq = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type": "Question", "name": "Is there a dancing banana emoji?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The original Dancing Banana is available as a free transparent emoji and sticker, pre-sized for Discord, Slack, Telegram, Twitch and more, from its creator Trym Stene." } },
-    { "@type": "Question", "name": "Is there a dancing banana emoji to copy and paste?", "acceptedAnswer": { "@type": "Answer", "text": "Not as a Unicode text emoji you can type like the banana emoji. The dancing banana is an animated image, so you add it as a custom emoji or sticker: download the free transparent file here and upload it to Discord, Slack, Telegram and more." } },
-    { "@type": "Question", "name": "How do I add the dancing banana emoji to Discord?", "acceptedAnswer": { "@type": "Answer", "text": "Download the 128px transparent GIF, then in Discord open Server Settings, go to Emoji, click Upload Emoji and choose the file. It is pre-cropped, so no editing is needed." } },
-    { "@type": "Question", "name": "How do I add the dancing banana to Slack?", "acceptedAnswer": { "@type": "Answer", "text": "Download the 128px GIF (13KB, well under Slack's size cap), click the emoji smiley in any message field, choose Add emoji, upload the file and name it, for example :bananadance:." } },
-    { "@type": "Question", "name": "Can I use the dancing banana on Telegram?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Send the 512px GIF in any chat and tap Save to GIFs to reuse it anywhere, or build a sticker pack with the 512px PNG via Telegram's @Stickers bot." } }
-  ]
-};
+// ❓ the questions are ONE list (src/data/copy/emoji-page.json): drawn in the FAQ below and made into the FAQPage here, so
+// what a search engine reads is what is on the page (src/lib/faq.js; tools/check-structured-data.mjs holds it)
+const faq = faqLd(EP.faq.items);
 
 // 🕸 the emoji itself as an image a search engine can credit and license, and the page's place in the site
 const emojiLd = {
@@ -168,28 +163,14 @@ const DL = {
 
   <!-- FAQ -->
   <section class="block block--dark">
-    <p class="kicker kicker--light">The usual questions</p>
-    <h2>Dancing Banana emoji FAQ</h2>
-    <div class="faq__item">
-      <h3>Is there a dancing banana emoji?</h3>
-      <p>Yes — the original, right here, free and transparent. Add it to Discord, Slack, Telegram or anywhere.</p>
-    </div>
-    <div class="faq__item">
-      <h3>Is there a dancing banana emoji to copy and paste?</h3>
-      <p>Not as a Unicode text emoji you can type like 🍌 — the dancing banana is an animated image. So you add it as a <strong>custom emoji/sticker</strong>: grab the free file above and upload it to Discord, Slack, Telegram and the rest.</p>
-    </div>
-    <div class="faq__item">
-      <h3>How do I add the dancing banana to Discord?</h3>
-      <p>Download the <a href="#discord">128px emoji GIF</a>, then Server Settings → Emoji → Upload Emoji → pick the file. It's pre-cropped — no editing needed.</p>
-    </div>
-    <div class="faq__item">
-      <h3>Can I use it on Slack, Telegram or Twitch?</h3>
-      <p>Yes — every platform has its own pre-sized file and 3-step guide above: <a href="#slack">Slack</a>, <a href="#telegram">Telegram</a>, <a href="#twitch">Twitch</a>.</p>
-    </div>
-    <div class="faq__item">
-      <h3>Where's it from?</h3>
-      <p>It's the original Dancing Banana, made by Trym Stene in 1999. <a href="/dancing-banana-gif-meme/">Read the story →</a></p>
-    </div>
+    <p class="kicker kicker--light">{EP.faq.kicker}</p>
+    <h2>{EP.faq.heading}</h2>
+    {EP.faq.items.map((it) => (
+      <div class="faq__item">
+        <h3>{it.q}</h3>
+        <p><CopyLine s={it.a} /></p>
+      </div>
+    ))}
   </section>
 
   <script>

@@ -1,0 +1,28 @@
+{
+  "faq": {
+    "kicker": "The usual questions",
+    "heading": "Peanut Butter Jelly Time FAQ",
+    "items": [
+      {
+        "q": "Is the dancing banana the same as the Peanut Butter Jelly Time banana?",
+        "a": "Yes — same banana. I made it in 1999, and it predates the song."
+      },
+      {
+        "q": "Who made the Peanut Butter Jelly Time banana?",
+        "a": "I did — Trym Stene, in 1999. Others later set it to The Buckwheat Boyz’ song in a Flash animation that went viral."
+      },
+      {
+        "q": "Who made the Peanut Butter Jelly Time song?",
+        "a": "The Buckwheat Boyz — the song is all theirs. The banana was already dancing when it arrived."
+      },
+      {
+        "q": "Can I license the banana for a project?",
+        "a": "The banana, yes — directly from me. The song and the Flash video are owned by others and need separate permission. [How licensing works →](/license-the-dancing-banana/)"
+      },
+      {
+        "q": "Where’s the full story of the dancing banana?",
+        "a": "Right here: [the Dancing Banana story & download →](/dancing-banana-gif-meme/)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "faq": {
+    "heading": "Quick answers",
+    "items": [
+      {
+        "q": "Why do emotes need to be so small?",
+        "a": "Emotes render inline with chat text, so platforms display them at 28–32 pixels. Designs with bold shapes and few colours — like pixel art — stay readable at that size."
+      }
+    ]
+  }
+}

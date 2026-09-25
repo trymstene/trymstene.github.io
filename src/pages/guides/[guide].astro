@@ -52,6 +52,7 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 <BaseLayout title={g.title} description={g.metaDescription}>
   <script type="application/ld+json" set:html={JSON.stringify(articleLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
+  <link rel="stylesheet" href="/css/guides.css" slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
   <section class="gd">
     <nav class="gd-crumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/guides/">Guides</a> › <span>{g.label}</span></nav>
@@ -113,9 +114,6 @@ const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   .gd-cta .btn { margin-top: 0.6rem; display: inline-flex; align-items: center; gap: 0.4rem; }
   .gd-cta__alt { margin: 0.8rem 0 0; font-size: 0.9rem; }
   .gd h2 { margin: 1.6rem 0 0.8rem; }
-  .gd-gotcha { margin-bottom: 1rem; }
-  .gd-gotcha h3 { font-size: 1.02rem; margin-bottom: 0.25rem; }
-  .gd-gotcha p { line-height: 1.55; }
   .gd-more { margin-top: 2rem; font-size: 0.9rem; }
   @media (max-width: 640px) { .gd-table { display: block; overflow-x: auto; } }
 </style>

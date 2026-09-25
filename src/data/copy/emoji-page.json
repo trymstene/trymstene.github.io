@@ -1,0 +1,28 @@
+{
+  "faq": {
+    "kicker": "The usual questions",
+    "heading": "Dancing Banana emoji FAQ",
+    "items": [
+      {
+        "q": "Is there a dancing banana emoji?",
+        "a": "Yes — the original, right here, free and transparent. Add it to Discord, Slack, Telegram or anywhere."
+      },
+      {
+        "q": "Is there a dancing banana emoji to copy and paste?",
+        "a": "Not as a Unicode text emoji you can type like 🍌 — the dancing banana is an animated image. So you add it as a **custom emoji/sticker**: grab the free file above and upload it to Discord, Slack, Telegram and the rest."
+      },
+      {
+        "q": "How do I add the dancing banana to Discord?",
+        "a": "Download the [128px emoji GIF](#discord), then Server Settings → Emoji → Upload Emoji → pick the file. It’s pre-cropped — no editing needed."
+      },
+      {
+        "q": "Can I use the dancing banana on Slack, Telegram or Twitch?",
+        "a": "Yes — every platform has its own pre-sized file and 3-step guide above: [Slack](#slack), [Telegram](#telegram), [Twitch](#twitch)."
+      },
+      {
+        "q": "Where does the dancing banana come from?",
+        "a": "It’s the original Dancing Banana, made by Trym Stene in 1999. [Read the story →](/dancing-banana-gif-meme/)"
+      }
+    ]
+  }
+}

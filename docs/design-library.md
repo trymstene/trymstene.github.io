@@ -720,7 +720,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | — | No front-facing standing pose | the town walk's `standingPose` check (⚠️ it compared a `"frame:tool"` string to numbers and could not fail until 25 Sep 2026) |
 | 23 | A resident at their post is never a statue: sway, glance, dance, talk | the town walk's `lively` check (`tests/town-life.spec.mjs`) |
 | 37 | Every area explains itself under its frame, on the one sheet | `check-design.mjs` (an area page without `id="what"` and `id="do"`, without `/css/area-guide.css`, or styling a guide class of its own fails) + `tests/town-guide.spec.mjs` (the town's windows fill their box at whole pixels) |
-| — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written; `FAQ_OWED` only shrinks) |
+| — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
 `node tools/check-all.mjs` runs the source-only gates in about a second and is the
@@ -1114,6 +1114,10 @@ more vague so we dont give it all away."*
   page's FAQPage from the same array; an answer links a page of the site as `[words](/path/)`. Two hand-kept copies had
   drifted on every area that had both: the rave's markup asked six questions its page never showed, the park's answers
   were other answers, and the bay's questions were not on screen at all. `tools/check-structured-data.mjs` now fails
-  any page whose FAQPage is not on the page as written (four older pages are OWED there, and that list only shrinks).
+  any page whose FAQPage is not on the page as written. The emoji, GIF, Peanut Butter Jelly Time and size-chart pages
+  followed the same day: their own FAQ look, drawn through `src/components/CopyLine.astro` (a line's links, **bold** and
+  *italic*), their words in `<page>-page.json`; the size chart takes two answers straight from the deep guides
+  (`src/data/guides.js`), so it can never disagree with one. A question stands on its own ("Can I use the Dancing Banana?",
+  never "Can I use it?") — the copy gate fails one that ends on "it".
 - **The line under the sign is the whole town's.** Trym: *"Nib shouldnt be part of the top description … Banana Town
   isnt all about Nib."* The `town-page` tag fails on any resident's name.

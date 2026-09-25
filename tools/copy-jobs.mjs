@@ -1433,40 +1433,47 @@ function guideShape(data) {
 // Two hand-kept copies had drifted: the rave's markup asked six questions its page never showed, the park's answers were
 // other answers, and the bay's questions were not on the page at all. These files are the area guides' own; the rest of
 // each guide's words can move in beside the questions. An answer may link a page of THIS site as [words](/path/).
-const FAQ_FOREIGN_LINK = [/\]\((?!\/)/, 'a link in an answer goes to a page on this site: [words](/path/)'];
-const faqFields = (area) => ({
-  'faq.kicker': { kind: 'label', aim: 20, max: 28, note: 'The small coloured line over the questions’ heading, lower case.' },
-  'faq.heading': { kind: 'label', aim: 18, max: 30, note: 'The heading over ' + area + '’s questions, lower case.' },
-  'faq.items[].q': { kind: 'label', aim: 44, max: 64, note: 'A question the way a newcomer types it into a search box, capital first, ending in a question mark. It is also the question the search engines read (the page’s FAQPage).' },
-  'faq.items[].a': { kind: 'prose', aim: 170, max: 260, forbids: [FAQ_FOREIGN_LINK], note: 'The answer, plainly, in one to three sentences, the thing asked first. A page of the site may be linked as [words](/path/).' },
+const FAQ_FOREIGN_LINK = [/\]\((?![\/#])/, 'a link in an answer goes to a page on this site, [words](/path/), or a place on this one, [words](#id)'];
+const FAQ_PAIRED = [/^[^*]*(\*[^*]*\*[^*]*)*$/, 'an * or ** is opened and never closed — **bold** and *italic* come in pairs'];
+// o: { kicker: false } for a page with no kicker line, qMax / aMax for longer lines, emojiOk / allowBrands for a page
+// whose answers need them (the emoji page's 🍌, the song's name on the pages about it), min / max questions
+const faqFields = (area, o = {}) => ({
+  ...(o.kicker === false ? {} : { 'faq.kicker': { kind: 'label', aim: 20, max: 28, note: 'The small coloured line over the questions’ heading.' } }),
+  'faq.heading': { kind: 'label', aim: 18, max: 34, note: 'The heading over ' + area + '’s questions.' },
+  'faq.items[].q': { kind: 'label', aim: 44, max: o.qMax || 64, note: 'A question the way a newcomer types it into a search box, capital first, ending in a question mark, and whole on its own (never “can I use it?”). It is also the question the search engines read (the page’s FAQPage).' },
+  'faq.items[].a': { kind: 'prose', aim: 170, max: o.aMax || 260, forbids: [FAQ_FOREIGN_LINK], needs: [FAQ_PAIRED], emojiOk: !!o.emojiOk, allowBrands: o.allowBrands || [], note: 'The answer, plainly, in one to three sentences, the thing asked first. A page of the site may be linked as [words](/path/), a place on the page as [words](#id); **bold** and *italic* are drawn.' },
 });
-function faqShape(names) {
+function faqShape(names, o = {}) {
+  const min = o.min ?? 4, max = o.max ?? 8;
   return (data) => {
     const bad = [];
     const say = (p, msg) => bad.push({ path: p, msg, rule: 'shape' });
     const qs = (data.faq && data.faq.items) || [];
-    if (!Array.isArray(qs) || qs.length < 4 || qs.length > 8) { say('faq.items', 'four to eight questions'); return bad; }
+    if (!Array.isArray(qs) || qs.length < min || qs.length > max) { say('faq.items', min + ' to ' + max + ' questions'); return bad; }
     const seen = new Set();
     qs.forEach((it, i) => {
       const q = String(it.q || '');
       if (!/\?$/.test(q)) say('faq.items[' + i + '].q', 'a question ends in a question mark');
+      if (/\b(it|this|that)\?$/i.test(q)) say('faq.items[' + i + '].q', 'ends on “it”: a question has to stand on its own, in a search box and in the FAQPage');
       if (seen.has(q.toLowerCase())) say('faq.items[' + i + '].q', 'asked twice');
       seen.add(q.toLowerCase());
     });
-    if (!qs.some((it) => names.test(String(it.q || '')))) say('faq.items', 'no question names the place — the search box does');
+    if (!qs.some((it) => names.test(String(it.q || '')))) say('faq.items', 'no question names the subject — the search box does');
     return bad;
   };
 }
-const areaGuideJob = (id, area, names) => ({
+// a page's own questions (and its FAQPage, built from the same list)
+const faqJob = (id, title, subject, reads, names, o = {}) => ({
   id,
-  title: area + ' — the field guide under the frame',
-  what: 'The questions under ' + area + '’s frame (and its FAQPage, built from the same list).',
+  title,
+  what: 'The questions on ' + subject + ' (and its FAQPage, built from the same list: src/lib/faq.js).',
   approved: 'src/data/copy/' + id + '.json',
-  reads: 'src/pages/' + id.replace('-guide', '') + '.astro (a static import at build time — the page does not build without it)',
+  reads: reads + ' (a static import at build time — the page does not build without it)',
   top: ['faq'],
-  fields: faqFields(area),
-  shape: faqShape(names),
+  fields: faqFields(subject, o),
+  shape: faqShape(names, o),
 });
+const areaGuideJob = (id, area, names) => faqJob(id, area + ' — the field guide under the frame', area, 'src/pages/' + id.replace('-guide', '') + '.astro', names);
 
 // --- town-page -----------------------------------------------------------------
 // 🏘 THE TOWN PAGE ITSELF (21 Sep 2026): the four lines nobody in the world speaks — the tab title,
@@ -2145,6 +2152,11 @@ export const JOBS = {
     shape: pageShape,
     schema: pageSchema,
   },
+  'emoji-page': faqJob('emoji-page', 'The emoji page — its questions', 'the Dancing Banana emoji page', 'src/pages/dancing-banana-emoji.astro', /dancing banana/i, { emojiOk: true }),
+  'gif-page': faqJob('gif-page', 'The GIF page — its questions', 'the Dancing Banana GIF page', 'src/pages/dancing-banana-gif-meme.astro', /dancing banana/i, { max: 12, aMax: 400, allowBrands: ['peanut butter jelly time'] }),
+  'pbjt-page': faqJob('pbjt-page', 'Peanut Butter Jelly Time — its questions', 'the Peanut Butter Jelly Time page', 'src/pages/peanut-butter-jelly-time.astro', /Peanut Butter Jelly Time/, { qMax: 80, allowBrands: ['peanut butter jelly time'] }),
+  // the hub's OWN question; its Discord and Twitch answers are the deep guides' (src/data/guides.js), so the two cannot disagree
+  'guides-page': faqJob('guides-page', 'The size chart — its own question', 'the emoji and emote size chart', 'src/pages/guides/index.astro', /\b(emote|emoji)s?\b/i, { kicker: false, min: 1, max: 4 }),
   'rave-guide': areaGuideJob('rave-guide', 'The Rave', /\brave\b/i),
   'park-guide': areaGuideJob('park-guide', 'The Park', /\bPark\b/),
   'beach-guide': areaGuideJob('beach-guide', 'Banana Bay', /\bBanana Bay\b/),

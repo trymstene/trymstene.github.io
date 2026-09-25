@@ -2,7 +2,7 @@
 // ❓ an area's questions, under its frame (design library §37). The words are the area's copy file ({ kicker, heading,
 // items: [{ q, a }] }); the page makes its FAQPage from the same list with faqLd() (src/lib/faq.js), so what a search
 // engine reads is what is on the screen.
-import { linkParts } from '../lib/faq.js';
+import CopyLine from './CopyLine.astro';
 const { faq } = Astro.props;
 ---
 <section class="ag__block" id="faq">
@@ -10,7 +10,7 @@ const { faq } = Astro.props;
   <h2>{faq.heading}</h2>
   <dl class="ag__faq">
     {faq.items.map((it) => (
-      <Fragment><dt>{it.q}</dt><dd>{linkParts(it.a).map((p) => (p.href ? <a href={p.href}>{p.text}</a> : p.text))}</dd></Fragment>
+      <Fragment><dt>{it.q}</dt><dd><CopyLine s={it.a} /></dd></Fragment>
     ))}
   </dl>
 </section>
