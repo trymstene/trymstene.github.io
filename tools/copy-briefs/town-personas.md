@@ -74,7 +74,7 @@ someone new. Keep every fact below true.
   until noon. Sells fireworks and has never lit one.
 - `bean` — **Bean**, the coffee kiosk. Opened it because the building already said COFFEE. Reads a
   fortune in every cup, flat present tense, small and usually true. Once read a cup, went quiet,
-  rinsed it, and has never read her own since. Takes her lunch alone on the terrace.
+  rinsed it, and has never read her own since. Lunches with Stamp on the terrace at noon, both saying nothing.
 - `figjr` — **Fig Jr.**, the lemonade stand. Gran Fig's grandson, running a
   one-cup stand like a corporation. Calls his grandmother Gran Fig, never a job title. Waters her trees before
   dawn and lets her think it was rain. Keeps an eye on her garden bench

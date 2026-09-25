@@ -74,8 +74,8 @@ const COPY_P = import('../data/copy/town-npcs.json').then((m) => m.default || m)
 const MECH = [
   { key: 'nib', hat: 'tophat', glasses: 'potter', tool: '', home: 'hall',
     day: [['hall', 'counter', 'front'], ['hall', 'counter', 'front'], ['bench_e', 'bench', 'front'], ['hall', 'counter', 'front'], ['hall', 'counter', 'front'], ['home', 'home', 'front']] },
-  { key: 'stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post',
-    day: [['bus', 'stand', 'right'], ['post', 'counter', 'front'], ['post', 'counter', 'front'], ['post', 'counter', 'front'], ['terrace', 'bench', 'front'], ['home', 'home', 'front']] },
+  { key: 'stamp', hat: 'buckethat', glasses: '', tool: 'letter', home: 'post',   // ☕ lunch on the terrace beside Bean at noon (25 Sep 2026)
+    day: [['bus', 'stand', 'right'], ['post', 'counter', 'front'], ['terrace', 'bench', 'front'], ['post', 'counter', 'front'], ['post', 'counter', 'front'], ['home', 'home', 'front']] },
   { key: 'moss', hat: 'woolbeanie', glasses: '', tool: 'broom', home: 'clothes',
     day: [['square', 'sweep', 'left'], ['hall', 'sweep', 'right'], ['bench_w', 'bench', 'front'], ['cafe', 'sweep', 'left'], ['square', 'stand', 'front'], ['home', 'home', 'front']] },
   { key: 'pip', hat: 'backwardscap', glasses: '', tool: 'rubberchicken', home: 'store',
@@ -322,7 +322,9 @@ export function initLife({ world, W, H, pct }) {
     const odd0 = overrideFn && overrideFn(n, beat);
     // 🕯 an override may INSIST ({ place, always }): the chapter's Nib waits at the fountain through the night too
     const odd = odd0 && odd0.place ? odd0.place : odd0, insist = !!(odd0 && odd0.always);
-    if (odd && ST[odd] && (act !== 'home' || insist)) { const p = ST[odd][0]; return { place: odd, act: 'stand', face: p[0] > 1100 ? 'left' : 'right', lines, x: p[0], y: p[1], loop: null, insist }; }
+    // …on a point of that place nobody stands on this hour: the first point stacked it on whoever lives there (Trym, 24 Sep:
+    // "Moss comes around and stand on top of Spinner")
+    if (odd && ST[odd] && (act !== 'home' || insist)) { const taken = res.filter((m) => m !== n && m.day[beat][0] === odd && !/^(sweep|stroll|home)$/.test(m.day[beat][1])).length, p = ST[odd][Math.min(taken, ST[odd].length - 1)]; return { place: odd, act: 'stand', face: p[0] > 1100 ? 'left' : 'right', lines, x: p[0], y: p[1], loop: null, insist }; }
     const loop = PATHS[n.key + '|' + beat] || null;
     if (loop) return { place, act, face, lines, x: loop[0][0], y: loop[0][1], loop };
     if (act === 'home') { const d = HOME[n.home]; return { place, act, face, lines, x: d[0], y: d[1], loop: null }; }

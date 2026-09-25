@@ -1102,8 +1102,10 @@ export function bootTownLife(ctx) {
     // Spinner out on the arcade's step — for as long as the shift, the round, or your time in their room lasts. They still
     // potter about their aside as they would about any station; only the station moved. 🕹 Spinner's INSISTS: his day
     // is half spent on the arcade's floor (a home beat, which an aside never moves), and the floor is yours while you work it.
+    // …and only when they would be AT that workplace this hour: at lunch they are out of the way already (Stamp and Bean
+    // share the terrace at noon since 25 Sep 2026), and an aside would pull one of them off it
     const wa = workingAt();
-    if (wa && n2.key === ASIDE_BOSS[wa] && beat !== 5) return ASIDE[n2.key];
+    if (wa && n2.key === ASIDE_BOSS[wa] && beat !== 5) { const d = n2.day[beat]; if (d[0] === wa || (wa === 'condo' && d[1] === 'home')) return ASIDE[n2.key]; }
     return oddKey && n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null;
   };
   const ASIDE = { bean: 'terrace', figjr: 'booth', stamp: 'monument', pip: 'bank', spinner: { place: 'condo', always: true } };
@@ -1124,7 +1126,7 @@ export function bootTownLife(ctx) {
     cond.shut = new Set([...LOOK[band].shut, ...todayShut]);
     shutters();
     // the odd spot: one resident, one beat, somewhere they never stand
-    oddKey = todayHas('oddspot') ? Object.keys(ODD_SPOTS)[Math.floor(h(d, 22) * 9)] : null;
+    oddKey = todayHas('oddspot') ? Object.keys(ODD_SPOTS)[Math.floor(h(d, 22) * Object.keys(ODD_SPOTS).length)] : null;
     life.setOverride(overrideFor);
     // the merchant
     killBody(merchant); merchant = null;

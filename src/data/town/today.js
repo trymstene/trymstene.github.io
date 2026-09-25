@@ -16,12 +16,15 @@ export const TODAY_N = { abandoned: 3, struggling: 3, recovering: 2, lively: 3, 
 
 // where each resident stands when the day sends them somewhere odd (a place key of
 // town-life.js's stations), and in which beat
+// ⚠️ NEVER WHERE SOMEBODY ELSE STANDS AT THAT HOUR (25 Sep 2026): five of these stood on a resident's own station — Nib and
+// Spinner on the noon terrace (Bean and Stamp's lunch), Pip on Stamp at the dawn bus, Stamp and Dot on the Figs in the
+// orchard, Bean on Gran Fig's garden bench. tools/check-design.mjs fails one that does.
 export const ODD_SPOTS = {
-  nib: ['terrace', 2], stamp: ['orchard', 2], moss: ['monument', 4], pip: ['bus', 0], bean: ['garden_w', 4],
+  nib: ['terrace', 4], stamp: ['monument', 3], moss: ['monument', 4], pip: ['bus', 3], bean: ['garden_e', 4],
   // ⚠️ Fig Jr.'s odd spot was the notice board, which no longer exists (20 Sep 2026). The fruit cart
   // is the nearest thing to it in kind — somewhere in the square he does not work, a few steps from
   // his own stall — and it is a place town-life already has a station for.
-  figjr: ['cart', 3], spinner: ['terrace', 2], dot: ['orchard', 3], granfig: ['cafe', 2],   // 🕹 Spinner's at noon: his morning is indoors now
+  figjr: ['cart', 3], spinner: ['exchange', 2], dot: ['orchard', 1], granfig: ['cafe', 2],   // 🕹 Spinner's on an outdoor beat: his morning is indoors
   twirl: ['monument', 1],
 };
 // ⚠️ THE ARCADE (`condo`) IS NEVER HERE and never in a band's `shut` list: five shipped games must

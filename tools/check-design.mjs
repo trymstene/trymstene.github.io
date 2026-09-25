@@ -187,6 +187,22 @@ for (const f of files) {
       if (walks > 4) problems.push([rel, `${who} walks ${walks} times a day (${places.join(' → ')}) — a resident stands by their own shop: post, post, a break, post, post, home. The visitors are the traffic (town-folk.js), see design library §23`]);
     }
   }
+  // 🧍 AN ODD SPOT NEVER STANDS ON SOMEBODY (25 Sep 2026; Trym, 24 Sep: "Moss comes around and stand on top of Spinner"). The
+  // day's odd resident goes to src/data/town/today.js ODD_SPOTS [place, beat]; if another resident's own station that beat
+  // is the same place, one banana is drawn on the other. Also never on the odd one's own home beat (it would not show).
+  if (rel === 'src/scripts/town-life.js') {
+    const mech = (code.split('const MECH = [')[1] || '').split('\n];')[0];
+    const days = {};
+    for (const m of mech.matchAll(/\{ key: '(\w+)'[\s\S]*?day: \[([\s\S]*?)\] \},/g)) days[m[1]] = [...m[2].matchAll(/\['(\w+)', '(\w+)'/g)].map((p) => [p[1], p[2]]);
+    const today = readFileSync(join(ROOT, 'src/data/town/today.js'), 'utf8');
+    const odd = [...((today.split('export const ODD_SPOTS = {')[1] || '').split('\n};')[0].matchAll(/(\w+): \['(\w+)', (\d)\]/g))].map((m) => [m[1], m[2], +m[3]]);
+    if (!odd.length) problems.push(['src/data/town/today.js', 'ODD_SPOTS not found where the design gate reads it']);
+    for (const [who, place, beat] of odd) {
+      if (!days[who]) { problems.push(['src/data/town/today.js', `ODD_SPOTS names ${who}, who is not a resident`]); continue; }
+      if (days[who][beat] && days[who][beat][1] === 'home') problems.push(['src/data/town/today.js', `${who}'s odd spot is on a home beat (${beat}), so it never shows`]);
+      for (const [other, d] of Object.entries(days)) if (other !== who && d[beat] && d[beat][0] === place && !/^(sweep|stroll|home)$/.test(d[beat][1])) problems.push(['src/data/town/today.js', `${who}'s odd spot (${place}, beat ${beat}) is where ${other} stands at that hour — one banana on another. Pick a place nobody uses then`]);
+    }
+  }
   if (rel.startsWith('src/pages/') && rel.endsWith('.astro') && /showFooter\s*=\s*\{\s*false\s*\}/.test(code) && !NO_FOOTER_OK.includes(rel)) {
     problems.push([rel, 'opts out of the footer (showFooter={false}) — only the desk and the dev pages may, see design library §17']);
   }

@@ -71,7 +71,7 @@ Inherited the shop from an uncle whose only note said everything is the last one
 
 ### `bean` — Bean, the coffee kiosk
 
-Opened the kiosk because the building already said COFFEE. Reads a fortune in every cup, flat present tense, always something small and usually true. Once read a cup, went quiet, rinsed it, and has never read her own since. Takes her lunch alone on the terrace, and would like company there.
+Opened the kiosk because the building already said COFFEE. Reads a fortune in every cup, flat present tense, always something small and usually true. Once read a cup, went quiet, rinsed it, and has never read her own since. Lunches with Stamp on the terrace at noon, the two of them saying nothing, which is the best part of her day.
 
 ### `figjr` — Fig Jr., the lemonade stand
 
