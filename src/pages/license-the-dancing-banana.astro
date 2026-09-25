@@ -5,28 +5,26 @@ const title = "License the Dancing Banana | Trym Stene";
 const description = "License the original Dancing Banana GIF — the pixel banana bobbing across the internet since 1999, licensed directly by its creator, Trym Stene. Ads, merch, games, video and more.";
 const ogDescription = "The original 1999 pixel banana, licensed directly by its creator. Ads, merch, games, video — quoted per project.";
 
-// this page is ABOUT the banana CreativeWork (entity defined on the hub)
-const pageSchema = {
+// this page is ABOUT the banana CreativeWork (entity defined on the hub); the page node is the layout's
+const workSchema = {
   "@context": "https://schema.org",
-  "@type": "WebPage",
-  "name": "License the Dancing Banana",
-  "url": "https://trymstene.com/license-the-dancing-banana/",
-  "about": {
-    "@type": "CreativeWork",
-    "@id": "https://trymstene.com/#banana-gif",
-    "name": "The Dancing Banana GIF",
-    "creator": { "@id": "https://trymstene.com/#trym", "@type": "Person", "name": "Trym Stene" }
-  }
+  "@type": "CreativeWork",
+  "@id": "https://trymstene.com/#banana-gif",
+  "name": "The Dancing Banana GIF",
+  "dateCreated": "1999",
+  "creator": { "@id": "https://trymstene.com/#trym", "@type": "Person", "name": "Trym Stene" },
+  "copyrightHolder": { "@id": "https://trymstene.com/#trym" }
 };
 ---
 <BaseLayout
   title={title}
   description={description}
+  about="https://trymstene.com/#banana-gif"
   ogTitle="License the Dancing Banana"
   ogImage="https://trymstene.com/assets/og/license.png"
   ogDescription={ogDescription}
 >
-  <script type="application/ld+json" slot="head" set:html={JSON.stringify(pageSchema)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(workSchema)} />
   <!-- hero -->
   <section class="hero">
     <div class="hero__banana">

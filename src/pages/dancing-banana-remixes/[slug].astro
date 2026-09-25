@@ -60,7 +60,7 @@ const crumbLD = {
 const scale = Math.max(4, Math.min(8, Math.round(280 / Math.max(r.w, r.h))));
 ---
 
-<BaseLayout title={m.metaTitle} description={m.metaDescription} ogType="article" ogImage={gifUrl}>
+<BaseLayout title={m.metaTitle} description={m.metaDescription} ogType="article" ogImage={gifUrl} primaryImage={pageUrl + '#image'}>
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(imageLD)} />
     <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} />

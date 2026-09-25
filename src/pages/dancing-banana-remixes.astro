@@ -46,7 +46,7 @@ const gallery = {
   "name": `Dancing Banana Remixes — ${remixes.length} Banana GIFs by the Internet`,
   "description": description,
   "about": { "@id": "https://trymstene.com/#banana-gif" },
-  "isPartOf": { "@id": "https://trymstene.com/#banana-gif" },
+  "isPartOf": { "@id": "https://trymstene.com/#website" },
   "creator": { "@type": "Person", "name": "Trym Stene", "url": "https://trymstene.com/" }
 };
 const CATS = [
@@ -61,6 +61,7 @@ const CATS = [
 <BaseLayout
   title={title}
   description={description}
+  pageNode={false}
   ogTitle="The Dancing Banana Remix Gallery"
   ogDescription={`${remixes.length} dancing banana memes by the internet, since 1999. Rate them in bananas.`}
   ogImage="https://trymstene.com/assets/og/gif.png"

@@ -91,7 +91,7 @@ const remixHref = item.params ? `/make-a-banana/?${item.params}` : '/make-a-bana
 const stickerHref = item.params ? `/make-a-banana/sticker/?${item.params}` : '/make-a-banana/sticker/';
 const teeHref = item.params ? `/make-a-banana/tee/?${item.params}` : '/make-a-banana/tee/';
 ---
-<BaseLayout title={title} description={description} ogType="article" ogImage={gifUrl}>
+<BaseLayout title={title} description={description} ogType="article" ogImage={gifUrl} primaryImage={pageUrl + '#image'}>
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(imageLD)} />
     <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} />

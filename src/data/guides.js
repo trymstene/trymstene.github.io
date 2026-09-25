@@ -3,10 +3,12 @@
 // on the /guides/ mega-cheatsheet hub. Adding a guide = one entry here
 // (research volumes with tools/kw.py first). Answer-first doctrine: `answer`
 // is the one-sentence featured-snippet bid, specs is the table behind it.
+// `published` / `updated` date the page's TechArticle (JSON-LD): bump `updated` when a spec changes.
 
 export const GUIDES = [
   {
     slug: 'slack-emoji-size',
+    published: '2026-08-02', updated: '2026-08-02',
     platform: 'Slack',
     label: 'Slack emoji size',
     asset: 'emoji',
@@ -35,6 +37,7 @@ export const GUIDES = [
   },
   {
     slug: 'telegram-sticker-size',
+    published: '2026-08-02', updated: '2026-08-02',
     platform: 'Telegram',
     label: 'Telegram sticker size',
     asset: 'sticker',
@@ -63,6 +66,7 @@ export const GUIDES = [
   },
   {
     slug: 'discord-sticker-size',
+    published: '2026-08-02', updated: '2026-08-02',
     platform: 'Discord',
     label: 'Discord sticker size',
     asset: 'sticker',
@@ -90,6 +94,7 @@ export const GUIDES = [
   },
   {
     slug: 'discord-emoji-size',
+    published: '2026-07-15', updated: '2026-08-02',
     platform: 'Discord',
     label: 'Discord emoji size',
     asset: 'emote',
@@ -119,6 +124,7 @@ export const GUIDES = [
   },
   {
     slug: 'twitch-emote-size',
+    published: '2026-07-15', updated: '2026-08-02',
     platform: 'Twitch',
     label: 'Twitch emote size',
     asset: 'emote',

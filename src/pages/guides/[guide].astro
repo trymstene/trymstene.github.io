@@ -29,10 +29,28 @@ const crumbLD = {
     { '@type': 'ListItem', position: 3, name: g.label, item: `https://trymstene.com/guides/${g.slug}/` },
   ],
 };
+// 🕸 the guide as what it is: a dated technical article by Trym, about one platform's sizes
+const URL_ = `https://trymstene.com/guides/${g.slug}/`;
+const articleLD = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  '@id': URL_ + '#article',
+  headline: g.h1,
+  description: g.metaDescription,
+  url: URL_,
+  inLanguage: 'en',
+  datePublished: g.published,
+  dateModified: g.updated || g.published,
+  author: { '@id': 'https://trymstene.com/#trym' },
+  publisher: { '@id': 'https://trymstene.com/#trym' },
+  mainEntityOfPage: { '@id': URL_ + '#webpage' },
+  about: { '@type': 'Thing', name: g.platform },
+};
 // **bold** in the answer line → <strong>
 const answerHtml = g.answer.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 ---
 <BaseLayout title={g.title} description={g.metaDescription}>
+  <script type="application/ld+json" set:html={JSON.stringify(articleLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
   <section class="gd">

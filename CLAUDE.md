@@ -51,6 +51,7 @@ npx astro build
 node tools/check-budgets.mjs   node tools/check-design.mjs
 node tools/check-storage.mjs   node tools/check-pulse-areas.mjs
 node tools/check-copy.mjs      node tools/build-worker-allowlists.mjs --check
+node tools/check-structured-data.mjs   (JSON-LD: a page node on every indexable page, licensable images)
 ```
 
 ## Standing rules worth knowing here

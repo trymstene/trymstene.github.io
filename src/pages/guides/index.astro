@@ -43,7 +43,7 @@ const crumbLD = {
   ],
 };
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} pageType="CollectionPage">
   <script type="application/ld+json" set:html={JSON.stringify(faqLD)} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(crumbLD)} slot="head" />
   <section class="gh">

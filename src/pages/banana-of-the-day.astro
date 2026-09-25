@@ -13,23 +13,15 @@ const dateText = today.toLocaleDateString('en-GB', { weekday: 'long', day: 'nume
 const title = 'Banana of the Day — a new dancing banana every day';
 const description = `Every day at midnight UTC the dancing banana puts on a new outfit. Today (${dateText}) it wears ${outfitText}. Come see it dance.`;
 
-const schema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'Banana of the Day',
-  url: 'https://trymstene.com/banana-of-the-day/',
-  description: 'A new randomly dressed dancing banana every day, from the creator of the original 1999 GIF.',
-  about: { '@id': 'https://trymstene.com/#banana-gif' },
-};
 ---
 <BaseLayout
   title={title}
   description={description}
+  about="https://trymstene.com/#banana-gif"
   ogTitle="Banana of the Day"
   ogDescription={`Today the banana wears ${outfitText}.`}
   ogImage="https://trymstene.com/assets/og/builder.png"
 >
-  <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <style is:inline slot="head">
     .botd-stage {
       width: min(420px, 88vw); aspect-ratio: 1; margin: 1.5rem auto;

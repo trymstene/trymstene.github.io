@@ -53,6 +53,8 @@ jobs:
         run: node tools/check-storage.mjs
       - name: Pulse gate — the world page titles the live counter matches on
         run: node tools/check-pulse-areas.mjs
+      - name: Structured-data gate — every indexable page says what it is, every image can be credited
+        run: node tools/check-structured-data.mjs
       - name: Copy gate — the mechanical half of docs/voice.md, on every approved line
         run: node tools/check-copy.mjs
       - name: Toast gate — no words typed straight into say/toast/passToast/bigMoment

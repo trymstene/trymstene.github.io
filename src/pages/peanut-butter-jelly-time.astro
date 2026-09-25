@@ -6,6 +6,35 @@ const title = "Peanut Butter Jelly Time — the Dancing Banana, Explained";
 const description = "Yes — the dancing banana in 'Peanut Butter Jelly Time' is the original 1999 GIF by Trym Stene, made years before the song. Who made what, explained.";
 const ogDescription = "The dancing banana in Peanut Butter Jelly Time is the original 1999 GIF — it predates the song by years. Who made what, explained.";
 
+// 🕸 who made what, said to a machine: the banana (Trym's, the image below) and the song (The Buckwheat Boyz') are two
+// works; the Flash video that paired them was someone else's again
+const bananaLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageObject',
+  '@id': 'https://trymstene.com/peanut-butter-jelly-time/#image',
+  contentUrl: 'https://trymstene.com/assets/dancing-banana-gif.gif',
+  url: 'https://trymstene.com/peanut-butter-jelly-time/',
+  name: 'The Peanut Butter Jelly Time banana — the original 1999 Dancing Banana GIF',
+  encodingFormat: 'image/gif',
+  width: 500,
+  height: 500,
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  creditText: 'Trym Stene',
+  copyrightNotice: '© Trym Stene',
+  license: 'https://trymstene.com/license-the-dancing-banana/',
+  acquireLicensePage: 'https://trymstene.com/license-the-dancing-banana/',
+  isBasedOn: { '@id': 'https://trymstene.com/#banana-gif' },
+};
+const SONG = { '@type': 'MusicRecording', name: 'Peanut Butter Jelly Time', byArtist: { '@type': 'MusicGroup', name: 'The Buckwheat Boyz' } };
+const crumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Dancing Banana GIF', item: 'https://trymstene.com/dancing-banana-gif-meme/' },
+    { '@type': 'ListItem', position: 2, name: 'Peanut Butter Jelly Time', item: 'https://trymstene.com/peanut-butter-jelly-time/' },
+  ],
+};
+
 const faq = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -24,8 +53,13 @@ const faq = {
   ogImage="https://trymstene.com/assets/og/pbjt.png"
   ogDescription={ogDescription}
   ogType="article"
+  about="https://trymstene.com/#banana-gif"
+  primaryImage="https://trymstene.com/peanut-butter-jelly-time/#image"
+  pageExtra={{ mentions: [SONG] }}
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(bananaLd)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(crumbLd)} />
 
   <!-- hero -->
   <section class="hero">

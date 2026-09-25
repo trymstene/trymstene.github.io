@@ -11,8 +11,27 @@ import PAGE from '../data/copy/town-page.json';
 
 const title = PAGE.title;
 const description = PAGE.description;
+// 🕸 what the page IS, for a crawler or an AI reading it: a free game in the browser, Banana World's front door
+const appLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  '@id': 'https://trymstene.com/town/#app',
+  name: 'Banana Town',
+  alternateName: 'Banana World',
+  url: 'https://trymstene.com/town/',
+  description,
+  applicationCategory: 'GameApplication',
+  operatingSystem: 'Web',
+  browserRequirements: 'Requires JavaScript',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  screenshot: 'https://trymstene.com/assets/og/town.png',
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  isBasedOn: { '@id': 'https://trymstene.com/#banana-gif' },
+};
 ---
-<BaseLayout title={title} description={description} ogImage="https://trymstene.com/assets/og/town.png">
+<BaseLayout title={title} description={description} ogImage="https://trymstene.com/assets/og/town.png" about="https://trymstene.com/town/#app">
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(appLd)} />
   <!-- 🗣 the world's shared NPC dialogue card (design library §18) -->
   <link rel="stylesheet" href="/css/dialogue.css" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />

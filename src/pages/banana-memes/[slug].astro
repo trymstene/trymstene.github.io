@@ -202,7 +202,8 @@ if (type === 'item') {
 }
 const heroScale = type === 'item' && Math.max(item.w, item.h) < 260;
 ---
-<BaseLayout title={title} description={description} ogType="article" ogImage={ogImage}>
+<BaseLayout title={title} description={description} ogType="article" ogImage={ogImage}
+  pageNode={type === 'item'} primaryImage={type === 'item' ? pageUrl + '#image' : undefined}>
   <Fragment slot="head">
     {ld.map((d) => <script type="application/ld+json" set:html={JSON.stringify(d)} />)}
   </Fragment>

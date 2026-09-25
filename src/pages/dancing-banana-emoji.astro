@@ -18,6 +18,34 @@ const faq = {
   ]
 };
 
+// 🕸 the emoji itself as an image a search engine can credit and license, and the page's place in the site
+const emojiLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageObject',
+  '@id': 'https://trymstene.com/dancing-banana-emoji/#image',
+  contentUrl: 'https://trymstene.com/assets/dancing-banana-emoji-128.gif',
+  url: 'https://trymstene.com/dancing-banana-emoji/',
+  name: 'Dancing Banana emoji — transparent animated GIF, 128 × 128',
+  caption: 'The original 1999 Dancing Banana as a transparent animated emoji, sized for Discord, Slack and Teams.',
+  encodingFormat: 'image/gif',
+  width: 128,
+  height: 128,
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  creditText: 'Trym Stene',
+  copyrightNotice: '© Trym Stene',
+  license: 'https://trymstene.com/license-the-dancing-banana/',
+  acquireLicensePage: 'https://trymstene.com/license-the-dancing-banana/',
+  isBasedOn: { '@id': 'https://trymstene.com/#banana-gif' },
+};
+const crumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Dancing Banana GIF', item: 'https://trymstene.com/dancing-banana-gif-meme/' },
+    { '@type': 'ListItem', position: 2, name: 'Dancing banana emoji', item: 'https://trymstene.com/dancing-banana-emoji/' },
+  ],
+};
+
 // the platform cuts — every button on this page maps a search intent to the
 // exact right file, pre-cropped: nobody should ever need an image editor
 const DL = {
@@ -34,8 +62,12 @@ const DL = {
   ogTitle="Dancing Banana Emoji & Sticker — Free for Discord & Slack"
   ogDescription={ogDescription}
   ogImage="https://trymstene.com/assets/og/emoji.png"
+  about="https://trymstene.com/#banana-gif"
+  primaryImage="https://trymstene.com/dancing-banana-emoji/#image"
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(emojiLd)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(crumbLd)} />
 
   <!-- hero -->
   <section class="hero">

@@ -14,6 +14,15 @@ const {
   robots = 'index,follow,max-image-preview:large',
   showFooter = true,
   viewportFit = false,
+  // 🕸 THE PAGE NODE (25 Sep 2026, the structured-data audit): every indexable page says in JSON-LD what it is — its
+  // URL, name, language and author, part of the site, by Trym — so a crawler or an AI reading ONE page knows whose
+  // it is and where it belongs. A page that declares its own page node (a CollectionPage, the ProfilePage) passes
+  // pageNode={false}; `about` and `primaryImage` are @ids (the GIF: https://trymstene.com/#banana-gif).
+  pageType = 'WebPage',
+  pageNode = true,
+  about,
+  primaryImage,
+  pageExtra,   // more properties for the page node, e.g. { mentions: [...] }
 } = Astro.props;
 // our generated banners are always 1200x630; external/custom images vary
 const ogIsBanner = ogImage.includes('/assets/og/');
@@ -23,6 +32,28 @@ const ogTitle = Astro.props.ogTitle ?? title;
 const ogLocale = Astro.props.ogLocale;
 const site = 'https://trymstene.com';
 const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
+const indexable = !/noindex/.test(robots);
+const pageLd = indexable && pageNode ? {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': pageType,
+      '@id': canonicalURL + '#webpage',
+      url: canonicalURL,
+      name: title,
+      description,
+      inLanguage: lang,
+      isPartOf: { '@id': site + '/#website' },
+      author: { '@id': site + '/#trym' },
+      ...(about ? { about: { '@id': about } } : {}),
+      ...(primaryImage ? { primaryImageOfPage: { '@id': primaryImage } } : {}),
+      ...(pageExtra || {}),
+    },
+    // the site and its maker, by the same @ids the homepage and /me/ describe in full
+    { '@type': 'WebSite', '@id': site + '/#website', url: site + '/', name: 'Trym Stene', publisher: { '@id': site + '/#trym' } },
+    { '@type': 'Person', '@id': site + '/#trym', name: 'Trym Stene', url: site + '/' },
+  ],
+} : null;
 ---
 <!DOCTYPE html>
 <html lang={lang}>
@@ -62,6 +93,7 @@ const canonicalURL = canonical ?? new URL(Astro.url.pathname, site).href;
     <link rel="stylesheet" href="/css/fonts.css" />
     <link rel="stylesheet" href="/css/paper.css" />
     <link rel="stylesheet" href="/css/styles.css" />
+    {pageLd && <script type="application/ld+json" set:html={JSON.stringify(pageLd)} />}
     <slot name="head" />
   </head>
   <body>

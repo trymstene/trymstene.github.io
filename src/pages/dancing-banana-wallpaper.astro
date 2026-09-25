@@ -17,18 +17,42 @@ const SIZES = [
 ];
 const file = (d, s) => `/assets/wallpapers/dancing-banana-wallpaper-${d}-${s}.png`;
 
+// 🖼 the page node lists its nine images (3 designs × 3 sizes), each one licensable in Google Images
+const PAGE = 'https://trymstene.com/dancing-banana-wallpaper/';
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
+  '@id': PAGE + '#webpage',
   name: 'Dancing Banana Wallpapers',
-  url: 'https://trymstene.com/dancing-banana-wallpaper/',
+  url: PAGE,
   description,
+  inLanguage: 'en',
+  isPartOf: { '@id': 'https://trymstene.com/#website' },
+  author: { '@id': 'https://trymstene.com/#trym' },
   about: { '@id': 'https://trymstene.com/#banana-gif' },
+  hasPart: DESIGNS.flatMap((d) => SIZES.map((s) => {
+    const [, w, h] = s.label.match(/(\d+)×(\d+)/);
+    return {
+      '@type': 'ImageObject',
+      contentUrl: 'https://trymstene.com' + file(d.id, s.id),
+      name: `Dancing Banana wallpaper — ${d.name}, ${s.label}`,
+      caption: d.blurb,
+      encodingFormat: 'image/png',
+      width: +w, height: +h,
+      creator: { '@id': 'https://trymstene.com/#trym' },
+      creditText: 'Trym Stene',
+      copyrightNotice: '© Trym Stene',
+      license: 'https://trymstene.com/license-the-dancing-banana/',
+      acquireLicensePage: 'https://trymstene.com/license-the-dancing-banana/',
+      isBasedOn: { '@id': 'https://trymstene.com/#banana-gif' },
+    };
+  })),
 };
 ---
 <BaseLayout
   title={title}
   description={description}
+  pageNode={false}
   ogTitle="Dancing Banana Wallpapers — Free"
   ogDescription="Free wallpapers of the original 1999 Dancing Banana: classic, dark and pattern — desktop, 4K and phone."
   ogImage={'https://trymstene.com' + file('classic', 'desktop')}
