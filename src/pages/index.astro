@@ -51,7 +51,9 @@ import citizens from '../data/citizen.json';
 // a slight arc and big text", "some movement and animations are nice and lively overall", the buttons with "no icons".
 // The party: rays turning behind a spotlit banana, confetti, a crew in builder outfits dancing on the same beat (rows
 // of /assets/hero/dancers.png, tools/build-hero-dancers.py), a coin for every tap on a dancer. The words are
-// src/data/copy/home-hero.json.
+// src/data/copy/home-hero.json. The rules it paid for (whole-pixel crew, clip not hide, the pill never over the banana,
+// numbers that count what the line says) are design library §38; the page's inline CSS keeps only labels, because it
+// ships to every visitor as written.
 import W from '../data/copy/home-hero.json';
 import homeStats from '../data/home-stats.json';
 import { cleanName } from '../lib/player-name.js';
@@ -118,15 +120,7 @@ const FEATURES = [
 <BaseLayout title={title} description={description} ogDescription={ogDescription}>
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <style is:inline slot="head">
-    /* 🎉 THE HERO (26 Sep 2026) — the party Trym picked from two prototypes: rays turning behind a spotlit banana,
-       confetti, the name on an arch, a crew in builder outfits on the banana's beat. Every loop runs on transform or
-       opacity only, pauses while the hero is off screen (.hw--rest) and stops under reduced motion.
-       ⚠️ THE CREW SCALE IS WHOLE DEVICE PIXELS (design library §6, §25): --hs2/--hs3 are 2 and 3 snapped to k/dpr by
-       the one-line script at the top of the hero, so a 2.625-dpr phone draws every art pixel five device pixels wide
-       instead of five-or-six. The strip steps by transform inside a clipped box of whole width, never by
-       background-position (§6: the sideways breathing).
-       ⚠️ CLIP, NOT HIDDEN: the rays are wider than the page, and overflow:hidden is a scroll container — focusing a
-       door or scrolling a dancer into view slid the whole hero sideways (the test caught it, 26 Sep). clip scrolls nothing. */
+    /* the hero: design library §38 */
     .hw {
       --hs: var(--hs2, 2);
       position: relative; overflow: hidden; overflow: clip; isolation: isolate; text-align: center;
@@ -139,9 +133,7 @@ const FEATURES = [
     @media (max-width: 699px) { .hw__conf b:nth-child(2n) { display: none; } }
     @keyframes hwFall { to { transform: translateY(1100px) rotate(620deg); } }
 
-    /* the hello, and the name on its arch: each letter sits on the curve (the outer span) and bobs in a wave that
-       runs across the name (the inner span's translate) after it pops in (its scale) — two properties, so the two
-       animations never fight */
+    /* the name on its arch: the outer span sits on the curve, the inner one pops (scale) and bobs (translate) */
     .hw__title { margin: 0; line-height: 1; }
     .hw__kicker {
       display: table; margin: 0 auto 0.5rem; text-transform: none; letter-spacing: 0.02em;
@@ -164,7 +156,7 @@ const FEATURES = [
       .hw__l { --u: var(--t); transform: translateY(calc(var(--u) * var(--u) * 0.3em)) rotate(calc(var(--u) * 8deg)); }
     }
 
-    /* the stage: the banana in its spotlight, the rays turning around it, the crew either side on its line */
+    /* the stage */
     .hw__stage { position: relative; margin: 0 auto; width: clamp(150px, 52vw, 240px); width: clamp(150px, min(52vw, 26svh), 240px); }
     @media (min-width: 700px) { .hw__stage { width: clamp(150px, min(52vw, 29svh), 240px); } }
     .hw__rays {
@@ -207,8 +199,7 @@ const FEATURES = [
     @media (min-width: 1100px) { .hw__d:nth-child(n+3 of .hw__d) { display: block; } .hw__d:nth-child(n+4 of .hw__d) { display: none; } }
     @media (min-width: 1300px) { .hw__d:nth-child(n+4 of .hw__d) { display: block; } }
 
-    /* the sticker that says the crew can be tapped, until somebody does. On a phone the one dancer stands under the
-       big banana's hand, so the sticker starts past the hand and points back at the dancer's head */
+    /* the "tap a dancer" sticker: on a phone it starts past the big banana's hand */
     .hw__hint {
       position: absolute; bottom: calc(100% - 11px * var(--hs)); left: 12px; z-index: 2; white-space: nowrap; pointer-events: none;
       font-weight: 800; font-size: 0.78rem; background: var(--paper); border: 3px solid var(--ink); padding: 0.1rem 0.45rem;
@@ -226,8 +217,7 @@ const FEATURES = [
     @keyframes hwBob { 50% { translate: 0 -5px; } }
     .hw.is-played .hw__hint { display: none; }
 
-    /* the coins: a pill under the banana that counts them, and after five a link into the town. In the flow, so it
-       pushes the words down (after a tap, which is not a layout shift) instead of covering the banana's feet */
+    /* the coin pill, in the flow under the stage (never over the banana) */
     .hw__coins {
       position: relative; z-index: 2; display: flex; align-items: center; gap: 0.4rem; width: max-content; max-width: calc(100% - 0.5rem);
       margin: 0.5rem auto -0.3rem; text-align: left; line-height: 1.2; text-decoration: none; color: var(--ink);
@@ -247,8 +237,7 @@ const FEATURES = [
     @keyframes hwCoin { to { background-position: 120% 0; } }
     .hw__bit { position: absolute; z-index: 4; width: 9px; height: 9px; pointer-events: none; }
 
-    /* the words under the dancers and the two doors, with no icons: the arrow is drawn and nudges forward, and a
-       shine crosses the main door now and then */
+    /* the line and the two doors: no icons, a drawn arrow */
     .hw__tag { max-width: 36ch; margin: 1.2rem auto 0; font-weight: 700; font-size: clamp(0.98rem, 2.6vw, 1.15rem); line-height: 1.4; text-wrap: balance; }
     .hw__cta { margin-top: 1.1rem; display: flex; gap: 0.9rem; justify-content: center; flex-wrap: wrap; }
     .hw__cta .btn { display: inline-flex; align-items: center; justify-content: center; font-size: 1.08rem; padding: 0.9rem 1.5rem; }
@@ -269,7 +258,7 @@ const FEATURES = [
       .hw__rays, .hw__l > span, .hw__d::before, .hw__hint, .hw__go::after, .hw__arrow { animation: none; }
     }
 
-    /* 📰 the ticker: the numbers in white, a live one led by the world's green dot, a pink diamond between */
+    /* the ticker */
     .tk .marquee__track { animation-duration: calc(var(--tk-len) * 0.16s); }
     .tk__i { display: inline-block; }
     .tk__i::after { content: ''; display: inline-block; vertical-align: 0.1em; width: 7px; height: 7px; margin: 0 1.05rem; background: var(--hot); transform: rotate(45deg); }
@@ -365,7 +354,7 @@ const FEATURES = [
     .bwl-also { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin-top: 1.6rem; font-weight: 700; }
   </style>
 
-  <!-- 📰 the ticker: the world's numbers (the frontmatter), the live ones put in front by the script below -->
+  {/* 📰 the ticker: the world's numbers (the frontmatter), the live ones put in front by the script below */}
   <div class="marquee tk" slot="banner" aria-hidden="true" id="tk" data-live={TICK_LIVE} data-len={TICK_LEN} style={`--tk-len:${TICK_LEN}`}>
     <div class="marquee__track">
       {[0, 1].map(() => (
@@ -374,7 +363,7 @@ const FEATURES = [
     </div>
   </div>
 
-  <!-- 🎉 the hero: the hello, the arched name, the banana and its crew, the two doors -->
+  {/* 🎉 the hero: the hello, the arched name, the banana and its crew, the two doors */}
   <section class="hw" id="hero">
     <script is:inline>(function(){var d=window.devicePixelRatio||1,s=document.documentElement.style;s.setProperty('--hs2',Math.max(1,Math.round(2*d))/d);s.setProperty('--hs3',Math.max(1,Math.round(3*d))/d);})();</script>
     <div class="hw__conf" aria-hidden="true">{CONFETTI.map((s) => <b style={s}></b>)}</div>
@@ -396,21 +385,21 @@ const FEATURES = [
     </div>
     <a class="hw__coins" href="/town/" data-place="hero-game" hidden><i class="hw__coin" aria-hidden="true"></i><b>0</b><span class="hw__done">{W.play.done}<span class="hw__arrow" aria-hidden="true">→</span></span></a>
     <p class="hw__tag">{W.tag}</p>
-    <!-- 🌍 ONE DOOR (Trym, 13 Aug): the per-area buttons collapsed into a
+    {/* 🌍 ONE DOOR (Trym, 13 Aug): the per-area buttons collapsed into a
          single entrance — the world is one place now and the town is its
          front door. "Enter" was the chosen verb: a place you walk into —
          "Join" read as signing up, "Play" shrank it to a minigame. No icons
          on either button (Trym, 26 Sep: the globe and the palette "dont match
-         the banana theme"); the arrow is drawn, and it moves. -->
+         the banana theme"); the arrow is drawn, and it moves. */}
     <div class="hw__cta">
       <a class="btn btn--dark hw__go" href="/town/" data-place="hero">{W.enter}<span class="hw__arrow" aria-hidden="true">→</span></a>
       <a class="btn btn--light hw__make" href="/make-a-banana/" data-place="hero">{W.make}</a>
     </div>
   </section>
 
-  <!-- 🎟 THE PACK BAND — the shop's main product, one band under the hero
+  {/* 🎟 THE PACK BAND — the shop's main product, one band under the hero
        (Trym, 5 Sep: "frontpage somewhere in the top"). The stickers are the
-       copy; the words stay tiny. -->
+       copy; the words stay tiny. */}
   <section class="block block--yellow pkband" id="stickers">
     <PackFan />
     <p class="kicker">New · Series 1</p>
@@ -424,9 +413,9 @@ const FEATURES = [
     .pkband__lead { margin: 0 auto 1.2rem; }
   </style>
 
-  <!-- 🌍 the world landing — the doors became a visual sell (Trym, 13 Aug):
+  {/* 🌍 the world landing — the doors became a visual sell (Trym, 13 Aug):
        feature stills from the reel scenes, real community homesteads with
-       names tagged, a CTA always in reach. Copy stays tiny and sharp. -->
+       names tagged, a CTA always in reach. Copy stays tiny and sharp. */}
   <section class="block" id="doors">
     <p class="kicker">Banana World</p>
     <h2>One world. Every banana.</h2>
@@ -494,7 +483,7 @@ const FEATURES = [
       <a href="/banana-of-the-day/">the banana of the day →</a>
     </p>
 
-    <!-- 💬 THE DISCORD CARD — right under the doors to the areas, because it is
+    {/* 💬 THE DISCORD CARD — right under the doors to the areas, because it is
          one of them: the world has a park, a rave, a bay, and a room where the
          people who play them talk. The makers whose items are IN the game are
          there, which is the actual reason to join and so it is the line used.
@@ -505,7 +494,7 @@ const FEATURES = [
          World and got confused. Every other card on this page is a door into
          the world, so a door metaphor here reads as one more area. The logo is
          the fastest disambiguator there is: nobody mistakes it for a place we
-         built. Never put the word back in the kicker alone. -->
+         built. Never put the word back in the kicker alone. */}
     <a class="dc" href="https://discord.gg/cuF6BHfZT4" target="_blank" rel="noopener"
        data-place="home_discord">
       <span class="dc__stage">
@@ -524,7 +513,7 @@ const FEATURES = [
     </a>
   </section>
 
-  <!-- banana hook -->
+  {/* banana hook */}
   <section class="block block--yellow" id="banana">
     <p class="kicker">Yes, THAT banana</p>
     <h2>I accidentally made the internet's favourite fruit.</h2>
@@ -540,7 +529,7 @@ const FEATURES = [
     <a class="btn btn--dark" href="/dancing-banana-gif-meme/">Read the full banana story →</a>
   </section>
 
-  <!-- the host -->
+  {/* the host */}
   <section class="block" id="about">
     <div class="split">
       <div class="split__media">
