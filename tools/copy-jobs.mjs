@@ -1995,6 +1995,44 @@ export const JOBS = {
     shape: townShape,
     schema: townSchema,
   },
+  // 🕹 THE ARCADE'S FIVE GAMES (25 Sep 2026). Trym lost a run of Banana Invaders to "SWARMED" with the swarm still high up:
+  // a fly's drop had hit him, and the game had one word for both ends. An end says what happened (docs/voice.md, "a game
+  // line says what happened"), and a computer's lines name its keys where a phone's say tap.
+  'town-games': {
+    id: 'town-games',
+    title: 'Banana Town — the arcade’s five games',
+    what: 'Each cabinet’s name and the line under it on its card, what the screen says before a run (for a thumb, and for a keyboard), how each run ends, the line that offers another go, and the few words drawn during a run.',
+    approved: 'src/data/copy/town-games.json',
+    reads: 'src/scripts/town-games.js (a static import inside the games’ own lazy chunk)',
+    top: ['cabinets', 'start', 'startKeys', 'end', 'again', 'againKeys', 'wave', 'perfect', 'spinner'],
+    fields: {
+      ...Object.fromEntries(['peelout', 'snake', 'invaders', 'pong', 'stack'].flatMap((g) => [
+        ['cabinets.' + g + '.name', { kind: 'label', aim: 15, max: 18, note: 'The cabinet’s name: the heading of its card.' }],
+        ['cabinets.' + g + '.sub', { kind: 'prose', aim: 76, max: 80, note: 'Under the name on the card: how to play with a thumb, then the game in one short sentence.' }],
+        ['start.' + g, { kind: 'label', aim: 28, max: 30, note: 'Drawn on the game’s screen before a run starts, on a phone or a tablet: the one gesture that starts it. Lower case.' }],
+        ['startKeys.' + g, { kind: 'label', aim: 28, max: 30, note: 'The same line on a computer (a mouse or a touchpad): the keys that play it. Lower case except a key’s own name.' }],
+      ])),
+      'end.peelout': { kind: 'label', aim: 8, max: 14, note: 'Big, in capitals, when the banana hits a vine, a crate or the vat.' },
+      'end.snakeBit': { kind: 'label', aim: 8, max: 14, note: 'Big, in capitals, when the snake runs into its own peel.' },
+      'end.snakeEdge': { kind: 'label', aim: 12, max: 14, note: 'Big, in capitals, when the snake runs off the edge of the board. Never the same word as snakeBit: the end says which it was.' },
+      'end.invadersSwarmed': { kind: 'label', aim: 8, max: 14, note: 'Big, in capitals, when the flies come all the way down to the banana.' },
+      'end.invadersHit': { kind: 'label', aim: 6, max: 14, note: 'Big, in capitals, when a drop from a fly lands on the banana (the drop that did it is marked). Never the swarm’s word.' },
+      'end.pong': { kind: 'label', aim: 12, max: 14, note: 'Big, in capitals, when the third ball gets past the player’s peel.' },
+      'end.stack': { kind: 'label', aim: 8, max: 14, note: 'Big, in capitals, when a crate misses the tower.' },
+      again: { kind: 'label', aim: 20, max: 32, note: 'Under the end, on a phone: a tap starts a new run.' },
+      againKeys: { kind: 'label', aim: 26, max: 32, note: 'The same on a computer: Space starts a new run (a click does too).' },
+      wave: { kind: 'label', aim: 8, max: 12, ...holdsAll('n'), note: 'Banana Invaders, when a new row of flies comes in; {n} is its number.' },
+      perfect: { kind: 'label', aim: 7, max: 10, note: 'Banana Stack, when a crate lands exactly on the one below.' },
+      spinner: { kind: 'label', aim: 7, max: 10, note: 'Banana Pong: the name written by the other peel. Spinner runs the arcade.' },
+    },
+    shape: (d) => {
+      const bad = [], ends = d.end || {};
+      if (ends.snakeBit && ends.snakeBit === ends.snakeEdge) bad.push({ path: 'end.snakeEdge', msg: 'the same word as snakeBit — the end must say which it was' });
+      if (ends.invadersHit && ends.invadersHit === ends.invadersSwarmed) bad.push({ path: 'end.invadersHit', msg: 'the same word as invadersSwarmed — a drop is not the swarm' });
+      if (!/\bS\b/.test((d.startKeys || {}).invaders || '')) bad.push({ path: 'startKeys.invaders', msg: 'must name S, the key that throws (Trym asked for it, 25 Sep 2026)' });
+      return bad;
+    },
+  },
   // 📷 the sticker packs' PRODUCT PHOTOS (18 Sep 2026): Trym's photos of the printed Party pack, shown on every
   // pack's page so a buyer sees the real thing — each carries a stamp saying so (tools/build-pack-photos.py bakes it)
   'pack-photos': {

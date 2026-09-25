@@ -1023,3 +1023,24 @@ other players in the store and arcade"*. The rules it left, for any room a playe
   a dead cabinet dims its LIGHTS (marquee, screen, buttons), never a black box over the machine.
 - Walked by `tests/town-spinner.spec.mjs` (the keeper, the doorstep), `tests/town-crowd.spec.mjs` (two phones meet in the
   arcade, on the real room) and `tests/town-arcade-chores.spec.mjs`.
+
+## §35 A GAME ENDS ON WHAT YOU CAN SEE, AND SAYS WHICH END IT WAS (25 Sep 2026, Trym playing Banana Invaders)
+
+Trym: *"i got "swarmed" in this scenario - not close to a bullet, and the swarm was still high up … should be able to use S
+key to shoot so you dont have to tap mousepad to shoot. hopefully none of the other games has these kind of issues"*. A fly's
+drop had ended the run from 30 px over the banana, drawn UNDER it, and the end had one word for both ways to lose. The rules
+it left, for every arcade game (src/scripts/town-games.js) and any game after them:
+
+- **What hits is what is drawn.** A run ends only where something drawn meets the banana's drawn body: a box or circle
+  measured off the sprite's own pixels, a little inside them, never a wider zone round it. An obstacle is hit by ONE
+  geometry that both draws it and collides (Peel Out's `vine()`), so the two cannot drift apart.
+- **The thing that ended it is on top and marked.** Drawn over the banana, never under, and ringed when it lands.
+- **The end says which end it was.** One word per cause ("HIT!" for a drop, "SWARMED" for the flies at the bottom, "HIT THE
+  EDGE" and "BITTEN" in Snake), from `src/data/copy/town-games.json`, and the copy gate refuses two causes sharing a word.
+- **Every game plays from the keyboard, and a computer is told its keys.** Held keys move at the game's own speed, read each
+  frame (`heldKeys`), never at the keyboard's repeat rate; one press is one action (a held Space does not drop the whole
+  Stack). The screen names the keys where there is a mouse or a touchpad (`(hover: hover) and (pointer: fine)`), and the tap
+  everywhere else.
+- **The press for another go is only that.** It restarts and plays nothing in the new run (`stopImmediatePropagation`: the
+  same tap used to drop Stack's first crate at the edge). The first real press is a real move, timed like every other.
+- Walked by `tests/town-arcade-fair.spec.mjs`: each game on the built site, Trym's drop included.

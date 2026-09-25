@@ -1,0 +1,52 @@
+{
+  "cabinets": {
+    "peelout": {
+      "name": "Peel Out",
+      "sub": "Tap to flap. Through the vines and over the crates; the vat is waiting."
+    },
+    "snake": {
+      "name": "Banana Snake",
+      "sub": "Tap the side you want to turn to. Eat jelly, grow a peel, never bite it."
+    },
+    "invaders": {
+      "name": "Banana Invaders",
+      "sub": "Drag to slide, tap to throw a peel. The flies come down in rows."
+    },
+    "pong": {
+      "name": "Banana Pong",
+      "sub": "Drag your peel. Spinner is on the other side, and he gets better."
+    },
+    "stack": {
+      "name": "Banana Stack",
+      "sub": "Tap to drop the crate. What hangs over is lost. Perfect drops grow it back."
+    }
+  },
+  "start": {
+    "peelout": "tap to flap",
+    "snake": "tap a side to go",
+    "invaders": "tap to throw, drag to slide",
+    "pong": "drag to play",
+    "stack": "tap to drop"
+  },
+  "startKeys": {
+    "peelout": "Space to flap",
+    "snake": "press an arrow key to go",
+    "invaders": "S to throw, A and D to slide",
+    "pong": "A and D to play",
+    "stack": "Space to drop"
+  },
+  "end": {
+    "peelout": "SPLAT",
+    "snakeBit": "BITTEN",
+    "snakeEdge": "HIT THE EDGE",
+    "invadersSwarmed": "SWARMED",
+    "invadersHit": "HIT!",
+    "pong": "SPINNER WINS",
+    "stack": "TOPPLED"
+  },
+  "again": "tap for another go",
+  "againKeys": "press Space for another go",
+  "wave": "wave {n}",
+  "perfect": "perfect",
+  "spinner": "Spinner"
+}
