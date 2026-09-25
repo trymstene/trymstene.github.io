@@ -186,7 +186,7 @@ const FEATURES = [
          chosen verb: a place you walk into — "Join" read as signing up,
          "Play" shrank it to a minigame. -->
     <div class="hero__cta">
-      <a class="btn btn--dark" href="/town/">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark" href="/town/" data-place="hero">🌍 Enter Banana World →</a>
       <a class="btn btn--light" href="/make-a-banana/" data-place="hero"><PixelIcon name="palette" /> Make a banana</a>
     </div>
   </section>
@@ -218,7 +218,7 @@ const FEATURES = [
         <img class={i === 0 ? 'on' : ''} src={h.img} alt={h.alt}
              width="1400" height="600" loading={i === 0 ? 'eager' : 'lazy'} />
       ))}
-      <a class="btn btn--dark bwl-hero__cta" href="/town/">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark bwl-hero__cta" href="/town/" data-place="doors">🌍 Enter Banana World →</a>
     </div>
     <p class="doors__daily" style="text-align:center">
       <span class="door__dot" style="display:inline-block;vertical-align:1px;margin-right:0.4rem"></span>
@@ -227,7 +227,7 @@ const FEATURES = [
 
     <div class="bwl-grid">
       {FEATURES.map((f) => (
-        <a class="bwl-card" href={f.href}>
+        <a class="bwl-card" href={f.href} data-place={f.href === '/town/' ? 'doors' : undefined}>
           <img src={`/assets/world/feat-${f.k}.jpg`} alt={`Banana World — ${f.line}`}
                width="640" height="800" loading="lazy" />
           <b>{f.line}</b>
@@ -268,7 +268,7 @@ const FEATURES = [
     </div>
 
     <div class="bwl-cta">
-      <a class="btn btn--dark" href="/town/">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark" href="/town/" data-place="doors">🌍 Enter Banana World →</a>
       <p class="bwl-fine">free · plays in the browser · your banana is waiting</p>
     </div>
     <p class="bwl-also">
@@ -346,18 +346,8 @@ const FEATURES = [
   </section>
 
   <script>
-    // 🌍 the one-door funnel: which frontpage door opened Banana World —
-    // town_open can't tell the hero button from a typed URL (the door is /town/ since 21 Sep 2026)
-    document.querySelectorAll('a[href="/town/"]').forEach((a) => {
-      a.addEventListener('click', () => {
-        try {
-          // @ts-ignore
-          window.gtag && window.gtag('event', 'world_door', {
-            from: a.closest('.hero') ? 'hero' : 'doors', transport_type: 'beacon',
-          });
-        } catch (e) {}
-      });
-    });
+    // 🌍 which frontpage door opened Banana World: public/js/main.js counts every door on every page now
+    // (world_door, from = the link's data-place: hero or doors here), so this page no longer counts its own
     // 🎠 the hero reel — fade through the world's best moments, Ken Burns
     // restarting per slide; still image under reduced motion
     const slides = [...document.querySelectorAll('#bwlHero img')];

@@ -64,7 +64,7 @@ const RANGE = {
   events: [
     { name: 'offer_shown', v: 236, u: 205 }, { name: 'offer_pack', v: 23, u: 21 }, { name: 'offer_swap', v: 52, u: 30 }, { name: 'offer_skip', v: 174, u: 160 },
     { name: 'offer_world', v: 2, u: 2 }, { name: 'offer_support', v: 2, u: 2 },
-    { name: 'gif_download', v: 176, u: 150 }, { name: 'builder_boot', v: 300, u: 250 }, { name: 'builder_start', v: 100, u: 90 },
+    { name: 'gif_download', v: 176, u: 150 }, { name: 'builder_boot', v: 300, u: 250 }, { name: 'builder_start', v: 100, u: 90 }, { name: 'world_door', v: 58, u: 44 },
     { name: 'shop_view', v: 50, u: 45 }, { name: 'select_item', v: 28, u: 24 }, { name: 'view_item', v: 33, u: 28 },
     { name: 'pass_ask_shown', v: 61, u: 40 }, { name: 'pass_ask_tap', v: 9, u: 8 }, { name: 'pass_mail_signin', v: 6, u: 5 }, { name: 'pass_mail_login', v: 3, u: 3 }, { name: 'pass_mail_attached', v: 1, u: 1 },
     { name: 'arcade_board', v: 14, u: 9 }, { name: 'arcade_run', v: 41, u: 9 }, { name: 'arcade_score', v: 37, u: 8 }, { name: 'arcade_prize', v: 2, u: 2 },
@@ -85,7 +85,7 @@ const LIVE = {
     { cc: 'CL', name: 'Chile', v: 1 }, { cc: 'AU', name: 'Australia', v: 1 }, { cc: 'NZ', name: 'New Zealand', v: 1 }],
   cities: [{ city: 'Oslo', cc: 'NO', v: 1 }], pages: [{ page: 'The Dancing Banana GIF', v: 2 }, { page: 'Banana Town | Trym Stene', v: 1 }],
   events: [{ name: 'offer_shown', v: 2 }, { name: 'offer_pack', v: 1 }],
-  spark: Array(30).fill(0), recent: [{ name: 'offer_pack', cc: 'US', v: 1 }, { name: 'offer_shown', cc: 'NO', v: 1 }, { name: 'gif_download', cc: 'US', v: 1 }],
+  spark: Array(30).fill(0), recent: [{ name: 'offer_pack', cc: 'US', v: 1 }, { name: 'offer_shown', cc: 'NO', v: 1 }, { name: 'gif_download', cc: 'US', v: 1 }, { name: 'world_door', cc: 'NL', v: 2 }],
   countryPages: { NO: [{ page: '/dancing-banana-gif-meme/' }, { page: '/' }, { page: '/shop/' }], GL: [{ page: '/' }, { page: '/rave/' }] },
   devices: { mobile: 2, desktop: 1 }, hot: {},
 };
@@ -195,8 +195,8 @@ async function walkFloor(page, f, name) {
   out.labelsToggle = await page.locator('[aria-label="show labels on the map"]').count();
   const T = {};
   for (const f of FLOORS) T[f] = await walkFloor(page, f, 'desk');
-  out.floors.now = { missing: missing(T.now, ['on the site now', 'in Banana World now', 'Pages open now', 'Cities', 'In Banana World now', 'Status board', 'Doors', 'tap a dot']) };
-  out.floors.visitors = { missing: missing(T.visitors, ['Visits in this window', 'visits', 'visitors', 'first-time visitors', 'Which pages they read', 'The GIF page', 'Where they came from', 'Where visitors were', 'What they did', 'visitors by country']) };
+  out.floors.now = { missing: missing(T.now, ['on the site now', 'in Banana World now', 'Pages open now', 'Cities', 'In Banana World now', 'Status board', 'Doors', 'tap a dot', 'took a door into Banana World']) };
+  out.floors.visitors = { missing: missing(T.visitors, ['Visits in this window', 'visits', 'visitors', 'first-time visitors', 'Which pages they read', 'The GIF page', 'Where they came from', 'Where visitors were', 'What they did', 'visitors by country', 'took a door into Banana World']) };
   out.floors.business = { missing: missing(T.business, ['Checkout works?', 'Money, as Google counts it', 'Free files', 'pack cards shown', 'tap rate', 'Files per day', 'Downloads by page', 'Downloads by country', 'The pack card', 'Which headline works', 'From a custom banana to an order', 'From the shop to a purchase', 'Where product clicks come from']),
     oldWords: found(T.business, ['The download business', 'old asks', 'take rate', 'Every surface that hands', 'Custom banana funnel', 'Official merch funnel']) };
   out.floors.players = { missing: missing(T.players, ['Passes and who is active', 'Growing?', 'Coming back?', 'From a pass to a kept pass', 'Login links', 'not saved', 'Every pass', 'Kiwi', 'Names on the floor', 'Find a pass by email']) };

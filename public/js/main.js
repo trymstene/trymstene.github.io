@@ -183,7 +183,7 @@
     // the real conversion (they named a plot and moved in).
     homestead_open: 'HomesteadOpen',
     homestead_claim: 'HomesteadClaim',
-    world_door: 'WorldDoor',       // the frontpage's Enter-Banana-World click
+    world_door: 'WorldDoor',       // a door into Banana World taken, on any page (from = the data-place)
     shop_view: 'ShopView',
     shop_door: 'ShopDoor',
     offer_click: 'OfferClick',
@@ -300,12 +300,17 @@
       gtag('event', 'gif_download', { file: href.split('/').pop() });
     } else if (href.indexOf('make-a-banana') > -1) {
       gtag('event', 'generator_click', { placement: place });
-    } else if (/^\/(rave|park|beach|homestead|banana-stand)\/?($|[?#])/.test(href)) {
+    } else if (/^\/(town|rave|park|beach|homestead|banana-stand)\/?($|[?#])/.test(href)) {
       // 🚪 WHICH DOOR INTO THE WORLD ACTUALLY GETS TAKEN. There was no branch
       // for this at all, so every world link on the site — including the one
       // in the nav and the builder's single old button — fired nothing, and
       // "which area do newcomers pick" had never been askable.
-      gtag('event', 'world_door', { area: (href.match(/^\/([a-z-]+)/) || [])[1] || '', from: place });
+      // 🏘 `town` since 25 Sep 2026: /town/ has been the front door since 21 Sep
+      // (every "Enter Banana World"), and only the frontpage's own listener
+      // counted it. That listener is gone — its links carry data-place="hero" /
+      // "doors" now, so one click is one world_door. Beacon, because every one
+      // of these taps leaves the page before an ordinary hit would get out.
+      gtag('event', 'world_door', { area: (href.match(/^\/([a-z-]+)/) || [])[1] || '', from: place, transport_type: 'beacon' });
     } else if (/^\/shop\/?($|[?#])/.test(href)) {
       // 🛍 which door earns the shop its visits. `shop_door` already means
       // "took a door out of the world to /shop/" — the nav is one of them, and

@@ -63,9 +63,10 @@ DIMENSIONS = [
      'Which product was tapped in the builder (product_tile_click): sticker, '
      'mug, tee. Fourteen taps in ninety days total, so the split matters.'),
     ('area', 'World door',
-     'Which area a world_door click led to: rave / park / beach / homestead / '
-     'banana-stand. New on 4 Sep with the builder door tiles — the first way '
-     'to ask which part of the world a newcomer picks.'),
+     'Which area a world_door click led to: town / rave / park / beach / '
+     'homestead / banana-stand. New on 4 Sep with the builder door tiles — the '
+     'first way to ask which part of the world a newcomer picks. town (the front '
+     'door) counts from every page since 25 Sep 2026.'),
     ('action', 'Quick action',
      'Which shortcut was used (quick_action): takehome or homebar.'),
     # ⚠️ beach_dig is by far the loudest event in the world and NOBODY COULD SAY
