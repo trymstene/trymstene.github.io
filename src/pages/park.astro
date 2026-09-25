@@ -4,6 +4,9 @@
 // its interior lives on inside this world's stand.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import AreaFaq from '../components/AreaFaq.astro';
+import { faqLd } from '../lib/faq.js';
+import PG from '../data/copy/park-guide.json';   // 📖 the guide's questions: on the page and in its FAQPage, one list
 
 // 🔍 INDEXED 30 Jul. Keyword picks are DataForSEO volumes, and the pick is as
 // much about what NOT to chase: the bay already targets "banana game" (40.5K)
@@ -28,21 +31,10 @@ const schema = {
   creator: { '@id': 'https://trymstene.com/#trym' },
   description: 'A free browser garden world for custom dancing bananas — a shared park you plant, water and weed together, with players worldwide.',
 };
-// ⚠️ every one of these answers is also VISIBLE on the page below (the field
-// guide + FAQ block) — FAQ markup whose answers only exist in JSON is exactly
-// what Google's structured-data guidelines call out.
-const faq = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'Is The Park free to play?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The Park is a free browser game — no account, no download, no install. Your custom dancing banana walks straight in through the gate.' } },
-    { '@type': 'Question', name: 'What do you do in The Park?', acceptedAnswer: { '@type': 'Answer', text: 'You keep a shared garden alive. Plant seeds in the beds, water what other people planted, pull weeds, pick up litter, skim the pond, spot the day’s birds and hunt for eggs — every one of those nudges the park’s health meter.' } },
-    { '@type': 'Question', name: 'What is park health?', acceptedAnswer: { '@type': 'Answer', text: 'One number, 0 to 100, shared by everyone in the park. It sinks on its own and every weed, algae patch and piece of litter holds it down, so a park nobody tends visibly dies — the grass goes straw, the trees turn, the animals mope. Watering, planting and tidying push it back up.' } },
-    { '@type': 'Question', name: 'Can you play The Park with other people?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every other banana you see is a real visitor, live. The garden is shared too — you can water a plant somebody else put in, and the health meter is the whole park’s score, not yours.' } },
-    { '@type': 'Question', name: 'How do you unlock better seeds?', acceptedAnswer: { '@type': 'Answer', text: 'By harvesting. Seeds are rated one to five stars, and your gardener level rises with every harvest: three harvests unlock three-star seeds, eight unlock four-star, fifteen unlock the five-star golden wheat. Better seeds feed the park harder and survive longer without water.' } },
-    { '@type': 'Question', name: 'How do you get to The Park?', acceptedAnswer: { '@type': 'Answer', text: 'Dress a banana in the free builder and walk in. The Park sits in the middle of Banana World: the rave is down the south road, Banana Bay is along the east road, and both shops are inside the park itself.' } },
-  ],
-};
+// ❓ the questions are ONE list (src/data/copy/park-guide.json): drawn on the page by AreaFaq and made into the FAQPage
+// here — FAQ markup whose answers only exist in JSON is what Google's structured-data guidelines call out, and the
+// hand-kept copy had drifted into other answers (src/lib/faq.js).
+const faq = faqLd(PG.faq.items);
 ---
 <BaseLayout
   title={title}
@@ -52,6 +44,8 @@ const faq = {
 >
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(faq)} />
+  <!-- 📖 the field guide below the park wears every area's one sheet (design library §37) -->
+  <link rel="stylesheet" href="/css/area-guide.css" slot="head" />
   <link rel="preload" as="image" href="/assets/park/park.png" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />
   <link rel="stylesheet" href="/css/world-frame.css" slot="head" />
@@ -111,42 +105,8 @@ const faq = {
       background-size: 100% 100%; background-repeat: no-repeat;
     }
 
-    /* ---- 📖 THE FIELD GUIDE — the indexable half of the page. Same shape
-       as the rave's guide block: real answers, visible, so the FAQ markup is
-       describing something a reader can actually see. ⚠️ this is what makes
-       the page tall, which is exactly why banana-park.js stands the world down
-       when the view scrolls out of sight. */
-    .pkg { max-width: 760px; margin: 3rem auto 0; padding: 0 0.2rem; }
-    .pkg__block { margin-top: 3rem; }
-    .pkg__kicker {
-      font-family: "Archivo Black", sans-serif; color: #8de08d; font-size: 0.7rem;
-      letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 0.35rem; opacity: 0.85;
-    }
-    .pkg__block h2 {
-      font-family: "Archivo Black", sans-serif; color: #b6f0b6;
-      font-size: clamp(1.3rem, 4vw, 1.9rem); margin: 0 0 0.9rem; line-height: 1.1;
-    }
-    .pkg__block h3 {
-      font-family: "Archivo Black", sans-serif; color: #ffe135;
-      font-size: 1rem; margin: 1.6rem 0 0.5rem;
-    }
-    .pkg__block p, .pkg__list li { line-height: 1.65; font-size: 0.98rem; }
-    .pkg__block p { margin: 0 0 0.8rem; }
-    .pkg__block a { color: #ffe135; }
-    .pkg__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
-    .pkg__list li { padding-left: 1.1rem; position: relative; }
-    .pkg__list li::before { content: '\00B7'; position: absolute; left: 0.25rem; color: #8de08d; font-weight: 800; }
-    .pkg__grid { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin-top: 1.2rem; }
-    .pkg__card { background: #101a10; border: 3px solid #8de08d; box-shadow: 6px 6px 0 #000; padding: 0.9rem; }
-    .pkg__thumb { height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.55rem; }
-    .pkg__thumb img { image-rendering: pixelated; max-height: 64px; max-width: 110px; width: auto; height: auto; }
-    .pkg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.92rem; color: #8de08d; margin: 0 0 0.35rem; text-align: center; }
-    .pkg__card p { margin: 0; font-size: 0.84rem; line-height: 1.5; opacity: 0.92; }
-    .pkg__seeds { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.4rem 0 0.9rem; }
-    .pkg__seeds th, .pkg__seeds td { text-align: left; padding: 0.4rem 0.6rem 0.4rem 0; border-bottom: 1px solid rgba(141, 224, 141, 0.18); }
-    .pkg__seeds th { color: #8de08d; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
-    .pkg__faq dt { font-weight: 800; color: #ffe135; margin-top: 1.1rem; }
-    .pkg__faq dd { margin: 0.3rem 0 0; line-height: 1.65; font-size: 0.98rem; }
+    /* 📖 the field guide below the park is on /css/area-guide.css (.ag--park). ⚠️ it is what makes the page tall,
+       which is exactly why banana-park.js stands the world down when the view scrolls out of sight. */
 
 
     /* 🌦 the rain moved to /css/weather.css (13 Sep 2026) when the beach, the
@@ -1866,9 +1826,9 @@ const faq = {
          ⚠️ GAME-DESIGN INFORMATION RULES (Trym, 28 Aug): short, visual,
          concrete — sprite cards over prose, one clause per idea, no clumps
          of text. Cut words before adding any. ===== -->
-    <div class="pkg">
-      <section class="pkg__block" id="what">
-        <p class="pkg__kicker">the fine print, in green</p>
+    <div class="ag ag--park">
+      <section class="ag__block" id="what">
+        <p class="ag__kicker">the fine print, in green</p>
         <h2>what is this place?</h2>
         <p>
           In 1999 I drew <a href="/dancing-banana-gif-meme/">a little banana that never stopped dancing</a>.
@@ -1881,58 +1841,58 @@ const faq = {
         </p>
       </section>
 
-      <section class="pkg__block" id="do">
-        <p class="pkg__kicker">the loop</p>
+      <section class="ag__block" id="do">
+        <p class="ag__kicker">the loop</p>
         <h2>what do you actually do here?</h2>
-        <div class="pkg__grid">
-          <article class="pkg__card">
-            <div class="pkg__thumb"><img src="/assets/park/g-sunflower.png" alt="a grown sunflower — park pixel sprite" loading="lazy" /></div>
+        <div class="ag__grid">
+          <article class="ag__card ag__card--sprite">
+            <div class="ag__thumb"><img src="/assets/park/g-sunflower.png" alt="a grown sunflower — park pixel sprite" loading="lazy" /></div>
             <h3>plant</h3>
             <p>Seeds cost coins, grow on watered days, and wear your name on the stake.</p>
           </article>
-          <article class="pkg__card">
-            <div class="pkg__thumb"><img src="/assets/park/g-soil-wet.png" alt="watered soil — park pixel sprite" loading="lazy" /></div>
+          <article class="ag__card ag__card--sprite">
+            <div class="ag__thumb"><img src="/assets/park/g-soil-wet.png" alt="watered soil — park pixel sprite" loading="lazy" /></div>
             <h3>water anybody&rsquo;s</h3>
             <p>The whole park runs on strangers watering each other&rsquo;s beds. +2 rep a pour.</p>
           </article>
-          <article class="pkg__card">
-            <div class="pkg__thumb"><img src="/assets/park/c-strawberry-4.png" alt="a ripe strawberry bush — park pixel sprite" loading="lazy" /></div>
+          <article class="ag__card ag__card--sprite">
+            <div class="ag__thumb"><img src="/assets/park/c-strawberry-4.png" alt="a ripe strawberry bush — park pixel sprite" loading="lazy" /></div>
             <h3>harvest</h3>
             <p>Ripe pays rep and pockets a seed for <a href="/homestead/">your homestead</a>. Some bushes fruit three times.</p>
           </article>
-          <article class="pkg__card">
-            <div class="pkg__thumb"><img src="/assets/park/w-weed1.png" alt="a weed — park pixel sprite" loading="lazy" /></div>
+          <article class="ag__card ag__card--sprite">
+            <div class="ag__thumb"><img src="/assets/park/w-weed1.png" alt="a weed — park pixel sprite" loading="lazy" /></div>
             <h3>tidy</h3>
             <p>Weeds, litter, pond scum &mdash; every piece cleared lifts the meter, every piece left holds it down.</p>
           </article>
-          <article class="pkg__card">
-            <div class="pkg__thumb"><img src="/assets/park/e-egg.png" alt="a park egg — pixel sprite" loading="lazy" /></div>
+          <article class="ag__card ag__card--sprite">
+            <div class="ag__thumb"><img src="/assets/park/e-egg.png" alt="a park egg — pixel sprite" loading="lazy" /></div>
             <h3>find eggs</h3>
             <p>Healthy parks lay them; above 95% they can come out golden. First tap wins.</p>
           </article>
-          <article class="pkg__card">
-            <div class="pkg__thumb"><img src="/assets/park/old-peel.png" alt="Old Peel — the park’s oldest banana, pixel sprite" loading="lazy" /></div>
+          <article class="ag__card ag__card--sprite">
+            <div class="ag__thumb"><img src="/assets/park/old-peel.png" alt="Old Peel — the park’s oldest banana, pixel sprite" loading="lazy" /></div>
             <h3>meet the locals</h3>
             <p>Old Peel has opinions. Twelve bird species visit by health. Both shops are inside the world.</p>
           </article>
         </div>
       </section>
 
-      <section class="pkg__block" id="health">
-        <p class="pkg__kicker">the meter</p>
+      <section class="ag__block" id="health">
+        <p class="ag__kicker">the meter</p>
         <h2>how park health works</h2>
-        <ul class="pkg__list">
+        <ul class="ag__list">
           <li><strong>It sinks on its own.</strong> Watering, planting and tidying push it back.</li>
           <li><strong>Mess caps the ceiling.</strong> No 100% while there&rsquo;s litter on the grass or scum on the pond.</li>
           <li><strong>The park shows it.</strong> Below 60 the colour drains and the animals mope; above 80 the rare birds and the eggs come back.</li>
         </ul>
       </section>
 
-      <section class="pkg__block" id="guide">
-        <p class="pkg__kicker">the ladder</p>
+      <section class="ag__block" id="guide">
+        <p class="ag__kicker">the ladder</p>
         <h2>seeds, stars and the gardener</h2>
         <p>Every harvest climbs your gardener level; the level raises the seed shelf.</p>
-        <table class="pkg__seeds">
+        <table class="ag__table">
           <thead><tr><th>seeds</th><th>stars</th><th>unlocked at</th></tr></thead>
           <tbody>
             <tr><td>daisy</td><td>&#9733;</td><td>from the start</td></tr>
@@ -1954,24 +1914,7 @@ const faq = {
         </p>
       </section>
 
-      <section class="pkg__block" id="faq">
-        <p class="pkg__kicker">questions</p>
-        <h2>frequently asked</h2>
-        <dl class="pkg__faq">
-          <dt>Is The Park free to play?</dt>
-          <dd>Yes &mdash; free, in the browser, no account. Your banana walks straight in through the gate.</dd>
-          <dt>What do you do in The Park?</dt>
-          <dd>Keep a shared garden alive: plant, water other people&rsquo;s beds, pull weeds, tidy, spot birds, hunt eggs. Everything nudges the health meter.</dd>
-          <dt>What is park health?</dt>
-          <dd>One number, 0&ndash;100, shared by everyone. It sinks on its own; tending pushes it back. A park nobody tends visibly dies.</dd>
-          <dt>Can you play with other people?</dt>
-          <dd>Yes &mdash; every banana is a real visitor, live, and the garden is shared. The meter is the whole park&rsquo;s score, not yours.</dd>
-          <dt>How do you unlock better seeds?</dt>
-          <dd>Harvest. Three harvests unlock three-star seeds, eight unlock four, fifteen unlock five &mdash; and thirty opens the six-star exotic tier.</dd>
-          <dt>How do you get to The Park?</dt>
-          <dd>Dress a banana in <a href="/make-a-banana/">the free builder</a> and walk in. The rave and the bay are one road away.</dd>
-        </dl>
-      </section>
+      <AreaFaq faq={PG.faq} />
     </div>
 
   </div>

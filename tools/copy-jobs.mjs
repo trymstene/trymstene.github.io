@@ -1427,6 +1427,47 @@ function guideShape(data) {
   return bad;
 }
 
+// --- the area guides: rave-guide, park-guide, beach-guide, homestead-guide --------------------------------------------
+// ❓ (25 Sep 2026) Each area's QUESTIONS under its frame are one list: the page draws them (src/components/AreaFaq.astro)
+// and makes its FAQPage from the same words (src/lib/faq.js faqLd), so what a search engine reads is what is on the screen.
+// Two hand-kept copies had drifted: the rave's markup asked six questions its page never showed, the park's answers were
+// other answers, and the bay's questions were not on the page at all. These files are the area guides' own; the rest of
+// each guide's words can move in beside the questions. An answer may link a page of THIS site as [words](/path/).
+const FAQ_FOREIGN_LINK = [/\]\((?!\/)/, 'a link in an answer goes to a page on this site: [words](/path/)'];
+const faqFields = (area) => ({
+  'faq.kicker': { kind: 'label', aim: 20, max: 28, note: 'The small coloured line over the questions’ heading, lower case.' },
+  'faq.heading': { kind: 'label', aim: 18, max: 30, note: 'The heading over ' + area + '’s questions, lower case.' },
+  'faq.items[].q': { kind: 'label', aim: 44, max: 64, note: 'A question the way a newcomer types it into a search box, capital first, ending in a question mark. It is also the question the search engines read (the page’s FAQPage).' },
+  'faq.items[].a': { kind: 'prose', aim: 170, max: 260, forbids: [FAQ_FOREIGN_LINK], note: 'The answer, plainly, in one to three sentences, the thing asked first. A page of the site may be linked as [words](/path/).' },
+});
+function faqShape(names) {
+  return (data) => {
+    const bad = [];
+    const say = (p, msg) => bad.push({ path: p, msg, rule: 'shape' });
+    const qs = (data.faq && data.faq.items) || [];
+    if (!Array.isArray(qs) || qs.length < 4 || qs.length > 8) { say('faq.items', 'four to eight questions'); return bad; }
+    const seen = new Set();
+    qs.forEach((it, i) => {
+      const q = String(it.q || '');
+      if (!/\?$/.test(q)) say('faq.items[' + i + '].q', 'a question ends in a question mark');
+      if (seen.has(q.toLowerCase())) say('faq.items[' + i + '].q', 'asked twice');
+      seen.add(q.toLowerCase());
+    });
+    if (!qs.some((it) => names.test(String(it.q || '')))) say('faq.items', 'no question names the place — the search box does');
+    return bad;
+  };
+}
+const areaGuideJob = (id, area, names) => ({
+  id,
+  title: area + ' — the field guide under the frame',
+  what: 'The questions under ' + area + '’s frame (and its FAQPage, built from the same list).',
+  approved: 'src/data/copy/' + id + '.json',
+  reads: 'src/pages/' + id.replace('-guide', '') + '.astro (a static import at build time — the page does not build without it)',
+  top: ['faq'],
+  fields: faqFields(area),
+  shape: faqShape(names),
+});
+
 // --- town-page -----------------------------------------------------------------
 // 🏘 THE TOWN PAGE ITSELF (21 Sep 2026): the four lines nobody in the world speaks — the tab title,
 // the search line, the line under the sign and the how-to under the square. Written the day the
@@ -2104,6 +2145,10 @@ export const JOBS = {
     shape: pageShape,
     schema: pageSchema,
   },
+  'rave-guide': areaGuideJob('rave-guide', 'The Rave', /\brave\b/i),
+  'park-guide': areaGuideJob('park-guide', 'The Park', /\bPark\b/),
+  'beach-guide': areaGuideJob('beach-guide', 'Banana Bay', /\bBanana Bay\b/),
+  'homestead-guide': areaGuideJob('homestead-guide', 'The Homestead', /\bhomestead\b/i),
   'town-guide': {
     id: 'town-guide',
     title: 'Banana Town \u2014 the field guide under the frame',

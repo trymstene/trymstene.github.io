@@ -2,6 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import PixelArtIcon from '../components/PixelArtIcon.astro';
+import AreaFaq from '../components/AreaFaq.astro';
+import { faqLd } from '../lib/faq.js';
+import RG from '../data/copy/rave-guide.json';   // 📖 the guide's questions: on the page and in its FAQPage, one list
 
 const title = 'The Banana Rave — everyone dances together';
 const description = 'A live dance floor where every visitor’s custom banana dances in perfect sync. Join the rave, drop an emote, outlast the others.';
@@ -22,18 +25,7 @@ const schema = {
   description: 'A realtime dance floor for custom dancing bananas, from the creator of the original 1999 GIF.',
 };
 
-const raveFaq = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: [
-    { '@type': 'Question', name: 'Is the banana rave really live?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every banana on the floor is a real visitor, right now. The only characters who are not visitors are staff — Barty the bartender and the DJ — and they have jobs.' } },
-    { '@type': 'Question', name: 'Why does everyone dance in perfect sync?', acceptedAnswer: { '@type': 'Answer', text: 'There is only one song and it never stops. Every banana on Earth dances on the same wall-clock beat — join from two devices and watch them match.' } },
-    { '@type': 'Question', name: 'Do I need an account to join the rave?', acceptedAnswer: { '@type': 'Answer', text: 'No account, no cost. Your banana walks in as you dressed it in the builder — or a fresh one is generated for you.' } },
-    { '@type': 'Question', name: 'What are the floor quests at the banana rave?', acceptedAnswer: { '@type': 'Answer', text: 'Every half hour something goes wrong in the club: drinks spill across the floor, the power cuts out, a mega-jelly escapes the walk-in, the balloon rig lets go, or the big screen turns into a camera. A quest tool appears next to the emote buttons, a hint line says what to do, and fixing it pays jelly and bananacoins. Everyone in the club gets the same quest at the same moment, and it is never the same one twice in a row.' } },
-    { '@type': 'Question', name: 'What can I earn at the banana rave?', acceptedAnswer: { '@type': 'Answer', text: 'Badges on your banana pass, permanent gear like the glowstick (30 minutes on the floor) and the golden banana trophy, the fire emote from the stage, and tonight’s wearable drop — one item per night, yours forever once caught.' } },
-    { '@type': 'Question', name: 'Where do the rave’s wearable drops come from?', acceptedAnswer: { '@type': 'Answer', text: 'Visitors draw them. Anyone can draw an item on the banana in the site’s pixel Forge and submit it; approved items drop on the dance floor with the maker’s name attached, and catching one makes it yours forever.' } },
-  ],
-};
+const raveFaq = faqLd(RG.faq.items);
 
 // the floor guide — thumbnails are the ACTUAL in-game sprites, rasterised by
 // tools/build-rave-guide.py straight from the source (rerun it if art changes)
@@ -80,33 +72,12 @@ const GUIDE = [
   <link rel="preload" as="image" href="/assets/banana-dance.png?v=7" slot="head" />
   <!-- perf: warm DNS+TCP+TLS to the presence worker before the WS handshake -->
   <link rel="preconnect" href="https://banana-rave.trymstene.workers.dev" slot="head" />
+  <!-- 📖 the field guide below the floor wears every area's one sheet (design library §37) -->
+  <link rel="stylesheet" href="/css/area-guide.css" slot="head" />
   <style is:inline slot="head">
     /* the whole page lives in the dark — the guide sections below the floor
        continue the hall, and no paper background can ever peek out the bottom */
     body { background: #0d0b14; }
-    /* ---- the guide below the floor ---- */
-    .rvg { max-width: 880px; margin: 0 auto; padding: 1rem 0 3rem; color: #fffdf5; }
-    .rvg__block { margin-top: 3.2rem; }
-    .rvg__kicker { color: #ff4d9d; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.4rem; }
-    .rvg__block h2 { font-family: "Archivo Black", sans-serif; color: #ffe135; font-size: clamp(1.4rem, 4vw, 2rem); margin: 0 0 0.9rem; }
-    .rvg__block p, .rvg__list li { line-height: 1.65; font-size: 0.98rem; }
-    .rvg__block a { color: #ffe135; }
-    .rvg__sub { opacity: 0.75; font-size: 0.9rem !important; }
-    .rvg__list { padding-left: 1.1rem; display: grid; gap: 0.55rem; }
-    .rvg__list--clock { list-style: none; padding-left: 0; }
-    .rvg__list--clock li { border-left: 4px solid #ffe135; padding-left: 0.8rem; }
-    .rvg__grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); margin-top: 1.4rem; }
-    .rvg__card { background: #17121f; border: 3px solid #ffe135; box-shadow: 6px 6px 0 #000; padding: 1rem; }
-    .rvg__thumb { height: 84px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.6rem; }
-    .rvg__thumb img { image-rendering: pixelated; max-height: 84px; max-width: 120px; width: auto; height: auto; }
-    .rvg__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: #ffe135; margin: 0 0 0.4rem; text-align: center; }
-    .rvg__card p { margin: 0; font-size: 0.86rem; line-height: 1.55; opacity: 0.92; }
-    .rvg__faq h3 { font-family: "Archivo Black", sans-serif; font-size: 1rem; color: #ffe135; margin: 1.3rem 0 0.3rem; }
-    .rvg__faq p { margin: 0; }
-    .rvg__doors { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.2rem; }
-    .rvg__doors a { border: 3px solid #ffe135; padding: 0.6rem 0.9rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; color: #ffe135; background: #17121f; box-shadow: 4px 4px 0 #000; }
-    .rvg__doors a:hover { background: #ffe135; color: #111; }
-    @media (max-width: 940px) { .rvg { padding-inline: 1.2rem; } }
     /* isolate = nothing inside the rave (raver z-indexes, drop flash) can ever
        paint over the sticky nav / slide menu (iOS Safari bug Trym caught) */
     .rv-hall { background: #0d0b14; color: #fffdf5; padding: 1.6rem 1rem 2.5rem; position: relative; isolation: isolate; z-index: 0; }
@@ -1749,9 +1720,9 @@ const GUIDE = [
     </div>
 
     <!-- ============ below the floor: what this place IS ============ -->
-    <div class="rvg">
-      <section class="rvg__block" id="what">
-        <p class="rvg__kicker">the fine print, in neon</p>
+    <div class="ag ag--rave">
+      <section class="ag__block" id="what">
+        <p class="ag__kicker">the fine print, in neon</p>
         <h2>what is this place?</h2>
         <p>
           In 1999 I drew <a href="/dancing-banana-gif-meme/">a little banana that never stopped dancing</a>.
@@ -1764,10 +1735,10 @@ const GUIDE = [
         </p>
       </section>
 
-      <section class="rvg__block" id="do">
-        <p class="rvg__kicker">the loop</p>
+      <section class="ag__block" id="do">
+        <p class="ag__kicker">the loop</p>
         <h2>what do you actually do here?</h2>
-        <ul class="rvg__list">
+        <ul class="ag__list">
           <li><strong>Boogie.</strong> Arrow keys, WASD, tap the floor — or hold a beat and drag. Walking is just dancing with direction.</li>
           <li><strong>Chase what the floor spawns.</strong> Jelly, snacks, the lost vinyl, the golden banana — being first is the sport. It all fills the <strong>JELLY meter</strong>; full = a personal drop.</li>
           <li><strong>Catch tonight's drop.</strong> One wearable a night — walk into it, yours forever. <a href="/forge/items/">Draw your own</a> and it goes on the <a href="/park/">Banana Stand</a>'s shelf.</li>
@@ -1779,14 +1750,14 @@ const GUIDE = [
         </ul>
       </section>
 
-      <section class="rvg__block" id="guide">
-        <p class="rvg__kicker">field guide</p>
+      <section class="ag__block" id="guide">
+        <p class="ag__kicker">field guide</p>
         <h2>who &amp; what is on the floor</h2>
-        <p class="rvg__sub">Everything below is the actual pixel art from the club, at actual chunkiness.</p>
-        <div class="rvg__grid">
+        <p class="ag__sub">Everything below is the actual pixel art from the club, at actual chunkiness.</p>
+        <div class="ag__grid">
           {GUIDE.map((g) => (
-            <article class="rvg__card">
-              <div class="rvg__thumb"><img src={G + g.img + '.png'} alt={g.name + ' — banana rave pixel sprite'} loading="lazy" /></div>
+            <article class="ag__card ag__card--sprite">
+              <div class="ag__thumb"><img src={G + g.img + '.png'} alt={g.name + ' — banana rave pixel sprite'} loading="lazy" /></div>
               <h3>{g.name}</h3>
               <p>{g.text}</p>
             </article>
@@ -1794,8 +1765,8 @@ const GUIDE = [
         </div>
       </section>
 
-      <section class="rvg__block" id="clock">
-        <p class="rvg__kicker">the rhythm</p>
+      <section class="ag__block" id="clock">
+        <p class="ag__kicker">the rhythm</p>
         <h2>the club runs on a clock</h2>
         <!-- ⚠️ NO SCHEDULE (Trym, 28 Aug): the full timing table spoiled the
              whole game-flow. Discovery IS the game — the clock's exact beats
@@ -1812,29 +1783,12 @@ const GUIDE = [
         </p>
       </section>
 
-      <section class="rvg__block" id="faq">
-        <p class="rvg__kicker">the usual questions</p>
-        <h2>banana rave FAQ</h2>
-        <div class="rvg__faq">
-          <h3>Is it really live?</h3>
-          <p>Yes — every banana is a real visitor, right now. A quiet floor is honesty, not failure. Bring a friend.</p>
-          <h3>Why is everyone in perfect sync?</h3>
-          <p>One song, one wall clock, the whole planet on the same beat. Oldest trick in the club.</p>
-          <h3>What's the JELLY meter?</h3>
-          <p>The gauge of the night — everything you grab fills it. Full, it flashes: tap it and the floor drops, just for you.</p>
-          <h3>What's my LEVEL?</h3>
-          <p>Your standing, 1 to 99, forever — synced across devices on <a href="/pass/">your pass</a>. Titles land at the big levels, in gold on the roster.</p>
-          <h3>Where do the wearable drops come from?</h3>
-          <p>People draw them in <a href="/forge/items/">the Items Workshop</a>. Approved ones drop here with the maker's name riding them.</p>
-          <h3>Do my things carry over?</h3>
-          <p>Everything — onto <a href="/pass/">your pass</a>, into <a href="/make-a-banana/">the builder</a>, and everywhere your banana goes.</p>
-        </div>
-      </section>
+      <AreaFaq faq={RG.faq} />
 
-      <section class="rvg__block rvg__block--doors" id="doors">
-        <p class="rvg__kicker">more banana</p>
+      <section class="ag__block" id="doors">
+        <p class="ag__kicker">more banana</p>
         <h2>before you go (or instead of going)</h2>
-        <div class="rvg__doors">
+        <div class="ag__also">
           <a href="/make-a-banana/" data-place="rave-guide">Dress your banana →</a>
           <a href="/pass/">Check your pass →</a>
           <a href="/dancing-banana-gif-meme/">Download the original GIF →</a>

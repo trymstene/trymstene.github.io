@@ -1,0 +1,24 @@
+{
+  "faq": {
+    "kicker": "questions",
+    "heading": "frequently asked",
+    "items": [
+      {
+        "q": "Is Banana Bay free to play?",
+        "a": "Yes. Banana Bay is a free banana game you play right in your browser — no account, no download. Your custom dancing banana walks straight onto the sand."
+      },
+      {
+        "q": "What can you do at Banana Bay?",
+        "a": "Play beach volleyball, hunt the day’s seashells along the shore, fish off the pier, dig up Captain Sabreface’s daily buried treasure, and win the giant plush banana from the pier’s claw machine."
+      },
+      {
+        "q": "Can you play Banana Bay with other people?",
+        "a": "Yes. The beach is live — other visitors’ bananas share the sand with you in real time, and you can pass the volleyball back and forth."
+      },
+      {
+        "q": "How do you get to Banana Bay?",
+        "a": "Walk east out of [the park](/park/) onto the sand, or take the door under the game from anywhere in Banana World."
+      }
+    ]
+  }
+}

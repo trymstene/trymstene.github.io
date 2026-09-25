@@ -1,0 +1,32 @@
+{
+  "faq": {
+    "kicker": "questions",
+    "heading": "frequently asked",
+    "items": [
+      {
+        "q": "Is The Park free to play?",
+        "a": "Yes — free, in the browser, no account. Your banana walks straight in through the gate."
+      },
+      {
+        "q": "What do you do in The Park?",
+        "a": "Keep a shared garden alive: plant, water other people’s beds, pull weeds, tidy, spot birds, hunt eggs. Everything nudges the health meter."
+      },
+      {
+        "q": "What is park health?",
+        "a": "One number, 0–100, shared by everyone. It sinks on its own; tending pushes it back. A park nobody tends visibly dies."
+      },
+      {
+        "q": "Can you play The Park with other people?",
+        "a": "Yes — every banana is a real visitor, live, and the garden is shared. The meter is the whole park’s score, not yours."
+      },
+      {
+        "q": "How do you unlock better seeds?",
+        "a": "Harvest. Three harvests unlock three-star seeds, eight unlock four, fifteen unlock five — and thirty opens the six-star exotic tier."
+      },
+      {
+        "q": "How do you get to The Park?",
+        "a": "Dress a banana in [the free builder](/make-a-banana/) and walk in. The rave and the bay are one road away."
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "faq": {
+    "kicker": "the usual questions",
+    "heading": "banana rave FAQ",
+    "items": [
+      {
+        "q": "Is the banana rave really live?",
+        "a": "Yes — every banana is a real visitor, right now. A quiet floor is honesty, not failure. Bring a friend."
+      },
+      {
+        "q": "Why does everyone dance in perfect sync?",
+        "a": "One song, one wall clock, the whole planet on the same beat. Oldest trick in the club."
+      },
+      {
+        "q": "Do I need an account to join the rave?",
+        "a": "No account and no cost. Your banana walks in dressed the way you left it in [the builder](/make-a-banana/), or a fresh one is made for you."
+      },
+      {
+        "q": "What’s the JELLY meter?",
+        "a": "The gauge of the night — everything you grab fills it. Full, it flashes: tap it and the floor drops, just for you."
+      },
+      {
+        "q": "What’s my LEVEL?",
+        "a": "Your standing, 1 to 99, forever — synced across devices on [your pass](/pass/). Titles land at the big levels, in gold on the roster."
+      },
+      {
+        "q": "Where do the rave’s wearable drops come from?",
+        "a": "People draw them in [the Items Workshop](/forge/items/). Approved ones drop here with the maker’s name riding them."
+      },
+      {
+        "q": "Do my things carry over?",
+        "a": "Everything — onto [your pass](/pass/), into [the builder](/make-a-banana/), and everywhere your banana goes."
+      }
+    ]
+  }
+}

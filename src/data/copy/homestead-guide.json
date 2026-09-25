@@ -1,0 +1,32 @@
+{
+  "faq": {
+    "kicker": "questions",
+    "heading": "frequently asked",
+    "items": [
+      {
+        "q": "Is the Homestead free to play?",
+        "a": "Yes. It plays in your browser, with no account and nothing to install, and the clearing is yours from the day you name it."
+      },
+      {
+        "q": "What do you do on your Homestead?",
+        "a": "Claim a clearing and name it, sow the seeds you pocket in the park, keep hens and then more animals, cook what they give, and furnish the yard."
+      },
+      {
+        "q": "Where do the coins come from?",
+        "a": "From playing anywhere in Banana World: [the rave](/rave/), [the park](/park/) and [the bay](/beach/) all pay, and so does a dish from the kitchen."
+      },
+      {
+        "q": "Can other players visit my homestead?",
+        "a": "Yes. Visitors drop by and see the whole yard, and a neighbour can water your beds for you."
+      },
+      {
+        "q": "Does my homestead save?",
+        "a": "Yes, on [your pass](/pass/), on this device from your first step. Add an email to the pass and you can pick it up on another phone or computer."
+      },
+      {
+        "q": "How do you get to the Homestead?",
+        "a": "Take the door under the game from anywhere in Banana World and pick The Homestead."
+      }
+    ]
+  }
+}

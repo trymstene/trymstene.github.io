@@ -9,6 +9,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import PAGE from '../data/copy/town-page.json';
 import G from '../data/copy/town-guide.json';   // 📖 the field guide under the frame (design library §37)
+import AreaFaq from '../components/AreaFaq.astro';
+import { faqLd } from '../lib/faq.js';
 
 const title = PAGE.title;
 const description = PAGE.description;
@@ -40,16 +42,12 @@ const ROADS = [
   { k: 'homestead', href: '/homestead/', name: 'THE HOMESTEAD' },
 ];
 const [leadA, leadB] = G.what.lead[0].split('{gif}');
-// …and its questions, word for word, for the search engines
-const faqLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: G.faq.items.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })),
-};
+// …and its questions, word for word, for the search engines (the list AreaFaq draws — src/lib/faq.js)
+const townFaq = faqLd(G.faq.items);
 ---
 <BaseLayout title={title} description={description} ogImage="https://trymstene.com/assets/og/town.png" about="https://trymstene.com/town/#app">
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(appLd)} />
-  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqLd)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(townFaq)} />
   <link rel="stylesheet" href="/css/area-guide.css" slot="head" />
   <link rel="stylesheet" href="/css/doors.css" slot="head" />
   <!-- 🗣 the world's shared NPC dialogue card (design library §18) -->
@@ -578,13 +576,7 @@ const faqLd = {
         <p class="ag__coda">{G.rumours.coda}</p>
       </section>
 
-      <section class="ag__block" id="faq">
-        <p class="ag__kicker">{G.faq.kicker}</p>
-        <h2>{G.faq.heading}</h2>
-        <dl class="ag__faq">
-          {G.faq.items.map((it) => (<Fragment><dt>{it.q}</dt><dd>{it.a}</dd></Fragment>))}
-        </dl>
-      </section>
+      <AreaFaq faq={G.faq} />
 
       <section class="ag__block" id="roads">
         <p class="ag__kicker">{G.roads.kicker}</p>

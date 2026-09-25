@@ -1,21 +1,26 @@
 /* 📖 AN AREA'S FIELD GUIDE — the explanation under a world area's frame (design library §37).
    Trym, 25 Sep 2026, on the town: "all other areas have a concrete explanation of what you can do in the area underneath
-   its game-frame … make sure the Banana Town also has a nice, visually excellent, concrete explanation". The rave, the
-   park, the bay and the homestead each carry their own copy of this sheet (.rvg, .pkg, .bhg, .hsg) — four copies of one
-   design, which is the drift §5 exists to stop. The town is the first area on the shared sheet; the others move onto it.
+   its game-frame … make sure the Banana Town also has a nice, visually excellent, concrete explanation". Every area's
+   guide wears this one sheet: the town, the rave, the park, the bay and the homestead each carried their own copy of it
+   until 25 Sep 2026 (.rvg, .pkg, .bhg, .hsg — four copies of one design, the drift §5 exists to stop).
 
-   An area sets its colours on .ag (the tokens below) and nothing else. Every area is a dark world, so there is one
-   theme. The pictures are WINDOWS: shots of the built area at 1× (tools/build-town-guide-art.mjs for the town), shown
-   with object-fit: none — a narrow box crops the picture, it never resamples it (§6). */
+   An area is a THEME: a set of the tokens below, as .ag--<area> at the end of this file, and nothing else. Every area is
+   a dark world, so there is one theme each. A card's picture is either a WINDOW — a shot of the built area at 1×
+   (tools/build-town-guide-art.mjs for the town), shown with object-fit: none, so a narrow box crops it and never
+   resamples it (§6) — or a SPRITE in a fixed box (.ag__card--sprite, the other four). */
 .ag {
-  --ag-ink: #fffdf5;       /* running text */
-  --ag-kick: #ff9f6e;      /* the kicker over each heading */
-  --ag-head: #ffb347;      /* headings, card names, the questions */
-  --ag-link: #ffd27a;      /* links in running text */
-  --ag-card: #241912;      /* a card's ground */
-  --ag-line: #ffb347;      /* a card's edge */
-  --ag-win: #120c08;       /* behind a window, where a picture is narrower than its box */
-  max-width: 760px; margin: 3.2rem auto 0; padding: 0 0.2rem; color: var(--ag-ink);
+  --ag-ink: #fffdf5;         /* running text */
+  --ag-kick: #ff9f6e;        /* the kicker over each heading, a list's bullets, a table's heads */
+  --ag-head: #ffb347;        /* headings */
+  --ag-q: var(--ag-head);    /* the questions */
+  --ag-link: #ffd27a;        /* links in running text */
+  --ag-card: #241912;        /* a card's ground */
+  --ag-line: #ffb347;        /* a card's edge, and its name */
+  --ag-win: #120c08;         /* behind a window, where a picture is narrower than its box */
+  --ag-w: 760px;             /* the guide's width */
+  --ag-thumb: 64px;          /* a sprite card's picture box: its height… */
+  --ag-thumb-w: 110px;       /* …and the widest a sprite may be in it */
+  max-width: var(--ag-w); margin: 3.2rem auto 0; padding: 0 0.2rem; color: var(--ag-ink);
 }
 .ag__block { margin-top: 3.2rem; }
 .ag__block:first-child { margin-top: 0; }
@@ -24,7 +29,19 @@
   line-height: 1.15; margin: 0 0 0.9rem; text-wrap: balance; }
 .ag__block p { line-height: 1.65; font-size: 0.98rem; margin: 0 0 0.8rem; max-width: 65ch; }
 /* links in running text only: a door or a button keeps its own colours */
-.ag__block p a, .ag__faq a { color: var(--ag-link); }
+.ag__block p a, .ag__block li a, .ag__faq a { color: var(--ag-link); }
+/* a line of small print under a heading */
+.ag__block .ag__sub { opacity: 0.75; font-size: 0.9rem; }
+
+/* a list of short points, each with the area's own bullet */
+.ag__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
+.ag__list li { padding-left: 1.1rem; position: relative; line-height: 1.65; font-size: 0.98rem; max-width: 65ch; }
+.ag__list li::before { content: '\00B7'; position: absolute; left: 0.25rem; color: var(--ag-kick); font-weight: 800; }
+
+/* a table of facts (the park's seed ladder) */
+.ag__table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.4rem 0 0.9rem; }
+.ag__table th, .ag__table td { text-align: left; padding: 0.4rem 0.6rem 0.4rem 0; border-bottom: 1px solid color-mix(in srgb, var(--ag-line) 18%, transparent); }
+.ag__table th { color: var(--ag-kick); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; }
 
 /* 🪟 a window: whole pixels, cropped to its box, never scaled */
 .ag__win { display: block; width: 100%; object-fit: none; object-position: 50% 50%; image-rendering: pixelated; background: var(--ag-win); }
@@ -35,12 +52,21 @@
 .ag__map { display: block; width: 100%; height: auto; }
 .ag__wide figcaption { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; padding: 0.45rem 0.75rem; border-top: 3px solid var(--ag-line); opacity: 0.8; }
 
-/* what you do: a card per place, its window on top */
+/* what you do: a card per thing, its picture on top */
 .ag__grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-top: 1.3rem; }
+.ag__grid + p { margin-top: 1.2rem; }
 .ag__card { display: flex; flex-direction: column; background: var(--ag-card); border: 3px solid var(--ag-line); box-shadow: 6px 6px 0 #000; }
 .ag__card .ag__win { height: 170px; border-bottom: 3px solid var(--ag-line); }
-.ag__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: var(--ag-head); margin: 0.8rem 0.9rem 0.3rem; }
+.ag__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: var(--ag-line); margin: 0.8rem 0.9rem 0.3rem; }
 .ag__card p { margin: 0 0.9rem 0.95rem; font-size: 0.86rem; line-height: 1.5; opacity: 0.92; }
+/* …or a SPRITE card: padded, the sprite centred in a fixed box, the name under it. An <img> is shown no bigger than the
+   box allows; an <i> is one frame of a strip, sized and scaled whole by its own style */
+.ag__card--sprite { padding: 0.9rem; }
+.ag__card--sprite h3 { margin: 0 0 0.35rem; font-size: 0.92rem; text-align: center; }
+.ag__card--sprite p { margin: 0; font-size: 0.84rem; }
+.ag__thumb { height: var(--ag-thumb); display: flex; align-items: center; justify-content: center; margin-bottom: 0.55rem; }
+.ag__thumb img { image-rendering: pixelated; max-height: var(--ag-thumb); max-width: var(--ag-thumb-w); width: auto; height: auto; }
+.ag__thumb i { display: block; background-repeat: no-repeat; image-rendering: pixelated; transform-origin: center; }
 
 /* the things nobody explains: a small window and one line each */
 .ag__odd { list-style: none; margin: 1.3rem 0 0; padding: 0; display: grid; gap: 0.9rem; }
@@ -55,9 +81,9 @@
 @keyframes ag-drift { from { transform: translate(-6px, 3px); } to { transform: translate(6px, -3px); } }
 @media (prefers-reduced-motion: reduce) { .ag__win--dark img { animation: none; } }
 
-/* the questions */
+/* the questions (src/components/AreaFaq.astro — the page's FAQPage is the same list) */
 .ag__faq { margin: 0; }
-.ag__faq dt { font-weight: 800; color: var(--ag-head); margin-top: 1.1rem; }
+.ag__faq dt { font-weight: 800; color: var(--ag-q); margin-top: 1.1rem; }
 .ag__faq dd { margin: 0.3rem 0 0; line-height: 1.65; font-size: 0.98rem; max-width: 65ch; }
 
 /* the roads out: the world's own doors (/css/doors.css), two up on a phone, four on a desk */
@@ -65,8 +91,16 @@
 .ag .bb-doors--wide .bb-doors__row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 700px) { .ag .bb-doors--wide .bb-doors__row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .ag .bb-door:focus-visible { outline-color: var(--ag-link); }
+/* …and the buttons to the rest of the site */
 .ag__also { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.8rem; }
 .ag__also a { border: 3px solid var(--ag-line); padding: 0.55rem 0.85rem; font-weight: 800; font-size: 0.9rem; text-decoration: none;
   color: var(--ag-head); background: var(--ag-card); box-shadow: 4px 4px 0 #000; white-space: nowrap; }
 .ag__also a:hover { background: var(--ag-head); color: #111; }
 .ag__also a:focus-visible { outline: 3px solid var(--ag-link); outline-offset: 3px; }
+
+/* 🎨 THE AREAS. The town is the defaults above. */
+.ag--rave { --ag-kick: #ff4d9d; --ag-head: #ffe135; --ag-link: #ffe135; --ag-card: #17121f; --ag-line: #ffe135;
+  --ag-w: 880px; --ag-thumb: 84px; --ag-thumb-w: 120px; }
+.ag--park { --ag-kick: #8de08d; --ag-head: #b6f0b6; --ag-q: #ffe135; --ag-link: #ffe135; --ag-card: #101a10; --ag-line: #8de08d; }
+.ag--bay { --ag-ink: #f2e8d8; --ag-kick: #ffd23f; --ag-head: #7fd4ff; --ag-link: #ffd23f; --ag-card: #10202b; --ag-line: #7fd4ff; }
+.ag--homestead { --ag-ink: #ece4d4; --ag-kick: #ffd23f; --ag-head: #a7d98a; --ag-link: #ffd23f; --ag-card: #16200f; --ag-line: #a7d98a; }

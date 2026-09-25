@@ -11,6 +11,7 @@
 //     (what Google Images needs for the Licensable badge)
 //   · every Product has a name, an image and an offer with a price
 //   · every @id on trymstene.com that a page REFERS to is DEFINED on some page (a node with more than an @id)
+//   · every FAQPage question and its answer are on the page as written (FAQ_OWED lists the pages still owed)
 //
 // Run after `npx astro build`:  node tools/check-structured-data.mjs   (in CI with the other built-site gates)
 import fs from 'node:fs';
@@ -18,6 +19,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIST = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
+// ❓ EVERY FAQPage QUESTION, AND ITS ANSWER, IS ON THE PAGE A READER SEES (25 Sep 2026). Search engines ask for FAQ markup
+// that describes what is visible; the rave's markup asked six questions its page never showed, the park's answers were
+// other answers, and the bay's questions were not on screen at all. The areas now build both from one list
+// (src/lib/faq.js). These pages still keep a second, hand-written copy that has drifted — OWED, and the list only
+// shrinks: a page on it that matches again fails too, until it comes off.
+const FAQ_OWED = ['/dancing-banana-emoji/', '/dancing-banana-gif-meme/', '/peanut-butter-jelly-time/', '/guides/'];
+const NAMED = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', mdash: '—', ndash: '–', hellip: '…', middot: '·', times: '×', rarr: '→', larr: '←', darr: '↓', uarr: '↑', copy: '©', reg: '®', trade: '™', deg: '°', eacute: 'é', hearts: '♥', star: '☆', bull: '•' };
+const decode = (s) => s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => (e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1)) : NAMED[e.toLowerCase()] ?? m));
+const said = (s) => decode(String(s)).replace(/\s+/g, ' ').trim();
+const visibleText = (html) => said(html.replace(/<(script|style|template)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<\/?(p|div|section|li|dt|dd|h[1-6]|br|tr|td|th|article|header|footer|main|nav|ul|ol|dl|figure|figcaption)\b[^>]*>/gi, ' ').replace(/<[^>]+>/g, ''));
 if (!fs.existsSync(DIST)) { console.error('✗ no dist/ — build first (npx astro build)'); process.exit(1); }
 const PAGE_TYPES = new Set(['WebPage', 'CollectionPage', 'ImageGallery', 'ProfilePage', 'ContactPage', 'AboutPage', 'ItemPage', 'FAQPage']);
 const SITE = 'https://trymstene.com';
@@ -43,7 +54,7 @@ function nodesOf(x, out = []) {
   }
   return out;
 }
-let pagesChecked = 0;
+let pagesChecked = 0, faqPages = 0;
 for (const f of files) {
   const html = fs.readFileSync(f, 'utf8');
   const rel = '/' + path.relative(DIST, f).split(path.sep).join('/').replace(/index\.html$/, '');
@@ -70,6 +81,15 @@ for (const f of files) {
       if (!o.price && !o.lowPrice && !(Array.isArray(o) && o.length)) problems.push(`${rel} — a Product without an offer price`);
     }
   }
+  const faqQs = nodes.filter((n) => typesOf(n).includes('FAQPage')).flatMap((n) => [].concat(n.mainEntity || []));
+  if (faqQs.length) {
+    faqPages++;
+    const shown = visibleText(html);
+    const off = faqQs.filter((q) => !shown.includes(said(q.name)) || !shown.includes(said((q.acceptedAnswer || {}).text || '')));
+    const owed = FAQ_OWED.includes(rel);
+    if (off.length && !owed) problems.push(`${rel} — ${off.length} of its ${faqQs.length} FAQPage questions are not on the page as written (first: “${said(off[0].name).slice(0, 60)}”). Build the markup and the questions from one list: src/lib/faq.js faqLd + src/components/AreaFaq.astro`);
+    if (!off.length && owed) problems.push(`${rel} — its FAQPage matches the page now: take it off FAQ_OWED in this file`);
+  }
   if (/noindex/.test(robots) || redirect) continue;
   pagesChecked++;
   const pageNodes = nodes.filter((n) => typesOf(n).some((t) => PAGE_TYPES.has(t)) && !typesOf(n).includes('FAQPage'));
@@ -83,4 +103,4 @@ if (problems.length) {
   console.error(`✗ structured data — ${problems.length} problem(s):\n` + [...new Set(problems)].slice(0, 60).map((p) => '  ' + p).join('\n'));
   process.exit(1);
 }
-console.log(`✅ structured data — ${files.length} pages read, ${pagesChecked} indexable each with a page node, every image licensable, every @id defined (${defined.size})`);
+console.log(`✅ structured data — ${files.length} pages read, ${pagesChecked} indexable each with a page node, every image licensable, every @id defined (${defined.size}), every FAQ on its page (${faqPages} pages; ${FAQ_OWED.length} owed)`);

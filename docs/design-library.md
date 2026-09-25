@@ -189,6 +189,8 @@ copied:
   park's board and by `/supporters/`.
 - `public/css/wardrobe.css` — the chip/tray/tooltip layer for the builder and
   the PDPs.
+- `public/css/area-guide.css` — the field guide under every world area's frame
+  (§37); four per-area copies of it were retired on 25 Sep 2026.
 
 Two copies drift within a week. When a second surface needs it, move it out
 first and *then* use it.
@@ -717,7 +719,8 @@ drifted. A rule with only a paragraph has drifted at least once.
 | — | The quiet rule: no floating text over an NPC | the town walk's `silence` check |
 | — | No front-facing standing pose | the town walk's `standingPose` check (⚠️ it compared a `"frame:tool"` string to numbers and could not fail until 25 Sep 2026) |
 | 23 | A resident at their post is never a statue: sway, glance, dance, talk | the town walk's `lively` check (`tests/town-life.spec.mjs`) |
-| 37 | Every area explains itself under its frame | `check-design.mjs` (an area page without `id="what"` and `id="do"` fails) + `tests/town-guide.spec.mjs` (the town's guide: whole-pixel windows that fill their box, the FAQ = the FAQPage) |
+| 37 | Every area explains itself under its frame, on the one sheet | `check-design.mjs` (an area page without `id="what"` and `id="do"`, without `/css/area-guide.css`, or styling a guide class of its own fails) + `tests/town-guide.spec.mjs` (the town's windows fill their box at whole pixels) |
+| — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written; `FAQ_OWED` only shrinks) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
 `node tools/check-all.mjs` runs the source-only gates in about a second and is the
@@ -1086,9 +1089,16 @@ more vague so we dont give it all away."*
 - **Every area page carries a field guide under the frame:** what is this place (`id="what"`), what you do there
   (`id="do"`), and then whatever that area needs (the rave's clock, the park's meter, the town's rumours), the
   questions, the doors out. `check-design.mjs` fails an area page without the first two.
-- **One sheet: `/css/area-guide.css`** (`.ag`, an area sets its colours as the `--ag-*` tokens on it and nothing else).
-  The town is the first area on it; the rave, the park, the bay and the homestead still carry their own copies (`.rvg`,
-  `.pkg`, `.bhg`, `.hsg`) — four copies of one design, which is §5's drift, and they move onto the sheet next.
+- **One sheet: `/css/area-guide.css`**, worn by all five areas since 25 Sep 2026. An area is a THEME — a set of the
+  `--ag-*` tokens as `.ag--<area>` at the end of the sheet (colours, and for the rave its wider column and bigger
+  sprite boxes) — and nothing else. Until that day the rave, the park, the bay and the homestead each carried their own
+  copy (`.rvg`, `.pkg`, `.bhg`, `.hsg`) and they had drifted in every number: three block spacings, three heading
+  sizes, two kicker fonts, text running 750 px wide. Moving them made those one, on purpose. `check-design.mjs` fails an
+  area page that does not link the sheet, or that styles a guide class of its own.
+- **Two kinds of card.** A WINDOW card (the town): the picture flush on top, shot from the built area. A SPRITE card
+  (`.ag__card--sprite`, the other four): padded, one sprite centred in a fixed box (`.ag__thumb`), an `<img>` never
+  bigger than the box, an `<i>` being one frame of a strip that its own style sizes and scales whole. Lists
+  (`.ag__list`), a table of facts (`.ag__table`) and a line of small print (`.ag__sub`) are the sheet's too.
 - **The pictures are the built area's own.** A card's picture is a WINDOW: the area shot at 1× with its residents at
   their posts (`tools/build-town-guide-art.mjs` for the town — the player, the HUD and the passing visitors hidden),
   shown with `object-fit: none` so a narrow box crops it and never scales it (§6). A window is shot wider than the
@@ -1098,7 +1108,12 @@ more vague so we dont give it all away."*
   a place answers plainly). A rumour says a fact a newcomer can go and look at — the statue with no plaque, the light
   in the hall's window, the road north — and never the answer or the timetable. The copy job's `GIVEAWAY` rule fails a
   rumour, an alt or an answer that says what the mystery is.
-- **The words are a copy file** (`src/data/copy/town-guide.json`, the `town-guide` job), and the questions on the page
-  are the page's FAQPage, built from the same words (`tests/town-guide.spec.mjs` holds them equal).
+- **The words are a copy file** (`src/data/copy/town-guide.json`, the `town-guide` job; the other four areas'
+  questions are `<area>-guide.json`, and the rest of their guides' words can move in beside them).
+- **The questions are ONE list.** `src/components/AreaFaq.astro` draws them and `faqLd()` (`src/lib/faq.js`) makes the
+  page's FAQPage from the same array; an answer links a page of the site as `[words](/path/)`. Two hand-kept copies had
+  drifted on every area that had both: the rave's markup asked six questions its page never showed, the park's answers
+  were other answers, and the bay's questions were not on screen at all. `tools/check-structured-data.mjs` now fails
+  any page whose FAQPage is not on the page as written (four older pages are OWED there, and that list only shrinks).
 - **The line under the sign is the whole town's.** Trym: *"Nib shouldnt be part of the top description … Banana Town
   isnt all about Nib."* The `town-page` tag fails on any resident's name.

@@ -176,6 +176,12 @@ for (const f of files) {
     if (!/\bid=["']what["']/.test(html) || !/\bid=["']do["']/.test(html)) {
       problems.push([rel, 'has no field guide under its frame — a "what is this place?" block (id="what") and "what do you actually do here?" (id="do"). Every area explains itself where a visitor scrolls, see design library §37']);
     }
+    // …on the ONE sheet: until 25 Sep 2026 four areas each carried their own copy of it (.rvg, .pkg, .bhg, .hsg)
+    if (!/<link[^>]+href=["']\/css\/area-guide\.css["']/.test(src)) {
+      problems.push([rel, 'its field guide is not on /css/area-guide.css — every area wears the one sheet and sets its colours there as a theme (.ag--<area>), see design library §37 and §5']);
+    }
+    const own = code.match(/\.((?!ag\b)[a-z]+)__(block|kicker|card|thumb|faq)\b[^{}]*\{/);
+    if (own) problems.push([rel, `styles its own field guide (.${own[1]}__${own[2]}) — a copy of /css/area-guide.css, the drift design library §5 exists to stop. Put the rule in the sheet (§37)`]);
   }
 
   // 🦶 the footer is on every page a visitor can reach — design library §17
