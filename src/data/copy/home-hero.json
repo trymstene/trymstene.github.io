@@ -1,0 +1,38 @@
+{
+  "kicker": "hello there, and welcome to",
+  "title": "Banana World",
+  "tag": "The dancing banana’s home since 1999: a town, park, rave, beach and farm, free in your browser.",
+  "alt": "The Dancing Banana GIF, created by Trym Stene in 1999",
+  "enter": "Enter Banana World",
+  "make": "Make a banana",
+  "play": {
+    "hint": "tap a dancer",
+    "done": "Nice moves. In Banana Town you keep the coins"
+  },
+  "ticker": {
+    "world": "{n} bananas in Banana World right now",
+    "worldOne": "1 banana in Banana World right now",
+    "town": "Banana Town today: {fixes} things fixed by {people} bananas",
+    "pot": "the pot at the Wheel of Peel: {pot} coins",
+    "citizen": "Citizen of the week: {name}",
+    "stats": [
+      { "key": "rave_join_users", "line": "{n} bananas have danced at the rave" },
+      { "key": "beach_dig", "line": "{n} holes dug at Banana Bay" },
+      { "key": "beach_shell", "line": "{n} shells picked up on the beach" },
+      { "key": "homestead_open_users", "line": "{n} bananas have visited the Homestead" },
+      { "key": "town_fix", "line": "{n} things fixed in Banana Town" },
+      { "key": "beach_fish_catch", "line": "{n} catches reeled in at Banana Bay" },
+      { "key": "rave_gold", "line": "{n} golden bananas found at the rave" },
+      { "key": "park_trash", "line": "{n} bits of litter picked up in the park" },
+      { "key": "park_bird", "line": "{n} birds spotted in the park" },
+      { "key": "park_egg", "line": "{n} eggs found in the park" },
+      { "key": "park_plant", "line": "{n} seeds planted in the park" },
+      { "key": "beach_treasure", "line": "{n} treasure chests dug up at Banana Bay" }
+    ],
+    "lines": [
+      "the dancing banana, since 1999",
+      "claim a free farm at the Homestead",
+      "make your own banana"
+    ]
+  }
+}

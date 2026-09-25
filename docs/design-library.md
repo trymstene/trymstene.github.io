@@ -720,6 +720,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | — | No front-facing standing pose | the town walk's `standingPose` check (⚠️ it compared a `"frame:tool"` string to numbers and could not fail until 25 Sep 2026) |
 | 23 | A resident at their post is never a statue: sway, glance, dance, talk | the town walk's `lively` check (`tests/town-life.spec.mjs`) |
 | 37 | Every area explains itself under its frame, on the one sheet | `check-design.mjs` (an area page without `id="what"` and `id="do"`, without `/css/area-guide.css`, or styling a guide class of its own fails) + `tests/town-guide.spec.mjs` (the town's windows fill their box at whole pixels) |
+| 38 | The front page's party clips (never scrolls), its crew is whole device pixels, its coin pill never covers the banana, its ticker's numbers are the stats file's read low and its live lines come only when the world answers | `tests/home-hero.spec.mjs` (a CSS property cannot be grepped for a meaning, so the walk asserts the outcome at 360–1440 px) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1138,3 +1139,37 @@ more vague so we dont give it all away."*
   never "Can I use it?") — the copy gate fails one that ends on "it".
 - **The line under the sign is the whole town's.** Trym: *"Nib shouldnt be part of the top description … Banana Town
   isnt all about Nib."* The `town-page` tag fails on any resident's name.
+
+---
+
+## §38 THE FRONT PAGE IS A PARTY, AND ITS NUMBERS ARE TRUE (26 Sep 2026, the homepage hero)
+
+Trym, on the old hero: *"mostly white background … the dancing banana in a big white space … a bit stiff and boring"*;
+then *"hello there, and welcome to BANANA WORLD … small text on top and banana world in a slight arc and big text"*, the
+hero buttons *"not a big fan of the emojis / icons … maybe its better with no icons"*, and a ticker of *"the best ones
+based on popularity"*. Built in `src/pages/index.astro`, words in `src/data/copy/home-hero.json`.
+
+- **The party is transform and opacity only, and it rests.** Rays turn behind a spotlit banana, confetti falls, the
+  name bobs a letter at a time, a crew in builder outfits dances either side on the GIF's 0.8 s beat
+  (`/assets/hero/dancers.png`, `tools/build-hero-dancers.py`, composed exactly like the builder). All of it pauses
+  while the hero is off screen (`.hw--rest`) and stands still under reduced motion.
+- **The crew is whole device pixels (§6, §25).** A one-line script before the hero sets `--hs2`/`--hs3` to 2 and 3
+  snapped to k/devicePixelRatio; the strip steps by `transform` inside a clipped box of whole width, never by
+  `background-position`.
+- **A decorative layer bigger than the page CLIPS, it never HIDES.** The rays are wider than any screen, and
+  `overflow: hidden` made the hero a scroll container: scrolling a dancer into view (and so a keyboard focus, or
+  find-in-page) slid the whole hero 47 px sideways. `overflow: clip` scrolls nothing. The same rule as `html`/`body`
+  in `styles.css` ("CLIP, NOT HIDDEN"), one level down.
+- **Doors have no icons; the arrow is drawn and moves.** Every "Enter Banana World" on the page is the copy file's
+  words plus a drawn arrow that nudges — no globe, no palette.
+- **A toy's reward never covers the star.** The coin pill sits IN THE FLOW under the stage (a shift after a tap is
+  not a layout shift) — the first build hung it over the stage and it covered the banana's feet, and on a phone its
+  five-coin line ran off both edges. The hint sticker starts past the big banana's hand on a phone.
+- **The ticker's numbers count what the line says, read low.** All-time floors from GA4
+  (`tools/build-home-stats.py` → `src/data/home-stats.json`, two significant figures rounded DOWN, printed with a "+"):
+  a line about PEOPLE reads the event's users (`rave_join` fires on every reconnect, so "danced at the rave" is
+  `rave_join_users`), a line about things reads only what the event counts (a fishing catch is "a catch", not "a
+  fish"). Live lines — who is in the world now, the town's day, the Wheel of Peel's pot — come only when they say
+  something (two or more) and a counter that does not answer is left out, never guessed.
+- **An inline number keeps its spaces.** A flex row trims the whitespace at the edges of its text runs, so
+  "today: 80 things" printed "today:80things"; the ticker's items are `inline-block`.

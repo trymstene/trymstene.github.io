@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PixelIcon from '../components/PixelIcon.astro';
 import PackFan from '../components/PackFan.astro';
 import { PACK_PRICE } from '../data/sticker-packs.js';
 
@@ -41,14 +40,59 @@ const schema = {
   ]
 };
 
-const marqueeText = "the dancing banana  ·  since 1999  ·  the rave is open  ·  make your own  ·  licensing enquiries welcome  ·  ".repeat(5);
-
 // 🌍 THE WORLD LANDING (13 Aug): the doors became a visual sell — feature
 // stills exported from the reel scenes (tools/reel/export_stills.py) and
 // REAL community homesteads (tools/build-yard-cards.py; re-run to refresh).
 import yardCards from '../data/yard-cards.json';
 // 🏆 the citizens of the week — frames baked by tools/build-citizen-cards.py (the deploy runs it daily)
 import citizens from '../data/citizen.json';
+
+// 🎉 THE HERO (26 Sep 2026). Trym: "hello there, and welcome to BANANA WORLD … small text on top and banana world in
+// a slight arc and big text", "some movement and animations are nice and lively overall", the buttons with "no icons".
+// The party: rays turning behind a spotlit banana, confetti, a crew in builder outfits dancing on the same beat (rows
+// of /assets/hero/dancers.png, tools/build-hero-dancers.py), a coin for every tap on a dancer. The words are
+// src/data/copy/home-hero.json.
+import W from '../data/copy/home-hero.json';
+import homeStats from '../data/home-stats.json';
+import { cleanName } from '../lib/player-name.js';
+// the name on its arch, a letter at a time: --t runs -1..1 across the whole name (one line), --tw across its own word
+// (the two lines of a phone)
+const NAME = W.title.split(' ');
+const NAME_LEN = W.title.length;
+let at = 0;
+const LETTERS = NAME.map((w) => {
+  const row = [...w].map((ch, i) => ({ ch, k: at + i, t: (2 * (at + i)) / (NAME_LEN - 1) - 1, tw: w.length > 1 ? (2 * i) / (w.length - 1) - 1 : 0 }));
+  at += w.length + 1;
+  return row;
+});
+// the crew by sheet row, nearest the banana first: party, sombrero, duck, viking | crown, cowboy, propeller, top hat
+const CREW_L = [0, 1, 2, 3], CREW_R = [4, 5, 6, 7];
+const CONF_COLORS = ['#ff4d6d', '#55aaff', '#111111', '#fffdf5', '#58c05c', '#ff7bac'];
+const CONFETTI = Array.from({ length: 24 }, (_, i) => `left:${(i * 37 + 11) % 100}%;background:${CONF_COLORS[i % CONF_COLORS.length]};`
+  + `animation-duration:${(6 + (i % 5) * 1.6).toFixed(1)}s;animation-delay:-${((i * 1.37) % 9).toFixed(2)}s`);
+
+// 📰 THE TICKER: the world's best numbers by popularity, all-time and read low (src/data/home-stats.json, tools/
+// build-home-stats.py), between them the banana and a thing to do; the page's script puts the live ones in front
+// (who is in the world right now, the town's day, the Wheel of Peel's pot). ⚠️ a line is split around its {holes}
+// and the number goes in a <b>: nothing from the copy file is ever parsed as markup.
+const fill = (line, holes) => line.split(/(\{\w+\})/).filter(Boolean).map((p) => {
+  const m = /^\{(\w+)\}$/.exec(p);
+  return m ? { b: holes[m[1]] } : { t: p };
+});
+const floorOf = (key) => {
+  if (homeStats.n[key] == null) throw new Error(`home-hero.json ticker.stats "${key}" is not in src/data/home-stats.json — run python tools/build-home-stats.py`);
+  return homeStats.n[key].toLocaleString('en-GB') + '+';
+};
+const citName = citizens.winners && citizens.winners.citizen ? cleanName(citizens.winners.citizen.name) : '';
+const TICKS = [];
+W.ticker.stats.forEach((s, i) => {
+  TICKS.push(fill(s.line, { n: floorOf(s.key) }));
+  if (i === 1 && citName) TICKS.push(fill(W.ticker.citizen, { name: citName }));
+  if (i % 4 === 3 && W.ticker.lines[i >> 2]) TICKS.push(fill(W.ticker.lines[i >> 2], {}));
+});
+W.ticker.lines.slice(W.ticker.stats.length >> 2).forEach((l) => TICKS.push(fill(l, {})));
+const TICK_LEN = TICKS.reduce((a, it) => a + it.reduce((b, p) => b + String(p.b ?? p.t).length, 0), 0);
+const TICK_LIVE = JSON.stringify({ world: W.ticker.world, worldOne: W.ticker.worldOne, town: W.ticker.town, pot: W.ticker.pot });
 const CIT_ORDER = [['citizen', 'Citizen of the week'], ['gardener', 'Gardener'], ['neighbour', 'Neighbour'], ['farmer', 'Farmer'], ['raver', 'Raver']];
 const citWon = CIT_ORDER.filter(([p]) => citizens.winners && citizens.winners[p]);
 // hero slides are HONEST world shots (tools/reel/export_hero.py: real plate
@@ -74,6 +118,164 @@ const FEATURES = [
 <BaseLayout title={title} description={description} ogDescription={ogDescription}>
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(schema)} />
   <style is:inline slot="head">
+    /* 🎉 THE HERO (26 Sep 2026) — the party Trym picked from two prototypes: rays turning behind a spotlit banana,
+       confetti, the name on an arch, a crew in builder outfits on the banana's beat. Every loop runs on transform or
+       opacity only, pauses while the hero is off screen (.hw--rest) and stops under reduced motion.
+       ⚠️ THE CREW SCALE IS WHOLE DEVICE PIXELS (design library §6, §25): --hs2/--hs3 are 2 and 3 snapped to k/dpr by
+       the one-line script at the top of the hero, so a 2.625-dpr phone draws every art pixel five device pixels wide
+       instead of five-or-six. The strip steps by transform inside a clipped box of whole width, never by
+       background-position (§6: the sideways breathing).
+       ⚠️ CLIP, NOT HIDDEN: the rays are wider than the page, and overflow:hidden is a scroll container — focusing a
+       door or scrolling a dancer into view slid the whole hero sideways (the test caught it, 26 Sep). clip scrolls nothing. */
+    .hw {
+      --hs: var(--hs2, 2);
+      position: relative; overflow: hidden; overflow: clip; isolation: isolate; text-align: center;
+      background: var(--banana); padding: 1.1rem 1rem 2.6rem;
+    }
+    @media (min-width: 900px) { .hw { --hs: var(--hs3, 3); padding-top: 1.4rem; } }
+    .hw__conf { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+    .hw__conf b { position: absolute; top: -14px; width: 9px; height: 9px; animation: hwFall linear infinite; }
+    .hw__conf b:nth-child(3n) { width: 7px; height: 12px; }
+    @media (max-width: 699px) { .hw__conf b:nth-child(2n) { display: none; } }
+    @keyframes hwFall { to { transform: translateY(1100px) rotate(620deg); } }
+
+    /* the hello, and the name on its arch: each letter sits on the curve (the outer span) and bobs in a wave that
+       runs across the name (the inner span's translate) after it pops in (its scale) — two properties, so the two
+       animations never fight */
+    .hw__title { margin: 0; line-height: 1; }
+    .hw__kicker {
+      display: table; margin: 0 auto 0.5rem; text-transform: none; letter-spacing: 0.02em;
+      font-family: "Space Grotesk", system-ui, sans-serif; font-size: clamp(0.9rem, 3.4vw, 1.15rem);
+      transform: rotate(-2deg); box-shadow: 3px 3px 0 var(--ink);
+    }
+    .hw__name {
+      display: block; margin: 0 auto 0.12em; text-transform: uppercase; color: var(--paper);
+      font-size: clamp(2.6rem, 16.5vw, 4.6rem); font-size: clamp(2.6rem, min(16.5vw, 8.4svh), 4.6rem); line-height: 1.02; letter-spacing: 0.01em;
+      -webkit-text-stroke: 0.055em var(--ink); paint-order: stroke fill; text-shadow: 0.055em 0.075em 0 var(--hot);
+    }
+    .hw__word { display: block; white-space: nowrap; }
+    .hw__l { --u: var(--tw); display: inline-block; transform: translateY(calc(var(--u) * var(--u) * 0.2em)) rotate(calc(var(--u) * 7deg)); }
+    .hw__l > span { display: inline-block; animation: hwPop 0.6s cubic-bezier(0.3, 1.7, 0.5, 1) calc(var(--k) * 45ms) backwards, hwWave 2.4s ease-in-out calc(var(--k) * -0.14s) infinite; }
+    @keyframes hwPop { from { scale: 0.3; } }
+    @keyframes hwWave { 50% { translate: 0 -0.07em; } }
+    @media (min-width: 700px) {
+      .hw__name { margin-bottom: 0.3em; font-size: clamp(3.4rem, 8.6vw, 7.4rem); }
+      .hw__word { display: inline-block; }
+      .hw__l { --u: var(--t); transform: translateY(calc(var(--u) * var(--u) * 0.3em)) rotate(calc(var(--u) * 8deg)); }
+    }
+
+    /* the stage: the banana in its spotlight, the rays turning around it, the crew either side on its line */
+    .hw__stage { position: relative; margin: 0 auto; width: clamp(150px, 52vw, 240px); width: clamp(150px, min(52vw, 26svh), 240px); }
+    @media (min-width: 700px) { .hw__stage { width: clamp(150px, min(52vw, 29svh), 240px); } }
+    .hw__rays {
+      --R: max(135vw, 1250px);
+      position: absolute; left: 50%; top: 50%; width: var(--R); height: var(--R); margin: calc(var(--R) / -2) 0 0 calc(var(--R) / -2);
+      z-index: -3; pointer-events: none; border-radius: 50%;
+      background: repeating-conic-gradient(from 0deg, #fff27a 0deg 9deg, rgba(255, 242, 122, 0) 9deg 18deg);
+      animation: hwSpin 90s linear infinite;
+    }
+    @keyframes hwSpin { to { transform: rotate(360deg); } }
+    .hw__stage::before {
+      content: ''; position: absolute; left: 50%; top: 52%; width: 250%; aspect-ratio: 1; z-index: -2; pointer-events: none;
+      transform: translate(-50%, -50%); border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6) 40%, rgba(255, 255, 255, 0) 100%);
+    }
+    .hw__stage::after {
+      content: ''; position: absolute; left: 24%; right: 24%; bottom: 3%; height: 7%; z-index: -1;
+      border-radius: 50%; background: rgba(60, 40, 0, 0.18);
+    }
+    .hw__banana { position: relative; display: block; width: 100%; height: auto; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .hw__crew { position: absolute; bottom: 4%; display: flex; align-items: flex-end; gap: calc(5px * var(--hs)); pointer-events: none; }
+    .hw__crew--l { right: 86%; flex-direction: row-reverse; }
+    .hw__crew--r { left: 86%; }
+    .hw__d {
+      position: relative; flex: none; overflow: hidden; overflow: clip; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent;
+      width: calc(35px * var(--hs)); height: calc(51px * var(--hs));
+    }
+    .hw__d::before {
+      content: ''; position: absolute; left: 0; top: 0; width: calc(280px * var(--hs)); height: 100%;
+      background: url(/assets/hero/dancers.png) 0 calc(-51px * var(--hs) * var(--row)) / calc(280px * var(--hs)) calc(408px * var(--hs)) no-repeat;
+      image-rendering: pixelated; animation: hwDance 0.8s steps(8) infinite;
+    }
+    @keyframes hwDance { to { transform: translateX(calc(-280px * var(--hs))); } }
+    .hw__crew--r .hw__d { scale: -1 1; }
+    .hw__d.is-hop { animation: hwHop 0.45s cubic-bezier(0.3, 0.7, 0.4, 1); }
+    @keyframes hwHop { 40% { translate: 0 -30%; } 70% { translate: 0 0; scale: var(--flip, 1) 0.9; } }
+    .hw__crew--r .hw__d.is-hop { --flip: -1; }
+    .hw__d:nth-child(n+2 of .hw__d) { display: none; }
+    @media (min-width: 560px) { .hw__d:nth-child(n+2 of .hw__d) { display: block; } .hw__d:nth-child(n+3 of .hw__d) { display: none; } }
+    @media (min-width: 1100px) { .hw__d:nth-child(n+3 of .hw__d) { display: block; } .hw__d:nth-child(n+4 of .hw__d) { display: none; } }
+    @media (min-width: 1300px) { .hw__d:nth-child(n+4 of .hw__d) { display: block; } }
+
+    /* the sticker that says the crew can be tapped, until somebody does. On a phone the one dancer stands under the
+       big banana's hand, so the sticker starts past the hand and points back at the dancer's head */
+    .hw__hint {
+      position: absolute; bottom: calc(100% - 11px * var(--hs)); left: 12px; z-index: 2; white-space: nowrap; pointer-events: none;
+      font-weight: 800; font-size: 0.78rem; background: var(--paper); border: 3px solid var(--ink); padding: 0.1rem 0.45rem;
+      box-shadow: 3px 3px 0 var(--ink); transform: rotate(3deg);
+      animation: hwHintIn 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 2.2s backwards, hwBob 1.6s ease-in-out 2.7s infinite;
+    }
+    .hw__hint::after {
+      content: ''; position: absolute; left: 14px; top: 100%; border: 7px solid transparent; border-top-color: var(--ink);
+    }
+    @media (min-width: 560px) {
+      .hw__hint { left: calc(17.5px * var(--hs)); font-size: 0.85rem; padding: 0.15rem 0.55rem; transform: translateX(-50%) rotate(3deg); }
+      .hw__hint::after { left: 50%; margin-left: -7px; }
+    }
+    @keyframes hwHintIn { from { opacity: 0; scale: 0.4; } }
+    @keyframes hwBob { 50% { translate: 0 -5px; } }
+    .hw.is-played .hw__hint { display: none; }
+
+    /* the coins: a pill under the banana that counts them, and after five a link into the town. In the flow, so it
+       pushes the words down (after a tap, which is not a layout shift) instead of covering the banana's feet */
+    .hw__coins {
+      position: relative; z-index: 2; display: flex; align-items: center; gap: 0.4rem; width: max-content; max-width: calc(100% - 0.5rem);
+      margin: 0.5rem auto -0.3rem; text-align: left; line-height: 1.2; text-decoration: none; color: var(--ink);
+      background: var(--paper); border: 3px solid var(--ink); border-radius: 1.3rem; padding: 0.25rem 0.8rem 0.25rem 0.4rem;
+      box-shadow: 3px 3px 0 var(--ink); font-weight: 800; font-size: 0.95rem;
+    }
+    .hw__coin { width: 22px; height: 22px; flex: none; background: url(/assets/banana-stand/coin.png) 0 0 / 100% 100%; }
+    .hw__coins.is-bump { animation: hwBump 0.3s ease-out; }
+    @keyframes hwBump { 40% { scale: 1.15; } }
+    .hw__done { display: none; align-items: center; padding-left: 0.5rem; border-left: 2px solid var(--ink); }
+    .hw__coins.is-done { background: var(--ink); color: var(--banana); animation: hwBump 0.4s ease-out; }
+    .hw__coins.is-done .hw__done { display: inline-flex; border-left-color: var(--banana); }
+    .hw__fly {
+      position: absolute; z-index: 4; width: 26px; height: 26px; margin-left: -13px; pointer-events: none;
+      background: url(/assets/banana-stand/coin-spin.png) 0 0 / 600% 100%; animation: hwCoin 0.5s steps(6) infinite;
+    }
+    @keyframes hwCoin { to { background-position: 120% 0; } }
+    .hw__bit { position: absolute; z-index: 4; width: 9px; height: 9px; pointer-events: none; }
+
+    /* the words under the dancers and the two doors, with no icons: the arrow is drawn and nudges forward, and a
+       shine crosses the main door now and then */
+    .hw__tag { max-width: 36ch; margin: 1.2rem auto 0; font-weight: 700; font-size: clamp(0.98rem, 2.6vw, 1.15rem); line-height: 1.4; text-wrap: balance; }
+    .hw__cta { margin-top: 1.1rem; display: flex; gap: 0.9rem; justify-content: center; flex-wrap: wrap; }
+    .hw__cta .btn { display: inline-flex; align-items: center; justify-content: center; font-size: 1.08rem; padding: 0.9rem 1.5rem; }
+    .hw__go { position: relative; overflow: hidden; overflow: clip; font-size: 1.15rem; }
+    .hw__go::after {
+      content: ''; position: absolute; top: -10%; bottom: -10%; left: 0; width: 34%; pointer-events: none;
+      background: linear-gradient(100deg, rgba(255, 225, 53, 0), rgba(255, 225, 53, 0.32), rgba(255, 225, 53, 0));
+      transform: translateX(-120%) skewX(-18deg); animation: hwShine 5s ease-in-out 1.6s infinite;
+    }
+    @keyframes hwShine { 0% { transform: translateX(-120%) skewX(-18deg); } 24%, 100% { transform: translateX(420%) skewX(-18deg); } }
+    .hw__arrow { display: inline-block; margin-left: 0.45em; animation: hwNudge 1.6s ease-in-out infinite; }
+    @keyframes hwNudge { 50% { translate: 4px 0; } }
+    @media (max-width: 559px) { .hw__cta { flex-direction: column; align-items: center; } .hw__cta .btn { width: min(100%, 19rem); } }
+
+    .hw--rest *, .hw--rest *::before, .hw--rest *::after { animation-play-state: paused !important; }
+    @media (prefers-reduced-motion: reduce) {
+      .hw__conf { display: none; }
+      .hw__rays, .hw__l > span, .hw__d::before, .hw__hint, .hw__go::after, .hw__arrow { animation: none; }
+    }
+
+    /* 📰 the ticker: the numbers in white, a live one led by the world's green dot, a pink diamond between */
+    .tk .marquee__track { animation-duration: calc(var(--tk-len) * 0.16s); }
+    .tk__i { display: inline-block; }
+    .tk__i::after { content: ''; display: inline-block; vertical-align: 0.1em; width: 7px; height: 7px; margin: 0 1.05rem; background: var(--hot); transform: rotate(45deg); }
+    .tk__i b { color: var(--paper); }
+    .tk__i--live::before { content: ''; display: inline-block; vertical-align: 0.05em; width: 8px; height: 8px; margin-right: 0.5rem; background: #37d67a; animation: doorPulse 1.2s steps(2) infinite; }
+
     /* 🌍 the world landing — highly visual, tiny copy, CTA always in reach */
     /* a cinematic STRIP, not a billboard — capped height so it never owns
        the whole viewport (Trym: way too much space) */
@@ -163,31 +365,46 @@ const FEATURES = [
     .bwl-also { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin-top: 1.6rem; font-weight: 700; }
   </style>
 
-  <!-- scrolling marquee banner -->
-  <div class="marquee" slot="banner" aria-hidden="true">
+  <!-- 📰 the ticker: the world's numbers (the frontmatter), the live ones put in front by the script below -->
+  <div class="marquee tk" slot="banner" aria-hidden="true" id="tk" data-live={TICK_LIVE} data-len={TICK_LEN} style={`--tk-len:${TICK_LEN}`}>
     <div class="marquee__track">
-      <span>{marqueeText}</span>
-      <span>{marqueeText}</span>
+      {[0, 1].map(() => (
+        <span class="tk__half">{TICKS.map((it) => <span class="tk__i">{it.map((p) => (p.b != null ? <b>{p.b}</b> : p.t))}</span>)}</span>
+      ))}
     </div>
   </div>
 
-  <!-- hero -->
-  <section class="hero">
-    <div class="hero__banana">
-      <img src="/assets/dancing-banana-gif.gif" alt="The Dancing Banana GIF, created by Trym Stene in 1999"
-           width="500" height="500"
-           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+  <!-- 🎉 the hero: the hello, the arched name, the banana and its crew, the two doors -->
+  <section class="hw" id="hero">
+    <script is:inline>(function(){var d=window.devicePixelRatio||1,s=document.documentElement.style;s.setProperty('--hs2',Math.max(1,Math.round(2*d))/d);s.setProperty('--hs3',Math.max(1,Math.round(3*d))/d);})();</script>
+    <div class="hw__conf" aria-hidden="true">{CONFETTI.map((s) => <b style={s}></b>)}</div>
+    <h1 class="hw__title">
+      <span class="kicker hw__kicker">{W.kicker}</span>
+      <span class="hw__name">{LETTERS.map((w, wi) => (
+        <Fragment>{wi > 0 && ' '}<span class="hw__word">{w.map((l) => <span class="hw__l" style={`--t:${l.t.toFixed(3)};--tw:${l.tw.toFixed(3)};--k:${l.k}`}><span>{l.ch}</span></span>)}</span></Fragment>
+      ))}</span>
+    </h1>
+    <div class="hw__stage">
+      <div class="hw__rays" aria-hidden="true"></div>
+      <div class="hw__crew hw__crew--l" aria-hidden="true">{CREW_L.map((r) => <i class="hw__d" style={`--row:${r}`}></i>)}</div>
+      <img class="hw__banana" src="/assets/dancing-banana-transparent.gif" alt={W.alt}
+           width="500" height="500" fetchpriority="high" draggable="false">
+      <div class="hw__crew hw__crew--r" aria-hidden="true">
+        <span class="hw__hint">{W.play.hint}</span>
+        {CREW_R.map((r) => <i class="hw__d" style={`--row:${r}`}></i>)}
+      </div>
     </div>
-    <h1 class="hero__title">hello yes,<br>it's the <span class="wobble">banana</span> guy</h1>
-    <p class="hero__tag">Welcome in. This is where the dancing banana lives — since 1999, still dancing.</p>
+    <a class="hw__coins" href="/town/" data-place="hero-game" hidden><i class="hw__coin" aria-hidden="true"></i><b>0</b><span class="hw__done">{W.play.done}<span class="hw__arrow" aria-hidden="true">→</span></span></a>
+    <p class="hw__tag">{W.tag}</p>
     <!-- 🌍 ONE DOOR (Trym, 13 Aug): the per-area buttons collapsed into a
-         single entrance — the world is one place now and the homestead is
-         its front door (the quest + tour greet you there). "Enter" was the
-         chosen verb: a place you walk into — "Join" read as signing up,
-         "Play" shrank it to a minigame. -->
-    <div class="hero__cta">
-      <a class="btn btn--dark" href="/town/" data-place="hero">🌍 Enter Banana World →</a>
-      <a class="btn btn--light" href="/make-a-banana/" data-place="hero"><PixelIcon name="palette" /> Make a banana</a>
+         single entrance — the world is one place now and the town is its
+         front door. "Enter" was the chosen verb: a place you walk into —
+         "Join" read as signing up, "Play" shrank it to a minigame. No icons
+         on either button (Trym, 26 Sep: the globe and the palette "dont match
+         the banana theme"); the arrow is drawn, and it moves. -->
+    <div class="hw__cta">
+      <a class="btn btn--dark hw__go" href="/town/" data-place="hero">{W.enter}<span class="hw__arrow" aria-hidden="true">→</span></a>
+      <a class="btn btn--light hw__make" href="/make-a-banana/" data-place="hero">{W.make}</a>
     </div>
   </section>
 
@@ -218,7 +435,7 @@ const FEATURES = [
         <img class={i === 0 ? 'on' : ''} src={h.img} alt={h.alt}
              width="1400" height="600" loading={i === 0 ? 'eager' : 'lazy'} />
       ))}
-      <a class="btn btn--dark bwl-hero__cta" href="/town/" data-place="doors">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark bwl-hero__cta" href="/town/" data-place="doors">{W.enter}<span class="hw__arrow" aria-hidden="true">→</span></a>
     </div>
     <p class="doors__daily" style="text-align:center">
       <span class="door__dot" style="display:inline-block;vertical-align:1px;margin-right:0.4rem"></span>
@@ -268,7 +485,7 @@ const FEATURES = [
     </div>
 
     <div class="bwl-cta">
-      <a class="btn btn--dark" href="/town/" data-place="doors">🌍 Enter Banana World →</a>
+      <a class="btn btn--dark" href="/town/" data-place="doors">{W.enter}<span class="hw__arrow" aria-hidden="true">→</span></a>
       <p class="bwl-fine">free · plays in the browser · your banana is waiting</p>
     </div>
     <p class="bwl-also">
@@ -359,15 +576,109 @@ const FEATURES = [
         slides[k].classList.add('on');
       }, 4200);
     }
-    // proof of life on the dance door — fail silently, never block the page
-    fetch('https://banana-rave.trymstene.workers.dev/count')
-      .then((r) => r.json())
-      .then((d) => {
-        const el = document.getElementById('raveCount');
-        if (el && typeof d.count === 'number' && d.count > 0) {
-          el.textContent = d.count === 1 ? '1 banana at the rave right now' : `${d.count} bananas at the rave right now`;
+
+    // 🎉 THE HERO: tap a dancer and a coin flies into the pill under the banana (at five it becomes a door into the
+    // town, where coins are kept; these are not), tap the banana and it throws confetti. Counted as hero_play (the
+    // first tap) and hero_play_5 (the fifth coin); the pill's own tap is a world_door from "hero-game" (main.js).
+    const hero = document.getElementById('hero');
+    const send = (name) => { try { if (window.gtag) window.gtag('event', name); } catch (e) { /* analytics never breaks the toy */ } };
+    if (hero) {
+      const pill = hero.querySelector('.hw__coins');
+      const count = pill.querySelector('b');
+      const banana = hero.querySelector('.hw__banana');
+      let coins = 0;
+      const play = () => { if (hero.classList.contains('is-played')) return; hero.classList.add('is-played'); send('hero_play'); };
+      const spot = (x, y) => { const h = hero.getBoundingClientRect(); return [x - h.left, y - h.top]; };
+      const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+      const COLS = ['#ff4d6d', '#55aaff', '#111111', '#fffdf5', '#58c05c', '#ff7bac'];
+      hero.addEventListener('click', (e) => {
+        const d = e.target.closest('.hw__d');
+        if (d) {
+          play();
+          restart(d, 'is-hop');
+          pill.hidden = false;
+          const r = d.getBoundingClientRect(), p = count.getBoundingClientRect();
+          const [x, y] = spot(r.left + r.width / 2, r.top + r.height * 0.1);
+          const [px, py] = spot(p.left + p.width / 2, p.top + p.height / 2);
+          const c = document.createElement('i');
+          c.className = 'hw__fly';
+          c.style.left = x + 'px';
+          c.style.top = y + 'px';
+          hero.appendChild(c);
+          c.animate([
+            { transform: 'translate(0, 0) scale(0.6)' },
+            { transform: 'translate(0, -50px) scale(1.25)', offset: 0.35 },
+            { transform: `translate(${px - x}px, ${py - y - 11}px) scale(0.8)` },
+          ], { duration: 720, easing: 'ease-in-out' }).onfinish = () => {
+            c.remove();
+            count.textContent = String(++coins);
+            restart(pill, 'is-bump');
+            if (coins === 5) { pill.classList.add('is-done'); send('hero_play_5'); }
+          };
+          return;
         }
-      })
-      .catch(() => {});
+        if (e.target === banana) {
+          play();
+          banana.animate([{ scale: '1' }, { scale: '1.07' }, { scale: '1' }], { duration: 320, easing: 'ease-out' });
+          const [x, y] = spot(e.clientX, e.clientY);
+          for (let i = 0; i < 18; i++) {
+            const b = document.createElement('b');
+            b.className = 'hw__bit';
+            b.style.cssText = `left:${x}px;top:${y}px;background:${COLS[i % COLS.length]}`;
+            hero.appendChild(b);
+            const a = (i / 18) * Math.PI * 2 + Math.random() * 0.35, v = 80 + Math.random() * 90;
+            const dx = Math.cos(a) * v, dy = Math.sin(a) * v - 40;
+            b.animate([
+              { transform: 'translate(-50%, -50%) rotate(0deg)', opacity: 1 },
+              { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${220 + i * 25}deg)`, opacity: 1, offset: 0.55 },
+              { transform: `translate(calc(-50% + ${dx * 1.25}px), calc(-50% + ${dy + 150}px)) rotate(${420 + i * 35}deg)`, opacity: 0 },
+            ], { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)' }).onfinish = () => b.remove();
+          }
+        }
+      });
+      // every loop in the hero rests while it is off screen
+      if ('IntersectionObserver' in window) new IntersectionObserver(([en]) => hero.classList.toggle('hw--rest', !en.isIntersecting)).observe(hero);
+    }
+
+    // 📰 THE LIVE TICKER, once the page has loaded and gone quiet: who is in Banana World right now (the four rooms'
+    // own headcounts, added up), the town's day and the Wheel of Peel's pot, put in front of the all-time numbers.
+    // Each only when it says something (two or more); a room that does not answer is left out, never guessed.
+    const RAVE = 'https://banana-rave.trymstene.workers.dev/';
+    const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const heads = (o) => (o && typeof o.count === 'number' ? o.count : 0);
+    const live = async () => {
+      const [rave, town, park, beach, life, pot] = await Promise.all([get(RAVE + 'count'), get(RAVE + 'town-count'),
+        get(RAVE + 'park-count'), get(RAVE + 'beach-count'), get(RAVE + 'town-life'), get('https://banana-pass.trymstene.workers.dev/town/pot')]);
+      // proof of life on the dance door
+      const rc = document.getElementById('raveCount');
+      if (rc && heads(rave) > 0) rc.textContent = heads(rave) === 1 ? '1 banana at the rave right now' : `${heads(rave)} bananas at the rave right now`;
+      const tk = document.getElementById('tk');
+      if (!tk) return;
+      const L = JSON.parse(tk.dataset.live || '{}');
+      const all = heads(rave) + heads(town) + heads(park) + heads(beach);
+      const day = life && life.today;
+      const items = [];
+      if (all > 1) items.push([L.world, { n: all }]);
+      else if (all === 1) items.push([L.worldOne, {}]);
+      if (day && day.fixes > 1 && day.people > 1) items.push([L.town, { fixes: day.fixes, people: day.people }]);
+      if (pot && pot.pot > 1) items.push([L.pot, { pot: pot.pot }]);
+      if (!items.length) return;
+      tk.querySelectorAll('.tk__half').forEach((half) => {
+        const frag = document.createDocumentFragment();
+        for (const [line, holes] of items) {
+          const s = document.createElement('span');
+          s.className = 'tk__i tk__i--live';
+          for (const part of String(line).split(/(\{\w+\})/)) {
+            const m = /^\{(\w+)\}$/.exec(part);
+            if (m) { const b = document.createElement('b'); b.textContent = Number(holes[m[1]]).toLocaleString('en-GB'); s.appendChild(b); }
+            else if (part) s.appendChild(document.createTextNode(part));
+          }
+          frag.appendChild(s);
+        }
+        half.prepend(frag);
+      });
+      tk.style.setProperty('--tk-len', String(+tk.dataset.len + items.reduce((a, [l]) => a + String(l).length, 0)));
+    };
+    addEventListener('load', () => (window.requestIdleCallback || setTimeout)(live));
   </script>
 </BaseLayout>

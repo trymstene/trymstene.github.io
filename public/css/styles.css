@@ -93,7 +93,7 @@ a { color: inherit; }
   animation: scroll 80s linear infinite;
   padding: 0.5rem 0;
 }
-.marquee__track span { padding-right: 1rem; }
+.marquee__track > span { padding-right: 1rem; }
 @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* ---------- pixel icons (PixelIcon.astro + JS-inlined) ---------- */

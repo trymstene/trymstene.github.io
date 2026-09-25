@@ -64,7 +64,7 @@ const RANGE = {
   events: [
     { name: 'offer_shown', v: 236, u: 205 }, { name: 'offer_pack', v: 23, u: 21 }, { name: 'offer_swap', v: 52, u: 30 }, { name: 'offer_skip', v: 174, u: 160 },
     { name: 'offer_world', v: 2, u: 2 }, { name: 'offer_support', v: 2, u: 2 },
-    { name: 'gif_download', v: 176, u: 150 }, { name: 'builder_boot', v: 300, u: 250 }, { name: 'builder_start', v: 100, u: 90 }, { name: 'world_door', v: 58, u: 44 },
+    { name: 'gif_download', v: 176, u: 150 }, { name: 'builder_boot', v: 300, u: 250 }, { name: 'builder_start', v: 100, u: 90 }, { name: 'world_door', v: 58, u: 44 }, { name: 'hero_play', v: 30, u: 28 }, { name: 'hero_play_5', v: 9, u: 9 },
     { name: 'shop_view', v: 50, u: 45 }, { name: 'select_item', v: 28, u: 24 }, { name: 'view_item', v: 33, u: 28 },
     { name: 'pass_ask_shown', v: 61, u: 40 }, { name: 'pass_ask_tap', v: 9, u: 8 }, { name: 'pass_mail_signin', v: 6, u: 5 }, { name: 'pass_mail_login', v: 3, u: 3 }, { name: 'pass_mail_attached', v: 1, u: 1 },
     { name: 'arcade_board', v: 14, u: 9 }, { name: 'arcade_run', v: 41, u: 9 }, { name: 'arcade_score', v: 37, u: 8 }, { name: 'arcade_prize', v: 2, u: 2 },

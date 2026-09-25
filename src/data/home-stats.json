@@ -1,0 +1,32 @@
+{
+  "asOf": "2026-09-26",
+  "from": "2026-06-01",
+  "n": {
+    "beach_dig": 24000,
+    "beach_shell": 6200,
+    "beach_fish_catch": 1400,
+    "beach_treasure": 110,
+    "rave_gold": 390,
+    "park_trash": 340,
+    "park_egg": 170,
+    "park_bird": 240,
+    "park_plant": 150,
+    "town_fix": 380,
+    "rave_join_users": 6600,
+    "homestead_open_users": 720
+  },
+  "raw": {
+    "beach_dig": 24437,
+    "beach_shell": 6292,
+    "beach_fish_catch": 1406,
+    "beach_treasure": 114,
+    "rave_gold": 391,
+    "park_trash": 341,
+    "park_egg": 175,
+    "park_bird": 244,
+    "park_plant": 153,
+    "town_fix": 380,
+    "rave_join_users": 6680,
+    "homestead_open_users": 728
+  }
+}

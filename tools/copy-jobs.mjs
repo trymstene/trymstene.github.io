@@ -1659,6 +1659,11 @@ const holdsAll = (...keys) => ({
   needs: keys.map((k) => [new RegExp(`\\{${k}\\}`), `must carry {${k}} — the game fills it`]),
 });
 const NO_MARKUP = { forbids: [[/[<>&]/, 'markup or an entity — the code builds the markup around this line']] };
+// 🎉 the homepage ticker's numbers: the keys tools/build-home-stats.py writes into src/data/home-stats.json (its EVENTS,
+// and its USERS as <event>_users), MIRRORED here because this file runs in a throwaway copy with no src/ (the lock test);
+// src/pages/index.astro fails the build on a key the JSON does not carry
+export const HOME_STAT_KEYS = ['beach_dig', 'beach_shell', 'beach_fish_catch', 'beach_treasure', 'rave_gold', 'park_trash',
+  'park_egg', 'park_bird', 'park_plant', 'town_fix', 'rave_join_users', 'homestead_open_users'];
 
 // 🌍 THE LANGUAGE PAGES (25 Sep 2026). Trym: "upgrade all international pages, and add more big languages that probably
 // searches for the banana". Every language page (src/pages/[locale].astro) reads src/data/copy/locale-<code>.json through
@@ -2691,6 +2696,44 @@ export const JOBS = {
       close: { kind: 'label', aim: 5, max: 10, note: 'The button that closes the card after a failure: “Close”, the word every card on the site closes with.' },
     },
     shape: () => [],
+  },
+  // 🎉 THE HOMEPAGE HERO (26 Sep 2026). Trym: "hello there, and welcome to BANANA WORLD … small text on top and banana
+  // world in a slight arc and big text", the buttons with "no icons", a crew you can tap and a live ticker of the world's
+  // best numbers "based on popularity". Site words: plain. The page draws the arrows, the "+" and the commas.
+  'home-hero': {
+    id: 'home-hero',
+    title: 'The homepage hero — the welcome, the buttons, the dancers and the ticker',
+    what: 'The top of the homepage: the hello over the big arched BANANA WORLD, the line under the dancers, the two buttons, the sticker that says the dancers can be tapped and the link after five coins, and every line of the ticker along the top (the live ones and the all-time numbers).',
+    approved: 'src/data/copy/home-hero.json',
+    reads: 'src/pages/index.astro (a static import at build time; its script reads the live lines off the page)',
+    top: ['kicker', 'title', 'tag', 'alt', 'enter', 'make', 'play', 'ticker'],
+    fields: {
+      kicker: { kind: 'label', aim: 30, max: 34, forbids: [[/^[A-Z]/, 'lower case: the small hello above the big name']], note: 'The small line above the big BANANA WORLD: a hello that ends where the name begins.' },
+      title: { kind: 'label', max: 12, needs: [[/^Banana World$/, 'the name, exactly: Banana World']], note: 'The big arched name. The page sets it in capitals, a letter at a time.' },
+      tag: { kind: 'prose', aim: 100, max: 110, needs: [[/dancing banana/i, 'says dancing banana: the search this page answers']], note: 'Under the dancers: what this place is, plainly, and that it is free.' },
+      alt: { kind: 'prose', max: 80, needs: [[/Dancing Banana GIF/, 'names the Dancing Banana GIF'], [/Trym Stene/, 'names who made it'], [/1999/, 'says when']], note: 'The big banana’s alt text: what it is, who made it, when.' },
+      enter: { kind: 'label', max: 22, note: 'The main button, into Banana Town (the front door of Banana World). No icon; the page draws the arrow.' },
+      make: { kind: 'label', max: 18, note: 'The second button, to the banana builder. No icon.' },
+      'play.hint': { kind: 'label', aim: 14, max: 18, forbids: [[/^[A-Z]/, 'lower case, like a sticker']], note: 'The sticker by the dancers until the first tap: they can be tapped.' },
+      'play.done': { kind: 'prose', aim: 52, max: 60, ...NO_MARKUP, note: 'After five coins the coin pill becomes a link into Banana Town. The hero’s coins are for fun and are not kept; the town’s are. Never promises that these carry over. The page draws the arrow.' },
+      'ticker.world': toastLine(48, 'Live: the bananas in the town, the park, the bay and the rave right now, added up (two or more).', { ...holdsAll('n'), ...NO_MARKUP }),
+      'ticker.worldOne': toastLine(48, 'The same when it is exactly one.', NO_MARKUP),
+      'ticker.town': toastLine(64, 'Live: today in Banana Town, the things fixed and by how many bananas (both two or more).', { ...holdsAll('fixes', 'people'), ...NO_MARKUP }),
+      'ticker.pot': toastLine(52, 'Live: the Wheel of Peel’s pot, in coins.', { ...holdsAll('pot'), ...NO_MARKUP }),
+      'ticker.citizen': toastLine(48, 'This week’s Citizen by name, baked in at build (src/data/citizen.json).', { ...holdsAll('name'), ...NO_MARKUP }),
+      'ticker.stats[].key': { kind: 'enum', values: HOME_STAT_KEYS, note: 'Which number: a key of src/data/home-stats.json (tools/build-home-stats.py). A key ending _users counts people, the rest count times it happened.' },
+      'ticker.stats[].line': toastLine(48, 'An all-time number, read low: {n} is filled with the number, commas and a “+”. A line about people must use a _users key; a line about things must say only what the event counts.', { ...holdsAll('n'), ...NO_MARKUP }),
+      'ticker.lines[]': toastLine(48, 'A line between the numbers: the banana, or a thing to do. No number of its own.', { ...NO_MARKUP, forbids: [...NO_MARKUP.forbids, [/\b(?!1999\b)\d/, 'a number here is counted by nothing — a number belongs in ticker.stats, read from home-stats.json']] }),
+    },
+    shape: (d) => {
+      const bad = [];
+      const stats = (d.ticker && d.ticker.stats) || [];
+      if (!Array.isArray(stats) || stats.length < 6) bad.push({ path: 'ticker.stats', msg: 'the ticker needs at least six numbers' });
+      const keys = Array.isArray(stats) ? stats.map((s) => s && s.key) : [];
+      keys.forEach((k, i) => { if (keys.indexOf(k) !== i) bad.push({ path: `ticker.stats[${i}].key`, msg: `"${k}" twice: one line per number` }); });
+      if (!Array.isArray(d.ticker && d.ticker.lines) || !d.ticker.lines.length) bad.push({ path: 'ticker.lines', msg: 'at least one line between the numbers' });
+      return bad;
+    },
   },
   'pass-toasts': {
     id: 'pass-toasts',
