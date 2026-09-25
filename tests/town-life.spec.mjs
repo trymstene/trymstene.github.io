@@ -1228,11 +1228,58 @@ test('standingPose: a resident at their post stands sideways, never front-on', a
   for (let i = 0; i < 10; i++) {
     await page.waitForTimeout(700);
     for (const r of await seam(page, () => window.__town.life.residents())) {
-      if (r.hidden || r.walking || r.leg) continue;
-      if (FRONT.includes(r.frame)) bad.push(`${r.key} stands front-on in frame ${r.frame} at ${r.place}`);
+      // 💃 a dance (25 Sep 2026) moves THROUGH the front frames — two bars and done; this is about standing in one
+      if (r.hidden || r.walking || r.leg || r.dancing) continue;
+      // ⚠️ `frame` is the drawn key, "frame:tool" — compared as a string it matched nothing, and this gate never fired
+      const f = parseInt(r.frame, 10);
+      if (FRONT.includes(f)) bad.push(`${r.key} stands front-on in frame ${f} at ${r.place}`);
     }
   }
   expect(bad, '⚠️ somebody is posing at their own shop instead of standing at it').toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+// 💃 NOBODY STANDS THERE LIKE A STATUE (25 Sep 2026). Trym, on opening Banana World: "lots of town bananas just standing
+// there statically - not a great first impression". Standing still is now a life of its own (town-life.js idle()): the
+// sway you can see, a glance round, two bars of dance now and then, and a pair's talk. ⚠️ The first version ran only in
+// the plain standing branch, and a refresh (the square's condition arriving on a first load) puts the whole town in the
+// OTHER one — waiting at the post with a walk on the clock — so most of the town never danced. This walks noon, when the
+// pairs are out, with a band set first (the refresh), and asks for all of it inside half a minute.
+test('lively: at their posts the residents sway, dance and talk — never two dancers side by side', async ({ page }) => {
+  test.setTimeout(90000);
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  await setBand(page, 70);
+  await seam(page, () => window.__town.life.set(9));   // noon: three pairs on the benches and the terrace
+  await page.waitForTimeout(500);
+  const seen = {}, danced = new Set(), talked = new Set(), crowded = [];
+  const t0 = Date.now();
+  while (Date.now() - t0 < 28000) {
+    const snap = await seam(page, () => ({ rs: window.__town.life.residents(), lift: [...document.querySelectorAll('.tw-npc.is-lift')].map((e) => e.dataset.k) }));
+    const vis = snap.rs.filter((r) => !r.hidden);
+    for (const r of vis) {
+      (seen[r.key] || (seen[r.key] = { frames: new Set(), pair: r.pair })).frames.add(parseInt(r.frame, 10));
+      if (r.dancing) danced.add(r.key);
+    }
+    for (const k of snap.lift) talked.add(k);
+    const d = vis.filter((r) => r.dancing);
+    for (const a of d) for (const b of d) if (a.key < b.key && Math.hypot(a.x - b.x, a.y - b.y) < 200) crowded.push(`${a.key} and ${b.key}`);
+    await page.waitForTimeout(90);
+  }
+  const keys = Object.keys(seen);
+  expect(keys.length, 'nobody is out at noon').toBeGreaterThan(5);
+  // the sway is visible: every banana out changes pose, standing or not
+  const still = keys.filter((k) => seen[k].frames.size < 2);
+  expect(still, 'these stood in one pose for half a minute').toEqual([]);
+  // the dances: most of the town within half a minute of a visit, and never shoulder to shoulder
+  expect(danced.size, `only ${[...danced].join(', ') || 'nobody'} danced`).toBeGreaterThanOrEqual(Math.ceil(keys.length * 0.6));
+  expect([...new Set(crowded)], 'two neighbours danced at once — that is a chorus line').toEqual([]);
+  // the pairs talk: somebody in a pair gives the little hop of a turn to speak, and nobody outside a pair does
+  const paired = keys.filter((k) => seen[k].pair >= 0);
+  expect(paired.length, 'no pairs at noon').toBeGreaterThan(1);
+  expect(paired.filter((k) => talked.has(k)).length, 'no pair ever took a turn to talk').toBeGreaterThan(0);
+  expect([...talked].filter((k) => !paired.includes(k)), 'a banana on its own bobbed as if talking').toEqual([]);
   expect(errors).toEqual([]);
 });
 

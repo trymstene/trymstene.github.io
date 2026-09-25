@@ -1,0 +1,129 @@
+{
+  "what": {
+    "kicker": "the fine print, in cobbles",
+    "heading": "what is this place?",
+    "lead": [
+      "In 1999 I drew {gif}. Now it has a town, and this is it: the middle of Banana World, free in your browser, with no account and nothing to install.",
+      "Ten residents keep the shops round the square, each on a day of their own. The bananas with a name over their head are other players, here right now."
+    ],
+    "gif": "a little banana that never stopped dancing",
+    "mapAlt": "Banana Town from above: the square and its fountain, the town hall, the post office, the arcade, the shops and the stalls.",
+    "mapCap": "the whole town, from above"
+  },
+  "do": {
+    "kicker": "the loop",
+    "heading": "what do you actually do here?",
+    "cards": {
+      "work": {
+        "name": "take a job",
+        "text": "Five places in town are hiring. Ask the banana in charge, work a shift and keep the tips.",
+        "alt": "Bean by the Coffee Cup, the town’s coffee kiosk, a mug in hand."
+      },
+      "arcade": {
+        "name": "play the arcade",
+        "text": "Five cabinets in Spinner’s arcade. Beat your best score, and a good run wins something to wear.",
+        "alt": "The five game cabinets along the arcade’s back wall."
+      },
+      "wheel": {
+        "name": "spin the wheel",
+        "text": "One free spin a day at Twirl’s Wheel of Peel. Paid spins feed a pot that keeps on growing.",
+        "alt": "Twirl with a bunch of balloons beside the Wheel of Peel on its market stall."
+      },
+      "post": {
+        "name": "send a letter",
+        "text": "Write to other players from Stamp’s post office. Your own mailbox is there too, for the replies.",
+        "alt": "Stamp at the post office door with a letter."
+      },
+      "store": {
+        "name": "shop at Pip’s",
+        "text": "Things for your homestead, on a shelf that changes every day. A tidier square fills it up.",
+        "alt": "Pip outside the General Store, holding a rubber chicken."
+      },
+      "exchange": {
+        "name": "sell your produce",
+        "text": "Fig Jr. buys eggs, milk and wool at the Exchange. The price moves every day, so pick your moment.",
+        "alt": "The Exchange, a striped market stall on the square."
+      },
+      "folk": {
+        "name": "meet the neighbours",
+        "text": "Walk up to a resident and tap. They keep their own days, and they remember how often you’ve met.",
+        "alt": "Stamp and Bean facing each other over lunch on the Coffee Cup’s terrace."
+      },
+      "square": {
+        "name": "look after the square",
+        "text": "Shops shut, lamps go dark, tags go up. Everybody’s fixing shows, and a tidy town gets busier.",
+        "alt": "The Coffee Cup shut behind hazard tape, with Bean waiting outside."
+      }
+    }
+  },
+  "rumours": {
+    "kicker": "the rest is rumour",
+    "heading": "not everything here is on a sign",
+    "items": {
+      "statue": {
+        "text": "Nobody knows who the statue near the hall is. There’s no plaque on it.",
+        "alt": "The statue of a banana on its plinth, with ivy growing up it."
+      },
+      "window": {
+        "text": "A light comes on in the hall’s upper window in the evening. Nobody has met the Mayor.",
+        "alt": "The town hall’s upper window, lit."
+      },
+      "fountain": {
+        "text": "A story starts at the fountain. Somebody there has been waiting a very long time.",
+        "alt": "The fountain in the middle of the square."
+      },
+      "night": {
+        "text": "Some nights the town isn’t itself. Stay out late and you’ll see.",
+        "alt": "Something pale in the dark."
+      },
+      "north": {
+        "text": "The road north has a sign on it. It doesn’t go anywhere. Yet.",
+        "alt": "A signpost on the road out of town to the north."
+      }
+    },
+    "coda": "Nobody will tell you the rest. Finding it out is the game."
+  },
+  "faq": {
+    "kicker": "questions",
+    "heading": "frequently asked",
+    "items": [
+      {
+        "q": "Is Banana Town free to play?",
+        "a": "Yes. It plays in your browser, on a phone or a computer, with no account and nothing to install."
+      },
+      {
+        "q": "What can you do in Banana Town?",
+        "a": "Take a job, play the arcade, spin the Wheel of Peel, write letters, shop for your homestead, sell your eggs and wool, and get to know the residents. Or just walk round the square."
+      },
+      {
+        "q": "How do you get a job in Banana Town?",
+        "a": "Tap the banana who runs the place and ask: Bean at the Coffee Cup, Fig Jr. at the lemonade stand, Stamp at the post office, Pip at the General Store or Spinner at the arcade. Work shifts, keep the tips and move up the ranks."
+      },
+      {
+        "q": "Can you play with friends?",
+        "a": "Yes. Other players walk the same town live, with their name over their head, and you can write to them from the post office."
+      },
+      {
+        "q": "Does my progress save?",
+        "a": "Yes, on this device, from your first step. Add an email to your banana pass and you can pick it up on another phone or computer."
+      },
+      {
+        "q": "Where do the roads out of Banana Town go?",
+        "a": "To the rest of Banana World: the Park, the Rave, Banana Bay and your own Homestead. They are all free, and your banana is the same banana in every one."
+      }
+    ]
+  },
+  "roads": {
+    "kicker": "the roads out",
+    "heading": "the rest of Banana World",
+    "lines": {
+      "rave": "A dance floor where the music never stops",
+      "park": "A garden everyone plants together",
+      "beach": "Volleyball, fishing and treasure in the sand",
+      "homestead": "A plot of your own, with a house and animals"
+    },
+    "make": "Dress your banana →",
+    "pass": "Your banana pass →",
+    "gif": "Download the original GIF →"
+  }
+}

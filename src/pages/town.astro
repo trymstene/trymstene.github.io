@@ -8,6 +8,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import PAGE from '../data/copy/town-page.json';
+import G from '../data/copy/town-guide.json';   // 📖 the field guide under the frame (design library §37)
 
 const title = PAGE.title;
 const description = PAGE.description;
@@ -29,9 +30,28 @@ const appLd = {
   creator: { '@id': 'https://trymstene.com/#trym' },
   isBasedOn: { '@id': 'https://trymstene.com/#banana-gif' },
 };
+// 📖 the guide: a card per place, a line per thing nobody explains, the roads out (the world's names, on its signs)
+const CARDS = Object.keys(G.do.cards);
+const ODD = Object.keys(G.rumours.items);
+const ROADS = [
+  { k: 'rave', href: '/rave/', name: 'THE RAVE' },
+  { k: 'park', href: '/park/', name: 'THE PARK' },
+  { k: 'beach', href: '/beach/', name: 'BANANA BAY' },
+  { k: 'homestead', href: '/homestead/', name: 'THE HOMESTEAD' },
+];
+const [leadA, leadB] = G.what.lead[0].split('{gif}');
+// …and its questions, word for word, for the search engines
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: G.faq.items.map((it) => ({ '@type': 'Question', name: it.q, acceptedAnswer: { '@type': 'Answer', text: it.a } })),
+};
 ---
 <BaseLayout title={title} description={description} ogImage="https://trymstene.com/assets/og/town.png" about="https://trymstene.com/town/#app">
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(appLd)} />
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqLd)} />
+  <link rel="stylesheet" href="/css/area-guide.css" slot="head" />
+  <link rel="stylesheet" href="/css/doors.css" slot="head" />
   <!-- 🗣 the world's shared NPC dialogue card (design library §18) -->
   <link rel="stylesheet" href="/css/dialogue.css" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />
@@ -90,6 +110,8 @@ const appLd = {
       transform: translateX(-50%); background: rgba(20, 30, 18, 0.34); border-radius: 50%; z-index: -1;
     }
     .tw-me canvas, .tw-npc canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    /* 🗣 a pair talking: whoever's turn it is gives two little hops (town-life.js); the shadow stays put, in whole world pixels */
+    .tw-npc.is-lift canvas { transform: translateY(calc(var(--ws, 1) * -3px)); }
     /* 👥 another player: a resident's body, a name over the head (the park's grammar), and a smoothed
        step between the 150 ms positions the room relays — a banana that teleports six times a second
        is not walking */
@@ -510,6 +532,83 @@ const appLd = {
       </div>
     </div>
     <p class="tw-note">{PAGE.note}</p>
+
+    <!-- 📖 THE FIELD GUIDE (design library §37): what the town is, what you do there (a card per place, each window a
+         shot of the built town, tools/build-town-guide-art.mjs), what nobody explains, the questions, the roads out.
+         The places are said plainly; the mysteries are only named (Trym: "dont give it all away"). -->
+    <div class="ag" id="guide">
+      <section class="ag__block" id="what">
+        <p class="ag__kicker">{G.what.kicker}</p>
+        <h2>{G.what.heading}</h2>
+        <p>{leadA}<a href="/dancing-banana-gif-meme/">{G.what.gif}</a>{leadB}</p>
+        <p>{G.what.lead[1]}</p>
+        <figure class="ag__wide">
+          <img class="ag__map" src="/assets/town/guide/town.webp" width="1100" height="650" alt={G.what.mapAlt} loading="lazy" decoding="async" />
+          <figcaption>{G.what.mapCap}</figcaption>
+        </figure>
+      </section>
+
+      <section class="ag__block" id="do">
+        <p class="ag__kicker">{G.do.kicker}</p>
+        <h2>{G.do.heading}</h2>
+        <div class="ag__grid">
+          {CARDS.map((k) => (
+            <article class="ag__card" data-card={k}>
+              <img class="ag__win" src={`/assets/town/guide/${k}.png`} width="320" height="170" alt={G.do.cards[k].alt} loading="lazy" decoding="async" />
+              <h3>{G.do.cards[k].name}</h3>
+              <p>{G.do.cards[k].text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="ag__block" id="rumours">
+        <p class="ag__kicker">{G.rumours.kicker}</p>
+        <h2>{G.rumours.heading}</h2>
+        <ul class="ag__odd">
+          {ODD.map((k) => (
+            <li data-odd={k}>
+              {k === 'night'
+                ? <span class="ag__win ag__win--dark" role="img" aria-label={G.rumours.items[k].alt}><img src="/assets/town/s-ghost-0.png" width="72" height="72" alt="" loading="lazy" decoding="async" /></span>
+                : <img class="ag__win" src={`/assets/town/guide/${k}.png`} width="150" height="150" alt={G.rumours.items[k].alt} loading="lazy" decoding="async" />}
+              <p>{G.rumours.items[k].text}</p>
+            </li>
+          ))}
+        </ul>
+        <p class="ag__coda">{G.rumours.coda}</p>
+      </section>
+
+      <section class="ag__block" id="faq">
+        <p class="ag__kicker">{G.faq.kicker}</p>
+        <h2>{G.faq.heading}</h2>
+        <dl class="ag__faq">
+          {G.faq.items.map((it) => (<Fragment><dt>{it.q}</dt><dd>{it.a}</dd></Fragment>))}
+        </dl>
+      </section>
+
+      <section class="ag__block" id="roads">
+        <p class="ag__kicker">{G.roads.kicker}</p>
+        <h2>{G.roads.heading}</h2>
+        <div class="bb-doors bb-doors--wide">
+          <div class="bb-doors__row">
+            {ROADS.map((a) => (
+              <a class="bb-door" href={a.href} data-place="town-guide">
+                <span class="bb-door__shot">
+                  <img src={`/assets/world/door-${a.k}.jpg`} alt="" width="480" height="300" loading="lazy" decoding="async" />
+                  <span class="bb-door__pill">{a.name}</span>
+                </span>
+                <small>{G.roads.lines[a.k]}</small>
+              </a>
+            ))}
+          </div>
+        </div>
+        <div class="ag__also">
+          <a href="/make-a-banana/" data-place="town-guide">{G.roads.make}</a>
+          <a href="/pass/">{G.roads.pass}</a>
+          <a href="/dancing-banana-gif-meme/">{G.roads.gif}</a>
+        </div>
+      </section>
+    </div>
   </main>
 
   <script src="../scripts/banana-town.js"></script>

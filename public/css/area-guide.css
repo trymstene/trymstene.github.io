@@ -1,0 +1,72 @@
+/* 📖 AN AREA'S FIELD GUIDE — the explanation under a world area's frame (design library §37).
+   Trym, 25 Sep 2026, on the town: "all other areas have a concrete explanation of what you can do in the area underneath
+   its game-frame … make sure the Banana Town also has a nice, visually excellent, concrete explanation". The rave, the
+   park, the bay and the homestead each carry their own copy of this sheet (.rvg, .pkg, .bhg, .hsg) — four copies of one
+   design, which is the drift §5 exists to stop. The town is the first area on the shared sheet; the others move onto it.
+
+   An area sets its colours on .ag (the tokens below) and nothing else. Every area is a dark world, so there is one
+   theme. The pictures are WINDOWS: shots of the built area at 1× (tools/build-town-guide-art.mjs for the town), shown
+   with object-fit: none — a narrow box crops the picture, it never resamples it (§6). */
+.ag {
+  --ag-ink: #fffdf5;       /* running text */
+  --ag-kick: #ff9f6e;      /* the kicker over each heading */
+  --ag-head: #ffb347;      /* headings, card names, the questions */
+  --ag-link: #ffd27a;      /* links in running text */
+  --ag-card: #241912;      /* a card's ground */
+  --ag-line: #ffb347;      /* a card's edge */
+  --ag-win: #120c08;       /* behind a window, where a picture is narrower than its box */
+  max-width: 760px; margin: 3.2rem auto 0; padding: 0 0.2rem; color: var(--ag-ink);
+}
+.ag__block { margin-top: 3.2rem; }
+.ag__block:first-child { margin-top: 0; }
+.ag__kicker { color: var(--ag-kick); font-weight: 800; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 0.4rem; }
+.ag__block h2 { font-family: "Archivo Black", sans-serif; color: var(--ag-head); font-size: clamp(1.35rem, 4.2vw, 1.8rem);
+  line-height: 1.15; margin: 0 0 0.9rem; text-wrap: balance; }
+.ag__block p { line-height: 1.65; font-size: 0.98rem; margin: 0 0 0.8rem; max-width: 65ch; }
+/* links in running text only: a door or a button keeps its own colours */
+.ag__block p a, .ag__faq a { color: var(--ag-link); }
+
+/* 🪟 a window: whole pixels, cropped to its box, never scaled */
+.ag__win { display: block; width: 100%; object-fit: none; object-position: 50% 50%; image-rendering: pixelated; background: var(--ag-win); }
+
+/* the whole area from above, under the first heading: a MAP, so it is smooth and sized to the page (the one picture
+   here that is not a window — Dot's maps at her counter are drawn the same way) */
+.ag__wide { margin: 1.3rem 0 0; border: 3px solid var(--ag-line); box-shadow: 6px 6px 0 #000; background: var(--ag-card); }
+.ag__map { display: block; width: 100%; height: auto; }
+.ag__wide figcaption { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; padding: 0.45rem 0.75rem; border-top: 3px solid var(--ag-line); opacity: 0.8; }
+
+/* what you do: a card per place, its window on top */
+.ag__grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-top: 1.3rem; }
+.ag__card { display: flex; flex-direction: column; background: var(--ag-card); border: 3px solid var(--ag-line); box-shadow: 6px 6px 0 #000; }
+.ag__card .ag__win { height: 170px; border-bottom: 3px solid var(--ag-line); }
+.ag__card h3 { font-family: "Archivo Black", sans-serif; font-size: 0.95rem; color: var(--ag-head); margin: 0.8rem 0.9rem 0.3rem; }
+.ag__card p { margin: 0 0.9rem 0.95rem; font-size: 0.86rem; line-height: 1.5; opacity: 0.92; }
+
+/* the things nobody explains: a small window and one line each */
+.ag__odd { list-style: none; margin: 1.3rem 0 0; padding: 0; display: grid; gap: 0.9rem; }
+.ag__odd li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 1rem; align-items: center; }
+.ag__odd .ag__win { width: 112px; height: 112px; border: 3px solid var(--ag-line); box-shadow: 4px 4px 0 #000; }
+.ag__odd p { margin: 0; }
+.ag__coda { font-weight: 800; margin-top: 1.3rem !important; }
+/* the one window that is only a shape in the dark */
+.ag__win--dark { display: grid; place-items: center; background: #06080b; }
+.ag__win--dark img { width: 72px; height: 72px; image-rendering: pixelated; opacity: 0.38; filter: grayscale(1) brightness(1.7);
+  animation: ag-drift 4.8s ease-in-out infinite alternate; }
+@keyframes ag-drift { from { transform: translate(-6px, 3px); } to { transform: translate(6px, -3px); } }
+@media (prefers-reduced-motion: reduce) { .ag__win--dark img { animation: none; } }
+
+/* the questions */
+.ag__faq { margin: 0; }
+.ag__faq dt { font-weight: 800; color: var(--ag-head); margin-top: 1.1rem; }
+.ag__faq dd { margin: 0.3rem 0 0; line-height: 1.65; font-size: 0.98rem; max-width: 65ch; }
+
+/* the roads out: the world's own doors (/css/doors.css), two up on a phone, four on a desk */
+.ag .bb-doors--wide { max-width: none; margin-top: 1.4rem; }
+.ag .bb-doors--wide .bb-doors__row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 700px) { .ag .bb-doors--wide .bb-doors__row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ag .bb-door:focus-visible { outline-color: var(--ag-link); }
+.ag__also { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.8rem; }
+.ag__also a { border: 3px solid var(--ag-line); padding: 0.55rem 0.85rem; font-weight: 800; font-size: 0.9rem; text-decoration: none;
+  color: var(--ag-head); background: var(--ag-card); box-shadow: 4px 4px 0 #000; white-space: nowrap; }
+.ag__also a:hover { background: var(--ag-head); color: #111; }
+.ag__also a:focus-visible { outline: 3px solid var(--ag-link); outline-offset: 3px; }

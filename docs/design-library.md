@@ -715,7 +715,9 @@ drifted. A rule with only a paragraph has drifted at least once.
 | — | Copy came through the GPT rig and obeys the voice | `check-copy.mjs` |
 | 16 | A cabinet game is one card with its board | the town walk's 19 checks |
 | — | The quiet rule: no floating text over an NPC | the town walk's `silence` check |
-| — | No front-facing standing pose | the town walk's `standingPose` check |
+| — | No front-facing standing pose | the town walk's `standingPose` check (⚠️ it compared a `"frame:tool"` string to numbers and could not fail until 25 Sep 2026) |
+| 23 | A resident at their post is never a statue: sway, glance, dance, talk | the town walk's `lively` check (`tests/town-life.spec.mjs`) |
+| 37 | Every area explains itself under its frame | `check-design.mjs` (an area page without `id="what"` and `id="do"` fails) + `tests/town-guide.spec.mjs` (the town's guide: whole-pixel windows that fill their box, the FAQ = the FAQPage) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
 `node tools/check-all.mjs` runs the source-only gates in about a second and is the
@@ -747,6 +749,14 @@ you would look for them for two thirds of the day. `tools/check-design.mjs` fail
 walks more than four times a day. The small life that makes them alive needs no schedule: they
 potter between the marks of their own station, they turn to face each other when they share one, and
 `ODD_SPOTS` still puts one of them somewhere they never stand, once in a while.
+
+**A fixture is not a statue** (25 Sep 2026, Trym: *"lots of town bananas just standing there statically - not a great
+first impression"*). `idle()` in `src/scripts/town-life.js` gives a resident at their post a life with no new frame: a
+sway you can see (1–2.3 s), a glance round and back, two bars of the original dance now and then — never beside another
+dancer, the first within seconds of a visit — and in a pair, the talk: whoever's turn it is gives two little hops, the
+shadow staying on the ground. ⚠️ It runs in BOTH ways of standing: at the post, and waiting there with a walk on the
+clock, which is where every refresh (the square's condition arriving on a first load) puts the whole town for up to a
+minute. The town walk's `lively` check asks for all of it inside half a minute.
 
 ⚠️ **The sweeper is exempt, and the exemption is load-bearing.** Moss's beats are written into
 `LITTER`'s fourth column — the beat each flyer is swept on — so pinning him stops the flyers being
@@ -1065,3 +1075,30 @@ thumbnails of the areas … add more big languages that probably searches for th
   that already ranks catches the spike; a second page would split the same searches.
 - Walked by `tests/intl-pages.spec.mjs`: every page, its mesh, its FAQ against its schema, its doors and packs, no raw
   mark on screen, and the card in Dutch.
+
+## §37 AN AREA EXPLAINS ITSELF UNDER ITS FRAME (25 Sep 2026, the town's field guide)
+
+Trym, opening Banana World: *"all other areas have a concrete explanation of what you can do in the area underneath its
+game-frame - the Banana Town page doesnt have this yet … make sure the Banana Town also has a nice, visually excellent,
+concrete explanation of what you can do in Banana Town and what place it is - and dont give it all away, some can be
+more vague so we dont give it all away."*
+
+- **Every area page carries a field guide under the frame:** what is this place (`id="what"`), what you do there
+  (`id="do"`), and then whatever that area needs (the rave's clock, the park's meter, the town's rumours), the
+  questions, the doors out. `check-design.mjs` fails an area page without the first two.
+- **One sheet: `/css/area-guide.css`** (`.ag`, an area sets its colours as the `--ag-*` tokens on it and nothing else).
+  The town is the first area on it; the rave, the park, the bay and the homestead still carry their own copies (`.rvg`,
+  `.pkg`, `.bhg`, `.hsg`) — four copies of one design, which is §5's drift, and they move onto the sheet next.
+- **The pictures are the built area's own.** A card's picture is a WINDOW: the area shot at 1× with its residents at
+  their posts (`tools/build-town-guide-art.mjs` for the town — the player, the HUD and the passing visitors hidden),
+  shown with `object-fit: none` so a narrow box crops it and never scales it (§6). A window is shot wider than the
+  widest box it lands in (a phone's card, one to a row), or the box shows its edges. The one exception is the MAP of
+  the whole area, which is a smooth miniature like Dot's maps at her counter, sized to the page.
+- **The places are said plainly; the mysteries are only named.** A card says what you do and what it gets you (docs/voice.md,
+  a place answers plainly). A rumour says a fact a newcomer can go and look at — the statue with no plaque, the light
+  in the hall's window, the road north — and never the answer or the timetable. The copy job's `GIVEAWAY` rule fails a
+  rumour, an alt or an answer that says what the mystery is.
+- **The words are a copy file** (`src/data/copy/town-guide.json`, the `town-guide` job), and the questions on the page
+  are the page's FAQPage, built from the same words (`tests/town-guide.spec.mjs` holds them equal).
+- **The line under the sign is the whole town's.** Trym: *"Nib shouldnt be part of the top description … Banana Town
+  isnt all about Nib."* The `town-page` tag fails on any resident's name.

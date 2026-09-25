@@ -87,6 +87,7 @@ const OWN_DIALOGUE_OK = ['src/scripts/park-npc.js', 'src/pages/park.astro', 'src
 // two pairs, 1000/0.8rem against 1100/1rem, because the second pair was a copy of a copy.
 // ⚠️ THE RAVE IS DELIBERATELY NOT ONE OF THESE — it is a room, not a map.
 const WORLD_PAGES = ['src/pages/park.astro', 'src/pages/beach.astro', 'src/pages/homestead.astro', 'src/pages/town.astro'];
+const GUIDED_PAGES = [...WORLD_PAGES, 'src/pages/rave.astro'];   // §37: every area, the rave's room included, explains itself
 const FRAME_CSS = '/css/world-frame.css';
 const WX_MODULE = 'src/scripts/world-weather.js';
 const WX_CSS = '/css/weather.css';
@@ -164,6 +165,16 @@ for (const f of files) {
       if (/max-width\s*:/.test(m[1]) && !m[1].includes('var(--world-w)')) {
         problems.push([rel, 'sets its own frame width instead of var(--world-w) — every area is the same box, see design library §20']);
       }
+    }
+  }
+
+  // 📖 an area explains itself under its frame — design library §37. Trym, 25 Sep 2026, on the town: "all other areas have
+  // a concrete explanation of what you can do in the area underneath its game-frame - the Banana Town page doesnt have
+  // this yet". The rave is a room, not a map, and it has one too.
+  if (GUIDED_PAGES.includes(rel)) {
+    const html = src.replace(/<!--[\s\S]*?-->/g, '');
+    if (!/\bid=["']what["']/.test(html) || !/\bid=["']do["']/.test(html)) {
+      problems.push([rel, 'has no field guide under its frame — a "what is this place?" block (id="what") and "what do you actually do here?" (id="do"). Every area explains itself where a visitor scrolls, see design library §37']);
     }
   }
 

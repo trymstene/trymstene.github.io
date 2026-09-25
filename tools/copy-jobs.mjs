@@ -1363,6 +1363,70 @@ const c1Schema = {
     } } },
 };
 
+// --- town-guide ------------------------------------------------------------------
+// 📖 THE TOWN'S FIELD GUIDE (25 Sep 2026): what every other area already had under its frame. Trym: "all other areas have
+// a concrete explanation of what you can do in the area underneath its game-frame … make sure the Banana Town also has a
+// nice, visually excellent, concrete explanation of what you can do in Banana Town and what place it is - and dont give
+// it all away, some can be more vague so we dont give it all away." So the PLACES are said plainly (docs/voice.md, a
+// place answers plainly) and the MYSTERIES are only named: never the answer, never a timetable. The pictures are the
+// built town's own (tools/build-town-guide-art.mjs); the page is src/pages/town.astro, its sheet /css/area-guide.css.
+export const TOWN_NAMES = ['Nib', 'Stamp', 'Moss', 'Pip', 'Bean', 'Fig Jr.', 'Gran Fig', 'Spinner', 'Dot', 'Twirl'];
+export const GUIDE_CARDS = ['work', 'arcade', 'wheel', 'post', 'store', 'exchange', 'folk', 'square'];
+export const GUIDE_RUMOURS = ['statue', 'window', 'fountain', 'night', 'north'];
+export const GUIDE_ROADS = ['rave', 'park', 'beach', 'homestead'];
+// the answers the guide keeps back: a rumour NAMES a mystery, it never solves one
+const GIVEAWAY = [/\b(ghosts?|ghostly|curse[ds]?|cursed|haunt\w*|spirits?|spooks?|phantoms?)\b/i, 'says what the mystery is — the guide names it and lets the town show it (Trym: “dont give it all away”)'];
+const guideFields = {
+  'what.kicker': { kind: 'label', aim: 28, max: 36, note: 'The small coloured line over the first heading, lower case. The other areas say “the fine print, in neon / in green / in sand / on the porch”: the town’s own material.' },
+  'what.heading': { kind: 'label', aim: 22, max: 30, note: 'The first heading under the frame, lower case, the question every area guide opens with.' },
+  'what.lead[]': { kind: 'prose', aim: 150, max: 190, holds: ['{gif}'], note: 'Two short paragraphs in Trym’s own voice. The first: the banana he drew in 1999 has a town, this one, the middle of Banana World, free in the browser ({gif} is the linked words, what.gif). The second: who lives here, and which bananas are other players.' },
+  'what.gif': { kind: 'label', aim: 44, max: 50, note: 'The words of the first paragraph that link to the original GIF’s page, filling {gif}.' },
+  'what.mapAlt': { kind: 'prose', aim: 120, max: 160, note: 'The alt text of the map of the whole town under the first two paragraphs: what is in it, plainly.' },
+  'what.mapCap': { kind: 'label', aim: 36, max: 44, note: 'The small caption under the map, lower case.' },
+  'do.kicker': { kind: 'label', aim: 10, max: 24, note: 'Over the second heading, lower case (the other areas say “the loop”).' },
+  'do.heading': { kind: 'label', aim: 30, max: 36, note: 'The second heading, lower case.' },
+  ...Object.fromEntries(GUIDE_CARDS.flatMap((k) => [
+    ['do.cards.' + k + '.name', { kind: 'label', aim: 21, max: 24, note: 'The card’s heading under its picture, lower case: a verb and what it is done to.' }],
+    ['do.cards.' + k + '.text', { kind: 'prose', aim: 98, max: 110, note: 'Under the heading: what you do there and what it gets you, in two short plain sentences. A place answers plainly.' }],
+    ['do.cards.' + k + '.alt', { kind: 'prose', aim: 80, max: 120, note: 'The picture’s alt text: what is in the window, plainly, with the resident by name if one is in it.' }],
+  ])),
+  'rumours.kicker': { kind: 'label', aim: 18, max: 28, note: 'Over the third heading, lower case.' },
+  'rumours.heading': { kind: 'label', aim: 34, max: 40, note: 'The third heading, lower case: the part of the town nobody explains.' },
+  ...Object.fromEntries(GUIDE_RUMOURS.flatMap((k) => [
+    ['rumours.items.' + k + '.text', { kind: 'prose', aim: 86, max: 100, forbids: [GIVEAWAY], note: 'One odd thing about the town, said as a fact a newcomer can go and look at, with no answer and no timetable.' }],
+    ['rumours.items.' + k + '.alt', { kind: 'prose', aim: 64, max: 100, forbids: [GIVEAWAY], note: 'The small picture’s alt text: what is in it, and nothing it would give away.' }],
+  ])),
+  'rumours.coda': { kind: 'prose', aim: 60, max: 90, forbids: [GIVEAWAY], note: 'The line under the rumours: nobody will say the rest, and finding it is the game.' },
+  'faq.kicker': { kind: 'label', aim: 10, max: 24, note: 'Over the questions, lower case.' },
+  'faq.heading': { kind: 'label', aim: 18, max: 30, note: 'The questions’ heading, lower case.' },
+  'faq.items[].q': { kind: 'label', aim: 40, max: 60, note: 'A question the way people type it into a search box, capital first, ending in a question mark. It is also the FAQ the search engines read (the page’s FAQPage).' },
+  'faq.items[].a': { kind: 'prose', aim: 180, max: 240, forbids: [GIVEAWAY], note: 'The answer, plainly, in one to three sentences: the thing asked first.' },
+  'roads.kicker': { kind: 'label', aim: 12, max: 24, note: 'Over the last heading, lower case.' },
+  'roads.heading': { kind: 'label', aim: 24, max: 34, note: 'The last heading, lower case: the rest of the world the roads lead to.' },
+  ...Object.fromEntries(GUIDE_ROADS.map((k) => ['roads.lines.' + k, { kind: 'label', aim: 40, max: 52, note: 'Under the area’s picture on its door: what you do there, a phrase, no full stop.' }])),
+  'roads.make': { kind: 'label', aim: 22, max: 30, note: 'A link to the banana builder, with an arrow.' },
+  'roads.pass': { kind: 'label', aim: 22, max: 30, note: 'A link to the player’s banana pass, with an arrow.' },
+  'roads.gif': { kind: 'label', aim: 28, max: 34, note: 'A link to the original GIF’s page, with an arrow.' },
+};
+const sameKeys = (o, want) => { const k = Object.keys(o || {}); return k.length === want.length && want.every((w) => k.includes(w)); };
+function guideShape(data) {
+  const bad = [];
+  const say = (p, msg) => bad.push({ path: p, msg, rule: 'shape' });
+  const lead = (data.what && data.what.lead) || [];
+  if (!Array.isArray(lead) || lead.length !== 2) say('what.lead', 'two paragraphs, no more — the guides are short (Trym, 28 Aug: “cut words before adding any”)');
+  else if (!String(lead[0]).includes('{gif}') || lead.slice(1).some((p) => String(p).includes('{gif}'))) say('what.lead', 'the first paragraph holds {gif} once, and only the first');
+  if (!sameKeys(data.do && data.do.cards, GUIDE_CARDS)) say('do.cards', 'one card each for ' + GUIDE_CARDS.join(', ') + ' — the page has a picture for exactly these');
+  if (!sameKeys(data.rumours && data.rumours.items, GUIDE_RUMOURS)) say('rumours.items', 'one line each for ' + GUIDE_RUMOURS.join(', '));
+  if (!sameKeys(data.roads && data.roads.lines, GUIDE_ROADS)) say('roads.lines', 'one line each for ' + GUIDE_ROADS.join(', '));
+  const qs = (data.faq && data.faq.items) || [];
+  if (!Array.isArray(qs) || qs.length < 4 || qs.length > 8) say('faq.items', 'four to eight questions');
+  else {
+    qs.forEach((it, i) => { if (!/\?$/.test(String(it.q || ''))) say('faq.items[' + i + '].q', 'a question ends in a question mark'); });
+    if (!qs.some((it) => /Banana Town/.test(String(it.q || '')))) say('faq.items', 'no question names Banana Town — the search box does');
+  }
+  return bad;
+}
+
 // --- town-page -----------------------------------------------------------------
 // 🏘 THE TOWN PAGE ITSELF (21 Sep 2026): the four lines nobody in the world speaks — the tab title,
 // the search line, the line under the sign and the how-to under the square. Written the day the
@@ -1370,7 +1434,7 @@ const c1Schema = {
 const pageFields = {
   title: { kind: 'label', aim: 48, max: 60, note: 'The browser tab and the search headline. MUST start with the two words "Banana Town" (the desk counts world pages by that prefix), then a dash and a few plain words: a free pixel-art town you walk around in, where Banana World begins.' },
   description: { kind: 'prose', aim: 130, max: 155, note: 'The search result’s grey line: one or two plain sentences — what you do there, that the story starts here, free and in the browser. No exclamation marks, no "welcome to".' },
-  tag: { kind: 'label', aim: 44, max: 70, note: 'The small line right under the big BANANA TOWN sign. Lower case, a phrase not a sentence, in the world’s own voice: this is where Banana World begins. It may name the fountain or Nib.' },
+  tag: { kind: 'label', aim: 44, max: 70, note: 'The small line right under the big BANANA TOWN sign. Lower case, a phrase not a sentence, in the world’s own voice: this is where Banana World begins, and what the whole town holds. Never one resident’s name: Trym, 25 Sep 2026, “Banana Town isnt all about Nib”.' },
   note: { kind: 'prose', aim: 140, max: 180, note: 'The one line under the square that tells a newcomer how to play: walk by tapping or with the arrow keys; tap a door, a sign or a resident; the roads lead out to the rest of Banana World. The one place on the page where an instruction belongs.' },
 };
 const PAGE_PROTO = new RegExp('\\b(prototype|construction|coming soon|under development|beta|placeholder|work in progress)\\b', 'i');
@@ -1389,6 +1453,7 @@ function pageShape(data) {
     if (f !== 'note' && /!/.test(v)) say(f, 'has an exclamation mark');
   }
   if (/^[A-Z]/.test(String(data.tag || ''))) say('tag', 'starts with a capital, and the line under the sign is lower case');
+  for (const who of TOWN_NAMES) if (new RegExp('(^|[^\\w])' + who.replace('.', '\\.') + '(?!\\w)', 'i').test(String(data.tag || ''))) say('tag', `names ${who}, and the line under the sign is the whole town’s (Trym, 25 Sep 2026: “Banana Town isnt all about Nib”)`);
   if (!/Banana World/.test(String(data.description || '') + ' ' + String(data.tag || ''))) say('description', 'neither it nor the tag says "Banana World", and the page is its front door');
   return bad;
 }
@@ -2038,6 +2103,16 @@ export const JOBS = {
     fields: pageFields,
     shape: pageShape,
     schema: pageSchema,
+  },
+  'town-guide': {
+    id: 'town-guide',
+    title: 'Banana Town \u2014 the field guide under the frame',
+    what: 'The explanation under the town\u2019s frame: what the place is, what you do there (a card per place, with the built town\u2019s own picture), the things nobody explains, the questions, and the roads out.',
+    approved: 'src/data/copy/town-guide.json',
+    reads: 'src/pages/town.astro (a static import at build time \u2014 the page does not build without it)',
+    top: ['what', 'do', 'rumours', 'faq', 'roads'],
+    fields: guideFields,
+    shape: guideShape,
   },
   'town-duties': {
     id: 'town-duties',

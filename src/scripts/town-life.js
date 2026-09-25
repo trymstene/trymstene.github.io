@@ -13,6 +13,11 @@
 // side-on and sway slowly between their two frames, each on their own period. Front is for walking
 // toward or away from you, and for the portrait in the dialogue card.
 //
+// ⭐ …AND STANDING STILL IS NOT STANDING DEAD (25 Sep 2026, Trym: "lots of town bananas just standing there statically -
+// not a great first impression"). idle() gives every banana at its post a life without a new frame: a sway you can
+// see, a glance round and back, two bars of the ORIGINAL dance now and then (all eight frames, moving — a dance is not
+// the posing above), never beside another dancer, and in a pair the talk: whoever's turn it is gives two little hops.
+//
 // ⭐ AND NOBODY MOVES IN LOCKSTEP. Each resident leaves for the next station at their own seeded moment
 // in the beat, and at a station they POTTER between a few marks on their own rhythm, so what you see is
 // one banana crossing the square while another turns from a shelf — not a migration on the whistle.
@@ -238,10 +243,22 @@ const fill = (s) => s.replace(/\{name\}/g, nameOf());
 
 const WALK = 110, BOB_MS = 333, SWEEP_R = 120;
 const POTTER = 34, POTTER_SPD = 46;   // how far a resident drifts around their station, and how slowly
-const SWAY_MIN = 2100, SWAY_VAR = 2600;   // the standing sway: slow, and a different period each
+// 🫁 THE STANDING SWAY, a different period each. It was 2.1–4.7 s and read as nothing at all: Trym, 25 Sep 2026, "just
+// opened banana world … lots of town bananas just standing there statically - not a great first impression".
+const SWAY_MIN = 1000, SWAY_VAR = 1300;
 // how long they stand at a mark before moving to the next one: a wide spread so two neighbours never
-// shift at the same moment (which is what made the pairs look choreographed)
-const DWELL_MIN = 4200, DWELL_VAR = 11000;
+// shift at the same moment (which is what made the pairs look choreographed) — and short enough that a
+// newcomer sees somebody move in the first few seconds
+const DWELL_MIN = 2600, DWELL_VAR = 6000;
+// 💃 THE DANCE (25 Sep 2026): they are dancing bananas, and now and then one dances — two bars of the original GIF
+// (8 frames × 100 ms) where they stand. Never two neighbours at once, never on anybody else's beat, the first within
+// seconds of a visit. A dance MOVES through the front frames; standing still in one is still the posing §12 Sep forbids.
+const DANCE_MS = 1600, DANCE_GAP_MIN = 20000, DANCE_GAP_VAR = 30000, DANCE_NEAR = 260;
+// 👀 A GLANCE: somebody minding a shop looks up and round now and then, and back (side frames only)
+const GLANCE_MIN = 5000, GLANCE_VAR = 9000;
+// 🗣 A PAIR TALKS: turns of TALK_MS (each pair on its own phase), and whoever's turn it is bobs twice as it starts —
+// with no speech bubbles (the quiet rule), that back-and-forth is the conversation
+const TALK_MS = 2600;
 // a station's marks: the base point, then a few nearby ones with their own facing. `act` decides the
 // shape — a counter keeper stays behind it and only turns, a bench sitter shifts along it, someone
 // standing about wanders a little wider.
@@ -264,7 +281,10 @@ function marksFor(n, st, beat) {
 // between the facing's two frames on the resident's own period. Used while they stand AND while they
 // wait for their moment to set off.
 function standFrame(n, now) {
-  const base = n.face === 'left' ? 4 : n.face === 'right' ? 0 : (n.x > 1100 ? 4 : 0);
+  let base = n.face === 'left' ? 4 : n.face === 'right' ? 0 : (n.x > 1100 ? 4 : 0);
+  if (!n.glanceNext) n.glanceNext = now + 1500 + h01(n.idx + 1, 5, 94) * GLANCE_VAR;
+  if (now >= n.glanceNext) { n.glanceTo = now + 900 + h01(n.idx + 1, Math.floor(now / 1009), 95) * 1400; n.glanceNext = n.glanceTo + GLANCE_MIN + h01(n.idx + 1, Math.floor(now / 1013), 96) * GLANCE_VAR; }
+  if (now < n.glanceTo && n.pk < 0) base = base === 4 ? 0 : 4;   // a pair keeps its eyes on each other
   if (now - n.swayAt > n.sway) { n.swayAt = now; n.swayF = n.swayF ? 0 : 1; n.sway = SWAY_MIN + h01(n.idx + 1, n.beat + 2, n.swayF + 30) * SWAY_VAR; }
   return base + n.swayF;
 }
@@ -294,7 +314,8 @@ export function initLife({ world, W, H, pct }) {
     const outfit = { hat: r.hat || 'none', glasses: r.glasses || 'none', extras: r.tool ? { [r.tool]: true } : {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
     return { ...r, idx, el, cv, ctx: cv.getContext('2d'), outfit, x: 0, y: 0, px: NaN, py: NaN, drawn: '', face: 'front',
       path: [], wait: 0, walking: false, loop: null, li: 0, ldir: 1, hidden: true, beat: -1, place: '', act: '', talked: false, lastWater: 0, bedI: 0, glow: null,
-      marks: [], mi: 0, dwell: 0, drift: null, sway: SWAY_MIN, swayAt: 0, swayF: 0 };
+      marks: [], mi: 0, dwell: 0, drift: null, sway: SWAY_MIN, swayAt: 0, swayF: 0,
+      danceAt: 0, danceNext: 0, pk: -1, talkPh: 0, lift: false, glanceTo: 0, glanceNext: 0 };
   });
   // glows: one per home window; two residents above the arcade, the Figs share a lantern
   const glowCount = {};
@@ -342,7 +363,7 @@ export function initLife({ world, W, H, pct }) {
       if (Math.abs(other[0] - x) > 24) f = other[0] > x ? 'right' : 'left';
       y += k === 0 ? -7 : 7;   // half a step apart in depth: two on one line is a chorus line
     }
-    return { place, act, face: f, lines, x, y, loop: null, paired: group.length > 1 && pts.length > 1 };
+    return { place, act, face: f, lines, x, y, loop: null, paired: group.length > 1 && pts.length > 1, pk: k % 2 };
   }
   function goHome(n, walked) {
     const room = roomFor(n, n.beat);
@@ -388,6 +409,7 @@ export function initLife({ world, W, H, pct }) {
         continue;
       }
       n.beat = beat; n.place = st.place; n.act = st.act; n.face = st.face; n.lines = st.lines; n.loop = st.loop; n.li = 0; n.ldir = 1; n.st = [st.x, st.y];
+      n.pk = st.paired ? st.pk : -1; n.talkPh = Math.round(h01(st.place.length + 3, beat + 1, 51) * TALK_MS * 2);   // one phase per pair
       n.lastWater = 0;
       n.marks = marksFor(n, st, beat); n.mi = 0; n.drift = null;
       n.dwell = DWELL_MIN + h01(n.idx + 1, beat + 1, 11) * DWELL_VAR;
@@ -506,15 +528,41 @@ export function initLife({ world, W, H, pct }) {
     return false;
   }
 
+  // 💃🗣 A BANANA STANDING STILL (25 Sep 2026): now and then two bars of dance where they stand — never beside another
+  // dancer, the first within seconds — and in a pair at their post, the talk: whoever's turn it is bobs twice as the turn
+  // starts (the canvas lifts; the shadow stays down). ⚠️ BOTH ways of standing call this: at their post, and waiting at
+  // it with a walk on the clock (up to 74 s after every refresh — the square's condition arriving on a first load is
+  // one). The first version lived in the second branch only, and on a real first visit most of the town never danced.
+  function idle(n, now, frame, atPost) {
+    let lift = false;
+    if (!n.danceNext) n.danceNext = now + 4000 + h01(n.idx + 1, 7, 91) * 20000;
+    if (n.danceAt) {
+      const t = now - n.danceAt;
+      if (t < DANCE_MS) frame = Math.floor(t / 100) % 8;
+      else { n.danceAt = 0; n.danceNext = now + DANCE_GAP_MIN + h01(n.idx + 1, Math.floor(now / 997), 92) * DANCE_GAP_VAR; }
+    } else if (now >= n.danceNext && !n.hidden) {
+      if (res.some((m) => m !== n && m.danceAt && Math.hypot(m.x - n.x, m.y - n.y) < DANCE_NEAR)) n.danceNext = now + 2000 + h01(n.idx + 1, 3, 93) * 3000;
+      else { n.danceAt = now; frame = 0; }
+    }
+    if (atPost && n.pk >= 0 && !n.danceAt) {
+      const t = (now + n.talkPh) % (TALK_MS * 2), tt = t % TALK_MS;
+      lift = (n.pk === 0 ? t < TALK_MS : t >= TALK_MS) && ((tt > 60 && tt < 200) || (tt > 330 && tt < 470));
+    }
+    return [frame, lift];
+  }
+
   function tick(now, dt) {
     if (!ready) return;
     const beat = beatOf(hourNow());
     if (beat !== curBeat) changeBeat(beat, true);
     const bob = Math.floor(now / BOB_MS) % 2;
     for (const n of res) {
-      let frame;
+      let frame, lift = false, stood = false;
       if (n.path.length) {
-        if (n.wait > 0) { n.wait -= dt * 1000; frame = standFrame(n, now); }   // still at their post, not posing
+        if (n.wait > 0) {   // still at their post, not posing — and alive there
+          n.wait -= dt * 1000; stood = true;
+          [frame, lift] = idle(n, now, standFrame(n, now), !!n.st && Math.hypot(n.x - n.st[0], n.y - n.st[1]) < 8);
+        }
         else {
           if (n.hidden && n.act !== 'home') leaveHome(n);   // 🚪 out of the door now that it is time
           n.walking = true;
@@ -539,11 +587,11 @@ export function initLife({ world, W, H, pct }) {
         }
         frame = (n.dir === 'left' ? 4 : n.dir === 'right' ? 0 : 2) + bob;
       } else {
-        n.walking = false;
-        frame = standFrame(n, now);
+        n.walking = false; stood = true;
+        [frame, lift] = idle(n, now, standFrame(n, now), true);
         // …and every so often they move to another mark round the station: the pottering that makes a
-        // shopkeeper look like they are working rather than posing
-        if (n.marks.length > 1 && !n.path.length) {
+        // shopkeeper look like they are working rather than posing (never in the middle of a dance)
+        if (n.marks.length > 1 && !n.path.length && !n.danceAt) {
           n.dwell -= dt * 1000;
           if (n.dwell <= 0) {
             n.mi = (n.mi + 1 + Math.floor(h01(n.idx + 1, n.beat + 1, n.mi + 40) * (n.marks.length - 1))) % n.marks.length;
@@ -553,6 +601,8 @@ export function initLife({ world, W, H, pct }) {
           }
         }
       }
+      if (!stood && n.danceAt) { n.danceAt = 0; n.danceNext = now + DANCE_GAP_MIN; }   // set off mid-dance: the walk wins
+      if (n.lift !== lift) { n.lift = lift; n.el.classList.toggle('is-lift', lift); }
       if (n.hidden) continue;
       if (n.inside) { const off = roomNow !== n.home; if (n.el.hidden !== off) n.el.hidden = off; if (off) continue; }
       draw(n, frame);
@@ -611,7 +661,7 @@ export function initLife({ world, W, H, pct }) {
     glows: () => res.filter((n) => n.glow && !n.glow.hidden).map((n) => n.key),
     beat: () => curBeat,
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
-    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden || (!!n.inside && roomNow !== n.home), inside: !!n.inside, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
+    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden || (!!n.inside && roomNow !== n.home), inside: !!n.inside, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, dancing: !!n.danceAt, pair: n.pk, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
     flyers: () => flyers.filter((f) => !f.gone).map((f) => ({ i: f.i, x: f.x, y: f.y })),
     rung,
