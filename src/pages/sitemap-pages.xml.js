@@ -37,6 +37,7 @@ const PAGES = [
   { path: '/beach/', images: [['/assets/og/beach.png', 'Banana Bay — a free banana beach game']] },
   { path: '/park/', images: [['/assets/og/park.png', 'The Park — a free cozy garden game']] },
   { path: '/town/', images: [['/assets/og/town.png', 'Banana Town — where Banana World begins']] },
+  { path: '/homestead/', images: [['/assets/og/homestead.png', 'The Homestead — a free online farm game']] },   // 🏡 indexed on 25 Sep 2026
   { path: '/forge/', images: [] },
   { path: '/guides/', images: [] },
   // ⚠️ GENERATED FROM THE REGISTRY, never listed by hand. The two guides that

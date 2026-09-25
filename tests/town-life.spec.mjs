@@ -1239,6 +1239,32 @@ test('standingPose: a resident at their post stands sideways, never front-on', a
   expect(errors).toEqual([]);
 });
 
+// 🌧 RAIN STAYS OUTSIDE (25 Sep 2026). Trym: "in the town - the rain weather is visible if youre inside the store or the
+// arcade". Walking in while it rained was fine; rain that STARTED (or turned heavy, or became a storm) while you were
+// inside came down through the ceiling, because a change of weather rebuilt the sheet's classes and dropped
+// `is-indoors` — and the weather still believed it was hidden, so nothing put it back (src/scripts/world-weather.js).
+test('rain stays outside: the store and the arcade keep it off, whenever it starts', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await town(page);
+  const sheet = () => page.evaluate(() => { const w = document.querySelector('#twView .wx'); return !!w && getComputedStyle(w).display !== 'none'; });
+  for (const key of ['store', 'condo']) {
+    await seam(page, () => window.__town.wx('clear'));
+    await seam(page, (k) => window.__town.rooms.enter(k), key);
+    await page.waitForTimeout(200);
+    for (const k of ['drizzle', 'heavy', 'storm']) {
+      await seam(page, (x) => window.__town.wx(x), k);
+      await page.waitForTimeout(100);
+      expect(await sheet(), `${k} inside the ${key === 'condo' ? 'arcade' : key}`).toBe(false);
+    }
+    await seam(page, () => window.__town.rooms.exit());
+    await page.waitForTimeout(200);
+    expect(await sheet(), `out of the ${key === 'condo' ? 'arcade' : key}, into the storm`).toBe(true);
+  }
+  await seam(page, () => window.__town.wx(null));
+  expect(errors).toEqual([]);
+});
+
 // 💃 NOBODY STANDS THERE LIKE A STATUE (25 Sep 2026). Trym, on opening Banana World: "lots of town bananas just standing
 // there statically - not a great first impression". Standing still is now a life of its own (town-life.js idle()): the
 // sway you can see, a glance round, two bars of dance now and then, and a pair's talk. ⚠️ The first version ran only in

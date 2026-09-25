@@ -7,7 +7,7 @@ out of src/lib/banana-engine.js at run time, so this can never drift from
 the engine. Cards are composed per the original design (yellow card, black
 border, pink chip, Archivo Black headline, url, banana right).
 
-Run: python tools/build-og-cards.py [--write]
+Run: python tools/build-og-cards.py [--write] [name ...]   (names: only those cards)
 """
 import os
 import re
@@ -117,6 +117,9 @@ CARDS = {
                      glasses='shades'),
     'park':     dict(chip='A FREE COZY GARDEN GAME', title=['Welcome to', 'The Park'], pose=2,
                      hat='sombrero'),   # the widest sun hat in the manifest = the gardener read
+    # 🏡 indexed on 25 Sep 2026: the farm searches ("online farm game"), and the rancher's hat
+    'homestead': dict(chip='A FREE ONLINE FARM GAME', title=['Welcome to', 'The Homestead'], pose=2,
+                      hat='cowboy'),
     # 🎩 the card for the link Trym pastes into an email when somebody asks how
     # to support him — so it wears the gold hat that supporting actually buys
     'support':  dict(chip='KEEP BANANA WORLD FREE', title=['Support the', 'Dancing Banana'], pose=2,
@@ -164,5 +167,7 @@ def build(name, spec, write):
 
 if __name__ == '__main__':
     write = '--write' in sys.argv
+    only = [a for a in sys.argv[1:] if not a.startswith('--')]
     for name, spec in CARDS.items():
-        build(name, spec, write)
+        if not only or name in only:
+            build(name, spec, write)

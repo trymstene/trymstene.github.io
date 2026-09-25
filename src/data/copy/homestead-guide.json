@@ -1,4 +1,10 @@
 {
+  "page": {
+    "title": "The Homestead — a free online farm game in your browser",
+    "description": "Claim a clearing in Banana World and make it a farm: raise hens, goats, sheep and cows, grow crops, cook, and have friends over. Free in your browser.",
+    "ogDescription": "Your own farm in Banana World: hens, crops, cooking and friends dropping by. Free in the browser.",
+    "tag": "your own farm in Banana World"
+  },
   "faq": {
     "kicker": "questions",
     "heading": "frequently asked",

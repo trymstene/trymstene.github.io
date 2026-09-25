@@ -1,27 +1,47 @@
 ---
-// 🏡 THE HOMESTEAD — your own clearing west of the park (M0, task #106).
-// NOINDEXED + not in the sitemap: Rule Zero — the world advertises an area
-// when it's ready, and the park's west road stays shut until then. This page
-// exists for building and field-testing via the direct URL.
+// 🏡 THE HOMESTEAD — your own clearing west of the park (M0, task #106), the farm since 2 Sep 2026.
+// 🔍 INDEXED since 25 Sep 2026 (Trym: "yes index the homestead"). It was noindex under Rule Zero — the world advertises an
+// area when it is ready — and it has been ready for weeks: the travel door, the town's roads, the language pages and
+// llms.txt all lead here. It aims at the farm searches ("farm game" 49.5K, "online farm game" 6.6K), which neither the
+// park (garden, cozy) nor the bay (banana game) chases. Its page lines are src/data/copy/homestead-guide.json `page`.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import AreaFaq from '../components/AreaFaq.astro';
 import { faqLd } from '../lib/faq.js';
 import HG from '../data/copy/homestead-guide.json';   // 📖 the guide's questions: on the page and in its FAQPage, one list
 
-const title = 'The Homestead — your own corner of Banana World';
-const description = 'A clearing west of the park with your name on the sign: claim it, pitch a tent, order decor at the mailbox and grow the garden bed.';
+const title = HG.page.title;
+const description = HG.page.description;
 // ❓ the questions under the clearing are ONE list (src/data/copy/homestead-guide.json): drawn by AreaFaq, made into the
-// FAQPage here (src/lib/faq.js). ⚠️ the page is noindex (Rule Zero, above), so today they are for players only.
+// FAQPage here (src/lib/faq.js)
 const faq = faqLd(HG.faq.items);
+// 🕸 what the page IS, for a crawler or an AI reading it: a free game in the browser, one of Banana World's areas
+const appLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  '@id': 'https://trymstene.com/homestead/#app',
+  name: 'The Homestead',
+  url: 'https://trymstene.com/homestead/',
+  description,
+  applicationCategory: 'GameApplication',
+  operatingSystem: 'Web',
+  browserRequirements: 'Requires JavaScript',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  screenshot: 'https://trymstene.com/assets/world/door-homestead.jpg',
+  creator: { '@id': 'https://trymstene.com/#trym' },
+  isBasedOn: { '@id': 'https://trymstene.com/#banana-gif' },
+};
 ---
 <BaseLayout
   title={title}
   description={description}
-  robots="noindex,nofollow"
   ogTitle="The Homestead 🏡"
-  ogDescription="A clearing in Banana World with your name on the sign."
+  ogDescription={HG.page.ogDescription}
+  ogImage="https://trymstene.com/assets/og/homestead.png"
+  about="https://trymstene.com/homestead/#app"
 >
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(appLd)} />
   <link rel="stylesheet" href="/css/world-card.css" slot="head" />
   <link rel="stylesheet" href="/css/town-post.css" slot="head" />
   <link rel="stylesheet" href="/css/weather.css" slot="head" />
@@ -1089,7 +1109,7 @@ const faq = faqLd(HG.faq.items);
 
   <div class="hs-wrap">
     <h1 class="hs-sign">🏡 THE HOMESTEAD</h1>
-    <p class="hs-tag">your own corner of Banana World</p>
+    <p class="hs-tag">{HG.page.tag}</p>
 
     <div class="hs-stage">
       <div class="hs-view" id="hsView">

@@ -72,7 +72,10 @@ export function mountWeather(host, opts = {}) {
     if (!TIERS.includes(k)) return;
     if (k === kind) return;
     kind = k;
-    wrap.className = 'wx' + (k === 'clear' ? '' : ' is-' + k);
+    // ⚠️ KEEP is-indoors. This line rebuilt the whole class list, so rain that started while you stood in the store or
+    // the arcade came down through the ceiling (Trym, 25 Sep 2026: "the rain weather is visible if youre inside the
+    // store or the arcade") — and indoors(true) could not put it back: `hidden` still said it was.
+    wrap.className = 'wx' + (k === 'clear' ? '' : ' is-' + k) + (hidden ? ' is-indoors' : '');
     leaves.forEach((l) => l.classList.toggle('is-on', k === 'storm'));
     if (opts.onKind) opts.onKind(k);
     if (k !== 'clear' && opts.track) opts.track(k);

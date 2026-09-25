@@ -1474,6 +1474,16 @@ const faqJob = (id, title, subject, reads, names, o = {}) => ({
   shape: faqShape(names, o),
 });
 const areaGuideJob = (id, area, names) => faqJob(id, area + ' — the field guide under the frame', area, 'src/pages/' + id.replace('-guide', '') + '.astro', names);
+// 🏡 THE HOMESTEAD IS INDEXED (25 Sep 2026, Trym: "yes index the homestead"), so its own page lines are copy too: the
+// search headline, the search line, the share line and the line under the sign. It aims at the farm searches — "farm
+// game" 49.5K, "online farm game" 6.6K (tools/kw.py) — which neither the park (garden, cozy) nor the bay (banana game)
+// chases, so no two of our own pages fight over one search.
+const HS_PAGE = {
+  'page.title': { kind: 'label', aim: 55, max: 60, needs: [[/^The Homestead\b/, 'starts with "The Homestead" — the desk counts the area by that prefix (pulse-dicts WORLD_TITLES)'], [/\bfarm\b/i, 'says farm: it is the search this page answers']], note: 'The browser tab and the search headline: “The Homestead”, a dash, and what it is in the words people search for.' },
+  'page.description': { kind: 'prose', aim: 150, max: 160, needs: [[/Banana World/, 'says Banana World']], note: 'The search result’s grey line: what you do there, plainly, and that it is free in the browser. No exclamation marks.' },
+  'page.ogDescription': { kind: 'prose', aim: 100, max: 120, note: 'The line under the link when it is shared in a chat.' },
+  'page.tag': { kind: 'label', aim: 30, max: 50, forbids: [[/^[A-Z]/, 'lower case, like the line under every area’s sign']], note: 'The small line under the big THE HOMESTEAD sign.' },
+};
 
 // --- town-page -----------------------------------------------------------------
 // 🏘 THE TOWN PAGE ITSELF (21 Sep 2026): the four lines nobody in the world speaks — the tab title,
@@ -2160,7 +2170,7 @@ export const JOBS = {
   'rave-guide': areaGuideJob('rave-guide', 'The Rave', /\brave\b/i),
   'park-guide': areaGuideJob('park-guide', 'The Park', /\bPark\b/),
   'beach-guide': areaGuideJob('beach-guide', 'Banana Bay', /\bBanana Bay\b/),
-  'homestead-guide': areaGuideJob('homestead-guide', 'The Homestead', /\bhomestead\b/i),
+  'homestead-guide': (() => { const j = areaGuideJob('homestead-guide', 'The Homestead', /\bhomestead\b/i); return { ...j, what: 'The Homestead’s page lines (its search headline, search line, share line and the line under the sign) and the questions under its frame.', top: ['page', 'faq'], fields: { ...HS_PAGE, ...j.fields } }; })(),
   'town-guide': {
     id: 'town-guide',
     title: 'Banana Town \u2014 the field guide under the frame',
