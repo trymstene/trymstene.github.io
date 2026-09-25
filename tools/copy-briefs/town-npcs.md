@@ -71,11 +71,11 @@ Inherited the shop from an uncle whose only note said everything is the last one
 
 ### `bean` — Bean, the coffee kiosk
 
-Opened the kiosk because the building already said COFFEE. Reads a fortune in every cup, flat present tense, always something small and usually true. Once read a cup, went quiet, rinsed it, and has never read her own since. Lunches with Stamp on the terrace, the two of them saying nothing, which is the best part of her day.
+Opened the kiosk because the building already said COFFEE. Reads a fortune in every cup, flat present tense, always something small and usually true. Once read a cup, went quiet, rinsed it, and has never read her own since. Takes her lunch alone on the terrace, and would like company there.
 
-### `figjr` — Fig Jr., the lemonade stand and the fruit cart
+### `figjr` — Fig Jr., the lemonade stand
 
-Gran Fig's grandson, running a one-cup stand like a corporation: boardroom words, a confident opening, then the honest number. Calls his grandmother Gran Fig, never a job title. Waters her trees before dawn and lets her think it was rain. Wheels the cart into the square at noon and calls it expansion. Walks her to her bench every evening and calls it on the way; it is not on the way.
+Gran Fig's grandson, running a one-cup stand like a corporation: business words a child knows, a confident opening, then the honest number. Calls his grandmother Gran Fig, never a job title. At the stand all day except noon, when he waters her orchard; waters it before dawn too and lets her think it was rain. Keeps an eye on her garden bench from the stand in the evening. (The fruit cart in the square is not his, and it sells nothing yet.)
 
 ### `spinner` — Spinner, the Arcade
 

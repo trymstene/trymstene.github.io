@@ -110,7 +110,7 @@
           "beat": "noon",
           "lines": [
             "My lunch weighs two hundred grams. I checked before eating.",
-            "Bean has coffee on the terrace. We are both busy being quiet.",
+            "Lunch at my counter. The post office is quiet at noon. Noted.",
             "One postcard corner is damp. It will not improve."
           ]
         },
@@ -125,7 +125,7 @@
         {
           "beat": "evening",
           "lines": [
-            "The outgoing tray is level. That means the weight is distributed.",
+            "Evening on the terrace. The day’s post is out, and my tray is level.",
             "I wrote one address twice. The second one was better.",
             "The bus road is empty now. Noted."
           ]
@@ -179,7 +179,7 @@
         {
           "beat": "noon",
           "lines": [
-            "Hot stones. The broom raises less dust when I take the shady side.",
+            "Hot stones. I sit in the shade and let the broom rest until the round.",
             "A lemonade cup rolled under the bench and has now been properly removed.",
             "The fountain throws water over the same cobble, and it still looks surprised."
           ]
@@ -188,7 +188,7 @@
           "beat": "afternoon",
           "lines": [
             "Round again. A clean square collects new leaves with professional speed.",
-            "The arcade door has ticket scraps at its threshold. They travel in packs.",
+            "Café queue. It drops sugar packets, and they travel in packs.",
             "I found a flyer by the fountain. It goes under my mattress later."
           ]
         },
@@ -320,7 +320,7 @@
           "beat": "noon",
           "lines": [
             "The cup says sit down before the fountain water reaches your shoes.",
-            "Stamp and I have lunch on the terrace. Silence is on the menu.",
+            "Lunch on the terrace. Silence is on the menu.",
             "One square of lemon cake remains cold beside the fountain."
           ]
         },
@@ -353,14 +353,14 @@
     {
       "key": "figjr",
       "name": "Fig Jr.",
-      "role": "Lemonade stand manager and fruit-cart operator for the west orchard.",
-      "tap": "I run the lemonade stand and the fruit cart. Gran Fig grows the fruit; I sell it.",
-      "want": "I would welcome company while I walk Gran Fig to her bench.",
+      "role": "Runs the lemonade stand, with lemons from Gran Fig’s orchard.",
+      "tap": "I run the lemonade stand. Gran Fig grows the lemons; I sell the lemonade.",
+      "want": "I would welcome company at the stand when the square goes quiet.",
       "hi": [
-        "The lemonade stand is open for business! At noon, the fruit cart opens in the square.",
+        "The lemonade stand is open for business! Best lemonade in town. Also the only lemonade.",
         "You are back! Returning customers are good for business.",
         "{name}, the lemonade sign faces the square, not the orchard.",
-        "Market Analyst {name}, you always check the cart before it opens.",
+        "Market Analyst {name}, you always count how many cups I sell.",
         "{name}, I water the orchard before dawn so Gran Fig thinks it rained."
       ],
       "ask": {
@@ -373,7 +373,7 @@
         {
           "beat": "dawn",
           "lines": [
-            "I am watering Gran Fig’s trees before the sun comes up.",
+            "Stand open before the square wakes up. Early customers get the coldest glass.",
             "I counted twelve lemon halves, then added one for morale.",
             "Gran Fig will find wet roots and decide it rained."
           ]
@@ -389,15 +389,15 @@
         {
           "beat": "noon",
           "lines": [
-            "The fruit cart is in the square now. Business is growing!",
-            "I set the fruit crate beside the fountain. Visibility is our biggest asset.",
-            "One lemon half rolled away. I counted it as marketing."
+            "Noon water run in Gran Fig’s orchard. Good lemonade starts at the roots.",
+            "Every tree in this orchard is a future glass of lemonade. I told them so.",
+            "One lemon fell early. I counted it as marketing."
           ]
         },
         {
           "beat": "afternoon",
           "lines": [
-            "The cart wheel squeaks. I call it free advertising.",
+            "Back at the stand. The afternoon rush is one customer. Still a rush.",
             "Lemonade demand is steady: one cup, then another cup if destiny allows.",
             "Gran Fig sorts her fruit by ripeness, never by colour. Her rule."
           ]
@@ -405,9 +405,9 @@
         {
           "beat": "evening",
           "lines": [
-            "I am walking Gran Fig to her bench. I tell her it is on my way.",
+            "Gran Fig is on her garden bench. I keep an eye on her from the stand.",
             "Her second chair is empty. I have noted the available seating.",
-            "The cart is parked until noon tomorrow."
+            "Last glasses of the day. The sign stays up until the square goes dark."
           ]
         },
         {
@@ -599,7 +599,7 @@
         {
           "beat": "noon",
           "lines": [
-            "The fruit cart has gone to the square. Expansion, he calls it. Fine.",
+            "Lunch on the bench. The trees can wait an hour. They will complain.",
             "Pack the crate tight. Nothing should shift when it gets kicked.",
             "The garden bed has three dry corners. I know them all."
           ]
@@ -615,7 +615,7 @@
         {
           "beat": "evening",
           "lines": [
-            "Walk to the bench. Fig Jr. calls it on the way. He is wrong.",
+            "Back on my bench. The garden needs watching, and so does that boy.",
             "Keep the second chair clear. It is for sitting, not crates.",
             "The orchard can manage one night without an audience."
           ]
@@ -669,7 +669,7 @@
         {
           "beat": "noon",
           "lines": [
-            "Lunch at the fruit cart. Fig Jr. calls it expansion. I call it a pear.",
+            "Lunch at the fruit cart. It sells nothing yet, so I bring my own pear.",
             "Away from the wheel for a moment. It does better when nobody watches.",
             "I eat facing the wheel, so it knows I have not gone far."
           ]

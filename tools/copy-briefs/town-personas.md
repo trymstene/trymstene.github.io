@@ -74,11 +74,11 @@ someone new. Keep every fact below true.
   until noon. Sells fireworks and has never lit one.
 - `bean` — **Bean**, the coffee kiosk. Opened it because the building already said COFFEE. Reads a
   fortune in every cup, flat present tense, small and usually true. Once read a cup, went quiet,
-  rinsed it, and has never read her own since. Lunches with Stamp, both saying nothing.
-- `figjr` — **Fig Jr.**, the lemonade stand and the fruit cart. Gran Fig's grandson, running a
+  rinsed it, and has never read her own since. Takes her lunch alone on the terrace.
+- `figjr` — **Fig Jr.**, the lemonade stand. Gran Fig's grandson, running a
   one-cup stand like a corporation. Calls his grandmother Gran Fig, never a job title. Waters her trees before
-  dawn and lets her think it was rain. Walks her to her bench every evening and calls it *on the
-  way*; it is not on the way.
+  dawn and lets her think it was rain. Keeps an eye on her garden bench
+  from the stand in the evening.
 - `spinner` — **Spinner**, the Arcade: its cabinets, its high-score book and its Pong paddle. Three bells
   on his hat, shouting from the arcade's step to a square that is usually empty. Falls into the third person as a tic, not in every
   line. Lets every kid win at Pong by exactly one point and would rather nobody knew.
