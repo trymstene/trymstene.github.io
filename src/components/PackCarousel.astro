@@ -19,28 +19,30 @@ import { STICKER_PACKS, PACK_PRICE, SET_PRICE, packBanner, packProducts, preview
 
 export interface Props {
   place?: string;      // GA4 label: which slot on which page sent someone to a pack
+  t?: Record<string, string>;   // a language page's words (sticker, count, all, see, label); English when absent
 }
 const { place = 'carousel' } = Astro.props;
+const T = { sticker: 'Sticker', count: '6 stickers', all: 'all 8', see: 'See the pack →', label: 'Sticker packs', ...(Astro.props.t || {}) };
 
 let products = [];
 try { products = await getProducts(); } catch (e) { products = []; }
 const have = packProducts([...products, ...previewPacks(products)]);
 const slides = STICKER_PACKS.map((p) => ({ ...p, href: have[p.n] ? `/shop/${have[p.n].handle}/` : '/shop/#sticker-packs' }));
 ---
-<div class="pkc" data-place={place} aria-roledescription="carousel" aria-label="Sticker packs">
+<div class="pkc" data-place={place} aria-roledescription="carousel" aria-label={T.label}>
   <div class="pkc__track" tabindex="0">
     {slides.map((p, i) => (
       <a class="pkc__slide" href={p.href} data-name={`Sticker ${p.num}`}
-         aria-label={`Sticker ${p.num}, ${p.name}: ${p.names.join(', ')} and the Original, ${money(PACK_PRICE, 'USD')}`}>
+         aria-label={`${T.sticker ? T.sticker + ' ' : ''}${p.num}, ${p.name}: ${[...p.names, 'The Original'].join(', ')}, ${money(PACK_PRICE, 'USD')}`}>
         <img class="pkc__bg" src={packBanner(p.n)} alt="" width="1200" height="480" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
         <span class="pkc__text">
-          <span class="pkc__num">Sticker {p.num} · 6 stickers</span>
+          <span class="pkc__num">{T.sticker ? T.sticker + ' ' : ''}{p.num} · {T.count}</span>
           <b class="pkc__name">{p.name}</b>
           <span class="pkc__names">{p.names.join(' · ')}</span>
           <span class="pkc__row">
             <span class="price-tag price-tag--sm">{money(PACK_PRICE, 'USD')}</span>
-            <span class="pkc__set">all 8 · {money(SET_PRICE, 'USD')}</span>
-            <span class="pkc__go">See the pack →</span>
+            <span class="pkc__set">{T.all} · {money(SET_PRICE, 'USD')}</span>
+            <span class="pkc__go">{T.see}</span>
           </span>
         </span>
       </a>

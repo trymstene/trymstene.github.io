@@ -1,17 +1,9 @@
 ---
-// Shared hreflang mesh — identical on the banana hub + all localized pages.
-// Single source of truth so the language alternates never drift.
+// Shared hreflang mesh — identical on the banana hub + every language page, generated from the one registry
+// (src/data/locale-codes.js), so a new language joins every page's mesh at once and the list can never drift.
+import { LANG_LINKS } from '../data/locale-codes.js';
 const base = 'https://trymstene.com';
-const alternates = [
-  { lang: 'en', href: base + '/dancing-banana-gif-meme/' },
-  { lang: 'nl', href: base + '/nl/' },
-  { lang: 'es', href: base + '/es/' },
-  { lang: 'pt', href: base + '/pt/' },
-  { lang: 'fr', href: base + '/fr/' },
-  { lang: 'de', href: base + '/de/' },
-  { lang: 'ru', href: base + '/ru/' },
-];
 const xDefault = base + '/dancing-banana-gif-meme/';
 ---
-{alternates.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
+{LANG_LINKS.map((a) => <link rel="alternate" hreflang={a.code} href={base + a.href} />)}
 <link rel="alternate" hreflang="x-default" href={xDefault} />

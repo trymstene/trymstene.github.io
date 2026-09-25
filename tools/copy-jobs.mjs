@@ -1537,6 +1537,137 @@ const holdsAll = (...keys) => ({
 });
 const NO_MARKUP = { forbids: [[/[<>&]/, 'markup or an entity — the code builds the markup around this line']] };
 
+// 🌍 THE LANGUAGE PAGES (25 Sep 2026). Trym: "upgrade all international pages, and add more big languages that probably
+// searches for the banana". Every language page (src/pages/[locale].astro) reads src/data/copy/locale-<code>.json through
+// src/data/locales.js, and every one of those files answers to this one rulebook. The codes are src/data/locale-codes.js's,
+// MIRRORED here because this file runs in a throwaway copy (the lock test) where src/ does not exist; a file without a job,
+// a job without a file, a registry row without words and words without a row all fail (here, and in locales.js at build).
+// Site words, not a resident's: say what the page offers, plainly, in the reader's own search words (docs/voice.md).
+export const LOCALE_CODES = ['nl', 'es', 'pt', 'fr', 'de', 'it', 'pl', 'ru', 'ja', 'ko'];
+// the download card's measured headlines (src/data/pack-heads.js keys, mirrored for the same reason): a language says each
+// one in its own words, and the key stays the one GA4 counts
+const CARD_HEADS = ['official', 'get', 'unique', 'only', 'name'];
+const LINK_KEYS = ['tip', 'license', 'pbjt', 'builder', 'gif', 'world', 'packs', 'remixes', 'download', 'story'];
+const LOC_FORBIDS = [
+  [/<\/?[a-z]/i, 'HTML in a line: write **bold**, *italic* and [text](key), and the page builds the markup'],
+  [new RegExp(String.raw`\]\((?!(?:${LINK_KEYS.join('|')})\))`), `a link to an unknown place: [text](key) takes ${LINK_KEYS.join(', ')}`],
+  [/https?:\/\/|www\./i, 'a raw address: a link is [text](key)'],
+];
+// the song's name and the chat app are facts of the banana's history on these pages, not a borrowed brand
+const LOC_BRANDS = ['peanut butter jelly time', 'whatsapp'];
+const lp = (max, note, more = {}) => ({ kind: 'prose', max, note, allowBrands: LOC_BRANDS, forbids: LOC_FORBIDS, ...more });
+const ll = (max, note, more = {}) => ({ kind: 'label', max, note, forbids: LOC_FORBIDS, ...more });
+const FILE_OF = { original: /trymstene\.com\.gif$/, transparentGif: /trymstene\.com\.gif$/, transparentPng: /trymstene\.com\.png$/, hd: /trymstene\.com\.gif$/ };
+const localeFields = {
+  'meta.title': lp(75, 'The <title>: the banana’s name in this language’s own search words first (the query that brings people here), then original, 1999, free. For the six pages that already rank (nl es pt fr de ru) it is left as it was.'),
+  'meta.description': lp(175, 'The search snippet: original, free, no watermark, transparent, from its maker, and making your own. Never licensing (it spends snippet words on a door that is closed).'),
+  'meta.ogDescription': lp(140, 'The line under a shared link.'),
+  'meta.langAria': ll(24, 'The accessible name of the language switch: this language’s word for “Language”.'),
+  'hero.kicker': ll(30, 'Tiny line above the big title.'),
+  'hero.h1[]': ll(24, 'The big title, the banana’s name in lower case, one entry per line (two lines: where it splits).'),
+  'hero.tag': lp(95, 'Under the title, in the banana guy’s own voice: a GIF I made in 1999 that never stopped dancing.'),
+  'hero.alt': lp(120, 'Alt text of the dancing GIF; also its title in the image sitemap.'),
+  'hero.note': lp(50, 'Under the two download buttons: no sign-up, no watermark.'),
+  'hero.more': ll(30, 'A small link to every format further down (ends with ↓).'),
+  intro: lp(440, 'The answer-first paragraph: what the dancing banana is, who made it and when, the song it was set to, and what the page lets you do. **bold** the banana’s name and Trym Stene in 1999.'),
+  'jump.label': ll(24, 'The on-page menu’s name for a screen reader: “On this page”.'),
+  'jump.download': ll(22, 'On-page menu: the downloads.'), 'jump.make': ll(22, 'On-page menu: make your own.'),
+  'jump.packs': ll(22, 'On-page menu: the sticker packs.'), 'jump.world': ll(22, 'On-page menu: Banana World (keep the name).'),
+  'jump.story': ll(22, 'On-page menu: the story.'), 'jump.faq': ll(22, 'On-page menu: the questions.'),
+  'download.kicker': ll(30, 'Above the download heading.'),
+  'download.heading': lp(60, 'The download section’s heading.'),
+  'download.lead': lp(220, 'What there is to download: the original GIF, a transparent version (GIF and PNG) and a 2000 px HD remaster; free to download, share and send.'),
+  'download.grabAlt': lp(120, 'Alt text of the transparent banana beside the buttons.'),
+  'download.original': ll(30, 'Button: the original GIF (ends with ↓).'), 'download.transparentGif': ll(30, 'Button: the transparent GIF (ends with ↓).'),
+  'download.transparentPng': ll(30, 'Button: the transparent PNG (ends with ↓).'), 'download.hd': ll(34, 'Button: the 2000 px HD remaster (ends with ↓).'),
+  'download.formats': lp(260, 'Small print under the buttons: which transparent file is for what (the PNG is a still frame, the GIF keeps the dance).'),
+  ...Object.fromEntries(Object.entries(FILE_OF).map(([k, re]) => ['download.files.' + k, ll(64, 'The saved file’s name, in this language’s words, lower case with hyphens, ending in trymstene.com.' + (k === 'transparentPng' ? 'png' : 'gif'), { needs: [[re, 'must end in trymstene.com.' + (k === 'transparentPng' ? 'png' : 'gif') + ' so the file names its home']] })])),
+  'download.tip': lp(170, 'The coffee line: free, always, but if it made you smile you can buy the banana guy a coffee — the coffee words are the [link](tip).', { needs: [[/\]\(tip\)/, 'must carry the [coffee](tip) link']] }),
+  'make.kicker': ll(30, 'Above the builder heading.'),
+  'make.heading': lp(60, 'The builder section: make your own dancing banana. This is where most visitors of these pages go next.'),
+  'make.lead': lp(240, 'What the builder does: hats, glasses, moustaches, captions, disco colours; download free as a GIF or emoji, or order it as a real sticker, mug or tee.'),
+  'make.cta': ll(40, 'The button into the builder (ends with →).'),
+  'make.note': lp(70, 'Small line under the button: free, no app, works on a phone.'),
+  'packs.kicker': ll(30, 'Above the sticker heading.'), 'packs.heading': lp(40, 'The sticker packs’ heading.'),
+  'packs.lead': lp(200, 'The packs in one breath: the bananas people have sent for years as real kiss-cut vinyl stickers, eight packs of six, the original in every pack.'),
+  'packs.note': lp(140, 'Under the pack cards: the classic banana is in every pack; six stickers on one sheet, about 5–6 cm each.'),
+  'packs.see': ll(26, 'On a pack card: see the pack (ends with →).'), 'packs.soon': ll(16, 'On a pack card not in the shop yet.'),
+  'packs.thisOne': ll(16, 'On the card of the pack whose page this is.'),
+  'packs.count': ll(20, 'Six stickers, as a short label (the carousel prints it after the product’s own “Pack 3”).'),
+  'packs.all': ll(16, 'Before the set price in the carousel: all 8.'), 'packs.carousel': ll(30, 'Accessible name of the pack carousel.'),
+  'packs.dealKicker': ll(20, 'The set deal’s tiny label.'), 'packs.dealHeading': lp(46, 'All 8 packs · 48 stickers.'),
+  'packs.dealSub': lp(120, 'The whole of Series 1 in one order; the price drops by itself in the cart.'),
+  'packs.dealAdd': ll(36, 'Button: add all 8 to the cart (ends with →).'), 'packs.dealSee': ll(30, 'Button when the set cannot be added: see the packs (ends with →).'),
+  'packs.dealAdding': ll(30, 'The button while the set goes into the cart (ends with …).'), 'packs.dealAdded': ll(24, 'The button once it is in (ends with ✓).'),
+  'packs.dealFailed': lp(60, 'The button when the shop did not answer: try again.'),
+  'world.kicker': ll(24, 'Above the world heading: Banana World (keep the name).'),
+  'world.heading': lp(50, 'The world section’s heading: the banana is a place now.'),
+  'world.lead': lp(200, 'Not just a GIF any more: a world you can walk into, with other bananas in it; free, in the browser.'),
+  'world.enter': ll(40, 'The button into the world (to Banana Town): keep “Banana World” as the name, end with →.'),
+  'world.fine': ll(60, 'Tiny line under it: free, plays in the browser, no app.'),
+  'world.areas.town': lp(70, 'Under BANANA TOWN’s picture: ten residents, an arcade, jobs and a mystery from 1999.'),
+  'world.areas.rave': lp(70, 'Under THE RAVE’s picture: a dancefloor with music that never stops.'),
+  'world.areas.park': lp(70, 'Under THE PARK’s picture: plant a garden together with everyone else.'),
+  'world.areas.beach': lp(70, 'Under BANANA BAY’s picture: volleyball, fishing and treasure in the sand.'),
+  'world.areas.homestead': lp(70, 'Under THE HOMESTEAD’s picture: a plot of your own, with a house and animals.'),
+  'world.forge': ll(40, 'Small link: draw your own pixel emoji (the Forge; ends with →).'),
+  'world.gallery': ll(40, 'Small link: banana memes and stickers (the gallery; ends with →).'),
+  'world.shop': ll(30, 'Small link: the shop (ends with →).'),
+  'story.kicker': ll(24, 'Above the story heading.'), 'story.heading': lp(60, 'Who made the dancing banana?'),
+  'story.lead': lp(330, 'In the banana guy’s voice: Trym Stene, 1999, a 350 MHz computer in the Norwegian countryside, Animation Shop, a celebration emoticon for web forums. **bold** his name and 1999.'),
+  'story.later': lp(300, 'Then Flash, The Buckwheat Boyz and their song Peanut Butter Jelly Time, a life of its own all the way to Family Guy; ends with the [who made what](pbjt) link.', { needs: [[/\]\(pbjt\)/, 'must end with the [who made what](pbjt) link']] }),
+  'story.local': lp(340, 'Where people in THIS language remember it from (a hedge, never a claim: “maybe you saw it on …”), in the places they really used: MSN, their own forums and networks.'),
+  'faq.kicker': ll(30, 'Above the FAQ heading.'), 'faq.heading': lp(60, 'The FAQ heading, with the banana’s name.'),
+  'faq.items[].q': lp(110, 'A question the way people in this language would type it into a search box.'),
+  'faq.items[].a': lp(420, 'The answer, first sentence first; a [link](key) to where it can be done is welcome at the end.'),
+  'remixes.kicker': ll(30, 'Above the remix heading.'), 'remixes.heading': lp(50, 'Community remixes.'),
+  'remixes.lead': lp(230, 'The internet dressed the banana up (a warrior, a Jedi, Santa); the gallery has all {n}, free to download.', holdsAll('n')),
+  'remixes.cta': ll(40, 'The button into the remix gallery (ends with →).'),
+  ...Object.fromEntries(CARD_HEADS.map((k) => ['card.heads.' + k, lp(52, `The download card’s headline “${{ official: 'Official banana sticker pack', get: 'Get the official banana stickers', unique: 'Unique banana stickers for your laptop', only: 'Only here: official banana stickers', name: 'The dancing banana sticker pack' }[k]}”, said in this language. Each of the five is measured on its own, so keep them five different messages.`)])),
+  'card.count': ll(20, 'On the card’s price pill after the price: six stickers.'),
+  'card.desc': lp(160, 'The card’s line: the dancing banana and five more of his looks, as real stickers; nobody else prints these; ships worldwide.'),
+  'card.go': ll(36, 'The card’s button: see the sticker pack (ends with →).'),
+  'card.skip': ll(40, 'The card’s way out, lower case: no thanks, just the GIF (the download then carries on).', { needs: [[/GIF/, 'must say GIF: a PNG download says PNG in the same place (skipLabelIn in src/lib/make-it-real.js)']] }),
+  'footer.kicker': ll(24, 'Above the last heading.'), 'footer.heading': lp(60, 'The original, from its maker.'),
+  'footer.lead': ll(24, 'Before the English links: “In English:”.'), 'footer.story': ll(30, 'Link: the full story.'),
+  'footer.make': ll(30, 'Link: make your own.'), 'footer.license': ll(20, 'Link: licence.'), 'footer.tip': ll(20, 'Link: ☕ and the word for a tip.'),
+  'footer.copyright': ll(50, 'After © 2026: Trym Stene · the banana guy.'),
+};
+const LOC_TOP = ['meta', 'hero', 'intro', 'jump', 'download', 'make', 'packs', 'world', 'story', 'faq', 'remixes', 'card', 'footer'];
+// 📰 a language's OWN moment: a section under the intro that only one language has. Dutch has one since 25 Sep 2026: Hyves
+// came back on 22 Sep with "the dancing banana is back" in the Dutch press, and Dutch searches for the banana went up
+// twenty-fold overnight. Trym: "Should we, on the NL page say something about Hyves? Or have a dedicated page". The
+// section, not a page: /nl/ already ranks, so it catches the spike; a second page would split the same searches.
+const LOCAL_SPOT = ['nl'];
+const spotFields = {
+  'spot.kicker': ll(30, 'Tiny line above the moment’s heading.'),
+  'spot.heading': lp(70, 'The moment’s heading, in the words people search for it with.'),
+  'spot.lead': lp(420, 'What happened and what this page has for it; true, dated, never claiming a tie to anyone.'),
+};
+const getPath = (o, p) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
+function localeJob(code) {
+  return {
+    id: 'locale-' + code,
+    title: `The language pages — /${code}/`,
+    what: `Every word on /${code}/: the title and snippet, the hero and the downloads, the builder, the sticker packs, Banana World and its areas, the story, the FAQ, the remixes, the download card and the last links.`,
+    approved: `src/data/copy/locale-${code}.json`,
+    reads: 'src/pages/[locale].astro through src/data/locales.js; the download card (src/lib/make-it-real.js) takes card.*',
+    top: LOCAL_SPOT.includes(code) ? [...LOC_TOP, 'spot'] : LOC_TOP,
+    fields: LOCAL_SPOT.includes(code) ? { ...localeFields, ...spotFields } : localeFields,
+    shape: (d) => {
+      const bad = [];
+      const need = LOCAL_SPOT.includes(code) ? { ...localeFields, ...spotFields } : localeFields;
+      for (const p of Object.keys(need)) if (!p.includes('[]') && typeof getPath(d, p) !== 'string') bad.push({ path: p, msg: 'missing — every language page carries every line' });
+      const items = (d.faq || {}).items;
+      if (!Array.isArray(items) || items.length < 10 || items.length > 14) bad.push({ path: 'faq.items', msg: 'between 10 and 14 questions (the English hub has 10; each language adds its own)' });
+      else items.forEach((it, i) => { for (const k of Object.keys(it || {})) if (k !== 'q' && k !== 'a') bad.push({ path: `faq.items[${i}].${k}`, msg: 'a question is q and a, nothing else' }); });
+      const h1 = (d.hero || {}).h1;
+      if (!Array.isArray(h1) || h1.length < 1 || h1.length > 3) bad.push({ path: 'hero.h1', msg: 'the title is one to three lines, each its own entry' });
+      return bad;
+    },
+  };
+}
+
 export const JOBS = {
   // 📈🎡 THE MARKET (23 Sep 2026): the Wheel of Peel's card and the Exchange's card, now that both are real —
   // the server rolls the wheel and pays it, and a sale takes the produce out of the saved farm. The ids the
@@ -2033,6 +2164,8 @@ export const JOBS = {
       return bad;
     },
   },
+  // 🌍 THE LANGUAGE PAGES (25 Sep 2026): /nl/, /ja/ … one job per language, one rulebook for all (localeJob above).
+  ...Object.fromEntries(LOCALE_CODES.map((code) => ['locale-' + code, localeJob(code)])),
   // 📷 the sticker packs' PRODUCT PHOTOS (18 Sep 2026): Trym's photos of the printed Party pack, shown on every
   // pack's page so a buyer sees the real thing — each carries a stamp saying so (tools/build-pack-photos.py bakes it)
   'pack-photos': {

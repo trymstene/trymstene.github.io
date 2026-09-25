@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "title": "GIF de la Banane Qui Danse — Télécharge l’Original Gratuit",
+    "description": "Le GIF original de la banane qui danse, gratuit, sans filigrane, aussi sur fond transparent. Par son créateur, Trym Stene, qui l’a animé en 1999. Ou crée ta propre banane.",
+    "ogDescription": "Le GIF original de la banane qui danse, gratuit à télécharger. Créé en 1999 par Trym Stene.",
+    "langAria": "Langue"
+  },
+  "hero": {
+    "kicker": "Téléchargement gratuit",
+    "h1": ["la banane", "qui danse"],
+    "tag": "Un GIF que j’ai créé en 1999 et qui n’a jamais cessé de danser",
+    "alt": "Le GIF de la banane qui danse, créé par Trym Stene en 1999",
+    "note": "Sans inscription, sans filigrane.",
+    "more": "Tous les formats ↓"
+  },
+  "intro": "La **banane qui danse** est un GIF animé créé par **Trym Stene en 1999** : le mème de la banane, l’un des tout premiers d’internet, plus tard mis en musique sur la chanson *Peanut Butter Jelly Time*. Télécharge-le gratuitement ci-dessous, crée ta propre banane, ou viens voir où elle vit aujourd’hui.",
+  "jump": {
+    "label": "Sur cette page",
+    "download": "Télécharger",
+    "make": "Crée la tienne",
+    "packs": "Stickers",
+    "world": "Banana World",
+    "story": "L’histoire",
+    "faq": "FAQ"
+  },
+  "download": {
+    "kicker": "Emporte-la",
+    "heading": "Télécharge le GIF de la banane qui danse",
+    "lead": "Gratuit à télécharger, à partager et à envoyer : le GIF original, une version sur **fond transparent** (GIF et PNG) et une version HD remasterisée de 2000 px.",
+    "grabAlt": "La banane qui danse sur fond transparent — téléchargement gratuit",
+    "original": "GIF original ↓",
+    "transparentGif": "GIF transparent ↓",
+    "transparentPng": "PNG transparent ↓",
+    "hd": "Version HD (2000 px) ↓",
+    "formats": "Le PNG transparent est une seule image fixe, sans fond — idéal pour une photo de profil ou pour l’impression. Le GIF transparent, lui, garde la danse et le fond invisible : il se pose sur n’importe quelle couleur.",
+    "files": {
+      "original": "banane-qui-danse-trymstene.com.gif",
+      "transparentGif": "banane-qui-danse-transparent-trymstene.com.gif",
+      "transparentPng": "banane-qui-danse-transparent-trymstene.com.png",
+      "hd": "banane-qui-danse-hd-trymstene.com.gif"
+    },
+    "tip": "C’est gratuit — toujours. Mais si la banane t’a fait sourire, tu peux [offrir un café au créateur](tip)."
+  },
+  "make": {
+    "kicker": "Générateur de bananes gratuit",
+    "heading": "Crée ta propre banane qui danse",
+    "lead": "Chapeaux, lunettes de soleil, moustaches, textes, couleurs disco — habille la banane et elle est à toi. Télécharge-la gratuitement en GIF animé ou en emoji, ou commande-la en vrai sticker, mug ou t-shirt.",
+    "cta": "Ouvrir le générateur de bananes →",
+    "note": "Gratuit · sans appli · marche sur ton téléphone"
+  },
+  "packs": {
+    "kicker": "Nouveau · Série 1",
+    "heading": "Packs de stickers",
+    "lead": "Les bananes que tu envoies depuis des années — en vrais stickers en vinyle, prédécoupés. Huit packs de six, avec la banane originale dans chacun.",
+    "note": "La banane qui danse classique est dans chaque pack · six stickers sur une seule planche, environ 5–6 cm chacun",
+    "see": "Voir le pack →",
+    "soon": "Bientôt",
+    "thisOne": "Celui-ci",
+    "count": "6 stickers",
+    "all": "les 8",
+    "carousel": "Packs de stickers",
+    "dealKicker": "Offre groupée",
+    "dealHeading": "Les 8 packs · 48 stickers",
+    "dealSub": "Toute la Série 1 en une seule commande — le prix baisse tout seul dans le panier.",
+    "dealAdd": "Ajouter les 8 au panier →",
+    "dealSee": "Voir les packs →",
+    "dealAdding": "Ajout au panier…",
+    "dealAdded": "Dans le panier ✓",
+    "dealFailed": "La boutique ne répond pas — réessaie"
+  },
+  "world": {
+    "kicker": "Banana World",
+    "heading": "C’est un lieu, maintenant",
+    "lead": "La banane n’est plus seulement un GIF — c’est un monde où l’on peut se promener. Gratuit, dans ton navigateur.",
+    "enter": "Entrer dans Banana World →",
+    "fine": "gratuit · se joue dans ton navigateur · sans appli",
+    "areas": {
+      "town": "Dix habitants, une salle d’arcade, des boulots et un mystère de 1999",
+      "rave": "Une piste de danse où la musique ne s’arrête jamais",
+      "park": "Plante un jardin avec tous les autres joueurs",
+      "beach": "Du volley, de la pêche et des trésors dans le sable",
+      "homestead": "Un terrain rien qu’à toi, avec une maison et des animaux"
+    },
+    "forge": "Dessine ton emoji en pixel art →",
+    "gallery": "Mèmes de banane & stickers →",
+    "shop": "La boutique →"
+  },
+  "story": {
+    "kicker": "L’histoire",
+    "heading": "Qui a créé le mème de la banane qui danse ?",
+    "lead": "C’est moi : **Trym Stene**, en **1999**, sur un ordinateur à 350 MHz en pleine campagne norvégienne, avec un petit logiciel qui s’appelait Animation Shop. Au départ, c’était un smiley de fête que je postais sur les forums chaque fois que je finissais quelque chose.",
+    "later": "Puis Flash est arrivé : quelqu’un a fait danser la banane sur *Peanut Butter Jelly Time*, la chanson des Buckwheat Boyz, et la banane a pris son envol — jusque dans *Les Griffin* (*Family Guy*). [Qui a fait quoi →](pbjt)",
+    "local": "Tu l’as peut-être croisée à l’époque sur MSN, sur ton Skyblog, sur les forums ou dans une chaîne de mails : elle était partout aux débuts d’internet. La voici, la vraie, celle de 1999."
+  },
+  "faq": {
+    "kicker": "Questions fréquentes",
+    "heading": "Banane qui danse — FAQ",
+    "items": [
+      { "q": "C’est quoi, la banane qui danse ?", "a": "Un GIF animé créé par Trym Stene en 1999 : une banane en pixels qui danse les bras en l’air. C’est l’un des tout premiers mèmes d’internet." },
+      { "q": "Comment s’appelle le mème de la banane qui danse ?", "a": "Le plus souvent, juste « la banane qui danse ». En anglais, on l’appelle « dancing banana » ou la banane de « Peanut Butter Jelly Time ». On dit aussi « la banane dansante », « le gif banane » ou « le mème de la banane »." },
+      { "q": "Qui a créé la banane qui danse ?", "a": "Moi — Trym Stene. Je l’ai animée en 1999 dans Animation Shop. C’était sur un ordinateur à 350 MHz, en pleine campagne norvégienne." },
+      { "q": "Quand la banane qui danse a-t-elle été créée ?", "a": "Vers 1999. Quelques années plus tard, une version Flash sur la chanson « Peanut Butter Jelly Time » l’a fait connaître dans le monde entier." },
+      { "q": "La banane qui danse, c’était un smiley ?", "a": "À l’origine, oui : un smiley de fête que je postais sur les forums dès que je finissais quelque chose. Ensuite, elle a fait le tour d’internet." },
+      { "q": "Où ai-je déjà vu cette banane ?", "a": "Sans doute sur MSN, sur un Skyblog, sur les forums ou dans une chaîne de mails. C’était l’un des GIF les plus partagés des débuts d’internet." },
+      { "q": "Où puis-je la télécharger ?", "a": "Ici, gratuitement — en GIF original ou en version transparente. Sans inscription, sans filigrane. La version transparente existe en GIF et en PNG, et il y a aussi une version HD de 2000 px. [Vers les téléchargements ↓](download)" },
+      { "q": "Est-ce la même chose que « Peanut Butter Jelly Time » ?", "a": "Les deux sont liés, mais ce n’est pas la même chose. J’ai fait la banane en 1999 ; plus tard, quelqu’un l’a fait danser dans une animation Flash sur la chanson des Buckwheat Boyz. La chanson est à eux, la banane est à moi. [Qui a fait quoi →](pbjt)" },
+      { "q": "La banane qui danse est-elle libre de droits ?", "a": "Pas tout à fait. Pour t’amuser, dans tes messages et sur les réseaux sociaux : oui, c’est gratuit. Pour un usage commercial, il te faut une licence. [Comment ça marche →](license)" },
+      { "q": "Comment créer ma propre banane qui danse ?", "a": "Avec le générateur de bananes gratuit : tu lui mets des chapeaux, des lunettes, du texte et des couleurs disco, puis tu la télécharges en GIF ou en emoji. [Ouvrir le générateur →](builder)" },
+      { "q": "C’est quoi, Banana World ?", "a": "Un monde gratuit dans ton navigateur, où vivent les bananes : une ville avec ses habitants et sa salle d’arcade, une rave, un parc, une plage et un terrain rien qu’à toi. Tu y joues avec d’autres visiteurs, sans appli. [Entrer dans Banana World →](world)" },
+      { "q": "Existe-t-il des stickers de la banane qui danse ?", "a": "Oui — huit packs de stickers officiels, six stickers en vinyle par pack, avec la banane qui danse originale dans chacun. Livraison dans le monde entier. [Voir les packs de stickers →](packs)" }
+    ]
+  },
+  "remixes": {
+    "kicker": "Merci, internet",
+    "heading": "Les remixes de la communauté",
+    "lead": "Au fil des années, internet a fait de la banane un guerrier, un Jedi, le père Noël et bien plus encore. La galerie rassemble les {n} remixes, tous gratuits à télécharger.",
+    "cta": "Voir tous les remixes →"
+  },
+  "card": {
+    "heads": {
+      "official": "Le pack de stickers officiel de la banane",
+      "get": "Offre-toi les stickers officiels de la banane",
+      "unique": "Des stickers banane uniques pour ton ordi",
+      "only": "Uniquement ici : stickers officiels de la banane",
+      "name": "Le pack de stickers de la banane qui danse"
+    },
+    "count": "6 stickers",
+    "desc": "La banane qui danse et cinq autres de ses looks, en vrais stickers. Personne d’autre ne les imprime. Livraison dans le monde entier.",
+    "go": "Voir le pack de stickers →",
+    "skip": "non merci, juste le GIF"
+  },
+  "footer": {
+    "kicker": "Plus de banane",
+    "heading": "L’original, par son créateur",
+    "lead": "En anglais :",
+    "story": "l’histoire complète",
+    "make": "crée la tienne",
+    "license": "licence",
+    "tip": "☕ Pourboire",
+    "copyright": "Trym Stene · le gars de la banane"
+  }
+}

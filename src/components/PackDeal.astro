@@ -13,8 +13,16 @@ import { STICKER_PACKS, PACK_PRICE, SET_PRICE, SET_SIZE, packProducts, packThumb
 export interface Props {
   place?: string;
   variant?: 'band' | 'line';
+  t?: Record<string, string>;   // a language page's words (src/data/copy/locale-*.json packs.deal*); English when absent
 }
 const { place = 'deal', variant = 'band' } = Astro.props;
+const T = {
+  kicker: 'Set deal', heading: `All ${SET_SIZE} packs · ${SET_SIZE * 6} stickers`,
+  sub: 'The whole of Series 1 in one order — the price drops by itself in the cart.',
+  add: `Add all ${SET_SIZE} to cart →`, see: 'See the packs →',
+  adding: 'Adding the set…', added: 'In the cart ✓', failed: 'Could not reach the shop — try again',
+  ...(Astro.props.t || {}),
+};
 
 // a shop hiccup must never take a content page down with it
 let products = [];
@@ -27,22 +35,23 @@ const ids = STICKER_PACKS.map((p) => {
 const ready = ids.length === SET_SIZE;   // every pack live in the shop — otherwise the button is a door to the grid
 const full = SET_SIZE * PACK_PRICE;
 ---
-<div class:list={['pkdeal', `pkdeal--${variant}`]} id={variant === 'band' ? 'pkdeal' : undefined} data-place={place} data-ids={ready ? ids.join(',') : ''}>
+<div class:list={['pkdeal', `pkdeal--${variant}`]} id={variant === 'band' ? 'pkdeal' : undefined} data-place={place} data-ids={ready ? ids.join(',') : ''}
+     data-adding={T.adding} data-added={T.added} data-failed={T.failed}>
   {variant === 'band' && (
     <div class="pkdeal__fan" aria-hidden="true">
       {STICKER_PACKS.map((p) => <img src={packThumb(p.n)} alt="" width="240" height="240" loading="lazy" decoding="async" />)}
     </div>
   )}
   <div class="pkdeal__text">
-    <p class="pkdeal__kicker">Set deal</p>
-    <p class="pkdeal__h">All {SET_SIZE} packs · {SET_SIZE * 6} stickers</p>
-    <p class="pkdeal__sub">The whole of Series 1 in one order — the price drops by itself in the cart.</p>
+    <p class="pkdeal__kicker">{T.kicker}</p>
+    <p class="pkdeal__h">{T.heading}</p>
+    <p class="pkdeal__sub">{T.sub}</p>
   </div>
   <div class="pkdeal__buy">
     <span class="pkdeal__price"><s>{money(full, 'USD')}</s> <span class="price-tag">{money(SET_PRICE, 'USD')}</span></span>
     {ready
-      ? <button type="button" class="btn btn--dark pkdeal__btn">Add all {SET_SIZE} to cart →</button>
-      : <a class="btn btn--dark pkdeal__btn" href="/shop/#sticker-packs">See the packs →</a>}
+      ? <button type="button" class="btn btn--dark pkdeal__btn">{T.add}</button>
+      : <a class="btn btn--dark pkdeal__btn" href="/shop/#sticker-packs">{T.see}</a>}
   </div>
 </div>
 
@@ -97,16 +106,16 @@ const full = SET_SIZE * PACK_PRICE;
     const was = btn.textContent;
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
-      btn.disabled = true; btn.textContent = 'Adding the set…';
+      btn.disabled = true; btn.textContent = box.dataset.adding || '';
       try {
         const attributes = trackIds();   // so the sale is credited, not just counted
         await cartAddLines(ids.map((id) => ({ merchandiseId: id, quantity: 1, attributes })));
         const w = window as any;
         if (w.gtag) w.gtag('event', 'add_to_cart', { from: 'pack_deal_' + (box.dataset.place || 'deal'), n: ids.length, value: SET_PRICE, currency: 'USD' });
-        btn.textContent = 'In the cart ✓';
+        btn.textContent = box.dataset.added || '';
         if (w.__bbCart) w.__bbCart.open();
       } catch (e) {
-        btn.textContent = 'Could not reach the shop — try again';
+        btn.textContent = box.dataset.failed || '';
       } finally {
         btn.disabled = false;
         setTimeout(() => { btn.textContent = was; }, 4000);

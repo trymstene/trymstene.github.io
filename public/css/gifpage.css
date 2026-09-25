@@ -1,0 +1,46 @@
+/* 🍌 THE GIF PAGE'S OWN LAYER — worn by the English hub (/dancing-banana-gif-meme/) and every language page
+   (src/pages/[locale].astro). Moved out of the English page on 25 Sep 2026 when the language pages grew the same
+   hero (design library §5: a second surface needs it → it moves out first, then both link it). */
+
+/* Korean breaks a line at the spaces between words, never between the syllables of one (the browser's default split
+   다운/로드 and 만/들기 on /ko/). Japanese has no spaces and breaks anywhere, so this is Korean's alone. */
+:lang(ko) { word-break: keep-all; overflow-wrap: anywhere; }
+/* the headings' tight line-height is tuned for the Latin display face; the system's Japanese and Korean glyphs stand
+   taller, and two heading lines nearly touched */
+:lang(ja) :is(h1, h2, h3), :lang(ko) :is(h1, h2, h3) { line-height: 1.22; }
+
+/* the sticker moment in the hub: the same slim carousel as the hero, centred */
+.hub-packs { max-width: 560px; margin: 1.4rem auto 0; }
+/* the tip steps back — it shares the sticker's emotion at 1/30th the value */
+.dl-tip { font-size: 0.9rem; opacity: 0.7; }
+/* the formats line under the download buttons. ⚠️ `.block .dl-formats`, not `.dl-formats`: styles.css's `.block > p`
+   (0,1,1) sets 62ch and beat the plain class once it left the page's scoped block — the line wrapped a word later */
+.block .dl-formats { font-size: 0.88rem; opacity: 0.78; margin-top: 0.9rem; max-width: 60ch; margin-inline: auto; }
+
+/* 🍌 SIDE BY SIDE, NOT STACKED. The page's job is the DOWNLOAD, and the buttons used to sit a full screen below a
+   500px banana. ⚠️ THE BANANA STAYS BIG HERE: on this page the banana IS the product. It just moves beside the ask
+   instead of on top of it, so most visitors see the thing they came for without scrolling. */
+.gifhero { padding: 2rem 1.2rem 2.2rem; }
+.gifhero__in {
+  max-width: 1000px; margin: 0 auto; display: flex; align-items: center;
+  gap: clamp(1rem, 4vw, 2.6rem); text-align: left; flex-wrap: wrap;
+  justify-content: center;
+}
+.gifhero__nana { width: min(38vw, 260px); margin: 0; flex: 0 0 auto; }
+/* ONE column width on the right (Trym, 6 Sep: the buttons ran wide, the pack tile sat narrower, the title wrapped at
+   its own width — three edges). 640px fits "the dancing" at the title's 6rem cap, the two buttons fill it, and the
+   pack tile grows to the same edge. */
+.gifhero__say { flex: 0 1 640px; max-width: 640px; min-width: 0; }
+.gifhero__h1 { text-align: left; margin: 0.1rem 0 0.4rem; }
+.gifhero__dl { justify-content: flex-start; margin-top: 1rem; }
+.gifhero__note { font-size: 0.86rem; opacity: 0.7; margin: 0.7rem 0 0; }
+.gifhero__packs { margin-top: 1.2rem; }
+.gifhero__packs { --pkc-max: 100%; }   /* the tile takes the column's own width */
+@media (max-width: 640px) {
+  .gifhero__packs { text-align: left; }
+  /* on a phone the banana leads and the ask follows — same order as before, just without a screenful of air */
+  .gifhero__in { flex-direction: column; text-align: center; }
+  .gifhero__nana { width: min(52vw, 200px); }
+  .gifhero__h1, .gifhero__say { text-align: center; }
+  .gifhero__dl { justify-content: center; }
+}

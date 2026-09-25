@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "title": "Tanzende Banane GIF — Lade das Original Kostenlos Herunter",
+    "description": "Das originale Tanzende-Banane-GIF — kostenlos, ohne Wasserzeichen, auch transparent. Direkt von Trym Stene, der es 1999 gemacht hat. Oder mach dir deine eigene Banane.",
+    "ogDescription": "Das originale Tanzende-Banane-GIF, kostenlos herunterladen. 1999 von Trym Stene erstellt.",
+    "langAria": "Sprache"
+  },
+  "hero": {
+    "kicker": "Kostenloser Download",
+    "h1": ["die tanzende", "banane"],
+    "tag": "Ein GIF, das ich 1999 gemacht habe und das nie aufgehört hat zu tanzen",
+    "alt": "Das Tanzende-Banane-GIF, erstellt von Trym Stene im Jahr 1999",
+    "note": "Keine Anmeldung, kein Wasserzeichen.",
+    "more": "Alle Formate ↓"
+  },
+  "intro": "Die **tanzende Banane** ist ein animiertes GIF von **Trym Stene aus dem Jahr 1999** — eines der ersten Memes im Internet. Viele kennen sie als die Banane aus *Peanut Butter Jelly Time*: In einer Flash-Animation zum Song von The Buckwheat Boyz tanzte sie später um die ganze Welt. Der Song ist von ihnen, die Banane von Trym. Unten kannst du sie kostenlos herunterladen, deine eigene machen oder schauen, wo die Banane heute wohnt.",
+  "jump": {
+    "label": "Auf dieser Seite",
+    "download": "Download",
+    "make": "Mach deine eigene",
+    "packs": "Sticker-Packs",
+    "world": "Banana World",
+    "story": "Die Geschichte",
+    "faq": "FAQ"
+  },
+  "download": {
+    "kicker": "Nimm sie mit",
+    "heading": "Lade die tanzende Banane herunter",
+    "lead": "Kostenlos zum Herunterladen, Teilen und Verschicken: das originale Bananen-GIF, eine Version mit **transparentem Hintergrund** (GIF und PNG) und eine HD-Version mit 2000 px.",
+    "grabAlt": "Die tanzende Banane mit transparentem Hintergrund — kostenloser Download",
+    "original": "Original-GIF ↓",
+    "transparentGif": "Transparentes GIF ↓",
+    "transparentPng": "Transparentes PNG ↓",
+    "hd": "HD-Version (2000 px) ↓",
+    "formats": "Das transparente PNG ist ein einzelnes Standbild ohne Hintergrund — gut für Profilbilder und zum Drucken. Das transparente GIF tanzt weiter und bleibt durchsichtig, so passt es auf jede Farbe.",
+    "files": {
+      "original": "tanzende-banane-trymstene.com.gif",
+      "transparentGif": "tanzende-banane-transparent-trymstene.com.gif",
+      "transparentPng": "tanzende-banane-transparent-trymstene.com.png",
+      "hd": "tanzende-banane-hd-trymstene.com.gif"
+    },
+    "tip": "Es ist gratis — immer. Aber wenn die Banane dich zum Lächeln gebracht hat, kannst du [dem Bananen-Typen einen Kaffee spendieren](tip)."
+  },
+  "make": {
+    "kicker": "Kostenloser Bananen-Baukasten",
+    "heading": "Mach deine eigene tanzende Banane",
+    "lead": "Hüte, Sonnenbrillen, Schnurrbärte, Sprüche, Discofarben — verkleide die Banane, und sie gehört dir. Lade sie kostenlos als animiertes GIF oder als Emoji herunter oder bestell sie als echten Sticker, als Tasse oder als T-Shirt.",
+    "cta": "Zum Bananen-Baukasten →",
+    "note": "Kostenlos · keine App · funktioniert auf dem Handy"
+  },
+  "packs": {
+    "kicker": "Neu · Serie 1",
+    "heading": "Sticker-Packs",
+    "lead": "Die Bananen, die du seit Jahren verschickst — jetzt als echte Vinyl-Sticker, einzeln abziehbar. Acht Packs mit je sechs Stück, und in jedem ist das Original dabei.",
+    "note": "Die klassische tanzende Banane ist in jedem Pack · sechs Sticker auf einem Bogen, je etwa 5–6 cm",
+    "see": "Pack ansehen →",
+    "soon": "Demnächst",
+    "thisOne": "Dieses Pack",
+    "count": "6 Sticker",
+    "all": "alle 8",
+    "carousel": "Sticker-Packs",
+    "dealKicker": "Set-Angebot",
+    "dealHeading": "Alle 8 Packs · 48 Sticker",
+    "dealSub": "Die ganze Serie 1 in einer Bestellung — der Preis sinkt im Warenkorb von selbst.",
+    "dealAdd": "Alle 8 in den Warenkorb →",
+    "dealSee": "Packs ansehen →",
+    "dealAdding": "Set wird hinzugefügt…",
+    "dealAdded": "Im Warenkorb ✓",
+    "dealFailed": "Der Shop antwortet nicht — versuch es noch mal"
+  },
+  "world": {
+    "kicker": "Banana World",
+    "heading": "Jetzt ist sie ein Ort",
+    "lead": "Die Banane ist nicht mehr nur ein GIF — sie ist eine Welt, durch die du laufen kannst. Kostenlos, im Browser.",
+    "enter": "Ab in die Banana World →",
+    "fine": "kostenlos · läuft im Browser · keine App",
+    "areas": {
+      "town": "Zehn Bewohner, eine Arcade-Halle, Jobs und ein Geheimnis von 1999",
+      "rave": "Eine Tanzfläche mit Musik, die nie aufhört",
+      "park": "Pflanz mit allen anderen zusammen einen Garten",
+      "beach": "Volleyball, Angeln und Schätze im Sand",
+      "homestead": "Dein eigenes Stück Land, mit Haus und Tieren"
+    },
+    "forge": "Zeichne dein eigenes Pixel-Emoji →",
+    "gallery": "Bananen-Memes & Sticker →",
+    "shop": "Zum Shop →"
+  },
+  "story": {
+    "kicker": "Die Geschichte",
+    "heading": "Wer hat die tanzende Banane gemacht?",
+    "lead": "Ich war’s — **Trym Stene**, im Jahr **1999**, auf einem 350-MHz-Computer auf dem Land in Norwegen, mit einem kleinen Programm namens Animation Shop. Angefangen hat sie als Jubel-Emoticon, das ich in Webforen gepostet habe, immer wenn ich etwas fertig hatte.",
+    "later": "Dann kam Flash: Andere ließen die Banane zum Song *Peanut Butter Jelly Time* von The Buckwheat Boyz tanzen, und sie bekam ein Eigenleben — bis in *Family Guy*. [Wer hat was gemacht →](pbjt)",
+    "local": "Vielleicht kennst du sie noch aus ICQ- und MSN-Chats, aus deinem Lieblingsforum oder aus einer Kettenmail — im frühen Internet war sie einfach überall."
+  },
+  "faq": {
+    "kicker": "Häufige Fragen",
+    "heading": "Tanzende Banane — FAQ",
+    "items": [
+      { "q": "Was ist die tanzende Banane?", "a": "Ein animiertes Pixel-GIF von einer Banane, die mit den Armen in der Luft tanzt — 1999 gemacht von Trym Stene. Sie ist eines der ersten Memes im Internet." },
+      { "q": "Wie heißt das Tanzende-Banane-Meme?", "a": "Meist einfach „die tanzende Banane“. International auch als „dancing banana“ oder „Peanut Butter Jelly Time“-Banane bekannt. Viele sagen auch kurz „Bananen-GIF“ oder „Bananen-Meme“." },
+      { "q": "Wer hat die tanzende Banane gemacht?", "a": "Ich — Trym Stene. Ich habe sie 1999 in Animation Shop animiert. Gedacht war sie als Jubel-Emoticon für Webforen." },
+      { "q": "Wann wurde die tanzende Banane erstellt?", "a": "Um 1999. Ein paar Jahre später wurde sie durch eine Flash-Animation zum Song „Peanut Butter Jelly Time“ in der ganzen Welt bekannt." },
+      { "q": "Woher kenne ich die tanzende Banane?", "a": "Wahrscheinlich aus ICQ- oder MSN-Chats, aus Foren, aus Kettenmails oder aus den ersten sozialen Netzwerken. Sie war eines der meistgeteilten GIFs im frühen Internet." },
+      { "q": "Wo kann ich sie herunterladen?", "a": "Hier, kostenlos — als Original-GIF oder transparente Version. Keine Anmeldung, kein Wasserzeichen. Dazu gibt es eine HD-Version mit 2000 px. [Zu den Downloads ↓](download)" },
+      { "q": "Wie heißt das Lied mit der tanzenden Banane?", "a": "„Peanut Butter Jelly Time“ von The Buckwheat Boyz. Zu diesem Song tanzt die Banane in der Flash-Animation, durch die viele sie bis heute kennen." },
+      { "q": "Ist die tanzende Banane dasselbe wie „Peanut Butter Jelly Time“?", "a": "Verwandt, aber nicht dasselbe. Ich habe die Banane 1999 gemacht; später haben andere sie in einer Flash-Animation zu dem Song tanzen lassen. Der Song ist von The Buckwheat Boyz, die Banane ist von mir. [Wer hat was gemacht →](pbjt)" },
+      { "q": "Darf ich die tanzende Banane benutzen?", "a": "Zum Spaß, in Chats und in sozialen Netzwerken: ja, kostenlos. Für kommerzielle Nutzung brauchst du eine Lizenz. [So funktioniert die Lizenz →](license)" },
+      { "q": "Kann ich meine eigene tanzende Banane machen?", "a": "Ja. Im kostenlosen Bananen-Baukasten gibst du ihr Hüte, Brillen, Sprüche und Discofarben und lädst sie als GIF oder Emoji herunter. [Zum Bananen-Baukasten →](builder)" },
+      { "q": "Was ist Banana World?", "a": "Eine kostenlose Welt im Browser, in der die Bananen wohnen: eine Stadt mit Bewohnern und einer Arcade-Halle, ein Rave, ein Park, ein Strand und ein eigenes Stück Land für dich. Du spielst dort zusammen mit anderen Besuchern, ganz ohne App. [Ab in die Banana World →](world)" },
+      { "q": "Gibt es die tanzende Banane als Sticker?", "a": "Ja — acht offizielle Sticker-Packs mit je sechs Vinyl-Stickern, und in jedem Pack ist die originale tanzende Banane dabei. Sie werden weltweit verschickt. [Zu den Sticker-Packs →](packs)" }
+    ]
+  },
+  "remixes": {
+    "kicker": "Danke, Internet",
+    "heading": "Remixes aus der Community",
+    "lead": "Über die Jahre hat das Internet die Banane zum Krieger, zum Jedi, zum Weihnachtsmann und zu vielem mehr gemacht. In der Galerie findest du alle {n}, kostenlos zum Herunterladen.",
+    "cta": "Alle Remixes ansehen →"
+  },
+  "card": {
+    "heads": {
+      "official": "Offizielles Bananen-Sticker-Pack",
+      "get": "Hol dir die offiziellen Bananen-Sticker",
+      "unique": "Einzigartige Bananen-Sticker für deinen Laptop",
+      "only": "Nur hier: offizielle Bananen-Sticker",
+      "name": "Das Sticker-Pack der tanzenden Banane"
+    },
+    "count": "6 Sticker",
+    "desc": "Die tanzende Banane und fünf weitere ihrer Looks als echte Sticker. Niemand sonst druckt sie. Versand weltweit.",
+    "go": "Sticker-Pack ansehen →",
+    "skip": "nein danke, nur das GIF"
+  },
+  "footer": {
+    "kicker": "Mehr Banane",
+    "heading": "Das Original, vom Schöpfer",
+    "lead": "Auf Englisch:",
+    "story": "die ganze Geschichte",
+    "make": "mach deine eigene",
+    "license": "Lizenz",
+    "tip": "☕ Trinkgeld",
+    "copyright": "Trym Stene · der Bananen-Typ"
+  }
+}

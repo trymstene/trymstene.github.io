@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "title": "Banana che balla GIF — il meme originale del 1999, gratis",
+    "description": "La GIF della banana che balla, il meme originale del 1999: gratis, senza filigrana, anche trasparente. Direttamente dal suo autore, Trym Stene. Oppure crea la tua banana.",
+    "ogDescription": "La GIF originale della banana che balla, da scaricare gratis. Creata nel 1999 da Trym Stene.",
+    "langAria": "Lingua"
+  },
+  "hero": {
+    "kicker": "Download gratis",
+    "h1": ["la banana", "che balla"],
+    "tag": "Una GIF che ho fatto nel 1999 e che non ha mai smesso di ballare",
+    "alt": "La GIF della banana che balla, creata da Trym Stene nel 1999",
+    "note": "Senza registrazione, senza filigrana.",
+    "more": "Tutti i formati ↓"
+  },
+  "intro": "La **banana che balla** è una GIF animata creata da **Trym Stene nel 1999**, uno dei primi meme di internet. Più tardi è finita a ballare sulle note di *Peanut Butter Jelly Time*. Qui sotto puoi scaricare gratis la GIF della banana, crearne una tutta tua o venire a vedere dove vive adesso.",
+  "jump": {
+    "label": "In questa pagina",
+    "download": "Scarica",
+    "make": "Crea la tua",
+    "packs": "Sticker",
+    "world": "Banana World",
+    "story": "La storia",
+    "faq": "FAQ"
+  },
+  "download": {
+    "kicker": "Portala con te",
+    "heading": "Scarica la GIF della banana che balla",
+    "lead": "Da scaricare, condividere e mandare a chi vuoi, gratis. Trovi la GIF originale, una versione con **sfondo trasparente** (GIF e PNG) e una rimasterizzata in HD da 2000 px.",
+    "grabAlt": "La banana che balla con sfondo trasparente — download gratis",
+    "original": "GIF originale ↓",
+    "transparentGif": "GIF trasparente ↓",
+    "transparentPng": "PNG trasparente ↓",
+    "hd": "Versione HD (2000 px) ↓",
+    "formats": "Il PNG trasparente è un solo fotogramma, fermo e senza sfondo: perfetto per le foto profilo e per la stampa. La GIF trasparente invece continua a ballare e, senza sfondo, sta bene su qualsiasi colore.",
+    "files": {
+      "original": "banana-che-balla-trymstene.com.gif",
+      "transparentGif": "banana-che-balla-trasparente-trymstene.com.gif",
+      "transparentPng": "banana-che-balla-trasparente-trymstene.com.png",
+      "hd": "banana-che-balla-hd-trymstene.com.gif"
+    },
+    "tip": "È gratis, sempre. Ma se la banana ti ha strappato un sorriso, puoi [offrire un caffè al papà della banana](tip)."
+  },
+  "make": {
+    "kicker": "Editor gratuito della banana",
+    "heading": "Crea la tua banana che balla",
+    "lead": "Cappelli, occhiali da sole, baffi, scritte, colori da discoteca: vesti la banana ed è tutta tua. Scaricala gratis come GIF animata o come emoji, oppure ordinala stampata su uno sticker, una tazza o una maglietta.",
+    "cta": "Apri l’editor della banana →",
+    "note": "Gratis · senza app · funziona anche sul telefono"
+  },
+  "packs": {
+    "kicker": "Novità · Serie 1",
+    "heading": "Pacchetti di sticker",
+    "lead": "Le banane che mandi da anni, ora diventate veri sticker in vinile, già ritagliati. Otto pacchetti da sei, e in ognuno c’è l’originale.",
+    "note": "La classica banana che balla c’è in ogni pacchetto · sei sticker su un solo foglio, da circa 5–6 cm l’uno",
+    "see": "Vedi il pacchetto →",
+    "soon": "In arrivo",
+    "thisOne": "Questo",
+    "count": "6 sticker",
+    "all": "tutti e 8",
+    "carousel": "Pacchetti di sticker",
+    "dealKicker": "Offerta set",
+    "dealHeading": "Tutti gli 8 pacchetti · 48 sticker",
+    "dealSub": "Tutta la Serie 1 in un solo ordine: il prezzo scende da solo nel carrello.",
+    "dealAdd": "Aggiungi tutti e 8 al carrello →",
+    "dealSee": "Vedi i pacchetti →",
+    "dealAdding": "Aggiungo il set…",
+    "dealAdded": "Nel carrello ✓",
+    "dealFailed": "Il negozio non risponde: riprova"
+  },
+  "world": {
+    "kicker": "Banana World",
+    "heading": "Adesso è un posto",
+    "lead": "La banana non è più solo una GIF: è un mondo in cui puoi entrare, e dentro ci trovi altre banane. Gratis, nel tuo browser.",
+    "enter": "Entra in Banana World →",
+    "fine": "gratis · si gioca nel browser · senza app",
+    "areas": {
+      "town": "Dieci abitanti, una sala giochi, lavoretti e un mistero del 1999",
+      "rave": "Una pista da ballo dove la musica non si ferma mai",
+      "park": "Pianta un giardino insieme a tutti gli altri",
+      "beach": "Beach volley, pesca e tesori nella sabbia",
+      "homestead": "Un pezzo di terra tutto tuo, con una casa e gli animali"
+    },
+    "forge": "Disegna le tue emoji in pixel →",
+    "gallery": "Meme e sticker della banana →",
+    "shop": "Il negozio →"
+  },
+  "story": {
+    "kicker": "La storia",
+    "heading": "Chi ha creato la banana che balla?",
+    "lead": "Sono stato io, **Trym Stene**, nel **1999**, su un computer da 350 MHz in piena campagna norvegese, con un programmino che si chiamava Animation Shop. All’inizio era un’emoticon per festeggiare: la postavo sui forum ogni volta che finivo qualcosa.",
+    "later": "Poi è arrivato Flash: qualcuno l’ha fatta ballare sulle note di *Peanut Butter Jelly Time*, la canzone dei Buckwheat Boyz, e da lì la banana ha cominciato a vivere di vita propria, arrivando fino ai *Griffin*. [Chi ha fatto cosa →](pbjt)",
+    "local": "Forse l’hai vista su MSN, tra un trillo e l’altro, sui forum o in una catena di Sant’Antonio arrivata per email: nei primi anni di internet era dappertutto. Questa è lei, l’originale."
+  },
+  "faq": {
+    "kicker": "Domande frequenti",
+    "heading": "La banana che balla — FAQ",
+    "items": [
+      { "q": "Cos’è la banana che balla?", "a": "Una GIF animata in pixel art: una banana che balla con le braccia alzate, creata da Trym Stene nel 1999. È uno dei primi meme di internet." },
+      { "q": "Come si chiama il meme della banana che balla?", "a": "Quasi sempre «la banana che balla». C’è chi la chiama «banana ballerina», o semplicemente il meme della banana o la GIF della banana. In inglese è la «dancing banana», o la banana di «Peanut Butter Jelly Time»." },
+      { "q": "Chi ha inventato la banana che balla?", "a": "Sono stato io, Trym Stene. L’ho animata nel 1999 con Animation Shop, come emoticon per festeggiare sui forum." },
+      { "q": "Quando è nata la banana che balla?", "a": "Intorno al 1999. Qualche anno dopo, una versione in Flash sulla canzone «Peanut Butter Jelly Time» l’ha fatta girare in tutto il mondo." },
+      { "q": "Dove ho già visto la banana che balla?", "a": "Probabilmente su MSN, sui forum, in qualche catena di Sant’Antonio per email o sui primi social network. È stata una delle GIF più condivise dei primi anni di internet." },
+      { "q": "Dove posso scaricare la GIF della banana che balla?", "a": "Proprio qui, gratis: la GIF originale, la GIF o il PNG trasparente, oppure la versione HD da 2000 px. Senza registrazione e senza filigrana. [Vai ai download ↓](download)" },
+      { "q": "È la stessa cosa di «Peanut Butter Jelly Time»?", "a": "Sono legati, ma non sono la stessa cosa. Io ho fatto la banana nel 1999; più tardi qualcuno l’ha fatta ballare in un’animazione Flash sulla canzone dei Buckwheat Boyz. La canzone è loro, la banana è mia. [Chi ha fatto cosa →](pbjt)" },
+      { "q": "Posso usare la banana che balla?", "a": "Per divertimento, su WhatsApp, nelle chat e sui social: sì, gratis. Per un uso commerciale serve una licenza. [Come funziona la licenza →](license)" },
+      { "q": "Posso creare la mia banana che balla?", "a": "Sì. Nell’editor gratuito le metti cappelli, occhiali, scritte e colori da discoteca, poi la scarichi come GIF o come emoji. [Apri l’editor →](builder)" },
+      { "q": "Dove trovo altri meme della banana?", "a": "Nella galleria dei remix trovi i meme della banana fatti dalla community: la banana vestita da guerriero, da Jedi, da Babbo Natale e molto altro, tutti da scaricare gratis. [Vedi i remix →](remixes)" },
+      { "q": "Cos’è Banana World?", "a": "Un mondo gratuito nel browser dove vivono le banane: una cittadina con i suoi abitanti e una sala giochi, un rave, un parco, una spiaggia e un pezzo di terra tutto tuo. Ci giochi insieme agli altri visitatori, senza bisogno di app. [Entra in Banana World →](world)" },
+      { "q": "Ci sono adesivi o sticker della banana che balla?", "a": "Sì: otto pacchetti ufficiali, ognuno con sei sticker in vinile, e in ogni pacchetto c’è la banana che balla originale. Spedizione in tutto il mondo. [Vedi i pacchetti →](packs)" }
+    ]
+  },
+  "remixes": {
+    "kicker": "Grazie, internet",
+    "heading": "I remix della community",
+    "lead": "Negli anni internet ha trasformato la banana in un guerriero, in un Jedi, in Babbo Natale e in molto altro. Nella galleria trovi tutti i {n} remix, da scaricare gratis.",
+    "cta": "Vedi tutti i remix →"
+  },
+  "card": {
+    "heads": {
+      "official": "Pacchetto ufficiale di sticker della banana",
+      "get": "Prendi gli sticker ufficiali della banana",
+      "unique": "Sticker unici della banana per il tuo laptop",
+      "only": "Solo qui: gli sticker ufficiali della banana",
+      "name": "Il pacchetto di sticker della banana che balla"
+    },
+    "count": "6 sticker",
+    "desc": "La banana che balla e altri cinque dei suoi look, in veri sticker. Nessun altro li stampa. Spedizione in tutto il mondo.",
+    "go": "Vedi il pacchetto di sticker →",
+    "skip": "no grazie, solo la GIF"
+  },
+  "footer": {
+    "kicker": "Ancora più banana",
+    "heading": "L’originale, dal suo autore",
+    "lead": "In inglese:",
+    "story": "la storia completa",
+    "make": "crea la tua",
+    "license": "licenza",
+    "tip": "☕ Mancia",
+    "copyright": "Trym Stene · il papà della banana"
+  }
+}

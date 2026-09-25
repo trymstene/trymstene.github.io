@@ -1,20 +1,14 @@
 ---
-// Shared language switcher (hub + all localized pages). `current` = active code.
+// Shared language switcher (hub + every language page). `current` = active code. The list is the one registry
+// (src/data/locale-codes.js): a new language appears here the moment it is added there. Each name is in its own
+// language and marked `lang`, so a screen reader says 日本語 in Japanese.
 import PixelIcon from './PixelIcon.astro';
+import { LANG_LINKS } from '../data/locale-codes.js';
 const { current, label = 'Language' } = Astro.props;
-const langs = [
-  { code: 'en', href: '/dancing-banana-gif-meme/', name: 'English' },
-  { code: 'nl', href: '/nl/', name: 'Nederlands' },
-  { code: 'es', href: '/es/', name: 'Español' },
-  { code: 'pt', href: '/pt/', name: 'Português' },
-  { code: 'fr', href: '/fr/', name: 'Français' },
-  { code: 'de', href: '/de/', name: 'Deutsch' },
-  { code: 'ru', href: '/ru/', name: 'Русский' },
-];
 ---
 <nav class="langswitch" aria-label={label}>
   <PixelIcon name="globe" />
-  {langs.map((l) => (
-    <a href={l.href} hreflang={l.code} aria-current={l.code === current ? 'true' : undefined}>{l.name}</a>
+  {LANG_LINKS.map((l) => (
+    <a href={l.href} hreflang={l.code} lang={l.code} aria-current={l.code === current ? 'true' : undefined}>{l.name}</a>
   ))}
 </nav>

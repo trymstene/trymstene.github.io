@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "title": "Tańczący banan GIF — oryginalny mem z 1999 roku, za darmo",
+    "description": "Tańczący banan to mem, który Trym Stene zrobił w 1999 roku. Oryginalny GIF od twórcy: za darmo, bez znaku wodnego, też z przezroczystym tłem. Albo zrób własnego banana.",
+    "ogDescription": "Oryginalny GIF z tańczącym bananem do pobrania za darmo. Zrobił go Trym Stene w 1999 roku.",
+    "langAria": "Język"
+  },
+  "hero": {
+    "kicker": "Pobierz za darmo",
+    "h1": ["tańczący", "banan"],
+    "tag": "GIF, który zrobiłem w 1999 roku i który nigdy nie przestał tańczyć",
+    "alt": "Tańczący banan — GIF, który Trym Stene zrobił w 1999 roku",
+    "note": "Bez rejestracji, bez znaku wodnego.",
+    "more": "Wszystkie formaty ↓"
+  },
+  "intro": "**Tańczący banan** to animowany GIF i jeden z pierwszych memów w internecie — zrobił go **Trym Stene w 1999 roku**. Później ten mem z bananem zatańczył do piosenki *Peanut Butter Jelly Time*. Pobierz go poniżej za darmo, zrób własnego banana albo zobacz, gdzie dziś mieszka oryginał.",
+  "jump": {
+    "label": "Na tej stronie",
+    "download": "Pobierz",
+    "make": "Zrób własnego",
+    "packs": "Naklejki",
+    "world": "Banana World",
+    "story": "Historia",
+    "faq": "FAQ"
+  },
+  "download": {
+    "kicker": "Zabierz go ze sobą",
+    "heading": "Pobierz tańczącego banana",
+    "lead": "Możesz go za darmo pobrać, udostępnić i wysłać dalej. Do wyboru: oryginalny GIF, wersja z **przezroczystym tłem** (GIF i PNG) oraz remaster HD w rozmiarze 2000 px.",
+    "grabAlt": "Tańczący banan z przezroczystym tłem — do pobrania za darmo",
+    "original": "Oryginalny GIF ↓",
+    "transparentGif": "Przezroczysty GIF ↓",
+    "transparentPng": "Przezroczysty PNG ↓",
+    "hd": "Remaster HD (2000 px) ↓",
+    "formats": "Przezroczysty PNG to jedna nieruchoma klatka bez tła — w sam raz na awatar i do druku. Przezroczysty GIF dalej tańczy i ma przezroczyste tło, więc dobrze wygląda na każdym kolorze.",
+    "files": {
+      "original": "tanczacy-banan-trymstene.com.gif",
+      "transparentGif": "tanczacy-banan-przezroczysty-trymstene.com.gif",
+      "transparentPng": "tanczacy-banan-przezroczysty-trymstene.com.png",
+      "hd": "tanczacy-banan-hd-trymstene.com.gif"
+    },
+    "tip": "Banan jest za darmo — zawsze. Ale jeśli wywołał u ciebie uśmiech, możesz [postawić kawę facetowi od banana](tip)."
+  },
+  "make": {
+    "kicker": "Darmowy kreator bananów",
+    "heading": "Zrób własnego tańczącego banana",
+    "lead": "Kapelusze, okulary, wąsy, napisy, kolory disco — ubierz banana po swojemu, a będzie twój. Pobierz go za darmo jako animowany GIF lub emoji albo zamów jako prawdziwą naklejkę, kubek czy koszulkę.",
+    "cta": "Otwórz kreator bananów →",
+    "note": "Za darmo · bez aplikacji · działa na telefonie"
+  },
+  "packs": {
+    "kicker": "Nowość · Seria 1",
+    "heading": "Zestawy naklejek",
+    "lead": "Banany, które wysyłasz od lat — jako prawdziwe naklejki winylowe wycinane po konturze. Osiem zestawów po sześć sztuk, z oryginałem w każdym.",
+    "note": "Klasyczny tańczący banan jest w każdym zestawie · sześć naklejek na jednym arkuszu, każda około 5–6 cm",
+    "see": "Zobacz zestaw →",
+    "soon": "Wkrótce",
+    "thisOne": "Ten zestaw",
+    "count": "6 naklejek",
+    "all": "wszystkie 8",
+    "carousel": "Zestawy naklejek",
+    "dealKicker": "Taniej w komplecie",
+    "dealHeading": "Wszystkie 8 zestawów · 48 naklejek",
+    "dealSub": "Cała Seria 1 w jednym zamówieniu — w koszyku cena sama spada.",
+    "dealAdd": "Dodaj wszystkie 8 do koszyka →",
+    "dealSee": "Zobacz zestawy →",
+    "dealAdding": "Dodaję komplet…",
+    "dealAdded": "W koszyku ✓",
+    "dealFailed": "Sklep nie odpowiada — spróbuj jeszcze raz"
+  },
+  "world": {
+    "kicker": "Banana World",
+    "heading": "Banan ma teraz swój świat",
+    "lead": "To już nie tylko GIF — to miejsce, do którego możesz wejść i spotkać tam inne banany. Za darmo, w przeglądarce.",
+    "enter": "Wejdź do Banana World →",
+    "fine": "za darmo · działa w przeglądarce · bez aplikacji",
+    "areas": {
+      "town": "Dziesięciu mieszkańców, salon gier, praca i zagadka z 1999 roku",
+      "rave": "Parkiet, na którym muzyka nigdy nie cichnie",
+      "park": "Zasadź ogród razem z innymi graczami",
+      "beach": "Siatkówka, wędkowanie i skarby w piasku",
+      "homestead": "Twoja własna działka z domem i zwierzętami"
+    },
+    "forge": "Narysuj własne pikselowe emoji →",
+    "gallery": "Memy z bananem i naklejki →",
+    "shop": "Sklep →"
+  },
+  "story": {
+    "kicker": "Historia",
+    "heading": "Kto stworzył tańczącego banana?",
+    "lead": "To ja — **Trym Stene**. Zrobiłem go w **1999** roku na norweskiej wsi, na komputerze z procesorem 350 MHz, w programiku o nazwie Animation Shop. Zaczęło się od emotki, którą wrzucałem na fora internetowe za każdym razem, gdy coś skończyłem — taki mały taniec radości.",
+    "later": "Potem pojawił się Flash: ktoś kazał bananowi zatańczyć do piosenki *Peanut Butter Jelly Time* zespołu The Buckwheat Boyz, a banan zaczął żyć własnym życiem — i dotarł aż do serialu *Family Guy*. [Kto co zrobił →](pbjt)",
+    "local": "Może pamiętasz go z Gadu-Gadu, z forów albo z Naszej-klasy — w internecie tamtych lat tańczył dosłownie wszędzie. Oto on: oryginał."
+  },
+  "faq": {
+    "kicker": "Najczęstsze pytania",
+    "heading": "Mem z tańczącym bananem — FAQ",
+    "items": [
+      { "q": "Co to jest tańczący banan?", "a": "Animowany pikselowy GIF z bananem, który tańczy z rękami w górze. Zrobił go Trym Stene w 1999 roku. To jeden z pierwszych memów w internecie." },
+      { "q": "Jak się nazywa mem z tańczącym bananem?", "a": "Najczęściej po prostu „tańczący banan”. Bywa też nazywany „banan mem” (albo z angielska „banan meme”), „banan gif” czy „mem z bananem”. Po angielsku to „dancing banana” albo banan z „Peanut Butter Jelly Time”." },
+      { "q": "Kto jest autorem tańczącego banana?", "a": "Ja — Trym Stene. Animowałem go w 1999 roku w programie Animation Shop, jako radosną emotkę na fora internetowe." },
+      { "q": "Kiedy powstał tańczący banan?", "a": "Około 1999 roku. Kilka lat później wersja we Flashu z piosenką „Peanut Butter Jelly Time” rozniosła go po całym świecie." },
+      { "q": "Skąd znam ten mem z bananem?", "a": "Pewnie z Gadu-Gadu, z forów, z łańcuszków mailowych albo z Naszej-klasy. To był jeden z najczęściej udostępnianych GIF-ów wczesnego internetu." },
+      { "q": "Skąd się wzięła emotka z tańczącym bananem?", "a": "Ode mnie: tańczący banan zaczął właśnie jako emotka. W 1999 roku wrzucałem go na fora internetowe, kiedy coś skończyłem, a potem poszedł w świat. Jeśli pamiętasz go jako emotkę z forum albo z Gadu-Gadu, bardzo możliwe, że to był właśnie on." },
+      { "q": "Gdzie pobrać GIF z tańczącym bananem?", "a": "Tutaj, za darmo. Pobierzesz go jako oryginalny GIF, przezroczysty GIF lub PNG albo wersję HD w rozmiarze 2000 px. Bez rejestracji, bez znaku wodnego. [Przejdź do plików ↓](download)" },
+      { "q": "Czy tańczący banan to to samo co „Peanut Butter Jelly Time”?", "a": "Są ze sobą związane, ale to nie to samo. Banana zrobiłem w 1999 roku, a później ktoś wrzucił go do animacji we Flashu z piosenką zespołu The Buckwheat Boyz. Piosenka jest ich, banan jest mój. [Kto co zrobił →](pbjt)" },
+      { "q": "Czy mogę używać tańczącego banana?", "a": "Dla zabawy, na czatach i w mediach społecznościowych: tak, za darmo. Do użytku komercyjnego potrzebujesz licencji. [Jak działa licencja →](license)" },
+      { "q": "Jak zrobić własnego tańczącego banana?", "a": "W darmowym kreatorze bananów: dodajesz mu kapelusze, okulary, napisy i kolory disco, a potem pobierasz go jako GIF albo emoji. [Otwórz kreator →](builder)" },
+      { "q": "Co to jest Banana World?", "a": "Darmowy świat w przeglądarce, w którym mieszkają banany: miasteczko z mieszkańcami i salonem gier, rave, park, plaża i twoja własna działka. Grasz tam razem z innymi odwiedzającymi i nie potrzebujesz aplikacji. [Wejdź do Banana World →](world)" },
+      { "q": "Czy są naklejki z tańczącym bananem?", "a": "Tak — osiem oficjalnych zestawów po sześć naklejek winylowych, a oryginalny tańczący banan jest w każdym z nich. Wysyłka na cały świat. [Zobacz zestawy naklejek →](packs)" }
+    ]
+  },
+  "remixes": {
+    "kicker": "Dzięki, internecie",
+    "heading": "Remiksy od społeczności",
+    "lead": "Przez lata internet zrobił z banana wojownika, rycerza Jedi, Świętego Mikołaja i mnóstwo innych postaci. W galerii jest ich aż {n}, wszystkie do pobrania za darmo.",
+    "cta": "Zobacz wszystkie remiksy →"
+  },
+  "card": {
+    "heads": {
+      "official": "Oficjalny zestaw naklejek z bananem",
+      "get": "Zgarnij oficjalne naklejki z bananem",
+      "unique": "Unikatowe naklejki z bananem na twój laptop",
+      "only": "Tylko tutaj: oficjalne naklejki z bananem",
+      "name": "Zestaw naklejek z tańczącym bananem"
+    },
+    "count": "6 naklejek",
+    "desc": "Tańczący banan i pięć jego innych wcieleń jako prawdziwe naklejki. Nikt inny ich nie drukuje. Wysyłka na cały świat.",
+    "go": "Zobacz zestaw naklejek →",
+    "skip": "nie, dzięki, tylko GIF"
+  },
+  "footer": {
+    "kicker": "Więcej banana",
+    "heading": "Oryginał, prosto od twórcy",
+    "lead": "Po angielsku:",
+    "story": "cała historia",
+    "make": "zrób własnego",
+    "license": "licencja",
+    "tip": "☕ Napiwek",
+    "copyright": "Trym Stene · facet od banana"
+  }
+}

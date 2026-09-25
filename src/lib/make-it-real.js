@@ -331,7 +331,7 @@ function pickHead(offer) {
 // deal live in the shop and the cart, after the first yes.
 const NOUN_BY_FROM = { pbjt: 'The Peanut Butter Jelly Time banana' };
 
-function packCard({ pack, head, noun, skipText, onGo, onSkip }) {
+function packCard({ pack, head, noun, skipText, onGo, onSkip, words }) {
   injectCss();
   const card = document.createElement('div');
   card.className = 'mir mir--pack';
@@ -348,11 +348,11 @@ function packCard({ pack, head, noun, skipText, onGo, onSkip }) {
   const h = document.createElement('p'); h.className = 'mir__head'; h.textContent = head;
   const price = document.createElement('p'); price.className = 'mir__price';
   const pp = document.createElement('span'); pp.className = 'mir__pill mir__pill--price mir__pill--big';
-  pp.textContent = '$' + PACK_PRICE.toFixed(2) + ' · 6 stickers';
+  pp.textContent = '$' + PACK_PRICE.toFixed(2) + ' · ' + ((words && words.count) || '6 stickers');
   price.appendChild(pp);
   const d = document.createElement('p'); d.className = 'mir__desc';
-  d.textContent = (noun || 'The dancing banana') + ' and 5 more of his looks, as real stickers. Nobody else prints these. Ships worldwide.';
-  const go = document.createElement('a'); go.className = 'mir__go'; go.href = href; go.textContent = 'See the sticker pack →';
+  d.textContent = (words && words.desc) || ((noun || 'The dancing banana') + ' and 5 more of his looks, as real stickers. Nobody else prints these. Ships worldwide.');
+  const go = document.createElement('a'); go.className = 'mir__go'; go.href = href; go.textContent = (words && words.go) || 'See the sticker pack →';
   if (onGo) { go.addEventListener('click', onGo); shot.addEventListener('click', onGo); }
   const no = document.createElement('button');
   no.type = 'button'; no.className = 'mir__no'; no.textContent = skipText;
@@ -378,6 +378,7 @@ export function offerAfterDownload(opts = {}) {
   const head = PACK_HEADS[Math.floor(Math.random() * PACK_HEADS.length)];
   const list = CARD_LIST + head.key;
   const from = opts.from || 'unknown';
+  const W = opts.words || null;
   // the headline rides as a GA4 ITEM LIST: itemListName pairs with viewed-in-list
   // and clicked-in-list in the Data API, so Pulse prints shown → tapped per line
   const item = { item_id: pack.handle, item_name: pack.num + ' · ' + pack.name, item_list_name: list, price: PACK_PRICE, quantity: 1 };
@@ -389,8 +390,10 @@ export function offerAfterDownload(opts = {}) {
   veil.className = 'mir-veil';
   const close = () => veil.remove();
   const card = packCard({
-    pack, head: head.text, noun: NOUN_BY_FROM[from],
-    skipText: opts.skipText || 'no thanks, just the GIF',
+    // 🌍 a language page's own words (src/data/copy/locale-*.json card.*): the SAME measured headline, said in its
+    // language — the key GA4 counts stays the one drawn, so a Dutch 'official' adds to 'official'
+    pack, head: (W && W.heads && W.heads[head.key]) || head.text, noun: NOUN_BY_FROM[from], words: W,
+    skipText: opts.skipText || (W && W.skip) || 'no thanks, just the GIF',
     // ⚠️ beacon transport: the pack link navigates THIS tab away instantly —
     // a plain gtag hit would be cancelled mid-flight with the page
     onGo: () => {
@@ -565,6 +568,11 @@ export async function productShot(outfit, key, size = 420) {
 }
 
 // name the file the skip button hands over — the button must say what it gives
+// the skip line in a language page's own words: its sentence names the GIF, and a PNG download says PNG in its place
+function skipLabelIn(line, a) {
+  const name = (a.getAttribute('download') || a.pathname || '').toLowerCase();
+  return String(line || '').split('GIF').join(name.endsWith('.png') ? 'PNG' : 'GIF');
+}
 function skipLabelFor(a) {
   const name = (a.getAttribute('download') || a.pathname || '').toLowerCase();
   const m = name.match(/\.(gif|png|webp|jpe?g)$/);
@@ -592,6 +600,9 @@ function skipLabelFor(a) {
  */
 export function wireDownloads(key, over, scope) {
   const root = scope || document;
+  // 🌍 a language page passes its card words as `over.card`; the gallery's per-item merch override has no `card` and
+  // is still ignored
+  const words = over && over.card ? over.card : null;
   const refired = new WeakSet();
   root.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[download], a[href$=".gif"], a[href$=".png"], a[href$=".webp"]');
@@ -609,7 +620,8 @@ export function wireDownloads(key, over, scope) {
     const shown = offerAfterDownload({
       from: key,
       img: a.href,           // the card shows exactly what the tap is taking home
-      skipText: skipLabelFor(a),
+      skipText: words ? skipLabelIn(words.skip, a) : skipLabelFor(a),
+      words,
       onSkip: fire,
     });
     if (!shown) fire();   // belt and braces: no card, no toll — the file flows

@@ -1044,3 +1044,24 @@ it left, for every arcade game (src/scripts/town-games.js) and any game after th
 - **The press for another go is only that.** It restarts and plays nothing in the new run (`stopImmediatePropagation`: the
   same tap used to drop Stack's first crate at the edge). The first real press is a real move, timed like every other.
 - Walked by `tests/town-arcade-fair.spec.mjs`: each game on the built site, Trym's drop included.
+
+## §36 A LANGUAGE PAGE IS THE HUB IN ITS OWN LANGUAGE (25 Sep 2026, the international upgrade)
+
+Trym: *"upgrade all international pages … extend the FAQs … bring in sticker-packs … update the Banana World link - add
+thumbnails of the areas … add more big languages that probably searches for the banana"*. The rules it left:
+
+- **One registry, one template, one rulebook.** `src/data/locale-codes.js` lists the languages; everything that lists
+  them (hreflang, the switch, the sitemap, the pages) reads it; `src/pages/[locale].astro` is every page; every word is
+  in `src/data/copy/locale-<code>.json` under `localeJob` in `tools/copy-jobs.mjs`. A hand-kept list of languages anywhere
+  else is the bug this replaced (three of them had drifted apart).
+- **Their own search words, not a translation of ours.** The title, the h1 and the FAQ questions use what people in that
+  language type (the numbers are in the memory `intl-pages`); a page that already ranks keeps its title and h1.
+- **The page runs in the order its visitors move:** the GIF beside the ask (the hub's hero, `/css/gifpage.css`), every
+  format, the builder, the packs, the world, the story, the questions. The world is shown by its own door pictures
+  (`/css/doors.css`, the builder's doors) under the names on the world's signs, and entered at Banana Town.
+- **Nothing English where a visitor reads.** The pack components and the download card take the page's words (`t`,
+  `card.*`); a product's own name ("Pack 3", "Park Life") stays as printed. The site chrome (nav, footer) stays English.
+- **A language's own moment is a section on its page, not a new page** (nl: Hyves came back on 22 Sep 2026): the page
+  that already ranks catches the spike; a second page would split the same searches.
+- Walked by `tests/intl-pages.spec.mjs`: every page, its mesh, its FAQ against its schema, its doors and packs, no raw
+  mark on screen, and the card in Dutch.

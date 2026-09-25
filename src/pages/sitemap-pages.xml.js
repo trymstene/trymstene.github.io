@@ -72,9 +72,11 @@ const PAGES = [
   { path: '/projects/', images: [] },
   { path: '/contact/', images: [] },
   { path: '/me/', images: [['/assets/trym-stene-profile-photo.jpg', 'Trym Stene — creator of the Dancing Banana GIF']] },
+  // each language page's image is titled in its own language (its hero alt): these pages' Google Images impressions
+  // come from searches in that language
   ...locales.map((l) => ({
     path: `/${l.code}/`,
-    images: [['/assets/dancing-banana-gif.gif', 'The original Dancing Banana GIF (1999) by Trym Stene']],
+    images: [['/assets/dancing-banana-gif.gif', l.words.hero.alt]],
   })),
 ];
 

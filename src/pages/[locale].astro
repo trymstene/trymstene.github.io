@@ -1,121 +1,303 @@
 ---
+// 🌍 THE LANGUAGE PAGES — /nl/, /es/, /pt/, /fr/, /de/, /it/, /pl/, /ru/, /ja/, /ko/: the dancing banana's page in
+// each language, one template. Every word is in src/data/copy/locale-<code>.json (one rulebook for all of them:
+// tools/copy-jobs.mjs `localeJob`), the list of languages in src/data/locale-codes.js.
+//
+// 25 Sep 2026, Trym: "upgrade all international pages … extend the FAQs … bring in sticker-packs … update the Banana
+// World link - add thumbnails of the areas". Built on what these visitors DO (GA4, 90 days): download the GIF, then the
+// builder, then the rave, the remixes, the park and the bay. So the page runs in that order: the GIF in the hero, the
+// downloads, the builder, the packs, the world with a picture of each area, the story, the questions, the remixes.
+// The shape is the English hub's (/dancing-banana-gif-meme/), whose hero and download styles it shares (/css/gifpage.css).
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hreflang from '../components/Hreflang.astro';
 import LangSwitch from '../components/LangSwitch.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PackGrid from '../components/PackGrid.astro';
+import PackCarousel from '../components/PackCarousel.astro';
 import { locales } from '../data/locales.js';
+import { TIP_URL } from '../data/pay-rail.js';
+import remixes from '../data/remixes.json';
 
 export function getStaticPaths() {
   return locales.map((loc) => ({ params: { locale: loc.code }, props: { loc } }));
 }
 
 const { loc } = Astro.props;
+const W = loc.words;
+const PAGE = `https://trymstene.com/${loc.code}/`;
 
-const stripHtml = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+// the words carry three marks and nothing else: **bold**, *italic*, [text](key). Escaped FIRST, so no line can ever
+// put markup on the page; a key is one of these places.
+const HREF = {
+  tip: TIP_URL, license: '/license-the-dancing-banana/', pbjt: '/peanut-butter-jelly-time/', builder: '/make-a-banana/',
+  gif: '/dancing-banana-gif-meme/', world: '/town/', packs: '/shop/#sticker-packs', remixes: '/dancing-banana-remixes/',
+  download: '#download', story: '#story',
+};
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const link = (text, key) => {
+  const href = HREF[key];
+  if (!href) return text;
+  const out = key === 'tip' ? ' target="_blank" rel="noopener"' : '';
+  const place = key === 'builder' ? ' data-place="intl"' : '';
+  return `<a href="${href}"${out}${place}>${text}</a>`;
+};
+const md = (s) => esc(s)
+  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  .replace(/\*(.+?)\*/g, '<em>$1</em>')
+  .replace(/\[([^\]]+)\]\((\w+)\)/g, (m, t, k) => link(t, k));
+// for the schema: the words without marks, and without a trailing "go there →" link (a sentence of its own on the page)
+const plain = (s) => String(s)
+  .replace(/\s*\[[^\]]+\]\(\w+\)\s*$/, '')
+  .replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/\[([^\]]+)\]\(\w+\)/g, '$1');
+const fill = (s, v) => String(s).replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
+
 const faqSchema = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   inLanguage: loc.code,
-  mainEntity: loc.faq.map((f) => ({
+  mainEntity: W.faq.items.map((f) => ({
     '@type': 'Question',
-    name: stripHtml(f.q),
-    acceptedAnswer: { '@type': 'Answer', text: stripHtml(f.a) },
+    name: plain(f.q),
+    acceptedAnswer: { '@type': 'Answer', text: plain(f.a) },
   })),
 };
+// the GIF as a licensable image in this language — Google Images is where these pages are seen most
+const imageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageObject',
+  '@id': PAGE + '#banana-gif-image',
+  contentUrl: 'https://trymstene.com/assets/dancing-banana-gif.gif',
+  url: PAGE,
+  inLanguage: loc.code,
+  name: plain(W.hero.alt),
+  caption: plain(W.intro).split(/(?<=[.!?])\s+|(?<=。)/)[0],   // the intro's first sentence, in any script
+  encodingFormat: 'image/gif',
+  width: 500,
+  height: 500,
+  creator: { '@type': 'Person', '@id': 'https://trymstene.com/#trym', name: 'Trym Stene', url: 'https://trymstene.com/me/' },
+  copyrightHolder: { '@id': 'https://trymstene.com/#trym' },
+  copyrightYear: 1999,
+  creditText: 'Trym Stene',
+  acquireLicensePage: 'https://trymstene.com/license-the-dancing-banana/',
+  license: 'https://trymstene.com/license-the-dancing-banana/',
+  isBasedOn: { '@id': 'https://trymstene.com/#banana-gif' },
+};
+
+// the world's areas, by the names on their own signs (src/scripts/world-travel.js); Banana Town is the front door
+const AREAS = [
+  { k: 'town', href: '/town/', name: 'BANANA TOWN' },
+  { k: 'rave', href: '/rave/', name: 'THE RAVE' },
+  { k: 'park', href: '/park/', name: 'THE PARK' },
+  { k: 'beach', href: '/beach/', name: 'BANANA BAY' },
+  { k: 'homestead', href: '/homestead/', name: 'THE HOMESTEAD' },
+];
+const REMIX_STRIP = ['bananadance-warrior', 'bananadance-jedi', 'bananadance-santa', 'bananadance-rainbow', 'dancing-banana-homer', 'mariodance-pbj'];
+const packWords = {
+  see: W.packs.see, soon: W.packs.soon, thisOne: W.packs.thisOne, note: W.packs.note,
+  deal: { kicker: W.packs.dealKicker, heading: W.packs.dealHeading, sub: W.packs.dealSub, add: W.packs.dealAdd,
+    see: W.packs.dealSee, adding: W.packs.dealAdding, added: W.packs.dealAdded, failed: W.packs.dealFailed },
+};
+// "Pack 3" is the product's own name (printed on the sheet): in another language it stands alone, never "Adesivos Pack 3"
+const carouselWords = { sticker: '', count: W.packs.count, all: W.packs.all, see: W.packs.see, label: W.packs.carousel };
+const F = W.download.files;
 ---
 <BaseLayout
-  title={loc.title}
-  description={loc.description}
-  ogDescription={loc.ogDescription}
+  title={W.meta.title}
+  description={W.meta.description}
+  ogDescription={W.meta.ogDescription}
   ogImage="https://trymstene.com/assets/og/gif.png"
   ogType="article"
-  ogLocale={loc.ogLocale}
+  ogLocale={loc.og}
   lang={loc.code}
 >
   <Fragment slot="head">
     <Hreflang />
+    <link rel="stylesheet" href="/css/gifpage.css" />
+    <link rel="stylesheet" href="/css/doors.css" />
+    <script type="application/ld+json" set:html={JSON.stringify(imageSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
   </Fragment>
 
-  <!-- hero -->
-  <section class="hero">
-    <div class="hero__banana">
-      <img src="/assets/dancing-banana-gif.gif" alt={loc.heroAlt}
-           onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
-    </div>
-    <p class="kicker">{loc.kicker}</p>
-    <h1 class="hero__title" set:html={loc.h1}></h1>
-    <p class="hero__tag" style="text-transform:none;font-weight:500;">{loc.heroTag}</p>
-  </section>
-
-  <!-- answer-first + download -->
-  <section class="block">
-    <p class="lead" style="max-width:64ch;margin-inline:auto;font-size:1.2rem;" set:html={loc.intro}></p>
-    <div class="grab">
-      <img src="/assets/dancing-banana-transparent.gif" alt={loc.grabAlt}>
-      <div class="dl-buttons">
-        <a class="btn btn--dark" href="/assets/dancing-banana-gif.gif" download={loc.dlOriginalFile}>{loc.dlOriginalLabel}</a>
-        <a class="btn btn--light" href="/assets/dancing-banana-transparent.png" download={loc.dlTransFile}>{loc.dlTransLabel}</a>
+  <!-- 🍌 the GIF beside the ask, like the English hub: most visitors came for the file -->
+  <section class="hero gifhero">
+    <div class="gifhero__in">
+      <div class="hero__banana gifhero__nana">
+        <img src="/assets/dancing-banana-gif.gif" width="500" height="500" alt={W.hero.alt}
+             onerror="this.outerHTML='<div class=&quot;banana-fallback&quot;>🍌</div>';">
+      </div>
+      <div class="gifhero__say">
+        <p class="kicker">{W.hero.kicker}</p>
+        <h1 class="hero__title gifhero__h1" set:html={W.hero.h1.map(esc).join('<br>')}></h1>
+        <p class="hero__tag" style="text-transform:none;">{W.hero.tag}</p>
+        <div class="dl-buttons gifhero__dl">
+          <a class="btn btn--dark" href="/assets/dancing-banana-gif.gif" download={F.original}>{W.download.original}</a>
+          <a class="btn btn--light" href="/assets/dancing-banana-transparent.gif" download={F.transparentGif}>{W.download.transparentGif}</a>
+        </div>
+        <p class="gifhero__note">{W.hero.note} <a href="#download">{W.hero.more}</a></p>
+        <div class="gifhero__packs"><PackCarousel place={'intl_' + loc.code} t={carouselWords} /></div>
       </div>
     </div>
-    <p style="margin-top:1.5rem;">
-      <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> {loc.makeYourOwn}</a>
+  </section>
+
+  <!-- answer-first, then the page in one line -->
+  <section class="block">
+    <p class="lead" style="max-width:64ch;margin-inline:auto;font-size:1.2rem;" set:html={md(W.intro)}></p>
+    <nav class="jumpnav" aria-label={W.jump.label}>
+      <a href="#download"><PixelIcon name="download" /> {W.jump.download}</a>
+      <a href="#make"><PixelIcon name="palette" /> {W.jump.make}</a>
+      <a href="#sticker-packs">{W.jump.packs}</a>
+      <a href="#world"><PixelIcon name="globe" /> {W.jump.world}</a>
+      <a href="#story">{W.jump.story}</a>
+      <a href="#faq">{W.jump.faq}</a>
+    </nav>
+  </section>
+
+  {W.spot && (
+    <!-- 📰 this language's own moment (nl: Hyves came back on 22 Sep 2026, and the Dutch searched for the banana) -->
+    <section class="block block--yellow loc-spot" id="spot">
+      <p class="kicker">{W.spot.kicker}</p>
+      <h2>{W.spot.heading}</h2>
+      <p class="lead" set:html={md(W.spot.lead)}></p>
+      <div class="dl-buttons loc-spot__dl">
+        <a class="btn btn--dark" href="/assets/dancing-banana-gif.gif" download={F.original}>{W.download.original}</a>
+        <a class="btn btn--light" href="/assets/dancing-banana-transparent.gif" download={F.transparentGif}>{W.download.transparentGif}</a>
+      </div>
+    </section>
+  )}
+
+  <!-- every format -->
+  <section class="block" id="download">
+    <p class="kicker">{W.download.kicker}</p>
+    <h2>{W.download.heading}</h2>
+    <p class="lead" set:html={md(W.download.lead)}></p>
+    <div class="grab">
+      <img src="/assets/dancing-banana-transparent.gif" width="500" height="500" alt={W.download.grabAlt} loading="lazy">
+      <div class="dl-buttons">
+        <a class="btn btn--dark" href="/assets/dancing-banana-gif.gif" download={F.original}>{W.download.original}</a>
+        <a class="btn btn--dark" href="/assets/dancing-banana-transparent.gif" download={F.transparentGif}>{W.download.transparentGif}</a>
+        <a class="btn btn--light" href="/assets/dancing-banana-transparent.png" download={F.transparentPng}>{W.download.transparentPng}</a>
+        <a class="btn btn--light" href="/assets/dancing-banana-hd.gif" download={F.hd}>{W.download.hd}</a>
+      </div>
+    </div>
+    <p class="dl-formats">{W.download.formats}</p>
+    <p class="dl-tip" style="margin-top:1.6rem;" set:html={md(W.download.tip)}></p>
+  </section>
+
+  <!-- the builder — where most of these visitors go next -->
+  <section class="block block--dark" id="make">
+    <p class="kicker kicker--light">{W.make.kicker}</p>
+    <h2>{W.make.heading}</h2>
+    <div class="mkb-examples" aria-hidden="true">
+      <img src="/assets/example-banana-1.png" width="250" height="328" alt="" loading="lazy">
+      <img src="/assets/example-banana-2.png" width="315" height="349" alt="" loading="lazy">
+      <img src="/assets/example-banana-3.png" width="319" height="395" alt="" loading="lazy">
+    </div>
+    <p class="lead">{W.make.lead}</p>
+    <p style="margin-top:1.2rem;">
+      <a class="btn btn--light" href="/make-a-banana/" data-place="intl"><PixelIcon name="palette" /> {W.make.cta}</a>
     </p>
-    <p class="lead" style="margin-top:2rem;" set:html={loc.tip}></p>
+    <p class="mkb-note">{W.make.note}</p>
   </section>
 
-  <!-- 🌍 THE WORLD — these pages were download-only while the site grew a rave,
-       a park, a bay, a forge and a shop. A visitor who lands here from a Dutch
-       or Russian search saw a GIF and a FAQ and nothing else the site can do. -->
-  <section class="block block--yellow">
-    <p class="kicker">{loc.worldKicker}</p>
-    <h2>{loc.worldHeading}</h2>
-    <p class="lead" style="max-width:60ch;margin-inline:auto;">{loc.worldLead}</p>
-    <div class="hero__cta" style="margin-top:1.6rem;">
-      <a class="btn btn--dark" href="/rave/">🪩 {loc.worldRave} →</a>
-      <a class="btn btn--beach" href="/beach/">🏖 {loc.worldBeach} →</a>
-      <a class="btn btn--park" href="/park/">🌳 {loc.worldPark} →</a>
+  <!-- 🎟 the packs: the same bananas, as real stickers -->
+  <PackGrid place={'intl_' + loc.code} kicker={W.packs.kicker} heading={W.packs.heading} lead={W.packs.lead} t={packWords} />
+
+  <!-- 🌍 THE WORLD, with a window into each area (the world's own door pictures) and the one entrance, Banana Town -->
+  <section class="block block--yellow" id="world">
+    <p class="kicker">{W.world.kicker}</p>
+    <h2>{W.world.heading}</h2>
+    <p class="lead" style="max-width:60ch;margin-inline:auto;">{W.world.lead}</p>
+    <div class="bb-doors bb-doors--wide">
+      <div class="bb-doors__row">
+        {AREAS.map((a) => (
+          <a class:list={['bb-door', a.k === 'town' && 'bb-door--lead']} href={a.href} data-place={'intl_' + loc.code}>
+            <span class="bb-door__shot">
+              <img src={`/assets/world/door-${a.k}.jpg`} alt="" width="480" height="300" loading="lazy" decoding="async" />
+              <span class="bb-door__pill">{a.name}</span>
+            </span>
+            <small>{W.world.areas[a.k]}</small>
+          </a>
+        ))}
+      </div>
     </div>
-    <div class="hero__cta" style="margin-top:0.8rem;">
-      <a class="btn btn--light" href="/forge/">🎨 {loc.worldForge} →</a>
-      <a class="btn btn--light" href="/banana-memes/">🖼 {loc.worldGallery} →</a>
-      <a class="btn btn--light" href="/shop/" data-place="intl">🛍 {loc.worldShop} →</a>
+    <div class="loc-world__go">
+      <a class="btn btn--dark" href="/town/">🌍 {W.world.enter}</a>
+      <p class="loc-world__fine">{W.world.fine}</p>
     </div>
+    <p class="loc-world__also">
+      <a href="/forge/">{W.world.forge}</a>
+      <a href="/banana-memes/">{W.world.gallery}</a>
+      <a href="/shop/" data-place="intl">{W.world.shop}</a>
+    </p>
   </section>
 
-  <!-- FAQ -->
-  <section class="block block--dark">
-    <p class="kicker kicker--light">{loc.faqKicker}</p>
-    <h2>{loc.faqHeading}</h2>
-    {loc.faq.map((f) => (
+  <!-- the story, and where people in this language remember it from -->
+  <section class="block" id="story">
+    <p class="kicker">{W.story.kicker}</p>
+    <h2>{W.story.heading}</h2>
+    <p class="lead" set:html={md(W.story.lead)}></p>
+    <p class="lead" set:html={md(W.story.later)}></p>
+    <p class="lead loc-local" set:html={md(W.story.local)}></p>
+  </section>
+
+  <!-- FAQ: the same questions as the schema, word for word -->
+  <section class="block block--dark" id="faq">
+    <p class="kicker kicker--light">{W.faq.kicker}</p>
+    <h2>{W.faq.heading}</h2>
+    {W.faq.items.map((f) => (
       <div class="faq__item">
         <h3>{f.q}</h3>
-        <p>{f.a}</p>
+        <p set:html={md(f.a)}></p>
       </div>
     ))}
   </section>
 
-  <!-- footer / links to English -->
-  <footer class="block block--dark">
-    <p class="kicker kicker--light">{loc.footerKicker}</p>
-    <h2>{loc.footerHeading}</h2>
-    <p class="lead">
-      {loc.footerLead}
-      <a href="/dancing-banana-gif-meme/">{loc.linkStory}</a> ·
-      <a href="/make-a-banana/">{loc.linkMake}</a> ·
-      <a href="/license-the-dancing-banana/">{loc.linkLicense}</a> ·
-      <a href="https://banana-pass.trymstene.workers.dev/pay/tip" target="_blank" rel="noopener">{loc.linkTip}</a>
+  <!-- the remixes: people who land here browse them -->
+  <section class="block" id="remixes">
+    <p class="kicker">{W.remixes.kicker}</p>
+    <h2>{W.remixes.heading}</h2>
+    <p class="lead">{fill(W.remixes.lead, { n: remixes.length })}</p>
+    <div class="remix-grid">
+      {REMIX_STRIP.map((id) => (
+        <a class="slot" href="/dancing-banana-remixes/" aria-label={W.remixes.cta}>
+          <img src={'/assets/dancing-banana-community-remixes/' + id + '.gif'} alt="" loading="lazy"
+               style="image-rendering:pixelated;width:64%;height:64%;object-fit:contain;" />
+        </a>
+      ))}
+    </div>
+    <p style="text-align:center;margin-top:1.4rem;">
+      <a class="btn btn--dark" href="/dancing-banana-remixes/">{W.remixes.cta}</a>
     </p>
-    <LangSwitch current={loc.code} label={loc.langAria} />
-    <p class="copyright">© <span id="year">2026</span> {loc.copyright}</p>
-  </footer>
+  </section>
 
-  <script type="application/json" id="locOffer" set:html={JSON.stringify({
-    kicker: loc.offerKicker, head: loc.offerHead, pills: loc.offerPills, cta: loc.offerCta,
-  })} />
+  <!-- the way back to English, and every other language -->
+  <section class="block block--dark">
+    <p class="kicker kicker--light">{W.footer.kicker}</p>
+    <h2>{W.footer.heading}</h2>
+    <p class="lead">
+      {W.footer.lead}
+      <a href="/dancing-banana-gif-meme/">{W.footer.story}</a> ·
+      <a href="/make-a-banana/" data-place="intl">{W.footer.make}</a> ·
+      <a href="/license-the-dancing-banana/">{W.footer.license}</a> ·
+      <a href={TIP_URL} target="_blank" rel="noopener">{W.footer.tip}</a>
+    </p>
+    <LangSwitch current={loc.code} label={W.meta.langAria} />
+    <p class="copyright">© <span id="year">2026</span> {W.footer.copyright}</p>
+  </section>
+
+  <style>
+    .loc-spot { text-align: center; }
+    .loc-spot .lead { max-width: 62ch; margin-inline: auto; }
+    .loc-spot__dl { flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 1.2rem; }
+    .loc-world__go { text-align: center; margin-top: 2rem; }
+    .loc-world__fine { margin: 0.6rem 0 0; font-size: 0.85rem; opacity: 0.7; }
+    .loc-world__also { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 1.4rem; margin-top: 1.2rem; font-weight: 800; }
+    .loc-local { font-style: italic; }
+  </style>
+
+  <script type="application/json" id="locOffer" set:html={JSON.stringify({ card: W.card })} />
   <script>
-    // 🛍 the download moment — the ask lands when the wish is granted, never
-    // before it. See OFFERS in make-it-real.js for why this page shows THIS one.
+    // 🛍 the download moment — the pack card, in this page's own words (card.*); see offerAfterDownload in make-it-real.js
     import { wireDownloads } from '../lib/make-it-real.js';
     wireDownloads('original', JSON.parse(document.getElementById('locOffer').textContent));
   </script>
