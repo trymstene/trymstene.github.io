@@ -34,14 +34,16 @@ test.describe('with a finger', () => {
   test('the tray is a control a phone leaves alone: no selection, no callout, no filter on the gauge', async ({ page }) => {
     const errors = await bench(page);
     // ── the contract, from the file: Chrome drops -webkit-touch-callout from the CSSOM, so it is read as text
-    const css = await page.evaluate(() => fetch('/css/town-cafe.css').then((r) => r.text()));
-    const tray = (css.match(/\n\.tw-cup \{[^}]*\}/) || [''])[0];
-    for (const rule of ['touch-action: none', '-webkit-user-select: none', 'user-select: none', '-webkit-touch-callout: none']) {
+    // (the served sheet is MINIFIED at build since 26 Sep 2026, so a rule is compared with its spaces taken out)
+    const css = (await page.evaluate(() => fetch('/css/town-cafe.css').then((r) => r.text())))
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{};:,])\s*/g, '$1');
+    const tray = (css.match(/(^|[}\n])\.tw-cup\{[^}]*\}/) || [''])[0];
+    for (const rule of ['touch-action:none', '-webkit-user-select:none', 'user-select:none', '-webkit-touch-callout:none']) {
       expect(tray, `📱 .tw-cup keeps "${rule}" — without it iOS turns a held pour into a text selection and cancels it`).toContain(rule);
     }
-    const zone = (css.match(/\n\.tw-cup__zone \{[^}]*\}/) || [''])[0];
+    const zone = (css.match(/(^|[}\n])\.tw-cup__zone\{[^}]*\}/) || [''])[0];
     expect(zone, 'the band the player aims at is drawn').toContain('background');
-    expect(zone, '⚠️ never a filter on the band: Safari paints drop-shadow() unreliably').not.toMatch(/filter\s*:/);
+    expect(zone, '⚠️ never a filter on the band: Safari paints drop-shadow() unreliably').not.toMatch(/filter:/);
 
     // ── the page: nothing the gauge draws goes through a filter, at any of the three stations
     await page.evaluate(() => window.__cafe.serve());

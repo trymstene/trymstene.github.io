@@ -13,7 +13,9 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(HERE))
 import reel  # noqa: E402  (asset/banana helpers + caches)
+import webp_siblings  # noqa: E402  (the page shows the WebP; tools/webp_siblings.py)
 
 SITE = os.path.dirname(os.path.dirname(HERE))
 DST = os.path.join(SITE, 'public', 'assets', 'world')
@@ -34,6 +36,7 @@ def put(im, sprite, x, y, x0, y0):
 
 def save(im, name):
     im.convert('RGB').save(os.path.join(DST, name), quality=86)
+    webp_siblings.slide(im, os.path.join(DST, name))
     print(name)
 
 

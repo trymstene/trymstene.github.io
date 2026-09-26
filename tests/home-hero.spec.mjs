@@ -186,3 +186,28 @@ test('off screen, the party rests; back on screen, it dances again', async ({ pa
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.locator('#hero')).not.toHaveClass(/hw--rest/);
 });
+
+// ⚡ THE SPEED AUDIT (26 Sep 2026): the pictures are the size and the format they are shown in, nothing below the fold
+// loads first, and a variable font is one download
+test('every picture on the front page arrives, the world pictures are WebP, and Space Grotesk downloads once', async ({ page }) => {
+  await world(page, QUIET);
+  const fonts = [];
+  page.on('request', (r) => { if (/\/fonts\//.test(r.url())) fonts.push(new URL(r.url()).pathname); });
+  await page.goto('/', { waitUntil: 'load' });
+  // the banana is the WebP, the GIF under it for anything that cannot show one
+  expect(await page.locator('.hw__banana').evaluate((i) => i.currentSrc)).toMatch(/dancing-banana-transparent\.webp$/);
+  // no slide is fetched first: all four wait their turn, as WebP
+  const slides = await page.locator('#bwlHero img').evaluateAll((a) => a.map((i) => ({ src: i.getAttribute('src'), loading: i.loading })));
+  expect(slides).toHaveLength(4);
+  for (const sl of slides) { expect(sl.src).toMatch(/\.webp$/); expect(sl.loading).toBe('lazy'); }
+  // the sticker band shows the small copy
+  for (const src of await page.locator('#stickers .pkfan__s').evaluateAll((a) => a.map((i) => i.getAttribute('src')))) expect(src).toMatch(/-sm\.webp$/);
+  // walk the page so every lazy picture is asked for, then every one of them must have arrived
+  for (let y = 0; y < 12; y++) { await page.mouse.wheel(0, 900); await page.waitForTimeout(120); }
+  await page.waitForFunction(() => [...document.images].every((i) => i.complete), null, { timeout: 20000 });
+  const broken = await page.evaluate(() => [...document.images].filter((i) => !i.naturalWidth).map((i) => i.currentSrc || i.src));
+  expect(broken, 'pictures that did not load').toEqual([]);
+  // one file per variable font, whatever the weights on the page
+  expect(fonts.filter((f) => /spacegrotesk/.test(f)).length, fonts.join(', ')).toBe(1);
+  expect(fonts.filter((f) => /spacegrotesk-(500|700)|nunito-(800|900)/.test(f)), 'a per-weight copy was fetched').toEqual([]);
+});

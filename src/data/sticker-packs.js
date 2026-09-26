@@ -43,6 +43,8 @@ export const STICKER_PACKS = Object.keys(ART.packs).map(Number).sort((a, b) => a
 export const HEROES = STICKER_PACKS.map((p) => p.hero);
 
 export const stickerSrc = (slug) => `/assets/packs/stickers/${slug}.webp`;   // one kiss-cut sticker, transparent
+// the same sticker 300 px tall, for the sticker band (at most 150 CSS px tall there): tools/webp_siblings.py
+export const stickerSmall = (slug) => `/assets/packs/stickers/${slug}-sm.webp`;
 export const packSpread = (n) => `/assets/packs/pack-${n}-spread.webp`;     // 1200², the PDP's first picture
 export const packCard = (n) => `/assets/packs/pack-${n}-card.webp`;         // 600², the grids
 export const packThumb = (n) => `/assets/packs/pack-${n}-thumb.webp`;       // 240², the deal band's fan

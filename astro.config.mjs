@@ -9,7 +9,7 @@ import { stripCssStrings } from './tools/css-strings.mjs';
 // the product pages. Minified after the build (24 Sep 2026, the budget trim; 33 KB → 15 KB) so the source stays
 // readable. es2020 like the rest of the bundle: the minifier must never write newer syntax than it was given.
 const minifyPublicJs = {
-  name: 'minify-public-js',
+  name: 'minify-public-js',   // …and public/css, below
   hooks: {
     'astro:build:done': async ({ dir, logger }) => {
       const js = new URL('js/', dir);
@@ -18,6 +18,15 @@ const minifyPublicJs = {
         const out = await transformWithEsbuild(src, f, { minify: true, charset: 'utf8', target: 'es2020', legalComments: 'none' });
         await writeFile(p, out.code);
         logger.info('/js/' + f + ' ' + Buffer.byteLength(src) + ' → ' + Buffer.byteLength(out.code) + ' B');
+      }
+      // 🎨 public/css the same way (26 Sep 2026, the front-page speed audit): styles.css rode every page as written,
+      // 47 KB with its comments. esbuild's CSS minifier only removes and shortens; it lowers nothing it was not asked to.
+      const css = new URL('css/', dir);
+      for (const f of (await readdir(css)).filter((x) => x.endsWith('.css'))) {
+        const p = fileURLToPath(new URL(f, css)), src = await readFile(p, 'utf8');
+        const out = await transformWithEsbuild(src, f, { minify: true, charset: 'utf8', legalComments: 'none' });
+        await writeFile(p, out.code);
+        logger.info('/css/' + f + ' ' + Buffer.byteLength(src) + ' → ' + Buffer.byteLength(out.code) + ' B');
       }
     },
   },

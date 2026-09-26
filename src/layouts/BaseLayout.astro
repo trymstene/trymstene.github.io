@@ -1,6 +1,7 @@
 ---
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import { INLINE_CSS } from '../lib/inline-css.js';   // fonts.css + paper.css, minified into the head
 
 // One <head> to rule them all. Pages pass SEO props; extra <head> tags
 // (JSON-LD schema, hreflang) go through the named "head" slot.
@@ -90,8 +91,7 @@ const pageLd = indexable && pageNode ? {
     <!-- self-hosted fonts: no third-party round trips (perf + GDPR) -->
     <link rel="preload" href="/fonts/spacegrotesk-400-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/archivoblack-400-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/css/fonts.css" />
-    <link rel="stylesheet" href="/css/paper.css" />
+    <style is:inline set:html={INLINE_CSS}></style>
     <link rel="stylesheet" href="/css/styles.css" />
     {pageLd && <script type="application/ld+json" set:html={JSON.stringify(pageLd)} />}
     <slot name="head" />

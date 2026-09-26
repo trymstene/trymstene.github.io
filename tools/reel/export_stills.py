@@ -8,7 +8,9 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(HERE))
 import reel  # noqa: E402
+import webp_siblings  # noqa: E402  (the page shows the WebP; tools/webp_siblings.py)
 
 SITE = os.path.dirname(os.path.dirname(HERE))
 DST = os.path.join(SITE, 'public', 'assets', 'world')
@@ -33,4 +35,5 @@ for name, t in PICKS.items():
     im = im.crop((0, top, w, top + h))
     im = im.resize((640, 800), Image.LANCZOS)
     im.save(os.path.join(DST, 'feat-%s.jpg' % name), quality=84)
+    webp_siblings.card(im, os.path.join(DST, 'feat-%s.jpg' % name))
     print('feat-%s.jpg' % name)

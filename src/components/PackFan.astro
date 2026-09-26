@@ -7,14 +7,14 @@
 //
 //   <PackFan />              the band — the front page, the GIF page
 //   <PackFan size="hero" />  the shop's top
-import { HEROES, stickerSrc } from '../data/sticker-packs.js';
+import { HEROES, stickerSrc, stickerSmall } from '../data/sticker-packs.js';
 const { size = 'band' } = Astro.props;
 // fixed, deliberate tilts — a random set would reshuffle on every build
 const TILT = [-9, 6, -4, 8, -7, 5, -10, 7];
 ---
 <div class:list={['pkfan', `pkfan--${size}`]} aria-hidden="true">
   {HEROES.map((h, i) => (
-    <img class="pkfan__s" src={stickerSrc(h.slug)} alt="" width={h.w} height={h.h}
+    <img class="pkfan__s" src={size === 'hero' ? stickerSrc(h.slug) : stickerSmall(h.slug)} alt="" width={h.w} height={h.h}
          loading={size === 'hero' ? 'eager' : 'lazy'} decoding="async"
          style={`--r:${TILT[i]}deg;--d:${(i * 0.37).toFixed(2)}s;--z:${i % 2 ? 2 : 1}`} />
   ))}

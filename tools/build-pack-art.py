@@ -28,6 +28,7 @@ import os, sys, json, math, random, re
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+import webp_siblings  # the sticker band's small copy (tools/webp_siblings.py)
 import importlib.util as _ilu
 _spec = _ilu.spec_from_file_location('build_sticker_packs', os.path.join(HERE, 'build-sticker-packs.py'))
 BSP = _ilu.module_from_spec(_spec); _spec.loader.exec_module(BSP)   # PACKS, art_for
@@ -392,6 +393,7 @@ def main():
             if s not in done:
                 st = kiss_cut(fit(a, 420)[0], border=12)
                 total += save_webp(st, os.path.join(STK, s + '.webp'))
+                total += webp_siblings.sticker_sm(st, os.path.join(STK, s + '.webp'))   # the sticker band's size
                 done[s] = (st.width, st.height, key)
             w, h, _ = done[s]
             entries.append({'name': label, 'slug': s, 'w': w, 'h': h, 'hero': i == 1})

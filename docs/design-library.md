@@ -721,6 +721,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 23 | A resident at their post is never a statue: sway, glance, dance, talk | the town walk's `lively` check (`tests/town-life.spec.mjs`) |
 | 37 | Every area explains itself under its frame, on the one sheet | `check-design.mjs` (an area page without `id="what"` and `id="do"`, without `/css/area-guide.css`, or styling a guide class of its own fails) + `tests/town-guide.spec.mjs` (the town's windows fill their box at whole pixels) |
 | 38 | The front page's party clips (never scrolls), its crew is the builder's strips on whole CSS pixels with nothing to tap, the name's shadow is a black drop-shadow, its ticker's numbers are the stats file's read low and its live lines come only when the world answers | `tests/home-hero.spec.mjs` (a CSS property cannot be grepped for a meaning, so the walk asserts the outcome at 360–1440 px) |
+| 39 | A variable font is one URL across its weights; the front page's pictures are WebP at their shown size, nothing below the fold is eager, every picture arrives | `check-design.mjs` (two @font-face URLs with identical files fail) + `tests/home-hero.spec.mjs` (the banana is WebP, the slides lazy WebP, the band's stickers small, every image loads, Space Grotesk fetched once) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1183,3 +1184,34 @@ based on popularity"*. Built in `src/pages/index.astro`, words in `src/data/copy
   something (two or more) and a counter that does not answer is left out, never guessed.
 - **An inline number keeps its spaces.** A flex row trims the whitespace at the edges of its text runs, so
   "today: 80 things" printed "today:80things"; the ticker's items are `inline-block`.
+
+---
+
+## §39 A PAGE LOADS WHAT IT SHOWS, THE SIZE IT SHOWS IT (26 Sep 2026, the front-page speed audit)
+
+Trym: *"are there things we can do to optimize performance on the frontpage … can you do an audit?"* Measured cold on a
+throttled phone (Lighthouse's mobile profile: 150 ms, 1.6 Mbps, 4× CPU), the banana painted at about 1.7 s, but the
+page then pulled 1.6 MB (2.0 MB for a US visitor) and US visitors' trackers kept the phone busy another 0.5–1.5 s.
+
+- **A picture ships in the format and at the size it is shown.** The world strip's slides and feature cards were
+  1.09 MB of JPG; as WebP at their shown sizes (a card in two widths, `srcset`) they are about a third. The exporters
+  write the WebP beside the JPG themselves (`tools/webp_siblings.py`, called by `tools/reel/export_hero.py`,
+  `export_stills.py` and `tools/build-pack-art.py`), so a sibling can never go stale; `python tools/webp_siblings.py`
+  remakes them all. The 1999 banana is served as lossless animated WebP, 3.3 KB for its 39 KB GIF, checked pixel for
+  pixel on every write, with the GIF under it in a `<picture>`.
+- **Nothing below the first screen is fetched first.** The strip's first slide was `loading="eager"` and downloaded
+  alongside the banana. Chrome also starts lazy images 1,250–2,500 px early, so a picture the page shows small must
+  also BE small: the sticker band shows `<slug>-sm.webp` (300 px tall), the shop's big fan keeps the full sticker.
+- **A variable font is one URL across all its weights** — the way Google serves it. Each weight named its own
+  byte-identical copy and the browser fetched the same file twice. `tools/check-design.mjs` fails two `@font-face`
+  URLs whose files are identical.
+- **The trackers' files wait for the page; their commands do not.** Consent, config, the page view and every event
+  queue at once and in order (`dataLayer`, `fbq`'s and `clarity`'s queues); only gtag.js, the Meta pixel and Clarity
+  load after `load` and an idle moment (4 s at the latest). ⚠️ NOT a deferred main.js: page modules would then run
+  before it and fire their events ahead of the consent default and the config.
+- **CSS ships minified**, all of `public/css` at build (styles.css 47 → 29 KB), and the two small sheets
+  (fonts.css, paper.css) are written into every page's head instead of costing two render-blocking requests.
+- **A live number does not wait for the pictures.** The ticker's live lines start at idle, not at `load` (which on a
+  slow phone came 8.5 s in).
+- ⏳ Open, and Trym's call because it is a DNS change: GitHub Pages caches every file for 10 minutes. Long cache rules
+  need the site behind Cloudflare's proxy.

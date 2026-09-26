@@ -26,6 +26,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 // ⚠️ a URL pathname keeps its %20 — this repo lives under "Web Development"
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -454,6 +455,21 @@ for (const f of walkCss(join(ROOT, 'public/css'))) {
     const body = css.slice(m.index + m[0].length, i - 1);
     const bad = [...new Set([...body.matchAll(/(?:^|[;{]\s*)([a-z-]+)\s*:/g)].map((x) => x[1]))].filter((prop) => KF_COSTLY.has(prop));
     if (bad.length) problems.push([rel, `@keyframes ${m[1]} animates ${bad.join(', ')} — the compositor cannot take that, so every element wearing it is re-rasterised or re-laid-out on every frame. Make the ${bad[0]} static and animate opacity instead (design library §21.4)`]);
+  }
+}
+
+// §39 A VARIABLE FONT IS ONE URL. Space Grotesk and Nunito were saved once per weight under different names, byte for
+// byte the same file, so a browser downloaded the same 22 KB twice on the front page (the speed audit, 26 Sep 2026).
+// Two @font-face URLs whose files are identical are one font asked for twice: point them at one URL.
+{
+  const fontsCss = readFileSync(join(ROOT, 'public/css/fonts.css'), 'utf8');
+  const byHash = new Map();
+  for (const url of new Set([...fontsCss.matchAll(/url\((\/fonts\/[^)'"]+)\)/g)].map((m) => m[1]))) {
+    let buf;
+    try { buf = readFileSync(join(ROOT, 'public', url)); } catch (e) { problems.push(['public/css/fonts.css', `names ${url}, which is not in public/fonts`]); continue; }
+    const h = createHash('sha1').update(buf).digest('hex');
+    if (byHash.has(h)) problems.push(['public/css/fonts.css', `${url} and ${byHash.get(h)} are the same file under two names, so a browser downloads it twice — point every weight at one URL (design library §39)`]);
+    else byHash.set(h, url);
   }
 }
 

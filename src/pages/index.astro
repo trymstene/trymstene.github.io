@@ -102,10 +102,10 @@ const citWon = CIT_ORDER.filter(([p]) => citizens.winners && citizens.winners[p]
 // crops, sprites at true game scale) — the stylized reel stills stay in the
 // small feature cards where poster close-ups belong
 const HERO_SLIDES = [
-  { img: '/assets/world/hero-park.jpg', alt: 'The Park in Banana World — bananas at the fountain plaza' },
-  { img: '/assets/world/hero-home.jpg', alt: 'A real visitor-built homestead in Banana World' },
-  { img: '/assets/world/hero-bay.jpg', alt: 'Banana Bay — volleyball court, beach hut and palms' },
-  { img: '/assets/world/hero-quest.jpg', alt: 'Nib the registrar waiting with a quest at the homestead gate' },
+  { img: '/assets/world/hero-park.webp', alt: 'The Park in Banana World — bananas at the fountain plaza' },
+  { img: '/assets/world/hero-home.webp', alt: 'A real visitor-built homestead in Banana World' },
+  { img: '/assets/world/hero-bay.webp', alt: 'Banana Bay — volleyball court, beach hut and palms' },
+  { img: '/assets/world/hero-quest.webp', alt: 'Nib the registrar waiting with a quest at the homestead gate' },
 ];
 const FEATURES = [
   { k: 'homestead', line: 'Build your corner.', href: '/homestead/' },
@@ -177,6 +177,7 @@ const FEATURES = [
       content: ''; position: absolute; left: 24%; right: 24%; bottom: 3%; height: 7%; z-index: -1;
       border-radius: 50%; background: rgba(60, 40, 0, 0.18);
     }
+    .hw__pic { display: block; }
     .hw__banana { position: relative; display: block; width: 100%; height: auto; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
     .hw__crew { position: absolute; bottom: 4%; display: flex; align-items: flex-end; gap: calc(var(--ax) * 5px); pointer-events: none; }
     .hw__crew--l { right: 86%; flex-direction: row-reverse; }
@@ -333,8 +334,11 @@ const FEATURES = [
     <div class="hw__stage">
       <div class="hw__rays" aria-hidden="true"></div>
       <div class="hw__crew hw__crew--l" aria-hidden="true">{CREW_L.map((n) => <i class="hw__d" style={`--img:url(/assets/hero/dancer-${n}.webp)`}></i>)}</div>
-      <img class="hw__banana" src="/assets/dancing-banana-transparent.gif" alt={W.alt}
-           width="500" height="500" fetchpriority="high" draggable="false">
+      <picture class="hw__pic">
+        <source srcset="/assets/dancing-banana-transparent.webp" type="image/webp">
+        <img class="hw__banana" src="/assets/dancing-banana-transparent.gif" alt={W.alt}
+             width="500" height="500" fetchpriority="high" draggable="false">
+      </picture>
       <div class="hw__crew hw__crew--r" aria-hidden="true">{CREW_R.map((n) => <i class="hw__d" style={`--img:url(/assets/hero/dancer-${n}.webp)`}></i>)}</div>
     </div>
     <p class="hw__tag">{W.tag}</p>
@@ -375,7 +379,7 @@ const FEATURES = [
     <div class="bwl-hero" id="bwlHero">
       {HERO_SLIDES.map((h, i) => (
         <img class={i === 0 ? 'on' : ''} src={h.img} alt={h.alt}
-             width="1400" height="600" loading={i === 0 ? 'eager' : 'lazy'} />
+             width="1400" height="600" loading="lazy" decoding="async" />
       ))}
       <a class="btn btn--dark bwl-hero__cta" href="/town/" data-place="doors">{W.enter}<span class="hw__arrow" aria-hidden="true">→</span></a>
     </div>
@@ -387,8 +391,9 @@ const FEATURES = [
     <div class="bwl-grid">
       {FEATURES.map((f) => (
         <a class="bwl-card" href={f.href} data-place={f.href === '/town/' ? 'doors' : undefined}>
-          <img src={`/assets/world/feat-${f.k}.jpg`} alt={`Banana World — ${f.line}`}
-               width="640" height="800" loading="lazy" />
+          <img src={`/assets/world/feat-${f.k}-480.webp`} srcset={`/assets/world/feat-${f.k}-480.webp 480w, /assets/world/feat-${f.k}.webp 640w`}
+               sizes="(min-width: 760px) 280px, 50vw" alt={`Banana World — ${f.line}`}
+               width="640" height="800" loading="lazy" decoding="async" />
           <b>{f.line}</b>
         </a>
       ))}
@@ -586,6 +591,6 @@ const FEATURES = [
       });
       tk.style.setProperty('--tk-len', String(+tk.dataset.len + items.reduce((a, [l]) => a + String(l).length, 0)));
     };
-    addEventListener('load', () => (window.requestIdleCallback || setTimeout)(live));
+    if (window.requestIdleCallback) window.requestIdleCallback(live, { timeout: 2500 }); else setTimeout(live, 500);
   </script>
 </BaseLayout>

@@ -224,11 +224,29 @@
     ad_personalization: 'denied', analytics_storage: 'denied',
   });
 
-  function loadTrackers() {
+  // ⏳ THE TRACKERS' FILES WAIT FOR THE PAGE (26 Sep 2026, the front-page speed audit). On a throttled phone gtag.js, the
+  // Meta pixel and Clarity were 390 KB and up to 1.5 s of main thread in the middle of the first render. Every command
+  // still queues at once and in order (consent, config, page view, the page's own events: dataLayer, fbq's and
+  // clarity's queues); only the three script files load once the page has, and gone quiet (4 s at the very latest).
+  function afterPage(fn) {
+    var done = false;
+    var go = function () {
+      if (done) return;
+      done = true;
+      if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2000 }); else setTimeout(fn, 1);
+    };
+    if (document.readyState === 'complete') go();
+    else { window.addEventListener('load', go); setTimeout(go, 4000); }
+  }
+  function addScript(src) {
     var s = document.createElement('script');
     s.async = true;
-    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    s.src = src;
     document.head.appendChild(s);
+  }
+
+  function loadTrackers() {
+    afterPage(function () { addScript('https://www.googletagmanager.com/gtag/js?id=' + GA_ID); });
     gtag('js', new Date());
     // 🤖 arrivals forwarded from a retired URL are almost entirely scrapers
     // probing the old Wix store (measured: 42 of 45 with no referrer, one view
@@ -243,11 +261,8 @@
     // Sits INSIDE the production + internal-flag + consent guards like GA:
     // flagged browsers and consent-less EEA visitors record nothing.
     // Recordings stop at the Shopify domain.
-    (function (c, l, a, r, i, t, y) {
-      c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
-      t = l.createElement(r); t.async = 1; t.src = 'https://www.clarity.ms/tag/' + i;
-      y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-    })(window, document, 'clarity', 'script', 'xmja5x3h8h');
+    window.clarity = window.clarity || function () { (window.clarity.q = window.clarity.q || []).push(arguments); };
+    afterPage(function () { addScript('https://www.clarity.ms/tag/xmja5x3h8h'); });
     if (cc.eea) clarity('consent'); // consented European: tell Clarity cookies are OK
 
     // 📘 Meta pixel — the vendor snippet, INSIDE this gate. It sets _fbp, so a
@@ -263,8 +278,7 @@
       };
       if (!f._fbq) f._fbq = n;
       n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
-      t = b.createElement(e); t.async = true; t.src = v;
-      s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+      afterPage(function () { addScript(v); });
     })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', META_ID);
     fbq('track', 'PageView');
