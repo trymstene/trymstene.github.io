@@ -842,6 +842,10 @@ const postFields = {
   'card.make': { kind: 'label', aim: 9, max: 13, note: '⭐ THE BUTTON THAT STARTS A POSTCARD, side by side with the one that starts a letter, under anything you have open. A verb first, ONE line, and SHORT — it shares a row with “Write back” inside the open letter’s paper, which leaves it about 92 pixels at 360 wide (“Send a postcard” measured 104 and was cut, 26 Sep 2026), and a label that has to be cut with an ellipsis is a label nobody can read. ⚠️ not the sheet’s heading (card.title), which names the thing being made rather than the act of making one.' },
   // 📮 the words row (26 Sep 2026): one line of the deck at a time between two drawn arrows. These three are never on
   // screen as text — they are what a screen reader says for the row and its two arrows.
+  // 🗓 when a letter came (26 Sep 2026, Trym: "add date to the letters aswell"): the two dates a row says in words.
+  // Every other date is the reader's own calendar (en-GB, "Wed", "21 Sept", "Saturday 26 September").
+  'dates.today': { kind: 'label', aim: 5, max: 10, note: 'What a row in the mailbox says, on the right of who it is from, for post that came today. One word, capitalised, never a time.' },
+  'dates.yesterday': { kind: 'label', aim: 9, max: 12, note: 'The same for post that came yesterday. One word, capitalised.' },
   'card.words': { kind: 'label', aim: 14, max: 24, note: 'What a screen reader calls the row that shows the postcard’s words, one line of the deck at a time between two arrows. A plain name for it, never an instruction.' },
   'card.prev': { kind: 'label', aim: 12, max: 20, note: 'What a screen reader says for the left arrow of the words row: it shows the line before this one (and from the first, the last). Plain, and parallel with card.next.' },
   'card.next': { kind: 'label', aim: 12, max: 20, note: 'What a screen reader says for the right arrow of the words row: it shows the next line of the deck (and after the last, the first again). Plain, and parallel with card.prev.' },
@@ -961,9 +965,14 @@ function postShape(data) {
 }
 const postSchema = {
   type: 'object', additionalProperties: false,
-  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round', 'drawers', 'knock'],
+  required: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'dates', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round', 'drawers', 'knock'],
   properties: {
-    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.') && !k.startsWith('round.') && !k.startsWith('drawers.') && !k.startsWith('knock.')).map(([k, v]) => [k, str(v.note)])),
+    ...Object.fromEntries(Object.entries(postFields).filter(([k]) => !k.startsWith('card.') && !k.startsWith('folk.') && !k.startsWith('round.') && !k.startsWith('drawers.') && !k.startsWith('knock.') && !k.startsWith('dates.')).map(([k, v]) => [k, str(v.note)])),
+    // 🗓 the two dates a mailbox row says in words (26 Sep 2026)
+    dates: {
+      type: 'object', additionalProperties: false, required: ['today', 'yesterday'],
+      properties: { today: str(postFields['dates.today'].note), yesterday: str(postFields['dates.yesterday'].note) },
+    },
     // 📬 the two drawers (22 Sep 2026): the tab for new post, the tab for kept post, and new post with none
     drawers: {
       type: 'object', additionalProperties: false, required: ['fresh', 'kept', 'none'],
@@ -2129,7 +2138,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',
     reads: 'src/scripts/town-post.js (through a glob inside the post office’s own lazy chunk)',
-    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round', 'drawers', 'knock'],
+    top: ['front', 'title', 'empty', 'noaddress', 'shut', 'from', 'dates', 'back', 'report', 'reported', 'reply', 'sheet', 'send', 'sent', 'refused', 'nopass', 'card', 'folk', 'round', 'drawers', 'knock'],
     fields: postFields,
     shape: postShape,
     schema: postSchema,

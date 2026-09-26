@@ -5,6 +5,10 @@
   "noaddress": "Post needs an address. Put a name on your homestead’s sign first.",
   "shut": "The post counter is closed right now.",
   "from": "From {who}",
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
   "back": "Go back",
   "report": "Report this letter",
   "reported": "The letter is gone from your mailbox. Someone will check it.",

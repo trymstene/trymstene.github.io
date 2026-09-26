@@ -268,7 +268,7 @@ test('a postcard arrives as a picture, and is not an envelope', async ({ page })
   // opened, it is the picture with the SENDER's banana drawn in it
   await page.evaluate(() => document.querySelector('.tw-post__pctile').click());
   await page.waitForTimeout(700);
-  const got = await page.evaluate(() => {
+  const got = await page.evaluate((at) => {
     const pc = document.querySelector('.tw-pc'), cv = pc && pc.querySelector('.tw-pc__me');
     return {
       bg: pc && pc.querySelector('.tw-pc__bg').getAttribute('src'),
@@ -276,8 +276,11 @@ test('a postcard arrives as a picture, and is not an envelope', async ({ page })
       place: pc && pc.querySelector('.tw-pc__place').textContent,
       look: cv && cv.dataset.look, drawn: cv && cv.dataset.f,
       inside: !!(pc && cv && cv.getBoundingClientRect().bottom <= pc.getBoundingClientRect().bottom + 1),
+      date: (document.querySelector('.tw-post__open .tw-post__at') || {}).textContent,
+      day: new Date(at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
     };
-  });
+  }, CARD_IN.at);
+  expect(got.date, '🗓 an opened postcard says the day it came').toBe(got.day);
   expect(got.bg, 'the rave template').toContain('pc-rave');
   expect(got.line, 'the line it was sent with, from the deck').toBe(COPY.card.lines[3]);
   expect(got.place, 'and the place it was sent from').toBe(COPY.card.places.rave);
@@ -668,3 +671,40 @@ for (const [w, h] of [[360, 640], [375, 667], [1366, 625], [1280, 720]]) {
     expect(errs).toEqual([]);
   });
 }
+
+// 🗓 EVERY LETTER SAYS WHEN IT CAME (26 Sep 2026, Trym: "add date to the letters aswell"). A row says Today,
+// Yesterday, a weekday this week, then the date, with the year only when it is not this one; an open letter writes
+// the day out, the way a letter is dated. The days are the READER's: the letters are built inside the page, so
+// "today" is the browser's today whatever the clock of the machine running the test says.
+test('every letter says when it came, in the reader’s own days', async ({ page }) => {
+  const errs = await box(page, 360, 640);
+  const want = await page.evaluate(() => {
+    const noon = (days) => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - days); return d.getTime(); };
+    const year = new Date(new Date().getFullYear() - 1, 0, 5, 12).getTime();
+    const ls = [[0, 't0'], [1, 't1'], [3, 't3'], [20, 't20']].map(([n, id]) => ({ id, from: 'pip-yard', name: 'Pip', at: noon(n), read: true, text: 'a letter from ' + n + ' days ago' }));
+    ls.push({ id: 'ty', from: 'pip-yard', name: 'Pip', at: year, read: true, text: 'a letter from last year' });
+    window.__town.post().set({ letters: ls, unread: 0 });
+    const f = (at, o) => new Date(at).toLocaleDateString('en-GB', o);
+    const old = new Date(noon(20)).getFullYear() === new Date().getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' };
+    return { week: f(noon(3), { weekday: 'short' }), old: f(noon(20), old), last: f(year, { day: 'numeric', month: 'short', year: 'numeric' }),
+      long: f(noon(0), { weekday: 'long', day: 'numeric', month: 'long' }) };
+  });
+  await page.evaluate(() => window.__town.post().tap('.tw-post__tab[data-drawer="kept"]'));
+  await page.waitForTimeout(150);
+  expect(await page.locator('.tw-post__thread .tw-post__at').first().textContent(), 'Kept: a person’s row says when their last letter came').toBe(COPY.dates.today);
+  await page.evaluate(() => window.__town.post().tap('.tw-post__thread'));
+  await page.waitForTimeout(200);
+  const rows = await page.evaluate(() => [...document.querySelectorAll('.tw-post__thread')].map((r) => ({
+    at: (r.querySelector('.tw-post__at') || {}).textContent || '',
+    line: r.querySelector('.tw-post__top').getBoundingClientRect().height,
+  })));
+  expect(rows.map((r) => r.at), 'Today, Yesterday, a weekday, a date, and a year only when it is not this one')
+    .toEqual([COPY.dates.today, COPY.dates.yesterday, want.week, want.old, want.last]);
+  for (const r of rows) expect(r.line, 'who and when share one line').toBeLessThan(24);
+  await page.screenshot({ path: 'test-results/post-dates-thread-360.png' });
+  await page.evaluate(() => document.querySelector('.tw-post__thread[data-id="t0"]').click());
+  await page.waitForTimeout(700);
+  expect(await page.locator('.tw-post__open .tw-post__at').textContent(), '⭐ an open letter writes the day out').toBe(want.long);
+  await page.screenshot({ path: 'test-results/post-dates-open-360.png' });
+  expect(errs).toEqual([]);
+});

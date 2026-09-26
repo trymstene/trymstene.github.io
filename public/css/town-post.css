@@ -95,6 +95,14 @@
 .tw-post__thread:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
 .tw-post__thread.is-new { background: #fff8e2; }
 .tw-post__row { display: grid; gap: 1px; min-width: 0; }
+/* 🗓 when it came, on the line with who it is from (26 Sep 2026). In a row the name gives way before the date does;
+   on an open letter nothing is cut — a long name pushes the date onto a line of its own, still on the right. */
+.tw-post__top { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.5rem; min-width: 0; }
+.tw-post__row .tw-post__top { flex-wrap: nowrap; }
+.tw-post__row .tw-post__top .tw-post__who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tw-post__at { flex: none; margin-left: auto; font-size: 0.66rem; font-weight: 700; opacity: 0.66; white-space: nowrap; }
+/* a world note brings its own paper, so its date sits over it, in the card's own ink */
+.tw-post__open.is-world .tw-post__at { display: block; text-align: right; color: #fffdf5; }
 
 /* ---- an open letter, and the envelope it came out of ------------------------------------------- */
 /* ⭐ THE ENVELOPE COMES OPEN AND THE LETTER COMES OUT (Trym, 20 Sep). Two one-shot animations on
