@@ -94,12 +94,18 @@ test('the park: an echo stands about under its own name, and its card waves', as
   expect(Math.abs(geo.gap), 'and the row sits centred in the card').toBeLessThan(2);
   expect(geo.cw, 'the card is narrow').toBeLessThanOrEqual(300);
   expect(geo.ch, 'and short: well under a third of the world').toBeLessThan(geo.vh / 3);
-  // ⭐ the farm-and-when line sits centred under the name (Trym, 26 Sep: "isnt centered under the player-name")
+  // ⭐ ONE CENTRE: the name and the line under it sit on the middle between the two buttons (Trym, 26 Sep: "it should
+  // align with the center between the two buttons"); a NEW sticker hangs off the name and never moves it
   const mid = await page.evaluate(() => {
-    const c = (el) => { const r = document.createRange(); r.selectNodeContents(el); const b = r.getBoundingClientRect(); return b.left + b.width / 2; };
-    return { name: c(document.querySelector('.bws-card h2')), role: c(document.querySelector('.bws-role')) };
+    const text = (el) => { const r = document.createRange(); r.setStart(el, 0); r.setEnd(el, el.childNodes.length); const b = r.getBoundingClientRect(); return b.left + b.width / 2; };
+    const nm = document.querySelector('.bws-nm'), words = document.createRange();
+    words.selectNodeContents(nm.firstChild); const w = words.getBoundingClientRect();
+    const [g, a] = [...document.querySelectorAll('.bws-go, .bws-alt')].map((x) => x.getBoundingClientRect());
+    return { name: w.left + w.width / 2, role: text(document.querySelector('.bws-role')), say: text(document.querySelector('.bws-say')), buttons: (g.left + a.right) / 2 };
   });
-  expect(Math.abs(mid.name - mid.role), 'the line under the name shares its centre').toBeLessThan(2);
+  expect(Math.abs(mid.name - mid.buttons), 'the name sits on the middle between the buttons').toBeLessThan(2);
+  expect(Math.abs(mid.role - mid.buttons), '…and so does the line under it').toBeLessThan(2);
+  expect(Math.abs(mid.say - mid.buttons), '…and the line below').toBeLessThan(2);
   const roleH = await page.evaluate(() => document.querySelector('.bws-role').getBoundingClientRect().height);
   expect(roleH, '…and is one line, never an orphan word under it').toBeLessThan(20);
   await page.click('.bws-go');
@@ -237,6 +243,16 @@ test('the park: a new banana’s echo says NEW on its tag and its card', async (
   expect(chip, 'the tag wears the word from the copy file').toBe(JSON.stringify(W.card.new));
   await page.evaluate(() => window.__bws.open('fresh-fields'));
   await expect(page.locator('.bws-card h2 .bws-new')).toHaveText(W.card.new);
+  await page.waitForTimeout(400);
+  const c = await page.evaluate(() => {
+    const words = document.createRange(); words.selectNodeContents(document.querySelector('.bws-nm').firstChild);
+    const w = words.getBoundingClientRect(), chip = document.querySelector('.bws-card .bws-new').getBoundingClientRect();
+    const [g, a] = [...document.querySelectorAll('.bws-go, .bws-alt')].map((x) => x.getBoundingClientRect());
+    return { name: w.left + w.width / 2, buttons: (g.left + a.right) / 2, chipLeft: chip.left, nameRight: w.right, chipH: chip.height };
+  });
+  expect(Math.abs(c.name - c.buttons), 'the sticker never moves the name off the middle').toBeLessThan(2);
+  expect(c.chipLeft, 'it hangs just after the name').toBeGreaterThan(c.nameRight);
+  expect(c.chipH, 'and it is small, one line of three letters (hung off the name it once stacked N-E-W)').toBeLessThan(14);
   const me = await mePos(page, '#pkMe', 2760, 1100);
   await page.evaluate(([x, y]) => window.__bws.put(x, y, 'fresh-fields'), [me.x + 120, me.y]);
   await page.locator('.bws-x').click();

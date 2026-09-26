@@ -68,8 +68,8 @@ const CSS = `
 .bws-tag { position:absolute; left:50%; top:-14px; transform:translateX(-50%); font-size:.5rem; font-weight:800; letter-spacing:.05em; color:#fffdf5; text-shadow:1px 1px 0 #000; white-space:nowrap; }
 .bw-name, .bws-tag { display:flex; align-items:center; gap:3px; }
 [data-pid] > .bw-name::before { content:''; display:inline-block; width:4px; height:4px; background:#5fe36a; box-shadow:0 0 0 1px #000; }
-[data-new] > .bw-name::after, [data-new] > .bws-tag::after, .bws-new { content:var(--bws-new, ''); display:inline-block; padding:0 3px; background:#8de08d; color:#10220c; box-shadow:0 0 0 1px #000; text-shadow:none; font-size:.44rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; line-height:1.4; }
-.bws-new { font-size:.56rem; margin-left:6px; align-self:center; }
+[data-new] > .bw-name::after, [data-new] > .bws-tag::after, .bws-new { content:var(--bws-new, ''); display:inline-block; padding:0 3px; background:#8de08d; color:#10220c; box-shadow:0 0 0 1px #000; text-shadow:none; font-size:.4rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; line-height:1.35; white-space:nowrap; }
+.bws-new { position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:5px; padding:0 2px; font-size:.46rem; }
 .bws-hand { position:absolute; left:76%; top:24%; width:30%; transform:translate(-50%,-50%); transform-origin:50% 90%; pointer-events:none; image-rendering:pixelated; z-index:2; animation:bwsWave 1.6s ease-out forwards; }
 @keyframes bwsWave { 0% { transform:translate(-50%,-50%) scale(.2); opacity:0; } 12% { transform:translate(-50%,-50%) scale(1); opacity:1; } 26% { transform:translate(-50%,-50%) rotate(-22deg); } 40% { transform:translate(-50%,-50%) rotate(18deg); } 54% { transform:translate(-50%,-50%) rotate(-16deg); } 68% { transform:translate(-50%,-50%) rotate(10deg); } 84% { transform:translate(-50%,-50%) rotate(0); opacity:1; } 100% { transform:translate(-50%,-80%); opacity:0; } }
 .bws { position:absolute; left:18px; top:48px; width:0; height:0; z-index:10; pointer-events:none; transition:top 200ms ease-out; }
@@ -103,11 +103,14 @@ body.pk-inside .bws, body.bh-inside .bws, .hs-world.is-inside ~ .bws, .tw-world.
 .bws-me input { width:16px; height:16px; margin:0; accent-color:#111; flex:none; }
 .bws-veil { position:absolute; inset:0; z-index:59; }
 .bws-card { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); z-index:60; width:min(300px, calc(100% - 24px)); box-sizing:border-box; background:#fffdf5; color:#241c00;
-  border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:3px; padding:10px 12px 12px; animation:bwsUp .28s cubic-bezier(.34,1.56,.64,1); }
-/* ⭐ the name and the line under it share ONE centre: the same box (clear of the portrait and the ✕), both centred in it
-   (Trym, 26 Sep: "isnt centered under the player-name") */
-.bws-card h2 { margin:0; padding:0 26px 0 88px; min-height:28px; display:flex; align-items:flex-end; justify-content:center; font-size:1.05rem; line-height:1.1; overflow-wrap:anywhere; text-align:center; }
-.bws-role { margin:2px 0 0; padding:0 26px 0 88px; font-size:.7rem; opacity:.72; text-align:center; }
+  border:3px solid #000; box-shadow:3px 3px 0 #000; border-radius:3px; padding:24px 12px 12px; animation:bwsUp .28s cubic-bezier(.34,1.56,.64,1); }
+/* ⭐ THE CARD HAS ONE CENTRE, the middle between its two buttons: the name, the line under it and the line below all sit
+   on it (Trym, 26 Sep: "it should align with the center between the two buttons"). The same padding both sides, the
+   text starting under the portrait's reach, and the NEW sticker hung off the name so it never moves the name. */
+.bws-card h2 { margin:0; padding:0 30px; display:flex; justify-content:center; font-size:1.05rem; line-height:1.15; text-align:center; }
+.bws-nm { position:relative; min-width:0; overflow-wrap:anywhere; }
+.bws-nm.has-new { max-width:calc(100% - 64px); }
+.bws-role { margin:3px 0 0; padding:0 30px; font-size:.7rem; opacity:.72; text-align:center; }
 .bws-say { margin:12px 0 10px; font-size:.8rem; line-height:1.35; text-align:center; }
 .bws-pop { position:absolute; top:-56px; left:-16px; width:112px; height:112px; transform:rotate(-8deg); transform-origin:center bottom; clip-path:inset(0 0 26% 0); filter:drop-shadow(2px 3px 0 rgba(0,0,0,.4)); pointer-events:none; }
 .bws-pop canvas { display:block; width:100%; height:100%; image-rendering:pixelated; }
@@ -387,7 +390,7 @@ function openEcho(e) {
   card.setAttribute('aria-label', e.n);
   card.innerHTML = '<button type="button" class="bws-x" aria-label="' + esc(W.card.close) + '">' + ico(CLOSE, 18) + '</button>'
     + '<div class="bws-pop" aria-hidden="true"><canvas width="300" height="300"></canvas></div>'
-    + '<h2>' + esc(e.n) + (e.nw ? '<span class="bws-new">' + esc(W.card.new) + '</span>' : '') + '</h2>'
+    + '<h2><span class="bws-nm' + (e.nw ? ' has-new' : '') + '">' + esc(e.n) + (e.nw ? '<span class="bws-new">' + esc(W.card.new) + '</span>' : '') + '</span></h2>'
     + '<p class="bws-role">' + esc(when(e.d | 0)) + '</p>'   // ✂️ when, not the farm's name: Visit farm goes there, and a long name wrapped
     + '<p class="bws-say">' + esc(fillWords(W.card.away, { name: e.n })) + '</p>'
     + '<div class="bws-row"><button type="button" class="bws-go"' + (done ? ' disabled' : '') + '>' + handSvg('currentColor') + '<span>' + esc(done ? W.card.waved : W.card.wave) + '</span></button>'

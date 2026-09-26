@@ -1331,9 +1331,11 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
   wears a small green NEW chip after the name above their head — a nameless newcomer gets a tag for it to sit on — and an
   echo of a farm claimed in the last three days wears it too, on its tag and beside its name on the card. Every room
   hands the flag on (`nw`); a wave at one counts as a welcome (`wave_welcome`).
-- **The card's name and the line under it share ONE centre** (Trym: *"isnt centered under the player-name"*): both in
-  the same box clear of the portrait and the ✕, both centred, the line one line (when they played; the farm's name left it
-  because a long one wrapped). The walk measures the two centres and the line's height.
+- **The card has ONE centre: the middle between its two buttons** (Trym: *"isnt centered under the player-name"*, then
+  *"it should align with the center between the two buttons"*). The name, the line under it (when they played, one line:
+  the farm's name left it because a long one wrapped) and the line below all sit on it — the same padding both sides, the
+  text starting below the portrait's reach, and the NEW sticker hung off the name (absolutely, never wrapping) so it can
+  never push the name off the middle. The walk measures all three centres against the buttons.
 - **A tap on a banana is caught once, at the document.** Every area listens differently (the town on pointerdown, the
   others on click, the steer on touchstart), so the social layer takes a tap that lands on a banana's body in capture,
   before any of them, and swallows exactly the one click that tap owes — never a second, which is a new tap. The
