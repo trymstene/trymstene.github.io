@@ -53,7 +53,7 @@ jobs:
       # the front page the same day. Fail-soft: an unreachable board keeps the
       # committed pictures.
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Bake the citizens' frames

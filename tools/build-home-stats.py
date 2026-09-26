@@ -86,7 +86,7 @@ if __name__ == '__main__':
         if raw[k] < old.get(k, 0):
             print('%-22s GA4 said %d, below the committed %d: kept' % (k, raw[k], old[k]))
             raw[k] = old[k]
-    out = {'asOf': datetime.date.today().isoformat(), 'from': FROM, 'n': {k: floor2(v) for k, v in raw.items()}, 'raw': raw}
+    out = {'asOf': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ'), 'from': FROM, 'n': {k: floor2(v) for k, v in raw.items()}, 'raw': raw}
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(out, f, indent=2)
         f.write('\n')

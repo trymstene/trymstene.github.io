@@ -313,7 +313,7 @@ const FEATURES = [
   </style>
 
   {/* 📰 the ticker: the world's numbers (the frontmatter), the live ones put in front by the script below */}
-  <div class="marquee tk" slot="banner" aria-hidden="true" id="tk" data-live={TICK_LIVE} data-len={TICK_LEN} style={`--tk-len:${TICK_LEN}`}>
+  <div class="marquee tk" slot="banner" aria-hidden="true" id="tk" data-live={TICK_LIVE} data-len={TICK_LEN} data-as-of={homeStats.asOf} style={`--tk-len:${TICK_LEN}`}>
     <div class="marquee__track">
       {[0, 1].map(() => (
         <span class="tk__half">{TICKS.map((it) => <span class="tk__i">{it.map((p) => (p.b != null ? <b>{p.b}</b> : p.t))}</span>)}</span>
