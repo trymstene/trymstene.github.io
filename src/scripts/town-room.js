@@ -32,6 +32,7 @@ import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shi
 import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, INFO_WIN, OVERLAYS } from './town-geo.js';   // 🕹 ARCADE moved with the arcade's week (town-arcade.js)
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
+import { once, seen } from '../lib/once.js';   // 🧾 the counter's invitation, until the till is first opened
 import { arrived as callIn, calls as callsAt } from '../lib/work-calls.js';   // 📟 the on-call staff's work comes in as calls (slice 0b)
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
@@ -1064,7 +1065,10 @@ export function bootTownLife(ctx) {
       ctx.then(() => chore(key));
       return true;
     }
-    if (key === 'store' || key === 'till') return shopCard('store');   // 🏪 the counter inside (a tap on the front walks you in since 23 Sep 2026: banana-town.js openFor)
+    if (key === 'store' || key === 'till') {   // 🏪 the counter inside (a tap on the front walks you in since 23 Sep 2026: banana-town.js openFor)
+      if (key === 'till' && once('store:till')) hintShow();   // 🧾 opened once: the invitation has done its work
+      return shopCard('store');
+    }
     return false;
   }
 
@@ -1370,6 +1374,7 @@ export function bootTownLife(ctx) {
     restocked: () => restocked(),
     bare: () => bareShelf(),
     hints: () => hints.map((s2) => s2.key),
+    invite: () => invites.map((s2) => s2.key),   // 🧾 the counter's own invitation, for a customer (never the chore's hints)
     // ☕ the counter, once its chunk is in: the walk cannot wait on an import it did not ask for
     cafe: () => (cafe ? cafe.seam : null),
     lemon: () => (lemon ? lemon.seam : null),   // 🍋 the stand's counter, once its chunk is in
@@ -1498,17 +1503,29 @@ export function bootTownLife(ctx) {
   // and it only ever shines for somebody who can answer it, so it is never a tease.
   // Each glowing thing is the SAME single the plate already painted, laid exactly over itself, so
   // nothing moves and nothing is added to the room: it just picks up the town's own `is-todo` halo.
-  let hints = [];
+  let hints = [], invites = [];
   function hintShow() {
     hints.forEach(kill); hints = [];
+    invites.forEach(kill); invites = [];
     if (roomAt !== 'store' || !STORE || !STORE.over) return;
     const mine = ctx.job && ctx.job();
-    if (!mine || mine.at !== 'store' || bareShelf() < 0) return;
+    if (!mine || mine.at !== 'store') { invite(); return; }
+    if (bareShelf() < 0) return;
     for (const k of (carry ? [bareKey()] : CRATES)) {
       const o = STORE.over[k]; if (!o) continue;
       const sp = sprite(o[0], o[1], o[2], { z: 2000 + o[2], cls: 'is-in is-todo' });
       if (sp) hints.push(sp);
     }
+  }
+  // 🧾 …AND A CUSTOMER'S (26 Sep 2026, Trym: "its not very intuitive that you can click on the store counter for opening the
+  // inventory of the store - it should be solved visually"). The counter, register and all, wears the same halo until the first
+  // time its card is opened on this device; after that the register on it says "pay here" by itself (§30: say it when it applies,
+  // once). Never while the shop is shut — an invitation only shines for somebody who can answer it.
+  function invite() {
+    const o = STORE.over.till;
+    if (!o || seen('store:till') || !shelfFor()) return;
+    const sp = sprite(o[0], o[1], o[2], { z: 2000 + o[2], cls: 'is-in is-todo is-invite' });
+    if (sp) invites.push(sp);
   }
   function roomShow(key) {
     roomAt = key || '';

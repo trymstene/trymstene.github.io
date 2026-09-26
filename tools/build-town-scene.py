@@ -880,6 +880,8 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
     # So the two crates are composited into a single piece here, sat on each other with a two-pixel
     # overlap so the lower one's rim reads as carrying the upper.
     def spiece(n):
+        if n == 'till':
+            return till_piece()
         if not isinstance(n, tuple):
             return RB.strip_floor(RB.single(GROC, n))
         bot, top = (RB.strip_floor(RB.single(GROC, k)) for k in n)
@@ -892,6 +894,25 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
 
     STACK = (356, 359)   # the pack's bare wooden crate, with its shallow cousin on top
 
+    # 🧾 THE COUNTER IS A TILL (26 Sep 2026, Trym: "its not very intuitive that you can click on the store counter for
+    # opening the inventory of the store - it should be solved visually with something rather than add another information
+    # message or textbox"). It was the pack's bare wooden counter — two singles, nothing on them, nobody behind — so it read
+    # as furniture. The pack's own cash register (308) stands on it now, the one object anybody reads as "pay here", and it
+    # stays true when the shop is shut (an OPEN sign would not, design library §32). And the counter is ONE piece: the right
+    # third was a second single with no key, so a tap there found nothing, and the invitation could only have lit two thirds.
+    # ⚠️ the register is NOT strip_floor'ed: it has no baked plinth, and the flood would eat its grey from the bottom edge.
+    def till_piece():
+        a, b = (RB.strip_floor(RB.single(GROC, k)) for k in (378, 379))
+        reg = RB.single(GROC, 308)
+        reg = reg.crop(reg.getbbox())
+        lift = max(0, reg.height - 40)   # how far the register stands above the counter's own 80-px canvas
+        out = Image.new('RGBA', (a.width + b.width, a.height + lift), (0, 0, 0, 0))
+        out.alpha_composite(a, (0, lift))
+        out.alpha_composite(b, (a.width, lift))
+        # its feet on the front edge of the counter top, on the right half and clear of both ends (looked at in four places)
+        out.alpha_composite(reg, (66, lift + 40 - reg.height))
+        return out
+
     # (single, x, base y, collider rel. to (x, base) or None, the spot key stock hangs on)
     SFURN = [
         # the back wall: one flush run of bare shelving, pushed up into the wall band like the
@@ -899,8 +920,8 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
         (406, 28, 176, (0, -76, 48, 0), 'sh1'), (407, 76, 176, (0, -76, 48, 0), 'sh2'),
         (408, 124, 176, (0, -76, 48, 0), 'sh3'), (406, 172, 176, (0, -76, 48, 0), 'sh4'),
         (407, 220, 176, (0, -76, 48, 0), 'sh5'),
-        # the counter, right of the run and against the same wall — Pip stands behind it
-        (378, 330, 190, (0, -58, 96, 0), 'till'), (379, 426, 190, (0, -58, 48, 0), None),
+        # the counter, right of the run and against the same wall, with the register on it (till_piece above)
+        ('till', 330, 190, (0, -58, 144, 0), 'till'),
         # the floor: a crate stack at each side wall with a bare market table beside it, leaving a
         # clear aisle from the door straight up to the counter (the doorway is the bottom middle)
         #
@@ -947,7 +968,7 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
     # single, same pixel, nothing moved — and the room glows THAT. The trick the shutters and the full
     # bins have always used; here it lets the chore explain itself with no words at all: the crate
     # stacks glow while your hands are empty, and the bare face glows while you are carrying one.
-    SOVER = ['cr1', 'cr2', 'sh1', 'sh2', 'sh3', 'sh4', 'sh5', 'tbl1', 'tbl2']
+    SOVER = ['cr1', 'cr2', 'sh1', 'sh2', 'sh3', 'sh4', 'sh5', 'tbl1', 'tbl2', 'till']   # 🧾 the till: a customer's invitation
     sover = {}
     for n, x, base, col, key in SFURN:
         if key not in SOVER:

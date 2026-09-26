@@ -472,6 +472,14 @@ view.addEventListener('pointerdown', (e) => {
     }
     if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { if (life.pick(hit[1])) { float(f.x, f.y - 30, '+1'); hud.refresh(); } }; } return; }   // walk to it, then it is picked up: a point of rep, the park's litter rule
     if (inRoom === 'store' && serve && serve.tap(hit[1])) return;   // 🛒 a customer is waiting: the shelves and the till are theirs first
+    // 🧾 THE COUNTER IS WALKED TO, THEN IT OPENS (26 Sep 2026): its card opened on the tap from anywhere in the room, the one
+    // thing indoors that did not walk first — and a card that appears from across the room does not say where it came from
+    if (inRoom === 'store' && hit[1] === 'till') {
+      const q = ROOMS.store.spots.find((s2) => s2[0] === 'till');
+      if (q) { tgt.x = (q[1] + q[3]) / 2; tgt.y = q[4] + 26; }
+      arriveThen = () => { openFor('till'); };
+      return;
+    }
     const spot = SPOTS[hit[1]], wasIn = inRoom;
     // ⚠️ a thing with nothing to say says NOTHING. This used to fall back to the raw key, which was
     // harmless while every tappable thing had an entry — a room full of shelves would have toasted "sh1".

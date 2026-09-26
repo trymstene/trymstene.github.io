@@ -832,7 +832,8 @@ test('the shop fills as the town heals, and its stock is the shelf', async ({ pa
     await seam(page, () => window.__town.rooms.enter('store'));
     await page.waitForTimeout(700);
     const st = await page.evaluate(() => {
-      const els = [...document.querySelectorAll('.tw-state.is-in')];
+      // 🧾 not the counter's invitation: that is a customer's, lit until the till is first opened (town-store-till.spec)
+      const els = [...document.querySelectorAll('.tw-state.is-in:not(.is-invite)')];
       return {
         shelf: (window.__town.room.shelf() || []).length,
         faces: els.length,

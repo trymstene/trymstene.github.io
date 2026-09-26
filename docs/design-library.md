@@ -723,6 +723,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 38 | The front page's party clips (never scrolls), its crew is the builder's strips on whole CSS pixels with nothing to tap, the name's shadow is a black drop-shadow, its ticker's numbers are the stats file's read low and its live lines come only when the world answers | `tests/home-hero.spec.mjs` (a CSS property cannot be grepped for a meaning, so the walk asserts the outcome at 360–1440 px) |
 | 39 | A variable font is one URL across its weights; the front page's pictures are WebP at their shown size, nothing below the fold is eager, every picture arrives | `check-design.mjs` (two @font-face URLs with identical files fail) + `tests/home-hero.spec.mjs` (the banana is WebP, the slides lazy WebP, the band's stickers small, every image loads, Space Grotesk fetched once) |
 | 40 | The mailbox's envelopes are drawn, never a scaled item sprite; a letter from somebody new is never called a knock; the counter offers a postcard beside a letter; the postcard sheet is whole on its card at every size | `check-copy.mjs` (knock or door in the first-letter words; `card.make` ≤ 13) + `tests/town-post.spec.mjs` (the first-letter flow, the counter's two buttons whole at 360, the sheet with nothing below the fold at 360×640, 375×667, 1366×625 and 1280×720, the words go round) + `tests/homestead-letters.spec.mjs` (no postcard at home) |
+| 41 | A fitting that opens a card looks like what it does in its own art, the whole drawn piece answers a tap, the banana walks to it before the card opens, and a customer sees it lit once until first use — never its own staff, never while shut | `tests/town-store-till.spec.mjs` (the register's counter lit for a new customer and visible above the plate, a real tap on its right third walks there and opens the shop on arrival, the light gone for good after, none for the staff, none when shut) — a behaviour, so a walk rather than a grep |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1242,3 +1243,30 @@ view is a bit messy"*.
   walk scrolls a control into view before it taps, so it cannot see this class; the sheet's test measures the card.
 - **A label is measured in its own row at 360 px.** "Send a postcard" fits the counter's half-row at 0.82rem and not
   an open letter's (about 92 px), where the answer stays "Send a card". Measure the verb span, which is what clips.
+
+## §41 A COUNTER LOOKS LIKE WHAT IT DOES, AND SAYS SO ONCE (26 Sep 2026, Trym in the store)
+
+Trym: *"when i enter the store its not very intuitive that you can click on the store counter for opening the inventory of
+the store - it should be solved visually with something rather than add another information message or textbox"*.
+
+The store's counter was the pack's bare wooden counter: nothing on it, nobody behind it, a third of it dead to a tap, and a
+card that opened from across the room. Four rules came out of it, for any fitting in a room that opens a card:
+
+- **It looks like what it does, in its own art.** The pack's cash register (grocery single 308) stands on the counter:
+  the one object anybody reads as "pay here". Pack art, baked into the plate (`till_piece` in
+  `tools/build-town-scene.py`), and true in every state of the shop. ⚠️ Not an OPEN sign: the shop shuts at the lowest band,
+  and "nobody says a shop is open unless it always is" (§32).
+- **One piece, one spot.** The counter was two singles and only the first had a key, so a tap on its right third found
+  nothing. It is one composited piece now, keyed `till`, so the whole drawn thing answers a tap (§24's rule, indoors) and
+  the whole of it can glow.
+- **Walk first, then the card** (§18). Every other thing indoors is walked to before it answers; the counter opened on the
+  tap, from anywhere. A card that appears from across the room does not say where it came from.
+- **A customer's invitation, once.** The town's own halo (`is-todo`, the restock chore's invitation) on the counter, register
+  and all, for somebody who is not the shop's staff and has never opened its card on this device — gone at the first
+  opening and never back (`seen()` / `once()` in `src/lib/once.js`: §30, say it when it applies, once). Never for the
+  staff (a place greets strangers, §32), never while the shop is shut (an invitation only shines for somebody who can
+  answer it). It is its own list (`room.seam.invite()`), never the chore's `hints()`.
+- ⏳ Open: the bake still says "Pip stands behind it", and nobody does — `INSIDE` in `town-life.js` only lets Spinner keep
+  the arcade from within, so Pip minds the store from the square, and the room's greeting names him while he is outside
+  (§3e). Putting Pip behind the counter needs a depth piece for the counter's front (he would stand in front of the plate
+  otherwise) and a rule for a tap on him against a tap on the till.

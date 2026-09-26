@@ -8,3 +8,7 @@ export function once(k) {
   try { localStorage.setItem('tw-once-v1', JSON.stringify(o)); } catch (e) {}
   return true;
 }
+// …and whether it has been, without spending it: a thing shown UNTIL it is first used asks seen(k), then calls once(k) on the use
+export function seen(k) {
+  try { return !!(JSON.parse(localStorage.getItem('tw-once-v1') || '{}') || {})[k]; } catch (e) { return false; }
+}
