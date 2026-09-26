@@ -60,6 +60,16 @@ jobs:
         run: |
           pip install --quiet pillow
           python tools/build-citizen-cards.py || echo "::warning::citizens bake skipped"
+      # 📰 the front page ticker's all-time numbers, fresh from GA4 with every build (so at most a day old): the
+      # GA4_SERVICE_ACCOUNT secret is the service account's key JSON, read-only on analytics. Fail-soft: with no
+      # secret, or a GA4 that does not answer, the committed src/data/home-stats.json stays (and it never goes lower).
+      - name: Refresh the front page's numbers
+        env:
+          GA4_SERVICE_ACCOUNT: ${{ secrets.GA4_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$GA4_SERVICE_ACCOUNT" ]; then echo "::warning::no GA4_SERVICE_ACCOUNT secret: the committed front-page numbers stay"; exit 0; fi
+          pip install --quiet google-analytics-data
+          python tools/build-home-stats.py || echo "::warning::front-page numbers not refreshed: the committed ones stay"
       - name: Build
         run: npm run build
       - name: Upload Pages artifact

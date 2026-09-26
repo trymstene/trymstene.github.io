@@ -8,7 +8,11 @@ hole ever dug at the bay, every shell, everyone who ever danced at the rave — 
 ask. So this asks GA4 once and writes them into src/data/home-stats.json, baked into the page at build.
 
 ⚠️ ALL-TIME totals, ROUNDED DOWN, printed with a "+": a count that only grows, read low, stays true however long it
-sits between runs. Re-run whenever (python tools/build-home-stats.py) and commit the JSON.
+sits between runs. The DEPLOY runs this every day (.github/workflows/deploy.yml, the GA4_SERVICE_ACCOUNT secret: the
+service account's key JSON; the property is worker-pulse/wrangler.toml's PROPERTY_ID), so the live page is at most a
+day old; the committed JSON is only the fallback. Locally it reads tools/ga4.local.json as every GA4 tool does.
+⚠️ NEVER LOWER: a number is kept at the committed value if GA4 answers with less (a missing row, a quota hiccup), so
+the front page can never print "0+" or step backwards.
 ⚠️ GA4 counts only what consented visitors did (Consent Mode), so every number here is a floor — the "+" is honest.
 ⚠️ COUNT WHAT THE LINE SAYS. rave_join fires on every reconnect, so "danced at the rave" reads the event's USERS
 (rave_join_users), never its count. park_trash, park_egg and park_bird fire once per visit, so their counts are
@@ -21,6 +25,7 @@ visitors after the rave (728), the park and the town the most repeated chores.
 import datetime
 import json
 import os
+import re
 import sys
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -45,13 +50,24 @@ def floor2(n):
     return n // p * p
 
 
-if __name__ == '__main__':
+def credentials():
+    """(credentials, property id): the CI secret when it is set, else tools/ga4.local.json"""
     from google.oauth2 import service_account
+    scopes = ['https://www.googleapis.com/auth/analytics.readonly']
+    key = os.environ.get('GA4_SERVICE_ACCOUNT', '').strip()
+    if key:
+        toml = open(os.path.join(SITE, 'worker-pulse', 'wrangler.toml'), encoding='utf-8').read()
+        prop = re.search(r'^PROPERTY_ID\s*=\s*"(\d+)"', toml, re.M).group(1)
+        return service_account.Credentials.from_service_account_info(json.loads(key), scopes=scopes), prop
     cfg = json.load(open(os.path.join(SITE, 'tools', 'ga4.local.json'), encoding='utf-8'))
-    creds = service_account.Credentials.from_service_account_file(cfg['key_path'], scopes=['https://www.googleapis.com/auth/analytics.readonly'])
+    return service_account.Credentials.from_service_account_file(cfg['key_path'], scopes=scopes), cfg['property_id']
+
+
+if __name__ == '__main__':
+    creds, prop = credentials()
     client = BetaAnalyticsDataClient(credentials=creds)
     req = RunReportRequest(
-        property='properties/%s' % cfg['property_id'],
+        property='properties/%s' % prop,
         date_ranges=[DateRange(start_date=FROM, end_date='today')],
         dimensions=[Dimension(name='eventName')],
         metrics=[Metric(name='eventCount'), Metric(name='totalUsers')],
@@ -61,6 +77,15 @@ if __name__ == '__main__':
     rows = {r.dimension_values[0].value: (int(r.metric_values[0].value), int(r.metric_values[1].value)) for r in client.run_report(req).rows}
     raw = {k: rows.get(k, (0, 0))[0] for k in EVENTS}
     raw.update({k + '_users': rows.get(k, (0, 0))[1] for k in USERS})
+    # never lower than what is committed: an all-time count only grows, so less means GA4 answered short
+    try:
+        old = json.load(open(OUT, encoding='utf-8')).get('raw', {})
+    except (OSError, ValueError):
+        old = {}
+    for k in raw:
+        if raw[k] < old.get(k, 0):
+            print('%-22s GA4 said %d, below the committed %d: kept' % (k, raw[k], old[k]))
+            raw[k] = old[k]
     out = {'asOf': datetime.date.today().isoformat(), 'from': FROM, 'n': {k: floor2(v) for k, v in raw.items()}, 'raw': raw}
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(out, f, indent=2)

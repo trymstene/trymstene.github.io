@@ -1175,7 +1175,8 @@ based on popularity"*. Built in `src/pages/index.astro`, words in `src/data/copy
   sticker were built and taken out the same night (Trym: *"it becomes noise with that extra coin-element underneath"*).
   A tap on the big banana throws confetti, and that is all the hero does when touched.
 - **The ticker's numbers count what the line says, read low.** All-time floors from GA4
-  (`tools/build-home-stats.py` → `src/data/home-stats.json`, two significant figures rounded DOWN, printed with a "+"):
+  (`tools/build-home-stats.py` → `src/data/home-stats.json`, two significant figures rounded DOWN, printed with a "+";
+  every deploy refreshes them, so the page is at most a day old, and a count never goes lower than the committed one):
   a line about PEOPLE reads the event's users (`rave_join` fires on every reconnect, so "danced at the rave" is
   `rave_join_users`), a line about things reads only what the event counts (a fishing catch is "a catch", not "a
   fish"). Live lines — who is in the world now, the town's day, the Wheel of Peel's pot — come only when they say

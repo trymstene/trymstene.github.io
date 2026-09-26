@@ -88,7 +88,7 @@ const floorOf = (key) => {
 };
 const citName = citizens.winners && citizens.winners.citizen ? cleanName(citizens.winners.citizen.name) : '';
 const TICKS = [];
-W.ticker.stats.forEach((s, i) => {
+W.ticker.stats.filter((s) => homeStats.n[s.key] !== 0).forEach((s, i) => {   // never "0+ …" on the front page
   TICKS.push(fill(s.line, { n: floorOf(s.key) }));
   if (i === 1 && citName) TICKS.push(fill(W.ticker.citizen, { name: citName }));
   if (i % 4 === 3 && W.ticker.lines[i >> 2]) TICKS.push(fill(W.ticker.lines[i >> 2], {}));
@@ -361,7 +361,7 @@ const FEATURES = [
     <a class="btn btn--dark" href="/shop/#sticker-packs" data-place="home_band">Shop the packs →</a>
   </section>
   <style>
-    .pkband { text-align: center; padding-top: 1.6rem; }
+    .pkband { text-align: center; padding-top: clamp(3.4rem, 6vw, 4.4rem); }
     .pkband h2 { margin-bottom: 0.6rem; }
     .pkband__lead { margin: 0 auto 1.2rem; }
   </style>
