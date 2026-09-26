@@ -2749,8 +2749,20 @@ export const JOBS = {
     what: 'The card a tap on an echo opens (a real player who was about lately, drawn in the world), its two buttons and what they answer; and the list behind the waves badge in the corner: who waved at you, when, Wave back, Nib’s welcome, and the switch that keeps your own banana out of other people’s echoes.',
     approved: 'src/data/copy/world-social.json',
     reads: 'src/lib/world-social.js (a static import; the social layer is its own lazy chunk, loaded by every walkable area but the rave)',
-    top: ['card', 'list'],
+    top: ['card', 'list', 'gift'],
     fields: {
+      // 🎁 NIB'S WELCOME PRESENT (26 Sep 2026, Trym: "i believe in giving secret gifts or mystery chests … users get
+      // something others dont have"): handed to a new banana a while into the first visit, opened on a later day
+      'gift.give': { kind: 'label', aim: 16, max: 22, note: 'The heading of the card that hands the present over, under Nib’s portrait. What it is, plainly.' },
+      'gift.from': { kind: 'prose', aim: 28, max: 40, note: 'The one line under it: who it is from (the portrait is him) and that it opens TOMORROW — the whole reason to come back. A promise, never a time of day.' },
+      'gift.thanks': { kind: 'label', aim: 6, max: 10, note: 'The card’s one button, which closes it. A newcomer’s own warm word back, not an instruction.' },
+      'gift.back': { kind: 'label', aim: 14, max: 20, note: '⭐ The heading when the present opens by itself on a later day — the welcome back (the evidence: reward the return). For a banana with no name yet.' },
+      'gift.backName': { kind: 'label', aim: 20, max: 30, ...holdsAll('name'), note: 'The same, for a banana with a name: {name} is theirs. Answering somebody by name is most of what makes a place remember you.' },
+      'gift.nib': { kind: 'label', aim: 12, max: 16, note: 'The small line under that heading: whose present it was.' },
+      'gift.inside': { kind: 'prose', aim: 16, max: 28, ...holdsAll('item'), note: 'What was in it: {item} is the wearable’s own name from the wardrobe (“Squid hat”). Short and bright: the item is the news.' },
+      'gift.none': { kind: 'prose', aim: 44, max: 60, note: 'Only for somebody who already owns every piece the present can hold (very rare): inside is a note. Warm, never a scold.' },
+      'gift.wear': { kind: 'label', aim: 7, max: 9, note: 'The button that puts it on your banana now. A verb first, one line.' },
+      'gift.worn': { kind: 'label', aim: 16, max: 20, note: 'The same button once it is on: done, in a few words.' },
       'card.when.today': { kind: 'label', aim: 12, max: 18, note: 'Under an echo’s name, centred, the whole line (26 Sep: the farm’s name left it — a long one wrapped): they last played today. It says WHEN, never where — an echo can stand in an area its player never visited.' },
       'card.when.yesterday': { kind: 'label', aim: 14, max: 20, note: 'The same, for yesterday.' },
       'card.when.days': { kind: 'label', aim: 16, max: 22, ...holdsAll('n'), note: 'The same, two to fourteen days ago; {n} is the number of days.' },

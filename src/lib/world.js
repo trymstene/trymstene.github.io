@@ -112,6 +112,16 @@ export function worldNewcomer() {
   try { const c = +((JSON.parse(localStorage.getItem('pass-v1') || 'null') || {}).created || 0); return !c || Date.now() - c < NEW_BANANA_MS; } catch (e) { return false; }
 }
 
+// 👕 WEAR WHAT IS SAVED (26 Sep 2026): an area's banana takes the outfit in bb-last, in place (every area holds references
+// to its ME_DRAW, so it is mutated, never replaced). The areas call it on `world:rewear` — a present put on from the
+// social layer's card is on the banana the next frame, wherever you opened it.
+export function wearSaved(draw) {
+  try {
+    const o = JSON.parse(localStorage.getItem('bb-last') || 'null') || {};
+    draw.hat = o.hat || 'none'; draw.glasses = o.glasses || 'none'; draw.extras = o.extras || {};
+  } catch (e) {}
+}
+
 // 🪪 THE WORLD TOKEN — proof, for the world workers, that this browser holds
 // the pass behind worldOwner(). Minted by worker-pass on every pull/push
 // (`gid.exp.aliases.sig`, 30 days) and kept next to the gid; the workers

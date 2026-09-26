@@ -26,7 +26,7 @@ import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 
 import { askName } from '../lib/banana-id.js';
-import { worldOwner, worldSid, worldToken, presenceRoom, poofInto, snapScale } from '../lib/world.js';
+import { worldOwner, worldSid, worldToken, presenceRoom, poofInto, snapScale, wearSaved } from '../lib/world.js';
 import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
@@ -4929,6 +4929,7 @@ function init(visitDoc, visitMiss) {
     return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
   };
   let lastF = -1;
+  document.addEventListener('world:rewear', () => { wearSaved(ME_DRAW); lastF = -1; });   // 🎁 a present put on (world-gift.js)
   function standUp() {
     if (!sitting) return;
     sitting = null;

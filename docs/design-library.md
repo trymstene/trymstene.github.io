@@ -1340,5 +1340,18 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
   others on click, the steer on touchstart), so the social layer takes a tap that lands on a banana's body in capture,
   before any of them, and swallows exactly the one click that tap owes — never a second, which is a new tap. The
   park's and the bay's cull sweeps leave an echo alone (`noCull`).
+- **A new banana is handed a present that opens tomorrow** (Trym, 26 Sep: *"i believe in giving secret gifts or mystery
+  chests … users get something others dont have"*). Forty-five seconds into a new banana's first visit, in whichever area,
+  Nib hands it over on the social layer's own card (his portrait, one line, one button). It never opens that day: on any
+  later day it opens by itself when they come back, greets them BY NAME, says what was inside and offers Wear it. The pass
+  worker rolls it (`/gift`: a Banana Stand wearable they do not own, rarer the dearer) and owns it for them the way a
+  purchase does, so a phone can neither choose it nor forge one. `src/lib/world-gift.js` loads only for somebody it
+  concerns; walked by `tests/world-gift.spec.mjs`, proven by `worker-pass/test/gift.test.mjs`.
+- **The town's first minute says itself without a word** (13 newcomers walked into the town in its first week as the front
+  door; 5 found Nib). A new banana's own banana wears a small gold arrow just above its head until their first tap; three
+  coins run up its RIGHT-HAND SIDE to Nib (2 each, once per person: worker-pass RULES `town.trail`) — beside the banana,
+  never over it: at a phone's scale a coin on the straight path sat on your own head and the arrow floated inside the
+  trail; and Nib waves (the social layer's hand) until you have met him. `src/scripts/town-welcome.js`, loaded only by a
+  new banana (`?welcome=1` forces it for a walk).
 - Walked by `tests/world-social.spec.mjs` (an echo in the park, the bay, the homestead and the town; the card, the wave,
   the badge under the quest note, the list and a wave back) and proven server-side by `worker-rave/test/social.test.mjs`.

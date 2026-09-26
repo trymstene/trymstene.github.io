@@ -10,7 +10,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { passStat } from '../lib/banana-pass.js';
-import { presenceRoom, poofInto, snapScale } from '../lib/world.js';
+import { presenceRoom, poofInto, snapScale, wearSaved } from '../lib/world.js';
 // ⚠️ coinBalance rides along: the park hands `coinBal` to the garden, fountain
 // and shops through ctx. Extracting the HUD took the old inline definition with
 // it and the ctx reference was left dangling — a ReferenceError at ctx build
@@ -878,6 +878,8 @@ function init() {
     parkName,
     peersList: () => [...peers.values()],   // resolved lazily — peers is below
   };
+  // 🎁 a present put on from the social layer's card (world-gift.js): on the park banana the next frame, and on everyone's
+  document.addEventListener('world:rewear', () => { wearSaved(ME_DRAW); ctx.invalidateMe(); try { ctx.sendOutfit(); } catch (e) {} });
   // init order = the original world-DOM append order (garden renders only on
   // its first poll): garden → critters (animals) → Old Peel → fountain (coin
   // window) → shops (keeper windows). The fountain gets the garden's API for

@@ -12,7 +12,7 @@ import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE, CAFE_WIN } from './town-geo.js';
-import { snapScale } from '../lib/world.js';   // 🔍 whole device pixels
+import { snapScale, worldNewcomer } from '../lib/world.js';   // 🔍 whole device pixels · 🌱 a new banana's first minute
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
 import { bigMoment } from '../lib/world-moment.js';   // 🎖 the rave's big moment, shared: the town's first is being hired
@@ -242,6 +242,7 @@ function drawMe() {
   lastF = f;
   drawComposite(meCtx, CV, f, ME_DRAW);
 }
+document.addEventListener('world:rewear', rewear);   // 🎁 a present put on from the social layer's card (world-gift.js)
 
 // ---- camera: pans both axes, the banana leads (the park's numbers)
 const VIEW_ART_W = 900, VIEW_ART_V = 760, PLAZA_FIT = 520;
@@ -1197,6 +1198,16 @@ assetsReady().then(() => {
     // 👋 THE SOCIAL LAYER (26 Sep 2026): echoes (worn by the visitors: town-folk.js), waves and the waves badge — the
     // world's one chunk for them (src/lib/world-social.js). A QA walk asks for it the way it asks for the crowd.
     if (!qa || /[?&]social=1/.test(location.search)) import('../lib/world-social.js').then((m) => m.bootSocial('town')).catch(() => {});
+    // 🌱 A NEW BANANA'S FIRST MINUTE (26 Sep 2026): the "you" arrow, three coins on the way to Nib and Nib waving, in its own
+    // chunk — fetched only by a new banana whose trail is not picked up yet (town-welcome.js). A QA walk asks: &welcome=1
+    let fresh = false;
+    try { fresh = worldNewcomer() && !localStorage.getItem('tw-welcome-v1'); } catch (e) {}
+    if ((!qa && fresh) || /[?&]welcome=1/.test(location.search)) {
+      import('./town-welcome.js').then((m) => {
+        const w = m.bootTownWelcome({ world, me, pos, W, H, pct, float, track, refresh: () => { try { hud.refresh(); } catch (e) {} } });
+        if (window.__town) window.__town.welcome = w.seam;
+      }).catch(() => {});
+    }
     // 💼 the jobs, once the room can answer for the words. ⚠️ AFTER the room, never before: the
     // question on a boss's card is copy, and a half-built question is worse than none.
     import('./town-work.js').then((w) => {

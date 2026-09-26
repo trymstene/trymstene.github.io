@@ -30,5 +30,17 @@
       "yesterday": "yesterday",
       "days": "{n} days ago"
     }
+  },
+  "gift": {
+    "give": "A present for you",
+    "from": "From Nib. It opens tomorrow.",
+    "thanks": "Thanks!",
+    "back": "You came back!",
+    "backName": "You came back, {name}!",
+    "nib": "Nib’s present",
+    "inside": "Inside: {item}!",
+    "none": "Inside: a thank-you note. You have everything already!",
+    "wear": "Wear it",
+    "worn": "You’re wearing it"
   }
 }

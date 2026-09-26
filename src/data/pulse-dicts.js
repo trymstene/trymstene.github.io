@@ -98,6 +98,7 @@ export const AREAS=[
   // 👋 the social layer (26 Sep): echoes of real players in every area but the rave, waves, and the waves badge
   {key:'wave', name:'Waves', icon:'👋', door:'wave_card',
    q:'Does anybody WAVE BACK? — wave_back against wave_waiting is the whole bet'},
+  {key:'gift', name:'Nib’s present', icon:'🎁', door:'gift_give', q:'Do new faces COME BACK to open it?'},
 ];
 
 // 🏳 FLAGS, AND THE MACHINE THAT CANNOT DRAW THEM.

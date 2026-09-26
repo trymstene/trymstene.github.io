@@ -84,6 +84,7 @@ export default {
       if (url.pathname === '/town/wheel') return townWheel(request, env, ctx);
       if (url.pathname === '/town/sell') return townSell(request, env);
       if (url.pathname === '/town/pot') return townPot(request, env);
+      if (url.pathname === '/gift') return giftRoute(request, env);
       if (url.pathname === '/citizen') return citizen(request, env);
       if (url.pathname === '/staff') return staffBoard(request, env);
       if (url.pathname === '/arcade/board') return arcadeBoard(request, env, url);
@@ -1866,6 +1867,63 @@ async function townWheel(request, env, ctx) {
   return answer(res.R, res.out);
 }
 
+// ---------- POST /gift — NIB'S WELCOME PRESENT (26 Sep 2026) ----------
+// Trym: "i believe in giving secret gifts or mystery chests … users get something others dont have". A new banana (a
+// pass younger than GIFT_NEW_MS, by the pass's own created, which merges as a MINIMUM so nobody can make theirs look
+// newer) is handed ONE wrapped present that opens on a LATER UTC DAY: the newcomer's reason to come back tomorrow. What
+// is inside is rolled HERE — a Banana Stand wearable they do not own yet, rarer the dearer — and written the way a
+// purchase is (own_ is server-authored), so a phone can neither choose it nor forge one.
+//   { act: 'view' }  how it stands   { act: 'give' }  hand it over (once per pass, ever)   { act: 'open' }  a later day
+const GIFT_NEW_MS = 3 * 86400000;
+function giftRoll(pool) {
+  const w = pool.map((id) => Math.round(1200 / Math.max(5, OWN_PRICES[id])));   // a 10-coin potato 120, the 120-coin squid hat 10
+  const tot = w.reduce((a, c) => a + c, 0), lim = Math.floor(0x100000000 / tot) * tot, u = new Uint32Array(1);
+  do crypto.getRandomValues(u); while (u[0] >= lim);
+  let r = u[0] % tot;
+  for (let i = 0; i < pool.length; i++) { if (r < w[i]) return pool[i]; r -= w[i]; }
+  return pool[pool.length - 1];
+}
+const giftOut = (g, now) => ({ gift: g ? { at: g.at, ready: !g.opened && utcDay(now) > utcDay(g.at), opened: g.opened || 0, item: g.item || '' } : null });
+async function giftRoute(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const act = ['give', 'open'].includes(b && b.act) ? b.act : 'view';
+  const R0 = await tokenRec(env, b.credId, b.token);
+  if (!R0) return json({ error: 'not linked' }, 403, cors(env, request));
+  const res = await retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return null;
+    const now = Date.now(), g = R.home.gift || null;
+    if (act === 'view' || (act === 'give' && g)) return { R, out: giftOut(g, now) };
+    if (act === 'give') {
+      const created = +(((R.home.blob || {}).pass || {}).created || 0);
+      if (created && now - created > GIFT_NEW_MS) return { R, out: { error: 'old', ...giftOut(null, now) } };   // a present for new bananas
+      R.home.gift = { at: now };
+      await saveKey(env, R.homeKey, R.home);
+      return { R, out: giftOut(R.home.gift, now) };
+    }
+    if (!g) return { R, out: { error: 'none', ...giftOut(null, now) } };
+    if (g.opened) return { R, out: giftOut(g, now) };   // opened already: the same answer again, never a second roll
+    if (!(utcDay(now) > utcDay(g.at))) return { R, out: { error: 'early', ...giftOut(g, now) } };
+    const p = serverPass(R.home, now);
+    const pool = OWN_IDS_W.filter((id) => !(statTotal(p, 'own_' + id) > 0));
+    const item = pool.length ? giftRoll(pool) : '';
+    if (item) {
+      p.base['own_' + item] = 1;
+      p.stats = statsOf(p);
+      R.home.ownAuth = [...new Set([...(R.home.ownAuth || []), item])];   // remembered: it crosses a fold, like a purchase
+    }
+    g.opened = now; g.item = item;
+    await saveKey(env, R.homeKey, R.home);
+    return { R, out: giftOut(g, now) };
+  });
+  if (!res) return json({ error: 'not linked' }, 403, cors(env, request));
+  const home = res.R.home;
+  return json({ ok: !res.out.error, ...res.out, ...walletOut(home), own: OWN_IDS_W.filter((id) => statTotal((home.blob || {}).pass, 'own_' + id) > 0) }, 200, cors(env, request));
+}
+
 // ---------- POST /town/sell — Fig Jr. buys what the farm made, at today's price ----------
 function marketRec(home, day) {
   const m = home.market || (home.market = { d: '', sold: {}, n: 0, coins: 0 });
@@ -2608,6 +2666,7 @@ const RULES = {
     // so there is no faucet for a client to forge. 🪜 The DAY is the rank's (23 Sep 2026, one pay scale:
     // a fifth of a full week, src/data/town/jobs.js tipsCap) — 18 at the Coffee Cup's first rank.
     tips:   { max: 12,  day: tipsDay },
+    trail:  { max: 2,   count: 3 },    // 🪙 three coins (2 each) on the way to Nib, once per person (a count: the buff cannot double it)
     qa:     { deny: 1 },              // ?towntest shim coins
   },
   // 🎫 the pass page — the questline's finale pays there (bootQuest area 'pass')

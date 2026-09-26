@@ -6,7 +6,7 @@
 // area boots it with its own name and nothing else. The rules are docs/design-library.md §42, the server is worker-rave's
 // YardRoom (/echoes /wave /notices /echo) and relayWave in every presence room, and the wire in and out of those rooms is
 // two document events presenceRoom answers (world.js): world:wave-out and world:wave.
-import { worldOwner, worldSid, worldToken } from './world.js';
+import { worldOwner, worldSid, worldToken, worldNewcomer } from './world.js';
 import { drawComposite, assetsReady } from './banana-engine.js';
 import { ensureAnon, passFlush } from './banana-pass.js';
 import CLOSE from '../icons/pixelart/close.svg?raw';
@@ -121,6 +121,7 @@ body.pk-inside .bws, body.bh-inside .bws, .hs-world.is-inside ~ .bws, .tw-world.
 .bws-go[disabled] { background:#e8e0c8; color:#6b6450; box-shadow:2px 2px 0 #000; cursor:default; }
 .bws-alt { background:#fffdf5; color:#111; }
 .bws-note { margin:8px 0 0; font-size:.72rem; font-weight:700; text-align:center; }
+.bwg-ico { display:inline-block; vertical-align:-3px; color:#d99a00; }
 .bws-note[hidden] { display:none; }
 .bws-x { position:absolute; right:2px; top:2px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:none; border:0; color:#111; cursor:pointer; padding:0; }
 @keyframes bwsIn { 0% { transform:scale(.7); opacity:0; } 100% { transform:none; opacity:1; } }
@@ -335,6 +336,10 @@ function listen() {
 
 const meEl = () => document.querySelector(A.me);
 // ✋ the hand goes up beside a banana's head. An <img>, because a banana carries no words and no markup (the Quiet Rule's walk)
+// the layer's look, once — whoever needs it first (an area booting the layer, or the town's welcome raising Nib's hand)
+let styled = false;
+function style() { if (styled) return; styled = true; const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st); }
+export function raiseHand(el) { style(); hand(el); }   // 👋 for the town's welcome: Nib waves at a new banana (town-welcome.js)
 function hand(el) {
   if (!el) return;
   const old = el.querySelector(':scope > .bws-hand');
@@ -377,32 +382,36 @@ function closeCard() {
   if (card) card.remove();
   veil = card = null;
 }
-function openEcho(e) {
+// 🃏 THE CARD, one shape for everything the social layer shows (an echo, Nib's present): a veil that closes it, a ✕, the
+// portrait over its corner, and every tap kept off the world until it closes
+function showCard(label, inner) {
   closeCard();
   closeList();
-  track('wave_card', { area });
-  const done = sentToday(e.slug);
   veil = document.createElement('div');
   veil.className = 'bws-veil';
   card = document.createElement('div');
   card.className = 'bws-card';
   card.setAttribute('role', 'dialog');
-  card.setAttribute('aria-label', e.n);
+  card.setAttribute('aria-label', label);
   card.innerHTML = '<button type="button" class="bws-x" aria-label="' + esc(W.card.close) + '">' + ico(CLOSE, 18) + '</button>'
-    + '<div class="bws-pop" aria-hidden="true"><canvas width="300" height="300"></canvas></div>'
-    + '<h2><span class="bws-nm' + (e.nw ? ' has-new' : '') + '">' + esc(e.n) + (e.nw ? '<span class="bws-new">' + esc(W.card.new) + '</span>' : '') + '</span></h2>'
+    + '<div class="bws-pop" aria-hidden="true"><canvas width="300" height="300"></canvas></div>' + inner;
+  view.appendChild(veil);
+  view.appendChild(card);
+  for (const n of [veil, card]) for (const t of ['pointerdown', 'touchstart', 'click']) n.addEventListener(t, (ev) => ev.stopPropagation());
+  veil.addEventListener('click', closeCard);
+  card.querySelector('.bws-x').addEventListener('click', closeCard);
+  return card;
+}
+function openEcho(e) {
+  track('wave_card', { area });
+  const done = sentToday(e.slug);
+  showCard(e.n, '<h2><span class="bws-nm' + (e.nw ? ' has-new' : '') + '">' + esc(e.n) + (e.nw ? '<span class="bws-new">' + esc(W.card.new) + '</span>' : '') + '</span></h2>'
     + '<p class="bws-role">' + esc(when(e.d | 0)) + '</p>'   // ✂️ when, not the farm's name: Visit farm goes there, and a long name wrapped
     + '<p class="bws-say">' + esc(fillWords(W.card.away, { name: e.n })) + '</p>'
     + '<div class="bws-row"><button type="button" class="bws-go"' + (done ? ' disabled' : '') + '>' + handSvg('currentColor') + '<span>' + esc(done ? W.card.waved : W.card.wave) + '</span></button>'
     + '<a class="bws-alt" href="/homestead/?yard=' + encodeURIComponent(e.slug) + '"' + (e.house ? ' aria-label="' + esc(W.card.visit + ': ' + e.house) + '"' : '') + '>' + ico(HOUSE, 16) + '<span>' + esc(W.card.visit) + '</span></a></div>'
-    + '<p class="bws-note" hidden></p>';
-  view.appendChild(veil);
-  view.appendChild(card);
+    + '<p class="bws-note" hidden></p>');
   portrait(card.querySelector('canvas'), DRAW(e.fit));
-  // a card owns every tap until it closes: none of them walks the banana underneath
-  for (const n of [veil, card]) for (const t of ['pointerdown', 'touchstart', 'click']) n.addEventListener(t, (ev) => ev.stopPropagation());
-  veil.addEventListener('click', closeCard);
-  card.querySelector('.bws-x').addEventListener('click', closeCard);
   card.querySelector('.bws-alt').addEventListener('click', () => track('wave_visit', { area, from: 'echo' }));
   const go = card.querySelector('.bws-go');
   go.addEventListener('click', () => echoWave(e, go));
@@ -600,9 +609,7 @@ export function bootSocial(name) {
   world = document.querySelector(a.world);
   if (!view || !world) return null;
   A = a; area = name;
-  const st = document.createElement('style');
-  st.textContent = CSS;
-  document.head.appendChild(st);
+  style();
   document.documentElement.style.setProperty('--bws-new', JSON.stringify(W.card.new));   // 🌱 the marker's word, from the copy file
   const s = read();
   if (s.wf && !s.w) notes.push({ k: 'hi', t: s.wf });   // a welcome not yet read waits for its first look
@@ -630,5 +637,12 @@ export function bootSocial(name) {
     },
   };
   window.__bws = api.seam;
+  // 🎁 NIB'S WELCOME PRESENT (world-gift.js): its own chunk, fetched only by somebody it can concern — a new banana, or
+  // somebody whose present is still wrapped. It borrows this layer's card, portrait and words.
+  const g = read().g;
+  if ((worldNewcomer() && !g) || (g && !g.o && !g.none)) {
+    import('./world-gift.js').then((m) => { const x = m.bootGift({ area, view, me: meEl, read, write, track, esc, showCard, closeCard, portrait, DRAW, NIB, myName,
+      busy: () => !!card || (list && !list.hidden) }); window.__bwg = x && x.seam; }).catch(() => {});
+  }
   return api;
 }

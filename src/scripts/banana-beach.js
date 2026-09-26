@@ -9,7 +9,7 @@
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid, passBest, passBestGet } from '../lib/banana-pass.js';
 import { levelFor } from '../lib/pass-defs.js';
-import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale } from '../lib/world.js';
+import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale, wearSaved } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { mountHud } from '../lib/world-hud.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
@@ -3679,6 +3679,8 @@ function init() {
   }
 
   let lastKey = -1;                           // ⚠️ replaces lastF: the redraw
+  // 🎁 a present put on from the social layer's card (world-gift.js): on the bay's banana the next frame, and on everyone's
+  document.addEventListener('world:rewear', () => { wearSaved(ME_DRAW); lastKey = -1; try { if (bayRoom.live) bayRoom.send({ t: 'outfit', outfit: myBayOutfit() }); } catch (e) {} });
   let swamOnce = false;                       // key must include DEPTH or the
   function drawMe() {                         // early-return freezes the tint
     const f = seated ? (seated.sitFrame != null ? seated.sitFrame : SIT_FRAME) : frameNow();
