@@ -4874,6 +4874,7 @@ function init(visitDoc, visitMiss) {
     if (!sawNeighbour) { sawNeighbour = true; track('homestead_multiplayer'); }
     const el = document.createElement('div');
     el.className = 'hs-peer';
+    el.dataset.pid = d.id;   // 👋 a tap on a player here waves at them (world-social.js)
     const cv = document.createElement('canvas');
     cv.width = 150; cv.height = 150;
     el.appendChild(cv);

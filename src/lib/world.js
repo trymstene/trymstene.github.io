@@ -188,7 +188,7 @@ export function burstInto(container, className, x, y, n = 14, colors = ['#ffe135
 // with backoff, respect 'superseded' (never reconnect-fight), clean pagehide
 // goodbye. Every future room joins through this.
 export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs = 25000 }) {
-  let ws = null, tries = 0, closedForGood = false;
+  let ws = null, tries = 0, closedForGood = false, you = null;
   function connect() {
     if (closedForGood) return;
     let sock;
@@ -203,7 +203,11 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
     sock.onmessage = (ev) => {
       let m;
       try { m = JSON.parse(ev.data); } catch (e) { return; }
-      if (m && m.t !== 'pong') onMessage(m);
+      if (!m || m.t === 'pong') return;
+      if (m.t === 'roster') you = m.you;
+      // 👋 a wave in this room goes to the world's one social layer (world-social.js), whichever area this is
+      if (m.t === 'wave') { try { document.dispatchEvent(new CustomEvent('world:wave', { detail: { id: m.id, to: m.to, name: m.name || '', me: you } })); } catch (e) {} return; }
+      onMessage(m);
     };
     sock.onclose = (ev) => {
       if (ws !== sock) return;
@@ -229,6 +233,14 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !closedForGood && (!ws || ws.readyState > 1)) { tries = 0; connect(); }
   });
+  // 👋 …and out: the social layer asks, the room it rides sends, and says so on the ask
+  const waveOut = (e) => {
+    const d = e && e.detail;
+    if (!d || !d.to || closedForGood || !(ws && ws.readyState === 1)) return;
+    ws.send(JSON.stringify({ t: 'wave', to: String(d.to).slice(0, 12) }));
+    d.sent = true;
+  };
+  document.addEventListener('world:wave-out', waveOut);
   return {
     // 🎩 outfit changes re-present the member token — the worker verifies per
     // message, so a wardrobe change mid-visit keeps the supporter hat visible
@@ -244,7 +256,7 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
     // watch you stand frozen for that beat. Closing here makes the poof land
     // the instant you commit to leaving. (pagehide is still the backstop for
     // tab-close and hard exits.)
-    leave() { closedForGood = true; clearInterval(pinger); try { if (ws) ws.close(1000, 'bye'); } catch (e) {} },
+    leave() { closedForGood = true; clearInterval(pinger); document.removeEventListener('world:wave-out', waveOut); try { if (ws) ws.close(1000, 'bye'); } catch (e) {} },
   };
 }
 

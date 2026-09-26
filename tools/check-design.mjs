@@ -424,7 +424,7 @@ for (const f of files) {
 // town's work badge and the work pager's badge (every other area) are three rules in three files; each must be the
 // same 32 px circle with its icon centred, or one of them drifts into an oval again. Also written without backslashes.
 {
-  const BADGES = [['src/lib/world-quest.js', '.bwq-hint__badge {'], ['src/scripts/town-duties.js', '.twd-chip__badge {'], ['src/lib/work-pager.js', '.wkp__b {']];
+  const BADGES = [['src/lib/world-quest.js', '.bwq-hint__badge {'], ['src/scripts/town-duties.js', '.twd-chip__badge {'], ['src/lib/work-pager.js', '.wkp__b {'], ['src/lib/world-social.js', '.bws__b {']];   // 👋 the waves badge (26 Sep 2026, §42)
   const MUST = ['width:32px', 'height:32px', 'padding:0', 'border-radius:50%', 'display:flex', 'align-items:center', 'justify-content:center'];
   for (const [f, sel] of BADGES) {
     let src = ''; try { src = readFileSync(join(ROOT, f), 'utf8'); } catch {}

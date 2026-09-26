@@ -1816,5 +1816,8 @@ const faq = faqLd(BG.faq.items);
         import('../lib/work-pager.js').then((m) => { const p = m.bootWorkPager({ view: document.getElementById('bhView'), area: 'beach' }); if (p) window.__pager = p.seam; });
       }
     } catch (e) { /* the pager is garnish too: the area must never break */ }
+    // 👋 THE SOCIAL LAYER (26 Sep 2026): echoes of the players who were about lately, a wave for any banana, and the waves
+    // badge in the corner — one chunk for every walkable area (src/lib/world-social.js), loaded once the area stands
+    setTimeout(() => { import('../lib/world-social.js').then((m) => m.bootSocial('beach')).catch(() => {}); }, 1500);
   </script>
 </BaseLayout>

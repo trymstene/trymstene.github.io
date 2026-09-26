@@ -794,6 +794,20 @@ async function whoHash(env, short) {
   const buf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(String(short || '')));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
 }
+// 👋 A WAVE ACROSS A ROOM (26 Sep 2026) — one rule for every presence room: from one banana to another who is where
+// they are (the same room; the square also knows which building), seen by everybody there, and the one waved at is told
+// who by THIS ROOM's copy of the name (filtered at join), never one the message carries. A gesture, not a strobe.
+const WAVE_GAP = 1500;
+function relayWave(room, ws, me, msg) {
+  const now = Date.now();
+  if (now - (me.lastWave || 0) < WAVE_GAP) return;
+  const to = typeof msg.to === 'string' ? msg.to.slice(0, 12) : '';
+  const them = room.roster().find((a) => a.id === to);
+  if (!them || them.id === me.id || (them.room || '') !== (me.room || '')) return;
+  me.lastWave = now;
+  ws.serializeAttachment(me);
+  room.broadcast({ t: 'wave', id: me.id, to, name: me.name || '' }, ws);
+}
 function sanitizeOutfit(o, mrank = 0) {
   o = o && typeof o === 'object' ? o : {};
   const extras = {};
@@ -1258,6 +1272,7 @@ export class RaveRoom {
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit, name: me.name || '' });
     }
+    if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
   }
 
   // the QUICK SWIPE: a fresh strike sweeps the live floor — matching names
@@ -2528,6 +2543,7 @@ export class ParkRoom {
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
     }
+    if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
   }
 
   async webSocketClose(ws) {
@@ -2714,6 +2730,7 @@ export class BeachRoom {
         vz: num(msg.vz, -1600, 1600),
       }, ws);
     }
+    if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
   }
 
   async webSocketClose(ws) {
@@ -3013,16 +3030,24 @@ const FOLK_PAGE = 40;          // one screenful and a bit; the search narrows it
 const yQa = (slug) => /^testy(-|$)/.test(slug || '') || slug === 'trym' || /^qa-/.test(slug || '');
 // ⚠️ IT IS DRAWN ON SOMEBODY ELSE'S SCREEN, so it is judged rather than cleaned: a name that does
 // not survive the family filter, or an item id that is not an item id, does not go in the book.
+const yFit = (f0) => {
+  const f = (f0 && typeof f0 === 'object') ? f0 : {};
+  const one = (v) => (typeof v === 'string' && /^[a-z0-9_-]{1,24}$/i.test(v) ? v : '');
+  const extras = {};
+  for (const k of Object.keys(f.extras || {}).slice(0, 8)) if ((f.extras || {})[k] && one(k)) extras[k] = 1;
+  return { hat: one(f.hat), glasses: one(f.glasses), extras };
+};
 const yWho = (w) => {
   if (!w || typeof w !== 'object') return undefined;
   const n = sanitizeName(yStrip(w.n, 24), []);
   if (!n || dirty(n)) return undefined;
-  const f = (w.fit && typeof w.fit === 'object') ? w.fit : {};
-  const one = (v) => (typeof v === 'string' && /^[a-z0-9_-]{1,24}$/i.test(v) ? v : '');
-  const extras = {};
-  for (const k of Object.keys(f.extras || {}).slice(0, 8)) if ((f.extras || {})[k] && one(k)) extras[k] = 1;
-  return { n, fit: { hat: one(f.hat), glasses: one(f.glasses), extras } };
+  return { n, fit: yFit(w.fit) };
 };
+// 👥 THE SOCIAL LAYER'S NUMBERS (26 Sep 2026): who an echo can be, and how much waving one banana may do
+const ECHO_DAYS = 14;          // an echo is somebody who was about in the last two weeks: fresher than the book's month
+const ECHO_MAX = 16;           // plenty to go round five areas; the areas pick a few each
+const WAVE_DAY = 30;           // waves one banana may send in a UTC day, to everybody together
+const NOTICE_CAP = 30;         // notices a player keeps; the oldest fall off
 const yDay = () => new Date().toISOString().slice(0, 10);
 const yIso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
 // "Trym's Homestead" → trym — the sign name IS the address (clean slugs)
@@ -3184,6 +3209,7 @@ export class SquareRoom {
       ws.serializeAttachment(me);
       this.broadcast({ t: 'burst', id: me.id, x: me.x, y: me.y, name: me.name || '' }, ws);
     }
+    if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
   }
   async webSocketClose(ws) {
     let me = null;
@@ -3313,6 +3339,7 @@ export class YardRoom {
       ws.serializeAttachment(me);
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
     }
+    if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
   }
 
   async webSocketClose(ws) {
@@ -3472,7 +3499,9 @@ export class YardRoom {
       updated: doc.updated, owner: doc.otag || '', who: doc.who || undefined, pass: doc.pass ? 1 : 0,
       // 👋 the last time somebody was actually HERE, which is not the same as the last time the yard
       // changed — see /who. Only the book reads it.
-      seen: doc.seen || undefined });
+      seen: doc.seen || undefined,
+      // 👻 kept out of the echoes by its owner (/echo). Still in the address book: that is where letters are addressed.
+      ne: doc.noecho ? 1 : undefined });
     await this.state.storage.put('index', rest.slice(0, 400));
   }
 
@@ -4083,6 +4112,100 @@ export class YardRoom {
         if (folk.length >= FOLK_PAGE) break;
       }
       return json({ folk, more: folk.length >= FOLK_PAGE });
+    }
+
+    // 👥 THE ECHOES (26 Sep 2026, Trym: "the echo-thing sounds cool … something for all areas, not just the town, so
+    // build it as something that stretches throughout the whole world"). The players who were about lately, drawn as
+    // ambient bananas in every area: exactly the people, names, bananas and houses the address book already shows (a
+    // Pass, a Homestead, a name), the most recently seen first. ⚠️ nothing new about anybody leaves the room but WHICH
+    // DAY: `d` is whole days since they were last about (0 = the last day), never a time a stranger could learn their
+    // hours from.
+    if (path === '/echoes' && request.method === 'GET') {
+      const mine = (url.searchParams.get('mine') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+      const idx = (await this.state.storage.get('index')) || [];
+      const now = Date.now(), cut = now - ECHO_DAYS * 86400000;
+      const rows = [];
+      for (const e of idx) {
+        if (!e || !e.pass || !e.who || !e.who.n || e.ne || e.slug === mine || yQa(e.slug)) continue;
+        const t = Math.max(e.updated || 0, e.seen || 0);
+        if (!(t > cut)) continue;
+        const n = cleanName(e.who.n);
+        if (!n) continue;
+        rows.push({ slug: e.slug, house: cleanName(e.name) || e.name || '', n, fit: e.who.fit || {}, t });
+      }
+      rows.sort((a, b) => b.t - a.t);
+      return json({ echoes: rows.slice(0, ECHO_MAX).map(({ t, ...r }) => ({ ...r, d: Math.floor((now - t) / 86400000) })) });
+    }
+
+    // 👋 A WAVE (26 Sep 2026): one tap, no words, from anybody to anybody an echo (or a wave) points at. It lands in the
+    // other player's NOTICES, never their mailbox (Trym: "the letter mailbox is not the right place … a separate icon …
+    // for small easygoing messages"), and notices are keyed to the PASS, so a player with no homestead can be waved back
+    // to as well. ⚠️ Bounded twice: one wave from one banana to one other a day, and WAVE_DAY a day from a banana in all.
+    // ⚠️ WHO IS WAVING is a fact for a homestead's owner (their proof finds their house, their book name and banana) and
+    // a filtered claim for anybody else — a name the family filter refuses is no name, and nobody can wave as a house.
+    // ⚠️ A WAVE NEEDS ITS SENDER'S PROOF. Every visitor holds a pass (the anonymous one is minted on the first write), so
+    // this asks nothing of a real player — and without it the day's cap is a cap on nobody: new ids cost nothing.
+    if (path === '/wave' && request.method === 'POST') {
+      if (!proven) return json({ err: 'token' }, 401);
+      const me = pass;
+      let mySlug = '';
+      for (const id of [pass, ...(aliases || [])]) { const sl = await this.state.storage.get('own:' + id); if (sl) { mySlug = sl; break; } }
+      const myDoc = mySlug ? await this.state.storage.get('y:' + mySlug) : null;
+      const said = yWho({ n: body.n, fit: body.fit });
+      const n = myDoc && myDoc.who && myDoc.who.n ? cleanName(myDoc.who.n) : (said ? cleanName(said.n) : '');
+      const fit = (myDoc && myDoc.who && myDoc.who.fit) || yFit(body.fit);
+      // to whom: a house (an echo, the book), or a handle (a wave back to somebody with no house)
+      let to = '';
+      const slug = await this.canon(yStrip(body.to, 40).toLowerCase().replace(/[^a-z0-9-]/g, ''));
+      if (slug) { const d = await this.state.storage.get('y:' + slug); to = d && !d.alias && d.pass ? d.pass : ''; }
+      else if (/^[a-f0-9]{12}$/.test(String(body.h || ''))) to = (await this.state.storage.get('hd:' + body.h)) || '';
+      if (!to) return json({ err: 'nobody' }, 404);
+      if (to === pass || to === alt || (aliases || []).includes(to)) return json({ err: 'self' }, 400);
+      const day = yDay(), o = me.slice(0, 8);
+      const cnt = (await this.state.storage.get('wvn:' + o)) || {};
+      if (cnt.day === day && cnt.n >= WAVE_DAY) return json({ err: 'enough' }, 429);
+      const box = (await this.state.storage.get('nt:' + to)) || [];
+      if (box.some((x) => x.k === 'wave' && x.o === o && x.day === day)) return json({ ok: 1, again: 1 });
+      // a banana with no house is waved back to by a HANDLE: a keyed hash of their id, never the id itself
+      let h = '';
+      if (!mySlug) { h = await whoHash(this.env, 'wave:' + me); await this.state.storage.put('hd:' + h, me); }
+      box.unshift({ k: 'wave', n, s: mySlug || undefined, h: h || undefined, fit, o, day, t: Date.now() });
+      await this.state.storage.put('nt:' + to, box.slice(0, NOTICE_CAP));
+      await this.state.storage.put('wvn:' + o, { day, n: (cnt.day === day ? cnt.n : 0) + 1 });
+      return json({ ok: 1 });
+    }
+
+    // 👻 NOT AN ECHO, THANKS (26 Sep 2026): the owner of a house keeps their banana out of other people's worlds, or lets
+    // it back in. Their name stays in the address book — a letter still needs an address.
+    if (path === '/echo' && request.method === 'POST') {
+      if (!proven) return json({ err: 'token' }, 401);
+      const slug = await this.ownSlug(pass, alt, aliases);
+      const doc = slug ? await this.state.storage.get('y:' + slug) : null;
+      if (!doc) return json({ err: 'unclaimed' }, 404);
+      doc.noecho = body.on ? undefined : 1;
+      await this.state.storage.put('y:' + slug, doc);
+      await this.indexUpsert(doc);
+      return json({ ok: 1, echo: doc.noecho ? 0 : 1 });
+    }
+
+    // 🔔 MY NOTICES — what came while you were away, for the corner badge. Yours only: the proof says whose, and every
+    // id it vouches for is read (an anonymous pass that later signed in keeps what it was sent). `seen` is when you last
+    // looked, so the badge counts only what is new; `{ seen: 1 }` in the body marks now, after answering.
+    if (path === '/notices' && request.method === 'POST') {
+      if (!proven) return json({ err: 'token' }, 401);
+      const all = [];
+      for (const id of [pass, ...(aliases || [])]) for (const x of ((await this.state.storage.get('nt:' + id)) || [])) all.push(x);
+      all.sort((a, b) => b.t - a.t);
+      const seen = (await this.state.storage.get('nts:' + pass)) || 0;
+      if (body.seen) await this.state.storage.put('nts:' + pass, Date.now());
+      // 👻 are you one of the echoes: 1 yes, 0 kept out, absent = no house with a name, so nothing to switch
+      let echo;
+      for (const id of [pass, ...(aliases || [])]) {
+        const sl = await this.state.storage.get('own:' + id);
+        const d = sl ? await this.state.storage.get('y:' + sl) : null;
+        if (d && d.pass && d.who && d.who.n) { echo = d.noecho ? 0 : 1; break; }
+      }
+      return json({ notices: all.slice(0, NOTICE_CAP).map((x) => ({ k: x.k, n: x.n || '', s: x.s || '', h: x.h || '', fit: x.fit || {}, t: x.t })), seen, echo });
     }
 
     if (path === '/doors' && request.method === 'GET') {

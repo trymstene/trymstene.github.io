@@ -49,6 +49,7 @@ export function bootTownCrowd(ctx) {
     if (!sawPeer) { sawPeer = true; track('town_multiplayer'); }
     const el = document.createElement('div');
     el.className = 'tw-npc tw-peer';
+    el.dataset.pid = d.id;   // 👋 a tap on a player here waves at them (world-social.js)
     const cv = document.createElement('canvas');
     cv.width = CV; cv.height = CV;
     el.appendChild(cv);

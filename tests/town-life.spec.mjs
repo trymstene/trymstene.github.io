@@ -1199,9 +1199,14 @@ test('silence: not one word floats over a banana in this town', async ({ page })
     const bad = [];
     // every banana in the world: the nine residents, the visitors, the merchant, the night vendor
     for (const el of document.querySelectorAll('.tw-npc, .tw-visitor, .tw-me, .tw-atwork')) {
-      const t = (el.textContent || '').trim();
+      // 👋 A PERSON IS A PERSON (26 Sep 2026, design library §42): another player, here now or an echo of one, wears their
+      // own name over their head — one tag, their name, nothing said. Everything else that is a banana stays silent.
+      const person = el.matches('.tw-peer, .bws-echo');
+      const tags = person ? [...el.children].filter((k) => k.matches('.tw-peer__name, .bws-tag')) : [];
+      if (tags.length > 1) bad.push(el.className + ' wears ' + tags.length + ' name tags');
+      const t = [...el.childNodes].filter((k) => !tags.includes(k)).map((k) => k.textContent || '').join('').trim();
       if (t) bad.push(el.className + ' says "' + t.slice(0, 40) + '"');
-      for (const kid of el.children) if (kid.tagName !== 'CANVAS' && kid.tagName !== 'IMG') bad.push(el.className + ' carries a <' + kid.tagName.toLowerCase() + '>');
+      for (const kid of el.children) if (kid.tagName !== 'CANVAS' && kid.tagName !== 'IMG' && !tags.includes(kid)) bad.push(el.className + ' carries a <' + kid.tagName.toLowerCase() + '>');
     }
     return bad;
   });

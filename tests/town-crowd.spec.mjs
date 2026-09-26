@@ -97,3 +97,39 @@ test('two bananas in the square see each other, walk, go indoors, and leave', as
   expect(errs, 'nothing threw on either phone').toEqual([]);
   await A.close();
 });
+
+// 👋 A WAVE ACROSS THE SQUARE (26 Sep 2026, design library §42), on the REAL room: a tap on the other player's banana
+// waves, both screens see the hand go up, the one waved at finds it in the corner badge by name, and waves back from it.
+test('a tap on another player waves, and the one waved at can wave back from the badge', async ({ browser }) => {
+  test.setTimeout(120000);
+  const URL = TOWN + '&social=1';
+  const A = await browser.newContext({ viewport: { width: 393, height: 852 } });
+  const B = await browser.newContext({ viewport: { width: 393, height: 852 } });
+  const a = await A.newPage(), b = await B.newPage();
+  const errs = [];
+  a.on('pageerror', (e) => errs.push('A ' + e)); b.on('pageerror', (e) => errs.push('B ' + e));
+  for (const [p, n] of [[a, 'QA Wave A'], [b, 'QA Wave B']]) {
+    await p.addInitScript((nm) => { try { localStorage.setItem('ps-name-v1', nm); localStorage.setItem('bwq-c1', JSON.stringify({ s: 17, done: 1 })); } catch (e) {} }, n);
+    await p.goto(URL, { waitUntil: 'domcontentloaded' });
+    await p.waitForFunction(() => window.__town && window.__town.crowd && window.__town.crowd.live() && window.__bws, null, { timeout: 30000 });
+  }
+  await b.waitForFunction(() => window.__town.crowd.peers().some((p) => p.name === 'QA Wave A' && !p.hidden), null, { timeout: 20000 });
+  // B stands beside A, then taps A's banana
+  const at = (await b.evaluate(() => window.__town.crowd.peers())).find((p) => p.name === 'QA Wave A');
+  await b.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x + 110; t.pos.y = t.tgt.y = y; }, [at.x, at.y]);
+  await b.waitForTimeout(1500);
+  const r = await b.evaluate(() => { const el = [...document.querySelectorAll('.tw-peer[data-pid]')].find((x) => (x.textContent || '').includes('QA Wave A')); const q = el.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height * 0.6 }; });
+  await b.mouse.click(r.x, r.y);
+  expect(await b.locator('.tw-me .bws-hand').count(), 'B’s own hand goes up').toBe(1);
+  // A sees B's hand, and a wave from B in the corner
+  await a.waitForFunction(() => window.__bws.notes().some((n) => n.k === 'wave' && n.live && n.n === 'QA Wave B'), null, { timeout: 10000 });
+  expect(await a.locator('.tw-peer .bws-hand').count(), 'A sees B wave').toBe(1);
+  await expect(a.locator('.bws__b'), 'A’s waves badge shows').toBeVisible();
+  await a.screenshot({ path: 'test-results/town-crowd-a-waved-at.png' });
+  // A waves back from the list; B sees A's hand
+  await a.click('.bws__b');
+  await a.locator('.bws-back').first().click();
+  await b.waitForFunction(() => window.__bws.notes().some((n) => n.k === 'wave' && n.live && n.n === 'QA Wave A'), null, { timeout: 10000 });
+  expect(errs, 'nothing threw on either phone').toEqual([]);
+  await A.close(); await B.close();
+});

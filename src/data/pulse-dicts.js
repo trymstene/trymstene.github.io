@@ -95,6 +95,9 @@ export const AREAS=[
   // somebody comes back, and this one asks whether anybody ANSWERS.
   {key:'post', name:'The post office', icon:'✉️', door:'post_open',
    q:'Do they ANSWER? — a rail nobody writes back on is a broadcast, not post; and watch refusals against sends, because the filter is the whole defence and one tuned too hard kills this quietly'},
+  // 👋 the social layer (26 Sep): echoes of real players in every area but the rave, waves, and the waves badge
+  {key:'wave', name:'Waves', icon:'👋', door:'wave_card',
+   q:'Does anybody WAVE BACK? — wave_back against wave_waiting is the whole bet'},
 ];
 
 // 🏳 FLAGS, AND THE MACHINE THAT CANNOT DRAW THEM.

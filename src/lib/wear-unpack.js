@@ -20,7 +20,8 @@ const ART_HEAD = [
   (w, h) => '<svg viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">',
   (w, h) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges">',
 ];
-export function unpackArt(p) {
+// `cell` is the grid's cell in px: 10 for the wearables, 1 for the rave's own sprites (src/data/raveart.js)
+export function unpackArt(p, cell = 10) {
   const hi = p[0], gw = p[1], gh = p[2], pal = p[3], cells = p[4];
   let flat = '';
   for (let i = 0; i < cells.length;) {
@@ -39,9 +40,9 @@ export function unpackArt(p) {
       if (c === 0) { rx++; continue; }
       let run = 1;
       while (rx + run < gw && flat.charAt(ry * gw + rx + run) === at) run++;
-      out += '<rect x="' + rx * 10 + '" y="' + ry * 10 + '" width="' + run * 10 + '" height="10" fill="#' + pal.slice((c - 1) * 6, c * 6) + '"/>';
+      out += '<rect x="' + rx * cell + '" y="' + ry * cell + '" width="' + run * cell + '" height="' + cell + '" fill="#' + pal.slice((c - 1) * 6, c * 6) + '"/>';
       rx += run;
     }
   }
-  return ART_HEAD[hi](gw * 10, gh * 10) + out + '</svg>';
+  return ART_HEAD[hi](gw * cell, gh * cell) + out + '</svg>';
 }

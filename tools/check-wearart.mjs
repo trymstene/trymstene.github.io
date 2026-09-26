@@ -50,6 +50,18 @@ for (const k of [...Object.keys(ART_P), ...Object.keys(ART_R)]) {
   if (!(k in WEAR_ART_SOURCE)) bad.push([k, 'ships but is not in tools/wearart-source.js — the source of truth has drifted']);
 }
 
+// 🪩 THE RAVE'S OWN SPRITES (26 Sep 2026): the same decoder on a one-pixel grid, the same promise. Each is asked for
+// by name in banana-rave.js — RA('FISH_SVG') — so a name the rave asks for and the pack lacks would draw nothing.
+const { RAVE_ART_SOURCE } = await import('file://' + join(ROOT, 'tools', 'raveart-source.js').replace(/\\/g, '/'));
+const { RAVE_P } = await import('file://' + join(ROOT, 'src', 'data', 'raveart.js').replace(/\\/g, '/'));
+const rave = readFileSync(join(ROOT, 'src', 'scripts', 'banana-rave.js'), 'utf8');
+for (const k of Object.keys(RAVE_ART_SOURCE)) {
+  const want = RAVE_ART_SOURCE[k], got = RAVE_P[k] ? unpackArt(RAVE_P[k], 1) : null;
+  if (got !== want) bad.push(['rave ' + k, got == null ? 'is in tools/raveart-source.js but not packed — run python tools/build-raveart.py' : 'decodes to a DIFFERENT string — run python tools/build-raveart.py']);
+}
+for (const k of Object.keys(RAVE_P)) if (!(k in RAVE_ART_SOURCE)) bad.push(['rave ' + k, 'ships but is not in tools/raveart-source.js — the source of truth has drifted']);
+for (const m of rave.matchAll(/\bRA\('([^']+)'\)/g)) if (!RAVE_P[m[1]]) bad.push(['rave ' + m[1], 'banana-rave.js asks for it and the pack has no such sprite — it would draw nothing']);
+
 if (bad.length) {
   console.error('\n❌ art gate\n');
   for (const [k, why] of bad) console.error(`   ${k}\n     ${why}\n`);
@@ -58,4 +70,4 @@ if (bad.length) {
 }
 const packedB = JSON.stringify(ART_P).length + JSON.stringify(ART_R).length;
 const srcB = srcKeys.reduce((n, k) => n + WEAR_ART_SOURCE[k].length, 0);
-console.log(`✅ art gate — ${srcKeys.length} wearables decode byte-for-byte (${Object.keys(ART_P).length} packed, ${Object.keys(ART_R).length} verbatim); ${srcB.toLocaleString()} B of art ships as ${packedB.toLocaleString()} B`);
+console.log(`✅ art gate — ${srcKeys.length} wearables decode byte-for-byte (${Object.keys(ART_P).length} packed, ${Object.keys(ART_R).length} verbatim); ${srcB.toLocaleString()} B of art ships as ${packedB.toLocaleString()} B — and the rave's ${Object.keys(RAVE_P).length} sprites decode byte-for-byte too`);

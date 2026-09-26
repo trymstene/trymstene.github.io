@@ -1,0 +1,33 @@
+{
+  "card": {
+    "when": {
+      "today": "Played today",
+      "yesterday": "Played yesterday",
+      "days": "Played {n} days ago"
+    },
+    "away": "Not here now. They’ll see your wave later.",
+    "wave": "Wave",
+    "waved": "Waved",
+    "enough": "No more waves today.",
+    "off": "The wave didn’t send. Try again.",
+    "visit": "Visit farm",
+    "close": "Close"
+  },
+  "list": {
+    "title": "Waves",
+    "someone": "A new banana",
+    "back": "Wave back",
+    "backed": "Waved",
+    "visit": "Visit farm",
+    "welcome": "When a banana waves at you, it shows up here.",
+    "nib": "Nib",
+    "me": "Show my banana while I’m away",
+    "when": {
+      "now": "just now",
+      "mins": "{n} min ago",
+      "hours": "{n} h ago",
+      "yesterday": "yesterday",
+      "days": "{n} days ago"
+    }
+  }
+}

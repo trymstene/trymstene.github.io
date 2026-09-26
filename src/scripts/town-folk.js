@@ -273,9 +273,21 @@ export function bootTownFolk(ctx) {
     const cv = document.createElement('canvas');
     cv.width = cv.height = 150;
     el.appendChild(cv);
+    // 👋 AN ECHO (26 Sep 2026, design library §42): a real player who was about lately, in their own banana and under their
+    // own name — the one visitor with a name, because it is a PERSON (a tap opens their card: world-social.js)
+    if (v.echo) {
+      el.classList.add('bws-echo', 'is-on');
+      el.dataset.slug = v.echo.slug;
+      const tag = document.createElement('span');
+      tag.className = 'bws-tag';
+      tag.textContent = v.echo.n;
+      el.appendChild(tag);
+    }
     world.appendChild(el);
     v.el = el; v.cv = cv; v.g = cv.getContext('2d'); v.drawn = -1;
   }
+  // the social layer hands out an echo to wear, when it has one spare (at most two in town at once)
+  const askEcho = () => { const d = { echo: null }; try { document.dispatchEvent(new CustomEvent('world:echo', { detail: d })); } catch (e) {} return d.echo; };
 
   function spawn(now) {
     if (folk.length >= capNow()) return;
@@ -290,6 +302,13 @@ export function bootTownFolk(ctx) {
       outfit: { hat, glasses: r() < 0.22 ? pick(r, GLASSES) : 'none', extras, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' },
       job: null, until: 0, seat: null, gone: false, r,
     };
+    const echo = askEcho();
+    if (echo) {
+      const f = echo.fit || {}, x = {};
+      for (const k of Object.keys(f.extras || {})) if (f.extras[k]) x[k] = true;
+      v.echo = echo;
+      v.outfit = { hat: f.hat || 'none', glasses: f.glasses || 'none', extras: x, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
+    }
     body(v);
     folk.push(v);
     v.path = [gate.on];        // off the bus, or in off the road, before any routing happens
@@ -345,6 +364,7 @@ export function bootTownFolk(ctx) {
     if (v.seat) { v.seat.taken = false; v.seat = null; }
     if (v.el) v.el.remove();
     v.gone = true;
+    if (v.echo) try { document.dispatchEvent(new CustomEvent('world:echo-gone', { detail: v.echo.slug })); } catch (e) {}
   }
 
   function step(v, dt, now) {
@@ -363,7 +383,7 @@ export function bootTownFolk(ctx) {
         v.el.hidden = false;
         // 🛍 out of the shop with a bag — and, two times in three, with somewhere else to be first: a
         // bench, a stand about, and only then the road home. That is the whole "they have lives".
-        bagUp(v);
+        if (!v.echo) bagUp(v);   // 👋 an echo wears what its player wears, and nothing they did not buy
         if (v.r() < 0.65) { errand(v, now, null, true); return; }
       }
       leave(v);
@@ -450,11 +470,13 @@ export function bootTownFolk(ctx) {
     void inside;
   }
 
+  // 🪑 who the café's queue may borrow: a visitor about the square with nothing on — and never a player's echo 👋
+  const idle = () => folk.filter((v) => !v.gone && !v.sitting && v.job !== 'leave' && !v.el.hidden && !v.echo);
   return {
     tick,
     stop() { stopped = true; folk.forEach(kill); folk.length = 0; },
     // 🪑 the café's queue asks for these: a visitor already in town who can be sent to the rope
-    idle: () => folk.filter((v) => !v.gone && !v.sitting && v.job !== 'leave' && !v.el.hidden),
+    idle: () => idle(),
     take(v, to, onArrive) { if (v.seat) { v.seat.taken = false; v.seat = null; } v.job = 'queue'; v.until = 0; v.sitting = false; v.arrived = onArrive || null; v.path = []; go(v, to); },
     // the counter is done with them: back to their own day, or out of town
     release(v, sit) { if (!v || v.gone) return; v.arrived = null; v.job = ''; v.until = 0; if (sit) errand(v, performance.now()); else leave(v); },
@@ -482,7 +504,8 @@ export function bootTownFolk(ctx) {
     patience(v, k) { if (!v || !v.el) return; v.pat = k; v.el.classList.toggle('tw-wait', k != null); },
     seam: {
       count: () => folk.length,
-      folk: () => folk.map((v) => ({ x: Math.round(v.x), y: Math.round(v.y), job: v.job, sitting: !!v.sitting, frame: v.drawn, hat: v.outfit.hat, hidden: !!v.el.hidden, pat: v.pat == null ? null : v.pat, held: Object.keys(v.outfit.extras || {}).filter((k) => v.outfit.extras[k]) })),
+      idle: () => idle().length,
+      folk: () => folk.map((v) => ({ echo: v.echo ? v.echo.slug : '', x: Math.round(v.x), y: Math.round(v.y), job: v.job, sitting: !!v.sitting, frame: v.drawn, hat: v.outfit.hat, hidden: !!v.el.hidden, pat: v.pat == null ? null : v.pat, held: Object.keys(v.outfit.extras || {}).filter((k) => v.outfit.extras[k]) })),
       gates: () => GATES.map((g) => ({ at: { ...g.at }, on: { ...g.on } })),
       // 🛍 QA: send visitor i into a shop NOW, for a moment — the walk cannot wait on a one-in-four roll
       // and a half-minute stroll to prove that what comes out carries a bag

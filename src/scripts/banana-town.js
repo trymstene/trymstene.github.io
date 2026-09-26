@@ -274,7 +274,7 @@ function notesBottom(now) {
   if (now - notesAt < 250) return notesLow;
   notesAt = now; notesLow = 0;
   const v = view.getBoundingClientRect();
-  for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top && r.top < v.top + v.height / 2) notesLow = Math.max(notesLow, r.bottom - v.top); }
+  for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge, .bws__b')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top && r.top < v.top + v.height / 2) notesLow = Math.max(notesLow, r.bottom - v.top); }
   return notesLow;
 }
 let frameAt = -1e9, frameY = null;
@@ -512,7 +512,7 @@ function placeToast(opening) {
   if (toastEl.classList.contains('is-above-tray')) {
     const v = view.getBoundingClientRect();
     let low = 0;
-    for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); if (noteRO && !noteSeen.has(el)) { noteSeen.add(el); noteRO.observe(el); } }
+    for (const el of document.querySelectorAll('.wh, .bwq-hint, .bwq-hint__badge, .twd-chip, .twd-chip__badge, .bws__b')) { const r = el.getBoundingClientRect(); if (r.height > 0 && r.bottom > v.top) low = Math.max(low, r.bottom - v.top); if (noteRO && !noteSeen.has(el)) { noteSeen.add(el); noteRO.observe(el); } }
     toastEl.style.setProperty('--tw-toast-top', Math.max(14, Math.round(low) + 10) + 'px');
   }
   if (toastEl.hidden || !panel || panel.hidden) return;
@@ -1194,6 +1194,9 @@ assetsReady().then(() => {
         if (window.__town) window.__town.crowd = crowd.seam;
       }).catch((e) => { console.warn('[town] the crowd did not load', e); });
     }
+    // 👋 THE SOCIAL LAYER (26 Sep 2026): echoes (worn by the visitors: town-folk.js), waves and the waves badge — the
+    // world's one chunk for them (src/lib/world-social.js). A QA walk asks for it the way it asks for the crowd.
+    if (!qa || /[?&]social=1/.test(location.search)) import('../lib/world-social.js').then((m) => m.bootSocial('town')).catch(() => {});
     // 💼 the jobs, once the room can answer for the words. ⚠️ AFTER the room, never before: the
     // question on a boss's card is copy, and a half-built question is worse than none.
     import('./town-work.js').then((w) => {

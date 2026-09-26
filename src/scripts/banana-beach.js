@@ -3905,6 +3905,7 @@ function init() {
     if (!sawPeer) { sawPeer = true; track('beach_multiplayer'); }
     const el = document.createElement('div');
     el.className = 'bh-peer';
+    el.dataset.pid = d.id;   // 👋 a tap on a player here waves at them (world-social.js)
     const cv = document.createElement('canvas');
     cv.width = CV; cv.height = CV;
     el.appendChild(cv);

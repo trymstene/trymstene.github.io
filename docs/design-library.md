@@ -748,7 +748,7 @@ A town has two populations and they must be **opposite**:
 | what they are | the town's **fixtures** | its **traffic** |
 | how many | nine, always | at most six at a time |
 | where | at their own shop, most of the day | in from the roads that leave the map |
-| named | yes, with a card you can tap | never — no name, no card, no tap |
+| named | yes, with a card you can tap | never — no name, no card, no tap (except an ECHO, which is a real player: §42) |
 | what they give | somewhere to find somebody | the feeling that the place is used |
 
 **A resident's day is POST, POST, a break, POST, POST, home** — about three walks, so they are where
@@ -1292,3 +1292,43 @@ card that opened from across the room. Four rules came out of it, for any fittin
   then 2, 4), so a store running low has gaps along its wall instead of one empty half. The logic did not change: one
   face per thing Pip sells today, three at Struggling, the whole wall at Recovering (the town's resting point), the
   flower tables only for a Lively or Thriving town.
+
+## §42 OTHER PLAYERS ARE EVERYWHERE, AND SAY SO HONESTLY (26 Sep 2026, the social layer)
+
+Trym: *"users must find emotional connection to Banana World in simpler, familiar ways"*, then *"the echo-thing sounds cool,
+wave - sure"*, *"for these social messages i dont think the letter mailbox is the right place, but maybe a separate icon
+shows up for general notifications on the top left corner with the quests and job-icons"*, and *"build it as something
+that stretches throughout the whole world and waves ofcourse"*. One chunk does it for every walkable area:
+`src/lib/world-social.js`, loaded by the town, the park, the bay and the homestead. The server half is worker-rave's
+YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every presence room.
+
+- **An echo is a real player, drawn as one, and never pretends to be here.** The players the address book already shows
+  (a Pass, a Homestead, a name, about in the last two weeks) walk about the world under their own name, in their own
+  banana, a little see-through. The town's visitors wear them (at most two at once, never at the café's rope); the park and
+  the bay stand them at fixed open spots (`AREAS.spots`: the plaza round the fountain, the paths on the sand — never a
+  court, a hut, a stall, a bench already taken or Old Peel's); the homestead lets them stroll the PUBLIC road past your
+  gate and stop on open road, never in your yard. A tap opens THEIR card — the NPC card's grammar — and its line says
+  plainly they are not here: an echo that could be mistaken for a live player breaks trust, doubly with children.
+- **Never on the rave floor.** Its copy promises that every banana on it is a real one, here now.
+- **A live player wears a green dot on their name tag; an echo does not.** A person is a person (the Quiet Rule is about
+  the residents and about speech): another player's name over their head is allowed, one tag, the name and nothing
+  else. The town walk's silence check allows exactly that and still fails any other word on any banana.
+- **A wave is one tap, and says nothing.** Tap a player here: your hand goes up and theirs sees it. Tap an echo: its card,
+  then Wave. There is no typing anywhere in the social layer — every word in it is the world's
+  (`src/data/copy/world-social.json`), so there is nothing to moderate.
+- **Waves live in the corner, never in the letterbox.** The waves badge is the fourth of the top-left column's one 32 px
+  circle (§28), UNDER whatever notes stand above it (the quest note, the town's work note, the pager), shown only while
+  something new is in it and for the rest of that visit once opened. Its list: who waved, when, Wave back, and the
+  switch that keeps your own banana out of other people's echoes. It never starts empty: the first wave you send, or the
+  first that comes for you, brings Nib's welcome, so the icon has said what it is for before it matters.
+- **Small, plain, aligned** (Trym, 26 Sep: *"not too much text not too big popups … make sure buttons are consistent in size
+  and centered … dont take more view than needed … if we can cut text, cut it"*). The echo card is its name, its farm and
+  when, ONE short line, and one row of two equal buttons centred in it, no wider than 300 px and no dimming veil; a
+  list row is who and when (a farm's link rides the when), its one Wave back in one column at one size, every row one
+  height. `tests/world-social.spec.mjs` measures all of it, so it cannot drift back.
+- **A tap on a banana is caught once, at the document.** Every area listens differently (the town on pointerdown, the
+  others on click, the steer on touchstart), so the social layer takes a tap that lands on a banana's body in capture,
+  before any of them, and swallows exactly the one click that tap owes — never a second, which is a new tap. The
+  park's and the bay's cull sweeps leave an echo alone (`noCull`).
+- Walked by `tests/world-social.spec.mjs` (an echo in the park, the bay, the homestead and the town; the card, the wave,
+  the badge under the quest note, the list and a wave back) and proven server-side by `worker-rave/test/social.test.mjs`.

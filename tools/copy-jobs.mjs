@@ -2740,6 +2740,43 @@ export const JOBS = {
     },
     shape: () => [],
   },
+  // 👋 THE SOCIAL LAYER (26 Sep 2026). Trym: echoes "for all areas … and waves ofcourse", and waves never in the letterbox:
+  // "a separate icon … on the top left corner with the quests and job-icons … for small easygoing messages". No free text
+  // anywhere in it — a wave is one tap and says nothing, so every word here is the world's, never a player's.
+  'world-social': {
+    id: 'world-social',
+    title: 'The social layer — an echo’s card, a wave, and the waves badge',
+    what: 'The card a tap on an echo opens (a real player who was about lately, drawn in the world), its two buttons and what they answer; and the list behind the waves badge in the corner: who waved at you, when, Wave back, Nib’s welcome, and the switch that keeps your own banana out of other people’s echoes.',
+    approved: 'src/data/copy/world-social.json',
+    reads: 'src/lib/world-social.js (a static import; the social layer is its own lazy chunk, loaded by every walkable area but the rave)',
+    top: ['card', 'list'],
+    fields: {
+      'card.when.today': { kind: 'label', aim: 12, max: 18, note: 'Under an echo’s name, after their farm’s name: they last played today. It says WHEN, never where — an echo can stand in an area its player never visited.' },
+      'card.when.yesterday': { kind: 'label', aim: 14, max: 20, note: 'The same, for yesterday.' },
+      'card.when.days': { kind: 'label', aim: 16, max: 22, ...holdsAll('n'), note: 'The same, two to fourteen days ago; {n} is the number of days.' },
+      'card.away': { kind: 'prose', aim: 42, max: 52, note: '⭐ WHAT AN ECHO IS, on its own card, ONE short line (Trym, 26 Sep: "if we can cut text, cut it"): this player is not here now, and a wave reaches them later. The name is already the card’s heading, so the line never repeats it. It keeps an echo honest (a fake player breaks trust, doubly with children), so it may never suggest they are here, watching, or about to come back.' },
+      'card.wave': { kind: 'label', aim: 4, max: 8, note: 'The button that waves at the echo. One word, a verb. The code draws a hand in front of it; it shares a row with Visit farm, the two the same width.' },
+      'card.waved': { kind: 'label', aim: 5, max: 8, note: 'The same button once the wave has gone (or already went today): one word, done.' },
+      'card.enough': { kind: 'prose', aim: 20, max: 30, note: 'Under the buttons when today’s waves are used up. Plain, not a scolding, and never a number or a time.' },
+      'card.off': { kind: 'prose', aim: 30, max: 36, note: 'Under the buttons when the wave did not reach the server. What happened and what to do; never “error” or “server”.' },
+      'card.visit': { kind: 'label', aim: 10, max: 12, note: 'The button that walks to the echo’s farm. A verb first, one line, beside Wave in a row about 300 px wide at 360.' },
+      'card.close': { kind: 'label', aim: 5, max: 10, note: 'What a screen reader says for the card’s ✕: the word every card closes with.' },
+      'list.title': { kind: 'label', aim: 5, max: 10, note: 'What a screen reader calls the badge and its list. One word: what is in it. Not printed: a row is who and when, and its Wave back button says the rest.' },
+      'list.someone': { kind: 'label', aim: 12, max: 16, note: 'Who a wave is from when the waver has no name yet (a newcomer), or one the family filter refused. Kind: it is somebody new, not somebody hidden.' },
+      'list.back': { kind: 'label', aim: 9, max: 10, note: 'The row’s button: wave back. One line, in a row that also holds a portrait, the line and a small house button, 300 px wide.' },
+      'list.backed': { kind: 'label', aim: 5, max: 8, note: 'The same button once you waved back (or already did today).' },
+      'list.visit': { kind: 'label', aim: 10, max: 12, note: 'The small link after when a wave came, for somebody with a farm: it walks to their farm. The card’s own button says the same (card.visit).' },
+      'list.welcome': { kind: 'prose', aim: 46, max: 60, note: '⭐ NIB’S WELCOME, the first thing that is ever in the list: it arrives with the first wave you send (or the first that comes for you), so the icon has said what it is for before it matters. Nib, the town hall clerk, in character but plain: what this badge collects. No instruction, no promise that anybody will wave.' },
+      'list.nib': { kind: 'label', aim: 3, max: 6, note: 'Who the welcome is from, under it: the resident’s name.' },
+      'list.me': { kind: 'prose', aim: 30, max: 36, note: 'The switch at the foot of the list, for a player with a farm and a name (the only players who become echoes): leave it on and other players see your banana around the world while you are away; off, and they do not. A statement that is true when the box is ticked, never a question.' },
+      'list.when.now': { kind: 'label', aim: 8, max: 12, note: 'When a wave came: in the last two minutes.' },
+      'list.when.mins': { kind: 'label', aim: 9, max: 12, ...holdsAll('n'), note: 'When a wave came: {n} minutes ago (2–59).' },
+      'list.when.hours': { kind: 'label', aim: 8, max: 12, ...holdsAll('n'), note: 'When a wave came: {n} hours ago (1–23).' },
+      'list.when.yesterday': { kind: 'label', aim: 9, max: 12, note: 'When a wave came: yesterday.' },
+      'list.when.days': { kind: 'label', aim: 11, max: 14, ...holdsAll('n'), note: 'When a wave came: {n} days ago.' },
+    },
+    shape: () => [],
+  },
   // 🎉 THE HOMEPAGE HERO (26 Sep 2026). Trym: "hello there, and welcome to BANANA WORLD … small text on top and banana
   // world in a slight arc and big text", the buttons with "no icons", a crew either side and a live ticker of the world's
   // best numbers "based on popularity". Site words: plain. The page draws the arrows, the "+" and the commas.

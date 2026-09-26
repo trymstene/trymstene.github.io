@@ -57,20 +57,21 @@ def head_of(h):
     return None, 0, 0
 
 
-def pack(svg):
-    """a wearable as [headIndex, gridW, gridH, palette, cells] — or None if it is not a plain grid"""
+def pack(svg, cell=CELL):
+    """a wearable as [headIndex, gridW, gridH, palette, cells] — or None if it is not a plain grid.
+    `cell` is the grid's cell in px: 10 for the wearables, 1 for the rave's own sprites (tools/build-raveart.py)"""
     if not svg.startswith('<svg') or not svg.endswith('</svg>'):
         return None
     head, body = svg[:svg.index('>') + 1], svg[svg.index('>') + 1:-6]
     hi, W, H = head_of(head)
-    if hi is None or W % CELL or H % CELL:
+    if hi is None or W % cell or H % cell:
         return None
     rects = RECT.findall(body)
     if ''.join('<rect x="%s" y="%s" width="%s" height="%s" fill="%s"/>' % r for r in rects) != body:
         return None   # something in there is not a rect
-    if any(int(v) % CELL for r in rects for v in r[:4]):
+    if any(int(v) % cell for r in rects for v in r[:4]):
         return None   # sub-cell detail: keep it verbatim
-    gw, gh = W // CELL, H // CELL
+    gw, gh = W // cell, H // cell
     grid = [[-1] * gw for _ in range(gh)]
     pal = []
     for (x, y, w, h, fill) in rects:
@@ -79,7 +80,7 @@ def pack(svg):
         if fill not in pal:
             pal.append(fill)
         ci = pal.index(fill)
-        x, y, w, h = int(x) // CELL, int(y) // CELL, int(w) // CELL, int(h) // CELL
+        x, y, w, h = int(x) // cell, int(y) // cell, int(w) // cell, int(h) // cell
         for yy in range(y, y + h):
             for xx in range(x, x + w):
                 if 0 <= yy < gh and 0 <= xx < gw:
@@ -100,13 +101,13 @@ def pack(svg):
     # it is kept verbatim. That covers sub-cell detail, and it covers a wearable whose rects were
     # merged VERTICALLY (midnighttulip), where row-major runs cannot reproduce the original order.
     # Refusing is always right here; guessing would move a pixel.
-    return out if unpack(out) == svg else None
+    return out if unpack(out, cell) == svg else None
 
 
-def unpack(p):
-    """the twin of the decoder in src/lib/banana-engine.js — kept here only to PROVE the pack"""
+def unpack(p, cell=CELL):
+    """the twin of the decoder in src/lib/wear-unpack.js — kept here only to PROVE the pack"""
     hi, gw, gh, pal, cells = p
-    W, H = gw * CELL, gh * CELL
+    W, H = gw * cell, gh * cell
     head = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d" shape-rendering="crispEdges">' % (W, H, W, H),
             '<svg viewBox="0 0 %d %d" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">' % (W, H),
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" shape-rendering="crispEdges">' % (W, H)][hi]
@@ -135,7 +136,7 @@ def unpack(p):
             while rx + run < gw and flat[ry * gw + rx + run] == flat[ry * gw + rx]:
                 run += 1
             out.append('<rect x="%d" y="%d" width="%d" height="%d" fill="#%s"/>'
-                       % (rx * CELL, ry * CELL, run * CELL, CELL, pal[(c - 1) * 6:c * 6]))
+                       % (rx * cell, ry * cell, run * cell, cell, pal[(c - 1) * 6:c * 6]))
             rx += run
     return head + ''.join(out) + '</svg>'
 

@@ -9,7 +9,7 @@
 // page paid for nothing). A script that wants one of these takes it off this list — tools/check-design.mjs fails an
 // iconSvg('…') of a name that is still on it.
 const raw = import.meta.glob(['../icons/pixelart/*.svg',
-  '!../icons/pixelart/{arrow-down,arrow-left,arrow-right,arrow-up,bird-solid,camera,check-double,chevron-left,clipboard,duplicate,external-link,eye,flip-horizontal,flip-vertical,folder,image-plus,menu,minus,paint-bucket,pipette,plus,prev,redo,shirt,shopping-bag,sliders,user}.svg'],
+  '!../icons/pixelart/{arrow-down,arrow-left,arrow-right,arrow-up,bird-solid,camera,check-double,chevron-left,clipboard,duplicate,external-link,eye,flip-horizontal,flip-vertical,folder,hand-solid,image-plus,menu,minus,paint-bucket,pipette,plus,prev,redo,shirt,shopping-bag,sliders,user}.svg'],
 { query: '?raw', import: 'default', eager: true });
 const ICONS = {};
 for (const p in raw) ICONS[p.split('/').pop().replace('.svg', '')] = raw[p];
