@@ -16,29 +16,71 @@
    the stack past the card and turn a mailbox into a scroller */
 .tw-post__peek { display: block; font-size: 0.78rem; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.85; }
 
-/* ---- the new post: SEALED ENVELOPES, and the seal is the art rather than a badge ---------------- */
-/* the pack ships two envelopes, one with a red wax seal and one without, so "new" is a thing you can
-   see from across a room instead of a dot you have to read. 52px each, side by side, wrapping. */
+/* ---- ✉️ THE ENVELOPE, DRAWN (26 Sep 2026) -------------------------------------------------------
+ * It was the pack's letter ITEM — a nine-pixel diamond blown up to 52 px, and squeezed to 40 and 30 where it
+ * broke unevenly (Trym: "looks very pixelated and ugly at the size we're showing it"). Now paper: the flap drawn
+ * as two lines meeting in the middle, a red wax seal on its tip while the letter is unopened, and who it is from
+ * written across the front by hand (Caveat, the paper notes' own hand). Crisp at any size. */
 .tw-post__env {
-  appearance: none; font: inherit; cursor: pointer;
-  display: grid; justify-items: center; gap: 2px; padding: 0.4rem 0.45rem 0.35rem;
-  background: #2a2119; color: #fffdf5; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
-  min-width: 78px; max-width: 118px;
+  appearance: none; font: inherit; cursor: pointer; position: relative; overflow: hidden;
+  display: grid; align-content: end; justify-items: center; min-width: 0; width: 100%;
+  aspect-ratio: 4 / 3; padding: 0 0.3rem 0.3rem;
+  background: #fbf3de; color: #241c0e; border: 3px solid #000; border-radius: 3px; box-shadow: 3px 3px 0 #000;
 }
 .tw-post__env:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
-/* a name on a tile wraps to two lines, at a space first, before it is cut: the tile's whole job is to say
-   who. The card's body face, bold, because the display face is too wide to fit a name in 60 px. */
-.tw-post__env .tw-post__who, .tw-post__pctile .tw-post__who {
-  font-family: inherit; font-weight: 800; letter-spacing: 0;
-  font-size: 0.68rem; line-height: 1.2; text-align: center; max-width: 100%;
-  white-space: normal; overflow-wrap: break-word; overflow: hidden;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+/* the flap: the upper 46%, a shade darker, edged by two lines from the top corners to the tip */
+.tw-post__env::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 46%; pointer-events: none;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #efe0bd calc(50% + 1px)) left / 50.5% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #efe0bd calc(50% + 1px)) right / 50.5% 100% no-repeat;
 }
-.tw-post__stamp {
-  width: 52px; height: 52px; image-rendering: pixelated;
-  background: center/contain no-repeat url('/assets/town/s-letterseal-0.png');
+/* the wax seal on the flap's tip: the state is in the paper, not in a badge */
+.tw-post__env::after {
+  content: ''; position: absolute; left: 50%; top: 46%; width: 28%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  border-radius: 50%; border: 2px solid #5c0f09; pointer-events: none;
+  background: radial-gradient(circle at 36% 34%, #ff7466 0 14%, #d92b20 42%, #a51b12 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14), 1px 1px 0 rgba(0, 0, 0, 0.3);
 }
-.tw-post__stamp.is-open { width: 30px; height: 30px; background-image: url('/assets/town/s-letteropen-0.png'); }
+/* who it is from, written on the front by hand; one line, and the whole name is on the letter when it opens */
+.tw-post__env .tw-post__who {
+  position: relative; z-index: 1; max-width: 100%; box-sizing: border-box;
+  font-family: "Caveat", cursive; font-weight: 600; font-size: 1rem; line-height: 1.05; letter-spacing: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* a hand's last stroke runs past its letter's box — room for it, or the clip takes the tail off "Pip" */
+  padding: 0 0.22em;
+}
+/* 💼 a payslip is a KRAFT envelope, as its paper is kraft when it opens */
+.tw-post__env.is-wage { background: #caa06a; color: #241a0c; }
+.tw-post__env.is-wage::before {
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #b98b52 calc(50% + 1px)) left / 50.5% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #b98b52 calc(50% + 1px)) right / 50.5% 100% no-repeat;
+}
+/* ✉️ a FIRST letter — post from a house you have never had post from — wears a tag across its corner */
+.tw-post__tag {
+  position: absolute; z-index: 2; left: -3px; top: 5px; padding: 1px 5px 1px 6px;
+  background: #ffe135; color: #141208; border: 2px solid #000; font-style: normal;
+  font-size: 0.56rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+  transform: rotate(-4deg); transform-origin: 0 50%;
+}
+/* the small envelope beside a row: the same drawing at 26 × 19, and a dot of wax while it is unopened */
+.tw-post__mini {
+  position: relative; flex: none; width: 26px; height: 19px; box-sizing: border-box;
+  background: #fbf3de; border: 2px solid #000; border-radius: 2px;
+}
+.tw-post__mini::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 55%;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), #1a120a calc(50% - 1px), #1a120a calc(50% + 0.6px), transparent calc(50% + 0.6px)) left / 50.5% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1px), #1a120a calc(50% - 1px), #1a120a calc(50% + 0.6px), transparent calc(50% + 0.6px)) right / 50.5% 100% no-repeat;
+}
+.tw-post__mini.is-sealed::after {
+  content: ''; position: absolute; left: 50%; top: 55%; width: 8px; height: 8px; transform: translate(-50%, -50%);
+  border-radius: 50%; background: #d92b20; border: 1px solid #5c0f09;
+}
+/* a postcard in a row shows its own picture where a letter shows its envelope */
+.tw-post__pcmini { flex: none; width: 30px; aspect-ratio: 3 / 2; object-fit: cover; border: 2px solid #000; image-rendering: pixelated; }
 
 /* ---- the kept post: ONE ROW PER PERSON, never one per letter ------------------------------------ */
 .tw-post__of { display: block; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.72; font-weight: 800; margin-top: 0.15rem; }
@@ -60,10 +102,9 @@
    fades, and the sheet rises out from behind where it was. Both run once and then the card is still —
    nothing animates while you are reading, which is the whole point of a letter. */
 .tw-post__open { position: relative; display: grid; gap: 0.45rem; background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000; padding: 0.6rem; }
-.tw-post__flap {
-  position: absolute; left: 50%; top: 6px; width: 52px; height: 52px; margin-left: -26px; z-index: 2;
-  image-rendering: pixelated; pointer-events: none;
-  background: center/contain no-repeat url('/assets/town/s-letterseal-0.png');
+.tw-post__flap.tw-post__env {
+  position: absolute; left: 50%; top: 6px; width: 76px; margin-left: -38px; z-index: 2;
+  pointer-events: none; cursor: default;
   animation: twPostFlap 520ms cubic-bezier(0.3, 0, 0.2, 1) forwards;
 }
 @keyframes twPostFlap {
@@ -152,6 +193,8 @@
   text-align: center;
 }
 .tw-pc.is-big { margin: 0.1rem 0 0.4rem; }
+/* on the sheet a short screen narrows the picture (fitSheet in town-post.js), and a narrowed one stays centred */
+.tw-post__make .tw-pc.is-big { justify-self: center; width: 100%; max-width: 100%; }
 
 /* ---- the sheet: three places, eight lines ------------------------------------------------------ */
 .tw-post__make { display: grid; gap: 0.35rem; }
@@ -164,22 +207,40 @@
 }
 .tw-pc__pick img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; image-rendering: pixelated; }
 .tw-pc__pick.is-on { border-color: #ffb347; box-shadow: 0 0 0 2px #ffb347; }
-/* the deck: every line the world has, one tap each. ⚠️ it scrolls on a phone and the mask says so —
-   the same fade the dressing room's rails use, so "there is more" reads the same way twice. */
-.tw-pc__deck {
-  display: grid; gap: 0.18rem; max-height: 132px; overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; scrollbar-color: #ffd21f rgba(0, 0, 0, 0.34);
-  -webkit-mask-image: linear-gradient(#000 0 calc(100% - 16px), rgba(0, 0, 0, 0.15) 100%);
-  mask-image: linear-gradient(#000 0 calc(100% - 16px), rgba(0, 0, 0, 0.15) 100%);
+/* the words: ONE line at a time between two arrows, on paper, and the picture above shows it as it will arrive.
+   ⚠️ It was a list of all eight that scrolled inside a card that also scrolled, and Send postcard sat below both at
+   every screen size (26 Sep 2026). The row is as tall as two lines of the longest, so the card never jumps as the
+   words go round. The arrows are drawn, not typed: the page's fonts carry no arrow, and a fallback one would change
+   from phone to phone. */
+.tw-pc__words { display: grid; grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 0.3rem; min-height: 46px; }
+.tw-pc__step {
+  appearance: none; cursor: pointer; padding: 0; position: relative; min-width: 0;
+  background: #2a2119; color: #ffe135; border: 3px solid #000; box-shadow: 2px 2px 0 #000;
 }
-.tw-pc__deck::-webkit-scrollbar { width: 8px; }
-.tw-pc__deck::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.34); border-radius: 999px; }
-.tw-pc__deck::-webkit-scrollbar-thumb { background: #ffd21f; border: 1px solid #1a1408; border-radius: 999px; }
+.tw-pc__step::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 11px; height: 16px; transform: translate(-40%, -50%);
+  background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.tw-pc__step[data-step="-1"]::before { transform: translate(-60%, -50%); clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.tw-pc__step:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
+.tw-pc__step:focus-visible { outline: 3px solid #ffe135; outline-offset: 1px; }
 .tw-pc__say {
-  appearance: none; text-align: left; font: inherit; font-size: 0.74rem; line-height: 1.3;
-  padding: 0.3rem 0.45rem; border: 2px solid #3a2718; background: #1f150e; color: #fffdf5; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; text-align: center; min-width: 0;
+  padding: 0.2rem 0.45rem; font-size: 0.78rem; line-height: 1.25; overflow-wrap: anywhere;
+  background: #fbf3dd; color: #241c0e; border: 3px solid #000;
 }
-.tw-pc__say.is-on { border-color: #ffb347; background: #2f2013; color: #ffd98a; }
+/* the last row: Go back, and Send postcard taking the rest of it.
+   ⚠️ AND IT NEVER LEAVES THE SCREEN: on a screen too short even for the smallest picture the sheet scrolls UNDER
+   this row. Its bottom padding and the equal negative margin are the card's own 0.9rem, so where everything fits
+   the row sits exactly where it would without them. */
+.tw-post__go {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.4rem; align-items: stretch;
+  position: sticky; bottom: 0; z-index: 3; background: #1a120c;
+  padding: 0.35rem 0 0.9rem; margin-bottom: -0.9rem;
+}
+.tw-post__go .tw-cta { margin: 0; min-width: 0; justify-content: center; }
+.tw-post__go .tw-cta__verb { overflow: hidden; text-overflow: ellipsis; }
+.tw-post__go .tw-post__back { padding-inline: 0.7rem; }
 
 /* ---- two ways to answer -------------------------------------------------------------------- */
 /* ⚠️ buttons in this world never line-break, so two side by side get equal thirds of the row and the
@@ -244,8 +305,15 @@
   font-size: 0.7rem; opacity: 0.75;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* the way out of the mailbox: a full-width action under the post, never a chip beside it */
-.tw-post__write { margin-top: 0.2rem; }
+/* the ways out of the mailbox: full-width actions under the post, never chips beside it. At the counter a
+   postcard sits beside the letter, two equal halves; at home the letter has the row to itself */
+.tw-post__outs { display: grid; gap: 0.4rem; margin-top: 0.2rem; }
+.tw-post__outs.is-two { grid-template-columns: 1fr 1fr; }
+.tw-post__outs .tw-cta { margin: 0; min-width: 0; justify-content: center; padding-inline: 0.4rem; }
+/* ⚠️ 0.82rem, the in-card buttons' own size: at 0.86 “Send a postcard” came out a pixel wider than its half of a
+   360-px phone, and an ellipsis on the one button Trym went looking for is the bug over again */
+.tw-post__outs.is-two .tw-cta__verb { font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; }
+.tw-post__outs .tw-cta.is-card { background: #fbf3de; }
 /* ✉️ the sorting round’s button, for the post office’s own staff (22 Sep 2026): under the write button */
 .tw-post__sort { margin-top: 0.3rem; }
 
@@ -293,55 +361,46 @@
 .tw-post__drawer::-webkit-scrollbar, .tw-post__cards::-webkit-scrollbar { width: 8px; height: 8px; }
 .tw-post__drawer::-webkit-scrollbar-track, .tw-post__cards::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.34); border-radius: 999px; }
 .tw-post__drawer::-webkit-scrollbar-thumb, .tw-post__cards::-webkit-scrollbar-thumb { background: #ffd21f; border: 1px solid #1a1408; border-radius: 999px; }
-.tw-post__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 0.45rem; }
-.tw-post__grid .tw-post__env { min-width: 0; max-width: none; width: 100%; padding-inline: 0.25rem; }
-/* 💼 a payslip is a kraft envelope, as its paper is kraft when it opens */
-.tw-post__env.is-wage { background: #b88a4c; color: #241c0e; }
+.tw-post__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 0.5rem 0.45rem; padding: 2px 4px 4px 2px; }
+/* 📮 a postcard is a picture, and in the grid it is the envelopes' shape: the picture fills it, who sent it on a strip */
 .tw-post__pctile {
-  appearance: none; font: inherit; cursor: pointer; min-width: 0;
-  display: grid; justify-items: center; gap: 3px; padding: 0.3rem;
-  background: #1f150e; color: #fffdf5; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+  appearance: none; font: inherit; cursor: pointer; min-width: 0; position: relative; overflow: hidden;
+  display: grid; align-content: end; padding: 0; aspect-ratio: 4 / 3;
+  background: #1f150e; color: #fffdf5; border: 3px solid #000; border-radius: 3px; box-shadow: 3px 3px 0 #000;
 }
-.tw-post__pctile.is-new { border-color: #ffb347; }
+.tw-post__pctile.is-new { border-color: #000; }
 .tw-post__pctile:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
-.tw-post__pctile .tw-post__pcthumb { width: 100%; }
+.tw-post__pctile .tw-post__pcthumb { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.tw-post__pctile .tw-post__who {
+  position: relative; display: block; padding: 1px 4px 2px; background: rgba(20, 14, 8, 0.78);
+  font-family: "Caveat", cursive; font-weight: 600; font-size: 0.95rem; line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
+}
 /* the kept drawer: postcards as a strip of pictures, then one row per person */
-.tw-post__cards { display: grid; grid-auto-flow: column; grid-auto-columns: 96px; gap: 0.45rem; overflow-x: auto; padding: 2px 2px 8px; }
+.tw-post__cards { display: grid; grid-auto-flow: column; grid-auto-columns: 92px; gap: 0.45rem; overflow-x: auto; padding: 2px 2px 8px; }
 .tw-post__thread { grid-template-columns: auto minmax(0, 1fr) auto; }
 .tw-post__n {
   min-width: 1.6em; padding: 0 0.4em; border-radius: 999px; line-height: 1.6; text-align: center;
   background: #241c0e; color: #ffe135; font-size: 0.64rem; font-variant-numeric: tabular-nums;
 }
 
-/* ---- 🚪 THE KNOCK (22 Sep 2026) ----------------------------------------------------------------
- * Post from a house the reader has never had post from waits at the door: who, never what. The
- * envelope knocks twice when the drawer opens — once, transform only — and then it is still. */
-.tw-post__about { margin: 0; font-size: 0.76rem; line-height: 1.45; opacity: 0.86; }
-.tw-post__knocks { display: grid; gap: 0.4rem; }
-.tw-knock {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.35rem 0.5rem;
-  padding: 0.45rem 0.5rem; background: #fbf3dd; color: #241c0e; border: 3px solid #000; box-shadow: 3px 3px 0 #000;
+/* ---- ✉️ A FIRST LETTER (26 Sep 2026; the server calls it a knock) -------------------------------------
+ * Post from a house the reader has never had post from: a tile in the New drawer like any other letter, with a
+ * tag across its corner. A tap asks, once: who it is from, never what they wrote, and two answers of the same
+ * weight. Opening it lets the house in and opens the letter; sending it back means they cannot write again. */
+.tw-post__first { display: grid; justify-items: center; gap: 0.4rem; text-align: center; }
+.tw-post__env.is-big { width: 132px; cursor: default; margin: 0.2rem 0 0.1rem; }
+.tw-post__env.is-big .tw-post__who { font-size: 1.35rem; }
+.tw-post__env.is-big:active { transform: none; box-shadow: 3px 3px 0 #000; }
+.tw-post__firstwho { font-family: "Archivo Black", sans-serif; font-size: 0.86rem; letter-spacing: 0.02em; unicode-bidi: isolate; }
+.tw-post__house { font-size: 0.72rem; opacity: 0.75; margin-top: -0.25rem; unicode-bidi: isolate; }
+.tw-post__about { margin: 0; font-size: 0.78rem; line-height: 1.45; opacity: 0.88; }
+.tw-post__first .tw-post__two { width: 100%; }
+.tw-post__first .tw-post__two button {
+  margin: 0; min-height: 42px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 0.8rem; font-weight: 800; border: 3px solid #000; box-shadow: 2px 2px 0 #000; padding: 0.3rem 0.5rem;
 }
-.tw-post__stamp.is-knock { width: 40px; height: 40px; transform-origin: 50% 90%; animation: twKnock 700ms ease-in-out 250ms 1 both; }
-@keyframes twKnock {
-  0%, 100% { transform: rotate(0); }
-  15% { transform: rotate(-9deg); }
-  30% { transform: rotate(5deg); }
-  50% { transform: rotate(0); }
-  65% { transform: rotate(-9deg); }
-  80% { transform: rotate(5deg); }
-}
-.tw-knock__who { display: grid; gap: 1px; min-width: 0; }
-.tw-knock__who b { font-family: "Archivo Black", sans-serif; font-size: 0.74rem; letter-spacing: 0.02em; unicode-bidi: isolate; }
-.tw-knock__who small { font-size: 0.68rem; opacity: 0.72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: isolate; }
-/* ⚠️ buttons never line-break: two equal halves, and the longer label ellipses rather than wraps */
-.tw-knock__two { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
-.tw-knock__two button {
-  min-height: 40px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  /* ⚠️ ONE BOX FOR BOTH: the shared .tw-btn--in carries a top margin and a thinner border, which sat Let in
-     lower than Turn away — two answers of the same weight have to look it */
-  margin: 0; font-size: 0.78rem; font-weight: 800; border: 3px solid #000; box-shadow: 2px 2px 0 #000; padding: 0.3rem 0.5rem;
-}
+.tw-post__first .tw-post__back { justify-self: start; }
 .tw-post__away {
   appearance: none; font: inherit; cursor: pointer; font-size: 0.78rem; font-weight: 700;
   background: #2a2119; color: #fffdf5; border: 3px solid #000; box-shadow: 2px 2px 0 #000; padding: 0.3rem 0.5rem;
@@ -353,6 +412,5 @@
 .tw-post__world .bw-paper { margin: 0.1rem 0 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tw-post__stamp.is-knock { animation: none; }
   .tw-post__tab:active, .tw-post__pctile:active, .tw-post__away:active { transform: none; }
 }

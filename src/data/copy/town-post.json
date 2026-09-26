@@ -1,5 +1,5 @@
 {
-  "front": "This is Stamp’s post office. Your mailbox is here, with letters to read, replies to write, and sorting work from Stamp.",
+  "front": "This is Stamp’s post office. Read your post, write letters, send postcards, or sort mail for Stamp.",
   "title": "Your Mailbox",
   "empty": "No letters in your mailbox yet.",
   "noaddress": "Post needs an address. Put a name on your homestead’s sign first.",
@@ -20,11 +20,12 @@
     "none": "No new letters. Letters you have opened are in Kept."
   },
   "knock": {
-    "line": "A knock from {who}",
-    "about": "A letter from someone new is at the door. Let them in to read it; their next letters come straight in.",
-    "in": "Let in",
-    "away": "Turn away",
-    "gone": "The knock is gone. That house will not knock again."
+    "line": "First letter from {who}",
+    "tag": "first letter",
+    "about": "You haven’t had a letter from this banana before. Open it, and their next letters come straight in.",
+    "in": "Open it",
+    "away": "Send back",
+    "gone": "Sent back. That house can’t send you letters again."
   },
   "round": {
     "leave": "Leave work",
@@ -69,9 +70,13 @@
       "Nothing urgent. Just a postcard.",
       "Hello from Banana World!"
     ],
+    "words": "Words on the card",
+    "prev": "Previous words",
+    "next": "Next words",
     "send": "Send postcard",
     "sent": "The postcard joins the outgoing mail.",
-    "got": "Sent by {who}"
+    "got": "Sent by {who}",
+    "to": "To {who}"
   },
   "folk": {
     "title": "Neighbours’ Houses",
@@ -79,6 +84,7 @@
     "find": "A name or house name",
     "wait": "The book is opening.",
     "empty": "Nobody is around right now.",
-    "none": "That name or house name is not in the book."
+    "none": "That name or house name is not in the book.",
+    "card": "Send a postcard"
   }
 }

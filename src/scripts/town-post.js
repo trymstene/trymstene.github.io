@@ -60,6 +60,9 @@ export function bootTownPost(ctx) {
   let opening = false;    // one pass of the envelope coming open, then it is just a letter
   // 📮 the postcard being made: who it is for, which of the three places, which line of the deck
   let making = null;
+  // ✉️ a FIRST LETTER being decided on: post from a house you have never had post from shows who, never what,
+  // until you open it (the server's 'knock'; Trym, 26 Sep: "its a letter, not a knock")
+  let first = null;
   // 📇 THE ADDRESS BOOK — the answer to the first letter (Trym, 21 Sep: "i must be able to actually
   // send a letter for the first time"). The rail shipped REPLY-ONLY: Write back hangs off a letter
   // you already have, and nothing in this world ever wrote the first one — so a new player's box
@@ -233,14 +236,23 @@ export function bootTownPost(ctx) {
     return [...by.values()].sort((a, b) => b.at - a.at);
   };
   const where = () => (cards ? 'post' : 'home');
+  // ---- the buttons: every one is type="button" (nothing on this card submits a form), its words escaped here --------
+  const idBtn = (cls, id, label) => '<button type="button" class="' + cls + '" id="' + id + '">' + esc(label || '') + '</button>';
+  // …and the big yellow one, whose words sit in the verb span
+  const cta = (cls, id, label) => '<button type="button" class="tw-cta' + cls + '" id="' + id + '"><span class="tw-cta__verb">' + esc(label || '') + '</span></button>';
+
   // ✍️ the door OUT of the mailbox. ⭐ it is at the top level and not on a letter, which is the whole
   // fix: before this, writing to somebody required already having heard from them.
-  const writeBtn = () => '<button type="button" class="tw-cta tw-post__write" id="twPostNew">'
-    + '<span class="tw-cta__verb">' + esc(((COPY.folk || {}).write) || '') + '</span></button>';
+  // 📮 …and at the counter a postcard too, side by side with it (Trym, 26 Sep: "i dont see any postcard option at
+  // the post office anymore" — it only ever hung off a letter you had already opened). At home: letters only.
+  const writeBtn = () => '<div class="tw-post__outs' + (cards ? ' is-two' : '') + '">'
+    + cta(' tw-post__write', 'twPostNew', (COPY.folk || {}).write)
+    + (cards ? cta(' tw-post__write is-card', 'twPostNewCard', (COPY.folk || {}).card) : '')
+    + '</div>';
   // ✉️ THE ROUND, for the post office's own staff (22 Sep 2026): one more button at the foot of the mailbox,
   // and only here — a stranger's mailbox has no counter behind it. The words are the rig's (`round.start`).
   const sortBtn = () => (cards && staff && staff() && (COPY.round || {}).start
-    ? '<button type="button" class="tw-cta tw-post__sort" id="twPostSort"><span class="tw-cta__verb">' + esc(COPY.round.start) + '</span></button>' : '');
+    ? cta(' tw-post__sort', 'twPostSort', COPY.round.start) : '');
 
   // 📮 A POSTCARD IS A PICTURE, at tile size in the fresh drawer and in the kept strip alike. An envelope you
   // open is the letter's grammar; a card has nothing to open, so it shows its own picture and who sent it.
@@ -250,31 +262,20 @@ export function bootTownPost(ctx) {
     + '<img class="tw-post__pcthumb" src="/assets/world/pc-' + esc((l.card || {}).tpl || 'park') + '.png" alt="" loading="lazy">'
     + '<b class="tw-post__who">' + esc(nameOf(l)) + '</b></button>';
 
-  // ✉️ the state is in the ART, not in a badge: the pack ships two envelopes, one with a red wax seal
-  // and one without. You can see which post is new from across a room, which is what a mailbox is for.
-  // 💼 a payslip is a KRAFT envelope, the same way its paper is kraft when it opens.
-  const sealed = (l) => (l.kind === 'card' ? cardTile(l) : '<button type="button" class="tw-post__env' + (l.tone === 'wage' ? ' is-wage' : '') + '" data-id="' + esc(l.id) + '">'
-    + '<i class="tw-post__stamp" aria-hidden="true"></i>'
+  // ✉️ AN ENVELOPE, DRAWN (26 Sep 2026). It was the pack's letter ITEM, a nine-pixel diamond blown up to 52 px and
+  // squeezed to 40 and 30 (Trym: "looks very pixelated and ugly at the size we're showing it"). Now it is paper: a
+  // flap, a red wax seal while it is unopened, and who it is from written across it by hand (public/css/town-post.css).
+  // 💼 a payslip is a KRAFT envelope, the way its paper is kraft when it opens; a first letter wears a tag.
+  const sealed = (l, isFirst) => (l.kind === 'card' ? cardTile(l) : '<button type="button" class="tw-post__env'
+    + (l.tone === 'wage' ? ' is-wage' : '') + (isFirst ? ' is-first' : '') + '" data-id="' + esc(l.id) + '"' + (isFirst ? ' data-first="1"' : '') + '>'
+    + (isFirst ? '<i class="tw-post__tag">' + esc((COPY.knock || {}).tag || '') + '</i>' : '')
     + '<b class="tw-post__who">' + esc(nameOf(l)) + '</b>'
     + '</button>');
 
-  // 🚪 A KNOCK: who, and the house when it adds something — never a word of what they wrote. Two answers
-  // side by side, the same weight: letting a house in and turning one away are both ordinary.
-  const knockRow = (l) => {
-    const k = COPY.knock || {};
-    return '<div class="tw-knock" data-id="' + esc(l.id) + '">'
-      + '<i class="tw-post__stamp is-knock" aria-hidden="true"></i>'
-      + '<span class="tw-knock__who"><b>' + esc((k.line || '{who}').replace('{who}', nameOf(l))) + '</b>'
-      + (l.house && !same(nameOf(l), l.house) ? '<small>' + esc(l.house) + '</small>' : '') + '</span>'
-      + '<span class="tw-knock__two">'
-      + '<button type="button" class="tw-btn--in" data-in="' + esc(l.id) + '">' + esc(k.in || '') + '</button>'
-      + '<button type="button" class="tw-post__away" data-away="' + esc(l.id) + '">' + esc(k.away || '') + '</button>'
-      + '</span></div>';
-  };
-
   const rowOf = (o) => '<button type="button" class="tw-post__thread' + (o.unread ? ' is-new' : '') + '"'
     + (o.id ? ' data-id="' + esc(o.id) + '"' : ' data-who="' + esc(o.key) + '"') + '>'
-    + '<i class="tw-post__stamp is-open" aria-hidden="true"></i>'
+    + (o.tpl ? '<img class="tw-post__pcmini" src="/assets/world/pc-' + esc(o.tpl) + '.png" alt="" loading="lazy">'
+      : '<i class="tw-post__mini' + (o.unread ? ' is-sealed' : '') + '" aria-hidden="true"></i>')
     + '<span class="tw-post__row"><b class="tw-post__who">' + who(o.name) + '</b>'
     + '<span class="tw-post__peek">' + peek(o.last) + '</span></span>'
     + (o.n > 1 ? '<b class="tw-post__n">' + o.n + '</b>' : '')
@@ -288,10 +289,12 @@ export function bootTownPost(ctx) {
   // can forge one) and they have no mailbox of their own — writing back to “nib” would address a yard
   // nobody owns. A button that cannot work is worse than no button, so a note carries neither.
   const replies = (w, note) => (note ? '' : '<div class="tw-post__two">'
-    + '<button type="button" class="tw-btn--in" id="twPostReply">' + esc(w.reply || '') + '</button>'
-    + (cards ? '<button type="button" class="tw-btn--in" id="twPostCard">' + esc((w.card || {}).make || '') + '</button>' : '')
+    + idBtn('tw-btn--in', 'twPostReply', w.reply)
+    + (cards ? idBtn('tw-btn--in', 'twPostCard', (w.card || {}).make) : '')
     + '</div>');
-  const backBtn = () => (COPY.back ? '<button type="button" class="tw-post__back" id="twPostBack">' + esc(COPY.back) + '</button>' : '');
+  const backBtn = () => (COPY.back ? idBtn('tw-post__back', 'twPostBack', COPY.back) : '');
+  // the foot of anything open: back, and — unless a resident wrote it — the quiet report line
+  const feet = () => '<div class="tw-post__feet">' + backBtn() + (resident(open) ? '' : idBtn('tw-post__flag', 'twPostFlag', COPY.report)) + '</div>';
 
   // ⭐ ONE ROW PER PERSON, NOT PER LETTER. A flat list of sixty letters is sixty rows and a thumb-ache;
   // the same sixty from eight people is eight rows, and each one is a conversation.
@@ -323,7 +326,9 @@ export function bootTownPost(ctx) {
     // ⚠️ …and NOT in the address book. The building's own line (“the post office keeps your letters
     // in its mailbox”) is about the room you are standing in, and in a list of PEOPLE it is both the
     // wrong subject and the 38 px that pushed Go back below the fold on a 360×640 phone.
-    const front = (cards && bare && !open && !writing && !thread && !folk && w.front) ? '<p class="tw-card__sub">' + esc(w.front) + '</p>' : '';
+    // ⚠️ …nor on the postcard sheet or a first letter: with an empty box it printed between “Picture Postcard” and
+    // who the card is for, and pushed Send postcard below the fold (26 Sep 2026)
+    const front = (cards && bare && !open && !writing && !thread && !folk && !making && !first && w.front) ? '<p class="tw-card__sub">' + esc(w.front) + '</p>' : '';
 
     // 🏡 a closed room or a missing address only fills the card when there is nothing else to show — at home
     // the world's own notes are still yours to read (and the write door stays shut until the room answers)
@@ -341,15 +346,31 @@ export function bootTownPost(ctx) {
       body = '<div class="tw-post__write">'
         + '<p class="tw-post__to">' + esc((w.sheet || '{who}').replace('{who}', writing.name || writing.to)) + '</p>'
         + '<textarea class="tw-post__sheet" id="twPostText" maxlength="' + LETTER.max + '" rows="5" aria-label="' + esc((w.sheet || '').replace('{who}', writing.name || writing.to)) + '"></textarea>'
-        + '<button type="button" class="tw-cta" id="twPostSend"><span class="tw-cta__verb">' + esc(w.send || '') + '</span></button>'
+        + cta('', 'twPostSend', w.send)
+        + backBtn() + '</div>';
+    } else if (first) {
+      // ✉️ A FIRST LETTER: who, and the house when it adds something — never a word of what they wrote. Two answers
+      // side by side, the same weight: opening it and sending it back are both ordinary.
+      const k = COPY.knock || {};
+      body = '<div class="tw-post__first">'
+        + '<div class="tw-post__env is-big is-first" aria-hidden="true"><i class="tw-post__tag">' + esc(k.tag || '') + '</i>'
+        + '<b class="tw-post__who">' + esc(nameOf(first)) + '</b></div>'
+        + '<b class="tw-post__firstwho">' + esc((k.line || '{who}').replace('{who}', nameOf(first))) + '</b>'
+        + (first.house && !same(nameOf(first), first.house) ? '<small class="tw-post__house">' + esc(first.house) + '</small>' : '')
+        + '<p class="tw-post__about">' + esc(k.about || '') + '</p>'
+        + '<div class="tw-post__two">' + idBtn('tw-btn--in', 'twPostIn', k.in) + idBtn('tw-post__away', 'twPostAway', k.away) + '</div>'
         + backBtn() + '</div>';
     } else if (making) {
       // 📮 THE SHEET. Three places, eight lines, and the picture changes under your thumb as you
       // pick — which is the whole of the fun and the reason the preview is the same component the
       // receiver sees rather than an approximation of it.
+      // ⭐ IT FITS THE CARD (26 Sep 2026). The eight lines were a list that scrolled inside a card that scrolled, and
+      // Send postcard sat below both at every screen size; now the words are one line between two arrows, and Go
+      // back shares the last row with Send postcard.
       const c = (COPY.card || {});
+      const deck = c.lines || [];
       body = '<div class="tw-post__make">'
-        + '<p class="tw-post__to">' + esc((w.sheet || '{who}').replace('{who}', making.to)) + '</p>'
+        + '<p class="tw-post__to">' + esc(((COPY.card || {}).to || w.sheet || '{who}').replace('{who}', making.name || making.to)) + '</p>'
         + picture(making, 'is-big')
         + '<div class="tw-pc__row" role="group" aria-label="' + esc(c.title || '') + '">'
         + CARD.tpl.map((t) => '<button type="button" class="tw-pc__pick' + (t === making.tpl ? ' is-on' : '')
@@ -357,12 +378,14 @@ export function bootTownPost(ctx) {
           + '<img src="/assets/world/pc-' + esc(t) + '.png" alt="' + esc((c.places || {})[t] || t) + '" loading="lazy">'
           + '</button>').join('')
         + '</div>'
-        + '<div class="tw-pc__deck">'
-        + (c.lines || []).map((l, i) => '<button type="button" class="tw-pc__say' + (i === making.line ? ' is-on' : '')
-          + '" data-line="' + i + '" aria-pressed="' + (i === making.line ? 'true' : 'false') + '">' + esc(l) + '</button>').join('')
+        + '<div class="tw-pc__words" role="group" aria-label="' + esc(c.words || '') + '">'
+        + '<button type="button" class="tw-pc__step" data-step="-1" aria-label="' + esc(c.prev || '') + '"></button>'
+        + '<span class="tw-pc__say" aria-live="polite">' + esc(deck[making.line] || '') + '</span>'
+        + '<button type="button" class="tw-pc__step" data-step="1" aria-label="' + esc(c.next || '') + '"></button>'
         + '</div>'
-        + '<button type="button" class="tw-cta" id="twPostCardGo"><span class="tw-cta__verb">' + esc(c.send || '') + '</span></button>'
-        + backBtn() + '</div>';
+        + '<div class="tw-post__go">' + backBtn()
+        + cta('', 'twPostCardGo', c.send) + '</div>'
+        + '</div>';
     } else if (open && open.kind === 'card' && open.card) {
       // 📮 a postcard that arrived: the picture, who sent it, and the same two feet every open
       // letter has — a card can be reported like anything else, even though nothing on it was typed
@@ -370,14 +393,13 @@ export function bootTownPost(ctx) {
         + '<b class="tw-post__who">' + esc(((COPY.card || {}).got || '{who}').replace('{who}', nameOf(open))) + '</b>'
         + picture(open.card, 'is-big')
         + replies(w, resident(open))
-        + '<div class="tw-post__feet">' + backBtn()
-        + (resident(open) ? '' : '<button type="button" class="tw-post__flag" id="twPostFlag">' + esc(w.report || '') + '</button>') + '</div>'
+        + feet()
         + '</div>';
     } else if (open && open.kind === 'world') {
       // 🏡 one of the world's own notes, on its own paper — the homestead draws it into the space held
       // here (a payslip carries figures and a coin), and the envelope still comes open over it
       body = '<div class="tw-post__open is-world' + (opening ? ' is-opening' : '') + '">'
-        + (opening ? '<i class="tw-post__flap" aria-hidden="true"></i>' : '')
+        + (opening ? '<i class="tw-post__flap tw-post__env" aria-hidden="true"></i>' : '')
         + '<div class="tw-post__sheetin"><div class="tw-post__world" data-local="' + esc(open.id) + '"></div></div>'
         + '<div class="tw-post__feet">' + backBtn() + '</div>'
         + '</div>';
@@ -387,20 +409,20 @@ export function bootTownPost(ctx) {
       // dropped afterwards so a re-render while you are reading — a report, a reply — does not play the
       // envelope again over a letter that is already open.
       body = '<div class="tw-post__open' + (opening ? ' is-opening' : '') + '">'
-        + (opening ? '<i class="tw-post__flap" aria-hidden="true"></i>' : '')
+        + (opening ? '<i class="tw-post__flap tw-post__env" aria-hidden="true"></i>' : '')
         + '<div class="tw-post__sheetin"><b class="tw-post__who">' + who(nameOf(open)) + '</b>'
         + '<p class="tw-post__body">' + esc(open.text) + '</p></div>'
         + replies(w, resident(open))
-        + '<div class="tw-post__feet">' + backBtn()
-        + (resident(open) ? '' : '<button type="button" class="tw-post__flag" id="twPostFlag">' + esc(w.report || '') + '</button>') + '</div>'
+        + feet()
         + '</div>';
     } else if (thread) {
       // ⚠️ INSIDE a thread a row opens THAT letter, not the thread again — so it carries the id, and the
       // handler prefers an id over a name. An unread one in here is still a sealed envelope, and a
       // postcard is still a picture rather than a row with nothing to preview.
       const t = threadsOf(letters.filter((l) => l.kind !== 'knock')).find((x) => x.key === thread);
-      const rows = t ? t.letters.map((l) => (l.kind === 'card' ? cardTile(l) : !l.read ? sealed(l)
-        : rowOf({ key: keyOf(l), name: nameOf(l), last: textOf(l), id: l.id }))).join('') : '';
+      const rows = t ? t.letters.map((l) => rowOf({ key: keyOf(l), name: nameOf(l), id: l.id, unread: !l.read,
+        last: l.kind === 'card' ? (((COPY.card || {}).lines || [])[(l.card || {}).line] || '') : textOf(l),
+        tpl: l.kind === 'card' ? ((l.card || {}).tpl || 'park') : '' })).join('') : '';
       body = '<div class="tw-post__stack">' + rows + '</div>' + backBtn();
     } else if (folk) {
       // 📇 one row per person: their banana, their name, their house. ⚠️ the canvas is painted after
@@ -441,10 +463,11 @@ export function bootTownPost(ctx) {
         + tab('kept', d.kept, kept.length, !kept.length) + '</div>';
       let inner = '';
       if (drawer === 'fresh') {
-        inner = (knocks.length ? '<p class="tw-post__about">' + esc((w.knock || {}).about || '') + '</p>'
-          + '<div class="tw-post__knocks">' + knocks.map(knockRow).join('') + '</div>' : '')
-          + (fresh.length ? '<div class="tw-post__grid">' + fresh.map(sealed).join('') + '</div>' : '')
-          + (!knocks.length && !fresh.length ? '<p class="tw-post__none">' + esc(d.none || '') + '</p>' : '');
+        // ⭐ ONE GRID, NEWEST FIRST. First letters used to sit above everything as big rows with two buttons each,
+        // and two of them pushed every new letter out of sight; now each is a tile like the rest, and asks on a tap.
+        const tiles = [...fresh.map((l) => [l, false]), ...knocks.map((l) => [l, true])].sort((a, b) => b[0].at - a[0].at);
+        inner = tiles.length ? '<div class="tw-post__grid">' + tiles.map(([l, f]) => sealed(l, f)).join('') + '</div>'
+          : '<p class="tw-post__none">' + esc(d.none || '') + '</p>';
       } else {
         const keptCards = kept.filter((l) => l.kind === 'card').sort((a, b) => b.at - a.at);
         const threads = threadsOf(kept.filter((l) => l.kind !== 'card'));
@@ -456,7 +479,7 @@ export function bootTownPost(ctx) {
     // ⚠️ THE HEADING NAMES THE ROOM YOU ARE IN. Every state wore the mailbox's own title, so
     // tapping “Write a letter” landed you on a page headed “Your Mailbox” — the wrong name over the
     // right thing, which is the one mistake the world's naming rule is about.
-    const head = (folk ? (w.folk || {}).title : '') || w.title;
+    const head = (folk ? (w.folk || {}).title : '') || (making ? (w.card || {}).title : '') || w.title;
     return '<div class="tw-post">' + (head ? '<h2>' + esc(head) + '</h2>' : '') + front + body + '</div>';
   }
 
@@ -479,7 +502,23 @@ export function bootTownPost(ctx) {
     if (looks.length) dressPictures(looks);
     // 📇 the address book's faces, and the caret the rebuild would otherwise throw away
     if (folk) dressFolk();
+    if (making) fitSheet();
   }
+
+  // 📮 THE SHEET FITS THE CARD. Every row under the picture is a control, so on a short screen — a 1366×768 laptop
+  // leaves the card about 430 px — the picture gives up height first, stepping down to a half or a third of its
+  // 600-px plate so the pixels stay even. (26 Sep 2026: Send postcard sat below the fold at every size.)
+  function fitSheet() {
+    const pc = card.querySelector('.tw-post__make .tw-pc.is-big');
+    if (!pc) return;
+    pc.style.width = '';
+    const w = pc.getBoundingClientRect().width;
+    for (const px of [300, 200, 150]) {
+      if (card.scrollHeight <= card.clientHeight + 1) return;
+      if (px < w) pc.style.width = px + 'px';
+    }
+  }
+  addEventListener('resize', () => { if (making && card.querySelector('.tw-post__make')) fitSheet(); }, { passive: true });
 
   // 📇 one banana per row, drawn once. ⚠️ A STILL, NOT A LOOP: the postcard preview animates
   // because it is one banana being posed; forty of them bobbing in a list is a flicker and forty
@@ -518,24 +557,24 @@ export function bootTownPost(ctx) {
       if (l.kind === 'note') track('post_note', { at: where(), note: l.note || '' });
       else track('post_read', { at: where(), ...(l.kind === 'card' ? { kind: 'card' } : {}) });
     };
-    // 📮 a postcard opens flat — there is no envelope on one, so no flap and no animation
-    card.querySelectorAll('.tw-post__pctile').forEach((b) => b.addEventListener('click', () => {
-      open = byId(b.dataset.id);
-      if (!open) return;
+    // ✉️ ONE WAY TO OPEN A THING, from a tile, a thread or a first letter: an unopened letter comes out of its
+    // envelope, and a postcard has no envelope, so it opens flat
+    const show = (l) => {
+      if (!l) return;
+      open = l;
+      opening = !l.read && l.kind !== 'card';
       render();
-      opened(open);
-    }));
-    card.querySelectorAll('.tw-post__env').forEach((b) => b.addEventListener('click', () => {
-      open = byId(b.dataset.id);
-      if (!open) return;
-      opening = true;
-      render();
-      setTimeout(() => { opening = false; }, 520);
-      opened(open);
+      if (opening) setTimeout(() => { opening = false; }, 520);
+      opened(l);
+    };
+    card.querySelectorAll('.tw-post__pctile').forEach((b) => b.addEventListener('click', () => show(byId(b.dataset.id))));
+    card.querySelectorAll('button.tw-post__env').forEach((b) => b.addEventListener('click', () => {
+      // ✉️ a first letter asks before it opens: who it is from, and the two answers
+      if (b.dataset.first) { first = byId(b.dataset.id); if (first) render(); return; }
+      show(byId(b.dataset.id));
     }));
     card.querySelectorAll('.tw-post__thread').forEach((b) => b.addEventListener('click', () => {
-      const id = b.dataset.id;
-      if (id) { open = byId(id); render(); opened(open); return; }
+      if (b.dataset.id) { show(byId(b.dataset.id)); return; }
       thread = b.dataset.who; open = null; render();
       track('post_open', { at: where(), step: 'thread' });
     }));
@@ -545,33 +584,41 @@ export function bootTownPost(ctx) {
       drawer = b.dataset.drawer;
       render();
     }));
-    // 🚪 LET IN: the house is known from now on, and everything it knocked with comes in to be opened
-    card.querySelectorAll('[data-in]').forEach((b) => b.addEventListener('click', async () => {
-      if (busy) return;
+    // ✉️ OPEN IT: the house is known from now on, and the letter you tapped opens at once — opening it was the
+    // point of the tap. Everything the house sends after comes straight in.
+    const inB = card.querySelector('#twPostIn');
+    if (inB) inB.addEventListener('click', async () => {
+      if (busy || !first) return;
+      const k = first;
       busy = true;
-      const res = await ask('/accept', { id: b.dataset.in });
+      const res = await ask('/accept', { id: k.id });
       busy = false;
-      if (res && res.ok) { track('post_accept', { at: where() }); await refresh(); }
-      else say(COPY.shut || '');
-    }));
-    // 🚪 TURN AWAY: gone on the tap, the way a report is — every knock from that house leaves at once,
-    // and the house never knocks again. ⚠️ the sender is told nothing, ever.
-    card.querySelectorAll('[data-away]').forEach((b) => b.addEventListener('click', async () => {
-      if (busy) return;
-      const k = byId(b.dataset.away);
-      if (!k || !box) return;
+      if (!(res && res.ok)) { say(COPY.shut || ''); return; }
+      track('post_accept', { at: where() });
+      first = null;
+      await refresh();
+      show(byId(k.id) || all().filter((x) => x.from === k.from && x.kind !== 'knock').sort((a, b) => b.at - a.at)[0]);
+    });
+    // ✉️ SEND IT BACK: gone on the tap, the way a report is — every first letter from that house leaves at once,
+    // and the house cannot write again. ⚠️ the sender is told nothing, ever.
+    const awayB = card.querySelector('#twPostAway');
+    if (awayB) awayB.addEventListener('click', async () => {
+      if (busy || !first || !box) return;
+      const k = first;
       box.letters = (box.letters || []).filter((l) => !(l.kind === 'knock' && l.from === k.from));
+      first = null;
       render();
       say(((COPY.knock || {}).gone) || '');
       track('post_away', { at: where() });
       busy = true;
       await ask('/away', { id: k.id });
       busy = false;
-    }));
+    });
     const back = card.querySelector('#twPostBack');
     if (back) back.addEventListener('click', () => {
       // one step at a time: the sheet → the address book → the letter → the thread → the mailbox
-      if (making) making = null;
+      if (first) first = null;
+      else if (making) making = null;
       else if (writing) writing = null;
       else if (folk) folk = null;
       else if (open) open = null;
@@ -584,9 +631,8 @@ export function bootTownPost(ctx) {
     // ── 📇 THE ADDRESS BOOK ───────────────────────────────────────────────────────────────────
     const sortB = card.querySelector('#twPostSort');
     if (sortB) sortB.addEventListener('click', () => { if (typeof sort === 'function') sort(); });
-    const fresh = card.querySelector('#twPostNew');
-    if (fresh) fresh.addEventListener('click', async () => {
-      folk = { q: '', rows: [], asked: false };
+    const openFolk = async (mode) => {
+      folk = { q: '', rows: [], asked: false, mode };
       open = null; writing = null; thread = null;
       render();
       track('post_folk', { at: 'post', step: 'open' });
@@ -594,7 +640,11 @@ export function bootTownPost(ctx) {
       if (!folk) return;                       // they closed it while the book was on its way
       folk.rows = rows; folk.asked = true;
       render();
-    });
+    };
+    const newB = card.querySelector('#twPostNew');
+    if (newB) newB.addEventListener('click', () => openFolk('letter'));
+    const newC = card.querySelector('#twPostNewCard');
+    if (newC) newC.addEventListener('click', () => { openFolk('card'); track('post_card', { at: 'post', step: 'book' }); });
     const find = card.querySelector('#twFolkFind');
     if (find) {
       // ⚠️ the caret is restored by hand after every render: the card is rebuilt from a string, so
@@ -612,11 +662,16 @@ export function bootTownPost(ctx) {
         }, 260);
       });
     }
+    // 📮 a sheet opens on the first place and the first line. ⚠️ THE OUTFIT IS READ WHEN IT OPENS, not when the card
+    // is sent: it is what your banana has on as you make it, which is what the picture shows, so the two cannot disagree.
+    const sheet = (to, name) => { making = { to, name: name || '', tpl: CARD.tpl[0], line: 0, look: readWorn() }; };
     card.querySelectorAll('.tw-folk__row').forEach((b) => b.addEventListener('click', () => {
-      writing = { to: b.dataset.slug, name: b.dataset.name || '' };
+      const toCard = folk && folk.mode === 'card';
+      if (toCard) sheet(b.dataset.slug, b.dataset.name);
+      else writing = { to: b.dataset.slug, name: b.dataset.name || '' };
       folk = null;
       render();
-      focusSheet();
+      if (!toCard) focusSheet();
       track('post_folk', { at: 'post', step: 'pick' });
     }));
     const flag = card.querySelector('#twPostFlag');
@@ -639,21 +694,25 @@ export function bootTownPost(ctx) {
     // 📮 the card path: open the sheet, pick a place, pick a line, send it
     const pc = card.querySelector('#twPostCard');
     if (pc) pc.addEventListener('click', () => {
-      // ⚠️ THE OUTFIT IS READ WHEN THE SHEET OPENS, not when the card is sent. It is what your banana
-      // is wearing at the moment you make it — which is what the picture shows you, so the two cannot
-      // disagree between the preview and the post.
       const tk = (thread && thread.indexOf('p:') === 0) ? thread.slice(2) : '';
-      making = { to: (open && open.from) || (writing && writing.to) || tk, tpl: CARD.tpl[0], line: 0, look: readWorn() };
+      const t = tk ? threadsOf(all()).find((x) => x.key === thread) : null;
+      sheet((open && open.from) || (writing && writing.to) || tk, (open && nameOf(open)) || (writing && writing.name) || (t && t.name));
       open = null; writing = null;
       render();
       track('post_card', { at: 'post', step: 'open' });   // the sheet opened: against post_send kind=card, how many pick one up and put it down
     });
-    card.querySelectorAll('.tw-pc__pick').forEach((b) => b.addEventListener('click', () => {
-      if (!making) return; making.tpl = b.dataset.tpl; render();
-    }));
-    card.querySelectorAll('.tw-pc__say').forEach((b) => b.addEventListener('click', () => {
-      if (!making) return; making.line = +b.dataset.line; render();
-    }));
+    // ⌨️ a pick rebuilds the card, so the button that had focus is a new one: it gets focus back, and a keyboard its place
+    const pick = (b, set, sel) => b.addEventListener('click', () => {
+      if (!making) return;
+      const was = document.activeElement === b;
+      set(); render();
+      const e = was && card.querySelector(sel);
+      if (e) e.focus({ preventScroll: true });
+    });
+    card.querySelectorAll('.tw-pc__pick').forEach((b) => pick(b, () => { making.tpl = b.dataset.tpl; }, '.tw-pc__pick[data-tpl="' + b.dataset.tpl + '"]'));
+    // the words go round, after the last line the first again (CARD.lines is the gate's own count of the deck)
+    card.querySelectorAll('.tw-pc__step').forEach((b) => pick(b, () => { making.line = (making.line + Number(b.dataset.step) + CARD.lines) % CARD.lines; },
+      '.tw-pc__step[data-step="' + b.dataset.step + '"]'));
     const go = card.querySelector('#twPostCardGo');
     if (go) go.addEventListener('click', async () => {
       if (busy || !making) return;
@@ -728,7 +787,7 @@ export function bootTownPost(ctx) {
   return {
     async openBox() {
       live = true;
-      open = null; writing = null; thread = null; opening = false; making = null; drawer = '';
+      open = null; writing = null; thread = null; opening = false; making = null; first = null; drawer = '';
       box = null;
       render();                 // the closed line shows first: a card that appears at once beats a spinner
       await refresh();
@@ -742,10 +801,10 @@ export function bootTownPost(ctx) {
     // that is ON SCREEN (render() goes through openCard, which would pop a closed mailbox open by itself),
     // and never over a sheet somebody is writing on — a rebuild is a new, empty textarea.
     redraw() {
-      if (writing || making || folk || !card.getClientRects().length || !card.querySelector('.tw-post')) return;
+      if (writing || making || folk || first || !card.getClientRects().length || !card.querySelector('.tw-post')) return;
       render();
     },
-    stop() { live = false; sleep(); open = null; writing = null; thread = null; opening = false; making = null; drawer = ''; },
+    stop() { live = false; sleep(); open = null; writing = null; thread = null; opening = false; making = null; first = null; drawer = ''; },
     seam: {
       state: () => ({
         letters: all(), open: open && open.id, writing: writing && writing.to,
@@ -754,7 +813,7 @@ export function bootTownPost(ctx) {
         threads: threadsOf(all().filter((l) => l.read && l.kind !== 'knock' && l.kind !== 'card')).map((t) => ({ from: t.from, key: t.key, name: t.name, n: t.letters.length })),
       }),
       drawer: (d) => { drawer = d; render(); },
-      set: (b) => { pinned = true; box = b; open = null; writing = null; thread = null; making = null; render(); },   // QA: a box without a worker, and nothing may replace it
+      set: (b) => { pinned = true; box = b; open = null; writing = null; thread = null; making = null; first = null; render(); },   // QA: a box without a worker, and nothing may replace it
       unpin: () => { pinned = false; },
       tap: (sel) => { const b = card.querySelector(sel); if (b) b.click(); return !!b; },
       type: (s) => { const t = document.getElementById('twPostText'); if (t) t.value = s; return !!t; },

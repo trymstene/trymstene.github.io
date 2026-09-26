@@ -55,6 +55,7 @@ test('one mailbox at home: a resident’s note and the world’s own notes in th
       text: (c.querySelector('.tw-post') || {}).textContent || '',
       write: !!c.querySelector('#twPostNew'),
       postcard: !!c.querySelector('#twPostCard'),
+      newCard: !!c.querySelector('#twPostNewCard'),
       overflow: out, sideways: card.scrollWidth - card.clientWidth,
       onScreen: r.top >= -1 && r.bottom <= innerHeight + 1,
     };
@@ -67,6 +68,7 @@ test('one mailbox at home: a resident’s note and the world’s own notes in th
   expect(seen.write, 'and the way to write one is here too').toBe(true);
   // ⭐ the two that make this the HOMESTEAD's mailbox rather than a copy of the counter
   expect(seen.postcard, 'a postcard is made at the post office, never here').toBe(false);
+  expect(seen.newCard, '…nor started from the foot of the mailbox, the way the counter can').toBe(false);
   expect(seen.text, 'and the post office does not describe itself at your own house').not.toContain('post office');
   expect(seen.overflow, 'nothing breaks out of the card').toEqual([]);
   expect(seen.sideways, 'and it never scrolls sideways').toBe(0);

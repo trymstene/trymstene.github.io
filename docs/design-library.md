@@ -722,6 +722,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 37 | Every area explains itself under its frame, on the one sheet | `check-design.mjs` (an area page without `id="what"` and `id="do"`, without `/css/area-guide.css`, or styling a guide class of its own fails) + `tests/town-guide.spec.mjs` (the town's windows fill their box at whole pixels) |
 | 38 | The front page's party clips (never scrolls), its crew is the builder's strips on whole CSS pixels with nothing to tap, the name's shadow is a black drop-shadow, its ticker's numbers are the stats file's read low and its live lines come only when the world answers | `tests/home-hero.spec.mjs` (a CSS property cannot be grepped for a meaning, so the walk asserts the outcome at 360–1440 px) |
 | 39 | A variable font is one URL across its weights; the front page's pictures are WebP at their shown size, nothing below the fold is eager, every picture arrives | `check-design.mjs` (two @font-face URLs with identical files fail) + `tests/home-hero.spec.mjs` (the banana is WebP, the slides lazy WebP, the band's stickers small, every image loads, Space Grotesk fetched once) |
+| 40 | The mailbox's envelopes are drawn, never a scaled item sprite; a letter from somebody new is never called a knock; the counter offers a postcard beside a letter; the postcard sheet is whole on its card at every size | `check-copy.mjs` (knock or door in the first-letter words; `card.make` ≤ 13) + `tests/town-post.spec.mjs` (the first-letter flow, the counter's two buttons whole at 360, the sheet with nothing below the fold at 360×640, 375×667, 1366×625 and 1280×720, the words go round) + `tests/homestead-letters.spec.mjs` (no postcard at home) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1215,3 +1216,29 @@ page then pulled 1.6 MB (2.0 MB for a US visitor) and US visitors' trackers kept
   slow phone came 8.5 s in).
 - ⏳ Open, and Trym's call because it is a DNS change: GitHub Pages caches every file for 10 minutes. Long cache rules
   need the site behind Cloudflare's proxy.
+
+## §40 THE MAILBOX IS PAPER, AND EVERY CONTROL OF IT IS ON THE CARD (26 Sep 2026, Trym's notes on the mail view)
+
+Trym: *"i dont see any postcard option at the post office anymore. And why do we call a letter received from someone
+new a «Knock»? Its a letter, not a knock. And the letter icon sprite looks very pixelated and ugly … I think the mail
+view is a bit messy"*.
+
+- **An envelope is drawn, never a scaled item sprite.** The pack's letter item is nine art pixels; at 52, 40 and 30 px
+  it broke unevenly. The mailbox's envelopes are CSS (`public/css/town-post.css`): a flap of two lines meeting in the
+  middle, a red wax seal while it is unopened, the sender's name across the front in Caveat, kraft for a payslip. The
+  sprite stays in the WORLD (the delivery round), where it is drawn at whole pixels. ⚠️ A handwritten name in a clipped
+  box needs side padding: Caveat's last stroke runs past its letter's box, and the clip took the tail off "Pip".
+- **A letter from somebody new is a letter.** A tile in New like the rest, tagged "first letter"; a tap shows who,
+  never what, with Open it and Send back side by side. The server still says `knock` and the events keep their names
+  (`post_knock`, `post_accept`, `post_away`); no screen says it, HQ included, and the copy gate fails knock or door
+  in those words.
+- **What the counter can do is at the foot of the mailbox.** Write a letter and Send a postcard, side by side, even
+  with an empty box. Home is letters only.
+- **A card's controls are ON the card — measured, never scrolled to.** The postcard sheet's eight lines were a list
+  scrolling inside a card that also scrolled, and Send postcard sat below both at every size. Now the words are one
+  line between two drawn arrows, Go back shares the last row with Send postcard, and on a short screen (a 1366×768
+  laptop leaves the card about 430 px) the picture steps down to a half or a third of its 600-px plate before anything
+  else gives. The last row also holds to the card's bottom edge, the guarantee for a screen shorter still. ⚠️ The thumb
+  walk scrolls a control into view before it taps, so it cannot see this class; the sheet's test measures the card.
+- **A label is measured in its own row at 360 px.** "Send a postcard" fits the counter's half-row at 0.82rem and not
+  an open letter's (about 92 px), where the answer stays "Send a card". Measure the verb span, which is what clips.

@@ -818,11 +818,15 @@ const postFields = {
   'drawers.kept': { kind: 'label', aim: 5, max: 9, note: 'THE OTHER TAB: the post you have already opened — one row per person who wrote, and the postcards you kept. ONE word, titled. ⚠️ never “Archive”, “Inbox”, “Folder”, “Old” or “Read”: it is a drawer of letters worth keeping, not a mail program’s folder.' },
   'drawers.none': { kind: 'prose', aim: 58, max: 84, note: 'The whole of the new-post drawer when nothing new has come but older post IS kept in the other drawer. It may point to the other drawer by its name, calmly. ⚠️ Not the same as `empty` (a box with nothing in it at all): this box has post, just nothing new. It may not promise post is coming and may not tell anybody to go and write one.' },
   // 🚪 THE KNOCK (22 Sep 2026) — the rail that actually holds (docs/town-jobs-plan.md §6)
-  'knock.line': { kind: 'label', aim: 14, max: 22, holds: ['{who}'], note: '🚪 THE LINE ON A KNOCK. Post from a house the reader has never had post from waits at the door instead of coming straight in: the reader sees WHO, never what they wrote, until they let them in. MUST contain {who} (the game puts the sender’s name there). Two to four words, one line: somebody is at the door, not a warning.' },
-  'knock.about': { kind: 'prose', aim: 84, max: 116, note: 'The one line above the knocks, saying what they are in plain words: post from a house that has not written to you before waits at the door; let them in and you can read it, and whatever they send after comes straight in. ⚠️ It may not frighten (never “stranger”, “danger”, “unknown”, “blocked”), may not name a rule or a filter, and it is not a list of instructions. One or two short sentences.' },
-  'knock.in': { kind: 'label', aim: 7, max: 11, note: 'The button that lets the house in: the letter comes in to be opened, and everything they send after comes straight in. A verb first, one or two words, ONE line in half of a 261-pixel row.' },
-  'knock.away': { kind: 'label', aim: 8, max: 11, note: 'The button beside it that turns the house away: this post goes, and that house does not knock again. A verb first, one or two words, ONE line in the other half of the row. Plain and never cruel — never “block” or “report”.' },
-  'knock.gone': { kind: 'prose', aim: 52, max: 74, note: 'The toast after turning a house away: the knock is gone and that house will not knock again. Matter-of-fact. ⚠️ It may not say what the sender is told (they are told nothing), and it may not thank or praise.' },
+  // ✉️ A FIRST LETTER (26 Sep 2026; the server still calls it a knock). Trym: "why do we call a letter received from
+  // someone new a «Knock»? Its a letter, not a knock." Post from a house the reader has never had post from is a tile
+  // in the New drawer like any other letter, tagged; a tap asks once, with who it is from and never what they wrote.
+  'knock.line': { kind: 'label', aim: 18, max: 26, holds: ['{who}'], note: '✉️ THE HEADING WHEN A FIRST LETTER IS TAPPED: post from a house the reader has never had post from. It says it is a letter and who from — MUST contain {who}. The reader sees who, never what, until they open it. A letter, never a knock or a door (the gate fails both). One line across the card.' },
+  'knock.tag': { kind: 'label', aim: 12, max: 14, note: 'The small tag across the corner of a first letter’s envelope in the New drawer: what makes this envelope different from the others, in two words at most. Lower case, like a label tied on.' },
+  'knock.about': { kind: 'prose', aim: 84, max: 116, note: 'The line under the heading, in plain words: this banana has not written to you before; open it to read it, and whatever they send after comes straight in. ⚠️ It may not frighten (never “stranger”, “danger”, “unknown”, “blocked”), may not name a rule or a filter, and it is not a list of instructions. One or two short sentences.' },
+  'knock.in': { kind: 'label', aim: 7, max: 11, note: 'The button that opens it: the letter opens at once, and everything that house sends after comes straight in. A verb first, one or two words, ONE line in half of a 261-pixel row.' },
+  'knock.away': { kind: 'label', aim: 8, max: 11, note: 'The button beside it that sends the letter back: it goes, and that house cannot write to you again. A verb first, one or two words, ONE line in the other half of the row. Plain and never cruel — never “block” or “report”.' },
+  'knock.gone': { kind: 'prose', aim: 52, max: 74, note: 'The toast after sending a first letter back: it is gone and that house cannot write again. Matter-of-fact. ⚠️ It may not say what the sender is told (they are told nothing), and it may not thank or praise.' },
   back: { kind: 'label', aim: 8, max: 14, note: 'The button that goes back up a level — from an open letter to the list, and from one person’s letters to the mailbox. A verb first, one or two words, one line, and it must make sense in BOTH of those places.' },
   report: { kind: 'label', aim: 14, max: 20, note: 'The button under an open letter that reports it. A verb first, two or three words, plain — this is a normal thing a person might do, not an accusation. One line, always.' },
   reported: { kind: 'prose', aim: 66, max: 88, note: 'The one line after they tap it: the letter is gone from their box and somebody will read it. Matter-of-fact and brief. It must not thank them, must not praise them, and must not say what happens to the sender, because nobody knows yet.' },
@@ -835,11 +839,19 @@ const postFields = {
   'card.places.home': { kind: 'label', aim: 12, max: 20, note: 'The same, under the picture of your own gate on the road. ⚠️ this one is the PLAYER’S OWN place, which the word may acknowledge.' },
   'card.places.rave': { kind: 'label', aim: 10, max: 18, note: 'The same, under the picture of the Banana Rave: beams, a dark floor, a crowd. Its own name, titled.' },
   'card.lines[]': { kind: 'prose', aim: 40, max: 62, note: '⭐ ONE LINE OF THE DECK, AND THE DECK IS THE ENTIRE VOCABULARY OF EVERY POSTCARD ANYBODY WILL EVER SEND. Short — the back of a card with somebody waiting behind you in the queue. ⚠️ IT MUST WORK UNDER ALL THREE PICTURES (the park, a gate on a road, the rave), because the sender picks the place and the line separately and will pick the odd combination on purpose. Nobody is named, nothing is asked (a postcard has no reply box, so a question can never be answered), and the eight must not read as eight ways of saying one thing: some warm, some dry, one or two funny because they are so flat.' },
-  'card.make': { kind: 'label', aim: 9, max: 13, note: '⭐ THE BUTTON THAT STARTS A POSTCARD, side by side with the one that starts a letter, under anything you have open. A verb first, ONE line, and SHORT — it shares a row with “Write back” inside a 261-pixel card, and a label that has to be cut with an ellipsis is a label nobody can read. ⚠️ not the sheet’s heading (card.title), which names the thing being made rather than the act of making one.' },
-  'card.send': { kind: 'label', aim: 8, max: 14, note: 'The button that sends the postcard. A verb first, one or two words, ONE line.' },
+  'card.make': { kind: 'label', aim: 9, max: 13, note: '⭐ THE BUTTON THAT STARTS A POSTCARD, side by side with the one that starts a letter, under anything you have open. A verb first, ONE line, and SHORT — it shares a row with “Write back” inside the open letter’s paper, which leaves it about 92 pixels at 360 wide (“Send a postcard” measured 104 and was cut, 26 Sep 2026), and a label that has to be cut with an ellipsis is a label nobody can read. ⚠️ not the sheet’s heading (card.title), which names the thing being made rather than the act of making one.' },
+  // 📮 the words row (26 Sep 2026): one line of the deck at a time between two drawn arrows. These three are never on
+  // screen as text — they are what a screen reader says for the row and its two arrows.
+  'card.words': { kind: 'label', aim: 14, max: 24, note: 'What a screen reader calls the row that shows the postcard’s words, one line of the deck at a time between two arrows. A plain name for it, never an instruction.' },
+  'card.prev': { kind: 'label', aim: 12, max: 20, note: 'What a screen reader says for the left arrow of the words row: it shows the line before this one (and from the first, the last). Plain, and parallel with card.next.' },
+  'card.next': { kind: 'label', aim: 12, max: 20, note: 'What a screen reader says for the right arrow of the words row: it shows the next line of the deck (and after the last, the first again). Plain, and parallel with card.prev.' },
+  'card.send': { kind: 'label', aim: 8, max: 14, note: 'The button that sends the postcard. A verb first, one or two words, ONE line — and it shares its row with Go back.' },
   'card.sent': { kind: 'prose', aim: 54, max: 76, note: 'The world’s line once the card has gone — the feeling of a card dropping in, not a receipt. ⚠️ it may not repeat the letter’s own `sent` line: two different things happened.' },
   'card.got': { kind: 'label', aim: 14, max: 24, holds: ['{who}'], note: 'The small label over a postcard in the mailbox, saying who sent it. MUST contain {who}. ⚠️ not the letter’s `from`: a letter is FROM somebody, a postcard was SENT by somebody from somewhere, and the words may notice it.' },
   'folk.title': { kind: 'prose', aim: 16, max: 24, note: '⚠️ THE HEADING OVER THE ADDRESS BOOK, and it REPLACES the mailbox’s own — you tapped “Write a letter” and landed on a page headed “Your Mailbox”, which names the wrong room. Two or three words, a NAME for the list of people you could write to, never an instruction and never a question. It may not be the mailbox’s title and may not use the word mailbox.' },
+  // 📮 the counter's second way out (26 Sep 2026, Trym: "i dont see any postcard option at the post office anymore")
+  'folk.card': { kind: 'label', aim: 13, max: 16, note: '📮 THE BUTTON BESIDE “Write a letter” AT THE POST OFFICE, which opens the same address book to send a postcard instead: until 26 Sep a postcard could only be sent as the answer to a letter you had already opened, so nobody found it. A verb first, ONE line in half of a 261-pixel row. Never at home — the homestead’s mailbox is letters only.' },
+  'card.to': { kind: 'label', aim: 10, max: 22, holds: ['{who}'], note: 'The small line over the postcard being made, saying who it is for — their NAME, never the address on their sign. MUST contain {who}.' },
   'folk.write': { kind: 'label', aim: 12, max: 16, note: '⭐ THE BUTTON THAT OPENS THE ADDRESS BOOK, and the most important label in this job — it sits at the bottom of the mailbox and it is the ONLY way anybody ever writes a first letter. A verb first, two or three words, ONE line inside 261 pixels. It is about writing to somebody, not about the book: never “Directory”, never “Find people”, never “Browse”.' },
   'folk.find': { kind: 'label', aim: 20, max: 28, note: 'The placeholder inside the search box above the list of people. It says what you can type — a name, or the name of a house. Never an instruction with a verb (“Search for…”): a placeholder is an example, not an order.' },
   'folk.wait': { kind: 'prose', aim: 30, max: 44, note: 'The one line where the list goes, for the half-second the book is on its way. Calm and brief — it is a page turning, not a load. Never “Loading”, never a spinner’s words, never a promise about what will be there.' },
@@ -890,8 +902,13 @@ function postShape(data) {
     if (!String(v || '').trim()) say(p, 'is empty');
     else if (String(v).trim().split(/\s+/).length > 2) say(p, 'is more than two words, and a button never wraps');
   }
-  if (/\b(stranger|danger|unknown|blocked?|filter|rules?|spam)\b/i.test(String(kn.about || ''))) say('knock.about', 'frightens or names a rule — a knock is somebody at the door');
-  if (/\b(block|blocked|report|ban|banned)\b/i.test(String(kn.away || ''))) say('knock.away', 'calls turning a house away a block or a report');
+  if (/\b(stranger|danger|unknown|blocked?|filter|rules?|spam)\b/i.test(String(kn.about || ''))) say('knock.about', 'frightens or names a rule — a first letter is only somebody new writing');
+  // ✉️ Trym, 26 Sep 2026: "its a letter, not a knock"
+  for (const [p, v] of [['knock.line', kn.line], ['knock.tag', kn.tag], ['knock.about', kn.about], ['knock.in', kn.in], ['knock.away', kn.away], ['knock.gone', kn.gone]]) {
+    if (/\b(knocks?|knocked|knocking|doors?)\b/i.test(String(v || ''))) say(p, 'calls a letter a knock at the door — Trym, 26 Sep: "its a letter, not a knock"');
+  }
+  if (!String(data.card && data.card.to || '').includes('{who}')) say('card.to', 'must contain {who}');
+  if (/\b(block|blocked|report|ban|banned)\b/i.test(String(kn.away || ''))) say('knock.away', 'calls sending a letter back a block or a report');
   if (/\b(block|blocked|report|ban|banned|told)\b/i.test(String(kn.gone || ''))) say('knock.gone', 'calls it a block, or says what the sender is told');
   for (const [p, v] of [['drawers.none', dr.none], ['knock.about', kn.about], ['knock.gone', kn.gone]]) {
     if (/\?\s*$/.test(String(v || ''))) say(p, 'ends in a question — nobody may ask the player one');
@@ -954,9 +971,9 @@ const postSchema = {
     },
     // 🚪 the knock (22 Sep 2026): who is at the door, what a knock is, the two buttons, and the toast after one
     knock: {
-      type: 'object', additionalProperties: false, required: ['line', 'about', 'in', 'away', 'gone'],
+      type: 'object', additionalProperties: false, required: ['line', 'tag', 'about', 'in', 'away', 'gone'],
       properties: {
-        line: str(postFields['knock.line'].note), about: str(postFields['knock.about'].note),
+        line: str(postFields['knock.line'].note), tag: str(postFields['knock.tag'].note), about: str(postFields['knock.about'].note),
         in: str(postFields['knock.in'].note), away: str(postFields['knock.away'].note), gone: str(postFields['knock.gone'].note),
       },
     },
@@ -976,25 +993,30 @@ const postSchema = {
     // card's index is judged against, so a ninth would be a line nobody can ever pick and a seventh
     // would be a card that refuses itself.
     card: {
-      type: 'object', additionalProperties: false, required: ['title', 'make', 'places', 'lines', 'send', 'sent', 'got'],
+      type: 'object', additionalProperties: false, required: ['title', 'make', 'places', 'lines', 'words', 'prev', 'next', 'send', 'sent', 'got', 'to'],
       properties: {
         title: str(postFields['card.title'].note),
         make: str(postFields['card.make'].note),
         places: { type: 'object', additionalProperties: false, required: ['park', 'home', 'rave'],
           properties: { park: str(postFields['card.places.park'].note), home: str(postFields['card.places.home'].note), rave: str(postFields['card.places.rave'].note) } },
         lines: { type: 'array', minItems: 8, maxItems: 8, items: str(postFields['card.lines[]'].note) },
+        words: str(postFields['card.words'].note),
+        prev: str(postFields['card.prev'].note),
+        next: str(postFields['card.next'].note),
         send: str(postFields['card.send'].note),
         sent: str(postFields['card.sent'].note),
         got: str(postFields['card.got'].note),
+        to: str(postFields['card.to'].note),
       },
     },
     // 📇 the address book — the way a FIRST letter is ever written (21 Sep 2026)
     folk: {
-      type: 'object', additionalProperties: false, required: ['title', 'write', 'find', 'wait', 'empty', 'none'],
+      type: 'object', additionalProperties: false, required: ['title', 'write', 'card', 'find', 'wait', 'empty', 'none'],
       description: 'The list of players a first letter can be addressed to, and the button that opens it.',
       properties: {
         title: str(postFields['folk.title'].note),
         write: str(postFields['folk.write'].note),
+        card: str(postFields['folk.card'].note),
         find: str(postFields['folk.find'].note),
         wait: str(postFields['folk.wait'].note),
         empty: str(postFields['folk.empty'].note),
@@ -2102,7 +2124,7 @@ export const JOBS = {
   'town-post': {
     id: 'town-post',
     title: 'Banana Town — the post office',
-    what: 'What the building says, the mailbox card and its two drawers, the knock at the door, an open letter, writing back, the refusal that may not say why — and the sorting round for the post office’s own staff.',
+    what: 'What the building says, the mailbox card and its two drawers, a first letter from someone new, an open letter, writing back, a postcard, the refusal that may not say why — and the sorting round for the post office’s own staff.',
     brief: 'tools/copy-briefs/town-post.md',
     out: 'tools/copy-out/town-post.json',
     approved: 'src/data/copy/town-post.json',

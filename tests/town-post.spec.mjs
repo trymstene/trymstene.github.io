@@ -308,7 +308,12 @@ test('making one: three places, eight lines, and the picture follows your thumb'
   await page.evaluate(() => document.querySelector('#twPostCard').click());
   await page.waitForTimeout(700);
   expect(await page.locator('.tw-pc__pick').count(), 'three places').toBe(3);
-  expect(await page.locator('.tw-pc__say').count(), 'and the whole deck').toBe(COPY.card.lines.length);
+  // ⭐ THE WORDS ARE ONE LINE BETWEEN TWO ARROWS (26 Sep 2026). The eight were a list that scrolled inside a card
+  // that scrolled, and Send postcard sat below both at every size; every line is still an arrow away.
+  expect(await page.locator('.tw-pc__step').count(), 'two arrows').toBe(2);
+  const words = () => page.evaluate(() => document.querySelector('.tw-pc__say').textContent);
+  const step = (n) => page.evaluate((d) => document.querySelector('.tw-pc__step[data-step="' + d + '"]').click(), n);
+  expect(await words(), 'it starts on the first line').toBe(COPY.card.lines[0]);
 
   // the picture follows the picks — which is the whole of the fun
   const shown = () => page.evaluate(() => ({
@@ -318,11 +323,19 @@ test('making one: three places, eight lines, and the picture follows your thumb'
   const before = await shown();
   await page.evaluate(() => document.querySelectorAll('.tw-pc__pick')[2].click());
   await page.waitForTimeout(250);
-  await page.evaluate(() => document.querySelectorAll('.tw-pc__say')[5].click());
+  for (let i = 0; i < 5; i++) await step(1);
   await page.waitForTimeout(250);
   const after = await shown();
   expect(after.bg, 'the place changed').not.toBe(before.bg);
   expect(after.line, 'and so did the line').toBe(COPY.card.lines[5]);
+  expect(await words(), 'the row says what the picture says').toBe(COPY.card.lines[5]);
+  // the words go round, both ways: the whole deck is reachable, and back from the first is the last
+  const seen = new Set();
+  for (let i = 0; i < COPY.card.lines.length; i++) { seen.add(await words()); await step(1); }
+  expect([...seen].sort(), 'every line of the deck').toEqual([...COPY.card.lines].sort());
+  expect(await words(), 'eight presses is all the way round').toBe(COPY.card.lines[5]);
+  for (let i = 0; i < 6; i++) await step(-1);
+  expect(await words(), 'and back from the first is the last').toBe(COPY.card.lines[COPY.card.lines.length - 1]);
 
   // ⭐ AND IT IS YOUR BANANA IN IT, read when the sheet opened rather than when it is sent — so the
   // preview and the post can never disagree about what you had on.
@@ -416,7 +429,8 @@ for (const [w, h] of [[360, 640], [375, 667], [390, 844], [393, 852]]) {
     await thumb(page, '.tw-post__pctile', 'the postcard in the box');
     await thumb(page, '#twPostCard', 'Send a card');
     await thumb(page, '.tw-pc__pick:nth-child(3)', 'the third place');
-    await thumb(page, '.tw-pc__say:last-child', 'the last line of the deck');
+    await thumb(page, '.tw-pc__step[data-step="1"]', 'the next words');
+    await thumb(page, '.tw-pc__step[data-step="-1"]', 'the words before');
     await thumb(page, '#twPostCardGo', 'Send postcard');
 
     // ── and the report, which is the one control that must never be hard to reach
@@ -519,55 +533,138 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
   });
 }
 
-// 🚪 THE KNOCK (22 Sep 2026). A house you have never had post from knocks: you see who, never what, until you
-// let it in. Letting in and turning away are side by side and the same weight — both are ordinary.
-test('a new house knocks: who and never what, let in or turned away', async ({ page }) => {
+// ✉️ A FIRST LETTER (22 Sep 2026 as “the knock”; 26 Sep 2026, Trym: "why do we call a letter received from someone
+// new a «Knock»? Its a letter, not a knock"). Post from a house you have never had post from is a tile in the New
+// drawer like any other letter, tagged; a tap shows who and never what, and opening it and sending it back sit side by
+// side at the same weight — both are ordinary. The server still calls it a knock; the reader never sees the word.
+test('a first letter from somebody new: who and never what, opened or sent back', async ({ page }) => {
   const now = Date.now();
   const knock = (id, from, name, house, at) => ({ id, from, at, kind: 'knock', read: false, name, house });
   const LETTER = { id: 'a1', from: 'pip-yard', name: 'Pip', at: now - 5000, read: false, text: 'The hens are laying again.' };
+  const KIT = 'Hello from the next plot over.';
   let letIn = false;
   const calls = { accept: [], away: [] };
   await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(letIn
-    ? { letters: [LETTER, { id: 'kit1', from: 'kit-farm', name: 'Kit', at: now, read: false, text: 'Hello from the next plot over.' },
+    ? { letters: [LETTER, { id: 'kit1', from: 'kit-farm', name: 'Kit', at: now, read: false, text: KIT },
       { id: 'kit2', from: 'kit-farm', name: 'Kit', at: now - 9000, read: false, text: 'And a second one.' }, knock('rue1', 'rue-yard', 'Rue', 'Rue', now - 20000)], unread: 3, knocks: 1 }
     : { letters: [LETTER, knock('kit1', 'kit-farm', 'Kit', 'Kit’s Farm', now), knock('kit2', 'kit-farm', 'Kit', 'Kit’s Farm', now - 9000), knock('rue1', 'rue-yard', 'Rue', 'Rue', now - 20000)], unread: 1, knocks: 3 }) }));
   await page.route('**/post/accept', async (r) => { calls.accept.push(JSON.parse(r.request().postData() || '{}')); letIn = true; await r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"n":2}' }); });
   await page.route('**/post/away', async (r) => { calls.away.push(JSON.parse(r.request().postData() || '{}')); await r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+  await page.route('**/post/read', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
   const errs = await box(page, 360, 640);
-  await page.waitForFunction(() => document.querySelectorAll('.tw-knock').length > 0, null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelectorAll('.tw-post__env[data-first]').length > 0, null, { timeout: 15000 });
 
-  const door = await page.evaluate(() => ({
-    knocks: [...document.querySelectorAll('.tw-knock')].map((k) => k.textContent),
-    about: (document.querySelector('.tw-post__about') || {}).textContent || '',
-    env: document.querySelectorAll('.tw-post__env').length,
+  const grid = await page.evaluate(() => ({
+    firsts: [...document.querySelectorAll('.tw-post__env[data-first]')].map((e) => ({ id: e.dataset.id, who: (e.querySelector('.tw-post__who') || {}).textContent, tag: (e.querySelector('.tw-post__tag') || {}).textContent })),
+    known: document.querySelectorAll('.tw-post__grid .tw-post__env:not([data-first])').length,
     fresh: (document.querySelector('.tw-post__tab[data-drawer="fresh"] b') || {}).textContent,
-    cut: [...document.querySelectorAll('.tw-knock__two button')].some((b) => b.scrollWidth > b.clientWidth + 1),
+    text: document.querySelector('.tw-post').textContent,
   }));
-  expect(door.knocks.length, '⭐ one knock per house, however many times it knocked').toBe(2);
-  expect(door.knocks[0], 'who is knocking').toContain('Kit');
-  expect(door.knocks[0], 'and from which house, when it adds something').toContain('Kit’s Farm');
-  expect(door.knocks[1], 'a house named for its owner is said once').not.toMatch(/Rue.*Rue/);
-  expect(door.about, 'the door says what a knock is').toBe(COPY.knock.about);
-  expect(door.env, 'the letter from a house you know is not held at the door').toBe(1);
-  expect(door.fresh, 'Fresh counts the knocks with the post').toBe('3');
-  expect(door.cut, 'neither answer is cut short').toBe(false);
-  await page.screenshot({ path: 'test-results/post-knock-360.png' });
+  expect(grid.firsts.length, '⭐ one tile per house, however many letters it sent').toBe(2);
+  expect(grid.firsts[0].who, 'who it is from, written on the envelope').toBe('Kit');
+  expect(grid.firsts[0].tag, 'and the tag that says it is the first').toBe(COPY.knock.tag);
+  expect(grid.known, 'the letter from a house you know is an ordinary envelope beside them').toBe(1);
+  expect(grid.fresh, 'New counts first letters with the rest of the post').toBe('3');
+  expect(grid.text, '⭐ a letter, never a knock (Trym, 26 Sep)').not.toMatch(/knock/i);
+  await page.screenshot({ path: 'test-results/post-first-letters-360.png' });
 
-  // ── let Kit in: both letters come in to be opened, and the door answers the next time from the room
-  await thumb(page, '.tw-knock[data-id="kit1"] [data-in]', 'Let in');
-  // ⚠️ every path proves who is asking first, and a test page may wait out the proof's poll: wait on the door, not a clock
-  await page.waitForFunction(() => document.querySelectorAll('.tw-knock').length === 1, null, { timeout: 20000 });
+  // ── a tap asks, once: who, and from which house when that adds something — never what they wrote
+  await thumb(page, '.tw-post__env[data-id="kit1"]', 'Kit’s first letter');
+  const asked = await page.evaluate(() => ({
+    head: (document.querySelector('.tw-post__firstwho') || {}).textContent || '',
+    house: (document.querySelector('.tw-post__house') || {}).textContent || '',
+    about: (document.querySelector('.tw-post__about') || {}).textContent || '',
+    text: document.querySelector('.tw-post').textContent,
+    cut: [...document.querySelectorAll('.tw-post__first .tw-post__two button')].some((b) => b.scrollWidth > b.clientWidth + 1),
+  }));
+  expect(asked.head, 'it says it is a letter, and who from').toBe(COPY.knock.line.replace('{who}', 'Kit'));
+  expect(asked.house, 'and from which house').toBe('Kit’s Farm');
+  expect(asked.about, 'and what a first letter is').toBe(COPY.knock.about);
+  expect(asked.text, 'never what they wrote').not.toContain(KIT);
+  expect(asked.text, 'a letter, never a knock').not.toMatch(/knock/i);
+  expect(asked.cut, 'neither answer is cut short').toBe(false);
+  await page.screenshot({ path: 'test-results/post-first-letter-360.png' });
+
+  // ── open it: the house is known from now on, and the letter you tapped opens at once
+  await thumb(page, '#twPostIn', 'Open it');
+  // ⚠️ every path proves who is asking first, and a test page may wait out the proof's poll: wait on the letter, not a clock
+  await page.waitForFunction(() => window.__town.post().state().open === 'kit1', null, { timeout: 20000 });
   expect(calls.accept.map((b) => b.id), 'the room is asked to let that house in').toEqual(['kit1']);
   expect(calls.accept[0].slug, '…by the box’s owner').toBe('ada-yard');
-  const inside = await page.evaluate(() => ({ knocks: document.querySelectorAll('.tw-knock').length, env: document.querySelectorAll('.tw-post__env').length }));
-  expect(inside.knocks, 'Kit is no longer at the door').toBe(1);
-  expect(inside.env, 'Kit’s two letters are post now').toBe(3);
+  expect(await page.locator('.tw-post__body').textContent(), '⭐ and the letter is open: opening it was the point of the tap').toBe(KIT);
+  await page.waitForTimeout(600);
+  await thumb(page, '#twPostBack', 'Back');
+  const after = await page.evaluate(() => ({
+    firsts: [...document.querySelectorAll('.tw-post__env[data-first]')].map((e) => e.dataset.id),
+    kit2: !!document.querySelector('.tw-post__env[data-id="kit2"]:not([data-first])'),
+  }));
+  expect(after.firsts, 'Kit has no first letter waiting any more; Rue still has').toEqual(['rue1']);
+  expect(after.kit2, 'Kit’s second letter is ordinary post now').toBe(true);
 
-  // ── turn Rue away: gone on the tap, and said so
-  await thumb(page, '.tw-knock[data-id="rue1"] [data-away]', 'Turn away');
-  expect(await page.locator('.tw-knock').count(), 'the knock is gone at once').toBe(0);
+  // ── send Rue's back: gone on the tap, and said so
+  await thumb(page, '.tw-post__env[data-id="rue1"]', 'Rue’s first letter');
+  expect(await page.locator('.tw-post__house').count(), 'a house named for its owner is said once').toBe(0);
+  await thumb(page, '#twPostAway', 'Send back');
+  expect(await page.locator('.tw-post__env[data-first]').count(), 'the first letter is gone at once').toBe(0);
   const said = await page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
-  expect(said, 'the world says the knock is gone').toBe(COPY.knock.gone);
+  expect(said, 'the world says it went back').toBe(COPY.knock.gone);
   await expect.poll(() => calls.away.map((b) => b.id), { message: 'and the room is told', timeout: 15000 }).toEqual(['rue1']);
   expect(errs).toEqual([]);
 });
+
+// 📮 A POSTCARD FROM THE COUNTER, AND A SHEET THAT FITS (26 Sep 2026). Trym: "i dont see any postcard option at the
+// post office anymore" — it only ever hung off a letter already opened. It sits beside Write a letter now, opens the
+// same address book, and the sheet says who it is for by NAME.
+// ⚠️ AND THE WHOLE SHEET IS ON THE CARD. The thumb walk scrolls a control into view before tapping it, so it could
+// never catch Send postcard below the fold — which is where it was, at every size. This measures the card instead.
+// 1366×625 is a 1366×768 laptop with the browser's own bars: the shortest desktop the house sees.
+const FOLK_ONE = { folk: [{ slug: 'pip-yard', house: 'Pip’s Plot', n: 'Pip', fit: { hat: 'cowboy' } }] };
+for (const [w, h] of [[360, 640], [375, 667], [1366, 625], [1280, 720]]) {
+  test(`the counter sends a postcard, and the whole sheet is on the card at ${w}×${h}`, async ({ page }) => {
+    await page.route('**/yards/folk*', (r) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(FOLK_ONE) }));
+    const errs = await box(page, w, h);
+    await put(page, []);
+    await page.waitForTimeout(200);
+    // ⚠️ the LABEL is what clips (the verb span carries the ellipsis), so it is the span that is measured, not the button
+    const outs = await page.evaluate(() => [...document.querySelectorAll('.tw-post__outs button')].map((b) => {
+      const v = b.querySelector('.tw-cta__verb') || b;
+      return { id: b.id, text: b.textContent.trim(), cut: v.scrollWidth > v.clientWidth };
+    }));
+    expect(outs.map((b) => b.id), '⭐ a letter and a postcard, side by side, even with nothing in the box').toEqual(['twPostNew', 'twPostNewCard']);
+    expect(outs[1].text, 'the postcard says so').toBe(COPY.folk.card);
+    for (const b of outs) expect(b.cut, `"${b.text}" is cut off`).toBe(false);
+
+    await thumb(page, '#twPostNewCard', 'Send a postcard');
+    await page.waitForSelector('.tw-folk__row', { timeout: 10000 });
+    expect(await page.locator('.tw-post h2').textContent(), 'the address book names itself').toBe(COPY.folk.title);
+    await thumb(page, '.tw-folk__row', 'Pip in the book');
+    await page.waitForSelector('.tw-post__make', { timeout: 5000 });
+    await page.waitForTimeout(300);
+    const m = await page.evaluate(() => {
+      const c = document.querySelector('.tw-card'), cr = c.getBoundingClientRect();
+      const inCard = (sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.top >= cr.top - 1 && r.bottom <= cr.bottom + 1 && r.bottom <= innerHeight + 1; };
+      return {
+        head: document.querySelector('.tw-post h2').textContent,
+        to: (document.querySelector('.tw-post__to') || {}).textContent || '',
+        front: document.querySelectorAll('.tw-post .tw-card__sub').length,
+        scroll: c.scrollHeight - c.clientHeight,
+        go: inCard('#twPostCardGo'), back: inCard('#twPostBack'), next: inCard('.tw-pc__step[data-step="1"]'), words: inCard('.tw-pc__say'),
+        pic: Math.round(document.querySelector('.tw-post__make .tw-pc.is-big').getBoundingClientRect().width),
+        sheet: Math.round(document.querySelector('.tw-post__make').getBoundingClientRect().width),
+      };
+    });
+    expect(m.head, 'the sheet names the thing being made').toBe(COPY.card.title);
+    expect(m.to, '…and who it is for, by name').toBe(COPY.card.to.replace('{who}', 'Pip'));
+    expect(m.front, 'the building’s own line stays off the sheet').toBe(0);
+    expect(m.scroll, '⭐ the whole sheet is on the card, nothing below the fold').toBeLessThanOrEqual(1);
+    expect(m.go, 'Send postcard is on the card').toBe(true);
+    expect(m.back, 'so is Go back').toBe(true);
+    expect(m.next, 'and the arrows for the words').toBe(true);
+    expect(m.words, 'and the words themselves').toBe(true);
+    // a short screen narrows the picture to a clean fraction of its 600-px plate, never an odd one
+    expect(m.pic === m.sheet || [300, 200, 150].includes(m.pic), `the picture is ${m.pic} px in a ${m.sheet}-px sheet`).toBe(true);
+    await page.screenshot({ path: `test-results/post-sheet-${w}x${h}.png` });
+    await thumb(page, '#twPostCardGo', 'Send postcard');
+    expect(errs).toEqual([]);
+  });
+}
