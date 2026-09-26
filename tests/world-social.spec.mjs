@@ -94,6 +94,14 @@ test('the park: an echo stands about under its own name, and its card waves', as
   expect(Math.abs(geo.gap), 'and the row sits centred in the card').toBeLessThan(2);
   expect(geo.cw, 'the card is narrow').toBeLessThanOrEqual(300);
   expect(geo.ch, 'and short: well under a third of the world').toBeLessThan(geo.vh / 3);
+  // ⭐ the farm-and-when line sits centred under the name (Trym, 26 Sep: "isnt centered under the player-name")
+  const mid = await page.evaluate(() => {
+    const c = (el) => { const r = document.createRange(); r.selectNodeContents(el); const b = r.getBoundingClientRect(); return b.left + b.width / 2; };
+    return { name: c(document.querySelector('.bws-card h2')), role: c(document.querySelector('.bws-role')) };
+  });
+  expect(Math.abs(mid.name - mid.role), 'the line under the name shares its centre').toBeLessThan(2);
+  const roleH = await page.evaluate(() => document.querySelector('.bws-role').getBoundingClientRect().height);
+  expect(roleH, '…and is one line, never an orphan word under it').toBeLessThan(20);
   await page.click('.bws-go');
   await expect(page.locator('.bws-go span')).toHaveText(W.card.waved, { timeout: 4000 });
   expect(waves.length, 'the wave went to the server').toBe(1);
@@ -214,5 +222,25 @@ test('the beach: an echo stands on the sand', async ({ page }) => {
   await page.evaluate(([x, y]) => window.__bws.put(x, y), [me.x + 140, me.y - 20]);
   await page.waitForTimeout(500);
   await page.screenshot({ path: SHOT + 'beach-echo.png' });
+  expect(errs).toEqual([]);
+});
+
+// 🌱 A NEW BANANA (26 Sep 2026, Trym: "build the new banana markers so regulars can welcome newcomers"): an echo of a
+// farm claimed in the last three days wears a small NEW chip after its name, and its card says so beside the name
+test('the park: a new banana’s echo says NEW on its tag and its card', async ({ page }) => {
+  const NEW = [{ slug: 'fresh-fields', house: 'Fresh Fields', n: 'Sprout', fit: { hat: 'party' }, d: 0, nw: 1 }];
+  const { errs } = await area(page, '/park/', { echoes: NEW });
+  await page.waitForFunction(() => window.__bws.echoes().length === 1, null, { timeout: 15000 });
+  await page.evaluate(() => { window.__bws.hold(); window.__bws.spawn(); });
+  await page.waitForFunction(() => !!document.querySelector('.bws-echo[data-new] .bws-tag'), null, { timeout: 5000 });
+  const chip = await page.evaluate(() => getComputedStyle(document.querySelector('.bws-echo[data-new] .bws-tag'), '::after').content);
+  expect(chip, 'the tag wears the word from the copy file').toBe(JSON.stringify(W.card.new));
+  await page.evaluate(() => window.__bws.open('fresh-fields'));
+  await expect(page.locator('.bws-card h2 .bws-new')).toHaveText(W.card.new);
+  const me = await mePos(page, '#pkMe', 2760, 1100);
+  await page.evaluate(([x, y]) => window.__bws.put(x, y, 'fresh-fields'), [me.x + 120, me.y]);
+  await page.locator('.bws-x').click();
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: SHOT + 'park-new-echo.png' });
   expect(errs).toEqual([]);
 });

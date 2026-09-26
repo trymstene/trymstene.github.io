@@ -50,7 +50,7 @@ const LENS_EVENTS = [
   'town_promo', 'town_warn', 'town_demote',
   'post_open', 'post_read', 'post_send', 'post_refused', 'post_report', 'post_card',
   // 👋 the social layer, 26 Sep — an echo's card, a wave (at an echo, live, back), and coming back to waves waiting
-  'wave_card', 'wave_echo', 'wave_live', 'wave_back', 'wave_waiting',
+  'wave_card', 'wave_echo', 'wave_live', 'wave_back', 'wave_waiting', 'wave_welcome',
 ];
 
 let tokCache = { v: null, exp: 0 };
@@ -605,7 +605,7 @@ const ANALYST_EVENTS = [
   'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
   'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
   'post_open', 'post_read', 'post_send', 'post_refused', 'post_report', 'post_card',   // ✉️ the post, 20 Sep
-  'wave_card', 'wave_echo', 'wave_live', 'wave_back', 'wave_waiting',   // 👋 the social layer, 26 Sep: is anybody waved at, and does anybody answer
+  'wave_card', 'wave_echo', 'wave_live', 'wave_back', 'wave_waiting', 'wave_welcome',   // 👋 the social layer, 26 Sep: is anybody waved at, and does anybody answer
   'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',   // 💼 the jobs, 19 Sep: the analyst cannot weigh a week's work it cannot see
   'town_wheel', 'town_pot', 'town_sell', 'beach_lure',   // 🎡📈 the market, 23 Sep: the town's sink and its one risk loop
   'town_staff',   // 💼 the staff card, 23 Sep: which door workers use, and whether looking turns into working

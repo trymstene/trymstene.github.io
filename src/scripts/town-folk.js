@@ -278,6 +278,7 @@ export function bootTownFolk(ctx) {
     if (v.echo) {
       el.classList.add('bws-echo', 'is-on');
       el.dataset.slug = v.echo.slug;
+      if (v.echo.nw) el.dataset.new = '1';   // 🌱 a new banana's echo: the tag says so
       const tag = document.createElement('span');
       tag.className = 'bws-tag';
       tag.textContent = v.echo.n;

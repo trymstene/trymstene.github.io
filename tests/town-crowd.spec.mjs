@@ -108,12 +108,20 @@ test('a tap on another player waves, and the one waved at can wave back from the
   const a = await A.newPage(), b = await B.newPage();
   const errs = [];
   a.on('pageerror', (e) => errs.push('A ' + e)); b.on('pageerror', (e) => errs.push('B ' + e));
+  // 🌱 A is a regular (a pass a month old), B is brand new (no pass yet): only B wears the NEW chip
+  await a.addInitScript(() => { try { localStorage.setItem('pass-v1', JSON.stringify({ created: Date.now() - 30 * 86400000, patches: {}, days: [] })); } catch (e) {} });
   for (const [p, n] of [[a, 'QA Wave A'], [b, 'QA Wave B']]) {
     await p.addInitScript((nm) => { try { localStorage.setItem('ps-name-v1', nm); localStorage.setItem('bwq-c1', JSON.stringify({ s: 17, done: 1 })); } catch (e) {} }, n);
     await p.goto(URL, { waitUntil: 'domcontentloaded' });
     await p.waitForFunction(() => window.__town && window.__town.crowd && window.__town.crowd.live() && window.__bws, null, { timeout: 30000 });
   }
   await b.waitForFunction(() => window.__town.crowd.peers().some((p) => p.name === 'QA Wave A' && !p.hidden), null, { timeout: 20000 });
+  await a.waitForFunction(() => window.__town.crowd.peers().some((p) => p.name === 'QA Wave B'), null, { timeout: 20000 });
+  const marks = async (p, who) => p.evaluate((w) => { const el = [...document.querySelectorAll('.tw-peer[data-pid]')].find((x) => (x.textContent || '').includes(w)); const t = el && el.querySelector('.bw-name'); return { isNew: !!(el && el.dataset.new), chip: t ? getComputedStyle(t, '::after').content : '' }; }, who);
+  const bOnA = await marks(a, 'QA Wave B'), aOnB = await marks(b, 'QA Wave A');
+  expect(bOnA.isNew, '🌱 the regular sees the newcomer marked new').toBe(true);
+  expect(bOnA.chip, '…with the word on their name tag').toContain('new');
+  expect(aOnB.isNew, 'and the newcomer does not see the regular marked new').toBe(false);
   // B stands beside A, then taps A's banana
   const at = (await b.evaluate(() => window.__town.crowd.peers())).find((p) => p.name === 'QA Wave A');
   await b.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x + 110; t.pos.y = t.tgt.y = y; }, [at.x, at.y]);

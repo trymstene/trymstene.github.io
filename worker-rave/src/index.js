@@ -2502,6 +2502,7 @@ export class ParkRoom {
         name: sanitizeName(msg.name, []), // family filter; the strike list is applied via /ingest below
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: parkClampX(msg.x), y: parkClampY(msg.y),
+        nw: msg.nw === 1,   // 🌱 a new banana (world.js worldNewcomer): the others see it and can welcome them
         joined: Date.now(),
       };
       // 👻 ATTACH BEFORE THE /ingest FETCH. That fetch is not a storage op, so
@@ -2667,6 +2668,7 @@ export class BeachRoom {
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: bayClampX(msg.x), y: bayClampY(msg.y),
         sit: msg.sit === true,
+        nw: msg.nw === 1,   // 🌱 a new banana (world.js worldNewcomer)
         joined: Date.now(),
       };
       // 👻 attach BEFORE the /ingest fetch (same trap as ParkRoom): the gate
@@ -2755,7 +2757,7 @@ function num(v, lo, hi) {
 function bayClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(2748, Math.max(12, Math.round(n))) : 898; }
 function bayClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(1088, Math.max(64, Math.round(n))) : 742; }
 function bayStrip(p) {
-  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
+  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined, nw: p.nw ? 1 : undefined };
 }
 
 // 🌱 THE seed catalog — ⚠️ keep in sync with SEEDS in src/scripts/banana-park.js
@@ -2976,7 +2978,7 @@ const EGG_SPOTS = [[1060, 640], [1150, 706], [1270, 745], [1005, 715], [1180, 76
 function parkClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(95, Math.max(5, Math.round(n * 10) / 10)) : 50; }
 function parkClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(99, Math.max(20, Math.round(n * 10) / 10)) : 90; }
 function parkStrip(p) {
-  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, name: p.name || undefined };
+  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, name: p.name || undefined, nw: p.nw ? 1 : undefined };
 }
 const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 99 ? n : undefined; };
 
@@ -2997,7 +2999,7 @@ const YARD_CAP = 12;
 function hsClampX(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(1788, Math.max(12, Math.round(n))) : 900; }
 function hsClampY(v) { const n = Number(v); return Number.isFinite(n) ? Math.min(1088, Math.max(40, Math.round(n))) : 700; }
 function yardPStrip(p) {
-  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined };
+  return { id: p.id, outfit: p.outfit, x: p.x, y: p.y, sit: p.sit || undefined, name: p.name || undefined, nw: p.nw ? 1 : undefined };
 }
 // 🏷 the owner TAG: sha256 of the owner id, first 8 hex. HQ lines a pass up
 // with its yard through it; the pass desk prints the same tag from its side.
@@ -3048,6 +3050,7 @@ const ECHO_DAYS = 14;          // an echo is somebody who was about in the last 
 const ECHO_MAX = 16;           // plenty to go round five areas; the areas pick a few each
 const WAVE_DAY = 30;           // waves one banana may send in a UTC day, to everybody together
 const NOTICE_CAP = 30;         // notices a player keeps; the oldest fall off
+const NEW_DAYS = 3;            // 🌱 a farm younger than this is a new banana's: its echo carries the marker
 const yDay = () => new Date().toISOString().slice(0, 10);
 const yIso = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
 // "Trym's Homestead" → trym — the sign name IS the address (clean slugs)
@@ -3068,7 +3071,7 @@ const SQUARE_BURST_GAP = 3000;   // 🎆 one firework per banana per three secon
 const SQUARE_ROOMS = ['', 'condo', 'store'];
 const sqClamp = (v, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n * 10) / 10)) : d; };
 const sqRoom = (v) => (SQUARE_ROOMS.includes(v) ? v : '');
-const sqStrip = (p) => ({ id: p.id, outfit: p.outfit, x: p.x, y: p.y, room: p.room || '', name: p.name || undefined });
+const sqStrip = (p) => ({ id: p.id, outfit: p.outfit, x: p.x, y: p.y, room: p.room || '', name: p.name || undefined, nw: p.nw ? 1 : undefined });
 
 export class SquareRoom {
   constructor(state, env) {
@@ -3162,6 +3165,7 @@ export class SquareRoom {
         name: sanitizeName(msg.name, []),
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: sqClamp(msg.x, 50), y: sqClamp(msg.y, 94), room: sqRoom(msg.room),
+        nw: msg.nw === 1,   // 🌱 a new banana (world.js worldNewcomer)
         joined: Date.now(),
       };
       // attach BEFORE the ledger fetch (the park's trap): the gate opens across a plain fetch, so a
@@ -3299,6 +3303,7 @@ export class YardRoom {
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: hsClampX(msg.x), y: hsClampY(msg.y),
         sit: msg.sit === true,
+        nw: msg.nw === 1,   // 🌱 a new banana (world.js worldNewcomer)
         joined: Date.now(),
       };
       // 👻 attach BEFORE the /ingest fetch (same trap as ParkRoom): the gate
@@ -3501,7 +3506,9 @@ export class YardRoom {
       // changed — see /who. Only the book reads it.
       seen: doc.seen || undefined,
       // 👻 kept out of the echoes by its owner (/echo). Still in the address book: that is where letters are addressed.
-      ne: doc.noecho ? 1 : undefined });
+      ne: doc.noecho ? 1 : undefined,
+      // 🌱 when the farm was claimed: an echo of one claimed in the last NEW_DAYS is a new banana (/echoes)
+      created: doc.created || undefined });
     await this.state.storage.put('index', rest.slice(0, 400));
   }
 
@@ -4131,7 +4138,7 @@ export class YardRoom {
         if (!(t > cut)) continue;
         const n = cleanName(e.who.n);
         if (!n) continue;
-        rows.push({ slug: e.slug, house: cleanName(e.name) || e.name || '', n, fit: e.who.fit || {}, t });
+        rows.push({ slug: e.slug, house: cleanName(e.name) || e.name || '', n, fit: e.who.fit || {}, t, nw: e.created && now - e.created < NEW_DAYS * 86400000 ? 1 : undefined });
       }
       rows.sort((a, b) => b.t - a.t);
       return json({ echoes: rows.slice(0, ECHO_MAX).map(({ t, ...r }) => ({ ...r, d: Math.floor((now - t) / 86400000) })) });

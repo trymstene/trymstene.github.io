@@ -1062,10 +1062,12 @@ function init() {
     const el = document.createElement('div');
     el.className = 'pk-peer';
     el.dataset.pid = d.id;   // 👋 a tap on a player here waves at them (world-social.js)
+    if (d.nw) el.dataset.new = '1';   // 🌱 a new banana: its tag says so (world-social.js), so a regular can welcome them
     const cv = document.createElement('canvas');
     cv.width = CV; cv.height = CV;
     el.appendChild(cv);
-    if (d.name) { const tag = document.createElement('span'); tag.textContent = d.name; el.appendChild(tag); }
+    // a player's name over their head — and a new banana's tag before they have one, for the marker to sit on
+    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); }
     world.appendChild(el);
     const p = {
       el, ctx: cv.getContext('2d'), outfit: d.outfit || {}, name: d.name || '',

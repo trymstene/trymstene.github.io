@@ -2751,9 +2751,10 @@ export const JOBS = {
     reads: 'src/lib/world-social.js (a static import; the social layer is its own lazy chunk, loaded by every walkable area but the rave)',
     top: ['card', 'list'],
     fields: {
-      'card.when.today': { kind: 'label', aim: 12, max: 18, note: 'Under an echo’s name, after their farm’s name: they last played today. It says WHEN, never where — an echo can stand in an area its player never visited.' },
+      'card.when.today': { kind: 'label', aim: 12, max: 18, note: 'Under an echo’s name, centred, the whole line (26 Sep: the farm’s name left it — a long one wrapped): they last played today. It says WHEN, never where — an echo can stand in an area its player never visited.' },
       'card.when.yesterday': { kind: 'label', aim: 14, max: 20, note: 'The same, for yesterday.' },
       'card.when.days': { kind: 'label', aim: 16, max: 22, ...holdsAll('n'), note: 'The same, two to fourteen days ago; {n} is the number of days.' },
+      'card.new': { kind: 'label', aim: 3, max: 5, note: '🌱 THE NEW-BANANA MARKER (Trym, 26 Sep: "build the new banana markers so regulars can welcome newcomers"): a tiny green chip after a player’s name above their head — and beside an echo’s name on its card — for somebody in their first three days. ONE short plain word a child reads at a glance; the chip prints it in capitals. Never “noob”, never a rank.' },
       'card.away': { kind: 'prose', aim: 42, max: 52, note: '⭐ WHAT AN ECHO IS, on its own card, ONE short line (Trym, 26 Sep: "if we can cut text, cut it"): this player is not here now, and a wave reaches them later. The name is already the card’s heading, so the line never repeats it. It keeps an echo honest (a fake player breaks trust, doubly with children), so it may never suggest they are here, watching, or about to come back.' },
       'card.wave': { kind: 'label', aim: 4, max: 8, note: 'The button that waves at the echo. One word, a verb. The code draws a hand in front of it; it shares a row with Visit farm, the two the same width.' },
       'card.waved': { kind: 'label', aim: 5, max: 8, note: 'The same button once the wave has gone (or already went today): one word, done.' },

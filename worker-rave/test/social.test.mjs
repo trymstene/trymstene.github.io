@@ -83,6 +83,9 @@ ok('…and never a time, a pass or an owner tag', ['t', 'pass', 'owner', 'update
 ok('the most recently about come first', r.echoes[r.echoes.length - 1].slug === lately.slug, r.echoes.map((e) => e.slug));
 r = await yg('/echoes?mine=' + ada.slug);
 ok('you are never one of your own echoes', !(r.echoes || []).some((e) => e.slug === ada.slug), r.echoes);
+r = await yg('/echoes');
+ok('🌱 an echo of a farm claimed today is a new banana', E(ada) && r.echoes.find((e) => e.slug === ada.slug).nw === 1, r.echoes);
+ok('…and one claimed three days ago is not', !r.echoes.find((e) => e.slug === lately.slug).nw, r.echoes);
 
 console.log('2. a wave');
 const nim = { id: gid() }; nim.wt = await wt(nim.id);   // an anonymous pass: no house, no name in any book
@@ -227,6 +230,17 @@ Date.now = realNow;
 
 console.log('10. and in every other room people meet in');
 const mods = await import('../src/index.js');
+// 🌱 a new banana is told to everybody in the room, and nobody else is
+for (const K of ['ParkRoom', 'BeachRoom', 'YardRoom', 'SquareRoom']) {
+  const list = [];
+  const room = new mods[K]({ ...fakeState(), getWebSockets: () => list, getWebSocketAutoResponseTimestamp: () => null, acceptWebSocket(ws) { list.push(ws); } }, {});
+  const hi = async (name, nw) => { const ws = fakeWs(); list.push(ws); await room.webSocketMessage(ws, JSON.stringify({ t: 'hi', sid: 's-' + name + K, name, x: 50, y: 50, ...(nw ? { nw: 1 } : {}) })); return ws; };
+  const old = await hi('Old'), fresh = await hi('Fresh', true);
+  const seen = old.got.find((m) => m.t === 'join');
+  ok(K + ': a new banana arrives marked new', seen && seen.p.name === 'Fresh' && seen.p.nw === 1, seen);
+  const ros = fresh.got.find((m) => m.t === 'roster').all.find((a) => a.name === 'Old');
+  ok(K + ': …and a regular is not', ros && !ros.nw, ros);
+}
 for (const K of ['RaveRoom', 'ParkRoom', 'BeachRoom', 'YardRoom']) {
   const list = [];
   const room = new mods[K]({ ...fakeState(), getWebSockets: () => list, getWebSocketAutoResponseTimestamp: () => null, acceptWebSocket(ws) { list.push(ws); } }, {});

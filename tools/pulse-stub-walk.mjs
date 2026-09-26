@@ -71,7 +71,7 @@ const RANGE = {
     { name: 'town_open', v: 11, u: 7 }, { name: 'town_fix', v: 38, u: 6 }, { name: 'town_buy', v: 3, u: 3 }, { name: 'town_curse', v: 4, u: 4 }, { name: 'town_dark', v: 5, u: 3 }, { name: 'town_multiplayer', v: 4, u: 3 }, { name: 'town_job', v: 5, u: 4 }, { name: 'town_chore', v: 12, u: 4 }, { name: 'town_sort', v: 24, u: 2 }, { name: 'town_shift', v: 9, u: 3 }, { name: 'town_cup', v: 31, u: 3 }, { name: 'town_duty', v: 9, u: 4 }, { name: 'town_ghost', v: 2, u: 2 }, { name: 'town_object', v: 3, u: 2 }, { name: 'town_merchant', v: 1, u: 1 },
     { name: 'post_open', v: 22, u: 14 }, { name: 'post_read', v: 17, u: 11 }, { name: 'post_send', v: 6, u: 5 }, { name: 'post_refused', v: 3, u: 3 }, { name: 'post_report', v: 1, u: 1 },
     { name: 'post_card', v: 9, u: 7 }, { name: 'post_note', v: 8, u: 6 }, { name: 'post_knock', v: 4, u: 3 }, { name: 'post_accept', v: 3, u: 3 }, { name: 'post_away', v: 1, u: 1 }, { name: 'post_folk', v: 7, u: 5 },
-    { name: 'wave_card', v: 12, u: 8 }, { name: 'wave_echo', v: 9, u: 6 }, { name: 'wave_live', v: 2, u: 2 }, { name: 'wave_waiting', v: 5, u: 4 }, { name: 'wave_list', v: 5, u: 4 }, { name: 'wave_back', v: 3, u: 3 }, { name: 'wave_visit', v: 2, u: 2 },
+    { name: 'wave_card', v: 12, u: 8 }, { name: 'wave_echo', v: 9, u: 6 }, { name: 'wave_live', v: 2, u: 2 }, { name: 'wave_waiting', v: 5, u: 4 }, { name: 'wave_list', v: 5, u: 4 }, { name: 'wave_back', v: 3, u: 3 }, { name: 'wave_visit', v: 2, u: 2 }, { name: 'wave_welcome', v: 3, u: 2 },
     { name: 'rave_join', v: 40, u: 30 }, { name: 'park_join', v: 25, u: 20 },
     { name: 'homestead_save_refused', v: 1, u: 1 },
   ],

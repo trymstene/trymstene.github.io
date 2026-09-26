@@ -103,6 +103,15 @@ export function worldOwner() {
   return worldSid();
 }
 
+// 🌱 A NEW BANANA (26 Sep 2026): a pass younger than three days, so the regulars in a room can see who is new and
+// welcome them (Trym: "build the new banana markers so regulars can welcome newcomers"). A pass's `created` is the
+// earliest any device of it has known (the pass merges it as a minimum, on the client and the server), so a regular
+// on a new phone is new only until they sign in; a visitor with no pass yet is new. Read raw: banana-pass imports this.
+export const NEW_BANANA_MS = 3 * 86400000;
+export function worldNewcomer() {
+  try { const c = +((JSON.parse(localStorage.getItem('pass-v1') || 'null') || {}).created || 0); return !c || Date.now() - c < NEW_BANANA_MS; } catch (e) { return false; }
+}
+
 // 🪪 THE WORLD TOKEN — proof, for the world workers, that this browser holds
 // the pass behind worldOwner(). Minted by worker-pass on every pull/push
 // (`gid.exp.aliases.sig`, 30 days) and kept next to the gid; the workers
@@ -198,7 +207,7 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
       tries = 0;
       // 🪪 the OWNER rides along so a person shows up ONCE, not once per
       // device — the room supersedes an older socket for the same account.
-      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), mt: memberTok(), ...hi() }));
+      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), mt: memberTok(), ...(worldNewcomer() ? { nw: 1 } : {}), ...hi() }));
     };
     sock.onmessage = (ev) => {
       let m;
