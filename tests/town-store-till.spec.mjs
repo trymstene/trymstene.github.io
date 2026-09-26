@@ -7,13 +7,14 @@
 // counter before its card opens (it opened from anywhere in the room, the one thing indoors that did not walk first); and a
 // customer who has never opened it sees it lit with the town's own halo — until the first time, and never again after.
 import { test, expect } from '@playwright/test';
+import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
 
-async function store(page, { job = '', band = 0 } = {}) {
+async function store(page, { job = '', band = 0, hour = 12 } = {}) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
-  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.life.set(12); });
+  await page.evaluate((h) => { window.__town.room.curse('none'); window.__town.life.set(h); }, hour);
   // a fresh page has no job at all; the job seam arrives a moment after the square does, so it is waited for, never raced
   if (job) {
     await page.waitForFunction(() => window.__town.work && window.__town.work.set, null, { timeout: 20000 });
@@ -93,5 +94,74 @@ test('a shut shop invites nobody', async ({ page }) => {
   const errs = await store(page, { band: 5 });
   expect(await page.evaluate(() => (window.__town.room.shelf() || []).length), 'the lowest band: nothing on the shelf').toBe(0);
   expect(await invite(page), 'an invitation only shines for somebody who can answer it').toEqual([]);
+  expect(errs).toEqual([]);
+});
+
+// 🧾 PIP KEEPS THE STORE FROM BEHIND ITS COUNTER (26 Sep 2026, Trym: "maybe pip should be behind the counter, can sometimes walk
+// out, but mainly is behind the counter. Feels organic if he has errands, but mostly behind the counter"). Every daytime beat on
+// the store's floor but noon (the cash machine) and today's odd errand when it is his; the counter's front is drawn over him.
+const pip = (page) => page.evaluate(() => window.__town.life.residents().find((q) => q.key === 'pip'));
+const toast = (page) => page.evaluate(() => (document.getElementById('twToast').textContent || '').trim());
+
+test('Pip keeps the store from behind its counter, and the room names him', async ({ page }) => {
+  const errs = await store(page, { hour: 6 });   // the morning
+  const p = await pip(page);
+  expect(p.inside, '⭐ in the store, not on the square').toBe(true);
+  expect(p.hidden, 'and drawn while you are in it').toBe(false);
+  const till = await page.evaluate(() => window.__town.rooms.of('store').spots.find((q) => q[0] === 'till'));
+  expect(p.x > till[1] && p.x < till[3], 'behind the counter, across its width').toBe(true);
+  expect(p.y > 752 && p.y < till[4], '…with his feet inside its footprint, so its front hides them').toBe(true);
+  const z = await page.evaluate(() => ({
+    front: +document.querySelector('.tw-state.is-front').style.zIndex,
+    pip: +document.querySelector('.tw-npc[data-k="pip"]').style.zIndex,
+  }));
+  expect(z.front, '⚠️ the counter’s front is drawn OVER him — a plate cannot be in front of anybody').toBeGreaterThan(z.pip);
+  expect(await toast(page), 'the room names who runs it: he is here').toBe(LIFE.rooms.store);
+  await page.screenshot({ path: 'test-results/store-pip-in.png' });
+  expect(errs).toEqual([]);
+});
+
+test('at noon Pip is out at the cash machine, and the room says so', async ({ page }) => {
+  const errs = await store(page, { hour: 10 });
+  const p = await pip(page);
+  expect(p.inside, 'out on his errand').toBe(false);
+  expect(p.place, 'the cash machine, as his own noon line says').toBe('bank');
+  expect(await toast(page), 'the greeting does not send you to ask somebody who is not there (§3e)').toBe(LIFE.rooms.storeOut);
+  expect(errs).toEqual([]);
+});
+
+test('a tap on Pip is Pip, and a tap on the counter under him is the shop', async ({ page }) => {
+  const errs = await store(page, { hour: 6 });
+  const p = await pip(page);
+  // his chest, above the counter top: his card, after the banana has walked to the counter's front to talk across it
+  await tapWorld(page, p.x, p.y - 50);
+  await page.waitForFunction(() => !document.getElementById('twPanel').hidden, null, { timeout: 10000 });
+  const talked = await page.evaluate(() => ({ npc: document.querySelector('#twPanel .tw-card').classList.contains('tw-card--npc'), y: window.__town.pos.y }));
+  expect(talked.npc, '⭐ his own card: the same one as outside').toBe(true);
+  expect(talked.y, '…talked to across the counter, from its front').toBeGreaterThan(810);
+  await page.click('#twCardX');
+  await page.waitForTimeout(200);
+  // the counter's front, straight under him: that is the till, never him
+  await tapWorld(page, p.x, 792);
+  await page.waitForFunction(() => !document.getElementById('twPanel').hidden, null, { timeout: 10000 });
+  expect(await page.locator('#twPanel [data-town-buy]').count(), 'the shop, not Pip').toBeGreaterThan(0);
+  expect(errs).toEqual([]);
+});
+
+test('his own staff get the floor: Pip walks out round the end of his counter to the bank', async ({ page }) => {
+  const errs = await store(page, { hour: 6, job: 'store' });
+  const seen = [];
+  for (let i = 0; i < 40; i++) {
+    const p = await pip(page);
+    seen.push([Math.round(p.x), Math.round(p.y), p.inside]);
+    if (!p.inside && p.place === 'bank') break;
+    await page.waitForTimeout(250);
+  }
+  const last = await pip(page);
+  expect(last.inside, '⭐ he has left the room to the one working it').toBe(false);
+  expect(last.place, 'for the bank’s step, his aside').toBe('bank');
+  const through = seen.filter(([x, y, inside]) => inside && x > 630 && x < 774 && y > 812);
+  expect(through, 'never through the counter’s front: round its end, like anybody').toEqual([]);
+  expect(seen.some(([x, y, inside]) => inside && x < 630 && y > 780), 'the way out passes the counter’s left end').toBe(true);
   expect(errs).toEqual([]);
 });

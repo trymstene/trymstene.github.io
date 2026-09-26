@@ -149,7 +149,9 @@
   },
   "rooms": {
     "condo": "Spinner’s Arcade. Tap a cabinet to play for prizes to wear, or ask Spinner for a job.",
-    "store": "Pip’s general store: homestead things for sale at the counter. Ask Pip for a job here."
+    "condoOut": "Spinner’s Arcade. Tap a cabinet to play for prizes to wear. Spinner is outside.",
+    "store": "Pip’s general store: homestead things for sale at the counter. Ask Pip for a job here.",
+    "storeOut": "Pip’s general store: homestead things for sale at the counter. Pip is out on an errand."
   },
   "objects": [
     {

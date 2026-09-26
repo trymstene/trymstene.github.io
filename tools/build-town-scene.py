@@ -879,9 +879,20 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
     # the restock chore lights it, because the invitation lays one copy of one single over one spot.
     # So the two crates are composited into a single piece here, sat on each other with a two-pixel
     # overlap so the lower one's rim reads as carrying the upper.
+    # 🛒 THE BACK WALL'S SHELVING (26 Sep 2026, Trym: "most of the times the shelves in the store looks empty, with
+    # empty-sprites, and rarely any 'all shelves full'-sprites - seems like banana worlds saddest store"). The "stocked"
+    # faces were 403/404/405 — which are NOT 406/407/408 filled, as this file used to say: they are the same bare units
+    # painted green. So the store looked empty in every band, and "full" read as green lockers. The pack's real pair is
+    # the white shop shelving: 104 bare, and 98-106 the same unit with goods on every board (five different ones here,
+    # so the wall is not one picture five times). ⚠️ Their canvas is 144 tall with the feet at 111 — the rows under are
+    # the baked floor strip_floor clears — so they are cut at 111, or every unit floats 33 px above the floor.
+    SHELF_BARE, SHELF_FULL = 104, (98, 102, 99, 105, 101)
     def spiece(n):
         if n == 'till':
             return till_piece()
+        if n == SHELF_BARE or n in SHELF_FULL:
+            im = RB.strip_floor(RB.single(GROC, n))
+            return im.crop((0, 0, im.width, 111))
         if not isinstance(n, tuple):
             return RB.strip_floor(RB.single(GROC, n))
         bot, top = (RB.strip_floor(RB.single(GROC, k)) for k in n)
@@ -917,9 +928,9 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
     SFURN = [
         # the back wall: one flush run of bare shelving, pushed up into the wall band like the
         # arcade's cabinets, so its top half reads as standing against the wall
-        (406, 28, 176, (0, -76, 48, 0), 'sh1'), (407, 76, 176, (0, -76, 48, 0), 'sh2'),
-        (408, 124, 176, (0, -76, 48, 0), 'sh3'), (406, 172, 176, (0, -76, 48, 0), 'sh4'),
-        (407, 220, 176, (0, -76, 48, 0), 'sh5'),
+        (SHELF_BARE, 28, 176, (0, -76, 48, 0), 'sh1'), (SHELF_BARE, 76, 176, (0, -76, 48, 0), 'sh2'),
+        (SHELF_BARE, 124, 176, (0, -76, 48, 0), 'sh3'), (SHELF_BARE, 172, 176, (0, -76, 48, 0), 'sh4'),
+        (SHELF_BARE, 220, 176, (0, -76, 48, 0), 'sh5'),
         # the counter, right of the run and against the same wall, with the register on it (till_piece above)
         ('till', 330, 190, (0, -58, 144, 0), 'till'),
         # the floor: a crate stack at each side wall with a bare market table beside it, leaving a
@@ -947,14 +958,16 @@ if os.path.isdir(RBD) and os.path.isdir(GROC):
             scols.append([x + col[0], base + col[1], x + col[2], base + col[3]])
         if key:
             sspots.append([key, x, base - im_.height, x + im_.width, base])
-    # 🧺 THE STOCKED FACES. The pack carries the very same units WITH GOODS ON THEM — 403/404/405 are
-    # 406/407/408 filled, 423 is 421 filled, 428 is 426 filled — so a full shop is the same shop, not a
+    # 🧺 THE STOCKED FACES. The pack carries the very same units WITH GOODS ON THEM — 98-106 are 104
+    # filled (NOT 403-405: see SHELF_BARE), 423 is 421 filled, 428 is 426 filled — so a full shop is the same shop, not a
     # different one. They export as ordinary town state sprites and the client lays them over the bare
     # plate, one per thing on Pip's shelf today. That is docs/town-jobs-plan.md §4 exactly: HOW FULL THE
     # SHOP LOOKS IS THE TOWN'S HEALTH, with no new state and no number anywhere on screen.
     # ⚠️ 1:1, never PROP-scaled: the room's plate is baked at the pack's own 48 px and so is everything on it.
-    SFULL = [('sh1', 403, 28, 176), ('sh2', 404, 76, 176), ('sh3', 405, 124, 176),
-             ('sh4', 403, 172, 176), ('sh5', 404, 220, 176),
+    # ⭐ THE ORDER IS THE ORDER THEY FILL IN: every other unit first (1, 3, 5, then 2, 4), so a store running low has gaps
+    # along the wall rather than one stocked half and one empty half — then the flower tables, which only a lively town has
+    SFULL = [('sh1', SHELF_FULL[0], 28, 176), ('sh3', SHELF_FULL[2], 124, 176), ('sh5', SHELF_FULL[4], 220, 176),
+             ('sh2', SHELF_FULL[1], 76, 176), ('sh4', SHELF_FULL[3], 172, 176),
              ('tbl1', 423, 120, 336), ('tbl2', 428, 312, 344)]
     sfull = []
     for skey, n, x, base in SFULL:

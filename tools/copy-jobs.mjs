@@ -471,6 +471,11 @@ const lifeFields = {
   'locks.story': { kind: 'prose', aim: 70, max: 90, note: 'The one line that says the STORY opens this door, not the town’s health and not money. It must read as a hook — something is coming — never as a refusal. Never a date, never a rate.' },
   'locks.step': { kind: 'prose', aim: 40, max: 60, holds: ['{n}', '{of}'], note: 'How far along the player is, MUST contain {n} and {of} (as in 2 and 4). A sign that only says no is a dead end; this is the half that makes it a quest hook.' },
   'rooms.condo': { kind: 'prose', aim: 60, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the arcade — tap a cabinet to play; scores go on the board and the prizes are things to wear. Then the old note: Said once, as a player steps into the Arcade: cabinets along one wall, a prize board, coins going in. ⚠️ IT IS THE PLACE TALKING, NOT A HELP STRING. The two room lines used to end with the same seven-word instruction about walking back onto the doorway, which made them the only tutorial voice left in the town — and the doorway is a LIT FLOOR TILE that already says it. So: what it is like to be standing in there. No instruction, and nothing about leaving. 💼 24 Sep 2026 (the job QA): said only to a STRANGER walking in (the place’s own staff are not greeted like its customers), so it also says the place hires — the café and the stand already did.' },
+  // 🧾 26 Sep 2026: a room's greeting names who runs it, so it has a second line for while they are out — Pip goes to the cash
+  // machine at noon and on errands, Spinner spends half his day on the arcade's step (design library §3e: never name somebody
+  // who is nowhere on screen)
+  'rooms.condoOut': { kind: 'prose', aim: 60, max: 110, note: 'The arcade’s greeting for a stranger walking in WHILE SPINNER IS NOT INSIDE (he is out on the arcade’s step half the day). Two plain sentences like rooms.condo: what the place is, what you can do here — and it may not tell anybody to ask Spinner for anything, because he is not there: say plainly that he is outside.' },
+  'rooms.storeOut': { kind: 'prose', aim: 60, max: 110, note: 'The store’s greeting for a stranger walking in WHILE PIP IS NOT BEHIND HIS COUNTER (at noon he runs to the cash machine, and some days he has an errand). Two plain sentences like rooms.store: what the place is, what you can do here (the counter still sells) — and it may not tell anybody to ask Pip for anything, because he is not there: say plainly that he is out.' },
   'rooms.store': { kind: 'prose', aim: 60, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the inside of Pip’s store — the shelves show what he has today, and the counter sells it. Then the old note: The same, for stepping into the general store: Pip’s counter, shelves bare or full depending on the town. The place talking, in its own way — it must not share a clause, a rhythm or an ending with the arcade’s line, and it must not tell anybody how to leave. 💼 24 Sep 2026 (the job QA): said only to a STRANGER walking in (the place’s own staff are not greeted like its customers), so it also says the place hires — the café and the stand already did.' },
   'lowShut[]': { kind: 'prose', aim: 70, max: 110, note: '⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: this shop is shut because the town is run down; fix broken things in the square and it opens again. Then the old note: Said when a player taps a shopfront THE TOWN has shut — not a one-day fault but a town too low to keep its doors open. It must point at the shared repair: hands in the square lift it and the doors come back. Never a number, never a rate, never a timetable, never a question.' },
   'objects[].id': { kind: 'key', max: 14, note: 'FIXED. The ten ids from the brief, in order.' },
@@ -513,6 +518,11 @@ function lifeShape(data) {
   plainPlace(bad, 'store.greet', (data.store || {}).greet, ['store', 'shop', 'shelf'], ['buy', 'coins', 'sell']);
   plainPlace(bad, 'rooms.condo', (data.rooms || {}).condo, ['arcade', 'cabinet'], ['play', 'score', 'prize']);
   plainPlace(bad, 'rooms.store', (data.rooms || {}).store, ['store', 'shop', 'shelves', 'shelf'], ['buy', 'sell', 'counter']);
+  plainPlace(bad, 'rooms.condoOut', (data.rooms || {}).condoOut, ['arcade', 'cabinet'], ['play', 'score', 'prize']);
+  plainPlace(bad, 'rooms.storeOut', (data.rooms || {}).storeOut, ['store', 'shop', 'shelves', 'shelf'], ['buy', 'sell', 'counter']);
+  // 🧾 a keeper who is out is not asked for anything, and the line says where they are
+  if (/\bask\b/i.test(String((data.rooms || {}).condoOut || '')) || !/\b(out|outside)\b/i.test(String((data.rooms || {}).condoOut || ''))) say('rooms.condoOut', 'asks for Spinner while he is not there, or does not say he is out', 'shape');
+  if (/\bask\b/i.test(String((data.rooms || {}).storeOut || '')) || !/\b(out|errand)\b/i.test(String((data.rooms || {}).storeOut || ''))) say('rooms.storeOut', 'asks for Pip while he is not there, or does not say he is out', 'shape');
   for (const k of ['cafe', 'info', 'store']) ((data.closed || {})[k] || []).forEach((l, i) => plainPlace(bad, 'closed.' + k + '[' + i + ']', l, ['shut', 'closed'], ['fix', 'mend', 'repair', 'open']));
   (data.lowShut || []).forEach((l, i) => plainPlace(bad, 'lowShut[' + i + ']', l, ['shut', 'closed', 'shop', 'door'], ['fix', 'mend', 'repair', 'open', 'hands']));
   const objs = data.objects;
@@ -582,9 +592,11 @@ const lifeSchema = {
       story: { type: 'string', description: lifeFields['locks.story'].note },
       step: { type: 'string', description: lifeFields['locks.step'].note },
     } },
-    rooms: { type: 'object', additionalProperties: false, required: ['condo', 'store'], properties: {
+    rooms: { type: 'object', additionalProperties: false, required: ['condo', 'condoOut', 'store', 'storeOut'], properties: {
       condo: { type: 'string', description: lifeFields['rooms.condo'].note },
+      condoOut: { type: 'string', description: lifeFields['rooms.condoOut'].note },
       store: { type: 'string', description: lifeFields['rooms.store'].note },
+      storeOut: { type: 'string', description: lifeFields['rooms.storeOut'].note },
     } },
     objects: { type: 'array', description: 'The ten cursed objects, ids fixed and in order.', items: { type: 'object', additionalProperties: false, required: ['id', 'name', 'desc'],
       properties: { id: str(lifeFields['objects[].id'].note), name: str(lifeFields['objects[].name'].note), desc: str(lifeFields['objects[].desc'].note) } } },

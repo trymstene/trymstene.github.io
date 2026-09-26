@@ -457,7 +457,8 @@ view.addEventListener('pointerdown', (e) => {
     if (hit[0] === 'npc') {   // 🗣 walk up first, THEN the dialogue opens (the park's Old Peel rule)
       const n = life.standBy(hit[1]);
       if (n) {
-        tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8;
+        if (n.at) { tgt.x = n.at[0]; tgt.y = n.at[1]; }   // 🧾 behind a counter: stand at its front, across from them
+        else { tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8; }
         const key = hit[1];
         // 🕯 QUEST FIRST. Chapter 2's marks hang on buildings, because the residents walk — so the
         // resident himself is the OTHER door to the same sheet, and it has to be the same door the
@@ -913,7 +914,9 @@ function enterRoom(key) {
   cam(true);
   if (room && room.roomShow) room.roomShow(key);   // 🧺 what the room shows of itself: the store's shelves fill with the town's health
   const rw = room && room.seam && room.seam.copyOf ? room.seam.copyOf('rooms') : null;   // the words are the rig's
-  if (rw && rw[key] && !(work && (work.seam.job() || {}).at === key)) say(rw[key]);   // the place's own staff are not greeted like its customers
+  // 🧾 …and the line names who runs the place only while they are in it: Pip is out at noon, Spinner out on his step (§3e)
+  const line = rw && ((life.keeperIn && !life.keeperIn(key) && rw[key + 'Out']) || rw[key]);
+  if (line && !(work && (work.seam.job() || {}).at === key)) say(line);   // the place's own staff are not greeted like its customers
   if (key === 'store' && work && (work.seam.job() || {}).at === 'store') loadServe().then((c) => { if (c && inRoom === 'store') c.enter(); });   // 🛒 the store's own staff: customers may come in
 }
 function exitRoom() {

@@ -723,7 +723,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 38 | The front page's party clips (never scrolls), its crew is the builder's strips on whole CSS pixels with nothing to tap, the name's shadow is a black drop-shadow, its ticker's numbers are the stats file's read low and its live lines come only when the world answers | `tests/home-hero.spec.mjs` (a CSS property cannot be grepped for a meaning, so the walk asserts the outcome at 360–1440 px) |
 | 39 | A variable font is one URL across its weights; the front page's pictures are WebP at their shown size, nothing below the fold is eager, every picture arrives | `check-design.mjs` (two @font-face URLs with identical files fail) + `tests/home-hero.spec.mjs` (the banana is WebP, the slides lazy WebP, the band's stickers small, every image loads, Space Grotesk fetched once) |
 | 40 | The mailbox's envelopes are drawn, never a scaled item sprite; a letter from somebody new is never called a knock; the counter offers a postcard beside a letter; the postcard sheet is whole on its card at every size | `check-copy.mjs` (knock or door in the first-letter words; `card.make` ≤ 13) + `tests/town-post.spec.mjs` (the first-letter flow, the counter's two buttons whole at 360, the sheet with nothing below the fold at 360×640, 375×667, 1366×625 and 1280×720, the words go round) + `tests/homestead-letters.spec.mjs` (no postcard at home) |
-| 41 | A fitting that opens a card looks like what it does in its own art, the whole drawn piece answers a tap, the banana walks to it before the card opens, and a customer sees it lit once until first use — never its own staff, never while shut | `tests/town-store-till.spec.mjs` (the register's counter lit for a new customer and visible above the plate, a real tap on its right third walks there and opens the shop on arrival, the light gone for good after, none for the staff, none when shut) — a behaviour, so a walk rather than a grep |
+| 41 | A fitting that opens a card looks like what it does in its own art, its keeper stands behind it (feet hidden by its front, round its end to leave, a tap on them is them and a tap on the counter is the counter), the whole drawn piece answers a tap, the banana walks to it before the card opens, and a customer sees it lit once until first use — never its own staff, never while shut | `tests/town-store-till.spec.mjs` (the register's counter lit for a new customer and visible above the plate, a real tap on its right third walks there and opens the shop on arrival, the light gone for good after, none for the staff, none when shut) + Pip behind the counter (the front above him, out at noon with the room saying so, his tap and the counter’s kept apart, walking out round the counter’s end for his staff) + tests/town-spinner.spec.mjs (nobody on the floor you work) — a behaviour, so a walk rather than a grep; the odd-errand rule is in check-design.mjs |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1265,8 +1265,30 @@ card that opened from across the room. Four rules came out of it, for any fittin
   and all, for somebody who is not the shop's staff and has never opened its card on this device — gone at the first
   opening and never back (`seen()` / `once()` in `src/lib/once.js`: §30, say it when it applies, once). Never for the
   staff (a place greets strangers, §32), never while the shop is shut (an invitation only shines for somebody who can
-  answer it). It is its own list (`room.seam.invite()`), never the chore's `hints()`.
-- ⏳ Open: the bake still says "Pip stands behind it", and nobody does — `INSIDE` in `town-life.js` only lets Spinner keep
-  the arcade from within, so Pip minds the store from the square, and the room's greeting names him while he is outside
-  (§3e). Putting Pip behind the counter needs a depth piece for the counter's front (he would stand in front of the plate
-  otherwise) and a rule for a tap on him against a tap on the till.
+  answer it). It lights the counter's own front piece (below), and `room.seam.invite()` is never the chore's `hints()`.
+- **A keeper stands BEHIND their counter** (26 Sep 2026, Trym: *"maybe pip should be behind the counter, can sometimes walk
+  out, but mainly is behind the counter. Feels organic if he has errands"*). Pip's daytime beats are on the store's floor
+  (`INSIDE.store` in `town-life.js`) but noon at the cash machine and the day's odd errand when it is his. Four things make
+  "behind" true, and each is needed:
+  - **a front over him.** A plate cannot be in front of anybody, so the counter's front is a copy of the plate's own counter
+    laid over it at the depth of its foot (`is-front`, town-room.js). His marks put his feet INSIDE the counter's footprint,
+    so the front hides them, and left of the register, so nothing of the till is covered — and far enough in that his
+    shadow does not peek past the counter's end.
+  - **a way round.** `via` walks him round the counter's left end and down the aisle to the doorway; straight, he walked
+    through the tables and the counter's face.
+  - **two taps that stay two.** Indoors a resident is hit-tested before the fittings, so his box stops at the counter top
+    (`clip`): tap HIM, his card; tap the counter, even straight under him, the shop. And he is talked to across the counter
+    (`talk`): the banana walks to its front, never round behind.
+  - **the room says where he is.** Its greeting names who runs it only while they are in (`rooms.storeOut`,
+    `rooms.condoOut`; §3e: never name somebody who is nowhere on screen).
+  While his own staff work the room he steps out to the bank's step — the aside INSISTS, because his store beats are
+  indoor ones. Today's odd errand pulls a keeper out of their room too; the design gate knows a daytime home beat in a
+  home with a room is a post.
+- **A "full" face must LOOK full — judge the pack's pair by eye, never by its number** (26 Sep 2026, Trym: *"most of
+  the times the shelves in the store looks empty … seems like banana worlds saddest store"*). The store's stocked
+  shelves were singles 403–405, written down as "406–408 filled": they are the same bare units painted green, so the
+  shop looked empty in every band and "full" read as green lockers. The real pair is the white shop shelving, 104 bare
+  and 98–106 with goods on every board. And the order faces fill in is a look too: every other unit first (1, 3, 5,
+  then 2, 4), so a store running low has gaps along its wall instead of one empty half. The logic did not change: one
+  face per thing Pip sells today, three at Struggling, the whole wall at Recovering (the town's resting point), the
+  flower tables only for a Lively or Thriving town.

@@ -90,7 +90,9 @@ test('while you work the arcade, Spinner waits outside on its step — the floor
   await page.waitForFunction(() => { const r = window.__town.life.residents().find((x) => x.key === 'spinner'); return r && !r.inside && r.place === 'condo'; }, null, { timeout: 8000 });
   const sp = await who(page, 'spinner');
   expect(sp.place, 'out on the step').toBe('condo');
-  expect(await page.evaluate(() => JSON.stringify(window.__town.life.residents().filter((r) => r.inside).map((r) => r.key)))).toBe('[]');
+  // nobody on THIS floor (drawn in the room you are in). 🧾 Pip keeps the store from inside since 26 Sep 2026, so "nobody
+  // inside anywhere" stopped being the arcade's business
+  expect(await page.evaluate(() => JSON.stringify(window.__town.life.residents().filter((r) => r.inside && !r.hidden).map((r) => r.key)))).toBe('[]');
   await page.evaluate(() => window.__town.rooms.exit && window.__town.rooms.exit());
   expect(errs).toEqual([]);
 });

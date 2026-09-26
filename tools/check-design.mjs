@@ -215,9 +215,15 @@ for (const f of files) {
     const today = readFileSync(join(ROOT, 'src/data/town/today.js'), 'utf8');
     const odd = [...((today.split('export const ODD_SPOTS = {')[1] || '').split('\n};')[0].matchAll(/(\w+): \['(\w+)', (\d)\]/g))].map((m) => [m[1], m[2], +m[3]]);
     if (!odd.length) problems.push(['src/data/town/today.js', 'ODD_SPOTS not found where the design gate reads it']);
+    // 🧾 …except a DAYTIME home beat in a home with a room (INSIDE): that keeper is at work on its floor, which is a post, and
+    // the day's odd errand pulls them out of it like any other (26 Sep 2026: Pip keeps the store from behind its counter)
+    const homes = {};
+    for (const m of mech.matchAll(/\{ key: '(\w+)'[\s\S]*?home: '(\w+)'/g)) homes[m[1]] = m[2];
+    const rooms = new Set([...((code.split('const INSIDE = {')[1] || '').split('\n};')[0].matchAll(/^\s*(\w+): \{ door:/gm))].map((m) => m[1]));
     for (const [who, place, beat] of odd) {
       if (!days[who]) { problems.push(['src/data/town/today.js', `ODD_SPOTS names ${who}, who is not a resident`]); continue; }
-      if (days[who][beat] && days[who][beat][1] === 'home') problems.push(['src/data/town/today.js', `${who}'s odd spot is on a home beat (${beat}), so it never shows`]);
+      const atWork = beat !== 5 && rooms.has(homes[who]);
+      if (days[who][beat] && days[who][beat][1] === 'home' && !atWork) problems.push(['src/data/town/today.js', `${who}'s odd spot is on a home beat (${beat}), so it never shows`]);
       for (const [other, d] of Object.entries(days)) if (other !== who && d[beat] && d[beat][0] === place && !/^(sweep|stroll|home)$/.test(d[beat][1])) problems.push(['src/data/town/today.js', `${who}'s odd spot (${place}, beat ${beat}) is where ${other} stands at that hour — one banana on another. Pick a place nobody uses then`]);
     }
   }

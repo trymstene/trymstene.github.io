@@ -1109,10 +1109,10 @@ export function bootTownLife(ctx) {
     // …and only when they would be AT that workplace this hour: at lunch they are out of the way already (Stamp and Bean
     // share the terrace at noon since 25 Sep 2026), and an aside would pull one of them off it
     const wa = workingAt();
-    if (wa && n2.key === ASIDE_BOSS[wa] && beat !== 5) { const d = n2.day[beat]; if (d[0] === wa || (wa === 'condo' && d[1] === 'home')) return ASIDE[n2.key]; }
+    if (wa && n2.key === ASIDE_BOSS[wa] && beat !== 5) { const d = n2.day[beat]; if (d[0] === wa || d[1] === 'home') return ASIDE[n2.key]; }
     return oddKey && n2.key === oddKey && ODD_SPOTS[oddKey][1] === beat ? ODD_SPOTS[oddKey][0] : null;
   };
-  const ASIDE = { bean: 'terrace', figjr: 'booth', stamp: 'monument', pip: 'bank', spinner: { place: 'condo', always: true } };
+  const ASIDE = { bean: 'terrace', figjr: 'booth', stamp: 'monument', pip: { place: 'bank', always: true }, spinner: { place: 'condo', always: true } };   // 🧾 Pip's insists: his store beats are on its floor (26 Sep 2026)
   const ASIDE_BOSS = { cafe: 'bean', stand: 'figjr', post: 'stamp', store: 'pip', condo: 'spinner' };
   // which workplace of yours is being worked right now: a counter's shift, the post office's round, or your own boss's room
   const workingAt = () => {
@@ -1374,7 +1374,7 @@ export function bootTownLife(ctx) {
     restocked: () => restocked(),
     bare: () => bareShelf(),
     hints: () => hints.map((s2) => s2.key),
-    invite: () => invites.map((s2) => s2.key),   // 🧾 the counter's own invitation, for a customer (never the chore's hints)
+    invite: () => (front && front.el.classList.contains('is-invite') ? [front.key] : []),   // 🧾 the counter's own invitation, for a customer (never the chore's hints)
     // ☕ the counter, once its chunk is in: the walk cannot wait on an import it did not ask for
     cafe: () => (cafe ? cafe.seam : null),
     lemon: () => (lemon ? lemon.seam : null),   // 🍋 the stand's counter, once its chunk is in
@@ -1503,10 +1503,10 @@ export function bootTownLife(ctx) {
   // and it only ever shines for somebody who can answer it, so it is never a tease.
   // Each glowing thing is the SAME single the plate already painted, laid exactly over itself, so
   // nothing moves and nothing is added to the room: it just picks up the town's own `is-todo` halo.
-  let hints = [], invites = [];
+  let hints = [], front = null;
   function hintShow() {
     hints.forEach(kill); hints = [];
-    invites.forEach(kill); invites = [];
+    if (front) front.el.classList.remove('is-todo', 'is-invite');
     if (roomAt !== 'store' || !STORE || !STORE.over) return;
     const mine = ctx.job && ctx.job();
     if (!mine || mine.at !== 'store') { invite(); return; }
@@ -1522,17 +1522,20 @@ export function bootTownLife(ctx) {
   // time its card is opened on this device; after that the register on it says "pay here" by itself (§30: say it when it applies,
   // once). Never while the shop is shut — an invitation only shines for somebody who can answer it.
   function invite() {
-    const o = STORE.over.till;
-    if (!o || seen('store:till') || !shelfFor()) return;
-    const sp = sprite(o[0], o[1], o[2], { z: 2000 + o[2], cls: 'is-in is-todo is-invite' });
-    if (sp) invites.push(sp);
+    if (front && !seen('store:till') && shelfFor()) front.el.classList.add('is-todo', 'is-invite');
   }
   function roomShow(key) {
     roomAt = key || '';
     if (roomAt === 'condo') arcadeShow(); else arcadeClear();   // 🕹 the arcade's week: litter and a dark cabinet, for its own staff
     if (roomAt !== 'store') carryOn(false);   // a crate belongs to the shop it came from
     stocked.forEach(kill); stocked = [];
+    kill(front); front = null;
     if (roomAt !== 'store' || !STORE || !STORE.full) { hintShow(); return; }
+    // 🧾 THE COUNTER'S FRONT, laid over the plate's own counter, pixel for pixel, at the depth of its foot (26 Sep 2026): Pip
+    // keeps the store from BEHIND it now, and a plate cannot be in front of anybody — this copy is, so it hides his feet and the
+    // counter reads as between you. It is also what the customer's invitation lights.
+    const o = STORE.over && STORE.over.till;
+    if (o) front = sprite(o[0], o[1], o[2], { z: 2000 + o[2], cls: 'is-in is-front' });
     const n = (shelfFor() || []).length;
     for (const [, sk, cx, base] of STORE.full.slice(0, n)) {
       const sp = sprite(sk, cx, base, { z: 2000 + base, cls: 'is-in' });

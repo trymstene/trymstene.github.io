@@ -832,8 +832,8 @@ test('the shop fills as the town heals, and its stock is the shelf', async ({ pa
     await seam(page, () => window.__town.rooms.enter('store'));
     await page.waitForTimeout(700);
     const st = await page.evaluate(() => {
-      // 🧾 not the counter's invitation: that is a customer's, lit until the till is first opened (town-store-till.spec)
-      const els = [...document.querySelectorAll('.tw-state.is-in:not(.is-invite)')];
+      // 🧾 not the counter's own front (laid over the plate so Pip can stand behind it), which is no face on a shelf
+      const els = [...document.querySelectorAll('.tw-state.is-in:not(.is-front)')];
       return {
         shelf: (window.__town.room.shelf() || []).length,
         faces: els.length,
@@ -986,10 +986,10 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   expect(poured.a, 'and Fig Jr. names the lemonade stand as the rig writes it').toContain('lemonade stand');
   expect(await seam(page, () => window.__town.work.job())).toMatchObject({ at: 'stand' });
 
-  // ── and the question is really ON THE CARD, reached by walking up and tapping like a player
+  // ── and the question is really ON THE CARD, reached by walking up and tapping like a player. 🧾 Since 26 Sep 2026 Pip keeps
+  // the store from BEHIND ITS COUNTER, so the player walks in and taps him above the counter top (below it is the till's)
   await seam(page, () => window.__town.work.set({ at: '' }));
-  const at = await seam(page, () => { const n = window.__town.life.residents().find((r) => r.key === 'pip'); return { x: n.x, y: n.y }; });
-  await stand(page, at.x + 40, at.y + 20);
+  await seam(page, () => window.__town.rooms.enter('store'));
   await page.waitForTimeout(500);
   // ⚠️ PIP'S OWN ELEMENT, BY NAME. This used to take the resident nearest the view's CENTRE, which is
   // a different banana whenever the camera has not caught up with stand() yet — and since 20 Sep the
@@ -997,10 +997,11 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   // full-suite run and passed alone in six seconds: a guard that is a coin flip at two workers is
   // close to no guard. town-life.js stamps `data-k` on every resident for exactly this.
   await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k=\"pip\"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
+  // his chest, in world px (the counter hides his feet): the camera decides where that is on the screen
   const hit = await page.evaluate(() => {
-    const e = document.querySelector('.tw-npc[data-k=\"pip\"]');
-    const r = e.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height - 12 };
+    const n = window.__town.life.residents().find((q) => q.key === 'pip');
+    const w = document.getElementById('twWorld'), sc = parseFloat(w.style.getPropertyValue('--ws')), r = w.getBoundingClientRect();
+    return { x: r.left + n.x * sc, y: r.top + (n.y - 50) * sc };
   });
   expect(hit, 'Pip is on screen to be tapped').toBeTruthy();
   await page.mouse.click(hit.x, hit.y);
@@ -1011,6 +1012,7 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   expect(q, 'the question exists for a boss').toBeTruthy();
   expect(said, '…and a real tap on the boss puts it on their card').toContain(q);
   await seam(page, () => document.getElementById('twCardX').click());
+  await seam(page, () => window.__town.rooms.exit());   // back out onto the square for the rest
 
   // ── turning up: standing at your own workplace is what marks the day
   await seam(page, () => window.__town.work.set({ at: 'store' }));
