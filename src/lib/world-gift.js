@@ -13,6 +13,9 @@ import W from '../data/copy/world-social.json';
 
 const G = W.gift;
 const GIVE_AFTER = 45000;   // not at the door: a newcomer who has been here two seconds has not met anybody yet
+// ⚠️ the social layer's own card is not the only one up: a story scene, an area's card or a counter shift would hide
+// the present under it (every area's cards sit far above this one), so it waits for all of them
+const OTHER = '.bwq-dlg, .bwq-intro, .tw-panel:not([hidden]), .tw-tray:not([hidden]), .tw-cup, .pk-panel:not([hidden]), .pk-shop:not([hidden]), .bh-panel:not([hidden]), .hs-veil:not([hidden])';
 const day = (t) => new Date(t).toISOString().slice(0, 10);
 const EXTRA = Object.fromEntries(EXTRA_DEFS.map((x) => [x.id, x]));
 const icon = String(GIFT).replace('<svg ', '<svg class="bwg-ico" width="18" height="18" shape-rendering="crispEdges" aria-hidden="true" ');
@@ -39,11 +42,12 @@ const saved = () => { try { return JSON.parse(localStorage.getItem('bb-last') ||
 export function bootGift(s) {
   const { area, read, write, track, esc, showCard, closeCard, portrait, DRAW, NIB, myName, busy } = s;
   let g = read().g || null;
+  const waiting = () => busy() || document.hidden || !!document.querySelector(OTHER);
 
   // 🎁 handed over once, a while into the first visit, and never over a card that is up
   function give() {
     if (read().g) return;
-    if (busy() || document.hidden) { setTimeout(give, 8000); return; }
+    if (waiting()) { setTimeout(give, 8000); return; }
     ensureAnon().catch(() => false).then(() => passPost('/gift', { act: 'give' })).then((r) => {
       if (!r || !r.gift) { if (r && r.error === 'old') write({ g: { none: 1 } }); return; }
       g = { at: r.gift.at, o: r.gift.opened ? 1 : 0, item: r.gift.item || '' };
@@ -60,7 +64,7 @@ export function bootGift(s) {
 
   // 🎉 a later day: it opens by itself, once — the "you came back!" is the whole point of the wait
   function open() {
-    if (busy() || document.hidden) { setTimeout(open, 6000); return; }
+    if (waiting()) { setTimeout(open, 6000); return; }
     passPost('/gift', { act: 'open' }).then((r) => {
       if (!r || !r.gift || r.error === 'early') return;   // this phone's clock ran ahead of the server's day: later, then
       if (!r.gift.opened) return;

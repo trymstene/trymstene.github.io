@@ -48,6 +48,22 @@ test('a new banana is handed Nib’s present, and it opens tomorrow', async ({ p
   expect(errs).toEqual([]);
 });
 
+test('the present waits while another card is up, and comes when it closes', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await passStubs(page, (act) => (act === 'give' ? { ok: true, gift: { at: Date.now(), ready: false, opened: 0, item: '' } } : { ok: true, gift: null }));
+  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'a:test', token: 't0k3n' })); } catch (e) {} });
+  await page.goto('/park/', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !!window.__bwg, null, { timeout: 30000 });
+  // the park's own card is up (its panel is far above the social layer's card): the present must not open under it
+  await page.evaluate(() => { document.querySelector('.pk-panel').hidden = false; window.__bwg.give(); });
+  await page.waitForTimeout(1200);
+  expect(await page.locator('.bws-card').count(), 'nothing handed over under another card').toBe(0);
+  await page.evaluate(() => { document.querySelector('.pk-panel').hidden = true; window.__bwg.give(); });
+  await page.waitForFunction(() => !!document.querySelector('.bws-card'), null, { timeout: 8000 });
+  expect(errs).toEqual([]);
+});
+
 test('a later day, it opens by itself, says you came back, and Wear it puts it on', async ({ page }) => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));

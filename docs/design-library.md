@@ -1342,7 +1342,8 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
   park's and the bay's cull sweeps leave an echo alone (`noCull`).
 - **A new banana is handed a present that opens tomorrow** (Trym, 26 Sep: *"i believe in giving secret gifts or mystery
   chests … users get something others dont have"*). Forty-five seconds into a new banana's first visit, in whichever area,
-  Nib hands it over on the social layer's own card (his portrait, one line, one button). It never opens that day: on any
+  Nib hands it over on the social layer's own card (his portrait, one line, one button), never while another card, a
+  story scene or a counter shift is up (every area's cards sit above it). It never opens that day: on any
   later day it opens by itself when they come back, greets them BY NAME, says what was inside and offers Wear it. The pass
   worker rolls it (`/gift`: a Banana Stand wearable they do not own, rarer the dearer) and owns it for them the way a
   purchase does, so a phone can neither choose it nor forge one. `src/lib/world-gift.js` loads only for somebody it
