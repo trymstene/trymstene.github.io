@@ -10,7 +10,7 @@ import { TOWN_NAMES } from '../tools/copy-jobs.mjs';
 
 async function guide(page) {
   // the story's first scene owns the screen on a first visit (design library §31); this walk reads the page under it
-  await page.addInitScript(() => { try { localStorage.setItem('bwq-c1', JSON.stringify({ done: true })); } catch (e) {} });
+  await page.addInitScript(() => { try { localStorage.setItem('bwq-c1', JSON.stringify({ done: true })); localStorage.setItem('bwq-c2', JSON.stringify({ done: true })); } catch (e) {} });
   await page.goto('/town/', { waitUntil: 'domcontentloaded' });
   await page.locator('#guide').scrollIntoViewIfNeeded();
   // every picture is lazy: walk the guide through the viewport so each one is asked for

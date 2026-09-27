@@ -57,6 +57,23 @@
     linear-gradient(to top right, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #b98b52 calc(50% + 1px)) left / 50.5% 100% no-repeat,
     linear-gradient(to top left, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #b98b52 calc(50% + 1px)) right / 50.5% 100% no-repeat;
 }
+/* 🕯 a QUEST letter is a BLUE envelope under the Town Hall's GOLD seal (27 Sep 2026, Trym: "a different color than
+   other letters - blue maybe as a quest-letter") — and every quest letter from here on is blue */
+.tw-post__env.is-quest { background: #9ec0ea; color: #10244d; }
+.tw-post__env.is-quest::before {
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #82a8da calc(50% + 1px)) left / 50.5% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1.4px), #1a120a calc(50% - 1.4px), #1a120a calc(50% + 1px), #82a8da calc(50% + 1px)) right / 50.5% 100% no-repeat;
+}
+.tw-post__env.is-quest::after { border-color: #6e4d06; background: radial-gradient(circle at 36% 34%, #fff2b0 0 14%, #e9b93a 42%, #b07f14 100%); }
+/* …and M.'s is BLACK, silver-lettered, with no seal and no stamp: black always means M. */
+.tw-post__env.is-mayor { background: #1b1b22; color: #d9dde9; }
+.tw-post__env.is-mayor::before {
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1.4px), #5c5f6e calc(50% - 1.4px), #5c5f6e calc(50% + 1px), #26262f calc(50% + 1px)) left / 50.5% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1.4px), #5c5f6e calc(50% - 1.4px), #5c5f6e calc(50% + 1px), #26262f calc(50% + 1px)) right / 50.5% 100% no-repeat;
+}
+.tw-post__env.is-mayor::after { display: none; }
 /* ✉️ a FIRST letter — post from a house you have never had post from — wears a tag across its corner */
 .tw-post__tag {
   position: absolute; z-index: 2; left: -3px; top: 5px; padding: 1px 5px 1px 6px;

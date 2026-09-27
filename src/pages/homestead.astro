@@ -987,6 +987,17 @@ const appLd = {
     .bw-slip__terms b, .bw-slip__total b { font-weight: 900; color: #1e1206; }
     .bw-slip__total { display: inline-flex; align-items: center; gap: 4px; justify-self: end; font-size: 0.95rem; }
     .bw-slip__total svg { display: block; }
+    /* 🕯 THE QUESTLINE'S LETTERS (27 Sep 2026, Trym: "that letter must be a different color than other letters - blue
+       maybe"): every quest letter is blue ruled paper under the Town Hall's gold seal, in the same hand; M.'s is black
+       paper in silver ink, unsealed, the small lower-case hand of the drawer letter in chapter one. */
+    .bw-paper--quest { position: relative; padding-top: 1.6rem;
+      background: #cfe0f4 repeating-linear-gradient(180deg, transparent 0 24px, rgba(40, 72, 140, 0.26) 24px 25px);
+      color: #1d2f5c; }
+    .bw-paper--quest::before { content: ''; position: absolute; right: 12px; top: 8px; width: 26px; height: 26px; border-radius: 50%;
+      background: radial-gradient(circle at 36% 34%, #fff2b0 0 14%, #e9b93a 44%, #b07f14 100%); border: 2px solid #6e4d06;
+      box-shadow: inset 0 0 0 3px rgba(110, 77, 6, 0.35); }
+    .bw-paper--mayor { background: #15151b repeating-linear-gradient(180deg, transparent 0 24px, rgba(190, 196, 214, 0.14) 24px 25px);
+      color: #d9dde9; }
     /* 🚚 orders on the way */
     .hs-orders { display: grid; gap: 0.4rem; }
     .hs-order {
@@ -1363,8 +1374,9 @@ const appLd = {
       // fetched and parsed — so every finisher paid for the whole questline on
       // every visit to every world area, forever. bwq-c1 is the quest's own
       // local state; reading one flag off it here costs nothing.
+      // 🕯 both chapters now: the homestead is where chapter one ends and chapter two begins and ends (its letters)
       let questDone = false;
-      try { questDone = !!(JSON.parse(localStorage.getItem('bwq-c1') || 'null') || {}).done; } catch (e) {}
+      try { questDone = [localStorage.getItem('bwq-c1'), localStorage.getItem('bwq-c2')].every((v) => (JSON.parse(v || 'null') || {}).done); } catch (e) {}
       if (!questDone && (QUEST_LIVE || localStorage.getItem('bwq-dev') === '1')) {
         import('../lib/world-quest.js').then((m) => m.bootQuest());
       }

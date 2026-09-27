@@ -1,91 +1,63 @@
-// 🕯 RETURN TO SENDER — CHAPTER TWO: THE FOUR SIGNATURES (docs/town-jobs-plan.md §2).
+// 👻 RETURN TO SENDER — CHAPTER TWO: GHOST WRITER (27 Sep 2026).
 //
-// ⭐ MECHANICS ONLY, AND NOT ONE LINE OF PROSE. The plan asks for exactly this: "a copy key per
-// step and not one line of prose". Chapter 1's dialogue is written into src/lib/world-quest.js,
-// which predates the rule that GPT writes every player-facing word (CLAUDE.md, 12 Sep) — this
-// file is what that rule looks like applied. `say` is a key into src/data/copy/town-quest.json,
-// and there is nothing here a player could read.
+// Trym: "after finishing chapter 1, you can get a quest-letter in your mailbox at the Homestead - that letter must be a
+// different color than other letters - blue maybe … And thats where Nib calls for you to come visit the town … the chapter
+// 2 must be spooky, have some twists, have some emotional stuff, and have a cliffhanger at the end". The plan and his seven
+// calls (one night; The Four Signatures retired): https://claude.ai/artifact/UcpojNEagJABU6qU5kgAc9
 //
-// ⭐ THE SHAPE, FROM THE PLAN: "Each building is two steps: find the fault in the paper, then get
-// it signed." Four buildings, eight steps, plus the one that starts it and the one that ends it.
-// Four round trips across a square you are learning — which is why it is a chapter and not a list.
+// ⭐ MECHANICS ONLY, NOT ONE WORD. `say` is a key into src/data/copy/quest-c2.json (the notes, the receipts, the scenes and
+// what is printed on the props); world-quest.js loadC2() joins the two. The two letters are the mailbox's own words
+// (homestead-post.json letters.questblue / questblack). tools/check-quest-c2.mjs holds this file and the words equal.
 //
-// ⭐ IT DOES NOT SIT BEHIND CHAPTER ONE, AND THAT IS A MEASUREMENT, NOT A PREFERENCE.
-// The plan's one BLOCKING question (§8 q1) was "how many players finish chapter 1?", with the
-// note that the answer is in Pulse and the instruction to measure it before step 1. Measured
-// 21 Sep 2026 from GA4, 1 Jun onward: 4400 people met the questline, 116 started it, 76 cleared
-// at least one step, and 409 steps were cleared in total. Sixteen steps a finisher means at most
-// 22 people have ever finished — half a percent of everybody who met it. The plan's own
-// recommendation for a small number is "gate less behind the chapter", so chapter 2 stands on
-// its own in the town and asks nothing of chapter 1. The fiction still joins them (the works
-// order is signed by the hand that scratched a name out of Nib's book), but the lock does not.
+// ⭐ IT OPENS AT HOME AND IT ENDS AT HOME. The blue letter is delivered once chapter one is done (banana-homestead.js
+// POST_WHEN reads bwq-c1); the black one once this chapter reaches the step that waits for it (`mail`, which advance()
+// writes into bwq-c2 as the step opens).
 //
-// ⚠️ NOTHING HERE DRAWS A BANANA, and that is the town's rule rather than a shortcut. The town's
-// nine residents WALK — a twelve-minute day, six beats, a station each — so a marker pinned to
-// where Nib stands is a marker pinned to where Nib stood at boot, and a second Nib drawn by the
-// quest beside the real one is a bug you can see from across the square. Every mark in this
-// chapter hangs on a BUILDING, which does not move, and the two voices are `paper` (the works
-// order nailed to the front) and `nib` (the counter inside the hall). Tapping the real Nib out in
-// the square opens the same conversation — banana-town.js honours window.bwqTalk the way the
-// park honours it for Old Peel — so the chapter never has to say where he is standing.
+// ⚠️ THE TOWN DRAWS ITS OWN PEOPLE. A scene's resident is held at a place of their own while it is open (`station`, read
+// off window.bwqTalk by banana-town.js and town-room.js), and the ! rides over their head wherever they walk (`follow`).
+// Nothing here is shared state: the ghost, the ink, the lit window and the running statue are drawn for this player only.
 
-// ---- where the marks hang -------------------------------------------------
-// x and y come out as % of the town's own 2200×1300 plate, the same units chapter 1 uses, so
-// place() needs no special case. ⚠️ DERIVED FROM src/scripts/town-geo.js, not eyeballed: x is the
-// front's drawn centre (OVERLAYS x + w/2) and the notice hangs 60 px above the base it stands on.
-//   condo  ov-0  370 + 220/2 = 480     hall  ov-1  963 + 275/2 = 1100
-//   post   ov-2  1554 + 293/2 = 1700   store ov-4  389 + 183/2 = 480
-//   cafe   ov-7  1751 + 158/2 = 1830
-//
-// ⚠️ AND A NOTICE NEEDS A DEPTH, WHICH IS NOT ITS OWN HEIGHT. Everything outdoors in this world
-// sorts by z = 100 + y, so a mark hung at notice height (y 500) sorts BEHIND the very building it is
-// nailed to (base 560) and the town hall paints straight over it — which is what happened the first
-// time it was walked: the chip said where to go and there was nothing there when you got there.
-// A thing ON a wall hangs at the wall's height and sorts at the wall's FOOT, the same +3 the
-// hoarding's own signpost uses (town-room.js hoardings()).
-const NORTH = 560, SOUTH = 1040;    // the two base lines the square's fronts stand on
-const at = (x, base, up = 60) => ({
-  x: +((x / 2200) * 100).toFixed(2),
-  y: +(((base - up) / 1300) * 100).toFixed(2),
-  z: 100 + base + 3,
-});
-
-export const HALL = at(1100, NORTH);
-
-// ⚠️ THE KEYS AND THEIR ORDER ARE `SIGNATURES` FROM src/data/town/locks.js. That list is what the
-// hoarding's signpost counts "the second of four" against, so the two cannot drift apart —
-// tools/check-quest-c2.mjs holds them together rather than trusting this comment.
-export const FRONTS = [
-  { key: 'store', at: at(480, SOUTH) },    // the general store, west side of the square
-  { key: 'condo', at: at(480, NORTH) },    // the arcade — a signature to collect, never boarded
-  { key: 'post', at: at(1700, NORTH) },    // the post office, north-east
-  { key: 'cafe', at: at(1830, SOUTH) },    // the Coffee Cup, south-east
-];
+// ---- where things are, in the town's world px (2200 × 1300; tools/build-town-scene.py)
+// the statue on its plinth between the town hall and the post office (placed at 1416, base 330)
+export const STATUE = { x: 1416, y: 214, base: 330 };
+// the ink's way out of the hall's door, east along Hall Street and up the monument lane to the plinth's foot
+// (town-life.js ST.monument is 1416, 372: where a banana stands to look at it)
+export const DRIPS = [[1100, 606], [1150, 616], [1204, 610], [1258, 618], [1312, 612], [1362, 606], [1402, 590],
+  [1418, 548], [1412, 506], [1420, 464], [1414, 424], [1416, 384]];
+// 👻 the last night's things (world-quest.js nightFx): the Ghost Writer in the hall's doorway (town-life.js HOME.hall is
+// 1100, 590), the light in the Mayor's window (town-life.js MAYOR, on the hall's base line 560), and the statue's water
+// laid over the statue's own box (ov-51: 1361, 124, 110 × 206, standing on 330)
+export const NIGHT = { ghost: { x: 1100, y: 580 }, glow: { x: 1098, y: 468, base: 560 }, water: { x: 1361, y: 124, base: 330 } };
 
 /**
  * The chapter, as steps. Every field is a mechanic or a key — never a word:
- *   id     — the step's name, and the receipt the wage is paid against (qpay_<id>)
- *   kind   — 'talk' throughout: a mark you tap, and a sheet that opens
- *   who    — 'paper' (the works order on the front) or 'nib' (the counter inside the hall)
- *   at     — where the mark hangs, in % of the town plate
- *   say    — THE COPY KEY. src/data/copy/town-quest.json carries the chip line and the sheet.
- *   turnin — the ? glyph instead of the !: you are bringing something back
- *   opens  — the front this step unlocks, pushed into bwq-c2.open, which town-room.js already
- *            reads (openedSet → hoardNow): the lock half shipped on 19 Sep and has been waiting
- *   pay    — bananacoins, receipted once per player in the pass, never once per device
+ *   id      — the step's name, its GA4 event (quest_step_<id>) and the receipt the pay is held against (qpay_<id>)
+ *   area    — where it is played: 'homestead' (the mailbox) or 'town'
+ *   kind    — 'letter' (a letter read at home), 'talk' (a scene), 'trail' (the ink, walked)
+ *   say     — THE COPY KEY
+ *   mail    — the letter a step waits on (homestead-post.json letters.<mail>)
+ *   splash  — the chapter's title plays once this letter is read
+ *   who     — whose scene: a resident, or 'monument' (the statue; the town hands a tap on it to the scene)
+ *   station — where that resident waits while the scene is open (town-life.js ST)
+ *   follow  — the ! rides over this resident's head
+ *   at      — a fixed ! for a scene with nobody in it (world px, and the base it stands on)
+ *   turnin  — the ? instead of the !: you are going back to somebody
+ *   night   — the scene only opens once the square is dark
+ *   fx      — what the dark brings for this player (NIGHT above), and takes away in the scene's `dark` moment
+ *   auto    — the scene opens by itself when the step before it ends right there
+ *   keep    — the receipt shows this prop, drawn: a keepsake
+ *   pay     — bananacoins, once per player (the pass receipt), never once per device
  */
 export const STEPS = [
-  { id: 'c2_open', kind: 'talk', who: 'nib', at: HALL, say: 'open' },
-  ...FRONTS.flatMap((f) => [
-    { id: 'c2_' + f.key + '_fault', kind: 'talk', who: 'paper', at: f.at, say: f.key + '_fault' },
-    { id: 'c2_' + f.key + '_sign', kind: 'talk', who: 'nib', at: HALL, turnin: 1,
-      say: f.key + '_sign', opens: f.key, pay: 15 },
-  ]),
-  // the certificate. ⚠️ THE PLAN PINS IT ON THE SQUARE REPORT and that board is gone — Trym had
-  // the notice board taken out of the square on 20 Sep ("the Square Report sign is a bit
-  // unnecessary now that we have the Town Health Meter popup") and its tallies moved under the
-  // meter. So it is filed at the counter instead, which is also truer to the plan's own rule that
-  // the certificate is worded as YOUR paperwork and never as town news — the meter's card is the
-  // one surface in the town whose numbers are genuinely shared.
-  { id: 'c2_done', kind: 'talk', who: 'nib', at: HALL, turnin: 1, say: 'done', pay: 40 },
+  { id: 'c2_letter', area: 'homestead', kind: 'letter', mail: 'questblue', splash: 1, say: 'letter' },
+  { id: 'c2_page', area: 'town', kind: 'talk', who: 'nib', station: 'hall', follow: 'nib', say: 'page', pay: 10 },
+  { id: 'c2_drips', area: 'town', kind: 'trail', path: DRIPS, say: 'drips' },
+  { id: 'c2_statue', area: 'town', kind: 'talk', who: 'monument', at: STATUE, auto: 1, say: 'statue' },
+  { id: 'c2_granfig', area: 'town', kind: 'talk', who: 'granfig', station: 'garden_w', follow: 'granfig', say: 'granfig', pay: 15 },
+  { id: 'c2_stamp', area: 'town', kind: 'talk', who: 'stamp', station: 'post', follow: 'stamp', say: 'stamp', pay: 20, keep: 'plaque' },
+  { id: 'c2_moss', area: 'town', kind: 'talk', who: 'moss', station: 'square', follow: 'moss', say: 'moss', pay: 20, keep: 'flyer' },
+  { id: 'c2_taptap', area: 'town', kind: 'talk', who: 'nib', station: 'hall', follow: 'nib', turnin: 1, say: 'taptap' },
+  { id: 'c2_notes', area: 'town', kind: 'talk', who: 'nib', station: 'hall', follow: 'nib', turnin: 1, say: 'notes', pay: 15 },
+  { id: 'c2_night', area: 'town', kind: 'talk', who: 'nib', station: 'hall', follow: 'nib', turnin: 1, night: 1, fx: NIGHT, say: 'night' },
+  { id: 'c2_black', area: 'homestead', kind: 'letter', mail: 'questblack', say: 'black', pay: 50 },
 ];

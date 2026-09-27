@@ -2931,7 +2931,13 @@ function init(visitDoc, visitMiss) {
     { id: 'firstbeast', when: () => farmAnimals().length > 0 },
     { id: 'shed', when: (s2) => (s2.shed || []).length >= 8 },
     { id: 'week', when: (s2) => s2.claimedAt && Date.now() - s2.claimedAt > 7 * 86400000 },
+    // 🕯 THE QUESTLINE'S LETTERS (27 Sep 2026): chapter two opens on Nib's BLUE letter, delivered once chapter one is done,
+    // and closes on M.'s BLACK one, once the chapter's save says it waits for it (world-quest.js advance writes `mail`).
+    // A `tone` is the envelope and the paper: blue is every quest letter, black is always M. (Trym's call 6).
+    { id: 'questblue', tone: 'quest', when: () => !!qSave(localStorage.getItem('bwq-c1')).done },
+    { id: 'questblack', tone: 'mayor', when: () => qSave(localStorage.getItem('bwq-c2')).mail === 'questblack' },
   ];
+  function qSave(raw) { try { return JSON.parse(raw || 'null') || {}; } catch (e) { return {}; } }
   function postDeliver() {
     if (visiting || !state.claimedAt) return 0;
     let n = 0;
@@ -2940,7 +2946,7 @@ function init(visitDoc, visitMiss) {
       let ok = false;
       try { ok = !!row.when(state); } catch (e) { ok = false; }
       if (!ok) continue;
-      (state.mail || (state.mail = [])).unshift({ id: row.id, t: Date.now(), read: 0 });
+      (state.mail || (state.mail = [])).unshift({ id: row.id, t: Date.now(), read: 0, ...(row.tone ? { tone: row.tone } : {}) });
       n++;
     }
     if (n) { state.mail = state.mail.slice(0, 40); save(); }
@@ -2967,19 +2973,23 @@ function init(visitDoc, visitMiss) {
     const w = wage ? (POSTCOPY.wage || {}) : bossKind ? (((POSTCOPY.bosses || {})[bossKind] || {})[m.at || String(m.id).split(':')[2]] || {}) : ((POSTCOPY.letters || {})[m.id] || {});
     // 📄 A WEEK THAT PAID NOTHING has its own line and its own stamp: "PAID" over nothing would be untrue
     const nil = wage && !(m.n | 0);
-    return { wage, w, nil, line: nil ? (w.none || w.line) : w.line, stamp: nil ? (w.void || w.stamp) : w.stamp };
+    // 🕯 a quest letter is paragraphs (`lines`); its first is the peek
+    return { wage, w, nil, line: nil ? (w.none || w.line) : (w.line || (w.lines || [])[0] || ''), stamp: nil ? (w.void || w.stamp) : w.stamp };
   }
-  // 🏡 a world note as the mailbox's drawers see it: who signed it, a line to peek at, and a kraft
-  // envelope for a payslip. The words are letterEl()'s own, so the peek and the paper never disagree.
+  // 🏡 a world note as the mailbox's drawers see it: who signed it, a line to peek at, and the envelope's
+  // tone (a kraft payslip, a blue quest letter, M.'s black one). The words are letterEl()'s own, so the
+  // peek and the paper never disagree.
   function worldRow(m) {
     const { wage, w, line } = wordsOf(m);
     return { id: 'w:' + String(m.id || ''), at: m.t || 0, read: !!m.read, name: w.from || '',
-      peek: pFill(line).replace('{n}', String(m.n | 0)), tone: wage ? 'wage' : '' };
+      peek: pFill(line).replace('{n}', String(m.n | 0)), tone: wage ? 'wage' : (m.tone || '') };
   }
   function letterEl(m) {
     const { wage, w, nil, line, stamp } = wordsOf(m);
     const p = document.createElement('div');
-    p.className = 'bw-paper' + (wage ? ' bw-paper--wage' : '');
+    p.className = 'bw-paper' + (wage ? ' bw-paper--wage' : m.tone ? ' bw-paper--' + m.tone : '');
+    // 🕯 a quest letter's paragraphs, a blank line between each (.bw-paper keeps white-space)
+    if (w.lines) { p.appendChild(document.createTextNode(w.lines.map(pFill).join('\n\n'))); const f = document.createElement('i'); f.className = 'bw-paper__from'; f.textContent = w.from || ''; p.appendChild(f); return p; }
     // 📄 THE PAYSLIP (22 Sep 2026; docs/town-jobs-plan.md §11.3, Trym: "the paycheck should have a
     // different color paper or look or envelope style"): kraft paper, a rubber stamp, Nib's line, and
     // the figures printed under it — the workplace, the days at the rate, the total with its coin.
@@ -3052,7 +3062,8 @@ function init(visitDoc, visitMiss) {
             local: {
               list: () => (state.mail || []).map(worldRow),
               el: (id) => { const m = (state.mail || []).find((x) => 'w:' + x.id === id); return m ? letterEl(m) : null; },
-              read: (id) => { const m = (state.mail || []).find((x) => 'w:' + x.id === id); if (m && !m.read) { m.read = 1; save(); refreshMail(); } },
+              // 🕯 …and says it was read: the questline waits on its own letters (world-quest.js, the `letter` step)
+              read: (id) => { const m = (state.mail || []).find((x) => 'w:' + x.id === id); if (m && !m.read) { m.read = 1; save(); refreshMail(); } if (m) document.dispatchEvent(new CustomEvent('bw:mail', { detail: m.id })); },
             },
           });
           return letters;
@@ -3156,6 +3167,7 @@ function init(visitDoc, visitMiss) {
   function postTick() { if (postDeliver()) { refreshMail(); if (letters) letters.redraw(); } wageCheck(); }
   setTimeout(() => { postTick(); peekPost(); }, 1600);
   setInterval(postTick, 60000);
+  document.addEventListener('bw:post', postTick);   // 🕯 the questline's letter is due now, not at the next minute
   setInterval(peekPost, 300000);   // the post room, every five minutes while you are home
 
   async function openGuest() {

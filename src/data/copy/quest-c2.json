@@ -1,0 +1,158 @@
+{
+  "chapter": "chapter ii",
+  "title": "ghost writer",
+  "props": {
+    "page": "plot 11’s page",
+    "dots": "the page, closer",
+    "glow": "plot 11’s page",
+    "blank": "plot 11’s page",
+    "plinth": "the plinth",
+    "plaque": "the brass plaque",
+    "flyer": "the oldest flyer"
+  },
+  "steps": [
+    {
+      "key": "letter",
+      "find": "a blue letter waits in your mailbox at home",
+      "note": "",
+      "lines": []
+    },
+    {
+      "key": "page",
+      "find": "nib waits at the town hall in banana town",
+      "note": "Nib’s spare lantern, for after dark",
+      "lines": [
+        { "who": "nib", "text": "You came. Thank you. I have not slept properly since it started." },
+        { "who": "nib", "text": "Plot 11’s page. Look just above the scratch." },
+        { "who": "page", "text": "Plot 11" },
+        { "who": "you", "text": "There are letters coming through the ink." },
+        { "who": "nib", "text": "One more every night. I lock the hall at dusk, and I hold the only key." },
+        { "who": "you", "text": "So who is writing them?" },
+        { "who": "nib", "text": "I do not know. But this morning the newest letter was still wet." },
+        { "who": "nib", "text": "And it did not stay on the page. It dripped out of the book, across my floor and under the door." },
+        { "who": "nib", "text": "I could not make myself follow it. The drops are still out there on the cobbles." },
+        { "who": "you", "text": "I’ll follow them." },
+        { "who": "nib", "text": "Thank you. Take my spare lantern. I would feel better knowing you have a light." }
+      ]
+    },
+    {
+      "key": "drips",
+      "find": "follow the ink from the town hall door",
+      "note": "",
+      "lines": []
+    },
+    {
+      "key": "statue",
+      "find": "the ink leads to the statue by the town hall",
+      "note": "",
+      "lines": [
+        { "who": "plinth", "text": "" },
+        { "who": "you", "text": "Four screw holes, and a clean square of stone between them." },
+        { "who": "you", "text": "Somebody keeps measuring this plinth in chalk." }
+      ]
+    },
+    {
+      "key": "granfig",
+      "find": "gran fig measures that plinth. she is in her garden",
+      "note": "a fig, and orders to eat it",
+      "lines": [
+        { "who": "granfig", "text": "Stop staring at my beds. You were at the statue. I saw." },
+        { "who": "you", "text": "It had a plaque once." },
+        { "who": "granfig", "text": "Of course it had a plaque. Every statue has a plaque. Do not be slow." },
+        { "who": "granfig", "text": "It was a fountain too. Water from the jug, all day long. Then one night it stopped, and nobody fixed it. Poor work." },
+        { "who": "granfig", "text": "I measure that plinth whenever I cross the square. Too much stone for a nobody." },
+        { "who": "granfig", "text": "I write to the Mayor every week. Take it down. It makes me sad and I do not know why. I do not like not knowing why." },
+        { "who": "granfig", "text": "Brass does not walk off. Somebody posted it. Go and ask Stamp. Now." }
+      ]
+    },
+    {
+      "key": "stamp",
+      "find": "stamp is at the post office",
+      "note": "the brass plaque, two kilos",
+      "lines": [
+        { "who": "stamp", "text": "Gran Fig sent you. She sends everyone. Noted." },
+        { "who": "you", "text": "Did the town hall ever post a plaque?" },
+        { "who": "stamp", "text": "One parcel I never delivered. It was on the bottom shelf when I came. Posted in 1999, from the Town Hall, to Plot 11." },
+        { "who": "stamp", "text": "No Plot 11 in the big book, so no address. It has sat there ever since." },
+        { "who": "stamp", "text": "You live on Plot 11 now. It is yours. Two kilos, and heavy for its size." },
+        { "who": "plaque", "text": "" },
+        { "who": "you", "text": "Somebody scraped the front clean off." },
+        { "who": "plaque", "text": "for teaching us all the dance" },
+        { "who": "stamp", "text": "The label is in the Town Hall’s own hand. Very neat letters. Noted." }
+      ]
+    },
+    {
+      "key": "moss",
+      "find": "moss is in the square. ask her about the nights",
+      "note": "the oldest flyer in Banana Town",
+      "lines": [
+        { "who": "moss", "text": "The statue. Yes. I sweep past it every morning, and I have never once seen water in it." },
+        { "who": "you", "text": "Gran Fig says it stopped one night." },
+        { "who": "moss", "text": "Same night. The fountain stopped, the ghosts came, and they have come back every night since." },
+        { "who": "moss", "text": "Every night. They break what we fix, and I thought it was spite, but now I think they are looking for something." },
+        { "who": "you", "text": "Looking for what?" },
+        { "who": "moss", "text": "Not sure. This was under the floor of my room when I came. The oldest flyer I own." },
+        { "who": "flyer", "text": "DANCE NIGHT on the eleventh plot. Everyone welcome. You will know the steps by the end. Hosted by" },
+        { "who": "you", "text": "The name of the host is torn off." },
+        { "who": "moss", "text": "Torn off. The whole town went that night, and not one of us remembers going." }
+      ]
+    },
+    {
+      "key": "taptap",
+      "find": "take the plaque and the flyer to nib",
+      "note": "",
+      "lines": [
+        { "who": "nib", "text": "A plaque with the name scraped off. A flyer with the name torn off." },
+        { "who": "nib", "text": "And my book, with the name scratched out. Three of them. Somebody was very thorough." },
+        { "who": "nib", "text": "Let me look at the page properly. I owe it that." },
+        { "who": "dots", "text": "" },
+        { "who": "you", "text": "Two little dots, right where the scratch begins." },
+        { "who": "nib", "text": "Before I write any name, I set my pen at the edge of the page and tap it twice. Every name, since the day I came." },
+        { "who": "nib", "text": "Those are my taps. I did this. And I do not remember doing it." }
+      ]
+    },
+    {
+      "key": "notes",
+      "find": "stay with nib at the town hall",
+      "note": "the Mayor’s note about you",
+      "lines": [
+        { "who": "nib", "text": "The Mayor has never spoken to me. Notes come under the door instead. I keep every one, in order." },
+        { "who": "nib", "text": "This is the oldest. 1999." },
+        { "who": "note", "text": "take the eleventh name out of the book tonight. it is the only way to keep them safe. then forget you did. — M." },
+        { "who": "nib", "text": "And I did. Both parts." },
+        { "who": "nib", "text": "This is the newest. It came a week before you did." },
+        { "who": "note", "text": "somebody is coming for the eleventh plot. be kind to them. — M." },
+        { "who": "you", "text": "That was me." },
+        { "who": "nib", "text": "That was you. The rumour I heard was a note under my door." },
+        { "who": "nib", "text": "There is a line in the book for my next of kin. I have always left it empty." },
+        { "who": "nib", "text": "I could not bear to invent a name. And I always hoped one might arrive." },
+        { "who": "you", "text": "One is arriving, a letter at a time." },
+        { "who": "nib", "text": "Yes. Keep the newest note. It was always about you." },
+        { "who": "nib", "text": "Tonight, then. At the book. Come when the square goes dark." }
+      ]
+    },
+    {
+      "key": "night",
+      "find": "at nightfall, meet nib at the town hall",
+      "note": "",
+      "lines": [
+        { "who": "nib", "text": "There. By the door. It has come for the book." },
+        { "who": "you", "text": "It’s writing." },
+        { "who": "glow", "text": "" },
+        { "who": "nib", "text": "It is finished. The whole name." },
+        { "who": "nib", "text": "Oh. Oh, I know you. You are my—" },
+        { "who": "dark", "text": "" },
+        { "who": "blank", "text": "" },
+        { "who": "nib", "text": "No. No, no. I had it. I had it just now." },
+        { "who": "you", "text": "The light upstairs just went out." },
+        { "who": "nib", "text": "Go home, resident. Please. Go home and lock the door." }
+      ]
+    },
+    {
+      "key": "black",
+      "find": "go home. something waits in your mailbox",
+      "note": "a black letter with no stamp",
+      "lines": []
+    }
+  ]
+}

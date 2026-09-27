@@ -1094,12 +1094,13 @@ export function bootTownLife(ctx) {
   // 🕯 …and the chapter's claim on Nib comes first (21 Sep 2026): at the fountain while chapter one's
   // first scene is open — whatever the hour, so `always` — then up to the town hall for the rest of
   // the beat it closed in, so "he walks up to his regular place" is what you see, not a lunch break.
-  let nibSt = ctx.nibStation ? ctx.nibStation() : null, nibHallBeat = -1;
+  // 👻 …and chapter two's the same way, for whichever resident its open scene belongs to (27 Sep 2026): the claim is
+  // 'who:place' (banana-town.js questClaim), and a resident it lets go walks back into their own day at once
+  let claim = ctx.questClaim ? ctx.questClaim() : '', nibHallBeat = -1;
   const overrideFor = (n2, beat) => {
-    if (n2.key === 'nib') {
-      if (nibSt) return { place: nibSt, always: true };
-      if (nibHallBeat === beat && beat !== 5) return { place: 'hall', always: true };   // insists: never kept in on the walk up
-    }
+    const [ck, cp] = claim.split(':');
+    if (ck === n2.key) return { place: cp, always: true };
+    if (n2.key === 'nib' && nibHallBeat === beat && beat !== 5) return { place: 'hall', always: true };   // insists: never kept in on the walk up
     // 🧍 A BOSS STEPS ASIDE WHILE YOU WORK THEIR PLACE (Trym, 22 Sep: "their default position while you work at their
     // workplace should be a bit away from the workplace so they dont distort the queue that lines up or is in the way
     // visually"): Bean to the terrace, Fig Jr. to the phone box, Stamp to the monument lane, Pip to the bank's step,
@@ -1266,9 +1267,10 @@ export function bootTownLife(ctx) {
     const c = curseNow(), cType = c === 'none' ? null : c;
     const om0 = !curse && !!omenNow();
     const beat = life.beat();
-    // 🕯 the chapter released (or claimed) Nib: a refresh walks him where he now belongs
-    const ns = ctx.nibStation ? ctx.nibStation() : null;
-    if (ns !== nibSt) { const freed = nibSt && !ns; if (freed) nibHallBeat = beat; nibSt = ns; life.setOverride(overrideFor); if (freed && life.nudge) life.nudge('nib'); }
+    // 🕯 the chapter released (or claimed) a resident: a refresh walks them where they now belong — and chapter one's Nib,
+    // let go at the fountain, walks up to the hall for the rest of the beat
+    const cl = ctx.questClaim ? ctx.questClaim() : '';
+    if (cl !== claim) { const was = claim.split(':')[0]; if (was === 'nib' && !cl.startsWith('nib:')) nibHallBeat = beat; claim = cl; life.setOverride(overrideFor); if (life.nudge) { if (was) life.nudge(was); if (cl) life.nudge(cl.split(':')[0]); } }
     // ⭐ THE GATE. Evening, a Curse Night, an omen — or a day ghost, which condition() asks for itself.
     if (!dusk && (beat >= 4 || cType || om0)) loadDusk();
     if (dusk) {

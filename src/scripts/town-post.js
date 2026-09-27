@@ -285,8 +285,10 @@ export function bootTownPost(ctx) {
   // squeezed to 40 and 30 (Trym: "looks very pixelated and ugly at the size we're showing it"). Now it is paper: a
   // flap, a red wax seal while it is unopened, and who it is from written across it by hand (public/css/town-post.css).
   // 💼 a payslip is a KRAFT envelope, the way its paper is kraft when it opens; a first letter wears a tag.
+  // 🕯 a quest letter is BLUE with the Town Hall's gold seal, and M.'s is BLACK and unsealed (27 Sep 2026). ⚠️ a tone is
+  // spliced into a class, so it is one of the three the world writes, never whatever a letter arrives carrying.
   const sealed = (l, isFirst) => (l.kind === 'card' ? cardTile(l) : '<button type="button" class="tw-post__env'
-    + (l.tone === 'wage' ? ' is-wage' : '') + (isFirst ? ' is-first' : '') + '" data-id="' + esc(l.id) + '"' + (isFirst ? ' data-first="1"' : '') + '>'
+    + (/^(wage|quest|mayor)$/.test(l.tone) ? ' is-' + l.tone : '') + (isFirst ? ' is-first' : '') + '" data-id="' + esc(l.id) + '"' + (isFirst ? ' data-first="1"' : '') + '>'
     + (isFirst ? '<i class="tw-post__tag">' + esc(KW.tag) + '</i>' : '')
     + '<b class="tw-post__who">' + esc(nameOf(l)) + '</b>'
     + '</button>');

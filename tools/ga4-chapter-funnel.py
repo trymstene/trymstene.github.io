@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Chapter one's funnel, step by step (24 Sep 2026).
+"""The chapters' funnels, step by step (chapter one 24 Sep 2026, chapter two 27 Sep).
 
 Every finished step fires an event named for it (world-quest.js advance: quest_step_c1_nib_hello, quest_step_c1_peel_hi, ...), so
 totalUsers per name is how many players got past that step. Read it for the last N days (default 14):
@@ -40,3 +40,16 @@ for s in steps:
     print(f'  {n:>4}  {s}{drop}')
     prev = n
 print(f"  {users.get('quest_c1_done', 0):>4}  finished the chapter (quest_c1_done)")
+
+# 👻 chapter two, Ghost Writer: its steps are the table's (src/data/quest-c2.js), and it opens on the blue letter at home
+c2src = open(r'C:\Web Development\trymstene.com\src\data\quest-c2.js', encoding='utf-8').read()
+c2steps = re.findall(r"\{ id: '(c2_[a-z0-9_]+)'", c2src)
+print()
+print(f'Chapter two, last {DAYS} days — players past each step')
+prev = users.get('quest_c1_done', 0) or None
+for s in c2steps:
+    n = users.get('quest_step_' + s, 0)
+    drop = '' if not prev else f'   ({round(100 * n / prev)}% of the step before)'
+    print(f'  {n:>4}  {s}{drop}')
+    prev = n
+print(f"  {users.get('quest_c2_done', 0):>4}  finished the chapter (quest_c2_done)")

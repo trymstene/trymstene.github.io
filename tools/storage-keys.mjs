@@ -46,7 +46,7 @@ export const KEYS = {
   'tw-restock-v1': { travels: 'no', why: 'how many faces you filled in the shop TODAY — the restock chore pays in the room, never in coins (docs/town-jobs-plan.md §4), so there is nothing here worth carrying to another device and nothing worth forging: the most it can do is put more rows on one shop’s shelf until midnight' },
   'tw-welcome-v1': { travels: 'no', why: 'the town’s welcome trail is picked up on this device (26 Sep 2026, town-welcome.js): the coins on the way to Nib are never laid here again. The coins themselves are the server’s to pay, once per person (worker-pass RULES town.trail), so another device only lays the ones still owed. Nothing of value' },
   'bw-social-v1': { travels: 'no', why: 'the social layer on this device (26 Sep 2026, src/lib/world-social.js): whether Nib’s welcome came and was read, who you waved at TODAY (so a card says Waved rather than offer a wave the server counts as the same one), the echoes list for ten minutes so hopping areas is one fetch, and `g`: Nib’s present as this device last heard of it (when it was given, whether it is opened), so only somebody it can concern downloads its chunk; the present itself is the pass worker’s (/gift). The waves themselves are the server’s (YardRoom nt:), keyed to the pass. Nothing of value' },
-  'bwq-c2': { travels: 'pass', why: 'chapter two — which town fronts the story has opened for you (docs/town-jobs-plan.md §2); read today by the town’s own lock, written when chapter two ships' },
+  'bwq-c2': { travels: 'no', why: 'chapter two, Ghost Writer (27 Sep 2026): the step, the splash seen, the ink drops walked, and `mail` — the letter the mailbox at home owes you (banana-homestead.js POST_WHEN reads it). THIS DEVICE ONLY FOR NOW: it does not ride the pass blob, so a second device plays the chapter again from its first town scene (the blue letter is already read in the yard doc) and is never paid twice, because every payout is a qpay_<id> receipt in the pass. The forward-only merge that would carry it is owed in worker-pass AND banana-pass.js, both or neither. Still wiped on a sign-in (pass-sync.js WORLD_KEYS): it is one person’s story' },
 
   // ---- the homestead, which lives in its own server doc ----
   'hs-v1': { travels: 'yard', why: 'the homestead: the yard, pen, family tree, pantry, produce and shed all publish; what stays is sync bookkeeping (pubUpdated, pubMarks, dirty)' },
@@ -159,8 +159,7 @@ export const ALLOW_DYNAMIC = [
   { file: 'src/scripts/banana-homestead.js', arg: 'wkey', why: "'hs-wd:' + slug: whether this device watered a given yard today" },
   { file: 'src/scripts/banana-homestead.js', arg: 'hkey', why: "'hs-hg:' + slug: which of a neighbour's animals this device hugged today — the server is the real gate, this only saves a round trip" },
   // 🕯 THE QUESTLINE HAS TWO CHAPTERS AND THEY DO NOT SHARE A SAVE. KEY was a const while there
-  // was one chapter; it now holds CH[<chapter>].key, named in bootQuest from the AREA — 'bwq-c1'
-  // out in the world, 'bwq-c2' in the town. Both are declared above, an area belongs to exactly
-  // one chapter, and there is no third value it can ever take.
-  { file: 'src/lib/world-quest.js', arg: 'KEY', why: "CH[chapter].key — 'bwq-c1' or 'bwq-c2', both declared above; bootQuest picks one from the area and nothing else assigns it" },
+  // was one chapter; it now holds CH[<chapter>].key, named in bootQuest — 'bwq-c1' until chapter
+  // one is done, 'bwq-c2' after (27 Sep 2026). Both are declared above, and there is no third value.
+  { file: 'src/lib/world-quest.js', arg: 'KEY', why: "CH[chapter].key — 'bwq-c1' or 'bwq-c2', both declared above; bootQuest picks the first chapter not done, and the page's own turn from one to two is the only other assignment" },
 ];

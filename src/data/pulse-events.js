@@ -514,7 +514,7 @@ export const EV_EXPLAIN = {
   stand_sign_beach:'tapped the signpost pointing down the road to Banana Bay',
   sticker_pdp_boot_fail:'⚠ a custom-product page threw before it could show anything. Any of these is worth chasing — it is a sale that could not even start',
   world_levelup:'⭐ crossed a level ANYWHERE in the world — where says which area. Levels come from rep, which the park waters up and the beach digs up, not just the dance floor. ⚠ the rave also fires its own older rave_levelup, so never add the two together',
-  quest_boot:'🕯 RETURN TO SENDER is running for this visitor — fires on every world-area load while chapter 1 is unfinished. area = where they are, step = the step id they are currently ON (not completed). High quest_boot with a stuck step = the chapter stalls there',
+  quest_boot:'🕯 RETURN TO SENDER is running for this visitor — fires on each area load while a chapter is unfinished (c1_*, then c2_*). area = where, step = the step id they are ON (not completed). High quest_boot with a stuck step = the chapter stalls there',
   quest_intro:'🎬 the CHAPTER I splash played — first tap on Nib, once per device. quest_boot without quest_intro = they saw the marker but never opened the story',
   quest_step:'🕯 COMPLETED a quest step — id says which (c1_nib_hello → c1_peel_hi → chores → … → c1_nib_registry = chapter done). GA4 never registered id, so each step also fires quest_step_<id> (24 Sep): users per name = the funnel (tools/ga4-chapter-funnel.py)',
   quest_pass:'🎫 clicked the finale receipt’s My Pass door (button or the pass-card picture) — the chapter’s whole funnel target. Compare with quest_step id=c1_nib_registry: completions vs walk-throughs = does Nib’s pitch land',

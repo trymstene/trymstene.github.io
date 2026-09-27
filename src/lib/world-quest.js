@@ -27,27 +27,23 @@ const NIB_DRAW = {
   top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none',
 };
 
-// 🕯 TWO CHAPTERS NOW, AND IT IS THE SAME ENGINE. Chapter 1 lives out in the world and carries
-// its dialogue inline — it predates the rule that GPT writes every player-facing word. Chapter 2
-// lives in the town and carries NONE: its steps come from src/data/quest-c2.js (mechanics) and its
-// words from src/data/copy/town-quest.json (prose), joined at boot. That split is the shape every
-// chapter from here takes; chapter 1 is the grandfathered exception, not the pattern.
-// ⚠️ THE TWO NEVER RUN AT ONCE. An area belongs to exactly one chapter, and each keeps its own
-// localStorage key, its own pass counter and its own finish line — so finishing one has no opinion
-// about the other, and a player may be mid-chapter in both.
-// 🏘 21 Sep 2026: CHAPTER ONE OPENS IN THE TOWN. Its first scene moved from the plot to the fountain
-// (Trym: "our starting point for Banana World is now — the town"), so the town belongs to chapter
-// one now and chapter two is parked: its code, its words and its gate all stay, and the walk still
-// plays it through ?towntest&chapter=2, but no area boots it. Something bigger that continues the
-// story is owed before it comes back.
+// 🕯 TWO CHAPTERS, ONE ENGINE. Chapter 1 lives out in the world and carries most of its dialogue
+// inline — it predates the rule that the words live in copy files. Chapter 2 carries NONE: its
+// steps come from src/data/quest-c2.js (mechanics) and its words from src/data/copy/quest-c2.json,
+// joined at boot. That split is the shape every chapter from here takes.
+// ⚠️ ONE CHAPTER AT A TIME, IN ORDER. Chapter 2 opens only once chapter 1 is done (Trym's call 7):
+// the blue letter that starts it is delivered to the mailbox at home when bwq-c1 is done. Each keeps
+// its own localStorage key, its own pass counter and its own finish line.
+// 👻 27 Sep 2026: chapter 2 is GHOST WRITER, played at home and in the town. The Four Signatures, the
+// chapter 2 built on 21 Sep and parked unplayed, is retired (Trym: "5. retire").
 const CH = {
   c1: { key: 'bwq-c1', stat: 'quest_c1', areas: ['town', 'homestead', 'park', 'beach', 'rave'],
     intro: ['chapter i', 'what the plot?'], over: '🍌 CHAPTER ONE — complete', cast: 1 },
-  // ⚠️ cast: 0 — THE TOWN DRAWS ITS OWN PEOPLE. Its nine residents walk a twelve-minute day, so a
-  // Nib drawn by the quest would stand frozen beside the real one walking past. Every chapter-2
-  // mark hangs on a BUILDING instead, and tapping the real Nib opens the same sheet through
-  // window.bwqTalk — the way the park hands Old Peel over.
-  c2: { key: 'bwq-c2', stat: 'quest_c2', areas: [], over: '🍌 CHAPTER TWO — complete', cast: 0 },
+  // ⚠️ cast: 0 — THE TOWN DRAWS ITS OWN PEOPLE. Its residents walk a twelve-minute day, so a Nib
+  // drawn by the quest would stand frozen beside the real one walking past. A scene's resident is
+  // held at a place instead (station) and the ! rides their head (follow); tapping them opens the
+  // scene through window.bwqTalk — the way the park hands Old Peel over.
+  c2: { key: 'bwq-c2', stat: 'quest_c2', areas: ['homestead', 'town'], over: '🍌 CHAPTER TWO — complete', cast: 0 },
 };
 let ch = CH.c1;        // named for real in bootQuest(), before any state is read
 let KEY = ch.key;
@@ -155,6 +151,10 @@ const WHO = {
   split: { n: 'captain sabreface', c: '#ffb36b', f: 2, d: { hat: 'tricorn', glasses: 'eyepatch', extras: {}, ...NPC } },
   shelly: { n: 'shelly', c: '#ffa0c8', f: 2, d: { hat: 'snailhat', glasses: 'none', extras: {}, ...NPC } },
   barty: { n: 'barty', c: '#ffe135', f: 4, d: { hat: 'none', glasses: 'none', extras: { mustache: true, bowtie: true }, ...NPC } },
+  // 👻 chapter two's town residents, in their town looks (town-life.js MECH) minus the held tool: a portrait is a face
+  granfig: { n: 'Gran Fig', c: '#e0a8ff', f: 0, d: { hat: 'snailhat', glasses: 'nerd', extras: {}, ...NPC } },
+  stamp: { n: 'Stamp', c: '#ffcf8a', f: 0, d: { hat: 'buckethat', glasses: 'none', extras: {}, ...NPC } },
+  moss: { n: 'Moss', c: '#a8e0b0', f: 0, d: { hat: 'woolbeanie', glasses: 'none', extras: {}, ...NPC } },
   you: { n: 'you', c: '#fffdf5', f: 0 },
 };
 // 'you' wears whatever the player wears — bb-last rides every area already
@@ -433,35 +433,44 @@ async function loadC1() {
   return true;
 }
 
-// 🏘 CHAPTER 2'S TABLE AND ITS WORDS, BOTH LAZY — a player who never walks into the town
+// 👻 CHAPTER 2'S TABLE AND ITS WORDS, BOTH LAZY — a player who has not finished chapter 1
 // downloads neither, which is what keeps world-quest.js inside its budget.
-// ⚠️ A GLOB, NOT A STATIC import(): the copy file is written by the rig and approved by hand, so
-// it may legitimately not exist yet, and a static import of a missing file fails the BUILD. The
-// same pattern the town's own surfaces use (town-room.js: "the town runs wordless until this is
-// approved") — except a chapter cannot run wordless, so no words means no chapter at all.
-const C2_COPY = import.meta.glob('../data/copy/town-quest.json', { import: 'default' });
+// ⚠️ A GLOB, NOT A STATIC import(): a static import of a missing copy file fails the BUILD, and a
+// chapter cannot run wordless, so no words means no chapter at all.
+const C2_COPY = import.meta.glob('../data/copy/quest-c2.json', { import: 'default' });
+let caps = {};   // the props' captions, from the same file
 async function loadC2() {
   const get = Object.values(C2_COPY)[0];
   if (!get) return null;
   const [d, c] = await Promise.all([import('../data/quest-c2.js'), get()]);
   if (!c || !Array.isArray(c.steps)) return null;
   CH.c2.intro = [c.chapter, c.title];
-  // ⚠️ the copy is an ORDERED ARRAY of rows, each carrying its own `key` — the rig's rule matcher
-  // only collapses array indices, so a keyed object could not be checked field by field, and an
-  // array also lets the schema pin the order. Keyed here, once, by that same key.
+  caps = c.props || {};
+  // 🎨 the chapter's own look (public/css/quest-c2.css): the props, the ink, the ghost, the water — only for its players
+  if (!document.querySelector('link[href="/css/quest-c2.css"]')) {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = '/css/quest-c2.css';
+    document.head.appendChild(l);
+  }
+  // ⚠️ the copy is an ORDERED ARRAY of rows, each carrying its own `key` (the rule matcher collapses
+  // array indices, and an array pins the order). Keyed here, once, by that same key.
   const by = {};
   for (const r of c.steps) if (r && r.key) by[r.key] = r;
-  // mechanics on the left, words on the right, joined here and nowhere else. A step whose copy key
-  // is missing would open an empty sheet, so the whole chapter is refused instead — one missing
-  // line is a copy bug to fix, never a silent hole in the middle of a story.
+  // mechanics on the left, words on the right, joined here and nowhere else. A scene whose words are
+  // missing would open an empty sheet, so the whole chapter is refused instead — one missing line is
+  // a copy bug to fix, never a silent hole in the middle of a story.
   const out = [];
   for (const st of d.STEPS) {
     const w = by[st.say];
-    if (!w || !Array.isArray(w.lines) || !w.lines.length) return null;
-    out.push({ ...st, area: 'town',
-      find: w.find || '', hint: w.hint || '',
-      lines: w.lines.map((l) => [l.who, l.text]),
-      ...(st.pay ? { reward: { coins: st.pay, ...(w.note ? { note: w.note } : {}) } } : {}) });
+    if (!w || (st.kind === 'talk' && !(w.lines || []).length)) return null;
+    const lines = (w.lines || []).map((l) => [l.who, l.text]);
+    // 🎁 a keepsake's receipt shows the thing itself: the last time that prop was shown in the scene
+    const kept = st.keep && [...lines].reverse().find((l) => l[0] === st.keep);
+    out.push({ ...st, find: w.find || '', hint: w.find || '', lines,
+      // a fixed ! in the town's %-space, at the depth of what it hangs on (z = 100 + its base)
+      ...(st.at ? { at: { x: st.at.x / 22, y: st.at.y / 13, z: 100 + st.at.base + 3 } } : {}),
+      ...(st.pay ? { reward: { coins: st.pay, ...(w.note ? { note: w.note } : {}),
+        ...(kept ? { art: () => propEl(kept[0], kept[1]) } : {}) } } : {}) });
   }
   return out;
 }
@@ -1201,6 +1210,82 @@ function passCanvas() {
   return cv;
 }
 
+// 👻 CHAPTER TWO'S PROPS — the things a scene SHOWS, drawn in the page rather than painted on a canvas,
+// because their words are the copy file's (a prop line's text is what is printed on it) and text in the
+// page wraps, scales and reads. ⚠️ Nothing here ever writes the first banana's name: the page shows
+// ink that cannot be read, the plaque's front is scraped, the flyer's host is torn off.
+// the letters coming back through the scratch: loops of ink that look like handwriting and spell nothing
+const INK = ['c2 -10 8 -12 7 -2c-1 5 -5 6 -4 1c1 -4 6 -2 8 1', 'c0 -6 3 -16 6 -14c3 2 -3 12 -2 14c2 2 5 -4 7 -2',
+  'c3 -8 9 -8 8 -1c-1 5 -7 3 -5 -1c2 -3 7 0 8 3', 'c4 -2 7 -9 3 -11c-4 -1 -5 9 0 12c3 2 6 -2 8 -4'];
+function inkPage(kind) {
+  const glow = kind === 'glow', n = kind === 'blank' ? 0 : glow ? 7 : 5;
+  let d = '';
+  for (let i = 0; i < n; i++) d += 'M' + (30 + i * 18) + ' ' + (29 + (i % 2)) + INK[i % INK.length];
+  // the scratch: Nib's own, a zigzag through the line, and his two taps in front of it
+  const scratch = 'M24 31' + Array.from({ length: 19 }, (_, i) => 'L' + (32 + i * 8) + ' ' + (i % 2 ? 34 : 23)).join('');
+  return '<svg viewBox="' + (kind === 'dots' ? '4 14 44 26' : '0 0 200 46') + '" aria-hidden="true">'
+    + (glow ? '<defs><radialGradient id="bwqG"><stop offset="0" stop-color="#fffbe6"/><stop offset=".55" stop-color="#ffe89a" stop-opacity=".9"/><stop offset="1" stop-color="#ffe89a" stop-opacity="0"/></radialGradient></defs>' : '')
+    + '<path d="' + scratch + '" fill="none" stroke="#1d2233" stroke-width="2.6" stroke-linejoin="round"/>'
+    + '<circle cx="13" cy="29" r="1.3" fill="#1d2233"/><circle cx="18" cy="29" r="1.3" fill="#1d2233"/>'
+    + (d ? '<path class="bwq-ink" d="' + d + '" fill="none" stroke="#2b3f9e" stroke-width="2.1" stroke-linecap="round"/>' : '')
+    + (glow ? '<ellipse cx="96" cy="26" rx="84" ry="21" fill="url(#bwqG)"/>' : '')
+    + '</svg>';
+}
+function propEl(kind, text) {
+  const el = document.createElement('div');
+  el.className = 'bwq-prop bwq-prop--' + kind;
+  if (kind === 'page' || kind === 'glow' || kind === 'blank' || kind === 'dots') {
+    el.innerHTML = (kind === 'dots' ? '' : '<b></b>') + inkPage(kind);
+    if (kind !== 'dots') el.querySelector('b').textContent = text || '';
+  } else if (kind === 'plinth') {
+    // the stone, the clean square where something hung, its four screw holes, the chalk, the ivy
+    el.innerHTML = '<svg viewBox="0 0 120 80" aria-hidden="true" shape-rendering="crispEdges">'
+      + '<rect x="8" y="8" width="104" height="64" fill="#8f909c"/><rect x="8" y="62" width="104" height="10" fill="#6f707c"/>'
+      + '<path d="M8 30h22M92 44h20M18 8v10M100 62v-8" stroke="#7b7c88" stroke-width="2"/>'
+      + '<rect x="34" y="21" width="52" height="34" fill="#b4b5c1"/>'
+      + '<g fill="#23232b"><rect x="37" y="24" width="4" height="4"/><rect x="79" y="24" width="4" height="4"/><rect x="37" y="48" width="4" height="4"/><rect x="79" y="48" width="4" height="4"/></g>'
+      + '<path d="M14 14h92M14 11v6M106 11v6M26 13v2M38 13v2M50 13v2M62 13v2M74 13v2M86 13v2M98 13v2M104 20v44M101 20h6M101 64h6" stroke="#f3f1ea" stroke-width="1.2" fill="none" opacity=".9" shape-rendering="auto"/>'
+      + '<path d="M8 72c4-10 2-18 8-26M112 70c-3-8 0-16-6-22M10 60h6M108 58h-5" stroke="#4f8f3c" stroke-width="3" fill="none" shape-rendering="auto"/>'
+      + '</svg>';
+  } else if (kind === 'plaque') {
+    // brass, four screws; the back engraved, the front gouged to the metal where the words were
+    el.innerHTML = '<p></p>';
+    el.classList.toggle('is-scraped', !text);
+    el.querySelector('p').textContent = text || '';
+    if (!text) {
+      let g = '', r = 7;
+      const rnd = () => ((r = (r * 1103515245 + 12345) % 2147483648) / 2147483648);   // the same gouges every time
+      for (let i = 0; i < 18; i++) {
+        const x = rnd() * 92, y = 4 + rnd() * 30, dx = 6 + rnd() * 16, dy = (rnd() - 0.5) * 7;
+        g += '<path d="M' + x.toFixed(1) + ' ' + y.toFixed(1) + 'l' + dx.toFixed(1) + ' ' + dy.toFixed(1) + '" stroke="' + (i % 3 ? '#6b4a12' : '#fff1bf') + '" stroke-width="' + (i % 3 ? 0.9 : 0.6) + '"/>';
+      }
+      el.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 100 38" preserveAspectRatio="none" aria-hidden="true" stroke-linecap="round" opacity=".85">' + g + '</svg>');
+    }
+  } else if (kind === 'flyer') {
+    // the headline's capitals big, the rest of its sentence under them, the small print, and a last line with no full
+    // stop is where it tore. ⚠️ split by hand, never a lookbehind: an older Safari fails to PARSE one, and a parse
+    // error is the whole module.
+    const parts = String(text || '').split('. ').map((p, i, a) => (i < a.length - 1 ? p + '.' : p));
+    const torn = /\.$/.test(parts[parts.length - 1] || '.') ? '' : parts.pop();
+    const head = parts.shift() || '', big = (head.match(/^[A-Z][A-Z ]*[A-Z](?=\s)/) || [head])[0];
+    el.innerHTML = '<h3></h3>' + (big !== head ? '<b></b>' : '') + '<p></p>' + (torn ? '<i></i>' : '');
+    el.querySelector('h3').textContent = big;
+    if (big !== head) el.querySelector('b').textContent = head.slice(big.length).trim();
+    el.querySelector('p').textContent = parts.join(' ');
+    if (torn) el.querySelector('i').textContent = torn;
+    // …and a little dancing banana in its corner, drawn by the engine every banana in the world is drawn by
+    const cv = document.createElement('canvas');
+    cv.width = 90; cv.height = 90;
+    el.appendChild(cv);
+    assetsReady().then(() => { try { drawComposite(cv.getContext('2d'), 90, 3, { hat: 'none', glasses: 'none', extras: {}, ...NPC }); } catch (e) {} });
+  } else {
+    // a note from M.: the Mayor's own small lower-case hand, on black
+    el.className = 'bw-paper bwq-mnote';
+    el.textContent = text || '';
+  }
+  return el;
+}
+
 // ---- the engine -----------------------------------------------------------
 export async function bootQuest() {
   const path = location.pathname;
@@ -1211,22 +1296,19 @@ export async function bootQuest() {
           : path.includes('town') ? 'town' : null;
   if (!area) return;
 
-  // 🕯 WHICH CHAPTER THIS AREA BELONGS TO, decided before any state is read — S and KEY are
-  // module-scope and chapter-specific, so reading them first would read the wrong chapter's save.
-  // 🧪 chapter two is parked (see CH); the walk plays it through ?towntest&chapter=2, nobody else does
-  const wantC2 = area === 'town' && /[?&]towntest/.test(location.search) && /[?&]chapter=2/.test(location.search);
-  ch = wantC2 ? CH.c2 : (Object.values(CH).find((c) => c.areas.includes(area)) || CH.c1);
+  // 🕯 WHICH CHAPTER, decided before any state is read — S and KEY are module-scope and
+  // chapter-specific, so reading them first would read the wrong chapter's save. The first one not
+  // yet done; an area the chapter never visits has nothing to show (chapter two: home and the town).
+  let c1done = false;
+  try { c1done = !!(JSON.parse(localStorage.getItem('bwq-c1') || 'null') || {}).done; } catch (e) {}
+  ch = c1done ? CH.c2 : CH.c1;
+  if (!ch.areas.includes(area)) return;
   KEY = ch.key;
   readS();
-  // ⚠️ NO WORDS, NO FIRST SCENE: the town has no chapter to open without them, and everywhere else the
-  // chip would point at an empty scene — so the whole chapter waits for its file, as chapter 2 does.
+  // ⚠️ NO WORDS, NO CHAPTER: the chip would point at an empty scene — so the chapter waits for its
+  // file, and the area keeps everything else it has with no story in it today.
   if (ch === CH.c1 && !(await loadC1())) return;
-  if (ch === CH.c2) {
-    STEPS = await loadC2();
-    // ⚠️ NO WORDS, NO CHAPTER. The town keeps every other thing it has — the square, the arcade,
-    // the shops, the problems, the residents, the post — and simply has no story in it today.
-    if (!STEPS) return;
-  }
+  if (ch === CH.c2 && !(STEPS = await loadC2())) return;
 
   // test conveniences — ⚠️ questreset must run BEFORE the done gate, or a
   // finished chapter can never be replayed on the device
@@ -1245,13 +1327,76 @@ export async function bootQuest() {
   activeView = document.querySelector(AREAS[area].view) || null;
   const layer = [];   // live quest DOM in this area
   let dlg = null, dlgTimer = null, watchTimer = null, introBusy = false;
-  // 📌 THE NOTE POPS, THEN FOLDS ITSELF (Trym, 28 Sep 2026: "quest-popups should not stay open, they can show right away,
+  // 📌 THE NOTE POPS, THEN FOLDS ITSELF (Trym, 27 Sep 2026: "quest-popups should not stay open, they can show right away,
   // after 3-4 seconds they can contract to the quest icon so it doesnt stay open and blocks any view"). An objective new to
   // this page opens at once and folds to its badge NOTE_MS later; the badge opens it again for as long, and a tap on the
   // paper folds it at once. It replaced a 5-s wait before the first note and a fold that was saved and stayed shut.
   const NOTE_MS = 3500;
   let popped = '', foldT = 0;   // the objective this page has already shown open, and the pending fold
   let nibEl = null;          // his body — so a finished talk can walk him off
+  // 🏘 the town's own seams (banana-town.js window.__town): where you stand, where a resident is, the hour of its day
+  const town = () => window.__town || null;
+  const beat = () => { try { return town().life.beat(); } catch (e) { return -1; } };
+  let justIn = false;        // this step was opened a moment ago by the one before it, right here (a step's `auto`)
+  let fx = null;             // 👻 the last night's things, drawn for this player only: the ghost, the lit window, the water
+  // a resident out in the square, by key: their feet in world px, or null while they are indoors or not yet drawn
+  const residentAt = (key) => {
+    try { const r = town().life.residents().find((q) => q.key === key); return r && !r.hidden ? r : null; } catch (e) { return null; }
+  };
+  // 👻 THE LAST NIGHT, FOR YOUR EYES ONLY — the questline's one rule: nothing shared changes. The Ghost Writer (the town's
+  // own ghost, pale, at the hall's door), a light in the Mayor's window (the town lights it only in the evening), and the
+  // statue's water running (the park's same fountain, still going: its pack frames, dropped onto the town's dry one).
+  // All three live in the layer, so the next render clears them; goDark() is the moment they go.
+  function nightFx(at) {
+    if (!at) return;
+    const w = world();
+    const put = (el, x, y, z) => { el.style.left = x / 22 + '%'; el.style.top = y / 13 + '%'; el.style.zIndex = String(z); w.appendChild(el); layer.push(el); return el; };
+    const ghost = put(document.createElement('div'), at.ghost.x, at.ghost.y, 100 + at.ghost.y + 5);
+    ghost.className = 'bwq-ghost';
+    ghost.innerHTML = '<img alt="" src="/assets/town/s-ghost-0.png">';
+    let f = 0;
+    const gt = setInterval(() => { f = (f + 1) % 8; const im = ghost.firstChild; if (im) im.src = '/assets/town/s-ghost-' + f + '.png'; }, 150);
+    unhook.push(() => clearInterval(gt));
+    const glow = put(document.createElement('div'), at.glow.x, at.glow.y, 100 + at.glow.base + 3);
+    glow.className = 'tw-glow tw-glow--mayor bwq-mayor';
+    const water = put(document.createElement('div'), at.water.x, at.water.y, 100 + at.water.base + 2);
+    water.className = 'bwq-water';
+    fx = { ghost, glow, water };
+  }
+  function goDark() {
+    if (!fx) return;
+    fx.glow.classList.add('is-out');
+    fx.ghost.classList.add('is-gone');
+    fx.water.classList.add('is-dry');
+  }
+
+  // 🎬 THE CHAPTER SPLASH — once per device (S.in). Chapter one's plays when you open the questline at
+  // Nib (never on area boot: it must not compete with the homestead's first-visit tutorial); chapter
+  // two's when its blue letter has been read. Fade in → hold → fade out → then.
+  function splash(then) {
+    introBusy = true;
+    hideHint();          // the note yields to the splash too
+    S.in = 1; save();
+    const sp = document.createElement('div');
+    sp.className = 'bwq-intro';
+    // ⚠️ textContent, not innerHTML: the words come out of a JSON file, and copy is never spliced into markup
+    sp.innerHTML = '<i></i><b></b>';
+    sp.querySelector('i').textContent = ch.intro[0];
+    sp.querySelector('b').textContent = ch.intro[1];
+    (document.querySelector(AREAS[area].view) || document.body).appendChild(sp);
+    if (ch === CH.c1) track('quest_intro');   // chapter two's is its first step, counted by name
+    // fade in only once the display font is ready — the FOUT hides inside the pre-fade; the hold clock
+    // starts at the reveal
+    Promise.race([fontWarm(), new Promise((r) => setTimeout(r, 800))]).then(() => {
+      requestAnimationFrame(() => sp.classList.add('is-on'));
+      setTimeout(() => {
+        sp.classList.remove('is-on');
+        setTimeout(() => sp.remove(), 600);
+        introBusy = false;
+        then();
+      }, 3000);
+    });
+  }
 
   // 🚶 done talking, Nib LEAVES — steps down to the road, then walks east
   // toward the park until the trees take him. Spliced out of the layer
@@ -1447,8 +1592,18 @@ export async function bootQuest() {
       }
       ans.hidden = true;
       const w = WHO[who];
-      if (!w) {   // paper / map / fb — the prop takes the stage alone
+      if (!w) {   // paper / map / fb / chapter two's props — the prop takes the stage alone
+        // 🌑 `dark` is not a prop but a MOMENT: the card steps aside, the world does something, and the scene comes back
+        // by itself — the only line no tap can hurry, because the thing to see is behind the card
+        if (who === 'dark') {
+          dlg.classList.add('is-away');
+          awaiting = true;
+          goDark();
+          setTimeout(() => { if (!dlg) return; dlg.classList.remove('is-away'); awaiting = false; next(); }, 3200);
+          return;
+        }
         pop.hidden = true; h2.hidden = true; box.hidden = true; sp.hidden = false;
+        p.textContent = '';   // a prop is nobody's last words: a reply after it answers the prop
         if (who === 'paper') {
           sp.innerHTML = '<div class="bw-paper bwq-paper"></div><small>tap to continue</small>';
           sp.querySelector('.bwq-paper').textContent = text;
@@ -1458,9 +1613,14 @@ export async function bootQuest() {
         } else if (who === 'photo') {
           sp.innerHTML = '<b>the photograph</b><small>tap to continue</small>';
           sp.insertBefore(photoCanvas(), sp.querySelector('small'));
-        } else {
+        } else if (who === 'fb') {
           sp.innerHTML = '<b>the flipbook</b><small>tap to continue</small>';
           sp.insertBefore(flipbookCanvas(), sp.querySelector('small'));
+        } else {
+          // 👻 the page, the plinth, the plaque, the flyer, M.'s notes: captioned from the copy file, drawn by propEl
+          sp.innerHTML = (caps[who] ? '<b></b>' : '') + '<small>tap to continue</small>';
+          if (caps[who]) sp.querySelector('b').textContent = caps[who];
+          sp.insertBefore(propEl(who, text), sp.querySelector('small'));
         }
         return;
       }
@@ -1489,15 +1649,14 @@ export async function bootQuest() {
     // 📊 THE FUNNEL, READABLE BY EVENT NAME (24 Sep 2026): 14 players a week met Nib and one finished the chapter, and
     // nobody could say where the other thirteen stopped — the step rides in quest_step's `id`, which GA4 never registered.
     // One event per step, named for it (quest_step_c1_peel_hi, …): totalUsers per name is the funnel (tools/ga4-chapter-funnel.py).
-    // ⚠️ the prefix is quest_step_, never quest_: chapter two has a step called c2_done, and quest_c2_done is the chapter's finish.
+    // ⚠️ the prefix is quest_step_, never quest_: a step named <chapter>_done would read as the chapter's finish.
     if (cur && cur.id) track('quest_step_' + cur.id, {});
-    // 🚧 A SIGNATURE. The front this step certified goes into bwq-c2.open, which town-room.js's
-    // openedSet() already reads — the lock half shipped on 19 Sep and has been waiting for this
-    // one line. ⚠️ additive and de-duplicated: the list only ever grows, like the step index, so a
-    // replay or a sync can never take a building back off somebody.
-    if (cur && cur.opens) S.open = [...new Set([...(S.open || []), cur.opens])];
     S.s++; S.k = {};
     passStat(ch.stat, 1);               // steps cleared, summed — never an index
+    justIn = true;                      // the next step opens where this one ended (a step's `auto`)
+    // 📬 a step that waits on a letter says so in the save, which is what the homestead's mailbox reads to deliver it
+    // (banana-homestead.js POST_WHEN): the black letter arrives once the last night is over, wherever that was played
+    if (STEPS[S.s] && STEPS[S.s].mail) S.mail = STEPS[S.s].mail;
     if (S.s >= STEPS.length) {
       S.done = 1;
       toast(ch.over, 4200);
@@ -1509,6 +1668,19 @@ export async function bootQuest() {
       // and a chapter is finished once per player, so totalUsers on this event IS the number, for
       // every chapter, forever, with nothing to configure in GA4.
       track(ch.stat + '_done', {});
+      // 📬 …AND THE NEXT ONE BEGINS WHERE THIS ONE ENDED. Chapter one ends at home, and chapter two begins in the mailbox
+      // at home: rather than wait for the next visit, this page turns over to it once the finish has been seen.
+      if (ch === CH.c1 && CH.c2.areas.includes(area)) {
+        setTimeout(() => {
+          if (!S.done || ch !== CH.c1) return;
+          loadC2().then((st) => {
+            if (!st) return;
+            ch = CH.c2; KEY = ch.key; STEPS = st;
+            readS();
+            if (!S.done) render();
+          });
+        }, 6000);
+      }
     }
     save();
     render();
@@ -1536,6 +1708,8 @@ export async function bootQuest() {
     if (S.done) return;
     const step = STEPS[S.s];
     if (!step) return;
+    const fresh = justIn;   // opened by the step before, a moment ago (read once: a re-render is not a fresh step)
+    justIn = false;
     const w = world();
     if (!w) { setTimeout(render, 400); return; }   // world still booting
 
@@ -1594,31 +1768,11 @@ export async function bootQuest() {
       // first-visit tutorial). Fade in → hold → fade out → the dialogue.
       // Once per device (S.in); ?questreset replays it.
       const talk = () => {
-        if (introBusy) return;
-        if (step.who !== 'nib' || S.s !== 0 || S.in || !ch.intro) { openDialog(step); return; }
-        introBusy = true;
-        hideHint();          // the chip yields to the splash too
-        S.in = 1; save();
-        const sp = document.createElement('div');
-        sp.className = 'bwq-intro';
-        // ⚠️ textContent, not innerHTML: chapter 2's title is written by the rig and read out of a
-        // JSON file, and copy is never spliced into markup anywhere else in this world either.
-        sp.innerHTML = '<i></i><b></b>';
-        sp.querySelector('i').textContent = ch.intro[0];
-        sp.querySelector('b').textContent = ch.intro[1];
-        (document.querySelector(AREAS[area].view) || document.body).appendChild(sp);
-        track('quest_intro');
-        // fade in only once the display font is ready — the FOUT hides
-        // inside the pre-fade; the hold clock starts at the reveal
-        Promise.race([fontWarm(), new Promise((r) => setTimeout(r, 800))]).then(() => {
-          requestAnimationFrame(() => sp.classList.add('is-on'));
-          setTimeout(() => {
-            sp.classList.remove('is-on');
-            setTimeout(() => sp.remove(), 600);
-            introBusy = false;
-            openDialog(step);
-          }, 3000);
-        });
+        if (introBusy || dlg) return;
+        // 🌙 a scene that waits for the dark opens only in it (the ! is not up by day either, this is the second lock)
+        if (step.night && beat() !== 5) return;
+        if (ch !== CH.c1 || step.who !== 'nib' || S.s !== 0 || S.in) { openDialog(step); return; }
+        splash(() => openDialog(step));
       };
       // 🗣 QUEST FIRST (Trym): while a talk step targets an NPC, tapping the
       // NPC starts the QUEST — not their everyday dialogue. Two prongs:
@@ -1629,8 +1783,18 @@ export async function bootQuest() {
       // ambient chit-chat holds its tongue (chatter under the ! / ? is
       // noise, Trym). The digzone's bwqTalk carries no mark, so Sabreface
       // may still mutter during the hunt.
-      // `station`: where the town's own Nib must stand while this step is open (town-life.js ST)
-      window.bwqTalk = { who: step.who, open: talk, mark: 1, station: step.station || '' };
+      // `station`: where the town's resident must stand while this step is open (town-life.js ST) —
+      // chapter one's Nib at the fountain, chapter two's cast at their own places.
+      // 🌙 A SCENE THAT WAITS FOR THE DARK is not up by day: no !, and a tap on the resident is their own
+      // everyday card (open: null), never a scene that silently refuses to start. The square's clock is
+      // watched, and nightfall puts the ! up — and the night's own things (nightFx) with it.
+      const lit = !step.night || beat() === 5;
+      window.bwqTalk = { who: step.who, open: lit ? talk : null, mark: lit ? 1 : 0, station: step.station || '' };
+      if (step.night) {
+        watchTimer = setInterval(() => { if ((beat() === 5) !== lit && !dlg) render(); }, 1000);
+        if (!lit) return;
+        nightFx(step.fx);
+      }
       // (document-level capture, delegated: the NPC element may not exist yet
       // when this render runs, and it fires before every area handler)
       const tapSel = step.tapSel || (step.at && step.at.sel);
@@ -1681,19 +1845,81 @@ export async function bootQuest() {
       const m = document.createElement('div');
       m.className = 'bwq-mark';
       m.innerHTML = step.turnin ? MARKQ_SVG : MARK_SVG;
-      // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
-      // (-9: -11.5 floated it a full head-height too high — Trym)
-      // the -9 lifts the glyph over Nib's HEAD; with no body drawn the mark belongs on the
-      // notice itself, which is where the step's own anchor already points.
-      place(m, (step.who === 'nib' && ch.cast && !AREAS[area].own) ? { ...at, y: at.y - 9 } : at);
-      // ⚠️ A MARK ON A WALL NEEDS THE WALL'S DEPTH. Chapter 1's marks float over open ground and
-      // stack by DOM order; the town sorts every sprite explicitly (z = 100 + y), so an unpositioned
-      // sibling loses to the building it is nailed to — walked once, and the town hall painted clean
-      // over its own notice. An anchor may carry its own z; nothing else changes.
-      if (at.z) m.style.zIndex = String(at.z);
+      if (step.follow) {
+        // 🚶 THE ! RIDES THE RESIDENT. They walk to the place the scene holds them at, and potter about it once there,
+        // so a mark pinned where they stood at boot would hang over empty cobbles. Their live feet, a head-height above.
+        const ride = () => {
+          const r = residentAt(step.follow);
+          m.hidden = !r;
+          if (!r) return;
+          m.style.left = r.x / 22 + '%';
+          m.style.top = (r.y - 104) / 13 + '%';
+          m.style.zIndex = String(100 + r.y + 3);
+        };
+        ride();
+        const rt = setInterval(ride, 120);
+        unhook.push(() => clearInterval(rt));
+      } else {
+        // above the NPC's head — a WORLD-% offset, since Nib is %-sized too
+        // (-9: -11.5 floated it a full head-height too high — Trym)
+        // the -9 lifts the glyph over Nib's HEAD; with no body drawn the mark belongs on the
+        // thing itself, which is where the step's own anchor already points.
+        place(m, (step.who === 'nib' && ch.cast && !AREAS[area].own) ? { ...at, y: at.y - 9 } : at);
+        // ⚠️ A MARK ON A WALL NEEDS THE WALL'S DEPTH. Chapter 1's marks float over open ground and
+        // stack by DOM order; the town sorts every sprite explicitly (z = 100 + y), so an unpositioned
+        // sibling loses to the building it is nailed to — walked once, and the town hall painted clean
+        // over its own notice. An anchor may carry its own z; nothing else changes.
+        if (at.z) m.style.zIndex = String(at.z);
+      }
       m.addEventListener('click', (e) => { e.stopPropagation(); talk(); });
       m.addEventListener('pointerdown', (e) => e.stopPropagation());
       w.appendChild(m); layer.push(m);
+      // ⏩ the step before ended right here (the ink's last drop is at the plinth): the scene opens by itself
+      if (step.auto && fresh) setTimeout(() => { if (STEPS[S.s] === step) talk(); }, 700);
+    } else if (step.kind === 'trail') {
+      // 💧 THE INK, WALKED. Drops on the cobbles from the hall's door to the plinth; each one you walk over dries up
+      // behind you, and reaching the last one is the step. Read off the town's own position (window.__town.pos),
+      // never a tap: the point is to follow it. pointer-events:none on the drops, so a tap on one walks you there.
+      const drops = step.path.map(([x, y], i) => {
+        const el = document.createElement('i');
+        el.className = 'bwq-drip' + (S.k['d' + i] ? ' is-gone' : '');
+        el.style.left = x / 22 + '%';
+        el.style.top = y / 13 + '%';
+        el.style.zIndex = String(100 + y);
+        w.appendChild(el); layer.push(el);
+        return el;
+      });
+      const end = step.path[step.path.length - 1];
+      const tt = setInterval(() => {
+        const me = town() && town().pos;
+        if (!me || dlg) return;
+        step.path.forEach(([x, y], i) => {
+          if (S.k['d' + i] || Math.hypot(me.x - x, me.y - y) > 44) return;
+          S.k['d' + i] = 1;
+          drops[i].classList.add('is-gone');
+          save();
+        });
+        if (Math.hypot(me.x - end[0], me.y - end[1]) < 48) { clearInterval(tt); advance(); }
+      }, 150);
+      unhook.push(() => clearInterval(tt));
+    } else if (step.kind === 'letter') {
+      // 📬 A LETTER AT HOME. The mailbox is the homestead's (banana-homestead.js): it delivers this letter once its
+      // condition holds and says so when it is read ('bw:mail'). The step waits for it to be read AND put away, so the
+      // splash never plays over the letter itself. Read on an earlier visit, before this chapter ran, counts too.
+      document.dispatchEvent(new CustomEvent('bw:post'));   // deliver it now, not at the mailbox's next minute
+      let got = false;
+      try { got = ((JSON.parse(localStorage.getItem('hs-v1') || '{}').mail) || []).some((q) => q.id === step.mail && q.read); } catch (e) {}
+      const onRead = (e) => { if (e.detail === step.mail) got = true; };
+      document.addEventListener('bw:mail', onRead);
+      unhook.push(() => document.removeEventListener('bw:mail', onRead));
+      const lt = setInterval(() => {
+        const box = document.getElementById('hsLetters');
+        if (!got || introBusy || (box && !box.hidden)) return;
+        clearInterval(lt);
+        const end = () => { payReward(step.reward, step.id); advance(); };
+        if (step.splash && ch.intro && !S.in) splash(end); else end();
+      }, 400);
+      unhook.push(() => clearInterval(lt));
     } else if (step.kind === 'objects') {
       // 🌼 Peel's bed steps: `tend` hands the bed to the quest (his fussing
       // pauses), `thirst` wilts his flowers ON THIS DEVICE ONLY, and each

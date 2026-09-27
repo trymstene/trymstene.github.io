@@ -59,7 +59,7 @@ test('the quest chip hides inside a shop', async ({ page }) => {
 });
 
 // 📎 THE PAPER FOLDS ON A TAP (Trym, 22 Sep 2026: "important that it's possible to contract the work-quest-notification"),
-// and 📌 FOLDS ITSELF (Trym, 28 Sep 2026: "quest-popups should not stay open, they can show right away, after 3-4 seconds
+// and 📌 FOLDS ITSELF (Trym, 27 Sep 2026: "quest-popups should not stay open, they can show right away, after 3-4 seconds
 // they can contract to the quest icon so it doesnt stay open and blocks any view"): a new objective opens at once and folds
 // to its badge after about three and a half seconds; the badge opens it again for as long; a tap on the paper folds it at
 // once, and never walks the banana under it.

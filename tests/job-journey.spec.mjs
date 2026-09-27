@@ -57,7 +57,7 @@ test('a real player’s job journey, every line in order', async ({ browser }) =
   const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, hasTouch: true, isMobile: true });
   await ctx.addInitScript(() => { try { localStorage.setItem('cookie-consent-v1', 'n'); } catch (e) {} });
   // chapter one is behind this player: the journey is about work, and the newcomer's first minute has its own walk
-  await ctx.addInitScript(() => { try { if (!localStorage.getItem('bwq-c1')) localStorage.setItem('bwq-c1', JSON.stringify({ s: 16, k: {}, res: 0, done: 1, resSet: 1 })); } catch (e) {} });
+  await ctx.addInitScript(() => { try { if (!localStorage.getItem('bwq-c1')) localStorage.setItem('bwq-c1', JSON.stringify({ s: 16, k: {}, res: 0, done: 1, resSet: 1 })); if (!localStorage.getItem('bwq-c2')) localStorage.setItem('bwq-c2', JSON.stringify({ s: 11, done: 1 })); } catch (e) {} });
   await ctx.addInitScript(RECORD);
   const page = await ctx.newPage();
   const errs = [];

@@ -1,122 +1,98 @@
-// 🕯🚦 CHAPTER TWO IS SPREAD OVER FOUR FILES AND THEY MUST AGREE.
+// 👻🚦 CHAPTER TWO, GHOST WRITER, IS SPREAD OVER SIX FILES AND THEY MUST AGREE (27 Sep 2026).
 //
-// The order the chapter opens the fronts in is written down four times, because four different
-// things need it and none of them can reasonably import the others at runtime:
-//   · src/data/town/locks.js   SIGNATURES — what the hoarding's signpost counts "the second of four"
-//   · src/data/quest-c2.js     FRONTS     — which building each pair of steps is about
-//   · tools/copy-jobs.mjs      QUEST_KEYS — the ten copy keys the writer is asked for
-//   · src/data/copy/town-quest.json       — the ten it actually wrote, in order
-// A comment saying "keep these in step" is the thing this repo does not do any more (CLAUDE.md:
-// a rule stated twice becomes a check). So: this is the check. It is source-only and costs nothing.
-//
-// ⚠️ AND IT HOLDS THE SEAM THAT ACTUALLY BREAKS THINGS. The chapter is only a chapter if every
-// step's copy key resolves; world-quest.js refuses the whole chapter if one does not, which is the
-// right runtime behaviour and an invisible one — the town would simply have no story in it and
-// nothing would say why. Here it is loud, on the branch, before a build.
+//   · src/data/quest-c2.js              STEPS  — the mechanics: which step, where, whose, what it pays
+//   · tools/copy-jobs.mjs               C2_KEYS, C2_WHO, C2_PROPS — what the copy gate asks the words for
+//   · src/data/copy/quest-c2.json       — the words it actually has, in order
+//   · src/data/copy/homestead-post.json — the two letters that open and close it
+//   · src/scripts/banana-homestead.js   POST_WHEN — who delivers those letters
+//   · src/lib/world-quest.js            WHO — the portraits the scenes are spoken under
+// A comment saying "keep these in step" is the thing this repo does not do (CLAUDE.md: a rule stated twice becomes a
+// check). The runtime refuses the whole chapter if one scene has no words, which is right and invisible: the story would
+// simply not be there, and nothing would say why. Here it is loud, before a build. Source-only; it costs nothing.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const read = (p) => { try { return readFileSync(join(ROOT, p), 'utf8'); } catch (e) { return ''; } };
 const fail = [];
 const say = (m) => fail.push(m);
 
-const [{ SIGNATURES, HOARDABLE, HOARD_ON }, c2, { QUEST_KEYS, QUEST_WHO }] = await Promise.all([
+const [{ HOARD_ON }, c2, { C2_KEYS, C2_WHO, C2_PROPS, TOWN_CAST }] = await Promise.all([
   import('../src/data/town/locks.js'),
   import('../src/data/quest-c2.js'),
   import('./copy-jobs.mjs'),
 ]);
+let copy = null, post = null;
+try { copy = JSON.parse(read('src/data/copy/quest-c2.json')); } catch (e) {}
+try { post = JSON.parse(read('src/data/copy/homestead-post.json')); } catch (e) {}
+const engine = read('src/lib/world-quest.js');
+const home = read('src/scripts/banana-homestead.js');
+const life = read('src/scripts/town-life.js');
 
-let copy = null;
-try { copy = JSON.parse(readFileSync(join(ROOT, 'src/data/copy/town-quest.json'), 'utf8')); } catch (e) {}
+// ── 1. the steps: the table and the copy job ask for the same keys, in the same order ─────────
+const keys = c2.STEPS.map((s) => s.say);
+if (keys.join(',') !== C2_KEYS.join(',')) say('quest-c2.js wants copy keys [' + keys.join(', ') + '] and tools/copy-jobs.mjs C2_KEYS asks for [' + C2_KEYS.join(', ') + ']');
+const ids = c2.STEPS.map((s) => s.id);
+if (new Set(ids).size !== ids.length) say('two steps share an id, and the id is the receipt the pay is held against');
 
-// ── 1. the four fronts, in the one order ────────────────────────────────────────────────────
-const fronts = c2.FRONTS.map((f) => f.key);
-if (fronts.join(',') !== SIGNATURES.join(',')) {
-  say('quest-c2.js opens ' + fronts.join(' → ') + ', and locks.js SIGNATURES says '
-    + SIGNATURES.join(' → ') + ' — the signpost counts against SIGNATURES, so a player would be'
-    + ' told they are on the second of four while the third came down');
-}
-
-// ── 2. the ten steps: the data and the copy job ask for the same ten ────────────────────────
-const ids = c2.STEPS.map((s) => s.say);
-if (ids.join(',') !== QUEST_KEYS.join(',')) {
-  say('the steps in quest-c2.js want copy keys [' + ids.join(', ') + '] and tools/copy-jobs.mjs'
-    + ' asks the writer for [' + QUEST_KEYS.join(', ') + ']');
-}
-
-// ── 3. …and the approved copy carries them, in order ────────────────────────────────────────
-if (!copy) {
-  say('src/data/copy/town-quest.json is missing or unreadable — the chapter refuses to load without'
-    + ' it and the town has no story in it (run: node tools/copy.mjs town-quest)');
-} else {
+// ── 2. …and the words carry every one, with a scene for every scene ─────────────────────────
+if (!copy) say('src/data/copy/quest-c2.json is missing or unreadable — the chapter refuses to load without it');
+else {
   const rows = Array.isArray(copy.steps) ? copy.steps : [];
-  const keys = rows.map((r) => String((r && r.key) || ''));
-  if (keys.join(',') !== ids.join(',')) {
-    say('the approved copy holds [' + keys.join(', ') + '] and the chapter needs [' + ids.join(', ') + ']');
-  }
-  for (const r of rows) {
-    const at = 'town-quest.json steps.' + (r.key || '?');
-    if (!Array.isArray(r.lines) || !r.lines.length) say(at + ' has no lines, and world-quest.js refuses a chapter with an empty sheet in it');
-    for (const l of r.lines || []) {
-      if (!QUEST_WHO.includes(String(l && l.who))) say(at + ' is spoken by "' + (l && l.who) + '", which world-quest.js cannot draw a portrait for');
+  const got = rows.map((r) => String((r && r.key) || ''));
+  if (got.join(',') !== keys.join(',')) say('quest-c2.json holds [' + got.join(', ') + '] and the chapter needs [' + keys.join(', ') + ']');
+  for (const st of c2.STEPS) {
+    const r = rows.find((x) => x && x.key === st.say);
+    if (!r) continue;
+    const lines = Array.isArray(r.lines) ? r.lines : [];
+    if (st.kind === 'talk' && !lines.length) say('quest-c2.json steps.' + st.say + ' has no scene, and world-quest.js refuses a chapter with an empty sheet in it');
+    for (const l of lines) {
+      const who = String((l && l.who) || '');
+      if (!C2_WHO.includes(who) && !C2_PROPS.includes(who)) say('quest-c2.json steps.' + st.say + ' is spoken by "' + who + '", which is neither a speaker nor a prop');
     }
+    if (r.note && !st.pay) say('quest-c2.json steps.' + st.say + ' carries a receipt line and the step pays nothing');
+    if (!r.note && st.pay) say('quest-c2.json steps.' + st.say + ' pays and has no receipt line');
+    if (st.keep && !lines.some((l) => l && l.who === st.keep)) say(st.id + ' keeps the ' + st.keep + ' as a keepsake, and its scene never shows one');
+    if (st.night && !lines.some((l) => l && l.who === 'dark')) say(st.id + ' is the night scene and has no `dark` moment — the night’s things would never go');
   }
-  // the receipt: only the steps that pay carry one, and the engine only reads it when they do
-  for (const r of rows) {
-    const st = c2.STEPS.find((s) => s.say === r.key);
-    if (!st) continue;
-    if (r.note && !st.pay) say('town-quest.json steps.' + r.key + ' carries a receipt line and the step pays nothing — nobody would ever read it');
-    if (!r.note && st.pay) say('town-quest.json steps.' + r.key + ' pays and has no receipt line');
-  }
+  for (const p of C2_PROPS) if (!/^(note|dark)$/.test(p) && !String((copy.props || {})[p] || '')) say('quest-c2.json props.' + p + ' is empty');
 }
 
-// ── 4. every `opens` is a front that CAN be hoarded, or the step unlocks nothing ─────────────
-// ⚠️ `condo` is the deliberate exception and must stay one: the arcade collects a signature and is
-// never boarded, because five shipped games have to answer on a stranger's worst day.
+// ── 3. every speaker has a portrait, every resident is the town's, every station a place ─────
+for (const w of C2_WHO) if (w !== 'you' && !new RegExp('\\n\\s+' + w + ': \\{ n: ').test(engine)) say('world-quest.js WHO has no portrait for "' + w + '", and its lines would open on a blank face');
+const cast = new Set(TOWN_CAST.map(([k]) => k));
 for (const st of c2.STEPS) {
-  if (!st.opens) continue;
-  if (!SIGNATURES.includes(st.opens)) say(st.id + ' opens "' + st.opens + '", which is not one of the four signatures');
-  if (st.opens !== 'condo' && !HOARDABLE.includes(st.opens)) {
-    say(st.id + ' opens "' + st.opens + '", which no hoarding ever stands in front of — the step would'
-      + ' pay out and nothing on screen would change');
-  }
-}
-const opens = c2.STEPS.filter((s) => s.opens).map((s) => s.opens);
-if (opens.join(',') !== SIGNATURES.join(',')) {
-  say('the chapter opens [' + opens.join(', ') + '] and there are four signatures to collect: ' + SIGNATURES.join(', '));
+  if (st.kind !== 'talk') continue;
+  if (st.who !== 'monument' && !cast.has(st.who)) say(st.id + ' belongs to "' + st.who + '", who is not one of the town’s residents');
+  if (st.follow && st.follow !== st.who) say(st.id + '’s ! follows ' + st.follow + ' and the scene is ' + st.who + '’s');
+  if (st.station && !new RegExp('\\b' + st.station + ': \\[\\[').test(life)) say(st.id + ' holds ' + st.who + ' at "' + st.station + '", which is not a place in town-life.js ST');
+  if (!st.follow && !st.at) say(st.id + ' has no ! anywhere: it needs a resident to follow or a place to hang it');
 }
 
-// ── 5. the marks are on the plate, and no two fronts share one ──────────────────────────────
-// A mark placed outside 0-100% lands off the world and is simply never seen; two steps sharing a
-// spot is the other silent failure — the second front's notice hanging on the first one's wall.
-const seen = new Map();
-for (const f of c2.FRONTS) {
-  const { x, y } = f.at;
-  if (!(x > 0 && x < 100 && y > 0 && y < 100)) say(f.key + '’s mark sits at ' + x + '%,' + y + '% — off the town plate');
-  const at = x + ',' + y;
-  if (seen.has(at)) say(f.key + ' and ' + seen.get(at) + ' hang their marks on the same spot');
-  seen.set(at, f.key);
+// ── 4. the letters: the mailbox delivers them, and has the words for them ───────────────────
+for (const st of c2.STEPS.filter((s) => s.kind === 'letter')) {
+  if (!new RegExp("id: '" + st.mail + "'").test(home)) say(st.id + ' waits on the letter "' + st.mail + '", and banana-homestead.js POST_WHEN never delivers it');
+  const w = post && post.letters && post.letters[st.mail];
+  if (!w || !Array.isArray(w.lines) || !w.lines.length) say(st.id + ' waits on "' + st.mail + '", and homestead-post.json has no words for it');
 }
-if (seen.has(c2.HALL.x + ',' + c2.HALL.y)) say('a building front shares the town hall’s spot, so a fault mark and a signing mark would sit on top of each other');
+const last = c2.STEPS[c2.STEPS.length - 1];
+if (!last || last.kind !== 'letter' || last.mail !== 'questblack') say('the chapter must end on M.’s black letter (Trym’s call 3), and its last step is ' + (last ? last.id : 'missing'));
 
-// ── 6. the switch is still Trym's ───────────────────────────────────────────────────────────
-// ⚠️ NOT A STYLE RULE. HOARD_ON boards up three fronts for every player who has not played this
-// chapter, and on 21 Sep 2026 that is very nearly everybody: 4400 people have met the questline,
-// 116 started it, 76 cleared a step, 409 steps in total — at most 22 finishers of chapter 1, and
-// chapter 2 is newer than that. The plan (§8 q1) says to measure before building and to "gate less
-// behind the chapter" if the number is small. Building it does not flip it; Trym does, by name.
-if (HOARD_ON !== false) {
-  say('HOARD_ON is no longer false. That boards up the store, the post office and the café for every'
-    + ' player who has not finished chapter 2 — which is almost everybody. It is Trym’s switch and'
-    + ' his alone (src/data/town/locks.js, docs/town-jobs-plan.md §8 q1). If he flipped it, delete'
-    + ' this check in the same commit and say so.');
+// ── 5. the ink stays on the town ────────────────────────────────────────────────────────────
+for (const st of c2.STEPS.filter((s) => s.kind === 'trail')) {
+  if (!Array.isArray(st.path) || st.path.length < 3) say(st.id + ' is a trail of fewer than three drops');
+  for (const [x, y] of st.path || []) if (!(x > 60 && x < 2140 && y > 60 && y < 1240)) say(st.id + ' drops ink at ' + x + ',' + y + ', off the walkable town');
 }
+
+// ── 6. the hoardings stay down ──────────────────────────────────────────────────────────────
+// ⚠️ The Four Signatures (the chapter 2 of 21 Sep) was the only thing that could open a hoarded front, and it is retired.
+// HOARD_ON now would board up the store, the post office and the café for EVERY player, for ever, with no way through.
+if (HOARD_ON !== false) say('HOARD_ON is no longer false, and since The Four Signatures retired no chapter opens a hoarded front: it would board up the store, the post office and the café for every player for good (src/data/town/locks.js)');
 
 if (fail.length) {
   console.error('❌ chapter two:\n' + fail.map((f) => '   · ' + f).join('\n'));
   process.exit(1);
 }
-console.log('✅ chapter two: ' + c2.STEPS.length + ' steps over ' + SIGNATURES.length + ' fronts'
-  + ' (' + SIGNATURES.join(' → ') + '), every copy key resolves, the arcade is never boarded,\n'
-  + '   and HOARD_ON is still off');
+console.log('✅ chapter two: ' + c2.STEPS.length + ' steps, every scene has its words, every speaker a face, both letters a sender,'
+  + '\n   and the hoardings stay down');

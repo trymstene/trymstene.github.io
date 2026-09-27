@@ -192,19 +192,18 @@ world.appendChild(park);
 
 // ---- the people: the residents live in town-life.js (their days, walks, speech, the litter, the windows)
 const life = initLife({ world, W, H, pct });
-// 🕯 CHAPTER ONE OPENS AT THE FOUNTAIN (21 Sep 2026): while its first scene is open Nib waits there —
-// whatever the hour — and when it closes he walks up to the town hall. The chapter says so through
-// window.bwqTalk.station once it has booted (after the room, a second in); before that the square
-// reads the chapter's own save, so he is standing there from the first frame instead of walking down
-// from his desk while the splash plays. ONE answer, read by the first override below and by
-// town-room's composed one (overrideFor) from then on.
-function nibStation() {
+// 🕯 THE CHAPTER'S CLAIM ON A RESIDENT, as 'who:place' or '' — whoever the open scene belongs to waits at
+// their place whatever the hour: chapter one's Nib at the fountain (21 Sep 2026), chapter two's cast at
+// their own (27 Sep). The chapter says so through window.bwqTalk.station once it has booted (after the
+// room, a second in); before that the square reads chapter one's own save, so Nib is standing at the
+// fountain from the first frame instead of walking down from his desk while the splash plays. ONE
+// answer, read by the first override below and by town-room's composed one (overrideFor) from then on.
+function questClaim() {
   const q = window.bwqTalk;
-  if (q) return (q.who === 'nib' && q.station) || null;
-  if (/[?&]chapter=2/.test(location.search)) return null;   // 🧪 the walk asked for the parked chapter: nobody waits at the fountain
-  try { const s = JSON.parse(localStorage.getItem('bwq-c1') || 'null'); if (!s) return 'fountain'; return (!s.done && !(+s.s > 0)) ? 'fountain' : null; } catch (e) { return null; }
+  if (q) return q.station ? q.who + ':' + q.station : '';
+  try { const s = JSON.parse(localStorage.getItem('bwq-c1') || 'null'); return !s || (!s.done && !(+s.s > 0)) ? 'nib:fountain' : ''; } catch (e) { return ''; }
 }
-life.setOverride((n) => (n.key === 'nib' && nibStation()) ? { place: nibStation(), always: true } : null);
+life.setOverride((n) => { const [k, p] = questClaim().split(':'); return k === n.key ? { place: p, always: true } : null; });
 
 // ---- me
 let myOutfit = { hat: 'none', glasses: 'none', extras: {} };
@@ -474,6 +473,9 @@ view.addEventListener('pointerdown', (e) => {
     }
     // 🤝 a place with only a line to say hands the tap to its keeper standing at it, whose card says more (KEEP) — unless the
     // front is shut or hoarded (it says why) or it is your own workplace (the tap is going to work)
+    // 🕯 the story first: a thing the open scene belongs to (chapter two's statue) is walked to, then the scene opens
+    const q1 = window.bwqTalk;
+    if (q1 && q1.open && q1.who === hit[1] && SPOTS[hit[1]]) { tgt.x = SPOTS[hit[1]].x; tgt.y = SPOTS[hit[1]].y + 30; arriveThen = q1.open; return; }
     const kp = KEEP[hit[1]], rs = room && room.seam;
     if (kp && !STALL[kp] && !inRoom && life.atPost(kp) === hit[1] && !isStaff(hit[1]) && !(rs && ((rs.shutNow && rs.shutNow(hit[1])) || (rs.hoardNow && rs.hoardNow(hit[1]))))) { talkTo(kp); return; }
     const spot = SPOTS[hit[1]], wasIn = inRoom;
@@ -1189,7 +1191,7 @@ assetsReady().then(() => {
     room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
       hud, esc, track: roomTrack, hush, sayNext, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
       setSlow: (v) => { slowRoom = +v > 0 ? +v : 1; },
-      nibStation,   // 🕯 where chapter one wants Nib right now ('fountain' while its first scene is open)
+      questClaim,   // 🕯 who the chapter holds where right now ('nib:fountain' while chapter one's first scene is open)
       // ⭐ WALK TO IT, THEN IT HAPPENS — the grammar every other reachable thing in this world already
       // uses (a cabinet, a flyer, a resident, a town problem). The tap has already set the target to
       // the thing's own front by the time this runs, so all the room has to hand over is the deed.
@@ -1256,9 +1258,9 @@ assetsReady().then(() => {
     // note in park.astro): bootQuest returns at once on S.done, but only after the chunk has been
     // fetched and parsed — so a finisher would pay for the whole questline on every visit forever.
     // The chapter's local state is one flag, and reading it costs nothing.
-    const wantC2 = /[?&]towntest/.test(location.search) && /[?&]chapter=2/.test(location.search);
+    // (both chapters now: the town is chapter one's first scene and most of chapter two)
     let qdone = false;
-    try { qdone = !!(JSON.parse((wantC2 ? localStorage.getItem('bwq-c2') : localStorage.getItem('bwq-c1')) || 'null') || {}).done; } catch (e) {}
+    try { qdone = [localStorage.getItem('bwq-c1'), localStorage.getItem('bwq-c2')].every((v) => (JSON.parse(v || 'null') || {}).done); } catch (e) {}
     if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
   window.__town = { pos, tgt, SPOTS, ABOUT, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)

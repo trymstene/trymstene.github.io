@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
 const TOWN = '/town/?towntest&crowd=1&questreset';
 const boot = async (page, name) => {
   await page.addInitScript((n) => {
-    try { localStorage.setItem('ps-name-v1', n); localStorage.setItem('bwq-c1', JSON.stringify({ s: 17, done: 1 })); } catch (e) {}
+    try { localStorage.setItem('ps-name-v1', n); localStorage.setItem('bwq-c1', JSON.stringify({ s: 17, done: 1 })); localStorage.setItem('bwq-c2', JSON.stringify({ s: 11, done: 1 })); } catch (e) {}
   }, name);
   await page.goto(TOWN, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
@@ -111,7 +111,7 @@ test('a tap on another player waves, and the one waved at can wave back from the
   // 🌱 A is a regular (a pass a month old), B is brand new (no pass yet): only B wears the NEW chip
   await a.addInitScript(() => { try { localStorage.setItem('pass-v1', JSON.stringify({ created: Date.now() - 30 * 86400000, patches: {}, days: [] })); } catch (e) {} });
   for (const [p, n] of [[a, 'QA Wave A'], [b, 'QA Wave B']]) {
-    await p.addInitScript((nm) => { try { localStorage.setItem('ps-name-v1', nm); localStorage.setItem('bwq-c1', JSON.stringify({ s: 17, done: 1 })); } catch (e) {} }, n);
+    await p.addInitScript((nm) => { try { localStorage.setItem('ps-name-v1', nm); localStorage.setItem('bwq-c1', JSON.stringify({ s: 17, done: 1 })); localStorage.setItem('bwq-c2', JSON.stringify({ s: 11, done: 1 })); } catch (e) {} }, n);
     await p.goto(URL, { waitUntil: 'domcontentloaded' });
     await p.waitForFunction(() => window.__town && window.__town.crowd && window.__town.crowd.live() && window.__bws, null, { timeout: 30000 });
   }

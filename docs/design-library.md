@@ -1385,3 +1385,24 @@ tap on her opened her card, a tap an inch higher opened the orders. `banana-town
   never their name run into a sentence ("Bean Milk for the coffee").
 - Walked by `tests/town-keepers.spec.mjs` (real taps on Tally, the stall, Twirl, the Town Hall and the café's window, at their
   posts and at lunch); the order board's fit at 360×640 on the longest day of the year by `tests/town-orders.spec.mjs`.
+
+## §44 THE STORY HAS ITS OWN COLOURS, AND ITS ! RIDES THE ONE IT MEANS (27 Sep 2026, chapter two)
+
+Trym: *"that letter must be a different color than other letters - blue maybe as a quest-letter"* — and his call 6 on the
+Ghost Writer plan: every quest letter is blue, black always means M.
+
+- **A quest letter is BLUE**, the envelope (`.tw-post__env.is-quest`) and the ruled paper (`.bw-paper--quest`), under the
+  Town Hall's gold seal. **Black always means M.** (`is-mayor`, `.bw-paper--mayor`): no seal, a silver lower-case hand. A
+  letter's tone is one of the three the world writes (wage, quest, mayor), never whatever a letter arrives carrying: it is
+  spliced into a class (`town-post.js sealed`).
+- **A scene's resident waits at a place of their own, and the ! rides their head** (`src/data/quest-c2.js` station + follow).
+  The town's residents walk, so a mark pinned where one stood at boot hangs over empty cobbles. A scene with nobody in it
+  (the statue) hangs its ! on the thing, at the thing's depth, and a tap on the thing opens it (`banana-town.js`, the story
+  first).
+- **A prop is drawn in the page and its words are the copy's** (`world-quest.js propEl`): what is printed on the plaque, the
+  flyer, M.'s notes. No prop, line or letter ever shows the first banana's name.
+- **What the night brings is only for the player in the chapter** (the Ghost Writer, the Mayor's lit window, the statue's
+  water): drawn in the quest's own layer and gone at its next render. The moment they go, the card steps aside (the `dark`
+  line) so it can be seen, and comes back by itself.
+- Walked by `tests/quest-c2.spec.mjs`: both letters, every scene in order, the ink, the night; screenshots in
+  test-results/c2-*.

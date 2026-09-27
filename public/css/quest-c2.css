@@ -1,0 +1,73 @@
+/* 👻 CHAPTER TWO'S LOOK — Ghost Writer (27 Sep 2026). The props a scene shows (src/lib/world-quest.js propEl), the ink
+   on the cobbles, the Ghost Writer, the Mayor's light and the statue's water. Loaded by world-quest.js loadC2() only for
+   a player in chapter two, so nobody else downloads a byte of it; it lives here rather than in the engine's CSS string
+   because the engine is shared by every world area and its JS is what the budget counts. */
+/* 👻 chapter two's props: the page, the plinth, the plaque, the flyer, M.'s notes (propEl) */
+.bwq-prop { margin:0.2rem auto 0.3rem; max-width:100%; box-sizing:border-box; filter:drop-shadow(3px 4px 0 rgba(0,0,0,0.4)); }
+.bwq-prop svg { display:block; width:100%; height:auto; }
+.bwq-prop.bwq-prop--page, .bwq-prop.bwq-prop--glow, .bwq-prop.bwq-prop--blank, .bwq-prop.bwq-prop--dots {
+  width:250px; padding:0.5rem 0.7rem 0.6rem; transform:rotate(-1.2deg);
+  background:#f6ecd0 repeating-linear-gradient(180deg, transparent 0 22px, rgba(122,88,40,0.2) 22px 23px);
+}
+.bwq-prop.bwq-prop--page b, .bwq-prop.bwq-prop--glow b, .bwq-prop.bwq-prop--blank b {
+  display:block; color:#43301a; font:600 1.3rem/1.1 "Caveat","Segoe Script",cursive; letter-spacing:0; text-transform:none; margin:0;
+}
+.bwq-prop.bwq-prop--dots { width:210px; }
+.bwq-prop.bwq-prop--page .bwq-ink { opacity:0.72; }
+.bwq-prop.bwq-prop--glow .bwq-ink { opacity:0.85; }
+.bwq-prop.bwq-prop--glow { box-shadow:0 0 26px 6px rgba(255,236,160,0.55); }
+.bwq-prop.bwq-prop--plinth { width:230px; }
+.bwq-prop.bwq-prop--plaque {
+  position:relative; width:236px; min-height:92px; display:grid; place-items:center; padding:0.9rem 1.3rem; border:3px solid #4a320c;
+  background:
+    radial-gradient(circle at 12px 12px, #5a3d0f 3px, transparent 4px), radial-gradient(circle at calc(100% - 12px) 12px, #5a3d0f 3px, transparent 4px),
+    radial-gradient(circle at 12px calc(100% - 12px), #5a3d0f 3px, transparent 4px), radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), #5a3d0f 3px, transparent 4px),
+    linear-gradient(160deg, #f0cf78, #c8962f 55%, #a87520);
+}
+.bwq-prop.bwq-prop--plaque p { margin:0; text-align:center; color:#3a2606; font:700 italic 1.05rem/1.3 Georgia,"Times New Roman",serif; text-shadow:0 1px 0 rgba(255,240,190,0.7); }
+/* the front, scraped to the metal: gouges where the words were (propEl draws them) */
+.bwq-prop.bwq-prop--plaque svg { position:absolute; left:22px; right:22px; top:16px; bottom:16px; width:calc(100% - 44px); height:calc(100% - 32px); }
+.bwq-prop.bwq-prop--flyer {
+  position:relative; width:236px; padding:0.8rem 0.9rem 1.2rem; transform:rotate(1.6deg); text-align:left;
+  background:#f3ead2; color:#2a1d10;
+  clip-path:polygon(0 0,100% 0,100% 84%,92% 88%,84% 83%,76% 90%,66% 85%,58% 92%,50% 86%,0 86%);
+}
+.bwq-prop.bwq-prop--flyer h3 { margin:0 0 0.2rem; font:900 1.5rem/1 "Archivo Black","Arial Black",sans-serif; letter-spacing:0.01em; color:#b3261e; padding-right:52px; }
+.bwq-prop.bwq-prop--flyer b { display:block; margin:0 0 0.4rem; padding-right:40px; font:800 0.95rem/1.2 "Archivo Black","Arial Black",sans-serif; color:#2a1d10; letter-spacing:0; text-transform:none; }
+.bwq-prop.bwq-prop--flyer p { margin:0 0 0.3rem; font-size:0.78rem; line-height:1.35; font-weight:700; }
+.bwq-prop.bwq-prop--flyer i { display:block; margin:0; font-size:0.78rem; font-weight:800; font-style:italic; opacity:0.85; color:inherit; letter-spacing:0; text-transform:none; }
+.bwq-prop.bwq-prop--flyer canvas { position:absolute; right:4px; top:2px; width:56px; height:56px; image-rendering:pixelated; border:0; background:none; box-shadow:none; margin:0; }
+/* M.'s notes: black paper and silver ink, the lower-case hand the drawer letter was written in */
+.bwq-sp .bwq-mnote { background:#16161c repeating-linear-gradient(180deg, transparent 0 24px, rgba(190,196,214,0.14) 24px 25px); color:#d9dde9; margin:0.1rem auto 0.2rem; max-width:290px; }
+/* 🌑 the dark moment: the card steps aside so the world can be seen, and comes back by itself */
+.bwq-dlg.is-away { opacity:0; pointer-events:none; transition:opacity 0.35s ease; }
+/* 💧 the ink on the cobbles: a wet blot and two spatters under a cold blue shimmer, drying up behind you */
+.bwq-drip {
+  position:absolute; width:20px; height:10px; margin:-5px 0 0 -10px; border-radius:50%; pointer-events:none;
+  background:radial-gradient(ellipse at 34% 32%, #7f8cf0 0 16%, #232c6e 42%, #141a45 100%);
+  box-shadow:13px -4px 0 -3px #1b2250, -12px 3px 0 -3px #1b2250;
+  transition:opacity 0.8s ease, transform 0.8s ease;
+}
+.bwq-drip::after {
+  content:''; position:absolute; inset:-9px -7px; border-radius:50%; pointer-events:none;
+  background:radial-gradient(ellipse, rgba(120,150,255,0.55) 0%, rgba(120,150,255,0) 70%);
+  animation:bwqInk 1.8s ease-in-out infinite;
+}
+@keyframes bwqInk { 0%,100% { opacity:0.45; } 50% { opacity:1; } }
+.bwq-drip.is-gone { opacity:0; transform:scale(0.6); }
+/* 👻 the Ghost Writer: the town's own ghost, pale, floating in the hall's doorway */
+.bwq-ghost { position:absolute; width:3.3%; aspect-ratio:1; transform:translate(-50%,-100%); pointer-events:none; transition:opacity 1.6s ease; }
+.bwq-ghost img { animation:bwqFloat 2.4s ease-in-out infinite; display:block; width:100%; height:100%; image-rendering:pixelated; filter:grayscale(1) brightness(1.3) contrast(1.15) drop-shadow(0 0 7px rgba(190,210,255,0.95)); opacity:0.9; }
+.bwq-ghost.is-gone { opacity:0; }
+@keyframes bwqFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+.bwq-mayor { transition:opacity 0.5s ease; }
+.bwq-mayor.is-out { opacity:0; animation:none; }
+/* ⛲ the statue's water: the park fountain's own frames, over the town's dry statue, for one night */
+.bwq-water {
+  position:absolute; width:5%; aspect-ratio:110 / 206; pointer-events:none; image-rendering:pixelated;
+  background:url('/assets/town/a-statuewater.png') 0 0 / 600% 100% no-repeat;
+  animation:bwqWater 0.72s steps(6, jump-none) infinite; transition:opacity 1.6s ease;
+}
+.bwq-water.is-dry { opacity:0; }
+@keyframes bwqWater { to { background-position-x:100%; } }
+@media (prefers-reduced-motion:reduce) { .bwq-ghost img, .bwq-water, .bwq-drip::after { animation:none; } }

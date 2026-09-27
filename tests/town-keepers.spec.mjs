@@ -22,7 +22,7 @@ async function town(page, hour) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   // a pass, no job, and chapter one behind them — a newcomer meets Nib at the fountain, not at his hall (world-quest.js step 0)
-  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); localStorage.removeItem('tw-job-v1'); localStorage.setItem('bwq-c1', JSON.stringify({ s: 16, k: {}, res: 0, done: 1, resSet: 1 })); } catch (e) {} });
+  await page.addInitScript(() => { try { localStorage.setItem('pass-link', JSON.stringify({ credId: 'c', token: 't' })); localStorage.removeItem('tw-job-v1'); localStorage.setItem('bwq-c1', JSON.stringify({ s: 16, k: {}, res: 0, done: 1, resSet: 1 })); localStorage.setItem('bwq-c2', JSON.stringify({ s: 11, done: 1 })); } catch (e) {} });
   await page.route('**/town/order', (r) => r.fulfill(json({ ok: true, day: 1, done: [] })));
   await page.route('**/town/wheel', (r) => r.fulfill(json({ ok: true, pot: 50, next: 'free', left: 30, cost: 3, wallet: { bal: 10, seq: 1 }, seen: [], slots: {} })));
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
