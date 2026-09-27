@@ -34,5 +34,8 @@
     "keepLink": "Get your pass",
     "potWon": "{name} just won THE POT at the Wheel of Peel: {n} coins.",
     "potWonAnon": "Somebody just won THE POT at the Wheel of Peel: {n} coins."
+  },
+  "keep": {
+    "talk": "Talk to {name}"
   }
 }

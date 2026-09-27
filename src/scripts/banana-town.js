@@ -455,21 +455,11 @@ view.addEventListener('pointerdown', (e) => {
       return;
     }
     if (hit[0] === 'room') { room.tap(hit[1], (x, y, then) => { tgt.x = x; tgt.y = y; arriveThen = then; }); return; }   // 🏘️ walk to it, then it happens
-    if (hit[0] === 'npc') {   // 🗣 walk up first, THEN the dialogue opens (the park's Old Peel rule)
-      const n = life.standBy(hit[1]);
-      if (n) {
-        if (n.at) { tgt.x = n.at[0]; tgt.y = n.at[1]; }   // 🧾 behind a counter: stand at its front, across from them
-        else { tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8; }
-        const key = hit[1];
-        // 🕯 QUEST FIRST. Chapter 2's marks hang on buildings, because the residents walk — so the
-        // resident himself is the OTHER door to the same sheet, and it has to be the same door the
-        // park uses for Old Peel. The everyday card is what he says when the story wants nothing.
-        arriveThen = () => {
-          const q = window.bwqTalk;
-          if (q && q.who === key && q.open) { q.open(); return; }
-          npcCard(key);
-        };
-      }
+    if (hit[0] === 'npc') {
+      // 🤝 a stall's keeper at their post IS the stall: the same walk and the same card as a tap on it (KEEP) — the story first
+      const st = STALL[hit[1]], q0 = window.bwqTalk;
+      if (st && life.atPost(hit[1]) === st && !(q0 && q0.who === hit[1])) { openFor(st); tgt.x = SPOTS[st].x; tgt.y = SPOTS[st].y + 30; return; }
+      talkTo(hit[1]);
       return;
     }
     if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { if (life.pick(hit[1])) { float(f.x, f.y - 30, '+1'); hud.refresh(); } }; } return; }   // walk to it, then it is picked up: a point of rep, the park's litter rule
@@ -482,6 +472,10 @@ view.addEventListener('pointerdown', (e) => {
       arriveThen = () => { openFor('till'); };
       return;
     }
+    // 🤝 a place with only a line to say hands the tap to its keeper standing at it, whose card says more (KEEP) — unless the
+    // front is shut or hoarded (it says why) or it is your own workplace (the tap is going to work)
+    const kp = KEEP[hit[1]], rs = room && room.seam;
+    if (kp && !STALL[kp] && !inRoom && life.atPost(kp) === hit[1] && !isStaff(hit[1]) && !(rs && ((rs.shutNow && rs.shutNow(hit[1])) || (rs.hoardNow && rs.hoardNow(hit[1]))))) { talkTo(kp); return; }
     const spot = SPOTS[hit[1]], wasIn = inRoom;
     // ⚠️ a thing with nothing to say says NOTHING. This used to fall back to the raw key, which was
     // harmless while every tappable thing had an entry — a room full of shelves would have toasted "sh1".
@@ -661,6 +655,29 @@ let dialog = null;
 // 🏘️ TOWN LIFE (14 Sep 2026): the town's condition, problems, shop, nights and ghosts — its own
 // chunk (town-room.js), loaded after the assets so this script stays under its budget
 let room = null;
+// 🗣 walk up to a resident first, THEN their card opens (the park's Old Peel rule)
+function talkTo(key) {
+  const n = life.standBy(key);
+  if (!n) return;
+  if (n.at) { tgt.x = n.at[0]; tgt.y = n.at[1]; }   // 🧾 behind a counter: stand at its front, across from them
+  else { tgt.x = n.x + (pos.x < n.x ? -58 : 58); tgt.y = n.y + 8; }
+  // 🕯 QUEST FIRST. Chapter 2's marks hang on buildings, because the residents walk — so the resident himself is the OTHER
+  // door to the same sheet, the same door the park uses for Old Peel. The everyday card is what he says when the story wants nothing.
+  arriveThen = () => {
+    const q = window.bwqTalk;
+    if (q && q.who === key && q.open) { q.open(); return; }
+    npcCard(key);
+  };
+}
+// 🤝 A KEEPER AT THEIR POST ANSWERS FOR THEIR PLACE (27 Sep 2026, Trym: "its a bit confusing that theres a different click
+// between the actual stall, and the NPC responsible for the stall - this goes for all NPCs standing outside something - like the
+// wheel of peel aswell"). While a keeper stands at their post, a tap on them or on their place is ONE answer: a stall with a card
+// of its own opens it, the keeper at its head (town-market.js keeperHead); a place with only a line to say opens the keeper's
+// card instead (a boss's holds the job question). Away from their post each answers for itself again. ⚠️ Not a door with a room
+// (the arcade, the store: you walk in), not the post office (your own letters), not the print shop (its line is the one pointer
+// to the sticker packs).
+const KEEP = { exchange: 'tally', wheel: 'twirl', hall: 'nib', cafe: 'bean', stand: 'figjr' };
+const STALL = { tally: 'exchange', twirl: 'wheel' };
 function npcCard(key) {
   const d = life.talk(key);
   if (!d) return;
@@ -972,7 +989,7 @@ let market = null, marketP = null;
 function loadMarket() {
   if (!marketP) {
     marketP = import('./town-market.js').then((m) => (market = m.bootMarket({ openCard, closeCard, isOpen: () => !panel.hidden,
-      say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS, life,   // 📋 life: the order board's faces and names
+      say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS, life, talk: npcCard,   // 📋 life + talk: the keeper at a stall's head, the order board's faces
       // 🎉 a win flies to where it lands: the HUD's purse, and the pocket on the bar (with its prize's own glyph)
       hud: () => hud, pocketBtn: () => pocketBtn, pocketIcon: (k) => (POCKET_ICON[k] ? iconSvg(POCKET_ICON[k], { size: 26 }) : '') })));
     marketP.catch(() => { marketP = null; });

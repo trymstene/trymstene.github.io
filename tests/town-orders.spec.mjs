@@ -174,20 +174,28 @@ test('with no homestead a farm order points at the homestead, and the spare-prod
 // 📱 the smallest phone the world is tested at (memory: mobile-viewport-targets): the three orders and their buttons fit
 test.describe('on a small phone', () => {
   test.use({ viewport: { width: 360, height: 640 } });
-  test('every order’s button or link is on screen without scrolling the card', async ({ page }) => {
-    orderWorker(page, () => ({ error: 'busy' }));
-    const errs = await town(page, seed());
-    await page.evaluate(() => window.__town.open('exchange'));
-    await page.waitForFunction(() => document.querySelectorAll('#twCardBody .tw-ex__order').length === 3, null, { timeout: 15000 });
-    await page.waitForTimeout(300);
-    const CTRL = '#twCardBody .tw-ex__act > *';
-    const off = await page.evaluate((sel) => { const cr = document.querySelector('.tw-card').getBoundingClientRect(); return [...document.querySelectorAll(sel)].map((b) => { const r = b.getBoundingClientRect(); return r.top >= cr.top - 1 && r.bottom <= cr.bottom + 1 && r.bottom <= innerHeight + 1 && r.right <= innerWidth ? '' : b.textContent + ' @' + Math.round(r.top) + '-' + Math.round(r.bottom); }).filter(Boolean); }, CTRL);
-    const scroll = await page.evaluate(() => { const c = document.querySelector('.tw-card'); return c.scrollHeight - c.clientHeight; });
-    expect(scroll, 'the whole board is on the card: nothing below its fold').toBeLessThanOrEqual(1);
-    await page.screenshot({ path: 'test-results/town-orders/board-360.png' });
-    expect(off, 'every button is on screen at 360×640').toEqual([]);
-    const wrapped = await page.evaluate((sel) => [...document.querySelectorAll(sel)].filter((b) => b.getBoundingClientRect().height > 40 || b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent), CTRL);
-    expect(wrapped, 'no button breaks its line (memory: buttons never line-break)').toEqual([]);
-    expect(errs).toEqual([]);
-  });
+  // ⚠️ THE TALLEST CARD, not today's: the morning (Tally at her post, her head over the orders) — today, and the day in the coming
+  // year whose three order lines are the longest (pip.eggs, spinner.fish, granfig.harvest, UTC day 20783). If those fit, every day does.
+  for (const [label, at, met] of [['today, a stranger', 0, 0], ['the longest day, a close friend', 20783 * 86400000 + 43200000, 20]]) {
+    test('every order’s button or link is on screen without scrolling the card — ' + label, async ({ page }) => {
+      if (at) await page.clock.setFixedTime(new Date(at));
+      orderWorker(page, () => ({ error: 'busy' }));
+      const errs = await town(page, seed());
+      if (met) await page.evaluate((m) => { const p = JSON.parse(localStorage.getItem('pass-v1')); p.led.tw_met_tally = { dev00001: m }; localStorage.setItem('pass-v1', JSON.stringify(p)); }, met);
+      await page.evaluate(() => window.__town.life.set(4.5));
+      await page.waitForTimeout(300);
+      await page.evaluate(() => window.__town.open('exchange'));
+      await page.waitForFunction(() => document.querySelectorAll('#twCardBody .tw-ex__order').length === 3 && !!document.querySelector('#twCardBody .tw-keep'), null, { timeout: 15000 });
+      await page.waitForTimeout(300);
+      const CTRL = '#twCardBody .tw-ex__act > *';
+      const off = await page.evaluate((sel) => { const cr = document.querySelector('.tw-card').getBoundingClientRect(); return [...document.querySelectorAll(sel)].map((b) => { const r = b.getBoundingClientRect(); return r.top >= cr.top - 1 && r.bottom <= cr.bottom + 1 && r.bottom <= innerHeight + 1 && r.right <= innerWidth ? '' : b.textContent + ' @' + Math.round(r.top) + '-' + Math.round(r.bottom); }).filter(Boolean); }, CTRL);
+      const scroll = await page.evaluate(() => { const c = document.querySelector('.tw-card'); return c.scrollHeight - c.clientHeight; });
+      await page.screenshot({ path: 'test-results/town-orders/board-360' + (met ? '-longest' : '') + '.png' });
+      expect(scroll, 'the whole board is on the card: nothing below its fold').toBeLessThanOrEqual(1);
+      expect(off, 'every button is on screen at 360×640').toEqual([]);
+      const wrapped = await page.evaluate((sel) => [...document.querySelectorAll(sel)].filter((b) => b.getBoundingClientRect().height > 40 || b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent), CTRL);
+      expect(wrapped, 'no button breaks its line (memory: buttons never line-break)').toEqual([]);
+      expect(errs).toEqual([]);
+    });
+  }
 });

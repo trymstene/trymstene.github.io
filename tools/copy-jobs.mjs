@@ -1857,11 +1857,12 @@ export const JOBS = {
   'town-market': {
     id: 'town-market',
     title: 'Banana Town — the Wheel of Peel',
-    what: 'The wheel’s card on the square: its pot, its wedges, its buttons and what each spin says.',
+    what: 'The wheel’s card on the square: its pot, its wedges, its buttons and what each spin says; and the Talk button a stall card’s keeper wears.',
     approved: 'src/data/copy/town-market.json',
     reads: 'src/scripts/town-market.js (the wheel’s lazy chunk, loaded when the card opens)',
-    top: ['wheel'],
+    top: ['wheel', 'keep'],
     fields: {
+      'keep.talk': { kind: 'label', max: 18, note: 'On a stall card whose keeper is at their post (Twirl at the wheel, Tally at the Exchange), after its line: opens the keeper’s own card. {name} is the keeper’s.', ...holdsAll('name') },
       'wheel.title': { kind: 'label', max: 24, note: 'The wheel card’s heading.' },
       'wheel.pot': toastLine(30, 'Over the wheel: how many coins are in the shared pot right now.', holdsAll('n')),
       'wheel.wedges.c5': { kind: 'label', max: 10, note: 'Painted on the wedge that pays five coins. Short: it is drawn on a canvas.' },
@@ -1960,8 +1961,8 @@ export const JOBS = {
       'orders.keepLink': { kind: 'label', max: 18, note: 'The link to the pass page under that line.' },
       'orders.allDone': toastLine(90, 'Every order on today’s board is delivered; new ones go up tomorrow. Never a time of day.'),
       // a resident's own line on their order: in THEIR voice (src/data/copy/town-personas.json), saying what it is for
-      ...Object.fromEntries(Object.values(ORDER_ASKS).flat().map(([who, want]) => ['orders.wants.' + who + '.' + want, { kind: 'prose', aim: 70, max: 90,
-        note: 'What ' + who + ' says on their order for ' + want + ', under it on the board: what it is for, in their own voice. No number (the board prints the count), no time of day, never a question.' }])),
+      ...Object.fromEntries(Object.values(ORDER_ASKS).flat().map(([who, want]) => ['orders.wants.' + who + '.' + want, { kind: 'prose', aim: 55, max: 60,
+        note: 'What ' + who + ' says on their order for ' + want + ', under it on the board: what it is for, in their own voice. No number (the board prints the count), no time of day, never a question. ⚠️ 60 at most: with the name pill it must stay two lines in a 360-px row, or three orders stop fitting the card (tests/town-orders.spec.mjs, the longest day).' }])),
     },
     shape: (d) => {
       const bad = [];

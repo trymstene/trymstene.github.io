@@ -717,5 +717,7 @@ export function initLife({ world, W, H, pct }) {
   const errands = (m) => { E = m; EX = { res, route, poof, hourNow, beat: () => curBeat }; };
   return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, errands, setKeep, setGlow, setOverride, nudge, setLitter, setRoom, route, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; },
     keeperIn: (home) => res.some((n) => n.inside && n.home === home),   // 🧾 is the one who keeps this room in it right now (the greeting)
-    look: (key) => { const n = byKey(key); return n && n.name ? { name: n.name, outfit: n.outfit } : null; } };   // 📋 a face and a name for a card (the order board)
+    look: (key) => { const n = byKey(key); return n && n.name ? { name: n.name, outfit: n.outfit } : null; },   // 📋 a face and a name for a card (the order board)
+    // 🤝 the place a resident is standing at, settled — not walking, not on an errand, not indoors — or '' (banana-town.js KEEP)
+    atPost: (key) => { const n = byKey(key); return n && !n.hidden && !n.inside && !n.walking && !n.errand && !n.path.length ? n.at || '' : ''; } };
 }

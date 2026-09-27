@@ -1578,6 +1578,7 @@ export function bootTownLife(ctx) {
     return false;
   };
   seam.hoardNow = hoardNow;
+  seam.shutNow = shutNow;   // 🤝 a shut front says why, before its keeper answers for it (banana-town.js KEEP)
 
   return { tick, at, tap, openFor, seam, story, roomShow, sweepAt, cabinetDead, cabinetRepair };
 }

@@ -8,6 +8,9 @@ const town = async (page) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band() && window.__town.life.residents().some((r) => r.place), null, { timeout: 30000 });
+  // ⚠️ A HEALTHY TOWN, PINNED: the band is the live square's otherwise, and a struggling one keeps residents indoors — this walk
+  // failed on the day the real town sat at 42% (27 Sep 2026), which says nothing about the errands
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); });
 };
 const sample = (page) => page.evaluate(() => window.__town.life.residents().map((r) => ({ k: r.key, e: r.errand, x: r.x, y: r.y, st: r.st, h: r.hidden })));
 

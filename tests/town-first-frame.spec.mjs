@@ -82,6 +82,8 @@ test('a beat run again while residents wait to set off strands nobody: everyone 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band() && window.__town.life.residents().some((r) => r.place), null, { timeout: 30000 });
+  // ⚠️ a healthy town, pinned: a struggling live square keeps residents indoors (this failed at the real town's 42%, 27 Sep 2026)
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); });
   // noon, three town-seconds from its end: the break (Nib and Dot on the east bench, Twirl at the cart, Gran Fig on the west)
   await page.evaluate(() => window.__town.life.set(11.9));
   await page.waitForFunction(() => window.__town.life.beat() === 3, null, { timeout: 10000 });

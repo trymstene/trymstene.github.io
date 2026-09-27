@@ -281,20 +281,32 @@ const townFaq = faqLd(G.faq.items);
        face of whoever asks; the order, then its pay (the value, loudest: §3b) and what you have; the button; and across the
        row's whole width the resident's own line, or what the last answer said. ⚠️ SIZED FOR 360×640: the card has about 440
        px there and three rows must fit it with nothing to scroll (§40) — tests/town-orders.spec.mjs measures it. */
-    .tw-ex__tabs { margin: 0.45rem 0 0; }
-    .tw-ex__tabs + .tw-rows { margin: 0.4rem 0 0; }
-    .tw-row.tw-ex__order { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: 'face ask act' 'face have act' 'say say say'; column-gap: 0.5rem; row-gap: 0; align-items: center; }
+    .tw-ex__tabs { margin: 0.4rem 0 0; }
+    .tw-ex__tabs + .tw-rows { margin: 0.35rem 0 0; gap: 0.35rem; }
+    .tw-row.tw-ex__order { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: 'face ask act' 'face have have' 'say say say'; column-gap: 0.5rem; row-gap: 0; align-items: center; padding: 0.35rem 0.55rem; }
     .tw-ex__face { grid-area: face; width: 36px; height: 36px; image-rendering: pixelated; align-self: start; }
     .tw-ex__ask { grid-area: ask; align-self: end; line-height: 1.2; }
     .tw-row .tw-ex__have { grid-area: have; align-self: start; }
     .tw-ex__have b { font-size: inherit; color: #ffe135; }
     .tw-ex__n { white-space: nowrap; }   /* “you have 2” moves as one, never “you have” / “2” */
-    .tw-ex__act { grid-area: act; }
-    .tw-row .tw-ex__say { grid-area: say; margin-top: 0.3rem; }
-    .tw-ex__say b { font-size: inherit; color: #ffe135; }
+    .tw-ex__act { grid-area: act; align-self: start; }   /* beside the order only: the pay and what you have get the row's width under it */
+    .tw-row .tw-ex__say { grid-area: say; margin-top: 0.2rem; opacity: 1; }
+    .tw-ex__say q { opacity: 0.85; }
+    /* 🍌 A RESIDENT'S NAME ON A CARD IS ITS OWN STICKER-PILL (Trym, 27 Sep: "it reads 'Bean Milk for the coffee', not 'Bean' -
+       'Milk for the coffee' - the name needs its own highlighting or that its in its own stickerpill") — the world's pill
+       (/css/doors.css .bb-door__pill: banana yellow, ink border, a hard shadow, a little tilt), small; their words a quote */
+    .tw-who { display: inline-block; transform: rotate(-3deg); background: #ffe135; color: #141208; font-family: "Archivo Black", sans-serif; font-size: 0.6rem; letter-spacing: 0.05em; line-height: 1.15; padding: 1px 5px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; margin-right: 0.3rem; white-space: nowrap; }
+    .tw-card q { quotes: '“' '”'; }
+    /* 🤝 the keeper at a stall card's head: their face beside the stall's name and line, and the way to their card (town-market.js keeperHead) */
+    .tw-keep { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 0.5rem; align-items: start; margin: 0; }
+    .tw-keep h2 { margin: 0 0 0.1rem; padding-right: 1.6rem; }   /* the title rides here: clear of the card's ✕, the line under it gets the width */
+    .tw-keep__face { width: 40px; height: 40px; image-rendering: pixelated; }
+    .tw-keep__say { margin: 0; font-size: 0.78rem; line-height: 1.35; opacity: 0.85; }
+    .tw-keep__open { font: inherit; font-weight: 800; font-size: 0.68rem; line-height: 1.2; padding: 1px 6px; margin-left: 0.2rem; border: 2px solid #000; background: #2a1a10; color: #fffdf5; box-shadow: 2px 2px 0 #000; cursor: pointer; white-space: nowrap; vertical-align: 1px; }
     .tw-row small.tw-ex__said { opacity: 1; font-weight: 800; color: #ffe135; }
     .tw-ex__order.is-done :is(.tw-ex__face, .tw-ex__ask, .tw-ex__have) { opacity: 0.6; }
     .tw-row .tw-ex__go { font-weight: 800; font-size: 0.78rem; padding: 0.35rem 0.6rem; border: 2px solid #000; background: #fffdf5; color: #141208; box-shadow: 2px 2px 0 #000; white-space: nowrap; text-decoration: none; }
+    .tw-row .tw-ex__act > button, .tw-row .tw-ex__act > .tw-ex__go { font-size: 0.72rem; padding: 0.28rem 0.45rem; }   /* a step smaller than a card's button: the order's name keeps its line beside it at 360 px */
     /* the heart's float over the player — the park's .pk-float */
     .tw-float { position: absolute; transform: translate(-50%, -50%); z-index: 1950; pointer-events: none; font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffe135; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 2px 2px 0 #000; white-space: nowrap; animation: twFloat 0.9s ease-out forwards; }
     .tw-float svg { display: block; width: 22px; height: 22px; }

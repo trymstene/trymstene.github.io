@@ -39,7 +39,10 @@ test('the hall, the bank, the print shop, the wheel, the exchange, the café and
     expect(said, key + ' answers in the rig’s words').toBe(line);
     expect(said, '…and never the developer’s').not.toContain('Not built yet');
   }
-  // the two cards: their first line is the rig's
+  // the two cards: their first line is the rig's — at lunch, when Twirl and Tally are away from their stalls (at their posts the
+  // keeper speaks for the stall instead: tests/town-keepers.spec.mjs)
+  await page.evaluate(() => window.__town.life.set(8.5));
+  await page.waitForTimeout(300);
   await page.evaluate(() => window.__town.open('wheel'));
   await page.waitForTimeout(400);
   expect(await cardSub(page), 'the Wheel’s card opens with the rig’s line').toBe(FRONTS.wheel);

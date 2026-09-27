@@ -59,39 +59,39 @@
     "wants": {
       "bean": {
         "milk": "Milk for the coffee. The grounds say a long queue.",
-        "eggs": "Eggs for a lemon cake. The grounds say it will not last the day.",
-        "harvest": "Fruit from the park for the counter. The grounds say something sweet."
+        "eggs": "Eggs for a lemon cake. The grounds say it sells out.",
+        "harvest": "Fruit for the counter. The grounds say something sweet."
       },
       "pip": {
-        "eggs": "Eggs for the shelf! The last box went, and it was the very last one.",
-        "wool": "Wool for mittens. The last pair went, and a store needs a last pair!",
-        "pegg": "Park eggs for the store. Found ones go fastest, every last one!"
+        "eggs": "Eggs for the shelf! The last box was the very last one.",
+        "wool": "Wool for mittens! A store needs a last pair.",
+        "pegg": "Park eggs for the store! Found ones go fastest."
       },
       "stamp": {
-        "wool": "Wool to pad the parcels. Dented ones weigh the same and look worse.",
-        "shell": "Shells to hold the letters down on windy days. Each one weighed first."
+        "wool": "Wool to pad the parcels. Dented ones look worse.",
+        "shell": "Shells to hold letters down on windy days. Weighed first."
       },
       "nib": {
-        "milk": "Milk for the Town Hall. It is recorded as a necessity, and properly so."
+        "milk": "Milk for the Town Hall. It is recorded as a necessity."
       },
       "spinner": {
-        "fish": "Fish for the arcade’s tank! Spinner has a tank and no fish! A tragedy!"
+        "fish": "Fish for the arcade’s tank! Spinner has no fish! A tragedy!"
       },
       "moss": {
-        "fish": "Fish, for supper. My back room smells of it afterwards, and nobody minds."
+        "fish": "Fish, for supper. The back room smells of it after."
       },
       "dot": {
-        "fish": "A real fish to draw, for once. The ones people describe all wear hats.",
-        "pegg":"Eggs found in the park. They are on my list of lost things."
+        "fish": "A real fish to draw. The ones people describe wear hats.",
+        "pegg": "Eggs found in the park. They are on my list of lost things."
       },
       "twirl": {
         "shell": "Shells for the wheel’s stand. It likes to look its best."
       },
       "granfig": {
-        "harvest": "Crops from the park. Picked ripe, not pretty. Do not bruise them."
+        "harvest": "Park crops. Picked ripe, not pretty. Do not bruise them."
       },
       "figjr": {
-        "harvest": "Fruit for a new lemonade. Big launch. Gran Fig is the taste test."
+        "harvest": "Fruit for a new lemonade. Gran Fig is the taste test."
       }
     }
   }

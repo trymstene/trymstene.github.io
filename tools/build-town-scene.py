@@ -481,7 +481,45 @@ place('ME_Singles_Shopping_Center_and_Markets_48x48_Market_Small_11.png', 190, 5
 SPOTS['clothes'] = (190, 560)
 
 # the square: three stalls with room between them, the board, the statue on the axis
-place('FARM:Market_Stand_Yellow_Big_48x48.png', 800, 780, solid=('rect', -80, -24, 80, 4), sh=0.5, key='exchange')
+# 📋 TALLY'S EXCHANGE, DRESSED (27 Sep 2026; Trym: "the cart / stall looks abandoned" → "yes do the stall look with slips and
+# crates"). The pack dresses this very stand itself (Market_Stand_Yellow_Example: a till and a scale on the counter, a chalkboard
+# in front, a sign off the post) and this follows it, with the goods the orders ask for: wool (cotton) and the park's crops in
+# baskets, the bay's fish sign, and the day's orders pinned on the counter's front — the paper face of the pack's blank signboard,
+# cut out of its board. Every pixel is the pack's; the chalkboard and an egg carton stand on the cobbles (placed after the
+# treeline below, so no other overlay is renumbered). ⚠️ The counter's middle third stays clear: Tally stands in front of it
+# (town-life.js ST.exchange 800,802). ⚠️ The sign widens the sprite to the RIGHT, so the centre moves by half the growth and the
+# stall's left edge, its collider and the plank's awning centre stay where they were. The Wheel's stand stays the bare sprite.
+def exchange_dressed():
+    stand = load_any('FARM:Market_Stand_Yellow_Big_48x48.png')
+    sign = load_any('FARM:Fish_Sign_Market_Stand_48x48.png')
+    sign = sign.crop(sign.getbbox())
+    out = Image.new('RGBA', (stand.width + sign.width - 6, stand.height), (0, 0, 0, 0))
+    out.alpha_composite(stand)
+    out.alpha_composite(sign, (stand.width - 6, 33))   # off the right post, where the pack's own example hangs it
+    # the slips: the blank signboard's torn white sheet, its wood made clear (lit wood and dark wood both sum under 450)
+    paper = load_any('FARM:Sign_Blank_48x48.png').crop((6, 15, 42, 33))
+    pp = paper.load()
+    for y in range(paper.height):
+        for x in range(paper.width):
+            r, g, b, a = pp[x, y]
+            if r + g + b <= 450:
+                pp[x, y] = (0, 0, 0, 0)
+    paper = paper.crop(paper.getbbox())
+    for sx, sy in ((18, 154), (58, 157), (180, 155)):   # three orders a day: two left of Tally, one right
+        out.alpha_composite(paper, (sx, sy))
+    # the counter's goods, by their drawn box: (file, left x, the y they rest on) in the stand's own pixels
+    for fn, lx, by in (('Register_Market_Stand_48x48.png', 14, 147), ('Crop_Cotton_Small_Basket_48x48.png', 54, 146),
+                       ('Crop_Carrot_Small_Basket_48x48.png', 148, 146), ('Scale_Market_Stand_48x48.png', 188, 147)):
+        t = load_any('FARM:' + fn)
+        t = t.crop(t.getbbox())
+        out.alpha_composite(t, (lx, by - t.height))
+    return stand, out
+
+
+_bare, _dressed = exchange_dressed()
+_bw, _dw = int(_bare.crop(_bare.getbbox()).width * PROP), int(_dressed.crop(_dressed.getbbox()).width * PROP)
+_ex = 800 - _bw // 2 + _dw // 2   # the same left edge as the bare stall's
+place('EXCHANGE_DRESSED', _ex, 780, img=_dressed, colors=48, solid=('rect', -80 - (_ex - 800), -24, 80 - (_ex - 800), 4), sh=0.5, key='exchange')   # 48: the carrots' greens go muddy at 28
 SPOTS['exchange'] = (800, 780)
 NPCS.append(('figjr', 800, 800, 'Fig Jr.'))
 place('FARM:Market_Stand_Yellow_Big_48x48.png', 1400, 780, flip=True, solid=('rect', -80, -24, 80, 4), sh=0.5, key='wheel')
@@ -632,6 +670,11 @@ for _ in range(16):
     try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(1860, 2140), rng.randrange(1150, 1260), shade=False, scale=PROP * 0.85)
 for _ in range(10):
     try_place(SMALLS[rng.randrange(len(SMALLS))], rng.randrange(80, 240), rng.randrange(1150, 1260), shade=False, scale=PROP * 0.85)
+
+# 📋 THE EXCHANGE'S COBBLES (see the dressed stall above): its chalkboard of the day's orders by the left post, an egg carton by
+# the right. Placed LAST so every overlay before them keeps its number; their sort line is their own feet, in front of the stall.
+try_place(['FARM:Sign_1_Market_Stand_48x48.png'], 712, 806, solid=('rect', -12, -6, 12, 2), sh=0.3)
+try_place(['FARM:Egg_Box_48x48.png'], 892, 800, solid=('rect', -20, -8, 20, 2), sh=0.4)
 
 im.save(os.path.join(OUT, 'town.png'), optimize=True)
 print('wrote town.png %dx%d, %d overlays, %d colliders' % (W, H, len(OVERLAYS), len(COLLIDERS)))

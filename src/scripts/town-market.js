@@ -9,6 +9,7 @@
 // a coin. The numbers both sides print are src/data/town/market.js; the words are src/data/copy/town-market.json.
 import { passPost, walletKeep, passServerSlots, ensureAnon, PASS_API } from '../lib/banana-pass.js';
 import { fillWords } from '../lib/fill-words.js';
+import { drawComposite } from '../lib/banana-engine.js';
 import { bigMoment } from '../lib/world-moment.js';
 import { WEDGES, SPIN_COST } from '../data/town/market.js';
 import WORDS from '../data/copy/town-market.json';
@@ -18,13 +19,44 @@ const KEEP_HREF = '/pass/?keep';
 const nonce = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
 export function bootMarket(ctx) {
-  const { openCard, closeCard, isOpen, say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS, hud, pocketBtn, pocketIcon } = ctx;
+  const { openCard, closeCard, isOpen, say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS, hud, pocketBtn, pocketIcon, life, talk } = ctx;
   const labels = WEDGES.map(([id]) => W.wedges[id] || '');
   // the server's view of this banana's wheel: { pot, next: free | again | paid, left, cost }
   let st = null, angle = 0, spinning = false, last = null;
   const el = (id) => document.getElementById(id);
   const keepLine = (line, link) => esc(line) + ' <a href="' + KEEP_HREF + '">' + esc(link) + '</a>';
   const still = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+
+  // ---- 🤝 THE KEEPER AT THE HEAD OF THEIR STALL'S CARD (27 Sep 2026; banana-town.js KEEP). While Twirl stands at the wheel and
+  // Tally at the Exchange, their card opens with them at its head: their face beside the stall's name and its own plain line, and a
+  // button that opens their card. ⚠️ THEY DO NOT SPEAK HERE: a character speaks only in the one NPC card (design library §18),
+  // so the head carries their face and the way to them, never a line of theirs — and the meeting is counted when that card opens.
+  const KEEPER = { wheel: 'twirl', exchange: 'tally' };
+  // a resident's head on a card: the dialogue card's drawing, zoomed to the hat, the eyes and the mouth (Trym, 27 Sep: "you only
+  // see the eyes of the NPC face"). The order board draws its faces with this too.
+  function face(cv, outfit) {
+    const g = cv.getContext('2d'), s = cv.width;
+    g.clearRect(0, 0, s, s);
+    g.save(); g.scale(2.4, 2.4); g.translate(-s * 0.29, -s * 0.2);
+    drawComposite(g, s, 0, { ...outfit, extras: {} });
+    g.restore();
+  }
+  let kept = null;
+  // the card's own title rides in the head beside the face: on a 360×640 phone that line is the order board's room (tests/town-orders)
+  function keeperHead(place, title) {
+    kept = null;
+    const key = KEEPER[place], d = key && life && life.atPost && life.atPost(key) === place ? life.look(key) : null;
+    if (!d) return '';
+    kept = { key, outfit: d.outfit };
+    return '<div class="tw-keep"><canvas class="tw-keep__face" width="88" height="88" aria-hidden="true"></canvas><div><h2>' + esc(title) + '</h2>'
+      + '<p class="tw-keep__say">' + esc(FRONTS[place] || '') + ' <button type="button" class="tw-keep__open">' + esc(fillWords(WORDS.keep.talk, { name: d.name })) + '</button></p></div></div>';   // the button ends the line: the words get the card's width on a phone
+  }
+  function keeperWire() {
+    const box = document.querySelector('#twCardBody .tw-keep'), k = kept;
+    if (!box || !k) return;
+    face(box.querySelector('canvas'), k.outfit);
+    box.querySelector('.tw-keep__open').addEventListener('click', () => { if (talk) talk(k.key); });
+  }
 
   // ---- 🎡 the wheel
   function paintPot() { const p = el('twPot'); if (p) p.textContent = st && st.pot != null ? fillWords(W.pot, { n: st.pot }) : ''; }
@@ -55,11 +87,12 @@ export function bootMarket(ctx) {
   }
   let lit = -1;   // the wedge the last spin won, lit on the wheel until the next one
   function wheelCard() {
-    openCard('<h2>' + esc(W.title) + '</h2><p class="tw-card__sub">' + esc(FRONTS.wheel || '') + '</p>'
+    openCard((keeperHead('wheel', W.title) || '<h2>' + esc(W.title) + '</h2><p class="tw-card__sub">' + esc(FRONTS.wheel || '') + '</p>')
       + '<p class="tw-pot" id="twPot"></p>'
       + '<div class="tw-wheelwrap" id="twWheelWrap"><div class="tw-wheel__pin"></div><canvas class="tw-wheel" id="twWheel" width="440" height="440"></canvas><canvas class="tw-wheelfx" id="twWheelFx" aria-hidden="true"></canvas></div>'
       + '<p class="tw-result" id="twSpinRes"></p>'
       + '<button class="tw-cta" id="twSpin" type="button"><span class="tw-cta__verb"></span><span class="tw-cta__rew"></span></button>');
+    keeperWire();
     const cv = el('twWheel');
     drawWheel(cv, false, labels, lit);
     cv.style.transform = 'rotate(' + angle + 'deg)';
@@ -291,7 +324,7 @@ export function bootMarket(ctx) {
   let exP = null, ex = null;
   function exchangeCard() {
     if (!exP) {
-      exP = import('./town-exchange.js').then((m) => (ex = m.bootExchange({ ...ctx, keepLine, fly: flyCoins })));
+      exP = import('./town-exchange.js').then((m) => (ex = m.bootExchange({ ...ctx, keepLine, fly: flyCoins, face, head: keeperHead, wireHead: keeperWire })));
       exP.catch(() => { exP = null; });
     }
     return exP.then((x) => x.open());

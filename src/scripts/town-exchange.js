@@ -13,7 +13,6 @@
 import { passPost, walletKeep, passServerSlots, ensureAnon, passStat, passRaw, statTotal } from '../lib/banana-pass.js';
 import { goodsInHand, soldFromHome } from '../lib/homestead-inventory.js';
 import { fillWords } from '../lib/fill-words.js';
-import { drawComposite } from '../lib/banana-engine.js';
 import { GOODS, priceOf, saleOf, rumourOf, dayOf } from '../data/town/market.js';
 import { ordersOf, WANTS, spareFrom, LADDER_STEP } from '../data/town/orders.js';
 import { FISH } from './fish-data.js';
@@ -26,8 +25,9 @@ const AREA_HREF = { farm: '/homestead/', bay: '/beach/', park: '/park/' };
 const SPECIES = { fish: Object.fromEntries(FISH.map((f) => [f.id, f.name])), shell: Object.fromEntries(SHELLS.map((s) => [s.id, s.name])) };
 
 export function bootExchange(ctx) {
-  const { openCard, track, esc, FRONTS, life, keepLine, fly } = ctx;
+  const { openCard, track, esc, FRONTS, life, keepLine, fly, face, head, wireHead } = ctx;
   let tab = 'orders', done = null, busy = '', asked = false;   // done: today's delivered order ids, as the server holds them
+  let top = '';   // 🤝 Tally at the card's head while she is at her post (town-market.js keeperHead), taken once per opening
   // what the last answer said about each order, told IN ITS OWN ROW — the thing that changed (design library §3d) — and
   // not in a line under the card, which a 360×640 phone has no room for (a string, or { html } for the pass link)
   const said = {};
@@ -53,7 +53,7 @@ export function bootExchange(ctx) {
       // a small grid (town.astro): the face; the order, then its pay and what you have; the button — and across the row's whole
       // width the resident's own line, or what the last answer said about this order (it replaces the line until the next)
       const say = note ? '<small class="tw-ex__say tw-ex__said">' + (note.html || esc(note)) + '</small>'
-        : '<small class="tw-ex__say"><b>' + esc(r ? r.name : '') + '</b> ' + esc((O.wants[o.who] || {})[o.want] || '') + '</small>';
+        : '<small class="tw-ex__say"><span class="tw-who">' + esc(r ? r.name : '') + '</span> <q>' + esc((O.wants[o.who] || {})[o.want] || '') + '</q></small>';   // the name its own pill, the words a quote (Trym, 27 Sep)
       return '<div class="tw-row tw-ex__order' + (isDone ? ' is-done' : '') + '" data-area="' + o.area + '">'
         + '<canvas class="tw-ex__face" width="88" height="88" data-face="' + o.who + '" aria-hidden="true"></canvas>'
         + '<b class="tw-ex__ask">' + esc(fillWords(O.ask, { what: nameOf(o), n: o.n })) + '</b>'
@@ -88,7 +88,7 @@ export function bootExchange(ctx) {
       body = s.rows; res = 'twSellRes'; fine = rumourOf(day) === 'up' ? X.rumourUp : X.rumourDown;
       if (out0 == null) out0 = s.said;
     }
-    openCard('<h2>' + esc(X.title) + '</h2><p class="tw-card__sub">' + esc(FRONTS.exchange || '') + '</p>'
+    openCard((top || '<h2>' + esc(X.title) + '</h2><p class="tw-card__sub">' + esc(FRONTS.exchange || '') + '</p>')
       + '<div class="tw-board__tabs tw-ex__tabs" role="tablist">' + tabBtn('orders', O.tab) + tabBtn('sell', X.tab) + '</div>'
       + '<div class="tw-rows">' + body + '</div>' + (res ? '<p class="tw-result" id="' + res + '"></p>' : '') + (fine ? '<p class="tw-fine">' + esc(fine) + '</p>' : ''));
     const out = res && el(res);
@@ -97,15 +97,9 @@ export function bootExchange(ctx) {
     q('[data-tab]').forEach((b) => b.addEventListener('click', () => { if (tab !== b.dataset.tab) { tab = b.dataset.tab; card(); } }));
     q('[data-order]').forEach((b) => b.addEventListener('click', () => deliver(b.dataset.order, b)));
     q('[data-sell]').forEach((b) => b.addEventListener('click', () => sell(b.dataset.sell, b)));
-    // the face of whoever asks, drawn the way their dialogue card draws them (the hat and glasses, never the held tool),
-    // zoomed past its waist-up crop to the head and shoulders: a whole banana at 44 px is a speck
-    q('[data-face]').forEach((cv) => {
-      const r = look(cv.dataset.face), g = cv.getContext('2d'), s = cv.width;
-      if (!r) return;
-      g.save(); g.scale(3, 3); g.translate(-s / 3, -s * 0.22);
-      drawComposite(g, s, 0, { ...r.outfit, extras: {} });
-      g.restore();
-    });
+    // the face of whoever asks: the same head the stall's keeper wears (town-market.js face)
+    q('[data-face]').forEach((cv) => { const r = look(cv.dataset.face); if (r && face) face(cv, r.outfit); });
+    if (top && wireHead) wireHead();
   }
   // what the server says is delivered today (once per visit to the card; a delivery answer carries it after that)
   async function refresh() {
@@ -116,7 +110,7 @@ export function bootExchange(ctx) {
     done = r.done;
     if (tab === 'orders' && document.querySelector('#twCardBody .tw-ex__order') && !busy) card();
   }
-  function open() { card(); if (!asked) refresh(); }
+  function open() { top = head ? head('exchange', X.title) : ''; card(); if (!asked) refresh(); }
 
   async function deliver(id, btn) {
     const o = ordersOf(dayOf(Date.now())).find((x) => x.id === id);

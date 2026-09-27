@@ -1363,3 +1363,25 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
   new banana (`?welcome=1` forces it for a walk).
 - Walked by `tests/world-social.spec.mjs` (an echo in the park, the bay, the homestead and the town; the card, the wave,
   the badge under the quest note, the list and a wave back) and proven server-side by `worker-rave/test/social.test.mjs`.
+
+## §43 A KEEPER AT THEIR POST IS THEIR PLACE: ONE TAP, ONE ANSWER (27 Sep 2026, Trym at the Exchange)
+
+Trym: *"its a bit confusing that theres a different click between the actual stall, and the NPC responsible for the stall -
+this goes for all NPCs standing outside something - like the wheel of peel aswell"*. Tally stood in front of her stall and a
+tap on her opened her card, a tap an inch higher opened the orders. `banana-town.js` KEEP holds the rule:
+
+- **A stall with a card of its own** (the Exchange, the Wheel of Peel): a tap on its keeper at their post is a tap on the stall
+  — the same walk, the same card — and the card has them at its head: their face beside the stall's name and its own plain
+  line, and "Talk to Tally" opening their card (`town-market.js keeperHead`). ⚠️ They do not SPEAK on it: a character speaks
+  only in the one NPC card (§18), so the head carries their face and the way to them, never a line of theirs.
+- **A place with only a line to say** (the Town Hall; the Coffee Cup and the lemonade stand for anybody who does not work
+  there): a tap on it while its keeper stands at their post opens the keeper's card, which says more — a boss's holds the job.
+- **Away from their post** (lunch, an errand, the night, a newcomer's Nib at the fountain) each answers for itself again, and
+  a shut or hoarded front still says why before anybody speaks for it. Your own workplace is still going to work.
+- ⚠️ Not a door with a room (the arcade, the store: you walk in), not the post office (the mailbox is your own letters), not
+  the print shop (its line is the one pointer to the sticker packs).
+- A resident on a card is a FACE and a NAME PILL: the head and shoulders (`town-market.js face`: the dialogue's drawing at 2.4,
+  hat to mouth — Trym: "you only see the eyes") and the world's sticker-pill (`.tw-who`, /css/doors.css `.bb-door__pill`) —
+  never their name run into a sentence ("Bean Milk for the coffee").
+- Walked by `tests/town-keepers.spec.mjs` (real taps on Tally, the stall, Twirl, the Town Hall and the café's window, at their
+  posts and at lunch); the order board's fit at 360×640 on the longest day of the year by `tests/town-orders.spec.mjs`.
