@@ -41,7 +41,7 @@ const LENS_EVENTS = [
   // 🕹 the town's Arcade, 12 Sep — a cabinet opened, a run, a score posted, a prize won
   'arcade_board', 'arcade_run', 'arcade_score', 'arcade_prize',
   // 🏘️ Town Life, 14 Sep — the door, a fix, a buy, a Curse Night, a ghost, a cursed object, the stall
-  'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_ghost', 'town_object', 'town_merchant',
+  'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_bignight', 'town_ghost', 'town_object', 'town_merchant',
   // 💼 the jobs, 19 Sep — a boss asked for work, a shift's own chore, and a turn at the café counter
   'town_job', 'town_chore', 'town_shift', 'town_dress', 'town_cup',
   // 🎡📈 the market, 23 Sep — a spin, THE POT, a sale at the Exchange, and a lure used at the pier
@@ -604,7 +604,7 @@ const ANALYST_EVENTS = [
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',
   'quest_step', 'stand_counter',
   'arcade_board', 'arcade_score', 'arcade_prize',   // 🕹 the Arcade, 12 Sep
-  'town_open', 'town_fix', 'town_buy', 'town_curse',   // 🏘️ Town Life, 14 Sep
+  'town_open', 'town_fix', 'town_buy', 'town_curse', 'town_bignight',   // 🏘️ Town Life, 14 Sep (a very cursed night seen, 27 Sep)
   'post_open', 'post_read', 'post_send', 'post_refused', 'post_report', 'post_card',   // ✉️ the post, 20 Sep
   'wave_card', 'wave_echo', 'wave_live', 'wave_back', 'wave_waiting', 'wave_welcome',   // 👋 the social layer, 26 Sep
   'gift_give', 'gift_open', 'town_welcome', 'town_trail_done',   // 🎁🌱 do new faces come back for Nib's present?: is anybody waved at, and does anybody answer

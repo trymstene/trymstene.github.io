@@ -869,6 +869,13 @@ dialogue popup should close first, then splash."*
 - **Proven by** `tests/town-hired.spec.mjs`: the card closes before the moment appears (timed in the
   page), the words are the rig's, the moment sits inside the view at 360 and 393, a burst went up, the
   where-to-start line follows, a ✕ during the yes still gets the moment, and a "no" never sets it off.
+- **Big happenings in the world get it too** (Trym, 27 Sep 2026: *"Big texts (like the promotion splash text banners) is
+  nice, i like to use those for big events or information of big happenings in the game"*). The first: a VERY CURSED
+  NIGHT opens with it and its dawn closes with it (`town-life.json big.*`, town-night.js enterCurse/leaveCurse) — half of
+  the town's own haunted nights and the evening Curse Nights; a plain or haunted night keeps its toast. Reach for it for
+  an event, never for a routine beat: a banner every twelve minutes is wallpaper.
+- **One at a time.** A new moment replaces one still up (`bigMoment` removes it): a night that ended inside its own opening
+  moment's hold put DAWN on top of VERY CURSED NIGHT as one jumble. `tests/town-life.spec.mjs` walks the night and its dawn.
 
 ## §28 THE CORNER BADGES ARE ONE CIRCLE (23 Sep 2026)
 

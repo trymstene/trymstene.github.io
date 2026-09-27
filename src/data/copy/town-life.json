@@ -219,6 +219,12 @@
     "best": "New best: {best}. #{rank} of {players} this week.",
     "haunt": "Tonight is haunted: bolder ghosts, and a cursed thing to find."
   },
+  "big": {
+    "title": "VERY CURSED NIGHT",
+    "line": "Every ghost is out. Walk into one to chase it off.",
+    "dawn": "DAWN",
+    "dawnLine": "The ghosts are gone. Fix what they broke."
+  },
   "pocket": {
     "firework": "Firework",
     "lure": "Lure",

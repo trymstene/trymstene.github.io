@@ -8,6 +8,9 @@
 //   bigMoment(view, 'HIRED', 'YOU WORK AT THE COFFEE CUP NOW')
 export function bigMoment(host, title, sub, opts) {
   if (!host || !title) return null;
+  // ONE AT A TIME: a new moment replaces one still up. Two landed on top of each other as one jumble ("VERY CDAWN NIGHT")
+  // when a very cursed night ended inside its own opening moment's hold (27 Sep 2026).
+  for (const o of host.querySelectorAll(':scope > .wm-moment')) o.remove();
   const d = document.createElement('div');
   d.className = 'wm-moment';
   d.setAttribute('role', 'status');

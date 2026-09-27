@@ -21,6 +21,7 @@ import { PROBLEMS } from '../data/town/problems.js';
 import { LOOK, NIGHT } from '../data/town/condition.js';
 import { OB_RECTS, OB_CIRCLES } from './town-geo.js';
 import { burstInto, townNightIdx } from '../lib/world.js';
+import { bigMoment } from '../lib/world-moment.js';
 import { passStat } from '../lib/banana-pass.js';
 import { grantToShed } from '../lib/homestead-inventory.js';
 
@@ -396,24 +397,35 @@ export function bootTownNight(ctx) {
   // the Curse Night's look — the dark, a cold rain, the residents indoors, the candles, the creeping night's ghosts and
   // its cursed things — but THE FRONTS STAY OPEN. A haunted night comes too often to end somebody's shift at the café's
   // hatch; only a real Curse Night shuts the café and the kiosk.
+  // 🌑 A VERY CURSED NIGHT (27 Sep 2026) is half of the haunted ones gone all the way: the deep night's storm, every ghost,
+  // its four cursed things and the night stall — and the fronts still stay open, for the same reason. It and a real
+  // Curse Night open with the BIG MOMENT and close with it (Trym: "Big texts … i like to use those for big events").
+  let bigOn = false;
   function enterCurse(type) {
+    const full = type === 'deep' || type === 'big';
     setCurse(type);
     if (night()) night().style.opacity = String(type === 'hush' ? NIGHT.hush : NIGHT.curse);
-    weather.setKind(type === 'deep' ? 'storm' : type === 'creep' || type === 'haunt' ? 'heavy' : null);
+    weather.setKind(full ? 'storm' : type === 'creep' || type === 'haunt' ? 'heavy' : null);
     if (type !== 'hush') {
       life.setKeep(keepFn); life.setGlow(() => false);
-      if (type !== 'haunt') { cond.shut.add('cafe'); cond.shut.add('info'); shutters(); }
+      if (type !== 'haunt' && type !== 'big') { cond.shut.add('cafe'); cond.shut.add('info'); shutters(); }
       candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
     }
     // a hush is dusk, not a night: it brings no ghosts and no cursed things of its own — the town's own night does
     // (15 Sep: a real-time hush spawned the night set by the town's day). A creeping or deep night is the night.
-    if (type !== 'hush') { (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true)); nightBegins(type === 'deep' ? 4 : 3); }
-    if (type === 'deep') { setVendor(body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' })); bodies.add(vendor()); }
+    if (type !== 'hush') { (NIGHT_GHOSTS[type] || []).forEach((id) => ghostOf(id, null, true)); nightBegins(full ? 4 : 3); }
+    if (full) { setVendor(body(CURSE_SHELF.at[0], CURSE_SHELF.at[1], { hat: 'tophat', glasses: 'nerd' })); bodies.add(vendor()); }
     lampsByHour();
-    const told = type + (type === 'haunt' ? townNightIdx(Date.now()) : dayNum());   // a haunted night is told once per NIGHT, a Curse Night once per day
-    if (curseTold() !== told) { setCurseTold(told); track('town_curse', { tier: type }); if (type === 'haunt') { const hl = ctx.hauntLine ? ctx.hauntLine() : ''; if (hl) say(hl); } }
+    const own = type === 'haunt' || type === 'big';
+    const told = type + (own ? townNightIdx(Date.now()) : dayNum());   // the town's own night is told once per NIGHT, a Curse Night once per day
+    if (curseTold() !== told) {
+      setCurseTold(told); track('town_curse', { tier: type });
+      if (type === 'haunt') { const hl = ctx.hauntLine ? ctx.hauntLine() : ''; if (hl) say(hl); }
+      else if (type !== 'hush') { const w = ctx.bigWords ? ctx.bigWords() : {}; if (w.title) { bigMoment(view, w.title, w.line); bigOn = true; } track('town_bignight', { tier: type }); }
+    }
   }
   function leaveCurse() {
+    if (bigOn) { bigOn = false; const w = ctx.bigWords ? ctx.bigWords() : {}; if (w.dawn) bigMoment(view, w.dawn, w.dawnLine); }   // 🌅 the night you saw fall, over
     setCurse(null);
     weather.setKind(null);
     life.setGlow((n) => h(dayNum(), 2, n.idx) >= LOOK[band()].windowsDark);

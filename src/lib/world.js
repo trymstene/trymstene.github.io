@@ -495,3 +495,10 @@ export const TOWN_HAUNT_SHARE = 0.1;
 export const townHaunted = (idx) => seedRand(TOWN_HAUNT_SALT + idx * 7919) < TOWN_HAUNT_SHARE;
 export const townHauntAt = (t) => townNightAt(t) && townHaunted(townNightIdx(t));
 // CLOCK-END
+// 🌑 THE VERY CURSED NIGHT (27 Sep 2026). Trym: "i believe more in letting in rare big cursed nights into the 2 minute
+// night - its better": almost nobody is in town for an evening Curse Night, so half of the haunted nights go all the way —
+// the deep night's storm, every ghost, its cursed things and its stall, for the two minutes. Outside the CLOCK block on
+// purpose: to the TownRoom it is still a haunted night (the same toll, the same cap), so the town's balance does not move.
+export const TOWN_BIG_SALT = 0x3c55;
+export const townBig = (idx) => townHaunted(idx) && seedRand(TOWN_BIG_SALT + idx * 7919) < 0.5;
+export const townBigAt = (t) => townNightAt(t) && townBig(townNightIdx(t));

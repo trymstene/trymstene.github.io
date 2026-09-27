@@ -456,6 +456,12 @@ const lifeFields = {
   'toasts.asleep': { kind: 'prose', aim: 44, max: 64, note: 'Said when an arcade cabinet’s game could not be loaded (a network hiccup): the machine is not answering right now; try again in a moment.' },
   'toasts.prize': { kind: 'prose', aim: 60, max: 90, holds: ['{prizes}'], note: 'Said when a run on an arcade cabinet wins a prize. MUST contain {prizes} exactly once — the game puts in what was won, as “an arcade visor” (two are joined with a comma); then that it is in the player’s wardrobe now. No number.' },
   'toasts.best': { kind: 'prose', aim: 50, max: 80, holds: ['{best}', '{rank}', '{players}'], note: 'Said when a run sets the player’s new personal best on that cabinet. MUST contain {best} (the score), {rank} (their place on this week’s board) and {players} (how many are on it), each exactly once, and no other number.' },
+  // 🌑 THE VERY CURSED NIGHT (27 Sep 2026, Trym: "letting in rare big cursed nights into the 2 minute night" and "Big texts
+  // (like the promotion splash text banners) … i like to use those for big events"): the big moment opens and closes it
+  'big.title': { kind: 'label', aim: 14, max: 18, note: 'The BIG words over the square as a very cursed night falls: one of the town’s own two-minute nights gone all the way (the storm, every ghost, cursed things, the night stall), or an evening Curse Night. The world’s voice, never a character. Capitals, at most three words.' },
+  'big.line': { kind: 'prose', aim: 44, max: 52, note: 'The small line under those big words: what is out there and the one thing a player can do about it (walking into a ghost chases it off). The screen sets it in capitals. Never a time, never how often.' },
+  'big.dawn': { kind: 'label', aim: 4, max: 10, note: 'The BIG word over the square when that very cursed night ends: the night is over. Capitals, one word.' },
+  'big.dawnLine': { kind: 'prose', aim: 36, max: 52, note: 'The small line under it: the ghosts have gone, and what they broke is the player’s to fix now. Plain, no number.' },
   // 👝 THE POCKET TRAY (what the Wheel of Peel's prizes go into)
   'pocket.firework': { kind: 'label', aim: 8, max: 14, note: 'The name of a firework as its row in the pocket tray shows it; a count follows it (“×2”). One word, a capital first.' },
   'pocket.lure': { kind: 'label', aim: 4, max: 14, note: 'The name of a fishing lure as its row in the pocket tray shows it; a count follows it. One word, a capital first.' },
@@ -607,6 +613,8 @@ const lifeSchema = {
     } },
     toasts: { type: 'object', additionalProperties: false, required: ['road', 'lure', 'warming', 'asleep', 'prize', 'best', 'haunt'],
       properties: Object.fromEntries(['road', 'lure', 'warming', 'asleep', 'prize', 'best', 'haunt'].map((k) => [k, { type: 'string', description: lifeFields['toasts.' + k].note }])) },
+    big: { type: 'object', additionalProperties: false, required: ['title', 'line', 'dawn', 'dawnLine'],
+      properties: Object.fromEntries(['title', 'line', 'dawn', 'dawnLine'].map((k) => [k, { type: 'string', description: lifeFields['big.' + k].note }])) },
     pocket: { type: 'object', additionalProperties: false, required: ['firework', 'lure', 'lureWhere', 'use', 'empty'],
       properties: Object.fromEntries(['firework', 'lure', 'lureWhere', 'use', 'empty'].map((k) => [k, { type: 'string', description: lifeFields['pocket.' + k].note }])) },
     things: { type: 'object', additionalProperties: false, description: 'What wants doing, in plain words: for each kind, [one, many].', required: ['lamp', 'litter', 'bin', 'dumpster', 'graffiti', 'fountain', 'shutter', 'crows', 'leaves'],
@@ -2121,7 +2129,7 @@ export const JOBS = {
     out: 'tools/copy-out/town-life.json',
     approved: 'src/data/copy/town-life.json',
     reads: 'src/scripts/town-room.js (through a glob: the town runs wordless until this is approved)',
-    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx', 'toasts', 'pocket'],
+    top: ['bands', 'store', 'board', 'merchant', 'vendor', 'ghosts', 'closed', 'lowShut', 'rooms', 'locks', 'work', 'objects', 'things', 'shutSign', 'fx', 'toasts', 'big', 'pocket'],
     // ✅ approved by Trym 14 Sep 2026 ("approve town-life")
     // 🧍 Pip speaks here, so the writer gets the bible
     personas: 'town-personas',

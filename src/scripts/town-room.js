@@ -25,7 +25,7 @@
 // banana or ghost — a ghost with a line says it in the town's toast. ⚠️ EVERY WORD is copy:
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
-import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt } from '../lib/world.js';
+import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt, townBigAt } from '../lib/world.js';
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
@@ -1168,6 +1168,7 @@ export function bootTownLife(ctx) {
       // 👻 what a ghost's mischief costs the town, and the float that shows it where it happens
       dark, float,
       hauntLine: () => ((COPY.toasts || {}).haunt || ''),   // 👻 what the square says as a haunted night falls
+      bigWords: () => COPY.big || {},   // 🌑 the big moment's words for a very cursed night
       // …and setters, because a getter cannot stand on the left of an assignment
       setCurse: (v) => { curse = v; }, setVendor: (v) => { vendor = v; },
       setPlainNight: (v) => { plainNight = v; }, setCurseTold: (v) => { curseTold = v; } };
@@ -1195,7 +1196,7 @@ export function bootTownLife(ctx) {
     if (forced && Date.now() < forcedUntil) return forced === 'omen' ? 'none' : forced;   // a chapter's own night — or 'none', a chapter's own calm
     if (forced) forced = null;
     const c = curseAt(Date.now()).type;
-    return c !== 'none' ? c : townHauntAt(Date.now()) ? 'haunt' : 'none';   // 👻 one town night in ten is haunted (23 Sep 2026)
+    return c !== 'none' ? c : townBigAt(Date.now()) ? 'big' : townHauntAt(Date.now()) ? 'haunt' : 'none';   // 👻 one town night in ten is haunted (23 Sep 2026), and half of those very cursed (27 Sep)
   }
 
   // ═══════════════════════════════════ the sky, the tick ═════════════════════════════

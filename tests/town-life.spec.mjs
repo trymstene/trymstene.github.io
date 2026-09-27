@@ -311,6 +311,36 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   expect(await page.evaluate(() => !!document.querySelector('.wx.is-storm')), 'the curse’s storm is lifted: the sky is the clock’s again').toBe(stormBefore);
 });
 
+// 🌑 THE VERY CURSED NIGHT (27 Sep 2026). Trym: "letting in rare big cursed nights into the 2 minute night - its better",
+// and "Big texts (like the promotion splash text banners) … i like to use those for big events". Half of the town's own
+// haunted nights go all the way; this walks one the QA seam calls up, and the dawn after it.
+test('a very cursed town night: the big moment, the storm, every ghost and the stall, the fronts open — and dawn says so', async ({ page }) => {
+  await town(page);
+  expect(await page.evaluate(() => window.__town.room.nightReady()), 'the night is in hand').toBe(true);
+  const shut0 = (await room(page, 'shut')).sort();
+  await seam(page, () => window.__town.room.curse('big'));
+  await page.waitForFunction(() => !!document.querySelector('.wm-moment b'), null, { timeout: 8000 });
+  const m = await page.evaluate(() => ({ b: document.querySelector('.wm-moment b').textContent, s: (document.querySelector('.wm-moment small') || {}).textContent }));
+  expect(m.b, 'the big words, from the copy file').toBe(LIFE.big.title);
+  expect(m.s).toBe(LIFE.big.line);
+  await page.waitForTimeout(1200);
+  expect(await room(page, 'night')).toBeGreaterThanOrEqual(0.45);
+  expect((await room(page, 'ghosts')).map((x) => x.id).sort(), 'every ghost is out, the deep night’s whole company').toEqual(['drift', 'knock', 'lead', 'repeat', 'roam', 'roam2', 'sit', 'wisp']);
+  expect(await room(page, 'vendor'), 'the night stall stands').toBe(true);
+  expect((await room(page, 'shut')).sort(), 'a town night never ends a shift: the fronts stay as they were').toEqual(shut0);
+  expect(await page.evaluate(() => !!document.querySelector('.wx.is-storm')), 'the deep night’s storm').toBe(true);
+  await page.screenshot({ path: SHOT + 'very-cursed.png' });
+  // dawn: the night you saw fall is over, and the square says so the same way
+  await seam(page, () => window.__town.room.curse('none'));
+  await page.waitForFunction((t) => [...document.querySelectorAll('.wm-moment b')].some((b) => b.textContent === t), LIFE.big.dawn, { timeout: 15000 });
+  const d = await page.evaluate((t) => { const b = [...document.querySelectorAll('.wm-moment b')].find((x) => x.textContent === t); return (b.parentElement.querySelector('small') || {}).textContent; }, LIFE.big.dawn);
+  expect(d).toBe(LIFE.big.dawnLine);
+  expect(await page.locator('.wm-moment').count(), 'one moment at a time: dawn replaces the night’s own, never lands on it').toBe(1);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: SHOT + 'very-cursed-dawn.png' });
+  await page.waitForFunction(() => window.__town.room.ghosts().length === 0 && !window.__town.room.vendor(), null, { timeout: 15000 });
+});
+
 test('the store sells a piece for the homestead into the shed or onto the van', async ({ page }) => {
   await town(page);
   await setBand(page, 70);   // lively: six rows
