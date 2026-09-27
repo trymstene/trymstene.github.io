@@ -1,6 +1,6 @@
 // 🏪 TOWN SHOP — every card the town opens over its own square (19 Sep 2026).
 //
-// Pip's shelf, the travelling stall, the night vendor and the notice board. Split out of
+// Pip's shelf, the night vendor and the notice board (the travelling stall went 27 Sep 2026: its goods are Pip's). Split out of
 // town-room.js when that chunk reached 96% of its 56 000 B budget with 2.2 KB left and Trym asked
 // for chunking. Nothing here runs until a card is opened, and none of it is on the walk-around path.
 //
@@ -11,7 +11,7 @@
 // quietly reports the town as it was when you arrived.
 //
 // ⚠️ WHAT STAYED BEHIND, and why: `shelfFor` (the QA seam calls it synchronously and a walk asserts
-// its length), and `let merchant, vendor` — those two are the BODIES standing in the world, written
+// its length), and `let vendor` — the BODY standing in the world, written
 // by seven sites in town-room including one inside the frame loop. They were declared in the middle
 // of this block by accident of history; taking them with it is a ReferenceError in lampsByHour().
 import { passSpend, passStat, coinsNow } from '../lib/banana-pass.js';
@@ -30,7 +30,7 @@ const dayNum = () => Math.floor(Date.now() / 86400000);
 export function bootTownShop(ctx) {
   const {
     // the tables, passed once: none of these references is ever replaced
-    COPY, W_BAND, W_OBJ, DEX, BANDS, ANCHORS, MERCHANT, CURSE_SHELF, OBJECTS, BOUNTY, SALT_SHELF,
+    COPY, W_BAND, W_OBJ, DEX, BANDS, ANCHORS, CURSE_SHELF, OBJECTS, BOUNTY, SALT_SHELF,
     // the room's own helpers and its condition object (mutated in place, so the reference holds)
     cond, propOf, pickN, one, fill, found, omenNow, shelfFor,
     // ⚠️ GETTERS: town-room reassigns each of these, so a value would go stale
@@ -79,15 +79,6 @@ export function bootTownShop(ctx) {
       // happens"). A tap on the shopfront walks you in (banana-town.js openFor); this card is the till's, so it carries no
       // way inside. It used to open at the door with a "Step inside" row under the goods (the old "a room is a gain,
       // never a toll" rule, docs/town-jobs-plan.md §4), and that is the thing Trym asked to move.
-      return true;
-    }
-    function merchantCard() {
-      const w = COPY.merchant || {};
-      const ids = pickN(MERCHANT.pool.filter((id) => DEX[id]), MERCHANT.n, SALT_SHELF + dayNum() * 29);
-      openCard('<h2>' + esc(w.name || 'The travelling stall') + '</h2>' + (w.greet ? '<p class="tw-card__sub">' + esc(fill(w.greet)) + '</p>' : '')
-        + '<div class="tw-store">' + rows(ids, MERCHANT.markup, 'merchant') + '</div>');
-      wireBuys(w.lines);
-      track('town_merchant', { n: ids.length });
       return true;
     }
     function vendorCard() {
@@ -198,5 +189,5 @@ export function bootTownShop(ctx) {
       };
     }
 
-  return { store: storeCard, report, merchant: merchantCard, vendor: vendorCard };
+  return { store: storeCard, report, vendor: vendorCard };
 }

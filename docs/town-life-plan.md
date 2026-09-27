@@ -165,8 +165,10 @@ catalogue (`src/data/town/stock.js`): `basic` from Struggling, `common` from Rec
 **daily seeded rotation** picks a shelf from the pools the band unlocks, so a Thriving
 Tuesday is not a Thriving Wednesday.
 
-A **travelling stall** appears on seeded days from Lively up, with a pool nobody else
-carries, at a markup. A **night vendor** appears only on deep Curse Nights, with a short
+~~A **travelling stall** appears on seeded days from Lively up, with a pool nobody else
+carries, at a markup.~~ **Gone 27 Sep 2026** (Trym: *"this banana thats always meeting me there called 'Fine Goods', hes
+just a wandering store … He shouldnt be, and the goods are sold at the Store"*): every piece it carried was already in Pip's
+pools, so Pip's shelf now holds one rare piece from Lively and two at Thriving. A **night vendor** appears only on deep Curse Nights, with a short
 cheap shelf, and buys cursed objects back. Buying uses the homestead's existing coin
 charge and lands the item in the homestead's existing shed or on its van
 (`src/lib/homestead-inventory.js` — the homestead's own buy uses the same door). The town

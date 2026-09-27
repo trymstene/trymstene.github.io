@@ -5,7 +5,6 @@
 // (docs/town-life-plan.md §6). A row is an event TYPE and its weight per band; a band that
 // is not listed cannot draw it. town-room.js does the drawing and the staging.
 export const TODAY = [
-  { id: 'merchant', w: { lively: 3, thriving: 5 } },                                                  // the travelling stall is in
   { id: 'oddspot',  w: { abandoned: 1, struggling: 2, recovering: 3, lively: 3, thriving: 3 } },       // a resident stands somewhere they never stand
   { id: 'closed',   w: { struggling: 3, recovering: 3, lively: 2, thriving: 1 } },                     // a kiosk is shut today (fixing it reopens it)
   // (no cursed thing by daylight since 15 Sep — the curse belongs to the dark: every night lays its own out, town-room.js)

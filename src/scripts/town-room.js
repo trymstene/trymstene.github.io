@@ -14,7 +14,7 @@
 //   problems      what THIS player can put right today: seeded by (player, day, band),
 //                 fixed by walking up and tapping, paid on the pass, pooled on the room
 //   the shop      Pip's shelf for the HOMESTEAD (decor.js rows), rotating daily by band;
-//                 a travelling merchant; a night vendor
+//                 a night vendor (the travelling merchant went 27 Sep 2026: its goods are Pip's)
 //   today         a few seeded things that are simply happening
 //   the curse     curseAt() from world.js — the weather clock's twin: a dark sky, the
 //                 storm, residents in, ghosts, cursed objects, the vendor's stall
@@ -36,7 +36,7 @@ import { once, seen } from '../lib/once.js';   // 🧾 the counter's invitation,
 import { arrived as callIn, calls as callsAt } from '../lib/work-calls.js';   // 📟 the on-call staff's work comes in as calls (slice 0b)
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
-import { POOLS, SHELF, MERCHANT, CURSE_SHELF } from '../data/town/stock.js';
+import { POOLS, SHELF, CURSE_SHELF } from '../data/town/stock.js';
 import { TODAY, TODAY_N, ODD_SPOTS, CLOSABLE } from '../data/town/today.js';
 import { GHOSTS, NIGHT_GHOSTS, DAY_GHOSTS, ROAM } from '../data/town/ghosts.js';
 import { OBJECTS, WHERE, RARITY_W, BOUNTY } from '../data/town/objects.js';
@@ -341,7 +341,7 @@ export function bootTownLife(ctx) {
     if (icon) { const ic = document.createElement('span'); ic.className = 'tw-mark__ic'; ic.innerHTML = iconSvg('tools', { size: 18 }); ic.style.top = (-(lift || 40)) + 'px'; m.appendChild(ic); } world.appendChild(m); return m; };
   const poof = (x, y) => poofInto(world, 'tw-poof', x / W * 100, (y - 10) / H * 100);   // the town's own puff (town.astro .tw-poof): a thing that merely vanishes
   const burst = (x, y) => burstInto(world, 'tw-burst', x / W * 100, (y - 16) / H * 100);   // ✨ a fix or a find: the moment (town.astro .tw-burst)
-  // a banana body that is not a resident: a visitor, the merchant, the vendor
+  // a banana body that is not a resident: a visitor, the vendor
   function body(x, y, outfit) {
     const el = document.createElement('div');
     el.className = 'tw-npc tw-visitor';
@@ -353,10 +353,10 @@ export function bootTownLife(ctx) {
     return b;
   }
   const bodies = new Set();
-  // the merchant and the vendor: a body by a stall, a shelf when you walk up. ⚠️ these were declared in
+  // the vendor: a body by a stall, a shelf when you walk up. ⚠️ this was declared in
   // the middle of the cards block until 19 Sep; they are written by seven sites here, one of them inside
   // lampsByHour(), so they never belonged to the chunk that moved out.
-  let merchant = null, vendor = null;
+  let vendor = null;
   function swayBodies(now) {
     for (const b of bodies) if (now - b.swayAt > b.period) { b.swayAt = now; b.sw = b.sw ? 0 : 1; drawMe(b.ctx, 150, b.face + b.sw, b.outfit); }
   }
@@ -581,7 +581,6 @@ export function bootTownLife(ctx) {
     // indoors (Trym, 15 Sep: "aren't the townsbananas supposed to go inside in the night?" — they were; these were not)
     const nightOut = beat === 5 || (curse && curse !== 'hush');
     for (const b of cond.visitors) b.el.hidden = nightOut;
-    if (merchant) merchant.el.hidden = nightOut;
   }
   const SHUT_STILL = { cafe: ['shutcafe', 1, 3], info: ['shutinfo', 0, 43] };   // key → [still, dx, lift]; a front with no entry wears only the tape
   function shutters() {
@@ -882,7 +881,7 @@ export function bootTownLife(ctx) {
 
   let shop = null, shopP = null;
   function shopCtx() {
-    return { COPY, W_BAND, W_OBJ, DEX, BANDS, ANCHORS, MERCHANT, CURSE_SHELF, OBJECTS, BOUNTY, SALT_SHELF,
+    return { COPY, W_BAND, W_OBJ, DEX, BANDS, ANCHORS, CURSE_SHELF, OBJECTS, BOUNTY, SALT_SHELF,
       cond, propOf, pickN, one, fill, found, omenNow, shelfFor,
       band: () => band, life: () => L, problems: () => problems, curse: () => curse,
       openCard, closeCard, cardBody, card, esc, say, hud, track, enterRoom: ctx.enterRoom };
@@ -1073,9 +1072,9 @@ export function bootTownLife(ctx) {
   }
 
   // ════════════════════════════════════ today ════════════════════════════════════════
-  let today = [], parked = null, todayPin = TEST ? [] : null, todayFront = null;   // ?towntest walks a PLAIN day unless the walk pins its own (room.today([...])): the date's own draw made the walks date-flaky (22 Sep: the day's closed event shut the store)
+  let today = [], todayPin = TEST ? [] : null, todayFront = null;   // ?towntest walks a PLAIN day unless the walk pins its own (room.today([...])): the date's own draw made the walks date-flaky (22 Sep: the day's closed event shut the store)
   const todayShut = new Set();
-  // the day's picks, for any day: today's, or tomorrow's for the parked cart
+  // the day's picks
   function picksFor(d) {
     const n = TODAY_N[band] || 2, left = TODAY.filter((t) => (t.w[band] || 0) > 0), out = [];
     for (let i = 0; i < n && left.length; i++) { const r = weighted(left, (t) => t.w[band], d * 11 + i * 5 + 3); out.push(r.id); left.splice(left.indexOf(r), 1); }
@@ -1132,13 +1131,6 @@ export function bootTownLife(ctx) {
     // the odd spot: one resident, one beat, somewhere they never stand
     oddKey = todayHas('oddspot') ? Object.keys(ODD_SPOTS)[Math.floor(h(d, 22) * Object.keys(ODD_SPOTS).length)] : null;
     life.setOverride(overrideFor);
-    // the merchant
-    killBody(merchant); merchant = null;
-    if (todayHas('merchant') && MERCHANT.bands.includes(band)) { merchant = body(MERCHANT.at[0], MERCHANT.at[1], { hat: 'cowboy', glasses: 'shades', extras: { backpack: true } }); bodies.add(merchant); }
-    // 🧳 and if the stall comes TOMORROW, its cart is parked at the bus stop today — a promise a
-    // player can see and come back for (a sign, not a timetable)
-    kill(parked); parked = null;
-    if (!merchant && MERCHANT.bands.includes(band) && picksFor(d + 1).includes('merchant')) parked = sprite('cartp', 1990, 296, { z: 296 });
     // a strange object by daylight
   }
 
@@ -1340,7 +1332,6 @@ export function bootTownLife(ctx) {
     for (const o of objectsNow()) if (Math.abs(wx - o.x) < 34 && wy < o.y + 10 && wy > o.y - 60) return ['room', 'o:' + o.def.id];
     for (const k in hoards) { const h = hoards[k]; if (h && Math.abs(wx - h.x) < 34 && wy < h.y + 10 && wy > h.y - 120) return ['room', 'h:' + k]; }
     for (const g of ghostsNow()) if (!g.done && g.def.tap && Math.abs(wx - g.x) < 34 && wy < g.y + 6 && wy > g.y - 80) return ['room', 'g:' + g.def.id];
-    if (merchant && Math.abs(wx - merchant.x) < 34 && wy < merchant.y + 6 && wy > merchant.y - 90) return ['room', 'm'];
     if (vendor && Math.abs(wx - vendor.x) < 34 && wy < vendor.y + 6 && wy > vendor.y - 90) return ['room', 'v'];
     return null;
   }
@@ -1350,7 +1341,6 @@ export function bootTownLife(ctx) {
     else if (kind === 'h') { const h = hoards[rest]; if (h) walkTo(h.x, h.y + 26, () => lockCard(rest)); }
     else if (kind === 'o') { const o = objectsNow().find((q) => q.def.id === rest); if (o) walkTo(o.x, o.y + 22, () => dusk.takeObject(o)); }
     else if (kind === 'g') { const g = ghostsNow().find((q) => q.def.id === rest && !q.done); if (g) walkTo(g.x + (ctx.pos.x < g.x ? -56 : 56), g.y + 6, () => { const line = one(COPY.ghosts, dayNum() + ghostsNow().length); if (line) say(fill(line)); if (g.s.n > 1) { g.s.fps = 9; setTimeout(() => { g.s.fps = g.def.fps || 5; }, 2500); } track('town_ghost', { id: rest }); }); }
-    else if (kind === 'm' && merchant && !merchant.el.hidden) walkTo(merchant.x + (ctx.pos.x < merchant.x ? -58 : 58), merchant.y + 8, () => shopCard('merchant'));
     else if (kind === 'v' && vendor) walkTo(vendor.x + (ctx.pos.x < vendor.x ? -58 : 58), vendor.y + 8, () => shopCard('vendor'));
   }
 
@@ -1440,15 +1430,15 @@ export function bootTownLife(ctx) {
     take: (id) => { const o = objectsNow().find((q) => q.def.id === id); if (o) dusk.takeObject(o); return !!o; },
     night: () => +night.style.opacity || 0,
     shelf: () => shelfFor(), today: (list, front) => { if (TEST && Array.isArray(list)) { todayPin = list.slice(); todayFront = front || null; todayStage(); condition(); reseedProblems(); } return today.slice(); }, odd: () => oddKey,
-    merchant: () => !!merchant, vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
+    vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
     full: () => [...cond.full], fountain: () => (cond.fountainDry ? 'dry' : 'on'),
     // the four that moved out answer with a PROMISE so a walk can await the render either way
-    cards: { store: () => shopSeam('store'), merchant: () => shopSeam('merchant'), vendor: () => shopSeam('vendor'), health: healthCard },
+    cards: { store: () => shopSeam('store'), vendor: () => shopSeam('vendor'), health: healthCard },
     shopReady: () => loadShop().then(() => true),
     story, copy: () => Object.keys(COPY),
     coins: () => coinsNow(), found,
     hbar: () => ({ pct: hPct.textContent, fill: hFill.style.width, phase: hbarPhase, used: Math.min(10, (L.cap && L.cap.used) | 0) }),
-    clock: () => (slot ? slot.textContent : ''), parked: () => !!parked,
+    clock: () => (slot ? slot.textContent : ''), 
     // 🧪 a QA purse (the pass worker refuses the 'qa' faucet; the coins stay on the local ledger)
     rich: () => (TEST ? passStat('coins_earned', 500, 'qa') : 0),
   };

@@ -23,7 +23,7 @@
     {
       "key": "thriving",
       "name": "Thriving",
-      "brings": "A travelling stall and a full square"
+      "brings": "The rarest goods at Pip’s and a full square"
     }
   ],
   "store": {
@@ -55,17 +55,6 @@
     "omen": "A cursed night is coming: crows on every bench, and a ghost out in daylight.",
     "night": "It’s a cursed night. Stay near the lit lamps. Cursed things you find are yours, and the night stall buys them.",
     "after": "Last night’s curse left dark lamps, shut doors and litter. Help fix them today."
-  },
-  "merchant": {
-    "name": "Fine Goods",
-    "greet": "Rare things from far away. They cost a few more coins than Pip’s.",
-    "lines": [
-      "{item} has crossed several cobbles to meet you.",
-      "A costly piece, but worth every coin.",
-      "{item} is wrapped up. The wrapping is complimentary.",
-      "That one does not visit Pip’s shelf.",
-      "Coins well spent. The stall approves."
-    ]
   },
   "vendor": {
     "name": "Night Trading",

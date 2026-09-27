@@ -411,6 +411,10 @@ export function initLife({ world, W, H, pct }) {
       // 🕯 …except a place the story INSISTS on: the day's seeded few once picked the chapter's Nib, and chapter one
       // opened on an empty fountain (23 Sep 2026)
       n.kept = !!(keepFn && keepFn(n, beat) && st.act !== 'home' && !st.insist);
+      // 🧹 already out, and already at this place: there is nowhere to set off FOR (27 Sep 2026). The square's condition
+      // arriving on every first load is a refresh, and it gave all of them their own moment to set off — up to 74 s of
+      // standing at a post they were already at, not doing their rounds (Trym: "was met with static bananas standing still").
+      const stay = !n.kept && !n.hidden && !n.inside && st.act !== 'home' && (n.place === st.place || Math.hypot(n.x - st.x, n.y - st.y) < 12);   // the same place, or already on its spot (home is a walk IN, never a stay)
       if (n.kept) {
         n.beat = beat; n.place = 'home'; n.act = 'home'; n.lines = st.lines; n.loop = null; n.drift = null;
         if (!n.inside) n.marks = [];
@@ -427,7 +431,8 @@ export function initLife({ world, W, H, pct }) {
       n.sway = SWAY_MIN + h01(n.idx + 1, beat + 1, 12) * SWAY_VAR;
       const room = st.act === 'home' && roomFor(n, beat);
       if (n.inside && room) { n.marks = room.marks; n.path = []; n.wait = 0; n.walking = false; continue; }   // 🕹 in, and staying in
-      if (walk) {
+      if (walk && stay) { n.path = []; n.wait = 0; n.walking = false; }   // 🧹 carry on with the rounds, no wait
+      else if (walk) {
         // 🚪 THE WAIT IS SPENT INDOORS (24 Sep 2026). leaveHome() used to stand them on the doorstep the moment the beat turned
         // and they waited THERE, up to 74 s — so housemates stood on each other at one door (Moss on Spinner at the arcade's,
         // Trym: "its hard to interact with Spinner when moss is placed on top of him"). Now they come out when it is time to go.

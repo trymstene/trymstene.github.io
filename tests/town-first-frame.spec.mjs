@@ -51,3 +51,21 @@ test('the chapter’s scene owns the screen: a tap on a building during its spla
   expect(await page.evaluate(() => document.getElementById('twPanel').hidden), 'no town card under Nib’s sheet').toBe(true);
   expect(errs).toEqual([]);
 });
+
+// 🧹 THE SQUARE IS AT WORK WHEN YOU ARRIVE (27 Sep 2026). Trym: "loaded up the /town/ now, was met with static bananas
+// standing still". The square's condition arriving on every first load re-runs the beat as a walk, and that gave every
+// resident their own moment to set off — up to 74 s standing at a post they were already at, their rounds on hold.
+test('a real first load: a resident already at their post carries on with their rounds, nobody waits for a walk already made', async ({ page }) => {
+  test.setTimeout(60000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band() && window.__town.life.residents().some((r) => r.place), null, { timeout: 30000 });
+  await page.waitForTimeout(2500);   // the room is up and has re-run the beat as a walk
+  const rs = await page.evaluate(() => window.__town.life.residents());
+  // (heading HOME is a real walk with its own short moment — the day's kept few, and anyone whose beat is over)
+  const held = rs.filter((r) => !r.hidden && !r.inside && r.act !== 'home' && r.st && Math.hypot(r.x - r.st[0], r.y - r.st[1]) < 12 && r.waiting).map((r) => r.key + '@' + r.place);
+  expect(held, 'already at their post: nobody is put on a wait').toEqual([]);
+  expect(errs).toEqual([]);
+});

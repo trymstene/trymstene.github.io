@@ -153,7 +153,7 @@ test('the band drives the look: abandoned, recovering, thriving', async ({ page 
   expect(await page.locator('.tw-tape').count()).toBe(2 * shutT.length);   // only a kiosk the day's event shut is taped off in a thriving town
   expect(await room(page, 'fountain')).toBe('on');
   expect(await room(page, 'visitors'), 'no baked statue-visitors any more: the crowd is living traffic (town-folk.js), 21 Sep').toBe(0);
-  expect((await room(page, 'shelf')).length).toBe(7);   // basic 2 + common 2 + good 2 + rare 1
+  expect((await room(page, 'shelf')).length).toBe(7);   // basic 1 + common 2 + good 2 + rare 2
   expect(Object.values(await room(page, 'lamps')).every((s) => s === 'ok')).toBe(true);
   // the town's night: the lamps light and the décor glows
   await seam(page, () => window.__town.life.set(21));
@@ -343,14 +343,14 @@ test('a very cursed town night: the big moment, the storm, every ghost and the s
 
 test('the store sells a piece for the homestead into the shed or onto the van', async ({ page }) => {
   await town(page);
-  await setBand(page, 70);   // lively: six rows
+  await setBand(page, 70);   // lively: seven rows (the fine goods moved onto Pip's shelf, 27 Sep 2026)
   await seam(page, () => window.__town.room.rich());
   await seam(page, () => window.__town.room.cards.store());
   // ⚠️ POLLED, NEVER SLEPT. Pip's shelf is a LAZY CHUNK (town-shop.js) and 300 ms was enough alone
   // and not enough with the machine loaded — the rows had not been built yet and the count was 0.
   // toHaveCount retries by itself, which is the whole reason it exists.
   const rows = page.locator('[data-town-buy]');
-  await expect(rows).toHaveCount(6, { timeout: 10000 });
+  await expect(rows).toHaveCount(7, { timeout: 10000 });
   const enabled = page.locator('[data-town-buy]:not([disabled])');
   expect(await enabled.count()).toBeGreaterThan(0);
   const id = await enabled.first().getAttribute('data-town-buy');
@@ -403,7 +403,11 @@ test('a container fixed is a clean-up: the litter round it goes too', async ({ p
   expect(ids).not.toContain(near2);
   expect(ids).toContain(far);
   expect(await room(page, 'full')).not.toContain(c.key);
-  expect(await page.evaluate(() => window.__town.life.litter())).toBe(flyers.length - swept);
+  // the litter round it went with it — and only that, though Moss may sweep one of his own on his round meanwhile: he
+  // works from the first second now, where a load used to hold him at his post (27 Sep 2026)
+  const left = await page.evaluate(() => window.__town.life.flyers());
+  expect(left.filter((f) => Math.hypot(f.x - c.x, f.y - c.y) < 170)).toEqual([]);
+  expect(left.length).toBeLessThanOrEqual(flyers.length - swept);
 });
 
 // 🔮 a cursed thing must be SEEN: every spot it can stand on is measured clear of every prop's box (15 Sep: the
@@ -1227,7 +1231,7 @@ test('silence: not one word floats over a banana in this town', async ({ page })
 
   const said = await page.evaluate(() => {
     const bad = [];
-    // every banana in the world: the nine residents, the visitors, the merchant, the night vendor
+    // every banana in the world: the nine residents, the visitors, the night vendor
     for (const el of document.querySelectorAll('.tw-npc, .tw-visitor, .tw-me, .tw-atwork')) {
       // 👋 A PERSON IS A PERSON (26 Sep 2026, design library §42): another player, here now or an echo of one, wears their
       // own name over their head — one tag, their name, nothing said. Everything else that is a banana stays silent.
