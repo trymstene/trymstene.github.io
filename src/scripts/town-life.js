@@ -414,6 +414,7 @@ export function initLife({ world, W, H, pct }) {
     if (!walk || beat === 0) spawnLitter(beat, walk);
     for (const n of res) {
       const st = stationFor(n, beat);
+      n.insist = !!st.insist;   // 🕯 a place the story holds them at: no errand takes them off it (town-errands.js)
       const wasKept = n.kept;
       // 🏘️ kept in: they go home (walking, if they are out) and stay there behind a dark window
       // 🕯 …except a place the story INSISTS on: the day's seeded few once picked the chapter's Nib, and chapter one

@@ -1158,21 +1158,30 @@ const C2_PAYS = ['page', 'granfig', 'stamp', 'moss', 'notes', 'black'];
 const C2_SILENT = ['letter', 'drips', 'black'];
 // who speaks (a portrait each) and what is SHOWN (a prop: its text is what is printed on it, and may be empty)
 export const C2_WHO = ['nib', 'granfig', 'stamp', 'moss', 'you'];
-export const C2_PROPS = ['page', 'dots', 'glow', 'blank', 'plinth', 'plaque', 'flyer', 'note', 'dark'];
-// the props that carry a caption over them (a note is a letter and needs none; `dark` is the world’s own moment)
-const C2_CAPTIONED = ['page', 'dots', 'glow', 'blank', 'plinth', 'plaque', 'flyer'];
+export const C2_PROPS = ['page', 'dots', 'glow', 'blank', 'statue', 'plaque', 'flyer', 'fountain', 'note', 'dark'];
+// the props that carry a caption over them (a note is a letter and needs none; `dark` is the world’s own moment), and
+// `back`, the caption over the plaque’s engraved side
+const C2_CAPTIONED = ['page', 'dots', 'glow', 'blank', 'statue', 'plaque', 'back', 'flyer', 'fountain'];
+// the props whose line text is printed on them, so it may never be empty: the chalk on the statue, the line under the cutaway
+const C2_WORDED = ['statue', 'fountain'];
 const c2Fields = {
   chapter: { kind: 'label', aim: 10, max: 14, note: 'The eyebrow over the title splash: lower case, “chapter” and a roman numeral, nothing else. Chapter one’s reads “chapter i”.' },
   title: { kind: 'label', aim: 14, max: 30, note: 'The chapter’s name on the splash that plays when the blue letter is read. Lower case, a phrase, never a sentence.' },
+  'end.pill': { kind: 'label', max: 24, note: 'The pill over the chapter’s last card, played once the black letter’s receipt is put away: “chapter” and its roman numeral, then “complete”.' },
+  'end.title': { kind: 'label', max: 24, note: 'The big words on that last card: the cliffhanger’s sign-off, lower case (the card sets it in capitals). Never names the next chapter.' },
   'props.page': { kind: 'label', max: 24, note: 'The caption over Plot 11’s page from the big book: the scratch, and letters coming back through it.' },
   'props.dots': { kind: 'label', max: 24, note: 'The caption over the same page seen close, where the scratch begins with two small dots.' },
   'props.glow': { kind: 'label', max: 24, note: 'The caption over the page on the last night, with the whole name glowing too brightly to read.' },
   'props.blank': { kind: 'label', max: 24, note: 'The caption over the page once the ink has run off it again.' },
-  'props.plinth': { kind: 'label', max: 24, note: 'The caption over the statue’s plinth: four screw holes, a clean square of stone, chalk marks.' },
-  'props.plaque': { kind: 'label', max: 24, note: 'The caption over the brass plaque from Stamp’s parcel, front (scraped blank) and back.' },
+  'props.statue': { kind: 'label', max: 24, note: 'The caption over the statue seen up close: its basin and base, four screw holes around a clean square where the plaque hung, and chalk on the stone.' },
+  'props.plaque': { kind: 'label', max: 24, note: 'The caption over the brass plaque from Stamp’s parcel, its front scraped blank.' },
+  'props.back': { kind: 'label', max: 24, note: 'The caption over the same plaque turned over, its back engraved.' },
+  'props.fountain': { kind: 'label', max: 24, note: 'The caption over the cutaway in the last night’s scene: the statue outside, at night, its water running again. It says the picture is somewhere else, at the same moment.' },
   'props.flyer': { kind: 'label', max: 24, note: 'The caption over Moss’s oldest flyer.' },
   'steps[].key': { kind: 'key', max: 10 },
   'steps[].find': { kind: 'prose', aim: 40, max: 58, note: 'The quest note while this step is open — the little note in the corner that says WHERE TO GO. Lower case, an instruction, never a control’s name.' },
+  'steps[].away': { kind: 'prose', aim: 40, max: 58, note: 'The note for this step while the player is in the chapter’s OTHER place (the letter waits at home and they are in the town; the night is in the town and they are at home). Says where to go, lower case.' },
+  'steps[].nightfall': { kind: 'prose', aim: 40, max: 58, note: 'The last night’s note once the square is dark: it is time, and where to go. Lower case.' },
   'steps[].note': { kind: 'prose', emptyOk: true, aim: 34, max: 52, note: 'The receipt line after a step pays: it names THE THING YOU WERE GIVEN, never the money. Empty on a step that pays nothing.' },
   'steps[].lines[].who': { kind: 'enum', values: [...C2_WHO, ...C2_PROPS] },
   'steps[].lines[].text': { kind: 'prose', emptyOk: true, aim: 110, max: 220, note: 'One bubble, or what is printed on a prop. ⚠️ FOUR VOICES AND THEY ARE THE TOWN’S (src/data/copy/town-personas.json): Nib is formal and measured with no contractions; Gran Fig gives short orders and blunt verdicts and never reminisces; Stamp is clipped and exact, gives a number, says “Noted.”; Moss opens on two or three plain words, then one longer sentence, and never asks a question. The player says one short sentence. A note is M.’s: lower case, signed “— M.”. The name is never written.' },
@@ -1193,6 +1202,9 @@ function c2Shape(data) {
   if (!/^chapter [ivx]+$/.test(String(data.chapter || ''))) say('chapter', 'must read like chapter one’s: lower case, “chapter” and a roman numeral, nothing else');
   const title = String(data.title || '');
   if (/[:.]/.test(title) || title !== title.toLowerCase()) say('title', 'is a lower-case phrase, with no colon and no full stop');
+  const end = data.end || {};
+  if (!String(end.pill || '').startsWith(String(data.chapter || '-') + ' ')) say('end.pill', 'starts with the chapter’s own eyebrow (“' + data.chapter + '”), so the last card and the first read as one chapter');
+  if (!String(end.title || '') || String(end.title) !== String(end.title).toLowerCase()) say('end.title', 'is the last card’s words, lower case, and it is empty or has a capital');
   for (const k of C2_CAPTIONED) if (!String((data.props || {})[k] || '')) say('props.' + k, 'is empty, and the prop would stand on the card with no caption');
   let told = false;   // the name is NEVER written, and the one place it could slip in is a prop’s own text
   for (const r of rows) {
@@ -1206,6 +1218,11 @@ function c2Shape(data) {
     if (C2_SILENT.includes(k) && lines.length) say(at('lines'), 'is a step with no scene (a letter read at home, a trail in the square), and it carries lines nobody would see');
     if (!C2_SILENT.includes(k) && lines.length < 3) say(at('lines'), 'has fewer than three bubbles — too short to be a scene');
     if (!C2_SILENT.includes(k) && !lines.some((l) => l && l.who === 'you')) say(at('lines'), 'has no line from the player, and every scene is theirs too');
+    // the other-place note is for the steps that live in one place and are pointed at from the other; nightfall is the night’s
+    for (const f of ['away', 'nightfall']) if (r[f] != null && /^[A-Z]/.test(String(r[f]))) say(at(f), 'starts with a capital, and every note in this world is lower case');
+    if (C2_SILENT.includes(k) && k !== 'drips' && !String(r.away || '')) say(at('away'), 'is empty: a letter waits at HOME, and a player in the town needs the note to say so');
+    if (k === 'night' && !String(r.nightfall || '')) say(at('nightfall'), 'is empty: once it is dark the note must stop saying “when”');
+    if (k !== 'night' && r.nightfall != null) say(at('nightfall'), 'belongs to the night scene only');
     const note = String(r.note || '');
     if (C2_PAYS.includes(k) && !note) say(at('note'), 'is the receipt for a step that pays, and it is empty');
     if (!C2_PAYS.includes(k) && note) say(at('note'), 'is a receipt line on a step that pays nothing — nobody would ever read it');
@@ -1214,6 +1231,7 @@ function c2Shape(data) {
       const who = String((l && l.who) || ''), t = String((l && l.text) || '');
       const where = at('lines[' + i + ']');
       if (C2_WHO.includes(who) && !t) say(where, 'is an empty bubble');
+      if (C2_WORDED.includes(who) && !t) say(where, 'is a ' + who + ' with nothing printed on it — its line text is what the picture carries');
       if (Q_PAY.test(t)) say(where, 'names what the player gets — the world never publishes its own numbers');
       if (Q_UI.test(t)) say(where, 'reads like a tutorial: no line in this world tells anybody which control to use');
       if (Q_RUSH.test(t)) say(where, 'puts the player in a hurry, and nothing in Banana Town is urgent');
@@ -1642,7 +1660,7 @@ const frontFields = {
   cart: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the fruit cart on the square. One day it will sell duck bread; nothing to buy at it yet." },
   fountain: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the fountain in the middle of the square. It works; there is nothing to do at it but look." },
   orchard: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the orchard by the lemonade stand. One day it will drop apples your animals at home love; nothing to pick yet." },
-  monument: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the monument: a statue of a banana on a plinth with no plaque, so nobody knows who it is. One day the week’s best will be read out here; nothing to do at it yet. Never name a day of the week." },
+  monument: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the monument: a statue of a banana on a base with no plaque, so nobody knows who it is. One day the week’s best will be read out here; nothing to do at it yet. Never name a day of the week." },
   terrace: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the Coffee Cup’s terrace. Nowhere to sit yet, and nothing to do here yet." },
   cut: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the road north out of town. One day it will lead to the Cut; it goes nowhere yet." },
   gardenE: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the Coffee Cup’s garden. Nothing to do here yet." },
@@ -2192,7 +2210,7 @@ export const JOBS = {
     what: 'The whole of chapter two in the town: the title splash, the quest notes, the receipts, the props\u2019 captions and every scene between Nib, Gran Fig, Stamp, Moss and the player. The two letters that open and close it are the mailbox\u2019s (homestead-post).',
     approved: 'src/data/copy/quest-c2.json',
     reads: 'src/lib/world-quest.js (through a glob, joined to src/data/quest-c2.js at boot \u2014 no words means no chapter)',
-    top: ['chapter', 'title', 'props', 'steps'],
+    top: ['chapter', 'title', 'end', 'props', 'steps'],
     fields: c2Fields,
     shape: c2Shape,
   },

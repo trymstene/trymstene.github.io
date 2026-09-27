@@ -85,7 +85,17 @@ for (const st of c2.STEPS.filter((s) => s.kind === 'trail')) {
   for (const [x, y] of st.path || []) if (!(x > 60 && x < 2140 && y > 60 && y < 1240)) say(st.id + ' drops ink at ' + x + ',' + y + ', off the walkable town');
 }
 
-// ── 6. the hoardings stay down ──────────────────────────────────────────────────────────────
+// ── 6. the statue the props draw is still the statue ────────────────────────────────────────
+// quest-c2-fx.js draws the town's own statue by its generated name, ov-51.png, in the close-up, the night's cutaway and
+// the inset where its water stops, and lays the water strip over it pixel for pixel. build-town-scene.py numbers its
+// overlays, so a rebuild that moved the statue would put a lamp post in the story and nothing would say so.
+const pngSize = (p) => { try { const b = readFileSync(join(ROOT, p)); return b.readUInt32BE(16) + 'x' + b.readUInt32BE(20); } catch (e) { return 'missing'; } };
+if (pngSize('public/assets/town/ov-51.png') !== '110x206') say('public/assets/town/ov-51.png is ' + pngSize('public/assets/town/ov-51.png') + ', not the statue (110x206) that chapter two’s props draw by that name (quest-c2-fx.js)');
+if (pngSize('public/assets/town/a-statuewater.png') !== '660x206') say('public/assets/town/a-statuewater.png is ' + pngSize('public/assets/town/a-statuewater.png') + ', not six frames of the statue’s water (660x206; tools/build-statue-water.py)');
+const fxSrc = read('src/lib/quest-c2-fx.js');
+for (const w of C2_PROPS.filter((p) => !/^(note|dark)$/.test(p))) if (!fxSrc.includes("'" + w + "'")) say('quest-c2-fx.js propEl draws no "' + w + '", and the copy file shows one');
+
+// ── 7. the hoardings stay down ──────────────────────────────────────────────────────────────
 // ⚠️ The Four Signatures (the chapter 2 of 21 Sep) was the only thing that could open a hoarded front, and it is retired.
 // HOARD_ON now would board up the store, the post office and the café for EVERY player, for ever, with no way through.
 if (HOARD_ON !== false) say('HOARD_ON is no longer false, and since The Four Signatures retired no chapter opens a hoarded front: it would board up the store, the post office and the café for every player for good (src/data/town/locks.js)');

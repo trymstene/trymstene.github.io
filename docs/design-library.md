@@ -1399,10 +1399,22 @@ Ghost Writer plan: every quest letter is blue, black always means M.
   The town's residents walk, so a mark pinned where one stood at boot hangs over empty cobbles. A scene with nobody in it
   (the statue) hangs its ! on the thing, at the thing's depth, and a tap on the thing opens it (`banana-town.js`, the story
   first).
-- **A prop is drawn in the page and its words are the copy's** (`world-quest.js propEl`): what is printed on the plaque, the
-  flyer, M.'s notes. No prop, line or letter ever shows the first banana's name.
+- **A prop is drawn in the page and its words are the copy's** (`src/lib/quest-c2-fx.js propEl`, a lazy chunk): what is
+  printed on the plaque, the flyer, M.'s notes, the chalk. No prop, line or letter ever shows the first banana's name —
+  writing that must not be read is HANDWRITING THAT SPELLS NOTHING (motifs that are no letter on their own), never letters.
+- **A prop is the world's own art where the world has it**: the statue up close is the town's statue (ov-51, its size held
+  by `tools/check-quest-c2.mjs`), never a diagram beside the pixel art (28 Sep 2026, Trym saw "a flat diagram").
+- **Your reply sits UNDER what you answer**, and wraps: a reply is a sentence, a content card, not a button label.
 - **What the night brings is only for the player in the chapter** (the Ghost Writer, the Mayor's lit window, the statue's
-  water): drawn in the quest's own layer and gone at its next render. The moment they go, the card steps aside (the `dark`
-  line) so it can be seen, and comes back by itself.
-- Walked by `tests/quest-c2.spec.mjs`: both letters, every scene in order, the ink, the night; screenshots in
-  test-results/c2-*.
+  water): drawn in the quest's own layer and gone at its next render. ⚠️ **A LIGHT GOES ON THE VIEW, OVER THE DARK**: the
+  town's night is a scrim on the view (`.tw-night`), so anything lit inside the world comes out grey under it. The lights
+  (`.bwq-light`, `mix-blend-mode: screen`) are pinned to world points every frame; a light laid over a face washes it
+  white, so a light on a character is a HALO with a clear middle.
+- **What the camera cannot show, the card shows**: at the hall on a phone the statue is off screen, so its water running is
+  a cutaway prop (“meanwhile, outside”) and its stopping a small inset while the card stands aside (the `dark` line).
+- **A scene owns its stage**: a resident held for a scene runs no errand (`n.insist`), and the town's own ghosts that
+  would share it step out for this player (`window.bwqHush`, town-night.js).
+- **A chapter opens and ends on a title card** over a dimmed world (`.bwq-scrim`), in the frame's middle where no area's
+  toast lands — never on a toast.
+- Walked by `tests/quest-c2.spec.mjs`: both letters, every scene in order, the ink, the night, the end card, the card's fit
+  and the reply's place at every line, and the tallest scenes at 360×640; screenshots in test-results/c2-*.

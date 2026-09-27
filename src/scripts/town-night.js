@@ -252,9 +252,15 @@ export function bootTownNight(ctx) {
   }
   function moveGhost(g, x, y) { g.x = x; g.y = y; moveSprite(g.s, x, y); }
   function stepGhosts(dt, now) {
+    // 🕯 a chapter's own night keeps its stage (quest-c2-fx.js night() sets window.bwqHush, for this player only): the ghost
+    // that leans on the hall's door and the wisp over the statue step out while the Ghost Writer has the door and the statue
+    // runs — two ghosts stacked on one door read as one blur (28 Sep 2026)
+    const hush = window.bwqHush;
     for (const g of ghosts) {
       if (g.done) continue;
-      const d = g.def, s = g.s;
+      const d = g.def, s = g.s, off = !!(hush && hush.includes(d.id));
+      if (g.hushed !== off) { g.hushed = off; s.el.style.visibility = off ? 'hidden' : ''; }
+      if (off) continue;
       // 👣 walked into, a ghost fades and keeps away a while (the drift has its own shyness below); the leader
       // hurries on instead — it is leading you (Trym, 15 Sep: "the ghosts should also flee or fade when i walk into them")
       const near = Math.hypot(ctx.pos.x - g.x, ctx.pos.y - g.y);

@@ -52,9 +52,26 @@ const playSheet = async (page, name, at = []) => {
       const hit = at.find((a) => now.includes(a));
       if (hit) { await page.waitForTimeout(650); await page.screenshot({ path: SHOT + name + '-' + hit.replace(/\W+/g, '') + '.png' }); }
     }
-    if (await page.locator('.bwq-ans:not([hidden]) button').count()) { await tap(page, '.bwq-ans:not([hidden]) button'); await page.waitForTimeout(240); continue; }
-    await tap(page, '.bwq-dlg'); await page.waitForTimeout(120);
-    await tap(page, '.bwq-dlg').catch(() => {}); await page.waitForTimeout(160);   // the first tap finishes the typing, the second moves on
+    // ⚠️ the card fits inside the game frame whatever it shows (§40), and a reply to a prop sits UNDER the prop (27 Sep:
+    // above it, the button read as the prop's caption)
+    await page.waitForTimeout(300);   // the card's pop-in is a scale; measure it settled
+    const geo = await page.evaluate(() => {
+      const d = document.querySelector('.bwq-dlg');
+      if (!d) return null;
+      const sp = d.querySelector('.bwq-sp'), b = d.querySelector('.bwq-ans:not([hidden]) button');
+      const host = d.parentElement.getBoundingClientRect(), r = d.getBoundingClientRect();
+      return { reply: !!b, under: !b || sp.hidden || b.getBoundingClientRect().top >= sp.getBoundingClientRect().bottom - 1, fits: r.top >= host.top - 1 && r.bottom <= host.bottom + 1,
+        whole: !b || (b.scrollWidth <= b.clientWidth + 1 && b.getBoundingClientRect().right <= r.right + 1) };
+    });
+    if (geo) {
+      expect(geo.fits, 'the card fits inside the game frame (' + now + ')').toBe(true);
+      expect(geo.under, 'the reply sits under the prop it answers (' + now + ')').toBe(true);
+      expect(geo.whole, 'a long reply wraps inside the card, never runs off its edge (' + now + ')').toBe(true);
+    }
+    if (geo && geo.reply) { await tap(page, '.bwq-ans:not([hidden]) button'); await page.waitForTimeout(240); continue; }
+    // ONE tap a turn: a line still typing is finished by it (and the next turn taps it on), a finished one moves on — two
+    // taps in a row skipped a prop whenever the line before it had finished typing by itself
+    await tap(page, '.bwq-dlg'); await page.waitForTimeout(160);
   }
   throw new Error('the sheet never closed');
 };
@@ -111,6 +128,7 @@ test('the blue letter at home opens chapter two, and its splash plays once it is
   // ── put it away: the splash, then the chapter moves to the town
   await tap(page, '#hsLettersX');
   await page.waitForSelector('.bwq-intro.is-on', { timeout: 8000 });
+  await page.waitForTimeout(700);   // the card fades in over half a second
   const sp = await page.locator('.bwq-intro').textContent();
   expect(sp).toContain(COPY.chapter);
   expect(sp).toContain(COPY.title);
@@ -130,11 +148,14 @@ const standAt = async (page, x, y) => {
   await page.waitForTimeout(500);
 };
 // the resident the open scene belongs to walks to their place; stand beside them, the ! must be over their head, tap it
-const meet = async (page, key, name) => {
+const meet = async (page, key, name, at) => {
   await page.waitForFunction((k) => window.bwqTalk && window.bwqTalk.who === k && window.bwqTalk.open, key, { timeout: 15000 });
-  await page.waitForFunction((k) => { const r = window.__town.life.residents().find((q) => q.key === k); return r && !r.hidden && !r.walking && r.place === window.bwqTalk.station; }, key, { timeout: 60000 });
+  await page.waitForFunction((k) => { const r = window.__town.life.residents().find((q) => q.key === k); return r && !r.hidden && !r.walking && !r.errand && r.place === window.bwqTalk.station; }, key, { timeout: 60000 });
   const r = await resident(page, key);
-  await standAt(page, r.x + (r.x > 1100 ? -60 : 60), r.y + 14);
+  // ⚠️ AT the place the note names, not merely bound for it: an errand once walked Gran Fig to the post office with the !
+  // on her head while her note said "the west garden" (28 Sep 2026)
+  expect(Math.hypot(r.x - r.st[0], r.y - r.st[1]), key + ' stands at the place the scene holds them').toBeLessThan(70);
+  await standAt(page, at ? at[0] : r.x + (r.x > 1100 ? -60 : 60), at ? at[1] : r.y + 14);
   await page.waitForSelector('.bwq-mark:not([hidden])', { timeout: 5000 });
   const geo = await page.evaluate((k) => {
     const m = document.querySelector('.bwq-mark').getBoundingClientRect();
@@ -184,7 +205,7 @@ test('chapter two in the town: every scene in order, the ink, the statue, and th
   }
   // ── 3. THE STATUE opens by itself where the ink ends
   await page.waitForSelector('.bwq-dlg', { timeout: 8000 });
-  await playSheet(page, '10-statue', ['bwq-prop--plinth']);
+  await playSheet(page, '10-statue', ['bwq-prop--statue']);
   expect((await save(page)).s, 'the statue scene pays nothing and moves on').toBe(4);
 
   // ── 4. GRAN FIG, in her garden
@@ -217,19 +238,24 @@ test('chapter two in the town: every scene in order, the ink, the statue, and th
   expect(await page.locator('.bwq-hint span').textContent()).toBe(step('night').find);
   await page.evaluate(() => window.__town.life.set(20.2));   // nightfall
   await page.waitForSelector('.bwq-ghost', { timeout: 10000 });
-  await page.waitForSelector('.bwq-water', { timeout: 3000 });
-  await standAt(page, 1416, 400);
-  await page.waitForTimeout(700);
-  await page.screenshot({ path: SHOT + '19-night-statue-runs.png' });
-  await meet(page, 'nib', '20-night-hall');
+  await page.waitForFunction((t) => { const h = document.querySelector('.bwq-hint span'); return h && h.textContent === t; }, step('night').nightfall, { timeout: 5000 });
+  // the statue stays dry until the name is whole, and the night's lights are on the view, over the town's dark
+  expect(await page.locator('.bwq-water.is-dry').count(), 'the statue is dry before the scene').toBe(1);
+  const lights = await page.evaluate(() => {
+    const l = document.querySelector('.bwq-lights'), n = document.querySelector('.tw-night');
+    return { onView: !!l && l.parentElement === n.parentElement, over: !!l && !!(n.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING), z: l && getComputedStyle(l).zIndex };
+  });
+  expect(lights, 'the lantern, the ghost’s light and the window are drawn over the dark').toEqual({ onView: true, over: true, z: '7' });
+  await meet(page, 'nib', '20-night-hall', [1196, 626]);   // beside him, clear of the door the ghost is at
   const lit = await page.evaluate(() => !!document.querySelector('.bwq-mayor:not(.is-out)'));
   expect(lit, 'the Mayor’s window is lit for this player tonight').toBe(true);
-  const night = await playSheet(page, '21-night', ['bwq-prop--glow', 'dark', 'bwq-prop--blank']);
+  const night = await playSheet(page, '21-night', ['bwq-prop--glow', 'bwq-prop--fountain', 'dark', 'bwq-prop--blank']);
   expect(night, 'the card stepped aside for the dark').toContain('dark');
+  expect(night.some((n) => n.includes('bwq-prop--fountain')), 'meanwhile, outside: the statue runs again').toBe(true);
   const s = await save(page);
   expect(s.s, 'the chapter now waits at home').toBe(10);
   expect(s.mail, 'for the black letter').toBe('questblack');
-  expect(await page.locator('.bwq-hint span').textContent()).toBe(step('black').find);
+  expect(await page.locator('.bwq-hint span').textContent(), 'from the town, the note sends you home').toBe(step('black').away);
   const ev = await page.evaluate(() => window.__ev.filter((e) => /^quest_step_c2_/.test(e)));
   expect(ev).toEqual(['quest_step_c2_page', 'quest_step_c2_drips', 'quest_step_c2_statue', 'quest_step_c2_granfig', 'quest_step_c2_stamp',
     'quest_step_c2_moss', 'quest_step_c2_taptap', 'quest_step_c2_notes', 'quest_step_c2_night']);
@@ -278,6 +304,15 @@ test('the black letter at home ends chapter two, from M., in lower case and unse
   await tap(page, '#hsLettersX');
   const got = await gotIt(page, '24-receipt-black');
   expect(got).toContain(step('black').note);
+  // …and then the chapter's last card, over a world gone dark: no toast in a corner
+  await page.waitForSelector('.bwq-intro.is-on', { timeout: 8000 });
+  const endCard = await page.locator('.bwq-intro').textContent();
+  expect(endCard).toContain(COPY.end.pill);
+  expect(endCard).toContain(COPY.end.title);
+  expect(await page.locator('.bwq-scrim--end.is-on').count(), 'the world dims behind it').toBe(1);
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: SHOT + '25-end-card.png' });
+  expect(await page.locator('.bwq-toast.on').count(), 'no toast: the card is the ending').toBe(0);
   await page.waitForFunction(() => { try { return JSON.parse(localStorage.getItem('bwq-c2')).done === 1; } catch (e) { return false; } }, null, { timeout: 8000 });
   const ev = await page.evaluate(() => window.__ev);
   expect(ev).toContain('quest_step_c2_black');
@@ -309,6 +344,40 @@ test('finishing chapter one at home turns the page over to chapter two, with no 
   // …and on the same page, a few seconds on: the blue letter is in the mailbox and the note says so
   await page.waitForFunction((t) => { const h = document.querySelector('.bwq-hint span'); return h && h.textContent === t; }, step('letter').find, { timeout: 15000 });
   await page.waitForFunction(() => window.__hs.mailOf().some((m) => m.id === 'questblue' && !m.read), null, { timeout: 8000 });
-  await page.screenshot({ path: SHOT + '25-c1-to-c2.png' });
+  await page.screenshot({ path: SHOT + '26-c1-to-c2.png' });
+  expect(errs).toEqual([]);
+});
+
+test('the tallest scenes fit a small phone: the statue up close, and the night’s cutaway at 360×640', async ({ page }) => {
+  test.setTimeout(180000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('c2-seeded')) return;
+    sessionStorage.setItem('c2-seeded', '1');
+    localStorage.setItem('bwq-c1', JSON.stringify({ s: 17, done: 1, in: 1 }));
+    localStorage.setItem('bwq-c2', JSON.stringify({ s: 3, k: {}, in: 1 }));
+  });
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); window.__town.life.set(4); });
+  // the statue scene, opened where it stands (playSheet measures the card at every line)
+  await page.waitForFunction(() => window.bwqTalk && window.bwqTalk.who === 'monument' && window.bwqTalk.open, null, { timeout: 15000 });
+  await standAt(page, 1416, 400);
+  await page.evaluate(() => window.bwqTalk.open());
+  await page.waitForSelector('.bwq-dlg', { timeout: 6000 });
+  await playSheet(page, '27-small-statue', ['bwq-prop--statue']);
+  // …and the last night, from its first line to its end
+  await page.evaluate(() => localStorage.setItem('bwq-c2', JSON.stringify({ s: 9, k: {}, in: 1 })));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); window.__town.life.set(20.2); });
+  await page.waitForFunction(() => window.bwqTalk && window.bwqTalk.who === 'nib' && window.bwqTalk.open, null, { timeout: 15000 });
+  await standAt(page, 1180, 610);
+  await page.evaluate(() => window.bwqTalk.open());
+  await page.waitForSelector('.bwq-dlg', { timeout: 6000 });
+  const seen = await playSheet(page, '28-small-night', ['bwq-prop--fountain', 'dark']);
+  expect(seen.some((n) => n.includes('bwq-prop--fountain'))).toBe(true);
   expect(errs).toEqual([]);
 });

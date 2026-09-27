@@ -52,7 +52,9 @@ export function tick(n, now, x) {
 export function send(n, now, x, force) {
   if (!n || !n.st || !SPOTS[n.key]) return false;
   const b = x.beat(), d = n.day[n.beat] || [];
-  const atWork = !n.hidden && !n.inside && !n.kept && !n.loop && n.beat !== 2 && n.beat !== 5
+  // ⚠️ never one the story INSISTS on (a chapter's scene holds them at a place, 28 Sep 2026: Gran Fig walked her errand to
+  // the post office with the ! riding her head while the note said "find her in the west garden")
+  const atWork = !n.hidden && !n.inside && !n.kept && !n.loop && !n.insist && n.beat !== 2 && n.beat !== 5
     && ACTS.has(n.act) && n.place === d[0] && n.at === n.place;
   if (!atWork && !force) { n.errandBeat = b; n.errandAt = 0; return false; }
   if (!force && (now < (n.holdUntil || 0) || x.res.filter((m) => m.errand).length >= CAP)) { n.errandAt = now + 4000; return false; }

@@ -54,6 +54,8 @@ export const JARGON = [
   [/\bon the house\b/i, '“on the house”: free'],
   [/\breference\b/i, '“reference”: a good word'],
   [/\b(vacate|vacated|entry level|reapply)\b/i, 'office words: the job is gone; ask again and you start from the first rank'],
+  // 28 Sep 2026: chapter two sent players after the statue’s “plinth” — a sculptor’s word, where every player knows “base”
+  [/\bplinths?\b/i, '“plinth”: the statue’s base'],
 ];
 export function faults(value, spec = {}) {
   const out = [];
