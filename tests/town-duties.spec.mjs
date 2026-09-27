@@ -115,6 +115,8 @@ test('the note: nothing without a job, the counts and the wage with one, the bos
   await page.goto('/town/?towntest&questreset', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.duties && !window.__town.duties.hidden() && document.querySelector('.bwq-hint') && !document.querySelector('.bwq-hint').classList.contains('bwq-hint--wait'), null, { timeout: 30000 });
   await page.waitForTimeout(1400);
+  // 📌 the quest note folds itself a few seconds after it opens (world-quest.js NOTE_MS): open it again to measure the column
+  if (await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min'))) { await page.click('.bwq-hint__badge'); await page.waitForTimeout(300); }
   await page.screenshot({ path: 'test-results/town-duties-under-the-quest.png' });
   const stack = await page.evaluate(() => { const q = document.querySelector('.bwq-hint').getBoundingClientRect(); const d = document.querySelector('.twd-chip').getBoundingClientRect(); return { qBottom: q.bottom, dTop: d.top }; });
   expect(stack.dTop, 'the work note sits below the quest note').toBeGreaterThan(stack.qBottom);

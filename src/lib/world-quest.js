@@ -605,7 +605,6 @@ body.pk-inside .bwq-hint,
 body.bh-inside .bwq-hint,
 .hs-world.is-inside ~ .bwq-hint,
 .tw-world.is-inside ~ .bwq-hint { display:none !important; }
-.bwq-hint--wait { visibility:hidden; animation:none; }
 /* 📕 folded — the card drops to a 0×0 anchor rather than hiding, so the badge
    holds the exact spot the finger just tapped. Transparent border, not
    border-width:0: the badge is placed off the PADDING box. */
@@ -1246,7 +1245,12 @@ export async function bootQuest() {
   activeView = document.querySelector(AREAS[area].view) || null;
   const layer = [];   // live quest DOM in this area
   let dlg = null, dlgTimer = null, watchTimer = null, introBusy = false;
-  let chipDelayed = false;   // the first chip of a visit holds back ~5s
+  // 📌 THE NOTE POPS, THEN FOLDS ITSELF (Trym, 28 Sep 2026: "quest-popups should not stay open, they can show right away,
+  // after 3-4 seconds they can contract to the quest icon so it doesnt stay open and blocks any view"). An objective new to
+  // this page opens at once and folds to its badge NOTE_MS later; the badge opens it again for as long, and a tap on the
+  // paper folds it at once. It replaced a 5-s wait before the first note and a fold that was saved and stayed shut.
+  const NOTE_MS = 3500;
+  let popped = '', foldT = 0;   // the objective this page has already shown open, and the pending fold
   let nibEl = null;          // his body — so a finished talk can walk him off
 
   // 🚶 done talking, Nib LEAVES — steps down to the road, then walks east
@@ -1554,30 +1558,24 @@ export async function bootQuest() {
       // internal strings only — a hint may carry an inline sprite (the
       // banana phone) so chip icons match the action bar's real art
       h.querySelector('span').innerHTML = label;
-      // the ! folds the card away when you have other business in the world
-      // (Trym). Folded rides in bwq-c1, so a re-render — or the next area —
-      // can't quietly unfold it again.
       const badge = h.querySelector('.bwq-hint__badge');
-      const fold = () => {
-        h.classList.toggle('is-min', !!S.hm);
-        badge.setAttribute('aria-expanded', S.hm ? 'false' : 'true');
-        badge.setAttribute('aria-label', S.hm ? 'show the quest note' : 'hide the quest note');
+      const fold = (min) => {
+        clearTimeout(foldT);
+        h.classList.toggle('is-min', min);
+        badge.setAttribute('aria-expanded', min ? 'false' : 'true');
+        badge.setAttribute('aria-label', min ? 'show the quest note' : 'hide the quest note');
+        if (!min) foldT = setTimeout(() => { if (h.isConnected) fold(true); }, NOTE_MS);
       };
-      fold();
+      fold(label === popped);   // new to this page: open, and it folds itself; seen already: its badge
+      popped = label;
       badge.addEventListener('click', (e) => {
         e.stopPropagation();       // the world walks on taps
-        S.hm = S.hm ? 0 : 1; save();
-        fold();
+        fold(!h.classList.contains('is-min'));
       });
       // 📎 and the paper folds on a tap of its own (the badge unfolds it). ⚠️ pointerdown is stopped HERE so the
       // area's own tap handler, which listens on the view above, never reads a note tap as a walk.
       h.addEventListener('pointerdown', (e) => { if (!h.classList.contains('is-min')) e.stopPropagation(); });
-      h.addEventListener('click', (e) => { if (h.classList.contains('is-min') || e.target.closest('.bwq-hint__badge')) return; e.stopPropagation(); S.hm = 1; save(); fold(); });
-      if (!chipDelayed) {   // let the world land first, then pop the journal in
-        chipDelayed = true;
-        h.classList.add('bwq-hint--wait');
-        setTimeout(() => { if (h.isConnected) h.classList.remove('bwq-hint--wait'); }, 5000);
-      }
+      h.addEventListener('click', (e) => { if (h.classList.contains('is-min') || e.target.closest('.bwq-hint__badge')) return; e.stopPropagation(); fold(true); });
       (document.querySelector(AREAS[area].chipHost || AREAS[area].view) || w).appendChild(h);
       layer.push(h);
     }

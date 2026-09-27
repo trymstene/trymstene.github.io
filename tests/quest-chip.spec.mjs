@@ -58,23 +58,33 @@ test('the quest chip hides inside a shop', async ({ page }) => {
   expect(inside.shown, 'the chip is still showing while you are inside a shop').toBe(false);
 });
 
-// 📎 THE PAPER FOLDS ON A TAP (Trym, 22 Sep 2026: "important that it's possible to contract the
-// work-quest-notification"). The badge was the only fold control and nobody found it; a tap on the note
-// itself folds it now, the badge brings it back, and a tap on the paper never walks the banana under it.
-test('a tap on the quest note folds it, the badge brings it back, and the banana stays put', async ({ page }) => {
+// 📎 THE PAPER FOLDS ON A TAP (Trym, 22 Sep 2026: "important that it's possible to contract the work-quest-notification"),
+// and 📌 FOLDS ITSELF (Trym, 28 Sep 2026: "quest-popups should not stay open, they can show right away, after 3-4 seconds
+// they can contract to the quest icon so it doesnt stay open and blocks any view"): a new objective opens at once and folds
+// to its badge after about three and a half seconds; the badge opens it again for as long; a tap on the paper folds it at
+// once, and never walks the banana under it.
+test('the quest note opens at once, folds itself to its badge, and a tap folds it without walking the banana', async ({ page }) => {
   await page.goto('/town/?towntest&questreset', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => window.__town && window.__town.pos && document.querySelector('.bwq-hint') && !document.querySelector('.bwq-hint').classList.contains('bwq-hint--wait'), null, { timeout: 30000 });
-  await page.waitForTimeout(600);
-  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'the note is open').toBe(false);
+  await page.waitForFunction(() => window.__town && window.__town.pos && document.querySelector('.bwq-hint'), null, { timeout: 30000 });
+  const isMin = () => page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min'));
+  expect(await isMin(), 'a new objective shows right away').toBe(false);
+  await page.waitForFunction(() => document.querySelector('.bwq-hint').classList.contains('is-min'), null, { timeout: 5000 });
+  const t0 = Date.now();
+  await page.click('.bwq-hint__badge');
+  expect(await isMin(), 'the badge opens it again').toBe(false);
+  await page.waitForFunction(() => document.querySelector('.bwq-hint').classList.contains('is-min'), null, { timeout: 6000 });
+  const held = Date.now() - t0;
+  expect(held, 'and it folds itself again after a few seconds').toBeGreaterThan(2500);
+  expect(held).toBeLessThan(5500);
+  await page.click('.bwq-hint__badge');
   const before = await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y }));
   await page.click('.bwq-hint > span');
-  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'a tap on the paper folds it').toBe(true);
+  expect(await isMin(), 'a tap on the paper folds it at once').toBe(true);
   await page.waitForTimeout(300);
   const after = await page.evaluate(() => ({ x: window.__town.tgt.x, y: window.__town.tgt.y }));
   expect(after, '…and the banana was not sent walking').toEqual(before);
-  await page.click('.bwq-hint__badge');
-  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'the badge brings it back').toBe(false);
+  // a fresh page is a fresh look: the same objective opens again for its few seconds
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelector('.bwq-hint'), null, { timeout: 30000 });
-  expect(await page.evaluate(() => document.querySelector('.bwq-hint').classList.contains('is-min')), 'and the fold is remembered either way').toBe(false);
+  expect(await isMin(), 'a new visit shows it again').toBe(false);
 });
