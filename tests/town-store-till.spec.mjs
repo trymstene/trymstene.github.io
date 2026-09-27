@@ -14,13 +14,16 @@ async function store(page, { job = '', band = 0, hour = 12 } = {}) {
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
+  // the band FIRST (27 Sep 2026): it decides who is kept in — the day's seeded few among them — and the pinned hour then
+  // PLACES everyone for it. The other way round, a band arriving after the hour re-runs the beat as a walk, and a resident
+  // let out waits up to 74 s to set off
+  if (band) { await page.evaluate((b) => window.__town.room.set(b), band); await page.waitForTimeout(700); }
   await page.evaluate((h) => { window.__town.room.curse('none'); window.__town.life.set(h); }, hour);
   // a fresh page has no job at all; the job seam arrives a moment after the square does, so it is waited for, never raced
   if (job) {
     await page.waitForFunction(() => window.__town.work && window.__town.work.set, null, { timeout: 20000 });
     await page.evaluate((j) => window.__town.work.set({ at: j }), job);
   }
-  if (band) { await page.evaluate((b) => window.__town.room.set(b), band); await page.waitForTimeout(700); }
   await page.evaluate(() => window.__town.rooms.enter('store'));
   await page.waitForTimeout(800);
   return errs;
@@ -122,7 +125,9 @@ test('Pip keeps the store from behind its counter, and the room names him', asyn
 });
 
 test('at noon Pip is out at the cash machine, and the room says so', async ({ page }) => {
-  const errs = await store(page, { hour: 10 });
+  // ⚠️ LIVELY, not the walk's resting Recovering (27 Sep 2026): at Recovering a tenth of the town is kept in by the day's own
+  // draw (LOOK.outside 0.9), and on a date that drew Pip he never left the store — the walk was only green on other days
+  const errs = await store(page, { hour: 10, band: 70 });
   const p = await pip(page);
   expect(p.inside, 'out on his errand').toBe(false);
   expect(p.place, 'the cash machine, as his own noon line says').toBe('bank');

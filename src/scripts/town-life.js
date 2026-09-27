@@ -270,6 +270,7 @@ const GLANCE_MIN = 5000, GLANCE_VAR = 9000;
 // 🗣 A PAIR TALKS: turns of TALK_MS (each pair on its own phase), and whoever's turn it is bobs twice as it starts —
 // with no speech bubbles (the quiet rule), that back-and-forth is the conversation
 const TALK_MS = 2600;
+// 🧺 ERRANDS (27 Sep 2026) live in their own chunk, src/scripts/town-errands.js: the table, the setting off, the two legs.
 // a station's marks: the base point, then a few nearby ones with their own facing. `act` decides the
 // shape — a counter keeper stays behind it and only turns, a bench sitter shifts along it, someone
 // standing about wanders a little wider.
@@ -402,6 +403,7 @@ export function initLife({ world, W, H, pct }) {
     n.hidden = false; n.el.hidden = false;
     if (n.glow) n.glow.hidden = true;
   }
+  let E = null, EX = null;   // 🧺 town-errands.js once it has loaded, and the reach it is given
   function changeBeat(beat, walk) {
     curBeat = beat;
     if (!walk || beat === 0) spawnLitter(beat, walk);
@@ -421,6 +423,8 @@ export function initLife({ world, W, H, pct }) {
       if (walk && n.beat === beat && (n.kept
         ? wasKept && (n.hidden || n.path.length > 0)
         : !wasKept && n.place === st.place && (n.path.length > 0 || n.at === st.place))) continue;
+      n.errand = null; n.errandAt = 0;   // 🧺 a beat that really re-plans them ends the errand they were on
+      if (!walk) n.errandBeat = -1;       // …and a fresh placement (a first load, a pinned hour) owes nobody's errand yet
       // 🧹 already out, and already AT this place: there is nowhere to set off for (27 Sep 2026: the square's condition on a
       // first load gave each resident at their post up to 74 s of standing still before their rounds). `at` is where they
       // ARRIVED, never merely where they are bound (home is a walk in, never a stay).
@@ -468,7 +472,9 @@ export function initLife({ world, W, H, pct }) {
     if (mayorEl) mayorEl.hidden = beat !== 4;
   }
   function arrive(n) {
-    n.walking = false; n.path = []; n.at = n.act === 'home' ? 'home' : n.place;
+    n.walking = false; n.path = [];
+    if (n.errand && E && E.arrive(n, EX)) return;   // 🧺 at an errand's far end: town-errands.js turns them round
+    n.at = n.act === 'home' ? 'home' : n.place;
     if (n.act === 'home' && !n.inside) goHome(n, true);
   }
 
@@ -512,6 +518,7 @@ export function initLife({ world, W, H, pct }) {
   function talk(key) {
     const n = byKey(key);
     if (!n || !n.name) return null;   // the words are still on their way
+    n.holdUntil = performance.now() + 20000;   // 🧺 …nor while their card is open
     const first = !n.talked;
     n.talked = true;
     const line = first ? n.hi[rung(n.key)] : (n.lines && n.lines.length ? n.lines[Math.floor(hourNow()) % n.lines.length] : n.tap);
@@ -532,6 +539,7 @@ export function initLife({ world, W, H, pct }) {
   function standBy(key) {   // where the player waits to talk: beside them, never on them
     const n = byKey(key);
     if (!n || n.hidden) return null;
+    n.holdUntil = performance.now() + 12000;   // 🧺 nobody sets off on an errand while you walk up to them
     const t = n.inside && INSIDE[n.home].talk;   // 🧾 behind a counter: talked to across it, from its front
     return { x: n.x, y: n.y, at: t ? [n.x, t] : null };
   }
@@ -628,6 +636,7 @@ export function initLife({ world, W, H, pct }) {
             if (!n.drift) { n.face = m[2] || n.face; n.dwell = DWELL_MIN + h01(n.idx + 1, n.beat + 1, n.mi + 21) * DWELL_VAR; }
           }
         }
+        if (E) E.tick(n, now, EX);   // 🧺 this beat's errand, when its moment comes
       }
       if (!stood && n.danceAt) { n.danceAt = 0; n.danceNext = now + DANCE_GAP_MIN; }   // set off mid-dance: the walk wins
       if (n.lift !== lift) { n.lift = lift; n.el.classList.toggle('is-lift', lift); }
@@ -689,7 +698,7 @@ export function initLife({ world, W, H, pct }) {
     glows: () => res.filter((n) => n.glow && !n.glow.hidden).map((n) => n.key),
     beat: () => curBeat,
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
-    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, at: n.at, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden || (!!n.inside && roomNow !== n.home), inside: !!n.inside, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, dancing: !!n.danceAt, pair: n.pk, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
+    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, at: n.at, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden || (!!n.inside && roomNow !== n.home), inside: !!n.inside, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0 && !n.errand, errand: n.errand && n.errand.phase, potter: !!n.drift, dancing: !!n.danceAt, pair: n.pk, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
     flyers: () => flyers.filter((f) => !f.gone).map((f) => ({ i: f.i, x: f.x, y: f.y })),
     rung,
@@ -697,8 +706,10 @@ export function initLife({ world, W, H, pct }) {
     facing: () => res.filter((n) => !n.hidden && !n.inside).map((n) => ({ key: n.key, face: n.face, place: n.place })),
     pick,
     mayor: () => !!(mayorEl && !mayorEl.hidden),
+    errand: (key) => !!(E && E.send(byKey(key), performance.now(), EX, true)),   // 🧺 QA: send one now
   };
   COPY_P.then((COPY) => applyCopy(res, COPY)).catch((e) => console.error('town-life: the words did not load', e));
-  return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, setKeep, setGlow, setOverride, nudge, setLitter, setRoom, route, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; },
+  const errands = (m) => { E = m; EX = { res, route, poof, hourNow, beat: () => curBeat }; };
+  return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, errands, setKeep, setGlow, setOverride, nudge, setLitter, setRoom, route, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; },
     keeperIn: (home) => res.some((n) => n.inside && n.home === home) };   // 🧾 is the one who keeps this room in it right now (the greeting)
 }

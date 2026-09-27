@@ -11,7 +11,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana
 import { mountHud } from '../lib/world-hud.js';
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
-import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, NPCS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE, CAFE_WIN } from './town-geo.js';
+import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE, CAFE_WIN } from './town-geo.js';   // (NPCS stays in the generated file: stale since the residents got days, read by nothing)
 import { snapScale, worldNewcomer } from '../lib/world.js';   // 🔍 whole device pixels · 🌱 a new banana's first minute
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
@@ -1162,6 +1162,7 @@ document.getElementById('twEmote').addEventListener('click', function () {
 const travel = initTravel({ here: 'town', mount: document.querySelector('.tw-actions'), btnClass: 'tw-act tw-act--icon' });
 assetsReady().then(() => {
   life.start();   // the residents take their stations for this hour of the town's day
+  setTimeout(() => import('./town-errands.js').then(life.errands, () => {}), 2500);   // 🧺 their errands: nobody waits on one
   cam(true);
   drawMe();
   requestAnimationFrame(tick);
@@ -1243,7 +1244,7 @@ assetsReady().then(() => {
     try { qdone = !!(JSON.parse((wantC2 ? localStorage.getItem('bwq-c2') : localStorage.getItem('bwq-c1')) || 'null') || {}).done; } catch (e) {}
     if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { pos, tgt, SPOTS, ABOUT, NPCS, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
+  window.__town = { pos, tgt, SPOTS, ABOUT, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)

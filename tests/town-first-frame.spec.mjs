@@ -21,7 +21,7 @@ test('a real first load: every resident who is out stands at their place, and Ni
   const rs = await page.evaluate(() => window.__town.life.residents());
   // on a doorstep that is not where they are meant to be (a station may be the door itself: Stamp at the post office)
   const atDoor = (r) => Object.values(HOME).some(([x, y]) => Math.hypot(r.x - x, r.y - y) < 4 && !(r.st && Math.hypot(r.st[0] - x, r.st[1] - y) < 12));
-  const stuck = rs.filter((r) => !r.hidden && r.act !== 'home' && atDoor(r) && !r.leg).map((r) => r.key + '@' + r.place);
+  const stuck = rs.filter((r) => !r.hidden && r.act !== 'home' && atDoor(r) && !r.leg && !r.errand).map((r) => r.key + '@' + r.place);   // 🧺 a letter at a door is Stamp's errand
   expect(stuck, 'nobody who is out stands on their doorstep waiting to walk to their place').toEqual([]);
   const nib = rs.find((r) => r.key === 'nib');
   expect(nib && !nib.hidden && Math.hypot(nib.x - FOUNTAIN[0], nib.y - FOUNTAIN[1]) < 30, 'Nib is at the fountain from the first seconds, whatever the hour').toBe(true);
@@ -94,7 +94,7 @@ test('a beat run again while residents wait to set off strands nobody: everyone 
   // the longest wait is 74.4 s from the turn, and the walk after it a few seconds more
   await page.waitForTimeout(62000);
   const rs = await page.evaluate(() => window.__town.life.residents());
-  const out = rs.filter((r) => !r.hidden && !r.inside && r.act !== 'home' && r.act !== 'sweep' && r.act !== 'stroll' && r.st);
+  const out = rs.filter((r) => !r.hidden && !r.inside && r.act !== 'home' && r.act !== 'sweep' && r.act !== 'stroll' && r.st && !r.errand);   // 🧺 out on an errand is not stranded
   const stranded = out.filter((r) => !r.leg && Math.hypot(r.x - r.st[0], r.y - r.st[1]) > 90).map((r) => r.key + ' at ' + r.x + ',' + r.y + ' for ' + r.place);
   expect(stranded, 'nobody stands at the last beat’s spot: every resident who is out is at, or on the way to, the afternoon’s place').toEqual([]);
   expect(rs.filter((r) => r.waiting).map((r) => r.key), 'a re-run never restarts a wait: nobody is still waiting 92 s after the turn').toEqual([]);
