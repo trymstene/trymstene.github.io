@@ -2,6 +2,7 @@
 // fake R2. A ticket under QA_KEY opens the same door an inbox link does; the
 // home it opens is stamped and invisible to the rollup and the desk; erase
 // deletes only stamped records; a player's pass is never touchable through it.
+import './clock.mjs';   // 🕰 first: a fixed moment, so a run can never straddle a midnight or a Monday (clock.mjs)
 import worker from '../src/index.js';
 
 const ORIGIN = 'https://trymstene.com';

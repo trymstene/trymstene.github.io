@@ -2,6 +2,7 @@
 // every named faucet is paid within its rule, the max binds, the tight caps
 // bind, once-evers count, QA is denied, unknown faucets are refused, spends
 // are untouched, and the quest wage is ruled in all three.
+import './clock.mjs';   // 🕰 first: a fixed moment, so a run can never straddle a midnight or a Monday (clock.mjs)
 import worker from '../src/index.js';
 
 const ORIGIN = 'https://trymstene.com';

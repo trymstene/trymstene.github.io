@@ -3,6 +3,7 @@
 // with a reason and never reach the wallet; the used caps ride the answers;
 // unnamed events pass while RULES_STRICT is off and fail when it is on; an
 // unruled area is untouched.
+import './clock.mjs';   // 🕰 first: a fixed moment, so a run can never straddle a midnight or a Monday (clock.mjs)
 import worker from '../src/index.js';
 
 const ORIGIN = 'https://trymstene.com';

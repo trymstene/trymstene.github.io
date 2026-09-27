@@ -3,6 +3,7 @@
 // subrequests), so totals computed live on a request are a truncated sample
 // presented as a population. A cron pages the bucket instead and writes one
 // small file a day; the desk reads it in one get.
+import './clock.mjs';   // 🕰 first: a fixed moment, so a run can never straddle a midnight or a Monday (clock.mjs)
 const ORIGIN = 'https://trymstene.com';
 function fakeR2() {
   const m = new Map();

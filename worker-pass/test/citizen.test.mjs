@@ -3,6 +3,7 @@
 // leader, a kept runner-up, a nameless grinder; last week's winners crowned on
 // the first lap, badges stamped, a four-week no-repeat honoured, and one public
 // route with names and looks but never an id.
+import './clock.mjs';   // 🕰 first: a fixed moment, so a run can never straddle a midnight or a Monday (clock.mjs)
 import worker from '../src/index.js';
 
 const ORIGIN = 'https://trymstene.com';

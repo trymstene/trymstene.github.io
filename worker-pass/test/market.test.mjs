@@ -195,7 +195,9 @@ console.log('\n8. the Exchange');
   const noRave = await J(await worker.fetch(new Request('https://w.dev/town/sell', { method: 'POST', body: JSON.stringify({ credId: seller.credId, token: seller.token, good: 'milk', n: 1 }),
     headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'CF-Connecting-IP': '10.0.9.9' } }), { ...env, RAVE: undefined }, ctx));
   ok('no way to the neighbourhood: busy, nothing paid', noRave.status === 503 && noRave.error === 'busy', noRave);
-  const forged = await J(await post('/push', { credId: seller.credId, token: seller.token, blob: { pass: { created: 1, patches: {}, base: {}, led: { coins_earned: { [DEV]: 0 } }, days: [] }, ev: [{ id: 'f0rged01', t: CLOCK, k: 'coins_earned', d: 50, a: 'town', s: 'exchange' }], evDrop: 0, evDev: DEV } }));
+  // ⚠️ a HEX id, like a phone's: the server drops any other id before the rules ever see it, and 'f0rged01' made this
+  // check pass even against a worker that paid clients exchange coins (27 Sep 2026, found beside gift.test's flake)
+  const forged = await J(await post('/push', { credId: seller.credId, token: seller.token, blob: { pass: { created: 1, patches: {}, base: {}, led: { coins_earned: { [DEV]: 0 } }, days: [] }, ev: [{ id: 'f0e9ed01', t: CLOCK, k: 'coins_earned', d: 50, a: 'town', s: 'exchange' }], evDrop: 0, evDev: DEV } }));
   ok('a CLIENT claiming exchange coins is refused (the Exchange pays only server-side)', forged.wallet && forged.wallet.bal === want + saleOf(dayOf(CLOCK), 0, SELL_CAP - 7), forged.wallet);
 }
 
