@@ -15,6 +15,7 @@ import POST from '../src/data/copy/town-post.json' with { type: 'json' };
 import DELIVER from '../src/data/copy/town-deliver.json' with { type: 'json' };
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
 import { DAY_XP, xpFor, UNLOCKS } from '../src/data/town/jobs.js';
+import { SHELF } from '../src/data/town/stock.js';
 const PERFECT_TIP = 2;   // town-cafe.js TIP[2]: what a perfect cup or glass tips (that module globs its words, so node cannot import it)
 import { playRepair } from './play-repair.mjs';
 
@@ -552,7 +553,15 @@ test('🔑 the store’s rank 5: Pip’s shelf sells to its keyholder at the sta
   await page.evaluate(() => window.__town.room.set(70));
   await page.waitForTimeout(700);
   await page.evaluate(() => window.__town.room.rich());
-  const priceRows = async () => { await page.evaluate(() => window.__town.room.cards.store()); const rows = page.locator('[data-town-buy]'); await expect(rows).toHaveCount(6, { timeout: 10000 }); const r = await page.evaluate(() => [...document.querySelectorAll('[data-town-buy]')].map((b) => ({ id: b.dataset.townBuy, price: +b.dataset.price, note: b.closest('.tw-row').querySelector('small').textContent }))); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return r; };
+  // 📟 THE DAY'S CALLS, PINNED: none today (tw-calls-v1 `qa`, honoured under ?towntest). For the store's own staff the shelf
+  // clears two faces for the day's delivery the moment its call is in (town-room.js shelfFor), and when that call arrives
+  // hangs on the day, the person and the device: this walk used to read whatever the schedule said. With no call, and none of
+  // today's restocking, the card is the band's own picks, every one, from the same table the shelf reads (stock.js SHELF:
+  // 7 at Lively since the fine goods moved onto Pip's shelf, 27 Sep 2026; this read 6 until then, and failed that day).
+  await page.evaluate(() => { localStorage.setItem('tw-calls-v1', JSON.stringify({ d: Math.floor(Date.now() / 864e5), t0: Date.now() - 36e5, qa: [] })); localStorage.removeItem('tw-restock-v1'); });
+  expect(await page.evaluate(() => window.__town.room.band()), 'a Lively town').toBe('lively');
+  const picks = Object.values(SHELF.lively).reduce((a, n) => a + n, 0);
+  const priceRows = async () => { await page.evaluate(() => window.__town.room.cards.store()); const rows = page.locator('[data-town-buy]'); await expect(rows).toHaveCount(picks, { timeout: 10000 }); const r = await page.evaluate(() => [...document.querySelectorAll('[data-town-buy]')].map((b) => ({ id: b.dataset.townBuy, price: +b.dataset.price, note: b.closest('.tw-row').querySelector('small').textContent }))); await page.keyboard.press('Escape'); await page.waitForTimeout(300); return r; };
   await hire(page, 'store', 4, 1900);
   const full = await priceRows();
   expect(full.every((r) => !r.note.includes(LIFE.store.staff)), 'the fourth rank pays the shelf price').toBe(true);
