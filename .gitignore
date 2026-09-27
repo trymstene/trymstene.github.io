@@ -61,6 +61,7 @@ node_modules/
 playwright-report/
 print-files/
 public/assets/_packs/
+tools/cat/out/
 public/assets/giphy-stickers/
 public/assets/pixelarticons-pro-2.2.1/
 qa-shots/
