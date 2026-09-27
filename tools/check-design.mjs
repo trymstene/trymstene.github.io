@@ -286,7 +286,7 @@ for (const f of files) {
   const hoardable = mH ? [...mH[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
   if (locks && !mH) problems.push(['src/data/town/locks.js', 'no HOARDABLE list found — the town-lock gate cannot read what the story may board up']);
   if (hoardable.includes('condo')) problems.push(['src/data/town/locks.js', "HOARDABLE names 'condo' — the arcade is never boarded, whatever the story says: five shipped games must answer on a stranger's worst day (town-jobs-plan §1)"]);
-  const geo = slurp('src/scripts/town-geo.js');
+  const geo = slurp('src/scripts/town-geo-lazy.js');   // 📦 HOARD is a lazy table since 27 Sep 2026
   if (/export const HOARD = \{/.test(geo)) {
     for (const k of hoardable) {
       if (!geo.includes('"' + k + '": {')) problems.push(['src/data/town/locks.js', `HOARDABLE names '${k}' but tools/build-town-scene.py baked no hoarding for it — the front would lock with nothing on screen to say so`]);

@@ -10,7 +10,7 @@
 //   · a visitor that can be TAPPED, and answers with nothing, because it has no name and no card
 //   · a visitor that survives walking into a room, painting over the shop's plate (design library §22)
 import { test, expect } from '@playwright/test';
-import { STREETS, SEATS } from '../src/scripts/town-geo.js';
+import { STREETS, SEATS } from '../src/scripts/town-geo-lazy.js';
 
 async function town(page) {
   const errors = [];

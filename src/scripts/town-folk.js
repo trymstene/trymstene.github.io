@@ -23,7 +23,8 @@
 // VISUALLY looks LEFT, and frame 4 (`face:'left'`) VISUALLY looks RIGHT. Verified on the beach by
 // cropping banana-dance.png, and that is where the sitting pair comes from — Banana Bay has sat
 // bananas on chairs since July with exactly these two frames.
-import { STREETS, SPOTS, SEATS, OB_RECTS, OB_CIRCLES } from './town-geo.js';
+import { SPOTS, OB_RECTS, OB_CIRCLES } from './town-geo.js';
+import { STREETS, SEATS } from './town-geo-lazy.js';   // 📦 read only by lazy chunks: out of the first load
 import { FRAME_H_FRAC, FRAME_TOP_FRAC } from '../lib/banana-geo.js';
 
 const F_LEFT = 0, F_RIGHT = 4;      // the side-facing crouch the beach sits its bananas on

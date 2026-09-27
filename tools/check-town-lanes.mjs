@@ -19,9 +19,11 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fail = [];
 
-const geo = await import(pathToFileURL(join(ROOT, 'src/scripts/town-geo.js')).href);
+// 📦 two generated files since 27 Sep 2026: town-geo-lazy.js holds the tables only lazy chunks read (STREETS, SEATS among them)
+const geo = { ...(await import(pathToFileURL(join(ROOT, 'src/scripts/town-geo.js')).href)),
+  ...(await import(pathToFileURL(join(ROOT, 'src/scripts/town-geo-lazy.js')).href)) };
 const geoConst = (k) => {
-  if (!(k in geo)) throw new Error('town-geo.js has no ' + k);
+  if (!(k in geo)) throw new Error('town-geo.js / town-geo-lazy.js have no ' + k);
   return geo[k];
 };
 const OB_RECTS = geoConst('OB_RECTS');
@@ -33,8 +35,8 @@ const OB_CIRCLES = geoConst('OB_CIRCLES');
 const folkSrc = readFileSync(join(ROOT, 'src/scripts/town-folk.js'), 'utf8');
 const mod = await import('data:text/javascript;base64,' + Buffer.from(
   folkSrc
-    .replace(/^import \{([^}]*)\} from '\.\/town-geo\.js';/m,
-      "const {$1} = " + JSON.stringify({ STREETS: geoConst('STREETS'), SPOTS: geoConst('SPOTS'), SEATS: geoConst('SEATS'), OB_RECTS, OB_CIRCLES }) + ';')
+    .replace(/^import \{([^}]*)\} from '\.\/town-geo(-lazy)?\.js';.*$/gm,
+      (m, names) => 'const {' + names + '} = ' + JSON.stringify({ STREETS: geoConst('STREETS'), SPOTS: geoConst('SPOTS'), SEATS: geoConst('SEATS'), OB_RECTS, OB_CIRCLES }) + ';')
     .replace(/^import .*$/gm, '')
     + ['', 'export const __lanes = LANES;', 'export const __route = route;', 'export const __near = nearLane;', ''].join('\n'),
 ).toString('base64'));

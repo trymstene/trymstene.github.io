@@ -29,7 +29,8 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { STATE, OB_RECTS, OB_CIRCLES, STORE, HOARD, CAFE_WIN, INFO_WIN, OVERLAYS } from './town-geo.js';   // 🕹 ARCADE moved with the arcade's week (town-arcade.js)
+import { OB_RECTS, OB_CIRCLES, STORE, CAFE_WIN, OVERLAYS } from './town-geo.js';
+import { STATE, HOARD, INFO_WIN } from './town-geo-lazy.js';   // 📦 read only here: out of the first load   // 🕹 ARCADE moved with the arcade's week (town-arcade.js)
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { once, seen } from '../lib/once.js';   // 🧾 the counter's invitation, until the till is first opened
