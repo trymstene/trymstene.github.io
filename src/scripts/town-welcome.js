@@ -12,7 +12,7 @@ import { passStat, ruleUsed } from '../lib/banana-pass.js';
 import { raiseHand } from '../lib/world-social.js';
 import ARROW from '../icons/pixelart/arrow-down.svg?raw';
 
-const TRAIL = 3;                 // coins, once per person (worker-pass RULES town.trail: a count of five at most; the buff cannot double it)
+const TRAIL = 3;                 // coins, once per person (worker-pass RULES town.trail: a count of three; the buff cannot double it)
 const PAY = 2;                   // each: six coins for walking to Nib, the homestead road's own rate
 const DONE = 'tw-welcome-v1';    // the trail is picked up: this device never lays it again
 const GRAB = 34;                 // world px: a banana walking over a coin picks it up (the homestead's reach)
