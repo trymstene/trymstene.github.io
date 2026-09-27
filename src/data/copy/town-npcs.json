@@ -699,6 +699,76 @@
           ]
         }
       ]
+    },
+    {
+      "key": "tally",
+      "name": "Tally",
+      "role": "Keeps the Exchange: pins up the residents’ orders every day and pays for what you bring.",
+      "tap": "Right. The orders are pinned on the stall. Bring all of one and I pay for it.",
+      "want": "Somebody to read the new orders out with me. Counting sounds better in company.",
+      "hi": [
+        "Hello. The orders are on the stall. Everybody in town is after something.",
+        "You again. Good. I like a banana who reads the slips first.",
+        "{name}, an order is paid in full or not at all. I do not do halves.",
+        "Full-order {name}. That is you in my book, next to the ticks.",
+        "{name}, I pin the orders up so I have a reason to talk to everybody. You are my favourite reason."
+      ],
+      "ask": {
+        "doing": "What are you up to?",
+        "want": "Need anything?",
+        "curse": ""
+      },
+      "curse": "",
+      "beats": [
+        {
+          "beat": "dawn",
+          "lines": [
+            "New slips, new pins, one pencil. Right. The stall is dressed.",
+            "I lick the pencil and make the first tick of the day. The first is always the neatest.",
+            "Three orders up before the square wakes. I count them twice. Still three."
+          ]
+        },
+        {
+          "beat": "morning",
+          "lines": [
+            "Eggs to the left, milk to the right, wool on top. Wool is light.",
+            "Six asked, six brought. That is my favourite sentence.",
+            "I count the jars twice, then once more for luck. Twirl says luck is her department."
+          ]
+        },
+        {
+          "beat": "noon",
+          "lines": [
+            "Lunch by the statue. Nobody knows who it is. I have counted its toes: none.",
+            "Forty-one cobbles from here to the stall. I count them on the way back.",
+            "The stall minds itself at lunch. Nobody has ever taken a slip."
+          ]
+        },
+        {
+          "beat": "afternoon",
+          "lines": [
+            "A full basket landing on the counter. The best sound on the square.",
+            "Tick. Pencil behind the ear. Out again. Somebody is coming.",
+            "Moss says I talk to the slips. I read them out. There is a difference."
+          ]
+        },
+        {
+          "beat": "evening",
+          "lines": [
+            "Crossing out what came in. A straight line, never a scribble.",
+            "An order nobody brought still gets a line in my book. A kind one.",
+            "The lamps come on round the square. I count them. Same number. I check anyway."
+          ]
+        },
+        {
+          "beat": "night",
+          "lines": [
+            "Home at the clothes shop. Moss is sweeping her room. I count the strokes.",
+            "I read my little book by the lamp. Every tick in it is somebody I met.",
+            "Pencil sharpened for the morning. Not too sharp: a sharp pencil tears the slips."
+          ]
+        }
+      ]
     }
   ]
 }

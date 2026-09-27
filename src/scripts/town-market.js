@@ -1,18 +1,19 @@
 // 📈🎡 THE MARKET — the Wheel of Peel and the Exchange (23 Sep 2026). Its own lazy chunk, loaded the first time either
 // card opens (or the square hears somebody win the pot), so a visitor who never spins or sells downloads none of it.
+// 📋 The Exchange's card is its own chunk since 27 Sep 2026 (town-exchange.js: the order board came with it); this one
+// loads it on the first tap and lends it the coin flight.
 //
 // ⚠️ THE MONEY IS THE PASS WORKER'S (worker-pass /town/wheel, /town/sell). The server rolls the wheel and pays it,
 // and pays a sale only after the neighbourhood has taken the goods out of the SAVED farm. This side draws the
 // card, asks, turns the wheel to the wedge the answer names and says what the answer says — nothing here decides
 // a coin. The numbers both sides print are src/data/town/market.js; the words are src/data/copy/town-market.json.
 import { passPost, walletKeep, passServerSlots, ensureAnon, PASS_API } from '../lib/banana-pass.js';
-import { goodsInHand, soldFromHome } from '../lib/homestead-inventory.js';
 import { fillWords } from '../lib/fill-words.js';
 import { bigMoment } from '../lib/world-moment.js';
-import { WEDGES, GOODS, priceOf, saleOf, rumourOf, dayOf, SPIN_COST } from '../data/town/market.js';
+import { WEDGES, SPIN_COST } from '../data/town/market.js';
 import WORDS from '../data/copy/town-market.json';
 
-const W = WORDS.wheel, X = WORDS.exchange;
+const W = WORDS.wheel;
 const KEEP_HREF = '/pass/?keep';
 const nonce = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
@@ -219,8 +220,8 @@ export function bootMarket(ctx) {
   }
   // the HUD's purse, when it is on screen to fly into
   function purse() { const h = hud && hud(), chip = h && h.el && h.el.querySelector('.wh__coins'); return chip && chip.getBoundingClientRect().width ? chip : null; }
-  function flyCoins(n, pay) {
-    const from = hub(), h = hud && hud(), chip = purse();
+  function flyCoins(n, pay, from0) {
+    const from = from0 || hub(), h = hud && hud(), chip = purse();
     if (!from || !chip) { if (pay) pay(); return; }
     const cb = chip.getBoundingClientRect();
     const to = { x: cb.left + 12, y: cb.top + cb.height / 2 };
@@ -286,45 +287,15 @@ export function bootMarket(ctx) {
     say(name ? fillWords(W.potWon, { name, n: won }) : fillWords(W.potWonAnon, { n: won }));
   }
 
-  // ---- 📈 the Exchange
-  function exchangeCard(line) {
-    const day = dayOf(Date.now()), have = goodsInHand();
-    let rows = '', total = 0;
-    GOODS.forEach(([id], i) => {
-      const p = priceOf(day, i), y = priceOf(day - 1, i), n = have ? have[id] : 0;
-      total += saleOf(day, i, n);
-      const move = p > y ? fillWords(X.up, { was: y }) : p < y ? fillWords(X.down, { was: y }) : X.same;
-      rows += '<div class="tw-row"><div><b>' + esc(X.goods[id]) + ' · ' + esc(fillWords(X.each, { price: p })) + '</b><small>' + esc(move) + ' · ' + esc(fillWords(X.have, { n })) + '</small></div>'
-        + '<button type="button" data-sell="' + id + '"' + (n ? '' : ' disabled') + '>' + esc(fillWords(X.sell, { n })) + '</button></div>';
-    });
-    const said = line != null ? line : have ? (total ? fillWords(X.total, { n: total }) : X.none) : X.noFarm;
-    openCard('<h2>' + esc(X.title) + '</h2><p class="tw-card__sub">' + esc(FRONTS.exchange || '') + '</p>'
-      + '<div class="tw-rows">' + rows + '</div>'
-      + '<p class="tw-result" id="twSellRes"></p>'
-      + '<p class="tw-fine">' + esc(rumourOf(day) === 'up' ? X.rumourUp : X.rumourDown) + '</p>');
-    const out = el('twSellRes');
-    if (out) { if (typeof said === 'object') out.innerHTML = said.html; else out.textContent = said; }
-    document.querySelectorAll('#twCardBody [data-sell]').forEach((b) => b.addEventListener('click', () => sell(b.dataset.sell, b)));
-  }
-  async function sell(good, btn) {
-    const have = goodsInHand(), n = have ? have[good] : 0;
-    if (!n || btn.disabled) return;
-    btn.disabled = true;
-    await ensureAnon();
-    const r = await passPost('/town/sell', { good, n });
-    if (r && r.ok) {
-      walletKeep(r);
-      passServerSlots(r.slots);
-      if (r.took) soldFromHome(good, r.took, r.yard);
-      track('town_sell', { good, n: r.took | 0, coins: r.coins | 0 });
-      exchangeCard(r.took ? fillWords(X.paid, { coins: r.coins, n: r.took, what: X.things[good] }) : X.none);
-      return;
+  // ---- 📋 the Exchange: its own chunk (town-exchange.js), loaded on the first tap and kept
+  let exP = null, ex = null;
+  function exchangeCard() {
+    if (!exP) {
+      exP = import('./town-exchange.js').then((m) => (ex = m.bootExchange({ ...ctx, keepLine, fly: flyCoins })));
+      exP.catch(() => { exP = null; });
     }
-    const e = r && r.error;
-    exchangeCard(e === 'keep' || e === 'not linked' ? { html: keepLine(X.keep, X.keepLink) }
-      : e === 'cap' ? fillWords(X.cap, { what: X.things[good] }) : e === 'nofarm' ? X.noFarm : X.busy);
-    track('town_sell', { good, n: 0, r: e || 'none' });
+    return exP.then((x) => x.open());
   }
 
-  return { wheel: wheelCard, exchange: () => exchangeCard(), pot: onPot, seam: { state: () => st, last: () => last, spinning: () => spinning, turning: () => !!motion, angle: () => angle, lit: () => lit, pot: onPot } };
+  return { wheel: wheelCard, exchange: exchangeCard, pot: onPot, seam: { state: () => st, last: () => last, spinning: () => spinning, turning: () => !!motion, angle: () => angle, lit: () => lit, pot: onPot, exchange: () => ex && ex.seam } };
 }

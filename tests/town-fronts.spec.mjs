@@ -88,7 +88,7 @@ test('the counter, the cart, the fountain, the orchard, the monument, the terrac
 test('every place line names its place and says what a player can do there', () => {
   const lines = [
     ['fronts.hall', FRONTS.hall, ['hall']], ['fronts.bank', FRONTS.bank, ['bank', 'cash machine']], ['fronts.print', FRONTS.print, ['print', 'sticker']],
-    ['fronts.wheel', FRONTS.wheel, ['wheel']], ['fronts.exchange', FRONTS.exchange, ['exchange', 'fig jr']], ['fronts.oldCabinet', FRONTS.oldCabinet, ['cabinet']],
+    ['fronts.wheel', FRONTS.wheel, ['wheel']], ['fronts.exchange', FRONTS.exchange, ['exchange', 'tally']], ['fronts.oldCabinet', FRONTS.oldCabinet, ['cabinet']],
     ['cafe.front', CAFE.front, ['coffee cup', 'kiosk', 'café', 'cafe']], ['lemon.front', LEMON.front, ['lemonade']], ['post.front', POST.front, ['post office']],
   ];
   for (const [id, line, names] of lines) {

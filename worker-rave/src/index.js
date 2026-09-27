@@ -3793,8 +3793,11 @@ export class YardRoom {
       if (!doc || !doc.state) return json({ err: 'nofarm' }, 404);
       const goods = doc.state.goods || {};
       const have = Math.max(0, Math.floor(+goods[good] || 0));
-      const took = Math.min(want, have);
       const prev = doc.updated || 0;
+      // 📋 AN ORDER IS ALL OR NOTHING (27 Sep 2026): the Exchange's order board sends `all`, and a farm short of it gives
+      // nothing — four of the six milk taken for an order it cannot fill would be goods gone for no coins
+      if (body.all && have < want) return json({ ok: 1, took: 0, short: 1, left: have, updated: prev, prev });
+      const took = Math.min(want, have);
       if (!took) return json({ ok: 1, took: 0, left: have, updated: prev, prev });
       doc.state.goods = { ...goods, [good]: have - took };
       doc.updated = Math.max(prev + 1, Date.now());

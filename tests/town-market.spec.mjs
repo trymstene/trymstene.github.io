@@ -7,9 +7,10 @@
 // the pier. Every line is the copy file's (src/data/copy/town-market.json, beach-toasts.json).
 import { test, expect } from '@playwright/test';
 import MARKET from '../src/data/copy/town-market.json' with { type: 'json' };
+import EXCHANGE from '../src/data/copy/town-exchange.json' with { type: 'json' };
 import BEACH from '../src/data/copy/beach-toasts.json' with { type: 'json' };
 
-const W = MARKET.wheel, X = MARKET.exchange;
+const W = MARKET.wheel, X = EXCHANGE.exchange;
 const fill = (t, v) => String(t).replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 const text = (page, sel) => page.evaluate((s) => ((document.querySelector(s) || {}).textContent || '').trim(), sel);
 const json = (o) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
@@ -196,6 +197,7 @@ test('the Exchange sells what the farm holds, and the farm on this device gives 
   page.route('**/town/sell', (r) => { sold.push(JSON.parse(r.request().postData() || '{}')); return r.fulfill(json({ ok: true, good: 'eggs', took: 5, coins: 17, left: 0, room: 19, yard: { updated: 2000, prev: 1000 }, wallet: { bal: 57, seq: 11 }, seen: [], slots: { coins_earned: { exchange: 17 } } })); });
   const errs = await town(page, () => { try { if (!sessionStorage.getItem('hs-seeded')) { localStorage.setItem('hs-v1', JSON.stringify({ v: 1, slug: 'ada-yard', claimedAt: 1, eggs: 5, milk: 2, wool: 0, pubUpdated: 1000, animals: [{ id: 'h1', sp: 'hen', gs: 31 }] })); sessionStorage.setItem('hs-seeded', '1'); } } catch (e) {} });
   await page.evaluate(() => window.__town.open('exchange'));
+  await page.locator('#twCardBody [data-tab="sell"]').click({ timeout: 10000 });   // the orders open first; the spare produce is the second tab
   await page.waitForSelector('#twCardBody [data-sell="eggs"]', { timeout: 10000 });
   const row = await text(page, '#twCardBody .tw-row');
   expect(row, 'the eggs row counts the eggs IN HAND — never the hen’s lifetime tally of 31').toContain(fill(X.have, { n: 5 }));
@@ -215,6 +217,7 @@ test('the Exchange sells what the farm holds, and the farm on this device gives 
 test('with no homestead the Exchange says so and sells nothing', async ({ page }) => {
   const errs = await town(page, () => { try { localStorage.removeItem('hs-v1'); } catch (e) {} });
   await page.evaluate(() => window.__town.open('exchange'));
+  await page.locator('#twCardBody [data-tab="sell"]').click({ timeout: 10000 });   // the orders open first; the spare produce is the second tab
   await page.waitForSelector('#twCardBody [data-sell="eggs"]', { timeout: 10000 });
   expect(await text(page, '#twSellRes')).toBe(X.noFarm);
   expect(await page.evaluate(() => [...document.querySelectorAll('#twCardBody [data-sell]')].every((b) => b.disabled))).toBe(true);

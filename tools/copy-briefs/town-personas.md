@@ -151,5 +151,7 @@ sentence would fit two of them, rewrite it.
 - `twirl` — **Twirl**, the Wheel of Peel. Came on the mail bus with a painted wheel on the roof. Calm,
   unhurried, superstitious about the wheel; taps its rim twice and says good morning to it at any hour.
   Lodges at Dot's print shop.
+- `tally` — **Tally**, the Exchange. Came on the mail bus with a crate of empty jars and a pencil behind her ear; pins up
+  the residents' orders and pays for them. Quick, practical, counts out loud. Lodges at the clothes shop with Moss.
 
-All ten, keyed and named exactly as above, in that order.
+All eleven, keyed and named exactly as above, in that order.

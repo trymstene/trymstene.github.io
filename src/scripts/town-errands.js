@@ -28,6 +28,7 @@ export const SPOTS = {
   dot: [[1415, 482], [1962, 352], [716, 1046]],                                          // the monument lane, the bus stop, the ATM's lamp
   twirl: [[1260, 880], [960, 880]],                                                      // either side of the fountain
   spinner: [[962, 576], [1000, 950]],                                                    // the lemonade stand, the square
+  tally: [[1060, 590], [1880, 1068]],                                                    // the hall's and the café's spare marks: slips to collect
 };
 
 // the life module's stable 0..1 (no Math.random anywhere in the town's clockwork)

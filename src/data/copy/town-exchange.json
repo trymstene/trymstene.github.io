@@ -1,0 +1,98 @@
+{
+  "exchange": {
+    "title": "Tally’s Exchange",
+    "tab": "Sell produce",
+    "goods": {
+      "eggs": "Eggs",
+      "milk": "Milk",
+      "wool": "Wool"
+    },
+    "things": {
+      "eggs": "eggs",
+      "milk": "bottles of milk",
+      "wool": "bundles of wool"
+    },
+    "each": "{price} coins each",
+    "up": "up from {was} yesterday",
+    "down": "down from {was} yesterday",
+    "same": "same as yesterday",
+    "have": "you have {n}",
+    "sell": "Sell {n}",
+    "sold": "Sold",
+    "total": "All of it, today: {n} coins",
+    "rumourUp": "Bean at the café says eggs go up tomorrow. She is usually right.",
+    "rumourDown": "Bean at the café says eggs drop tomorrow. She is usually right.",
+    "paid": "Tally paid you {coins} coins for {n} {what}.",
+    "none": "Nothing to sell yet. Your homestead’s hens, goats, cows and sheep make the eggs, milk and wool Tally buys.",
+    "noFarm": "Tally buys what a homestead makes, and you don’t have one yet.",
+    "cap": "Tally has bought all the {what} she can take from you today.",
+    "busy": "The sale didn’t go through. Nothing was sold, so try again in a moment.",
+    "keep": "Sales are kept on your Banana Pass, and this device doesn’t have one yet.",
+    "keepLink": "Get your pass"
+  },
+  "orders": {
+    "tab": "Orders",
+    "ask": "{what} ×{n}",
+    "pay": "{coins} coins",
+    "have": "you have {have}",
+    "deliver": "Deliver",
+    "wait": "Delivering…",
+    "done": "Delivered",
+    "go": {
+      "farm": "To the homestead",
+      "bay": "To Banana Bay",
+      "park": "To the park"
+    },
+    "goods": {
+      "harvest": "Crops",
+      "pegg": "Park eggs"
+    },
+    "paid": "Delivered to {who}. Tally paid you {coins} coins.",
+    "short": "Not enough yet: you have {have} of the {n}. Nothing was taken.",
+    "already": "That order is delivered already.",
+    "gone": "That order was yesterday’s. Today’s are on the board now.",
+    "noFarm": "Farm orders need a homestead of your own, and you don’t have one yet.",
+    "busy": "The delivery didn’t go through. Nothing was taken, so try again in a moment.",
+    "keep": "Deliveries are kept on your Banana Pass, and this device doesn’t have one yet.",
+    "keepLink": "Get your pass",
+    "allDone": "All of today’s orders are delivered. Tally pins up new ones tomorrow.",
+    "wants": {
+      "bean": {
+        "milk": "Milk for the coffee. The grounds say a long queue.",
+        "eggs": "Eggs for a lemon cake. The grounds say it will not last the day.",
+        "harvest": "Fruit from the park for the counter. The grounds say something sweet."
+      },
+      "pip": {
+        "eggs": "Eggs for the shelf! The last box went, and it was the very last one.",
+        "wool": "Wool for mittens. The last pair went, and a store needs a last pair!",
+        "pegg": "Park eggs for the store. Found ones go fastest, every last one!"
+      },
+      "stamp": {
+        "wool": "Wool to pad the parcels. Dented ones weigh the same and look worse.",
+        "shell": "Shells to hold the letters down on windy days. Each one weighed first."
+      },
+      "nib": {
+        "milk": "Milk for the Town Hall. It is recorded as a necessity, and properly so."
+      },
+      "spinner": {
+        "fish": "Fish for the arcade’s tank! Spinner has a tank and no fish! A tragedy!"
+      },
+      "moss": {
+        "fish": "Fish, for supper. My back room smells of it afterwards, and nobody minds."
+      },
+      "dot": {
+        "fish": "A real fish to draw, for once. The ones people describe all wear hats.",
+        "pegg":"Eggs found in the park. They are on my list of lost things."
+      },
+      "twirl": {
+        "shell": "Shells for the wheel’s stand. It likes to look its best."
+      },
+      "granfig": {
+        "harvest": "Crops from the park. Picked ripe, not pretty. Do not bruise them."
+      },
+      "figjr": {
+        "harvest": "Fruit for a new lemonade. Big launch. Gran Fig is the taste test."
+      }
+    }
+  }
+}

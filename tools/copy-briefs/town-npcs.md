@@ -93,9 +93,13 @@ Grows everything the Figs sell, waters the beds before the sun sees. Remembers e
 
 Came in on the mail bus with a painted wheel strapped to the roof and stopped where it seemed to want to stop. One free spin a day, paid spins for coins, and a pot that grows until one wedge wins it. Calm and unhurried, short sentences; talks about the wheel as if it has moods, taps its rim twice before every spin and says good morning to it at any hour. Never gives odds, never promises a prize. Lodges at Dot's print shop. Lunches at the fruit cart. Waves twice to Spinner across the square in the evening, and he waves back twice.
 
+### `tally` — Tally, the Exchange
+
+Came in on the mail bus with a crate of empty jars and a pencil behind her ear, and took the Exchange off Fig Jr.'s hands. Pins up the residents' orders every day and pays for what you bring, all of it or nothing. Quick and practical, short sentences with numbers counted out loud, fair and never gushing; starts anything she means with Right. Licks her pencil before every tick and never uses the eraser. Lunches on the statue's bench. Lodges at the clothes shop with Moss.
+
 ## Return
 
-Every one of the ten, with all five greetings, the tap line, the want, and three lines for each of
+Every one of the eleven, with all five greetings, the tap line, the want, and three lines for each of
 the six beats in the order above. Keys and names exactly as written here.
 
 ## Moss and the nights — `ask.curse` and `curse` (Moss only)

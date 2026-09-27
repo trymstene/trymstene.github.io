@@ -14,7 +14,7 @@ export function mix32(seed) {
 }
 export const dayOf = (t) => Math.floor(t / 86400000);   // the UTC day number (the worker's utcDay() names the same day)
 
-// ---- the Exchange: Fig Jr. buys what the farm made, at a price that moves from day to day
+// ---- the Exchange: Tally (Fig Jr. until 27 Sep 2026) buys what the farm made, at a price that moves from day to day
 // [id, base price, the animals that make it]
 export const GOODS = [['eggs', 3, ['hen']], ['milk', 5, ['goat', 'cow']], ['wool', 8, ['sheep']]];
 export const goodIndex = (id) => GOODS.findIndex((g) => g[0] === id);
@@ -27,7 +27,7 @@ export function rumourOf(day) {
   const up = priceOf(day + 1, 0) > priceOf(day, 0), honest = mix32(day * 3 + 9)() < 0.7;
   return up === honest ? 'up' : 'down';
 }
-export const SELL_CAP = 24;   // Fig Jr. buys at most this many of each good from one banana in a UTC day
+export const SELL_CAP = 24;   // Tally buys at most this many of each good from one banana in a UTC day
 
 // ---- the Wheel of Peel: the eight wedges in the order they are painted, clockwise from the pin
 // ids only; what each one PAYS is the worker's (WHEEL_PAY), and what each one is CALLED is the copy's

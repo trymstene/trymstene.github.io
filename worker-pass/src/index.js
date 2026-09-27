@@ -38,6 +38,8 @@ import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsO
 // 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
 // the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
 import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
+// 📋 THE ORDER BOARD — one source with the town (src/data/town/orders.js): today's three orders, what each takes and pays
+import { ordersOf, WANTS, givenOf, spareOf } from '../../src/data/town/orders.js';
 
 const MAX_BLOB = 2 * 1024 * 1024;   // 🚨 6 Sep 2026: 256 KB refused every veteran phone (a big shelf) silently, forever — see the mint
 const MAX_TOKENS = 10;
@@ -83,6 +85,7 @@ export default {
       if (url.pathname === '/job/memento') return jobMemento(request, env);
       if (url.pathname === '/town/wheel') return townWheel(request, env, ctx);
       if (url.pathname === '/town/sell') return townSell(request, env);
+      if (url.pathname === '/town/order') return townOrder(request, env);
       if (url.pathname === '/town/pot') return townPot(request, env);
       if (url.pathname === '/gift') return giftRoute(request, env);
       if (url.pathname === '/citizen') return citizen(request, env);
@@ -1976,6 +1979,73 @@ async function townSell(request, env) {
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
   return json({ ok: true, good, took, coins, left: t.left | 0, room: Math.max(0, room - took), yard: { updated: t.updated || 0, prev: t.prev || 0 },
     ...marketOut(R.home, ['coins_earned'], 'exchange') }, 200, cors(env, request));
+}
+
+// ---------- POST /town/order — a resident's order at the Exchange, delivered (27 Sep 2026) ----------
+// The order board (src/data/town/orders.js): three orders a UTC day, one per area, the same for everybody, each delivered
+// once. `view` answers which of today's this banana has delivered. A delivery takes the goods first — the SAVED farm's, all
+// or nothing (worker-rave /yards/take with `all`), or a pass count's, into the server's own `og_<stat>` slot so the
+// collection itself stays whole — and only then pays, into the ledger slot `order`. No client faucet: the server prices it.
+function ordersRec(home, day) {
+  const o = home.orders || (home.orders = { d: '', done: [] });
+  if (o.d !== day) { o.d = day; o.done = []; }
+  return o;
+}
+async function townOrder(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b;
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const R0 = await tokenRec(env, b && b.credId, b && b.token);
+  if (!R0) return json({ error: 'not linked' }, 403, cors(env, request));
+  const now = Date.now(), day = utcDay(now);
+  const done0 = ordersRec(R0.home, day).done;
+  if (b.view) return json({ ok: true, day: dayOf(now), done: done0 }, 200, cors(env, request));
+  const o = ordersOf(dayOf(now)).find((x) => x.id === String(b.id || ''));
+  if (!o) return json({ error: 'gone' }, 409, cors(env, request));   // yesterday's, or none
+  if (done0.includes(o.id)) return json({ error: 'done', done: done0 }, 409, cors(env, request));
+  const w = WANTS[o.want];
+  let yard = null;
+  if (w.take === 'yard') {
+    if (!env.RAVE) return json({ error: 'busy' }, 503, cors(env, request));
+    let t = null;
+    try {
+      const r = await env.RAVE.fetch(new Request('https://internal/yards/take', { method: 'POST',
+        body: JSON.stringify({ pass: await worldGid(env, R0.homeKey), aliases: R0.home.aliases || [], good: o.want, n: o.n, all: 1 }) }));
+      t = await r.json();
+    } catch (e) { t = null; }
+    if (t && t.err === 'nofarm') return json({ error: 'nofarm' }, 404, cors(env, request));
+    if (!t || !t.ok) return json({ error: 'busy' }, 503, cors(env, request));
+    if (t.short || (t.took | 0) < o.n) return json({ error: 'short', have: t.left | 0 }, 409, cors(env, request));
+    yard = { updated: t.updated || 0, prev: t.prev || 0, left: t.left | 0 };
+  } else {
+    const have = spareOf(statsOf(serverPass(R0.home, now)), o);
+    if (have < o.n) return json({ error: 'short', have }, 409, cors(env, request));
+  }
+  // …and only then the coins, once (a second tab that got there first is paid nothing twice)
+  const res = await retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return null;
+    const rec = ordersRec(R.home, day);
+    if (rec.done.includes(o.id)) return { R, out: 'done' };
+    const p = serverPass(R.home, now);
+    if (w.take === 'stat') {
+      if (spareOf(statsOf(p), o) < o.n) return { R, out: 'short' };
+      const k = givenOf(o);
+      p.led[k] = p.led[k] || {};
+      p.led[k].order = (+p.led[k].order || 0) + o.n;
+    }
+    rec.done.push(o.id);
+    serverCoins(R.home, 'coins_earned', 'order', o.coins, 'order', now);
+    p.stats = statsOf(p);
+    await saveKey(env, R.homeKey, R.home);
+    return { R, out: 'ok' };
+  });
+  if (!res) return json({ error: 'not linked' }, 403, cors(env, request));
+  const done = ordersRec(res.R.home, day).done;
+  if (res.out !== 'ok') return json({ error: res.out, done }, 409, cors(env, request));
+  return json({ ok: true, id: o.id, who: o.who, want: o.want, kind: o.kind, n: o.n, coins: o.coins, done, ...(yard ? { yard } : {}),
+    ...marketOut(res.R.home, ['coins_earned', ...(w.take === 'stat' ? [givenOf(o)] : [])], 'order') }, 200, cors(env, request));
 }
 
 async function citizen(request, env) {

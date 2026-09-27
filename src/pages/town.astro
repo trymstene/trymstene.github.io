@@ -277,6 +277,24 @@ const townFaq = faqLd(G.faq.items);
     .tw-row .pai { flex: none; margin-right: 0.5rem; color: #ffe135; }
     .tw-row__it { display: flex; align-items: center; min-width: 0; }
     .tw-row[data-say] { cursor: pointer; }
+    /* 📋 TALLY'S EXCHANGE (town-exchange.js): the cabinets' two tabs over the rows, and an order row as a small grid — the
+       face of whoever asks; the order, then its pay (the value, loudest: §3b) and what you have; the button; and across the
+       row's whole width the resident's own line, or what the last answer said. ⚠️ SIZED FOR 360×640: the card has about 440
+       px there and three rows must fit it with nothing to scroll (§40) — tests/town-orders.spec.mjs measures it. */
+    .tw-ex__tabs { margin: 0.45rem 0 0; }
+    .tw-ex__tabs + .tw-rows { margin: 0.4rem 0 0; }
+    .tw-row.tw-ex__order { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: 'face ask act' 'face have act' 'say say say'; column-gap: 0.5rem; row-gap: 0; align-items: center; }
+    .tw-ex__face { grid-area: face; width: 36px; height: 36px; image-rendering: pixelated; align-self: start; }
+    .tw-ex__ask { grid-area: ask; align-self: end; line-height: 1.2; }
+    .tw-row .tw-ex__have { grid-area: have; align-self: start; }
+    .tw-ex__have b { font-size: inherit; color: #ffe135; }
+    .tw-ex__n { white-space: nowrap; }   /* “you have 2” moves as one, never “you have” / “2” */
+    .tw-ex__act { grid-area: act; }
+    .tw-row .tw-ex__say { grid-area: say; margin-top: 0.3rem; }
+    .tw-ex__say b { font-size: inherit; color: #ffe135; }
+    .tw-row small.tw-ex__said { opacity: 1; font-weight: 800; color: #ffe135; }
+    .tw-ex__order.is-done :is(.tw-ex__face, .tw-ex__ask, .tw-ex__have) { opacity: 0.6; }
+    .tw-row .tw-ex__go { font-weight: 800; font-size: 0.78rem; padding: 0.35rem 0.6rem; border: 2px solid #000; background: #fffdf5; color: #141208; box-shadow: 2px 2px 0 #000; white-space: nowrap; text-decoration: none; }
     /* the heart's float over the player — the park's .pk-float */
     .tw-float { position: absolute; transform: translate(-50%, -50%); z-index: 1950; pointer-events: none; font-family: "Archivo Black", sans-serif; font-size: 0.85rem; color: #ffe135; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 2px 2px 0 #000; white-space: nowrap; animation: twFloat 0.9s ease-out forwards; }
     .tw-float svg { display: block; width: 22px; height: 22px; }

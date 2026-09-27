@@ -119,6 +119,18 @@
       "quirk": "She taps the wheel’s rim twice before every spin and says good morning to it, whatever the hour.",
       "voice": "Calm and unhurried. Short sentences, often four or five words. Talks about the wheel as if it has moods. Never gives odds, never promises a prize, never raises her voice.",
       "soft": "She is not sure the wheel is lucky at all. She keeps it turning because people smile at it, and she likes standing near that."
+    },
+    {
+      "key": "tally",
+      "name": "Tally",
+      "temper": "wry",
+      "born": "She came in on the mail bus with a crate of empty jars and a pencil behind her ear. Fig Jr. was minding the Exchange between lemonades, and she took it off his hands that afternoon.",
+      "loves": "An order slip crossed out before lunch, with the pencil line perfectly straight.",
+      "hates": "Half an order: two eggs brought for a slip that asked for six.",
+      "interest": "She counts everything that crosses her counter in a small green book, and on quiet days counts the cobbles between the stall and the fountain.",
+      "quirk": "She licks her pencil before every tick and never uses the eraser. A mistake gets a neat line through it, never a rub-out.",
+      "voice": "Quick and practical. Short sentences, often with a number in them, counted out loud. Fair to a fault and never gushing. Starts anything she means with Right. Never haggles.",
+      "soft": "She pins the orders up so she has a reason to talk to everybody in town each day. Before the stall, nobody here knew her name."
     }
   ]
 }

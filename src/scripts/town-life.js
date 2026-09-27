@@ -100,6 +100,11 @@ const MECH = [
     day: [['garden_w', 'water', 'left'], ['garden_w', 'water', 'left'], ['bench_w', 'bench', 'front'], ['orchard', 'water', 'right'], ['garden_w', 'bench', 'front'], ['home', 'home', 'front']] },
   { key: 'twirl', hat: 'party', glasses: 'monocle', tool: 'balloons', home: 'print',
     day: [['wheel', 'counter', 'front'], ['wheel', 'counter', 'front'], ['cart', 'stand', 'front'], ['wheel', 'counter', 'front'], ['wheel', 'counter', 'front'], ['home', 'home', 'front']] },
+  // 📋 AND TALLY KEEPS THE EXCHANGE (27 Sep 2026, Trym: "no town-banana looks responsible for it - might need a new NPC for the
+  // exchange"): the stall across the square from the wheel, where the residents' orders are pinned (src/data/town/orders.js).
+  // Lunch on the statue's bench; she lodges at the clothes shop with Moss.
+  { key: 'tally', hat: '', glasses: 'visor', tool: 'shopbag_brown', home: 'clothes',
+    day: [['exchange', 'counter', 'front'], ['exchange', 'counter', 'front'], ['monument', 'bench', 'front'], ['exchange', 'counter', 'front'], ['exchange', 'counter', 'front'], ['home', 'home', 'front']] },
 ];
 // the words, by key. A resident the copy file has never heard of would be a nameless banana standing
 // in the square with nothing to say, so it is named out loud here — the copy gate makes it impossible
@@ -711,5 +716,6 @@ export function initLife({ world, W, H, pct }) {
   COPY_P.then((COPY) => applyCopy(res, COPY)).catch((e) => console.error('town-life: the words did not load', e));
   const errands = (m) => { E = m; EX = { res, route, poof, hourNow, beat: () => curBeat }; };
   return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, errands, setKeep, setGlow, setOverride, nudge, setLitter, setRoom, route, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; },
-    keeperIn: (home) => res.some((n) => n.inside && n.home === home) };   // 🧾 is the one who keeps this room in it right now (the greeting)
+    keeperIn: (home) => res.some((n) => n.inside && n.home === home),   // 🧾 is the one who keeps this room in it right now (the greeting)
+    look: (key) => { const n = byKey(key); return n && n.name ? { name: n.name, outfit: n.outfit } : null; } };   // 📋 a face and a name for a card (the order board)
 }

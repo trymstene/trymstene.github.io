@@ -29,9 +29,9 @@ number (no price, no odds, no date), never a question, never "coming soon" with 
 - `wheel` — the line under the heading "The Wheel of Peel" on its card: Spinner's wheel. One free
   spin a day, then a few coins a spin; every paid spin feeds the pot, and one wedge takes the whole
   pot. "A few coins" is as precise as it gets; no odds.
-- `exchange` — the line under the heading "The Exchange" on its card: Fig Jr. buys what your
-  homestead made — eggs, milk, wool — at today's price, which moves from day to day. Sell now, or
-  hold. No number.
+- `exchange` — the line under the heading "Tally's Exchange" on its card (since 27 Sep 2026): Tally
+  keeps the stall; residents pin their orders on it and she pays when you bring all of one, and she
+  also buys what your homestead made (eggs, milk, wool) at today's price. No number.
 - `oldCabinet` — an old cabinet along the arcade wall, tapped: it is out of order; nothing to play on
   it yet.
 

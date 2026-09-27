@@ -817,7 +817,7 @@ export function buffSet(fx, mins) {
 // 🎡 THE SERVER'S OWN SLOTS, as a market answer carries them ({ key: { slot: n } } — worker-pass /town/wheel,
 // /town/sell): kept by MAX, the merge's own rule, so this device holds a prize before its next pull. Only the
 // server's named slots are taken — never a device's.
-const SERVER_SLOTS = new Set(['wheel', 'exchange', 'job']);
+const SERVER_SLOTS = new Set(['wheel', 'exchange', 'job', 'order']);   // 📋 'order': the Exchange's order board (worker-pass /town/order)
 export function passServerSlots(slots) {
   if (!slots || typeof slots !== 'object') return;
   const raw = readRaw();

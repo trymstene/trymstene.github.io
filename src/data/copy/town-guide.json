@@ -40,8 +40,8 @@
         "alt": "Pip outside the General Store, holding a rubber chicken."
       },
       "exchange": {
-        "name": "sell your produce",
-        "text": "Fig Jr. buys eggs, milk and wool at the Exchange. The price moves every day, so pick your moment.",
+        "name": "fill an order",
+        "text": "Residents pin orders at Tally’s Exchange: eggs, fish, crops. Bring one in full and she pays well.",
         "alt": "The Exchange, a striped market stall on the square."
       },
       "folk": {

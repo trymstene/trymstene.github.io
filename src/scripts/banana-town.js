@@ -972,7 +972,7 @@ let market = null, marketP = null;
 function loadMarket() {
   if (!marketP) {
     marketP = import('./town-market.js').then((m) => (market = m.bootMarket({ openCard, closeCard, isOpen: () => !panel.hidden,
-      say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS,
+      say, track, esc, drawWheel, pocketPaint, burstAt, view, pos, PROPS, FRONTS, life,   // 📋 life: the order board's faces and names
       // 🎉 a win flies to where it lands: the HUD's purse, and the pocket on the bar (with its prize's own glyph)
       hud: () => hud, pocketBtn: () => pocketBtn, pocketIcon: (k) => (POCKET_ICON[k] ? iconSvg(POCKET_ICON[k], { size: 26 }) : '') })));
     marketP.catch(() => { marketP = null; });

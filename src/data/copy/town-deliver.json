@@ -11,7 +11,8 @@
     "dot": "Dot at the print shop",
     "granfig": "Gran Fig in the garden",
     "twirl": "Twirl at the print shop",
-    "pip": "Pip at the general store"
+    "pip": "Pip at the general store",
+    "tally": "Tally at the clothes shop"
   },
   "pickedTwo": "Two parcels: for {to} and for {to2}. The markers are over their doors.",
   "deliveredOne": "Delivered to {to}. The other parcel is for {next}.",

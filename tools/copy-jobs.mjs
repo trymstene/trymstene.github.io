@@ -22,7 +22,15 @@ export const TOWN_CAST = [
   ['nib', 'Nib'], ['stamp', 'Stamp'], ['moss', 'Moss'], ['pip', 'Pip'], ['bean', 'Bean'],
   ['figjr', 'Fig Jr.'], ['spinner', 'Spinner'], ['dot', 'Dot'], ['granfig', 'Gran Fig'],
   ['twirl', 'Twirl'],   // 🎡 the tenth (24 Sep 2026): the Wheel of Peel's keeper, when Spinner went back to his arcade
+  ['tally', 'Tally'],   // 📋 the eleventh (27 Sep 2026): the Exchange's keeper, who pins up the residents' orders
 ];
+// 📋 who asks for what on the Exchange's order board — src/data/town/orders.js ASKS, MIRRORED here because this file runs
+// in a throwaway copy of tools/ for the lock test (no src/ there). worker-pass/test/orders.test.mjs holds the two equal.
+export const ORDER_ASKS = {
+  farm: [['bean', 'milk'], ['bean', 'eggs'], ['pip', 'eggs'], ['pip', 'wool'], ['stamp', 'wool'], ['nib', 'milk']],
+  bay: [['spinner', 'fish'], ['moss', 'fish'], ['dot', 'fish'], ['twirl', 'shell'], ['stamp', 'shell']],
+  park: [['granfig', 'harvest'], ['figjr', 'harvest'], ['bean', 'harvest'], ['dot', 'pegg'], ['pip', 'pegg']],
+};
 
 // --- town-npcs ---------------------------------------------------------------
 // The spoken half of src/scripts/town-life.js: five greetings up the meeting
@@ -1657,7 +1665,7 @@ const frontFields = {
   bank: { kind: 'prose', aim: 70, max: 110, note: 'What the bank says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the bank — a cash machine; nothing to do here yet.' },
   print: { kind: 'prose', aim: 80, max: 120, note: 'What the print shop says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: it is the print shop with the sticker packs in its window; nothing to do inside yet — the packs are in the site’s shop. Never a price.' },
   wheel: { kind: 'prose', aim: 90, max: 130, note: 'The line under the Wheel of Peel’s heading on its card. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: Spinner’s wheel — one free spin a day, then a few coins a spin; every paid spin feeds the pot and one wedge takes it all. No rate beyond “a few coins”, no odds.' },
-  exchange: { kind: 'prose', aim: 90, max: 130, note: 'The line under the Exchange’s heading on its card. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: Fig Jr. buys what your homestead made (eggs, milk, wool) at today’s price, which moves from day to day — sell now or hold. No number.' },
+  exchange: { kind: 'prose', aim: 90, max: 130, note: 'The line under the Exchange’s heading on its card. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026 — Trym: “i dont understand any of this text … clear and concrete messages”): this is a SIGNPOST, not a moment. Two plain sentences: what this is (name the place and who runs it), then what a player can do here. No scenery, no metaphor, no weather, no riddle. Here: Tally keeps the Exchange (since 27 Sep 2026): residents pin their orders on it and she pays when you bring all of one. Two lines on a 360-px phone at most — the card holds three orders under it; the spare-produce tab names itself. No number.' },
   // 🪧 THE REST OF THE SQUARE'S SPOTS (22 Sep 2026): these still answered a tap with a sentence typed into the code
   counter: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the counter inside the Arcade. One day it will hand out tokens and keep the high-score book; nothing to do at it yet (every cabinet keeps its own board already)." },
   cart: { kind: 'prose', aim: 70, max: 110, note: "What this place says when tapped. ⭐ A PLACE ANSWERS PLAINLY (docs/voice.md, 22 Sep 2026): a SIGNPOST, not a moment. Two plain sentences at most: what this is, then what a player can do here — here, that there is nothing to do yet, said plainly and without apology. No scenery, no metaphor, no riddle, no number, no day or time, never a question, never a promise of when. Here: the fruit cart on the square. One day it will sell duck bread; nothing to buy at it yet." },
@@ -1676,7 +1684,7 @@ function frontShape(data) {
   plainPlace(bad, 'bank', data.bank, ['bank', 'cash machine'], ['nothing', 'yet']);
   plainPlace(bad, 'print', data.print, ['print shop', 'sticker'], ['nothing', 'yet', 'shop']);
   plainPlace(bad, 'wheel', data.wheel, ['wheel'], ['spin']);
-  plainPlace(bad, 'exchange', data.exchange, ['exchange', 'fig jr'], ['sell', 'buys', 'price']);
+  plainPlace(bad, 'exchange', data.exchange, ['exchange', 'tally'], ['order', 'pays']);
   plainPlace(bad, 'oldCabinet', data.oldCabinet, ['cabinet'], ['out of order', 'nothing', 'yet']);
   plainPlace(bad, 'counter', data.counter, ['counter'], ['nothing', 'yet']);
   plainPlace(bad, 'cart', data.cart, ['cart'], ['nothing', 'yet']);
@@ -1843,16 +1851,16 @@ function localeJob(code) {
 }
 
 export const JOBS = {
-  // 📈🎡 THE MARKET (23 Sep 2026): the Wheel of Peel's card and the Exchange's card, now that both are real —
-  // the server rolls the wheel and pays it, and a sale takes the produce out of the saved farm. The ids the
-  // lists are keyed by (wedges, goods) are src/data/town/market.js's; the shape check holds the two together.
+  // 📈🎡 THE MARKET (23 Sep 2026): the Wheel of Peel's card, now that it is real — the server rolls the wheel and pays it.
+  // The ids the wedges are keyed by are src/data/town/market.js's; the shape check holds the two together. (The
+  // Exchange had its half of this file until 27 Sep 2026, when it got its own card, chunk and words: town-exchange.)
   'town-market': {
     id: 'town-market',
-    title: 'Banana Town — the Wheel of Peel and the Exchange',
-    what: 'The two market cards on the square: the wheel’s pot, its wedges, its buttons and what each spin says; the Exchange’s rows, its button, Bean’s rumour and what a sale says.',
+    title: 'Banana Town — the Wheel of Peel',
+    what: 'The wheel’s card on the square: its pot, its wedges, its buttons and what each spin says.',
     approved: 'src/data/copy/town-market.json',
-    reads: 'src/scripts/banana-town.js (a static import: both cards open from the square)',
-    top: ['wheel', 'exchange'],
+    reads: 'src/scripts/town-market.js (the wheel’s lazy chunk, loaded when the card opens)',
+    top: ['wheel'],
     fields: {
       'wheel.title': { kind: 'label', max: 24, note: 'The wheel card’s heading.' },
       'wheel.pot': toastLine(30, 'Over the wheel: how many coins are in the shared pot right now.', holdsAll('n')),
@@ -1884,7 +1892,29 @@ export const JOBS = {
       'wheel.keepLink': { kind: 'label', max: 18, note: 'The link to the pass page under that line.' },
       'wheel.potWon': toastLine(90, 'What everybody on the square reads when {name} wins the pot of {n} coins.', holdsAll('name', 'n')),
       'wheel.potWonAnon': toastLine(90, 'The same when the winner has no name on their pass.', holdsAll('n')),
-      'exchange.title': { kind: 'label', max: 20, note: 'The Exchange card’s heading.' },
+    },
+    shape: (d) => {
+      const bad = [];
+      const w = (d.wheel && d.wheel.wedges) || {};
+      for (const id of ['c5', 'firework', 'peel', 'c20', 'lure', 'again', 'pot']) if (!w[id]) bad.push({ path: 'wheel.wedges.' + id, msg: 'missing — src/data/town/market.js paints a wedge with this id' });
+      return bad;
+    },
+  },
+  // 📋 TALLY'S EXCHANGE (27 Sep 2026; Trym: "the Exchange looks visually abandoned … can it be much more?", then "yes
+  // order board, every area"). Two tabs on one card: today's three orders — one resident each from the farm, the bay and the
+  // park asking for what that area makes, paid by Tally when you bring all of it — and the spare-produce rows that were
+  // the whole card before. The ids its lists are keyed by are src/data/town/market.js's (the goods) and ORDER_ASKS above
+  // (the order pairs, src/data/town/orders.js); the shape check holds them together.
+  'town-exchange': {
+    id: 'town-exchange',
+    title: 'Banana Town — Tally’s Exchange',
+    what: 'The Exchange’s card: its two tabs; today’s orders (the good and the count, the pay, the resident’s own line, how many you have, the button or where to get more) and what a delivery says; the spare-produce rows, Bean’s rumour and what a sale says.',
+    approved: 'src/data/copy/town-exchange.json',
+    reads: 'src/scripts/town-exchange.js (its own lazy chunk, loaded when the Exchange’s card opens)',
+    top: ['exchange', 'orders'],
+    fields: {
+      'exchange.title': { kind: 'label', max: 20, note: 'The Exchange card’s heading: whose stall it is.' },
+      'exchange.tab': { kind: 'label', max: 14, note: 'The second tab: the spare-produce rows (the first is the orders).' },
       'exchange.goods.eggs': { kind: 'label', max: 10, note: 'A row’s name for eggs.' },
       'exchange.goods.milk': { kind: 'label', max: 10, note: 'A row’s name for milk.' },
       'exchange.goods.wool': { kind: 'label', max: 10, note: 'A row’s name for wool.' },
@@ -1904,19 +1934,45 @@ export const JOBS = {
       'exchange.paid': toastLine(70, 'After a sale: {coins} paid for {n} of {what}.', holdsAll('coins', 'n', 'what')),
       'exchange.none': toastLine(120, 'The farm has nothing to sell right now: what makes the goods.'),
       'exchange.noFarm': toastLine(80, 'A player with no homestead.'),
-      'exchange.cap': toastLine(80, 'Fig Jr. has bought all he takes of that good from one banana today; {what} is the good.', holdsAll('what')),
+      'exchange.cap': toastLine(80, 'Tally has bought all she takes of that good from one banana today; {what} is the good.', holdsAll('what')),
       'exchange.busy': toastLine(80, 'The sale did not go through: nothing was sold.'),
       'exchange.keep': toastLine(90, 'A device with no Banana Pass cannot sell, because sales are kept on the pass.'),
       'exchange.keepLink': { kind: 'label', max: 18, note: 'The link to the pass page under that line.' },
+      'orders.tab': { kind: 'label', max: 12, note: 'The first tab: today’s orders.' },
+      'orders.ask': { kind: 'label', max: 26, note: 'An order’s head: what it asks for and how many — {what} is the good or the species (Milk, Anchovy, Crops), {n} the count.', ...holdsAll('what', 'n') },
+      'orders.pay': toastLine(16, 'Beside the head: what the order pays; {coins} is filled by the game.', { ...holdsAll('coins'), ...NO_MARKUP }),
+      'orders.have': toastLine(20, 'Under the resident’s line: how many you have to give towards it.', { ...holdsAll('have'), ...NO_MARKUP }),
+      'orders.deliver': { kind: 'label', max: 12, note: 'The order’s button: hand all of it over.' },
+      'orders.wait': { kind: 'label', max: 14, note: 'On the button while the delivery goes through.' },
+      'orders.done': { kind: 'label', max: 12, note: 'On the button once today’s order is delivered.' },
+      'orders.go.farm': { kind: 'label', max: 18, note: 'In place of the button when you have too few: a link to the homestead, where eggs, milk and wool are made.' },
+      'orders.go.bay': { kind: 'label', max: 18, note: 'In place of the button when you have too few: a link to Banana Bay, where the fish and shells are.' },
+      'orders.go.park': { kind: 'label', max: 18, note: 'In place of the button when you have too few: a link to the park, where the crops grow and the eggs are hidden.' },
+      'orders.goods.harvest': { kind: 'label', max: 12, note: 'What a park order for harvested crops is called (the park’s own word: crops).' },
+      'orders.goods.pegg': { kind: 'label', max: 12, note: 'What a park order for eggs found hidden in the park is called: not the farm’s eggs.' },
+      'orders.paid': toastLine(80, 'After a delivery: who got it ({who}, a resident’s name) and what Tally paid.', holdsAll('who', 'coins')),
+      'orders.short': toastLine(80, 'The delivery found too few: {have} you have, {n} it asks for. Nothing was taken.', holdsAll('have', 'n')),
+      'orders.already': toastLine(60, 'The order was delivered already today (from another device).'),
+      'orders.gone': toastLine(80, 'The order was yesterday’s: the board has today’s on it now.'),
+      'orders.noFarm': toastLine(90, 'A farm order, and the player has no homestead.'),
+      'orders.busy': toastLine(90, 'The delivery did not go through: nothing was taken.'),
+      'orders.keep': toastLine(90, 'A device with no Banana Pass cannot deliver, because deliveries are kept on the pass.'),
+      'orders.keepLink': { kind: 'label', max: 18, note: 'The link to the pass page under that line.' },
+      'orders.allDone': toastLine(90, 'Every order on today’s board is delivered; new ones go up tomorrow. Never a time of day.'),
+      // a resident's own line on their order: in THEIR voice (src/data/copy/town-personas.json), saying what it is for
+      ...Object.fromEntries(Object.values(ORDER_ASKS).flat().map(([who, want]) => ['orders.wants.' + who + '.' + want, { kind: 'prose', aim: 70, max: 90,
+        note: 'What ' + who + ' says on their order for ' + want + ', under it on the board: what it is for, in their own voice. No number (the board prints the count), no time of day, never a question.' }])),
     },
     shape: (d) => {
       const bad = [];
-      const w = (d.wheel && d.wheel.wedges) || {}, g = (d.exchange && d.exchange.goods) || {}, t = (d.exchange && d.exchange.things) || {};
-      for (const id of ['c5', 'firework', 'peel', 'c20', 'lure', 'again', 'pot']) if (!w[id]) bad.push({ path: 'wheel.wedges.' + id, msg: 'missing — src/data/town/market.js paints a wedge with this id' });
+      const x = d.exchange || {}, g = x.goods || {}, t = x.things || {}, w = (d.orders && d.orders.wants) || {};
       for (const id of ['eggs', 'milk', 'wool']) {
         if (!g[id]) bad.push({ path: 'exchange.goods.' + id, msg: 'missing — src/data/town/market.js sells this good' });
         if (!t[id]) bad.push({ path: 'exchange.things.' + id, msg: 'missing — the sale line names this good' });
       }
+      for (const [who, want] of Object.values(ORDER_ASKS).flat()) if (!(w[who] && w[who][want])) bad.push({ path: 'orders.wants.' + who + '.' + want, msg: 'missing — src/data/town/orders.js ASKS has ' + who + ' ask for ' + want });
+      for (const who of Object.keys(w)) for (const want of Object.keys(w[who] || {})) if (!Object.values(ORDER_ASKS).flat().some(([a, b]) => a === who && b === want)) bad.push({ path: 'orders.wants.' + who + '.' + want, msg: 'nobody asks for this — not in src/data/town/orders.js ASKS' });
+      for (const [who] of Object.values(ORDER_ASKS).flat()) if (!TOWN_CAST.some(([k]) => k === who)) bad.push({ path: 'orders.wants.' + who, msg: 'not one of the cast' });
       return bad;
     },
   },

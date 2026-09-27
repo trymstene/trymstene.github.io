@@ -24,7 +24,7 @@ export const ODD_SPOTS = {
   // is the nearest thing to it in kind — somewhere in the square he does not work, a few steps from
   // his own stall — and it is a place town-life already has a station for.
   figjr: ['cart', 3], spinner: ['exchange', 2], dot: ['orchard', 1], granfig: ['cafe', 2],   // 🕹 Spinner's on an outdoor beat: his morning is indoors
-  twirl: ['monument', 1],
+  twirl: ['monument', 1], tally: ['bus', 4],   // 📋 the evening bus stop: nobody's station at that hour
 };
 // ⚠️ THE ARCADE (`condo`) IS NEVER HERE and never in a band's `shut` list: five shipped games must
 // answer on a stranger's worst day (docs/town-jobs-plan.md §1, enforced by tools/check-design.mjs).
