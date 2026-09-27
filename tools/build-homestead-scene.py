@@ -21,6 +21,7 @@ Outputs:
   src/data/decor.js                       the decor manifest (generated)
 Run: python tools/build-homestead-scene.py
 """
+import json
 import math
 import os
 import random
@@ -674,6 +675,7 @@ DECOR_DEFAULT = 2 / 3.0
 DECOR_SCALE = {'statue': 0.30, 'statue2': 0.30, 'coop': 0.43, 'crate': 0.55, 'fountain': 2 / 3.0}
 
 DECOR_OUT = []
+EXTRA_OUT = {}   # did -> {'ship': minutes, 'reward': 1}: what a row adds (the second delivery, 28 Sep 2026)
 if HAVE_PACK:
     for did, name, cat, price, stage, cands, solid in DECOR_DEF:
         s = sprite(cands, scale=DECOR_SCALE.get(did, DECOR_DEFAULT))
@@ -839,18 +841,125 @@ INDOOR_DEF = [
     ('drumkit', 'Drum kit', 'music', 38, 3, [_ts(MUS, 41), _ts(MUS, 42)]),
     ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
 ]
-INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']
-RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug', 'ovalrug', 'orangerug', 'whitemat', 'whiteoval'}
+
+# 📦 THE SECOND DELIVERY (28 Sep 2026, Trym: "find more fun interior from the modern interior pack, that we dont have
+# before … make sure they are moveable through the build-mode, and that the objects have a certain delivery time, and a
+# cost that makes sense … at least 50 more items spread around the different categories on the banana phone order").
+# Chosen off labelled contact sheets of the pack's own themes (art, gym, fishing, library, film studio, birthday,
+# Christmas, Halloween, museum, music) and the rooms the catalogue already had. Two new shelves: 🎨 hobbies and 🎉 party.
+# A 7th field carries what a row adds: `ship` — its own van time in minutes (small things are quick, a fireplace is an
+# afternoon; hours, never days), and `reward` — never sold: handed out as a reward (grantReward in
+# src/lib/homestead-inventory.js), priced 0 so the shed never offers to sell it.
+ART = ('7_Art_Singles_48x48', 'Art_Singles_48x48')
+BDAY = ('10_Birthday_Party_Singles_48x48', 'Birthday_Party_Singles_48x48')
+FISH = ('9_Fishing_Singles_48x48', 'Fishing_Singles_48x48')
+LIB = ('5_Classroom_and_Library_Singles_48x48', 'Classroom_and_Library_Singles_48x48')
+FILM = ('23_Television_and_Film_Studio_SIngles_48x48', 'Television_and_FIlm_Studio_Singles_48x48')
+CONDO = ('26_Condominium_Singles_48x48', 'Condominium_Singles_48x48')
+XMAS = ('15_Christmas_Singles_48x48', 'Christmas_SIngles_48x48')
+GYM = ('8_Gym_Singles_48x48', 'Gym_Singles_48x48')
+MUSEUM = ('22_Museum_Singles_48x48', 'Museum_Singles_48x48')
+HWEEN = ('11_Halloween_Singles_48x48', 'Halloween_Singles_48x48')
+INDOOR_DEF += [
+    # 🍳 kitchen: the sink, the fridge left open, and the small machines on a counter of their own
+    ('sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, _ts(KIT, 123), {'ship': 45}),
+    ('openfridge', 'Open fridge', 'kitchen', 38, 2, _ts(KIT, 162), {'ship': 60}),
+    ('toastcounter', 'Toaster counter', 'kitchen', 16, 2, _ts(KIT, 121), {'ship': 30}),
+    ('microcounter', 'Microwave counter', 'kitchen', 24, 2, _ts(KIT, 121), {'ship': 45}),
+    ('espressobar', 'Espresso bar', 'kitchen', 30, 3, [_ts(KIT, 121)] * 2, {'ship': 60}),
+    ('picnicbasket', 'Picnic basket', 'kitchen', 10, 1, _ts(BASE, 83), {'ship': 15}),
+    # 🛋 living room
+    ('fireplace', 'Fireplace', 'living', 58, 3, _ts(XMAS, 68), {'ship': 150}),
+    ('bookshelf', 'Tall bookshelf', 'living', 32, 2, _ts(LIB, 43), {'ship': 60}),
+    ('bookcase', 'Bookcase', 'living', 26, 2, _ts(LIB, 57), {'ship': 45}),
+    ('globe', 'Globe', 'living', 20, 2, _ts(LIB, 34), {'ship': 30}),
+    ('aquarium', 'Aquarium', 'living', 48, 3, _ts(FISH, 53), {'ship': 90}),
+    ('pottedpalm', 'Potted palm', 'living', 14, 1, _ts(LIV, 14), {'ship': 20}),
+    ('aloe', 'Aloe in a pot', 'living', 10, 1, _ts(LIV, 15), {'ship': 15}),
+    ('bluelamp', 'Blue floor lamp', 'living', 16, 2, _ts(LIV, 79), {'ship': 30}),
+    ('woodstove', 'Wood stove', 'living', 40, 2, _ts(LIV, 107), {'ship': 90}),
+    # 🛏 bedroom
+    ('pumpkinbed', 'Pumpkin bed', 'bedroom', 34, 2, _ts(HWEEN, 139), {'ship': 60}),
+    ('toykeys', 'Toy keyboard', 'bedroom', 14, 1, _ts(MUS, 67), {'ship': 20}),
+    ('toydrum', 'Toy drum', 'bedroom', 12, 1, _ts(MUS, 71), {'ship': 20}),
+    ('locker', 'School locker', 'bedroom', 20, 2, _ts(LIB, 40), {'ship': 30}),
+    ('beanbag', 'Bean bag', 'bedroom', 14, 1, _ts(GYM, 80), {'ship': 20}),
+    # 🛁 bathroom
+    ('soapsink', 'Pedestal sink', 'bathroom', 24, 2, _ts(BATH, 152), {'ship': 45}),
+    ('duckshelf', 'Rubber duck shelf', 'bathroom', 18, 2, _ts(BATH, 84), {'ship': 30}),
+    ('laundry', 'Laundry basket', 'bathroom', 10, 2, _ts(BATH, 95), {'ship': 20}),
+    ('striperug', 'Striped bath rug', 'bathroom', 8, 2, _ts(BATH, 76), {'ship': 15}),
+    ('tprolls', 'Toilet roll tower', 'bathroom', 4, 2, _ts(BATH, 139), {'ship': 10}),
+    # 🚪 hallway
+    ('welcomemat', 'Welcome mat', 'hallway', 8, 1, _ts(CONDO, 66), {'ship': 15}),
+    ('boxes', 'Moving boxes', 'hallway', 6, 1, _ts(CONDO, 71), {'ship': 10}),
+    ('goldmirror', 'Gold mirror', 'hallway', 24, 2, _ts(HWEEN, 83), {'ship': 45}),
+    ('rotaryphone', 'Rotary phone', 'hallway', 12, 2, _ts(HWEEN, 127), {'ship': 20}),
+    ('amphora', 'Bronze amphora', 'hallway', 30, 3, _ts(MUSEUM, 43), {'ship': 60}),
+    ('bigpalm', 'Big potted palm', 'hallway', 22, 3, _ts(MUSEUM, 197), {'ship': 45}),
+    # 🎸 music
+    ('acoustic', 'Acoustic guitar', 'music', 22, 1, _ts(MUS, 45), {'ship': 30}),
+    ('harp', 'Harp', 'music', 48, 3, _ts(MUS, 58), {'ship': 120}),
+    ('upright', 'Upright piano', 'music', 50, 3, _ts(MUS, 3), {'ship': 120}),
+    ('synth', 'Synthesizer', 'music', 30, 2, _ts(MUS, 66), {'ship': 45}),
+    ('boombox', 'Boombox', 'music', 18, 2, _ts(GYM, 100), {'ship': 30}),
+    # 🎨 hobbies: the easel, the gym corner, the fishing wall, the film set
+    ('easel', 'Landscape easel', 'hobby', 18, 1, _ts(ART, 40), {'ship': 30}),
+    ('easel2', 'Flower easel', 'hobby', 18, 1, _ts(ART, 38), {'ship': 30}),
+    ('paintpots', 'Paint pots', 'hobby', 8, 1, _ts(ART, 19), {'ship': 15}),
+    ('arttable', 'Art table', 'hobby', 26, 2, _ts(ART, 23), {'ship': 45}),
+    ('treadmill', 'Treadmill', 'hobby', 42, 3, _ts(GYM, 186), {'ship': 90}),
+    ('punchbag', 'Punching bag', 'hobby', 24, 2, _ts(GYM, 67), {'ship': 45}),
+    ('yogaball', 'Yoga ball', 'hobby', 8, 1, _ts(GYM, 125), {'ship': 15}),
+    ('yogamat', 'Yoga mat', 'hobby', 8, 1, _ts(GYM, 195), {'ship': 15}),
+    ('dumbbells', 'Dumbbell rack', 'hobby', 30, 2, _ts(GYM, 167), {'ship': 60}),
+    ('rodrack', 'Fishing rod rack', 'hobby', 20, 2, _ts(FISH, 65), {'ship': 30}),
+    ('tacklebox', 'Tackle box', 'hobby', 12, 1, _ts(FISH, 31), {'ship': 20}),
+    ('filmcamera', 'Film camera', 'hobby', 34, 3, _ts(FILM, 1), {'ship': 60}),
+    ('chalkboard', 'Chalkboard', 'hobby', 16, 2, _ts(LIB, 36), {'ship': 30}),
+    # 🎉 party: birthdays, Christmas and Halloween, all year round
+    ('xmastree', 'Christmas tree', 'party', 44, 2, _ts(XMAS, 2), {'ship': 60}),
+    ('nutcracker', 'Nutcracker', 'party', 16, 2, _ts(XMAS, 69), {'ship': 30}),
+    ('santasack', 'Sack of presents', 'party', 18, 2, _ts(XMAS, 90), {'ship': 30}),
+    ('giftred', 'Big red present', 'party', 12, 1, _ts(BDAY, 1), {'ship': 20}),
+    ('giftblue', 'Big blue present', 'party', 12, 1, _ts(BDAY, 2), {'ship': 20}),
+    ('partycake', 'Party cake', 'party', 24, 2, _ts(BDAY, 39), {'ship': 45}),
+    ('balloonred', 'Red balloon', 'party', 4, 1, _ts(BDAY, 35), {'ship': 10}),
+    ('balloonblue', 'Blue balloon', 'party', 4, 1, _ts(BDAY, 34), {'ship': 10}),
+    ('jackolantern', 'Jack-o’-lantern', 'party', 8, 1, _ts(HWEEN, 8), {'ship': 15}),
+    ('pumpkins', 'Pumpkin pile', 'party', 12, 1, _ts(HWEEN, 10), {'ship': 20}),
+    ('cauldron', 'Bubbling cauldron', 'party', 22, 2, _ts(HWEEN, 54), {'ship': 45}),
+    ('sheetghost', 'Sheet ghost', 'party', 14, 2, _ts(HWEEN, 74), {'ship': 30}),
+    # 🏆 THE REWARDS — never in the shop; each one is given for something (grantReward)
+    ('goldtrophy', 'Golden trophy', 'hobby', 0, 1, _ts(MUS, 141), {'reward': 1}),
+    ('goldmedal', 'Framed gold medal', 'hobby', 0, 1, _ts(MUS, 129), {'reward': 1}),
+    ('dinoskeleton', 'Dinosaur skeleton', 'hobby', 0, 1, _ts(MUSEUM, 366), {'reward': 1}),
+    ('triceratops', 'Triceratops model', 'hobby', 0, 1, _ts(MUSEUM, 358), {'reward': 1}),
+    ('butterflies', 'Butterfly collection', 'hobby', 0, 1, _ts(MUSEUM, 178), {'reward': 1}),
+    ('starrynight', 'Starry night painting', 'living', 0, 1, _ts(MUSEUM, 122), {'reward': 1}),
+    ('greatwave', 'Great wave painting', 'living', 0, 1, _ts(MUSEUM, 116), {'reward': 1}),
+    ('smilinglady', 'Smiling lady portrait', 'living', 0, 1, _ts(MUSEUM, 123), {'reward': 1}),
+    ('goldharp', 'Golden harp', 'music', 0, 1, _ts(MUS, 60), {'reward': 1}),
+    ('snowglobe', 'Snow globe', 'party', 0, 1, _ts(XMAS, 101), {'reward': 1}),
+]
+INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music', 'hobby', 'party']
+RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug', 'ovalrug', 'orangerug', 'whitemat', 'whiteoval',
+           'striperug', 'welcomemat', 'yogamat'}
 SIT_DIRS = {'dinchair': 'l', 'dinchair2': 'r', 'dinchair3': 's', 'hallchair': 's',
             'navychair': 's', 'whitechair': 's', 'sofa': 's', 'bigcouch': 's',
-            'bench': 's', 'benchv': 's', 'armchair': 's', 'chair': 's', 'stump': 's'}
+            'bench': 's', 'benchv': 's', 'armchair': 's', 'chair': 's', 'stump': 's', 'beanbag': 's'}
 # counters render at 1.0 (they must READ as work surfaces — Trym: "the kitchen
 # counter must be larger"); rugs render big because the banana walks over them.
 IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
             'starryrug': 4 / 3.0, 'longrug': 1.5, 'greyrug': 1.0, 'ovalrug': 1.0,
-            'orangerug': 1.0, 'whitemat': 1.0, 'whiteoval': 1.0}
+            'orangerug': 1.0, 'whitemat': 1.0, 'whiteoval': 1.0,
+            'sinkcounter': 1.0, 'toastcounter': 1.0, 'microcounter': 1.0, 'espressobar': 1.0,
+            'dinoskeleton': 0.5}   # a whole dinosaur at 2/3 filled a room
 # accessory parts baked onto the K121 counter (native px, base-line y, x)
 IN_COMPOSE = {
+    'toastcounter': [(_ts(KIT, 136), 22, 38)],
+    'microcounter': [(_ts(KIT, 134), 22, 34)],
+    'espressobar': [(_ts(KIT, 178), 8, 36), (_ts(KIT, 184), 100, 38)],
     'coffeemk': [(_ts(KIT, 185), 44, 30)],
     'stockcounter': [(_ts(LIV, 49), 22, 30), (_ts(KIT, 172), 168, 24)],
     'telly': [(_ts(BASE, 164), 14, 26)],
@@ -861,8 +970,8 @@ IN_COMPOSE = {
     'pingpong2': [(_ts(BASE, 67), 34, 127), (('crop', _ts(BASE, 67), (18, 0, 64, 48)), 20, 52)],
 }
 if HAVE_PACK:
-    NO_STRIP = RUG_IDS
-    IN_OVERLAP = {'kcounter': 3, 'coffeemk': 3, 'stockcounter': 3}
+    NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket'}   # cardboard and wicker share the floor's tan: the flood ate them
+    IN_OVERLAP = {'kcounter': 3, 'coffeemk': 3, 'stockcounter': 3, 'espressobar': 3}
     HENS = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animals_48x48/Chickens_and_Roosters_48x48')
     for hi, hname in enumerate(['Chicken_Brown_48x48.png', 'Chicken_White_48x48.png', 'Chicken_Golden_48x48.png']):
         hsheet = Image.open(os.path.join(HENS, hname)).convert('RGBA')
@@ -1032,7 +1141,9 @@ if HAVE_PACK:
         _tf.save(os.path.join(OUT, 'd-trough-full.png'), optimize=True)
         print('  d-trough-full.png %dx%d' % (_tf.width, _tf.height))
     shutil.copy(os.path.join(ANIM, 'Garden_Fountain_1_48x48.gif'), os.path.join(OUT, 'd-fountain.gif'))
-    for did, name, cat, price, stage, path in INDOOR_DEF:
+    for row in INDOOR_DEF:
+        did, name, cat, price, stage, path = row[:6]
+        EXTRA_OUT[did] = row[6] if len(row) > 6 else {}
         sc = IN_SCALE.get(did, DECOR_DEFAULT)
         s = indoor_sprite(path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
         if s is None:
@@ -1350,21 +1461,36 @@ def emit():
 
     D = []
     D.append('// GENERATED by tools/build-homestead-scene.py — DO NOT EDIT.')
-    D.append('// The decor catalog: footprints measured from the exported sprites.')
-    D.append('// surface: ground-only in M0; stage = house-ladder gate (0 = from the plot).')
-    D.append('export const DECOR = [')
+    D.append('// The decor catalog: footprints measured from the exported sprites. stage = house-ladder gate (0 = from the plot).')
+    D.append('// ⚡ PACKED, one row per piece (28 Sep 2026): the object keys cost more than the catalog, so each row is')
+    D.append('// [id, name, cat, price, stage, w, h, solid, extra] and DECOR expands them to the objects every reader keeps.')
+    D.append('// extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), gif.')
+    D.append('const IN = new Set(%s);' % json.dumps(INDOOR_CATS).replace('"', "'"))
+    D.append('const ROWS = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
         if did == 'fountain':
             w, h = 64, 96
-        D.append("  { id: '%s', name: '%s', cat: '%s', price: %d, stage: %d,"
-                 " w: %d, h: %d, surface: '%s',%s%s img: '/assets/homestead/d-%s.%s', solid: %s },"
-                 % (did, name, cat, price, stage, w, h,
-                    ('floor' if cat in ('kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music') else 'ground'),
-                    (' rug: 1,' if did in RUG_IDS else ''),
-                    ((" sit: '%s'," % SIT_DIRS[did]) if did in SIT_DIRS else ''), did,
-                    ('gif' if did == 'fountain' else 'png'),
-                    (str(box) if box else 'null')))
+        ex = EXTRA_OUT.get(did, {})
+        extra = []
+        if did in RUG_IDS:
+            extra.append('rug: 1')
+        if did in SIT_DIRS:
+            extra.append("sit: '%s'" % SIT_DIRS[did])
+        if 'ship' in ex:
+            extra.append('ship: %d' % ex['ship'])
+        if ex.get('reward'):
+            extra.append('reward: 1')
+        if did == 'fountain':
+            extra.append('gif: 1')
+        tail = ''
+        if box or extra:
+            tail += ', ' + (str(box) if box else 'null')
+        if extra:
+            tail += ', { ' + ', '.join(extra) + ' }'
+        D.append("  ['%s', '%s', '%s', %d, %d, %d, %d%s]," % (did, name, cat, price, stage, w, h, tail))
     D.append('];')
+    D.append("export const DECOR = ROWS.map(([id, name, cat, price, stage, w, h, solid = null, x = {}]) => ({ id, name, cat, price, stage, w, h,")
+    D.append("  surface: IN.has(cat) ? 'floor' : 'ground', ...x, img: '/assets/homestead/d-' + id + (x.gif ? '.gif' : '.png'), solid }));")
     with open(os.path.join(SITE, 'src', 'data', 'decor.js'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(D) + '\n')
     print('wrote src/data/decor.js (%d items)' % len(DECOR_OUT))

@@ -20,12 +20,13 @@ ASSETS = os.path.join(SITE, 'public', 'assets', 'homestead')
 
 # ---- the truth: parse the generated manifests ------------------------------
 decor_src = io.open(os.path.join(SITE, 'src', 'data', 'decor.js'), encoding='utf-8').read()
+INDOOR = {'kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music', 'hobby', 'party'}
 ITEMS = []
-for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)', cat: '([^']+)', price: (\d+), stage: (\d+),"
-                     r" w: (\d+), h: (\d+), surface: '([^']+)'", decor_src):
+# ⚡ decor.js is PACKED rows since 28 Sep 2026: [id, name, cat, price, stage, w, h, …]; surface follows the shelf
+for m in re.finditer(r"\['([^']+)', '([^']+)', '([^']+)', (\d+), (\d+), (\d+), (\d+)", decor_src):
     ITEMS.append({'id': m.group(1), 'name': m.group(2), 'cat': m.group(3),
                   'price': int(m.group(4)), 'stage': int(m.group(5)),
-                  'w': int(m.group(6)), 'h': int(m.group(7)), 'surface': m.group(8)})
+                  'w': int(m.group(6)), 'h': int(m.group(7)), 'surface': 'floor' if m.group(3) in INDOOR else 'ground'})
 
 geo_src = io.open(os.path.join(SITE, 'src', 'scripts', 'homestead-geo.js'), encoding='utf-8').read()
 def geo_json(name):
@@ -41,8 +42,8 @@ CAPS = [12, 28, 42, 56]
 INCAP = {1: 6, 2: 12, 3: 16}
 SHIP_MIN = {'garden': 0, 'nature': 0, 'farm': 0, 'fun': 0, 'community': 0,
             'lighting': 30, 'furniture': 60, 'display': 240,
-            'kitchen': 45, 'living': 45, 'bedroom': 45, 'bathroom': 45, 'hallway': 45, 'music': 45}
-INDOOR = {'kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music'}
+            'kitchen': 45, 'living': 45, 'bedroom': 45, 'bathroom': 45, 'hallway': 45, 'music': 45,
+            'hobby': 45, 'party': 30}
 LADDER = [
     {'tier': 1, 'icon': '⛺', 'name': 'The tent', 'price': 50, 'style': 'tent1', 'room': 'in-tent.png'},
     {'tier': 2, 'icon': '🛖', 'name': 'A real roof', 'price': 300, 'style': 'mobm3', 'room': 'in-wood2.png'},
@@ -54,6 +55,7 @@ CAT_META = [
     ('display', '🏆 Display'),
     ('kitchen', '🍳 Kitchen'), ('living', '🛋 Living room'), ('bedroom', '🛏 Bedroom'),
     ('bathroom', '🛁 Bathroom'), ('hallway', '🚪 Hallway'), ('music', '🎸 Music'),
+    ('hobby', '🎨 Hobbies'), ('party', '🎉 Party'),
 ]
 
 def b64(fn, missing_ok=False):

@@ -7,7 +7,7 @@ import POSTCOPY from '../data/copy/homestead-post.json';   // what the world wri
 import DUTYCOPY from '../data/copy/town-duties.json';      // 💼 the duty labels the payslip prints (the work note's own words)
 import { PAY_BACK, rankOf } from '../data/town/jobs.js';   // 💼 how many whole weeks a cheque may still reach back; 🪜 the rank a boss's news is about
 import pxEdit from '../icons/pixelart/edit.svg?raw';
-import { grantToShed, orderFor, dueOrders, SHIP_MIN } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
+import { grantToShed, orderFor, dueOrders, SHIP_MIN, grantReward } from '../lib/homestead-inventory.js';   // 🏠 one door for the shed and the van — the town's shop uses it too
 // 🏡 THE HOMESTEAD — your own clearing west of the park (task #106, M0).
 //
 // The world's first PERSONAL space: claim the plot, name it, buy decor at the
@@ -3383,16 +3383,16 @@ function init(visitDoc, visitMiss) {
     lighting: '🏮 Lighting', display: '🏆 Display', fun: '🎈 Fun', community: '🎁 Community',
     farm: '🌾 Farm', kitchen: '🍳 Kitchen', living: '🛋 Living room',
     bedroom: '🛏 Bedroom', bathroom: '🛁 Bathroom', hallway: '🚪 Hallway',
-    music: '🎸 Music' };
+    music: '🎸 Music', hobby: '🎨 Hobbies', party: '🎉 Party' };
   // the room-type shelves live INDOORS; everything else is the yard
-  const INDOOR = new Set(['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music']);
+  const INDOOR = new Set(['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music', 'hobby', 'party']);
   // community pieces carry the MAKER's indoor/yard choice; built-ins go by cat
   const isIndoorItem = (d) => d.cat === 'community' ? !!d.indoor : INDOOR.has(d.cat);
   // 🚚 THE DELIVERY TIERS (Trym): commons build instantly, furniture and
   // statement pieces take a van — short waits (hours, never days), and the
   // arrival is an EVENT. Community pieces ride the van too (Trym, 7 Aug).
   // (the tiers live in src/lib/homestead-inventory.js since 14 Sep — the town's shop ships by the same table)
-  const shipMin = (d) => SHIP_MIN[d.cat] || 0;
+  const shipMin = (d) => (d.ship != null ? d.ship : SHIP_MIN[d.cat] || 0);   // a piece's own van time first (decor.js `ship`)
   const fmtShip = (ms) => {
     const m = Math.max(1, Math.round(ms / 60000));
     return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60 ? (m % 60) + 'm' : '') : m + 'm';
@@ -3603,7 +3603,8 @@ function init(visitDoc, visitMiss) {
     const full = state.items.length >= cap();
     if (tab === 'order') {
       // category chips — the catalog reads as SHELVES, not a corridor
-      const HERE = (d2) => isIndoorItem(d2) === !!inside;
+      // 🏆 a reward piece (decor.js `reward: 1`) is never for sale: it arrives in the shed when it is earned
+      const HERE = (d2) => !d2.reward && isIndoorItem(d2) === !!inside;
       const cats = ['all', ...new Set(DECOR.filter(HERE).map((d) => d.cat))];
       const curCat = shopEl.dataset.cat || 'all';
       catsRow.hidden = cats.length <= 2;   // one shelf needs no chips
@@ -5250,6 +5251,9 @@ function init(visitDoc, visitMiss) {
       room: () => yardRoom,
       // the validity-grid probe (round-15 doctrine: verify the grid, not a spot)
       inOk: (id, x, y, t) => !!DEX[id] && inSpotOk(DEX[id], x, y, t),
+      // 📦 the second delivery's walk (tests/homestead-order.spec.mjs): step in, open a phone tab, earn a reward piece
+      enter: () => enterHome(), shop: (tab) => openShop(tab), reward: (id) => grantReward(id, state),
+      inv: () => ({ shed: state.shed.map((x) => x.id), orders: state.orders.map((o) => ({ id: o.id, at: o.at })), inItems: state.inItems || {} }),
       geo: { INTERIORS, roomBounds },
     };
   }

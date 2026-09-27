@@ -37,8 +37,10 @@ def sprite(path):
 # decor manifest: id -> {img, w, h} regexed from the game's own data
 DECOR_SRC = io.open(os.path.join(SITE, 'src', 'data', 'decor.js'), encoding='utf-8').read()
 DEX = {}
-for m in re.finditer(r"\{ id: '([a-z0-9]+)',.*?w: (\d+), h: (\d+),.*?img: '([^']+)'", DECOR_SRC):
-    DEX[m.group(1)] = { 'w': int(m.group(2)), 'h': int(m.group(3)), 'img': m.group(4) }
+# ⚡ PACKED rows since 28 Sep 2026: [id, name, cat, price, stage, w, h, …]; the picture is d-<id>.png (the fountain a gif)
+for m in re.finditer(r"\['([a-z0-9]+)', '[^']+', '[^']+', \d+, \d+, (\d+), (\d+)", DECOR_SRC):
+    DEX[m.group(1)] = { 'w': int(m.group(2)), 'h': int(m.group(3)),
+                        'img': '/assets/homestead/d-%s.%s' % (m.group(1), 'gif' if m.group(1) == 'fountain' else 'png') }
 
 STRUCTS = { 1: 'ov-tent1.png', 2: 'ov-mobm3.png', 3: 'ov-country.png' }
 

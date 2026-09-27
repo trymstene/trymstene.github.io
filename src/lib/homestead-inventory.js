@@ -17,8 +17,10 @@ export const SHED_CAP = 40;   // the homestead publishes at most 40 shed pieces 
 // take a van — short waits (hours, never days), and the arrival is an EVENT. Community
 // pieces ride the van too (Trym, 7 Aug). One table for the phone and the town.
 export const SHIP_MIN = { garden: 0, nature: 0, farm: 0, fun: 0, community: 60, lighting: 30, furniture: 60, display: 240,
-  kitchen: 45, living: 45, bedroom: 45, bathroom: 45, hallway: 45, music: 45 };
-export const shipMin = (d) => SHIP_MIN[d.cat] || 0;
+  kitchen: 45, living: 45, bedroom: 45, bathroom: 45, hallway: 45, music: 45, hobby: 45, party: 30 };
+// 📦 a piece may carry its OWN van time (the second delivery, 28 Sep 2026: a balloon is ten minutes, a fireplace an
+// afternoon) — tools/build-homestead-scene.py writes it into src/data/decor.js as `ship`; the shelf's is the fallback
+export const shipMin = (d) => (d.ship != null ? d.ship : SHIP_MIN[d.cat] || 0);
 
 export function readHome() {
   try {
@@ -77,6 +79,17 @@ export function grantToShed(id, state) {
 export function orderFor(id, mins, state) {
   const at = Date.now() + Math.max(0, mins | 0) * 60000;
   return edit(state, (s) => { if (!state && s.shed.length + s.orders.length >= SHED_CAP) return false; s.orders.push({ id, at }); return true; });
+}
+/** 🏆 A REWARD PIECE (decor.js `reward: 1`, never in any shop): given once — false if this home already has one, in
+ *  the shed, on the van, in the yard or in a room, so a reward is a thing you earned and never a pile */
+export function grantReward(id, state) {
+  return edit(state, (s) => {
+    const has = (L) => (L || []).some((x) => x && x.id === id);
+    if (has(s.shed) || has(s.orders) || has(s.items) || Object.values(s.inItems || {}).some(has)) return false;
+    if (!state && s.shed.length + s.orders.length >= SHED_CAP) return false;
+    s.shed.push({ id });
+    return true;
+  });
 }
 /** one piece leaves the shed (sold back, turned in) — false if there was none */
 export function takeFromShed(id, state) {
