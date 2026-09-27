@@ -81,7 +81,7 @@ ok('a patch event is kept', R.log.ev.some((e) => e.k === 'patch:raver'));
 ok('…and never scored', !('patch:raver' in (R.log.drift || {})));
 
 console.log('6. junk is refused quietly');
-r = await (await push(blobWith({ coins_earned: 140, rep: 12 }, [{ id: 'nope', k: 'coins_earned', d: 5 }, { id: 'aaaa0005', k: 'coins_earned', d: 1e9 }, 'garbage', null]))).json();
+r = await (await push(blobWith({ coins_earned: 140, rep: 12 }, [{ id: 'nope', k: 'coins_earned', d: 5 }, { id: 'aaaa0005', k: 'coins_earned', d: 1e9 }, 'garbage', null]))).json();   // 'nope': a bad id on purpose (tools/check-worker-fixtures.mjs)
 R = await rec(a.credId);
 ok('bad ids, absurd deltas and non-objects are dropped', R.log.n === 4 && r.ok === true, R.log.n);
 
