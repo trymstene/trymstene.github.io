@@ -324,7 +324,7 @@ export function initLife({ world, W, H, pct }) {
     world.appendChild(el);
     const outfit = { hat: r.hat || 'none', glasses: r.glasses || 'none', extras: r.tool ? { [r.tool]: true } : {}, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
     return { ...r, idx, el, cv, ctx: cv.getContext('2d'), outfit, x: 0, y: 0, px: NaN, py: NaN, drawn: '', face: 'front',
-      path: [], wait: 0, walking: false, loop: null, li: 0, ldir: 1, hidden: true, beat: -1, place: '', act: '', talked: false, lastWater: 0, bedI: 0, glow: null,
+      path: [], wait: 0, walking: false, loop: null, li: 0, ldir: 1, hidden: true, beat: -1, place: '', at: '', act: '', talked: false, lastWater: 0, bedI: 0, glow: null,
       marks: [], mi: 0, dwell: 0, drift: null, sway: SWAY_MIN, swayAt: 0, swayF: 0,
       danceAt: 0, danceNext: 0, pk: -1, talkPh: 0, lift: false, glanceTo: 0, glanceNext: 0 };
   });
@@ -407,20 +407,30 @@ export function initLife({ world, W, H, pct }) {
     if (!walk || beat === 0) spawnLitter(beat, walk);
     for (const n of res) {
       const st = stationFor(n, beat);
+      const wasKept = n.kept;
       // 🏘️ kept in: they go home (walking, if they are out) and stay there behind a dark window
       // 🕯 …except a place the story INSISTS on: the day's seeded few once picked the chapter's Nib, and chapter one
       // opened on an empty fountain (23 Sep 2026)
       n.kept = !!(keepFn && keepFn(n, beat) && st.act !== 'home' && !st.insist);
-      // 🧹 already out, and already at this place: there is nowhere to set off FOR (27 Sep 2026). The square's condition
-      // arriving on every first load is a refresh, and it gave all of them their own moment to set off — up to 74 s of
-      // standing at a post they were already at, not doing their rounds (Trym: "was met with static bananas standing still").
-      const stay = !n.kept && !n.hidden && !n.inside && st.act !== 'home' && (n.place === st.place || Math.hypot(n.x - st.x, n.y - st.y) < 12);   // the same place, or already on its spot (home is a walk IN, never a stay)
+      // 🔁 THE SAME BEAT, RUN AGAIN (27 Sep 2026). The square's condition, a shift, the night and the story all re-run the
+      // beat, and `place` is where a resident is GOING, set the moment the beat turns. So one still waiting for their moment
+      // to set off was taken for one already there: the walk was cancelled, and they stood at the last beat's spot until a
+      // beat sent them somewhere else — Nib and Dot on the noon bench through two hall beats, Twirl at the cart (Trym: "been
+      // standing here for 5 minutes now … they just stand there like dolls"). A re-run leaves anyone bound for, or at, this
+      // beat's place exactly as they are: the walk, its wait, the rounds.
+      if (walk && n.beat === beat && (n.kept
+        ? wasKept && (n.hidden || n.path.length > 0)
+        : !wasKept && n.place === st.place && (n.path.length > 0 || n.at === st.place))) continue;
+      // 🧹 already out, and already AT this place: there is nowhere to set off for (27 Sep 2026: the square's condition on a
+      // first load gave each resident at their post up to 74 s of standing still before their rounds). `at` is where they
+      // ARRIVED, never merely where they are bound (home is a walk in, never a stay).
+      const stay = !n.kept && !n.hidden && !n.inside && st.act !== 'home' && (n.at === st.place || Math.hypot(n.x - st.x, n.y - st.y) < 12);
       if (n.kept) {
         n.beat = beat; n.place = 'home'; n.act = 'home'; n.lines = st.lines; n.loop = null; n.drift = null;
         if (!n.inside) n.marks = [];
         if (n.inside) { n.path = []; n.wait = 0; }   // 🕹 kept in, and in already: at work indoors
-        else if (walk && !n.hidden) { const d = HOME[n.home]; n.path = route([n.x, n.y], [d[0], d[1]]); n.wait = 400 + h01(n.idx + 1, beat + 1, 7) * 12000; n.walking = false; }
-        else { n.path = []; n.walking = false; n.wait = 0; goHome(n); }
+        else if (walk && !n.hidden) { const d = HOME[n.home]; n.path = route([n.x, n.y], [d[0], d[1]]); n.wait = 400 + h01(n.idx + 1, beat + 1, 7) * 12000; n.walking = false; n.at = ''; }
+        else { n.path = []; n.walking = false; n.wait = 0; goHome(n); n.at = 'home'; }
         continue;
       }
       n.beat = beat; n.place = st.place; n.act = st.act; n.face = st.face; n.lines = st.lines; n.loop = st.loop; n.li = 0; n.ldir = 1; n.st = [st.x, st.y];
@@ -431,7 +441,7 @@ export function initLife({ world, W, H, pct }) {
       n.sway = SWAY_MIN + h01(n.idx + 1, beat + 1, 12) * SWAY_VAR;
       const room = st.act === 'home' && roomFor(n, beat);
       if (n.inside && room) { n.marks = room.marks; n.path = []; n.wait = 0; n.walking = false; continue; }   // 🕹 in, and staying in
-      if (walk && stay) { n.path = []; n.wait = 0; n.walking = false; }   // 🧹 carry on with the rounds, no wait
+      if (walk && stay) { n.path = []; n.wait = 0; n.walking = false; n.at = st.place; }   // 🧹 carry on with the rounds, no wait
       else if (walk) {
         // 🚪 THE WAIT IS SPENT INDOORS (24 Sep 2026). leaveHome() used to stand them on the doorstep the moment the beat turned
         // and they waited THERE, up to 74 s — so housemates stood on each other at one door (Moss on Spinner at the arcade's,
@@ -443,7 +453,7 @@ export function initLife({ world, W, H, pct }) {
         }
         // ⏳ their OWN moment to set off: up to two thirds of the beat, so the town never migrates at once
         n.wait = 400 + h01(n.idx + 1, beat + 1, 5) * 74000;
-        n.walking = false;
+        n.walking = false; n.at = '';
       } else {
         n.path = []; n.walking = false; n.wait = 0;
         // ⚠️ OUT OF THE HOUSE FIRST, THEN TO THE PLACE (24 Sep 2026). Everyone is made hidden, and leaveHome() puts a
@@ -452,12 +462,13 @@ export function initLife({ world, W, H, pct }) {
         // newcomer's "!"), each then waiting up to 74 s to walk out. Every walk pinned the hour first, and a second
         // placement found them visible — so no walk saw it; tests/town-first-frame.spec.mjs loads the town as it comes.
         if (st.act === 'home') { n.x = st.x; n.y = st.y; goHome(n); } else { goOut(n); leaveHome(n); n.el.hidden = false; n.x = st.x; n.y = st.y; }
+        n.at = st.act === 'home' ? 'home' : st.place;
       }
     }
     if (mayorEl) mayorEl.hidden = beat !== 4;
   }
   function arrive(n) {
-    n.walking = false; n.path = [];
+    n.walking = false; n.path = []; n.at = n.act === 'home' ? 'home' : n.place;
     if (n.act === 'home' && !n.inside) goHome(n, true);
   }
 
@@ -678,7 +689,7 @@ export function initLife({ world, W, H, pct }) {
     glows: () => res.filter((n) => n.glow && !n.glow.hidden).map((n) => n.key),
     beat: () => curBeat,
     set: (h) => { setHour = h == null ? null : +h; setAt = performance.now(); if (ready) changeBeat(beatOf(hourNow()), false); },
-    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden || (!!n.inside && roomNow !== n.home), inside: !!n.inside, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, dancing: !!n.danceAt, pair: n.pk, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
+    residents: () => res.map((n) => ({ key: n.key, x: Math.round(n.x), y: Math.round(n.y), beat: BEATS[n.beat] || '', place: n.place, at: n.at, act: n.act, tool: n.tool || 'none', walking: n.walking, hidden: n.hidden || (!!n.inside && roomNow !== n.home), inside: !!n.inside, face: n.face, frame: n.drawn, leg: !!(n.path.length && n.wait <= 0), waiting: n.wait > 0, potter: !!n.drift, dancing: !!n.danceAt, pair: n.pk, mark: n.mi, st: n.st || null })),   // `leg` = actually crossing town; a resident with a path but time on the clock is still at their post
     litter: () => flyers.filter((f) => !f.gone).length,
     flyers: () => flyers.filter((f) => !f.gone).map((f) => ({ i: f.i, x: f.x, y: f.y })),
     rung,

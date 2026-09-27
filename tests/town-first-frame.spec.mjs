@@ -69,3 +69,36 @@ test('a real first load: a resident already at their post carries on with their 
   expect(held, 'already at their post: nobody is put on a wait').toEqual([]);
   expect(errs).toEqual([]);
 });
+
+// 🔁 THE SAME BEAT, RUN AGAIN (27 Sep 2026). Trym, after the fix above: "been standing here for 5 minutes now, and no bananas
+// has walked around … they just stand there like dolls". A re-run of the beat (the square's condition, a shift, the night,
+// the story) took a resident still waiting for their moment to set off for one already there, and cancelled the walk — Nib
+// and Dot stood on the noon bench through two hall beats, Twirl at the cart. This turns noon into the afternoon, re-runs the
+// beat three times while everyone waits their turn, and then everyone who is out must be at the afternoon's place.
+test('a beat run again while residents wait to set off strands nobody: everyone reaches the new beat’s place', async ({ page }) => {
+  test.setTimeout(160000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/town/?towntest', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band() && window.__town.life.residents().some((r) => r.place), null, { timeout: 30000 });
+  // noon, three town-seconds from its end: the break (Nib and Dot on the east bench, Twirl at the cart, Gran Fig on the west)
+  await page.evaluate(() => window.__town.life.set(11.9));
+  await page.waitForFunction(() => window.__town.life.beat() === 3, null, { timeout: 10000 });
+  const noon = await page.evaluate(() => window.__town.life.residents());
+  // the beat run again while they wait to set off — the plain day pinned again is the square's condition re-applied, nothing else
+  for (const at of [800, 15000, 30000]) {
+    await page.waitForTimeout(at === 800 ? at : 15000);
+    await page.evaluate(() => window.__town.room.today([]));
+  }
+  // the longest wait is 74.4 s from the turn, and the walk after it a few seconds more
+  await page.waitForTimeout(62000);
+  const rs = await page.evaluate(() => window.__town.life.residents());
+  const out = rs.filter((r) => !r.hidden && !r.inside && r.act !== 'home' && r.act !== 'sweep' && r.act !== 'stroll' && r.st);
+  const stranded = out.filter((r) => !r.leg && Math.hypot(r.x - r.st[0], r.y - r.st[1]) > 90).map((r) => r.key + ' at ' + r.x + ',' + r.y + ' for ' + r.place);
+  expect(stranded, 'nobody stands at the last beat’s spot: every resident who is out is at, or on the way to, the afternoon’s place').toEqual([]);
+  expect(rs.filter((r) => r.waiting).map((r) => r.key), 'a re-run never restarts a wait: nobody is still waiting 92 s after the turn').toEqual([]);
+  const moved = out.filter((r) => { const n = noon.find((q) => q.key === r.key); return n && Math.hypot(n.x - r.x, n.y - r.y) > 100; }).map((r) => r.key);
+  expect(moved.length, 'the break is over: the residents who spent it on a bench have walked back to work').toBeGreaterThanOrEqual(3);
+  expect(errs).toEqual([]);
+});
