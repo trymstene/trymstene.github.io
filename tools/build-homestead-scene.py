@@ -877,9 +877,11 @@ INDOOR_DEF += [
     ('toastcounter', 'Toaster counter', 'kitchen', 16, 2, [_ts(KIT, 121)], {'ship': 30}),
     ('microcounter', 'Microwave counter', 'kitchen', 24, 2, [_ts(KIT, 121)], {'ship': 45}),
     ('espressobar', 'Espresso bar', 'kitchen', 30, 3, [_ts(KIT, 121)] * 2, {'ship': 60}),
-    # the pack's steel under-counter unit, cropped to its own pixels (its canvas has 15 empty px each side), at the
-    # appliances' 2/3; a tap opens it on its bottles (IN_ALT). Trym, 28 Sep 2026: "yes add the drinks cooler"
-    ('drinkscooler', 'Drinks cooler', 'kitchen', 38, 3, ('crop', _ts(KIT, 192), (15, 0, 84, 96)), {'ship': 90}),
+    # the pack's steel grill (K192 shut; K193 its fryer baskets, K194 its skewers), cropped to its own pixels (its canvas
+    # has 15 empty px each side), at the appliances' 2/3; a tap opens it on the skewers (IN_ALT). Added 28 Sep 2026 as a
+    # "Drinks cooler" (the skewers read as bottles to me); Trym: "i think your Drinks Cooler actually is a kitchen grill
+    # haha, looks like meat sticks on it". The id stays: pieces already ordered keep it.
+    ('drinkscooler', 'Kitchen grill', 'kitchen', 38, 3, ('crop', _ts(KIT, 192), (15, 0, 84, 96)), {'ship': 90}),
     ('picnicbasket', 'Picnic basket', 'kitchen', 10, 1, _ts(BASE, 83), {'ship': 15}),
     ('leafprint', 'Leaf print', 'kitchen', 8, 2, _ts(KIT, 271), {'ship': 15, **WALL}),
     # 🛋 living room
@@ -1042,7 +1044,7 @@ IN_ALT = {
     'stockcounter': ('base', [_ts(KIT, 121), _ts(KIT, 122), _ts(KIT, 121)], IN_COMPOSE['stockcounter']),
     'sinkcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['sinkcounter']),
     'microcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['microcounter']),
-    'drinkscooler': ('crop', _ts(KIT, 194), (15, 0, 84, 96)),   # its doors open on the bottles, the same frame as K192
+    'drinkscooler': ('crop', _ts(KIT, 194), (15, 0, 84, 96)),   # the grill: the skewers on it, the same frame as K192
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket'}   # cardboard and wicker share the floor's tan: the flood ate them

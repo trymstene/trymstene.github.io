@@ -97,9 +97,10 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   // kitchen things too"), each the size of the piece itself
   expect([by('fridge').alt, by('stove').alt, by('toastcounter').alt, by('espressobar').alt]).toEqual([[53, 85], [32, 64], [87, 84], [171, 87]]);
   for (const id of ['kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'microcounter']) expect(by(id).alt, id + '’s cupboard').toEqual([by(id).w, by(id).h]);
-  // the drinks cooler (Trym: "yes add the drinks cooler"): the house's, a kitchen-line piece, its doors open on bottles
+  // the kitchen grill (added as a drinks cooler; Trym: "actually is a kitchen grill haha, looks like meat sticks on it"):
+  // the house's, a kitchen-line piece, a tap shows its skewers
   const dc = by('drinkscooler');
-  expect([dc.name, dc.cat, dc.stage, dc.ship, dc.alt]).toEqual(['Drinks cooler', 'kitchen', 3, 90, [dc.w, dc.h]]);
+  expect([dc.name, dc.cat, dc.stage, dc.ship, dc.alt]).toEqual(['Kitchen grill', 'kitchen', 3, 90, [dc.w, dc.h]]);
   expect(dc.tight, 'it stands in the kitchen line').toBeTruthy();
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
@@ -394,7 +395,7 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   await put('Kitchen sink', 700);
   await put('Toaster counter', 790);
   await put('The stove', 850);
-  await put('Drinks cooler', 890);
+  await put('Kitchen grill', 890);
   const run = [];
   for (const id of ['fridge', 'sinkcounter', 'toastcounter', 'stove', 'drinkscooler']) {
     const it = await inRoom(page, id), d = DECOR.find((x) => x.id === id);
@@ -426,7 +427,7 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   const c0 = await drawn(page, 'drinkscooler');
   await page.mouse.click(c0.x, c0.y);
   await page.waitForTimeout(250);
-  expect(await bg('drinkscooler'), 'the cooler opens on its bottles').toContain('d-drinkscooler-alt');
+  expect(await bg('drinkscooler'), 'the grill shows its skewers').toContain('d-drinkscooler-alt');
   expect(await bg('stove'), 'the burners light').toContain('d-stove-alt');
   expect(await bg('sinkcounter'), 'the cupboard under the sink opens').toContain('d-sinkcounter-alt');
   expect(await bg('toastcounter'), 'the toast goes down').toContain('d-toastcounter-alt');
@@ -435,6 +436,23 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   expect(await bg('stove'), 'the burners go out').not.toContain('-alt');
   expect(await bg('sinkcounter'), 'the cupboard shuts').not.toContain('-alt');
   expect(await bg('toastcounter'), 'and up it pops').not.toContain('-alt');
-  expect(await bg('drinkscooler'), 'the cooler shuts').not.toContain('-alt');
+  expect(await bg('drinkscooler'), 'and shuts').not.toContain('-alt');
+
+  // ── 🔨 build mode snaps too (Trym: "make the counters snap together in build mode too"), and forgives a thumb: lift
+  // the toaster counter out of the run and tap 35 px past the grill's side — it lands butted to the grill, at the wall
+  await page.click('#hsBuild');
+  await page.waitForTimeout(700);
+  const t1 = await drawn(page, 'toastcounter');
+  await page.mouse.click(t1.x, t1.y + 20);
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  const grill = await inRoom(page, 'drinkscooler'), G = DECOR.find((x) => x.id === 'drinkscooler'), T = DECOR.find((x) => x.id === 'toastcounter');
+  const butted = Math.round(grill.x + (G.w + T.w) / 2 - Math.min(G.tight[1], T.tight[1]));
+  await page.mouse.click(...(await screenAt(page, butted + 35, 440)));
+  await page.waitForTimeout(300);
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  const moved = await inRoom(page, 'toastcounter');
+  expect([moved.x, moved.y], 'butted to the grill’s side, against the wall').toEqual([butted, await page.evaluate(() => window.__hs.geo.tightY('toastcounter', 3))]);
+  await page.screenshot({ path: SHOT + '15-kitchen-moved.png' });
   expect(errs).toEqual([]);
 });

@@ -996,19 +996,23 @@ function init(visitDoc, visitMiss) {
   // the wall, and the stove and the fridge stand flush with it. Next to another on the same line it butts up to it,
   // borders merged into one — the builder's own grammar for its long counters (IN_OVERLAP 3).
   const tightY = (d, t = inside) => (d && d.tight && WALL_FACE[t] ? INTERIORS[t].box[1] + 92 + 26 + d.tight[0] : 0);
-  function chainX(d, x, y, t) {
-    const front = y - d.tight[0];
-    let best = null, gap = 25;   // within a grid step of a neighbour's side
+  // ⚠️ FORGIVING, or it reads as broken (Trym, 28 Sep: "make the counters snap together in build mode too" — it did,
+  // but only for a tap within 25 px and the same row): a tap anywhere within half the piece of a neighbour's side
+  // butts it there, even one that would overlap it, and a row off joins the neighbour's line. At the wall it only joins
+  // neighbours at the wall, so an old counter left a row out never pulls a new one off it. Every side in reach, nearest
+  // first: the caller takes the first one that is free.
+  function chainAt(d, x, y, t) {
+    const front = y - d.tight[0], atWall = y === tightY(d, t), reach = Math.max(25, d.w / 2 + 8), out = [];
     for (const it of (state.inItems[t] || [])) {
       if (placing && placing.moving === it) continue;
       const o = DEX[it.id];
-      if (!o || !o.tight || Math.abs(it.y - o.tight[0] - front) > 16) continue;
+      if (!o || !o.tight || Math.abs(it.y - o.tight[0] - front) > (atWall ? 2 : 24)) continue;
       const seam = Math.min(d.tight[1], o.tight[1]);
       for (const cx of [it.x - (o.w + d.w) / 2 + seam, it.x + (o.w + d.w) / 2 - seam]) {
-        if (Math.abs(cx - x) < gap) { gap = Math.abs(cx - x); best = { x: Math.round(cx), y: it.y - o.tight[0] + d.tight[0] }; }
+        if (Math.abs(cx - x) < reach) out.push({ x: Math.round(cx), y: it.y - o.tight[0] + d.tight[0], far: Math.abs(cx - x) });
       }
     }
-    return best;
+    return out.sort((a, b) => a.far - b.far);
   }
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
@@ -4567,8 +4571,8 @@ function init(visitDoc, visitMiss) {
       else if (placing.room && dw.tight) {   // 🍳 the kitchen line: flush along the wall, butted to its neighbour
         const ty = tightY(dw, placing.room);
         if (ty && placing.y < ty + 24) placing.y = ty;
-        const c = chainX(dw, placing.x, placing.y, placing.room);
-        if (c && inSpotOk(dw, c.x, c.y, placing.room)) { placing.x = c.x; placing.y = c.y; }
+        const c = chainAt(dw, placing.x, placing.y, placing.room).find((p) => inSpotOk(dw, p.x, p.y, placing.room));
+        if (c) { placing.x = c.x; placing.y = c.y; }
       }
     }
     updateGhost();
