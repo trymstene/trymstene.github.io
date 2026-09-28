@@ -261,6 +261,7 @@ test('in the tent: a picture will not go up where there is no wall, nor a dinosa
   await page.evaluate(() => window.__hs.enter());
   await page.waitForTimeout(800);
   expect(await page.evaluate(() => window.__hs.geo.wallOf(1)), 'the tent has no wall to hang on').toBe(null);
+  await expect(page.locator('#hsToast.is-on'), 'the arrival line has had its say').toHaveCount(0, { timeout: 8000 });
   await placeFromShed(page, 'Great wave painting');
   await page.waitForTimeout(500);
   expect(await page.locator('#hsConfirm:not([hidden])').count(), 'no ghost comes up').toBe(0);
