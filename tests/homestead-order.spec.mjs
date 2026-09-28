@@ -102,6 +102,10 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   const dc = by('drinkscooler');
   expect([dc.name, dc.cat, dc.stage, dc.ship, dc.alt]).toEqual(['Kitchen grill', 'kitchen', 3, 90, [dc.w, dc.h]]);
   expect(dc.tight, 'it stands in the kitchen line').toBeTruthy();
+  // 🛁 and the bathroom (Trym: "add tap states to the bathroom things too"): the toilet's lid, the cabinet (it was never
+  // a towel rack), the laundry — each other state the size of the piece
+  for (const id of ['toilet', 'towelrack', 'laundry']) expect(by(id).alt, id).toEqual([by(id).w, by(id).h]);
+  expect(by('towelrack').name, 'B133 is a cabinet with a mirror on top').toBe('Bathroom cabinet');
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
@@ -454,5 +458,40 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   const moved = await inRoom(page, 'toastcounter');
   expect([moved.x, moved.y], 'butted to the grill’s side, against the wall').toEqual([butted, await page.evaluate(() => window.__hs.geo.tightY('toastcounter', 3))]);
   await page.screenshot({ path: SHOT + '15-kitchen-moved.png' });
+  expect(errs).toEqual([]);
+});
+
+// 🛁 Trym, 28 Sep 2026: "add tap states to the bathroom things too". The three the pack draws twice, standing in the
+// house: a tap closes the toilet's lid, opens the cabinet on its towels and shows the laundry — and each goes back by itself.
+test('in the house: the bathroom answers a tap — the toilet lid, the cabinet, the laundry', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('order-seeded')) return;
+    sessionStorage.setItem('order-seeded', '1');
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], shed: [], orders: [],
+      inItems: { 3: [{ id: 'toilet', x: 700, y: 480 }, { id: 'towelrack', x: 760, y: 480 }, { id: 'laundry', x: 820, y: 504 }] },
+      bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.__hs.enter());
+  await page.evaluate(() => window.__hs.warp(760, 560));
+  await page.waitForTimeout(900);
+  const bg = (id) => page.evaluate((i) => { const el = [...document.querySelectorAll('.hs-it--in')].find((e) => (e.style.backgroundImage || '').includes('/d-' + i)); return el ? el.style.backgroundImage : ''; }, id);
+  for (const id of ['toilet', 'towelrack', 'laundry']) {
+    const p = await drawn(page, id);
+    await page.mouse.click(p.x, p.y);
+  }
+  await page.waitForTimeout(250);
+  expect(await bg('toilet'), 'the lid goes down').toContain('d-toilet-alt');
+  expect(await bg('towelrack'), 'the cabinet opens on its towels').toContain('d-towelrack-alt');
+  expect(await bg('laundry'), 'the laundry shows').toContain('d-laundry-alt');
+  await page.screenshot({ path: SHOT + '16-bathroom-awake.png' });
+  await page.waitForTimeout(2600);
+  for (const id of ['toilet', 'towelrack', 'laundry']) expect(await bg(id), id + ' back by itself').not.toContain('-alt');
   expect(errs).toEqual([]);
 });

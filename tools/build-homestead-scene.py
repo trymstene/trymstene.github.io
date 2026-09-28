@@ -819,7 +819,7 @@ INDOOR_DEF = [
     ('toilet', 'The toilet', 'bathroom', 20, 2, _ts(BATH, 21)),
     ('bvanity', 'Wash stand', 'bathroom', 28, 2, _ts(BATH, 5)),
     ('floormirror', 'Standing mirror', 'bathroom', 16, 2, _ts(BATH, 66)),
-    ('towelrack', 'Towel rack', 'bathroom', 10, 2, _ts(BATH, 133)),
+    ('towelrack', 'Bathroom cabinet', 'bathroom', 10, 2, _ts(BATH, 133)),   # B133 is a cabinet (was "Towel rack"); the id stays
     ('washer', 'Washing machine', 'bathroom', 34, 2, _ts(BATH, 87)),
     ('bathtub', 'Sunken bath', 'bathroom', 46, 3, _ts(BATH, 157)),
     # 🚪 hallway
@@ -1045,6 +1045,12 @@ IN_ALT = {
     'sinkcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['sinkcounter']),
     'microcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['microcounter']),
     'drinkscooler': ('crop', _ts(KIT, 194), (15, 0, 84, 96)),   # the grill: the skewers on it, the same frame as K192
+    # 🛁 the bathroom (Trym: "add tap states to the bathroom things too"): the toilet's lid down (B22 is B21 with it
+    # shut), the cabinet's top compartment open on folded towels (B137), the laundry basket full (B96). The washer, the
+    # wash stand, the mirror, the baths, the duck shelf and the rolls have no second picture in the pack.
+    'toilet': _ts(BATH, 22),
+    'towelrack': _ts(BATH, 137),
+    'laundry': _ts(BATH, 96),
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket'}   # cardboard and wicker share the floor's tan: the flood ate them
