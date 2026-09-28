@@ -65,6 +65,18 @@ test('a letter opens, and reporting it takes it out of the box on the tap', asyn
   await page.evaluate(() => window.__town.post().tap('.tw-post__env'));
   await page.waitForTimeout(200);
   expect(await page.locator('.tw-post__body').count(), 'it opens').toBe(1);
+  // 📜 on the world's paper, like its own notes (Trym, 28 Sep 2026: "All should have the paper and handwritten style")
+  const paper = await page.evaluate(() => {
+    const b = document.querySelector('.tw-post__body'), p = b.closest('.bw-paper'), o = b.closest('.tw-post__open');
+    return { paper: !!p, font: getComputedStyle(b).fontFamily, from: p ? ((p.querySelector('.bw-paper__from') || {}).textContent || '') : '',
+      box: getComputedStyle(o).backgroundColor, border: getComputedStyle(o).borderTopWidth };
+  });
+  expect(paper.paper, 'the letter is on the paper').toBe(true);
+  expect(paper.font, 'in the hand').toMatch(/Caveat/);
+  expect(paper.from.length, 'signed by who wrote it').toBeGreaterThan(0);
+  expect([paper.box, paper.border], 'no cream box round the paper').toEqual(['rgba(0, 0, 0, 0)', '0px']);
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'test-results/post-letter-paper.png' });
 
   await page.evaluate(() => window.__town.post().tap('#twPostFlag'));
   await page.waitForTimeout(400);
@@ -127,6 +139,11 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     });
     expect(opened.body, 'the long letter opens').toBe(true);
     expect(opened.overflowX, 'and one unbroken word does not push the card sideways').toBeLessThanOrEqual(0);
+    // 📜 …nor does the paper it is written on, once it has unfolded: a tall sheet leans out by its tilt
+    await page.waitForTimeout(800);
+    const settled = await page.evaluate(() => { const b = document.getElementById('twCardBody'); return b.scrollWidth - b.clientWidth; });
+    expect(settled, 'the unfolded sheet stays inside the card').toBeLessThanOrEqual(0);
+    await page.screenshot({ path: 'test-results/post-long-letter-' + w + '.png' });
     expect(errs).toEqual([]);
   });
 }

@@ -4,6 +4,7 @@
 // `state`, `inside` and `visiting` are LIVE getters.
 import { KNIT_SVG } from '../data/knitwear.js';
 import CATW from '../data/copy/homestead-cat.json';   // 🐈 the cat's words (her favourite dish's possessive)
+import { coinText } from '../lib/coin.js';
 let C = null;
 let bondUp, buffGet, buffSet, coinsPaid, cookEl, CROP_EMO, DISHES, farmAnimals, farmStats, he0, hens, passStat, phone, refreshHud, save, syncLock, tailorEl, toast, track, track1;
 export function init(ctx) {
@@ -143,7 +144,7 @@ function showPlate(d) {
   acts.replaceChildren();
   const sell = document.createElement('button');
   sell.className = 'hs-btn';
-  sell.textContent = 'sell · +' + d.pay + ' 🪙';
+  coinText(sell, 'sell · +' + d.pay + ' 🪙');
   sell.addEventListener('click', () => sellPlate(false));
   acts.appendChild(sell);
   if (canTreat) {

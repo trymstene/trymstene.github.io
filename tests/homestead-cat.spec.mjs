@@ -29,10 +29,12 @@ async function open(page, animals, inItems) {
   await page.addInitScript(([an, room]) => {
     if (sessionStorage.getItem('cat-seeded')) return;
     sessionStorage.setItem('cat-seeded', '1');
+    localStorage.setItem('bw-social-v1', JSON.stringify({ g: { none: 1 } }));   // Nib's present (45 s in) is not this walk's: it took a tap once
     localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], shed: [], orders: [],
       inItems: room || {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
       animals: an, animalsV: 3, hens: an.filter((a) => a.sp === 'hen').length }));
   }, [animals, inItems || null]);
+  await page.route('**/yards/echoes*', (r) => r.fulfill({ contentType: 'application/json', body: '{"echoes":[]}' }));   // nobody strolling the road
   await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__hs && window.__hs.enter && window.__hs.wx, null, { timeout: 30000 });
   await page.evaluate(() => window.__hs.wx('clear'));   // the real sky may be raining: she would be under the eaves
@@ -293,7 +295,8 @@ test.describe('the cat', () => {
 
     // ── HUNT (a hen): creep, freeze, pounce — the hen hops away, and she sniffs about as if nothing happened
     await mood(page, 'sit', 30000, NO_VISIT);
-    expect(await page.evaluate(() => window.__hs.catHunt('hen')), 'she goes for a hen').toBe('hen');
+    // ⚠️ from 180 px off: a hen that had wandered within 58 of her made the creep one frame long, and the film missed it
+    expect(await page.evaluate(() => window.__hs.catHunt('hen', 180)), 'she goes for a hen').toBe('hen');
     s = await sample(page, 26000);
     seen = checkStrips(s, 'hunt a hen');
     const phases = [...new Set(s.filter((r) => r.m === 'hunt').map((r) => r.ph))];

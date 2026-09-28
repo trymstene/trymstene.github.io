@@ -135,7 +135,7 @@ const appLd = {
        (fountain, lit campfire). The room plate + indoor pieces are exempt. */
     .hs-world.is-inside :is(.hs-it:not(.hs-it--in), .hs-ov:not(.hs-ov--room),
       .hs-bird, .hs-hen, .hs-soil, .hs-crop, .hs-signname, .hs-fpiece,
-      .hs-tentspot, .hs-peer) { visibility: hidden; }
+      .hs-tentspot, .hs-peer, .bws-echo) { visibility: hidden; }
     /* 🐦 garden birds — 16px frames on a 4-frame strip, world-scaled */
     .hs-bird { position: absolute; left: 0; top: 0; width: 1.8%; pointer-events: none; }
     .hs-hen { position: absolute; left: 0; top: 0; width: 1.8%; pointer-events: none; }
@@ -248,7 +248,9 @@ const appLd = {
        toast at the chip's row read as one smear of quest UI (Trym) */
     .hs-toast {
       position: absolute; left: 50%; top: max(18%, 140px); transform: translateX(-50%);
-      z-index: 960; pointer-events: none; max-width: calc(100% - 2rem); text-align: center;
+      /* ⬆ over EVERY veil here — the kitchen's (950) and the mailbox's .tw-panel (2100): a line said while a card is open,
+         "the letter is sent", is in the foreground (§8; the town's toast is 2200 for the same reason) */
+      z-index: 2200; pointer-events: none; max-width: calc(100% - 2rem); text-align: center;
       /* ⚠️ EVERY TOAST HERE WAS HALF-WIDTH. An absolutely positioned box with
          `left: 50%` and no `right` shrinks to fit the space from 50% to the
          RIGHT EDGE — half the view, 177px of an available 323px on a 393px
@@ -523,6 +525,11 @@ const appLd = {
     }
     body.hs-lock { overflow: hidden; }
     .hs-veil[hidden] { display: none; }
+    /* 📬 the mailbox's veil covers the SCREEN, like every card here. It wears the town's .tw-panel, which is
+       `position: absolute; inset: 0` — right inside the town's view, but on this page it sits outside any positioned
+       box, so it covered the document's first screen-height: scrolled a little on a phone, its bottom edge rode up
+       into the world (Trym, 28 Sep 2026: "the black overlay doesnt cover the whole mobile screen when opening a letter"). */
+    #hsLetters { position: fixed; }
     .hs-card {
       /* ⚠️ RELATIVE: .hs-shopx is absolute, and without this its ✕ escapes the
          card and lands in the page's top corner (only #hsShop had the rule) */
@@ -1294,7 +1301,7 @@ const appLd = {
         <h2 id="hsShopTitle">🍌 Banana Phone</h2>
         <p id="hsShopLead"></p>
         <div class="hs-apps" id="hsApps">
-          <button type="button" data-tab="sell" hidden><span class="hs-appic" style="background:#fdeccc">🪙</span>Sell goods</button>
+          <button type="button" data-tab="sell" hidden><span class="hs-appic" style="background:#fdeccc"><img src="/assets/banana-stand/coin.png" width="34" height="34" alt=""></span>Sell goods</button>
           <button type="button" data-tab="buy" hidden><span class="hs-appic" style="background:#e7f3d1">🐄</span>Buy animals</button>
           <button type="button" data-tab="animals" hidden><span class="hs-appic" style="background:#fbe4e4">🐔</span>My animals</button>
           <button type="button" data-tab="tree" hidden><span class="hs-appic" style="background:#e3efd9">🌳</span>Family</button>
@@ -1304,7 +1311,7 @@ const appLd = {
           <button type="button" data-tab="up"><span class="hs-appic" style="background:#e2f4d9">⛺</span>Upgrades</button>
         </div>
         <div class="hs-tabs">
-          <button type="button" data-tab="sell" hidden>🪙 Sell goods</button>
+          <button type="button" data-tab="sell" hidden><img class="hs-coin" src="/assets/banana-stand/coin.png" width="14" height="14" alt=""> Sell goods</button>
           <button type="button" data-tab="buy" hidden>🐄 Buy animals</button>
           <button type="button" data-tab="animals" hidden>🐔 My animals</button>
           <button type="button" data-tab="order" aria-pressed="true">🛒 Order stuff</button>

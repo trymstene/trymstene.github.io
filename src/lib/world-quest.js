@@ -15,6 +15,7 @@
 //     ?queststep=N jumps (test only).
 import { passStat, passRaw, coinsNow } from './banana-pass.js';
 import { drawComposite, assetsReady, NFRAMES } from './banana-engine.js';
+import { coinText } from './coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 
 // 🍌 NIB IS A REAL BANANA (Trym's polish verdict: "theres no banana NPC
 // greeting me" — a floating ! is not a character). Engine-rendered like Old
@@ -838,7 +839,7 @@ function toast(msg, ms) {
     toastEl.className = 'bwq-toast';
     host.appendChild(toastEl);
   }
-  toastEl.textContent = msg;
+  coinText(toastEl, msg);
   toastEl.classList.add('on');
   clearTimeout(toastT);
   toastT = setTimeout(() => toastEl.classList.remove('on'), ms || 2600);
@@ -873,7 +874,7 @@ function payReward(r, id, then) {
   const linkHtml = r.link
     ? '<a class="bwq-reward__go" href="' + r.link.href + '"></a>' : '';
   card.innerHTML = '<i>you received</i>' + rows + linkHtml + '<button type="button">🍌 got it</button>';
-  if (r.note) card.querySelectorAll('p')[coins ? 1 : 0].textContent = r.note;
+  if (r.note) coinText(card.querySelectorAll('p')[coins ? 1 : 0], r.note);
   // a reward may carry ART — the received thing itself, drawn, not just named
   if (r.art) {
     const fig = document.createElement('div');

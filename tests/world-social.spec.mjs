@@ -210,6 +210,17 @@ test('the homestead: an echo strolls the road past your gate', async ({ page }) 
   const s = await page.evaluate(() => { const el = document.querySelector('.bws-echo'); return el ? { top: parseFloat(el.style.top) } : null; });
   expect(s, 'an echo is out').not.toBeNull();
   expect(Math.abs(s.top - 900 / 1100 * 100), 'on the road').toBeLessThan(3);
+  // ⭐ it walks on the frame, like every banana (Trym, 28 Sep 2026: "choppy in their movements, not fluid movement like
+  // normal"): sampled on every animation frame it moves on nearly every one and never hops — the old stroll was 8.4 px
+  // every 120 ms, and still for the seven frames between
+  const film = await page.evaluate(() => new Promise((res) => {
+    const el = document.querySelector('.bws-echo'), out = [], t0 = performance.now();
+    const tick = () => { out.push(parseFloat(el.style.left) / 100 * 1800); if (performance.now() - t0 < 1500) requestAnimationFrame(tick); else res(out); };
+    requestAnimationFrame(tick);
+  }));
+  const steps = film.slice(1).map((x, i) => Math.abs(x - film[i]));
+  expect(steps.filter((d) => d > 0.01).length / steps.length, 'it moves on nearly every frame (' + steps.length + ' frames)').toBeGreaterThan(0.8);
+  expect(Math.max(...steps), 'and never hops').toBeLessThan(4);
   // bring it past the gate, where you can see it, and watch it walk on
   const me = await mePos(page, '#hsMe', 1800, 1100);
   await page.evaluate((x) => window.__bws.put(x, 900), me.x + 160);

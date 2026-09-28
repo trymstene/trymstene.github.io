@@ -55,7 +55,6 @@ const CSS = `
    .wh > * rule do the rest, so the pill cannot drift away again. */
 .wh .wh__gard { font-family: inherit; font-size: 0.76rem; font-weight: 800;
   letter-spacing: inherit; cursor: pointer; }
-.wh .wh__lvlbar--s { width: 16px; }
 .wh__gardart { height: 15px; width: auto; image-rendering: pixelated; }
 /* 🧑‍🌾 the gardener card BODY — one game-style stat block, shared by the park
    panel and the homestead card. THE STAT IS THE VISUAL (a big number under a
@@ -90,6 +89,22 @@ const CSS = `
 .wh__save:focus-visible { outline: 2px solid #ffb340; outline-offset: 2px; }
 @keyframes wh-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.18; } }
 @media (prefers-reduced-motion: reduce) { .wh__lvlbar i { transition: none; } .wh__savedot { animation: none; } }
+/* 📱 ONE LINE ON A PHONE (Trym, 28 Sep 2026: "On mobile, the HUD doesnt have LVL, Coins, Gardener level and Online players
+   … on one line at the top"). Four chips at their desk size are ~370 px, and a phone's frame leaves the strip 310 px at
+   360 and 343 at 393, so the fourth chip fell to a second row. On a phone the chips tighten and the bars shorten — the
+   gardener's is the short one, set on its flex basis and floor, since a width alone loses to .wh__lvlbar's (it said 16 px
+   and drew 42). Measured one line at 360 with LVL 99, five-digit coins and "not saved" on: tests/hud-one-line.spec.mjs. */
+@media (max-width: 440px) {
+  .wh { gap: 4px; }
+  .wh > * { padding: 0 6px; gap: 4px; }
+  .wh__lvlbar { flex-basis: 26px; min-width: 26px; }
+  .wh .wh__lvlbar--s { flex-basis: 14px; min-width: 14px; }
+}
+@media (max-width: 380px) {
+  .wh > *, .wh .wh__gard { padding: 0 5px; font-size: 0.72rem; }
+  .wh__lvlbar { flex-basis: 20px; min-width: 20px; }
+  .wh .wh__lvlbar--s { flex-basis: 12px; min-width: 12px; }
+}
 `;
 
 let styled = false;

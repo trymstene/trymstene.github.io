@@ -351,6 +351,15 @@ chip] · CROWD, top-right over the map. It is read, not pressed — level and
 coins come from the pass, the crowd chip doubles as the save ask, the area
 chip is a status (the bay's rally). Nothing in the strip opens anything.
 
+**The strip is ONE line on a phone** (Trym, 28 Sep 2026: *"On mobile, the HUD
+doesnt have LVL, Coins, Gardener level and Online players … on one line"*).
+Four chips at their desk size are ~370 px; a phone's frame leaves the strip
+310 px at 360 and 343 at 393. Under 440 px the chips tighten (padding, gap,
+shorter bars) and under 380 the type steps down, so four chips hold one line
+at 360 with LVL 99, five-digit coins and the save ask on. A new chip is
+measured the same way: `tests/hud-one-line.spec.mjs` walks every area at 360,
+375, 390 and 393 and fails on a second row.
+
 **The action bar** sits under the view: a full-width band, `border-top: 4px
 solid #000`, a centred flex row of 44 px buttons (world-travel's `.wt-row > *`
 floor sets that height for every member, present and future). Left to right:
@@ -724,6 +733,9 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 39 | A variable font is one URL across its weights; the front page's pictures are WebP at their shown size, nothing below the fold is eager, every picture arrives | `check-design.mjs` (two @font-face URLs with identical files fail) + `tests/home-hero.spec.mjs` (the banana is WebP, the slides lazy WebP, the band's stickers small, every image loads, Space Grotesk fetched once) |
 | 40 | The mailbox's envelopes are drawn, never a scaled item sprite; a letter from somebody new is never called a knock; the counter offers a postcard beside a letter; the postcard sheet is whole on its card at every size | `check-copy.mjs` (knock or door in the first-letter words; `card.make` ≤ 13) + `tests/town-post.spec.mjs` (the first-letter flow, the counter's two buttons whole at 360, the sheet with nothing below the fold at 360×640, 375×667, 1366×625 and 1280×720, the words go round) + `tests/homestead-letters.spec.mjs` (no postcard at home) |
 | 41 | A fitting that opens a card looks like what it does in its own art, its keeper stands behind it (feet hidden by its front, round its end to leave, a tap on them is them and a tap on the counter is the counter), the whole drawn piece answers a tap, the banana walks to it before the card opens, and a customer sees it lit once until first use — never its own staff, never while shut | `tests/town-store-till.spec.mjs` (the register's counter lit for a new customer and visible above the plate, a real tap on its right third walks there and opens the shop on arrival, the light gone for good after, none for the staff, none when shut) + Pip behind the counter (the front above him, out at noon with the room saying so, his tap and the counter’s kept apart, walking out round the counter’s end for his staff) + tests/town-spinner.spec.mjs (nobody on the floor you work) — a behaviour, so a walk rather than a grep; the odd-errand rule is in check-design.mjs |
+| 15 | The HUD strip is one line on a phone | `tests/hud-one-line.spec.mjs` (every area at 360, 375, 390 and 393 with LVL 99, five-digit coins and the save ask on: one row, inside the frame) |
+| 40 | Every letter opens on the world's paper, under a veil that covers the screen | `tests/town-post.spec.mjs` (an open letter is `.bw-paper` in the hand, signed, no cream box) + `tests/homestead-letters.spec.mjs` (Moss's note on the same paper; the veil edge to edge on a scrolled phone) |
+| 45 | The bananacoin is the stand's coin, never the stock emoji | `check-design.mjs` (the emoji in a page's markup fails; in a script it must ride a line writer, and every world toast, float and say draws it through `src/lib/coin.js`; the check proves it bites every run) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1250,6 +1262,17 @@ view is a bit messy"*.
   walk scrolls a control into view before it taps, so it cannot see this class; the sheet's test measures the card.
 - **A label is measured in its own row at 360 px.** "Send a postcard" fits the counter's half-row at 0.82rem and not
   an open letter's (about 92 px), where the answer stays "Send a card". Measure the verb span, which is what clips.
+- **Every letter opens on the world's paper** (Trym, 28 Sep 2026: *"Some letters are in plain normal text with
+  «computer»-fonts, and some are with more paper visuals and a handwritten font … All should have the paper and
+  handwritten style"*). A player's letter, a resident's note and the world's own note (a payslip, a quest letter) are one
+  sheet: `.bw-paper` (/css/paper.css), Caveat on the ruled lines, the date over it in the card's ink, the sender's name
+  signed at the foot (`bw-paper__from`), and no cream box round it (`.tw-post__open.is-paper`). Only a postcard is a
+  picture instead. `tests/town-post.spec.mjs` fails a letter that opens in anything but the hand.
+- **The mailbox's veil covers the screen** (Trym, 28 Sep 2026: *"the black overlay doesnt cover the whole mobile screen
+  when opening a letter"*). The card wears the town's `.tw-panel` (`position: absolute; inset: 0`), which is right inside
+  the town's view; the homestead hangs it outside any positioned box, where it covered only the document's first
+  screen-height, so a phone scrolled a little saw the world bright under its bottom edge. There it is `position: fixed`,
+  like every homestead card (`.hs-veil`). `tests/homestead-letters.spec.mjs` opens it on a scrolled 393×852 page.
 
 ## §41 A COUNTER LOOKS LIKE WHAT IT DOES, AND SAYS SO ONCE (26 Sep 2026, Trym in the store)
 
@@ -1317,6 +1340,12 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
   gate and stop on open road, never in your yard. A tap opens THEIR card — the NPC card's grammar — and its line says
   plainly they are not here: an echo that could be mistaken for a live player breaks trust, doubly with children.
 - **Never on the rave floor.** Its copy promises that every banana on it is a real one, here now.
+- **An echo walks on the animation frame, like every banana** (Trym, 28 Sep 2026: *"the echoes of other banana users
+  walking by in the homestead are choppy in their movements"*). The stroll stepped 8.4 px on a 120 ms beat, eight hops a
+  second; the beat now only brings one out, and while one is out the frame walks it (70 px a second, dt-scaled). The
+  homestead walk samples an echo every frame and fails on a hop. An echo is yard traffic: indoors it is in the
+  homestead's `.is-inside` hide list, so under the shade it neither paints nor takes a tap (a tap on the dark over the
+  road opened the card of a stranger nobody could see).
 - **A live player wears a green dot on their name tag; an echo does not.** A person is a person (the Quiet Rule is about
   the residents and about speech): another player's name over their head is allowed, one tag, the name and nothing
   else. The town walk's silence check allows exactly that and still fails any other word on any banana.
@@ -1418,3 +1447,20 @@ Ghost Writer plan: every quest letter is blue, black always means M.
   toast lands — never on a toast.
 - Walked by `tests/quest-c2.spec.mjs`: both letters, every scene in order, the ink, the night, the end card, the card's fit
   and the reply's place at every line, and the tallest scenes at 360×640; screenshots in test-results/c2-*.
+
+## §45 THE BANANACOIN IS OURS (28 Sep 2026, Trym on the Banana Phone)
+
+Trym: *"The «Sell goods» on Banana Phone shows a moon emoji - we do have our own Banana Coin symbol / icon"* — the second
+time: the homestead's prices already said *"the REAL bananacoin, never the stock emoji"*. An iPhone draws the stock 🪙 as a
+grey disc; the world's coin is the Banana Stand's gold one (`/assets/banana-stand/coin.png`, 44 px).
+
+- **A line may still SAY 🪙** — it is how a toast or a float writes its coin, and the owed toast lines keep their words —
+  and **every surface that writes a line draws it as the coin**: `src/lib/coin.js` (`coinText` into an element as text,
+  `coinHtml` for markup the code builds, `coinImg()` for a coin on its own). The homestead's, the bay's, the park's, the
+  club's and the town's toasts, floats and says, the quest's toast and its reward note all go through it.
+- **In a page's markup, never the emoji**: an `<img>` of the stand's coin, sized to its line (`height: 1.1em`), or at its
+  own 44 px where it is the picture (the bay's catch card). App icons on the Banana Phone are drawn at 34 px.
+- `tools/check-design.mjs` §45: the emoji in an .astro page fails; in a script it must sit in the arguments of a line
+  writer (toast, float, floatPlus, say, shopNote, phoneNote, payReward, coinText, coinHtml); a writer defined in the same
+  file must draw through coin.js; and the world's own writers (HOSTS) are checked by name, so one that is rewritten
+  without it fails. The check runs a catch-and-pass self-test first.

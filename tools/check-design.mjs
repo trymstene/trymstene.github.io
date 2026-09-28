@@ -383,6 +383,7 @@ for (const f of files) {
     ['src/pages/town.astro', '.tw-toast', ['public/css/world-card.css', '.tw-panel']],
     ['src/pages/park.astro', '.pk-toast', [null, '.pk-panel']],
     ['src/pages/homestead.astro', '.hs-toast', [null, '.hs-veil']],
+    ['src/pages/homestead.astro', '.hs-toast', ['public/css/world-card.css', '.tw-panel']],   // 📬 the mailbox wears the town's card (28 Sep 2026)
   ];
   for (const [page, toast, [veilFile, veil]] of PAIRS) {
     const pageCss = slurp(page);
@@ -449,6 +450,127 @@ for (const f of files) {
   }
 }
 
+// §45 THE BANANACOIN IS OURS (Trym, twice: the homestead's prices wear "the REAL bananacoin, never the stock emoji", and on
+// 28 Sep 2026: "The «Sell goods» on Banana Phone shows a moon emoji - we do have our own Banana Coin symbol / icon"). An
+// iPhone draws the stock coin as a grey disc. A line may still SAY it — that is how a toast or a float writes its coin — and
+// src/lib/coin.js draws each one as the stand's coin. So: none in a page's markup; in a script, one rides a call to a line
+// writer (a toast, a float, a say, a reward note); and every line writer that takes one draws it through coin.js.
+{
+  const COIN = String.fromCodePoint(0x1FA99);
+  const WRITERS = ['toast', 'float', 'floatPlus', 'say', 'shopNote', 'phoneNote', 'payReward', 'coinText', 'coinHtml'];
+  // the world's own line writers: each must draw its line through coinText/coinHtml (or hand it to one that does)
+  const HOSTS = { 'src/scripts/banana-homestead.js': ['toast', 'float', 'phoneNote', 'shopNote'], 'src/scripts/banana-beach.js': ['float', 'say'],
+    'src/scripts/banana-park.js': ['float', 'toast'], 'src/scripts/banana-rave.js': ['floatPlus'], 'src/scripts/banana-town.js': ['say', 'float'],
+    'src/lib/world-quest.js': ['toast', 'payReward'] };
+  // the desk and the dev pages are not the world, and coin.js is the one file that turns the emoji into the coin
+  const DESK = /^src\/(pages\/(admin|dev)\/|pages\/inbox|pages\/dev-|data\/pulse-events|lib\/coin\.js$)/;
+  const NL = String.fromCharCode(10);
+  // a script twice over, same length and lines: its comments blanked (strings kept), and its strings blanked too
+  const blanked = (src) => {
+    const nc = src.split(''), ns = src.split('');
+    const blank = (a, from, to) => { for (let k = from; k < to && k < a.length; k++) if (a[k] !== NL) a[k] = ' '; };
+    let i = 0, prev = '';
+    while (i < src.length) {
+      const c = src[i], d = src[i + 1];
+      if (c === '/' && d === '/') { let e = src.indexOf(NL, i); if (e < 0) e = src.length; blank(nc, i, e); blank(ns, i, e); i = e; continue; }
+      if (c === '/' && d === '*') { let e = src.indexOf('*/', i + 2); e = e < 0 ? src.length : e + 2; blank(nc, i, e); blank(ns, i, e); i = e; continue; }
+      if (c === '"' || c === "'" || c === '`') {
+        let j = i + 1;
+        while (j < src.length && src[j] !== c && !(c !== '`' && src[j] === NL)) j += src[j] === '\\' ? 2 : 1;
+        blank(ns, i + 1, j); i = j + 1; prev = 'x'; continue;
+      }
+      if (c === '/' && (prev === '' || '(,=:[!&|?{};+-*%<>~^'.includes(prev))) {   // a regex literal, not a division
+        let j = i + 1, cls = false;
+        while (j < src.length && src[j] !== NL) { const q = src[j]; if (q === '\\') { j += 2; continue; } if (q === '[') cls = true; else if (q === ']') cls = false; else if (q === '/' && !cls) break; j++; }
+        blank(ns, i + 1, j); i = j + 1; prev = 'x'; continue;
+      }
+      if (/[\w$]/.test(c)) {
+        let j = i; while (j < src.length && /[\w$]/.test(src[j])) j++;
+        prev = /^(return|typeof|case|in|of|delete|void|throw|new|else|do|yield|await)$/.test(src.slice(i, j)) ? '(' : 'x';
+        i = j; continue;
+      }
+      if (!/\s/.test(c)) prev = c;
+      i++;
+    }
+    return [nc.join(''), ns.join('')];
+  };
+  // the writer whose call's arguments hold position p ('' when none does)
+  const writerAt = (ns, p) => {
+    let depth = 0;
+    for (let i = p - 1; i >= 0; i--) {
+      const c = ns[i];
+      if (c === ')' || c === ']' || c === '}') depth++;
+      else if (c === '(' || c === '[' || c === '{') {
+        if (depth) { depth--; continue; }
+        if (c === '(') { const m = /([\w$]+)\s*$/.exec(ns.slice(Math.max(0, i - 40), i)); if (m && WRITERS.includes(m[1])) return m[1]; }
+      }
+    }
+    return '';
+  };
+  // the body of a writer defined in this script (null when it is not): function name(…) { … } or const name = (…) => { … }
+  const bodyOf = (src, ns, name) => {
+    const m = new RegExp('(?:function\\s+' + name + '\\s*\\(|(?:const|let)\\s+' + name + '\\s*=\\s*(?:function\\b|\\([^)]*\\)\\s*=>|[\\w$]+\\s*=>))').exec(ns);
+    if (!m) return null;
+    const open = ns.indexOf('{', m.index + m[0].length);
+    if (open < 0) return '';
+    let depth = 0, i = open;
+    for (; i < ns.length; i++) { if (ns[i] === '{') depth++; else if (ns[i] === '}' && !--depth) break; }
+    return src.slice(open, i + 1);
+  };
+  const drawsCoin = (body) => /\bcoin(?:Text|Html)\(/.test(body) || /(?<![\w$.])(?:toast|phoneNote|float|say)\s*\(/.test(body.slice(1));
+  const lineOf = (src, p) => src.slice(0, p).split(NL).length;
+  function coinFaults(rel, src) {
+    const out = [];
+    if (!src.includes(COIN)) return out;
+    if (rel.endsWith('.astro')) {
+      const bare = src.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/[^\n]*/g, '$1');
+      if (bare.includes(COIN)) out.push('§45: the stock coin emoji in a page — the world’s coin is the stand’s own (<img src="/assets/banana-stand/coin.png">, or coinImg() from src/lib/coin.js), never the emoji an iPhone draws as a grey disc');
+      return out;
+    }
+    const [nc, ns] = blanked(src);
+    for (let p = nc.indexOf(COIN); p >= 0; p = nc.indexOf(COIN, p + 1)) {
+      const w = writerAt(ns, p);
+      if (!w) { out.push('§45: line ' + lineOf(src, p) + ' writes the stock coin emoji into the page — draw the stand’s coin: coinImg()/coinHtml()/coinText() from src/lib/coin.js'); continue; }
+      const body = bodyOf(src, ns, w);
+      if (body != null && !drawsCoin(body)) out.push('§45: line ' + lineOf(src, p) + ' hands a coin to ' + w + '(), which writes it as text — route ' + w + '() through coinText() (src/lib/coin.js)');
+    }
+    return out;
+  }
+  // 🧪 the check proves it bites, every run
+  const C = COIN;
+  const MUST_CATCH = [
+    ['a.astro', '<span class="x">' + C + ' <b>5</b></span>'],
+    ['a.js', "el.innerHTML = '<b>+5 " + C + "</b>';"],
+    ['a.js', "sell.textContent = 'sell · +' + n + ' " + C + "';"],
+    ['a.js', 'function toast(t) { el.textContent = t; }' + NL + "toast('" + C + " +5');"],
+  ];
+  const MUST_PASS = [
+    ['a.astro', '<!-- ' + C + ' the coin window -->' + NL + '<style>/* ' + C + ' */</style>' + NL + '<p>fine</p>'],
+    ['a.js', '// ' + C + ' a comment' + NL + '/* ' + C + ' a block */ const x = 1;'],
+    ['a.js', "toast('" + C + " +' + n, 2600);"],
+    ['a.js', 'function toast(t) { coinText(el, t); }' + NL + "toast('" + C + " +5');"],
+    ['a.js', 'payReward({ coins: 5,' + NL + "  note: '" + C + " a gift' }, id);"],
+    ['a.js', "const shopNote = (t) => { if (x) toast(t); else phoneNote(t); };" + NL + "shopNote('" + C + " not enough');"],
+  ];
+  const selfBad = [...MUST_CATCH.filter(([r, s]) => !coinFaults(r, s).length).map(([, s]) => 'missed: ' + s),
+    ...MUST_PASS.filter(([r, s]) => coinFaults(r, s).length).map(([, s]) => 'wrongly caught: ' + s)];
+  if (selfBad.length) problems.push(['tools/check-design.mjs', '§45: the coin check does not work as it says — ' + selfBad.join(' | ')]);
+  for (const f of files) {
+    const rel = relative(ROOT, f).replace(/\\/g, '/');
+    if (DESK.test(rel)) continue;
+    for (const why of coinFaults(rel, readFileSync(f, 'utf8'))) problems.push([rel, why]);
+  }
+  for (const [rel, names] of Object.entries(HOSTS)) {
+    let src = ''; try { src = readFileSync(join(ROOT, rel), 'utf8'); } catch {}
+    const ns = blanked(src)[1];
+    for (const n of names) {
+      const body = bodyOf(src, ns, n);
+      if (body == null) problems.push([rel, '§45: ' + n + '() is not where the coin check reads it — a world line writer that moved must still draw its coin through src/lib/coin.js (update HOSTS here)']);
+      else if (!drawsCoin(body)) problems.push([rel, '§45: ' + n + '() writes its line without coinText() — a coin in it would show as the stock emoji (src/lib/coin.js)']);
+    }
+  }
+}
+
 let cssN = 0;
 for (const f of walkCss(join(ROOT, 'public/css'))) {
   cssN++;
@@ -485,4 +607,4 @@ if (problems.length) {
   console.error(`${problems.length} problem(s). See docs/design-library.md.\n`);
   process.exit(1);
 }
-console.log(`✅ design gate — ${files.length} files + ${cssN} stylesheets, no [hidden] traps, no stray payment hosts, every HUD strip has its bar, every visitor page its footer, one dialogue card, the town lock sound`);
+console.log(`✅ design gate — ${files.length} files + ${cssN} stylesheets, no [hidden] traps, no stray payment hosts, every HUD strip has its bar, every visitor page its footer, one dialogue card, the town lock sound, the coin our own`);

@@ -90,6 +90,23 @@ test('one mailbox at home: a resident’s note and the world’s own notes in th
   await page.waitForTimeout(250);
   expect(await page.locator('#hsLetters .tw-post__tab[data-drawer="kept"] b').textContent(), 'and it is filed in Kept').toBe('1');
 
+  // ── 📜 …and a resident's note opens on the SAME paper (Trym, 28 Sep 2026: "Some letters are in plain normal text with
+  // «computer»-fonts … All should have the paper and handwritten style") — Moss's, the one he saw in plain type
+  await page.locator('#hsLetters .tw-post__tab[data-drawer="fresh"]').click();
+  await page.locator('#hsLetters .tw-post__env[data-id="n1"]').click();
+  await page.waitForSelector('#hsLetters .tw-post__paper', { timeout: 5000 });
+  const note = await page.evaluate(() => {
+    const p = document.querySelector('#hsLetters .tw-post__paper');
+    return { font: getComputedStyle(p).fontFamily, from: (p.querySelector('.bw-paper__from') || {}).textContent, text: (p.querySelector('.tw-post__body') || {}).textContent };
+  });
+  expect(note.font, 'in the same hand as the world’s notes').toContain('Caveat');
+  expect(note.text, 'the note itself').toBe(NOTE.text);
+  expect(note.from, 'signed by who wrote it').toBe('Moss');
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'test-results/homestead-letters-resident-note.png' });
+  await page.click('#twPostBack');
+  await page.waitForTimeout(250);
+
   // ── and the address book reaches the same people from here
   const w = await page.locator('#twPostNew').boundingBox();
   await page.mouse.click(w.x + w.width / 2, w.y + w.height / 2);
@@ -119,4 +136,34 @@ test('offline, the world’s own notes still show, and the write door waits', as
   expect(st.shut, 'and no closed-counter line stands over them').toBe(false);
   expect(st.write, 'the write door waits for the room').toBe(false);
   expect(errs, 'nothing threw').toEqual([]);
+});
+
+// 📬 THE VEIL COVERS THE SCREEN (Trym, 28 Sep 2026: "the black overlay doesnt cover the whole mobile screen when opening a
+// letter"). It wears the town's .tw-panel, which sat outside any positioned box here and so covered only the document's
+// first screen-height: scrolled a little on a phone, its bottom edge rode up into the world. Walked scrolled, as a phone is.
+test('the mailbox’s veil covers the whole screen, scrolled the way a phone is', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.route('**/post/box', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ letters: [NOTE], unread: 1, knocks: 0 }) }));
+  await page.route('**/post/read', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/homestead/?hstest=claimed', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.post, null, { timeout: 30000 });
+  await page.evaluate(() => window.__hs.slug('my-yard'));
+  // the view's top at the top of the screen, the way the phone had it
+  await page.evaluate(() => window.scrollTo(0, document.getElementById('hsView').getBoundingClientRect().top + scrollY - 8));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.__hs.post());
+  await page.waitForFunction(() => !document.getElementById('hsLetters').hidden, null, { timeout: 20000 });
+  await page.waitForTimeout(300);
+  const r = await page.evaluate(() => {
+    const v = document.getElementById('hsLetters').getBoundingClientRect(), w = document.getElementById('hsView').getBoundingClientRect();
+    return { top: v.top, bottom: v.bottom, left: v.left, right: v.right, viewBottom: w.bottom, h: innerHeight, w: document.documentElement.clientWidth, scrolled: scrollY };
+  });
+  expect(r.scrolled, 'the page is scrolled, as it was on the phone').toBeGreaterThan(40);
+  expect(r.top, 'the veil starts at the top of the screen').toBeLessThanOrEqual(0);
+  expect(r.bottom, '…and reaches the bottom of it, past the whole world').toBeGreaterThanOrEqual(Math.max(r.h, r.viewBottom) - 1);
+  expect([Math.round(r.left), Math.round(r.right)], '…edge to edge').toEqual([0, r.w]);
+  await page.screenshot({ path: 'test-results/homestead-letters-veil-393.png' });
+  expect(errs).toEqual([]);
 });

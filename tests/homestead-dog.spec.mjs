@@ -22,10 +22,12 @@ async function open(page, animals, items, inItems) {
   await page.addInitScript(([an, it, room]) => {
     if (sessionStorage.getItem('dog-seeded')) return;
     sessionStorage.setItem('dog-seeded', '1');
+    localStorage.setItem('bw-social-v1', JSON.stringify({ g: { none: 1 } }));   // Nib's present (45 s in) is not this walk's: it took a tap once
     localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: it || [], shed: [], orders: [],
       inItems: room || {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
       animals: an, animalsV: 3, hens: an.filter((a) => a.sp === 'hen').length }));
   }, [animals, items || null, inItems || null]);
+  await page.route('**/yards/echoes*', (r) => r.fulfill({ contentType: 'application/json', body: '{"echoes":[]}' }));   // nobody strolling the road
   await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__hs && window.__hs.dog && window.__hs.dog(), null, { timeout: 30000 });
   await page.evaluate(() => window.__hs.wx('clear'));   // the real sky may be raining

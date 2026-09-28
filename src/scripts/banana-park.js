@@ -18,6 +18,7 @@ import { presenceRoom, poofInto, snapScale, wearSaved } from '../lib/world.js';
 // looked alive and was not. Never let ctx reference something the HUD owns
 // without importing it.
 import { mountHud, coinBalance } from '../lib/world-hud.js';
+import { coinText } from '../lib/coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js';
 import { track, PARK_TEST, PHASE_STARTS } from './park-util.js';
 // generated geometry — tools/build-park-scene.py declares every collider on
@@ -776,7 +777,7 @@ function init() {
     const d = document.createElement('div');
     d.className = 'pk-float';
     if (text && text.nodeType) d.appendChild(text);
-    else d.textContent = text;
+    else coinText(d, text);
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     world.appendChild(d);
@@ -787,7 +788,7 @@ function init() {
   const toastEl = document.getElementById('pkToast');
   let toastTimer = null;
   function toast(text, ms) {
-    toastEl.textContent = text;
+    coinText(toastEl, text);
     toastEl.classList.add('is-on');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('is-on'), ms || 2400);

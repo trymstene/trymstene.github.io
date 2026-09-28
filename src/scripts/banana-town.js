@@ -9,6 +9,7 @@
 import { unlocksAt, unlocked, ranksOf } from '../data/town/jobs.js';   // 🔓 what a rank lets you do (23 Sep 2026)
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { mountHud } from '../lib/world-hud.js';
+import { coinText } from '../lib/coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE, CAFE_WIN } from './town-geo.js';   // (NPCS stays in the generated file: stale since the residents got days, read by nothing)
@@ -544,7 +545,7 @@ function sayPump() {
 function say(text) {
   if (!text) return;   // a line the rig has not written (or a chunk not landed yet) says nothing, never an empty box
   toastAt = performance.now();
-  toastEl.textContent = text;
+  coinText(toastEl, text);
   toastEl.hidden = false;
   placeToast();
   clearTimeout(toastT);
@@ -556,7 +557,7 @@ function say(text) {
 function float(x, y, node) {
   const d = document.createElement('div');
   d.className = 'tw-float';
-  if (node && node.nodeType) d.appendChild(node); else d.textContent = node || '';
+  if (node && node.nodeType) d.appendChild(node); else coinText(d, node || '');
   d.style.left = pct(x, W); d.style.top = pct(y, H);
   world.appendChild(d);
   setTimeout(() => d.remove(), 900);

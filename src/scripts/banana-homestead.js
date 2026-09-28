@@ -21,6 +21,7 @@ import { loggedIn } from '../lib/pass-sync.js';
 import { catCustom, loadCatalog, fullOutfit, noteCatch } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { mountHud, coinBalance, gardenerCardHtml } from '../lib/world-hud.js';
+import { coinText, coinHtml } from '../lib/coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 import { gardenerLvlFor } from '../lib/pass-defs.js';
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
@@ -2474,15 +2475,15 @@ function init(visitDoc, visitMiss) {
     const d = document.createElement('div');
     d.className = 'hs-float';
     if (text && text.nodeType) d.appendChild(text);
-    else d.innerHTML = text;   // internal strings only — prices ride the real coin
+    else d.innerHTML = coinHtml(text);   // internal strings only — prices ride the real coin
     d.style.left = pct(x, W); d.style.top = pct(y, H);
     world.appendChild(d);
     setTimeout(() => d.remove(), 950);
   }
   let toastTimer = null;
   function toast(text, ms) {
-    if (String(text).indexOf('<img') >= 0) toastEl.innerHTML = text;
-    else toastEl.textContent = text;
+    if (String(text).indexOf('<img') >= 0) toastEl.innerHTML = coinHtml(text);
+    else coinText(toastEl, text);
     toastEl.classList.add('is-on');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('is-on'), ms || 2400);
@@ -3867,7 +3868,7 @@ function init(visitDoc, visitMiss) {
   function phoneNote(text) {
     const n = document.getElementById('hsPhoneNote');
     if (!n) return;
-    n.textContent = text;
+    coinText(n, text);
     n.classList.add('is-on');
     clearTimeout(pnTimer);
     pnTimer = setTimeout(() => n.classList.remove('is-on'), 2300);

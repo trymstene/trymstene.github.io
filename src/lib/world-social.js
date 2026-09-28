@@ -233,18 +233,18 @@ function dropSprite(s, fade) {
   s.el.classList.remove('is-on');
   setTimeout(() => s.el.remove(), 1300);
 }
-function stepSprite(s, now) {
+function stepSprite(s, now, dt) {
   let walk = 0;
   if (A.road) {
     const dir = Math.sign(s.to - s.x);
     if (s.rest > now) walk = 0;
     else if (!s.rested && (dir > 0 ? s.x >= s.pauseAt : s.x <= s.pauseAt)) { s.rested = 1; s.rest = now + 4000 + Math.random() * 5000; }
     else {
-      s.x += dir * 8.4;   // 70 px a second on the 120 ms beat: a stroll
+      s.x += dir * STROLL * dt;
       walk = dir;
       if ((dir > 0 && s.x >= s.to) || (dir < 0 && s.x <= s.to)) { dropSprite(s); return; }
+      placeSprite(s);
     }
-    placeSprite(s);
   } else if (now > s.until) { dropSprite(s, true); return; }
   // ⚠️ the engine's labels are inverted: 4/5 is the pair that visibly walks LEFT, 0/1 right (town-folk.js paint)
   if (now - s.bobAt > (walk ? 260 : 900)) { s.bobAt = now; s.bob = s.bob ? 0 : 1; }
@@ -260,11 +260,24 @@ function stepSprite(s, now) {
     try { drawComposite(s.g, 150, f, s.fit); } catch (e) {}
   }
 }
+// ⭐ ON THE FRAME, like every other banana (Trym, 28 Sep 2026: "the echoes of other banana users walking by in the homestead
+// are choppy in their movements, not fluid movement like normal"). A stroll was 8.4 px on a 120 ms beat: eight hops a second
+// beside a yard that moves sixty times. The beat still brings one out; while one is out, the frame walks it.
+const STROLL = 70;   // world px a second: a stroll
+let raf = 0, lastAt = 0;
 function tickEchoes() {
   if (document.hidden || !rows.length) return;
   const now = performance.now();
   if (now > nextAt) { nextAt = now + 14000 + Math.random() * 16000; spawnEcho(now); }
-  for (const s of [...out.values()]) stepSprite(s, now);
+  if (out.size && !raf) { lastAt = 0; raf = requestAnimationFrame(frameEchoes); }
+}
+function frameEchoes(now) {
+  raf = 0;
+  if (!out.size || document.hidden) return;
+  const dt = lastAt ? Math.min(0.05, (now - lastAt) / 1000) : 0;
+  lastAt = now;
+  for (const s of [...out.values()]) stepSprite(s, now, dt);
+  raf = requestAnimationFrame(frameEchoes);
 }
 
 // ---- a tap on a banana: an echo opens its card, a player here gets a wave ------------------------------------------------

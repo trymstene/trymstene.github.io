@@ -15,6 +15,7 @@ import { seedRand, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { passPatch, passStat, passVisit, passToast, passGet, coinsNow, coinsPaid } from '../lib/banana-pass.js';
 import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
+import { coinText } from '../lib/coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
 import { initTravel } from './world-travel.js';
@@ -2204,7 +2205,7 @@ function init() {
   function floatPlus(x, y, text) {
     const d = document.createElement('div');
     d.className = 'rv-plus';
-    d.textContent = text || '+1';
+    coinText(d, text || '+1');
     d.style.left = x + '%';
     d.style.top = y + '%';
     world.appendChild(d);

@@ -12,6 +12,7 @@ import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale, wearSaved } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { mountHud } from '../lib/world-hud.js';
+import { coinText, coinImg, COIN_SRC } from '../lib/coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 import { shopWindow } from '../../shared/products.js';
 // 🔧 GENERATED GEOMETRY — every collider and world line comes from
@@ -32,6 +33,7 @@ import BEACH_WORDS from '../data/copy/beach-toasts.json';   // ✍️ the last s
 import { pocketHave } from '../data/town/market.js';   // 👝 the pocket's balance: a lure comes out of it at the pier
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
+const BIG_COIN = '<img src="' + COIN_SRC + '" width="44" height="44" alt="bananacoins">';   // the catch card's big one, at its own 44 px
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
 // touches (SHELL_IDS, SHELL_TABLE…) is a module const, and consts are in the
@@ -704,7 +706,7 @@ function init() {
     const d = document.createElement('div');
     d.className = 'bh-float' + (hold ? ' bh-float--hold' : '');
     if (text && text.nodeType) d.appendChild(text);
-    else d.textContent = text;
+    else coinText(d, text);
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     world.appendChild(d);
@@ -1071,7 +1073,7 @@ function init() {
     const d = document.createElement('div');
     d.className = 'bh-shellpick bh-coinpick';
     d.innerHTML = '<span class="bh-shellpick__name">🌊 the tide brought you something</span>'
-      + '<b class="bh-coinpick__n">+' + n + ' 🪙</b>';
+      + '<b class="bh-coinpick__n">+' + n + ' ' + coinImg('bananacoins') + '</b>';
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     world.appendChild(d);
@@ -1356,7 +1358,7 @@ function init() {
   function say(text, ms) {
     // 🕯 quiet under a quest marker (see shellySay)
     if (window.bwqTalk && window.bwqTalk.mark && window.bwqTalk.who === 'split') return;
-    capBubble.textContent = text;
+    coinText(capBubble, text);
     capBubble.classList.add('is-on');
     clearTimeout(capTimer);
     capTimer = setTimeout(() => capBubble.classList.remove('is-on'), ms || 4200);
@@ -1658,7 +1660,7 @@ function init() {
         if (by > 0) {
           passStat('coins_earned', by, 'fishing'); addFishCoins(by);
           refreshHud();
-          body += '<p class="bh-catch__new">🪙 something shiny on the line — <b>+'
+          body += '<p class="bh-catch__new">' + coinImg() + ' something shiny on the line — <b>+'
             + coinsPaid(by) + ' bananacoin' + (coinsPaid(by) === 1 ? '' : 's') + '</b></p>';
           track('beach_coins', { n: by, at: 'fish' });
         }
@@ -1679,10 +1681,10 @@ function init() {
     } else if (c.kind === 'coins') {
       const give = Math.min(c.n, fishCoinsLeft());
       if (give > 0) { passStat('coins_earned', give, 'fishing'); addFishCoins(give);
-        body = '<div class="bh-catch__big">🪙</div><p><b>' + coinsPaid(give) + ' bananacoin'
+        body = '<div class="bh-catch__big">' + BIG_COIN + '</div><p><b>' + coinsPaid(give) + ' bananacoin'
           + (coinsPaid(give) === 1 ? '' : 's') + '</b> snagged on the hook</p>';
       } else {
-        body = '<div class="bh-catch__big">🪙</div><p>a coin — but it slips off. '
+        body = '<div class="bh-catch__big">' + BIG_COIN + '</div><p>a coin — but it slips off. '
           + '(the sea’s given up its coins for today)</p>';
       }
     }

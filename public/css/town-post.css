@@ -118,8 +118,8 @@
 .tw-post__row .tw-post__top { flex-wrap: nowrap; }
 .tw-post__row .tw-post__top .tw-post__who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tw-post__at { flex: none; margin-left: auto; font-size: 0.66rem; font-weight: 700; opacity: 0.66; white-space: nowrap; }
-/* a world note brings its own paper, so its date sits over it, in the card's own ink */
-.tw-post__open.is-world .tw-post__at { display: block; text-align: right; color: #fffdf5; }
+/* a letter on the world's paper brings its own look, so its date sits over it, in the card's own ink */
+.tw-post__open.is-paper .tw-post__at { display: block; text-align: right; color: #fffdf5; }
 
 /* ---- an open letter, and the envelope it came out of ------------------------------------------- */
 /* ⭐ THE ENVELOPE COMES OPEN AND THE LETTER COMES OUT (Trym, 20 Sep). Two one-shot animations on
@@ -151,9 +151,9 @@
   padding: 0.3rem 0.6rem; font-size: 0.72rem; white-space: nowrap;
 }
 .tw-post__back:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
-/* ⚠️ break-word, not just wrap: a letter is player-typed and one 400-character word is a letter a
-   player CAN send — it would otherwise run straight off the side of the card */
-.tw-post__body { margin: 0; font-size: 0.84rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* the words ride the paper's hand, size and ruled lines (/css/paper.css) — and its break-anywhere: a letter is
+   player-typed, and one 400-character word is a letter a player CAN send */
+.tw-post__body { margin: 0; }
 .tw-post__open .tw-btn--in { margin-top: 0.15rem; }
 /* reporting is a normal thing to do, so it is quiet: a plain line, not a red button shouting at you */
 .tw-post__flag {
@@ -432,9 +432,11 @@
 }
 .tw-post__away:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #000; }
 
-/* 🏡 a world note opens on its own paper, which brings its own look */
-.tw-post__open.is-world { background: none; border: 0; box-shadow: none; padding: 0; color: inherit; }
-.tw-post__world .bw-paper { margin: 0.1rem 0 0; }
+/* 📜 every letter opens on the world's paper (a player's, a resident's, the world's own note), which brings its own look */
+.tw-post__open.is-paper { background: none; border: 0; box-shadow: none; padding: 0; color: inherit; }
+/* ⚠️ inset by its tilt: a sheet leans 1.4°, so a tall one reaches out ~1.2% of its height on each side — 5 px for the
+   longest letter a player can send (420 characters), which pushed the card sideways at full width */
+.tw-post__world .bw-paper, .tw-post__paper { margin: 0.1rem 6px 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .tw-post__tab:active, .tw-post__pctile:active, .tw-post__away:active { transform: none; }

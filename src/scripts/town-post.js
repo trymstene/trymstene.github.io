@@ -419,7 +419,7 @@ export function bootTownPost(ctx) {
     } else if (open && open.kind === 'world') {
       // 🏡 one of the world's own notes, on its own paper — the homestead draws it into the space held
       // here (a payslip carries figures and a coin), and the envelope still comes open over it
-      body = '<div class="tw-post__open is-world' + (opening ? ' is-opening' : '') + '">'
+      body = '<div class="tw-post__open is-paper' + (opening ? ' is-opening' : '') + '">'
         + (opening ? '<i class="tw-post__flap tw-post__env" aria-hidden="true"></i>' : '')
         + '<div class="tw-post__sheetin">' + dated(open.at, 1) + '<div class="tw-post__world" data-local="' + esc(open.id) + '"></div></div>'
         + '<div class="tw-post__feet">' + backBtn() + '</div>'
@@ -429,10 +429,14 @@ export function bootTownPost(ctx) {
       // opacity only: the envelope lifts and fades, the sheet rises out from behind it. The class is
       // dropped afterwards so a re-render while you are reading — a report, a reply — does not play the
       // envelope again over a letter that is already open.
-      body = '<div class="tw-post__open' + (opening ? ' is-opening' : '') + '">'
+      // 📜 ON THE WORLD'S PAPER, like its own notes (Trym, 28 Sep 2026: "some letters are in plain normal text with
+      // «computer»-fonts, and some are with more paper visuals and a handwritten font … All should have the paper and
+      // handwritten style"): the date over it, the words in the hand, the sender's name signed at the foot.
+      body = '<div class="tw-post__open is-paper' + (opening ? ' is-opening' : '') + '">'
         + (opening ? '<i class="tw-post__flap tw-post__env" aria-hidden="true"></i>' : '')
-        + '<div class="tw-post__sheetin">' + top(who(nameOf(open)), open.at, 1)
-        + '<p class="tw-post__body">' + esc(open.text) + '</p></div>'
+        + '<div class="tw-post__sheetin">' + dated(open.at, 1)
+        + '<div class="bw-paper tw-post__paper"><p class="tw-post__body">' + esc(open.text) + '</p>'
+        + '<i class="bw-paper__from">' + esc(nameOf(open)) + '</i></div></div>'
         + replies(w, resident(open))
         + feet()
         + '</div>';
