@@ -112,7 +112,7 @@ const ROWS = [
   ['theamp', 'The amp', 'music', 20, 2, 32, 74],
   ['drumkit', 'Drum kit', 'music', 38, 3, 86, 62],
   ['gpiano', 'Grand piano', 'music', 60, 3, 64, 74],
-  ['sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, 87, 70, null, { ship: 45 }],
+  ['sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, 87, 56, null, { ship: 45 }],
   ['openfridge', 'Open fridge', 'kitchen', 38, 2, 53, 85, null, { ship: 60, retired: 1 }],
   ['toastcounter', 'Toaster counter', 'kitchen', 16, 2, 87, 84, null, { ship: 30 }],
   ['microcounter', 'Microwave counter', 'kitchen', 24, 2, 87, 63, null, { ship: 45 }],

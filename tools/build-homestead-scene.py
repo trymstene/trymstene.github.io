@@ -993,8 +993,10 @@ def _on(path):
 
 ON_TOP = 12
 IN_COMPOSE = {
-    # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window
-    'sinkcounter': [(_on(_ts(KIT, 142)), 8, ON_TOP + 2)],
+    # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window.
+    # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:
+    # "the sink part looks a bit over-dimensioned to the counter it sits on"); the same counter as the toaster's keeps the row
+    'sinkcounter': [(_on(_ts(KIT, 142)), 20, ON_TOP + 2, 2 / 3.0)],
     'toastcounter': [(_on(_ts(KIT, 136)), 26, ON_TOP)],
     'microcounter': [(_on(_ts(KIT, 134)), 24, ON_TOP)],
     'espressobar': [(_on(_ts(KIT, 178)), 12, ON_TOP), (_on(_ts(KIT, 184)), 118, ON_TOP)],
@@ -1187,8 +1189,8 @@ if HAVE_PACK:
         if s is None:
             continue
         parts = []
-        for ppath, px_, by in IN_COMPOSE.get(did, []):
-            pt = indoor_sprite(ppath, 1.0)
+        for ppath, px_, by, *pscale in IN_COMPOSE.get(did, []):   # an optional 4th value: the part's own scale (2/3 stays crisp)
+            pt = indoor_sprite(ppath, pscale[0] if pscale else 1.0)
             if pt is not None:
                 parts.append((pt, px_, by))
         if parts:
