@@ -1079,6 +1079,7 @@ function init(visitDoc, visitMiss) {
     refreshInItems();
     pos.x = I.spawn[0]; pos.y = I.spawn[1];
     if (catMod && catH()) catMod.roomEnter(catH(), inside, performance.now());   // 🐈 she may follow you in
+    if (dogMod && dogH()) dogMod.roomEnter(dogH(), inside, performance.now());   // 🐕 and the dog most likely will
     tgt.x = pos.x;
     // nudge INTO the room — toward its centre, never back through the door
     tgt.y = pos.y + (pos.y < I.box[1] + I.box[3] / 2 ? 34 : -34);
@@ -1096,6 +1097,7 @@ function init(visitDoc, visitMiss) {
     cancelPlacing();
     inside = 0;
     if (catMod) catMod.roomLeave();   // 🐈 and out she comes with you
+    if (dogMod) dogMod.roomLeave();
     world.classList.remove('is-inside');
     hsWx.indoors(false);
     refreshInItems();
@@ -1828,6 +1830,7 @@ function init(visitDoc, visitMiss) {
     get mornN() { return mornN; }, W, H, IN_Z, INTERIORS, pct: (v, of) => pct(v, of), depth: (el, y) => depth(el, y),
     roomBounds: (t) => roomBounds(t), toast: (t, ms) => toast(t, ms), track1: (n, p) => track1(n, p), save: () => save(),
     passStat: (k, n) => passStat(k, n), stats: () => farmStats(), dayNum: () => dayNum(), refreshItems: () => refreshItems(),
+    petRoom: (sp) => { const M = sp === 'cat' ? catMod : dogMod; return M ? M.roomRead() : null; },   // the other one's spot indoors
   };
   const catH = () => hens.find((x) => x.a && x.a.sp === 'cat');
   const dogH = () => hens.find((x) => x.a && x.a.sp === 'dog');
@@ -4704,7 +4707,8 @@ function init(visitDoc, visitMiss) {
     if (inside) {          // indoors: the stove answers, furniture chats, else walks
       // ✋ a look around with a finger is never also a lift or a clear (the yard's rule, below)
       if (justPanned) { justPanned = false; if (clearing || arranging) return; }
-      if (!clearing && !arranging && catMod && catMod.roomAt(wx, wy)) { henMood(catH()); return; }   // 🐈 the cat first
+      if (!clearing && !arranging && catMod && catMod.roomAt(wx, wy)) { henMood(catH()); return; }   // 🐈🐕 the pets first
+      if (!clearing && !arranging && dogMod && dogMod.roomAt(wx, wy)) { henMood(dogH()); return; }
       if (clearing && !visiting) {   // 🧹 build mode: indoor furniture goes back to the shed
         const L4 = (state.inItems || {})[inside] || [];
         const k4 = pieceAt(L4, wx, wy);
@@ -5204,7 +5208,7 @@ function init(visitDoc, visitMiss) {
       if (FARM) farmEggTick();
       peers.forEach((p) => drawPeer(p));
       if (roadCoins.length) roadCoinTick();
-    } else if (catMod) catMod.roomTick(now, dt);   // 🐈 indoors, the cat's own small day
+    } else { if (catMod) catMod.roomTick(now, dt); if (dogMod) dogMod.roomTick(now, dt); }   // 🐈🐕 indoors, their own small days
     hsSendMove(now);
     cam();
   }
@@ -5441,6 +5445,8 @@ function init(visitDoc, visitMiss) {
         if (near) { const o = prey.b || prey.h; h2.x = h2.tx = o.x - near; h2.y = h2.ty = o.y + 6; }   // a film starts her close
         Object.assign(h2.cg, { m: 'hunt', ph: 0, until: 0, prey }); return prey.b ? 'bird' : 'hen'; },
       catRoom: () => catMod && catMod.roomRead(),
+      dogRoom: () => dogMod && dogMod.roomRead(),
+      dogRoomMood: (m, o) => !!dogMod && dogMod.roomMood(m, o),
       catRoomMood: (m, o) => !!catMod && catMod.roomMood(m, o),
       catGift: () => !!catMod && !!catH() && catMod.giftCheck(catH(), true),
       birds: () => birdsLive.map((b) => ({ id: b.id, x: Math.round(b.x), y: Math.round(b.y), mode: b.mode, scare: !!b.scare })),

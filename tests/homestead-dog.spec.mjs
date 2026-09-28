@@ -9,23 +9,23 @@ import { test, expect } from '@playwright/test';
 import DOGW from '../src/data/copy/homestead-dog.json' with { type: 'json' };
 
 const SHOT = 'test-results/dog-';
-const NF = { 'c-dog-idle.png': 6, 'c-dog-walk.png': 6, 'c-dog-run.png': 6, 'c-dog-eat.png': 6, 'c-dog-bark.png': 3 };
+const NF = { 'c-dog-idle.png': 6, 'c-dog-walk.png': 6, 'c-dog-run.png': 6, 'c-dog-eat.png': 6, 'c-dog-bark.png': 3, 'c-dog-sleep.png': 8 };
 const today = () => Math.floor(Date.now() / 86400000);
 // sd 22: pace 1, patience 1, boldness 2 — a dog the walk can predict
 const DOG = (o) => ({ sp: 'dog', b: 3, pd: 0, name: 'Biscuit', wd: 0, id: 200200, ad: today() - 5, gs: 0, sd: 22, ...o });
 const HEN = (i) => ({ sp: 'hen', b: 0, pd: 0, name: '', wd: 0, id: 100100 + i, ad: today() - 10, gs: 0, sd: 11 + i });
 const CAT = { sp: 'cat', b: 3, pd: 0, name: '', wd: 0, id: 424242, ad: today(), gs: 0, sd: 94 };
 
-async function open(page, animals, items) {
+async function open(page, animals, items, inItems) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
-  await page.addInitScript(([an, it]) => {
+  await page.addInitScript(([an, it, room]) => {
     if (sessionStorage.getItem('dog-seeded')) return;
     sessionStorage.setItem('dog-seeded', '1');
     localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: it || [], shed: [], orders: [],
-      inItems: {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
+      inItems: room || {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
       animals: an, animalsV: 3, hens: an.filter((a) => a.sp === 'hen').length }));
-  }, [animals, items || null]);
+  }, [animals, items || null, inItems || null]);
   await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__hs && window.__hs.dog && window.__hs.dog(), null, { timeout: 30000 });
   await page.evaluate(() => window.__hs.wx('clear'));   // the real sky may be raining
@@ -236,6 +236,83 @@ test.describe('the dog', () => {
     const names = await page.locator('#hsShopList .hs-tile b').allTextContents();
     expect(names.some((n) => n.startsWith('Doghouse')), 'the doghouse is for sale').toBe(true);
     expect(names.some((n) => n.startsWith('Dog bowl')), 'the bowl is for sale').toBe(true);
+    expect(errs, 'no page errors').toEqual([]);
+  });
+
+  test('with no doghouse she lies down on the grass: the sleeping row, where she stood; a tap and she is up', async ({ page }) => {
+    test.setTimeout(90000);
+    const errs = await open(page, [HEN(0), HEN(1), DOG()]);
+    await page.evaluate(() => window.__hs.warp(1150, 720));
+    await page.waitForTimeout(300);
+    await mood(page, 'rest', { ...CALM, at: [1000, 660], until: 1e12, rx: 1000, ry: 660 });
+    await page.waitForTimeout(500);
+    const before = await dog(page);
+    await mood(page, 'nap', { ...CALM });
+    const s = await sample(page, 3500);
+    const seen = checkStrips(s, 'grass nap');
+    expect(seen['c-dog-sleep.png'], 'the sleeping row, all eight frames').toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    const lying = s.filter((r) => r.strip === 'c-dog-sleep.png');
+    expect(lying.every((r) => Math.abs(r.x - before.x) < 0.5 && Math.abs(r.y - before.y) < 0.5), 'she lies down where she stood').toBe(true);
+    expect(lying.every((r) => r.fl === ''), 'facing you, as the pack draws her asleep').toBe(true);
+    await settle(page);
+    await page.screenshot({ path: SHOT + '05-grass-nap.png' });
+    const [sx, sy] = await screenAt(page, before.x, before.y - 12);
+    await page.mouse.click(sx, sy);
+    await page.waitForTimeout(400);
+    const d = await dog(page);
+    expect(d.m, 'a tap: up she gets, wagging').toBe('linger');
+    expect(d.strip).toBe('c-dog-idle.png');
+    expect(errs, 'no page errors').toEqual([]);
+  });
+
+  test('indoors she follows you, sits by your leg, and lies down by the fire (not on the cat’s spot), then out with you', async ({ page }) => {
+    test.setTimeout(180000);
+    const room = { 3: [{ id: 'fireplace', x: 760, y: 470 }, { id: 'greyrug', x: 1000, y: 640 }] };
+    const errs = await open(page, [HEN(0), HEN(1), DOG(), CAT], null, room);
+    await mood(page, 'linger', { ...CALM, at: [800, 520], until: 1e12 });
+    await page.evaluate(() => window.__hs.catMood('sit', 1e12, { at: [720, 520], calm: true, visitAt: 1e12 }));
+    await page.evaluate(() => window.__hs.enter());
+    await page.waitForTimeout(500);
+    let r = await page.evaluate(() => window.__hs.dogRoom());
+    expect(r, 'she followed you in').toBeTruthy();
+    // the cat lies down by the fire first; the dog must find her own spot
+    await page.evaluate(() => window.__hs.catRoomMood('nap', { calm: true }));
+    for (let i = 0; i < 100; i++) { const c = await page.evaluate(() => window.__hs.catRoom()); if (c && c.strip === 'c-catsleep.png') break; await page.waitForTimeout(100); }
+    // you walk across the room: she follows, walking
+    await page.evaluate(() => window.__hs.warp(1080, 700));
+    let followed = false;
+    for (let i = 0; i < 60 && !followed; i++) {
+      r = await page.evaluate(() => window.__hs.dogRoom());
+      followed = r.strip === 'c-dog-walk.png';
+      await page.waitForTimeout(100);
+    }
+    expect(followed, 'she follows you across the room').toBe(true);
+    // stand still: she sits by your leg (a heart), and after a while lies down for a nap
+    let slept = null;
+    for (let i = 0; i < 260 && !slept; i++) {
+      r = await page.evaluate(() => window.__hs.dogRoom());
+      if (r.strip === 'c-dog-sleep.png') slept = r;
+      await page.waitForTimeout(100);
+    }
+    expect(slept, 'she lay down for a nap').toBeTruthy();
+    expect(slept.size, 'the sleep row, sized for eight frames').toBe('800% 100%');
+    const cat = await page.evaluate(() => window.__hs.catRoom());
+    expect(Math.hypot(slept.x - cat.x, slept.y - cat.y), 'not on the cat’s spot').toBeGreaterThan(40);
+    const onRug = Math.abs(slept.x - 1000) < 40 && Math.abs(slept.y - (640 - 90 * 0.35)) < 14;
+    const atFire = Math.abs(slept.x - 760) < 40 && Math.abs(slept.y - 490) < 14;
+    expect(onRug || atFire, 'on the rug or by the fire, whichever the cat left her: ' + Math.round(slept.x) + ',' + Math.round(slept.y)).toBe(true);
+    await page.screenshot({ path: SHOT + '06-indoors.png' });
+    // a tap wakes her, wagging
+    const [sx, sy] = await screenAt(page, slept.x, slept.y - 12);
+    await page.mouse.click(sx, sy);
+    await page.waitForTimeout(400);
+    expect((await page.evaluate(() => window.__hs.dogRoom())).m, 'up, and with you').toBe('follow');
+    // out through the door: both come out with you, one each side of it
+    await page.evaluate(() => window.__hs.warp(900, 755));
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => window.__hs.dogRoom()), 'nobody left indoors').toBeFalsy();
+    const d = await dog(page);
+    expect(Math.abs(d.x - 726) < 30 && Math.abs(d.y - 476) < 30, 'she came out by the door: ' + Math.round(d.x) + ',' + Math.round(d.y)).toBe(true);
     expect(errs, 'no page errors').toEqual([]);
   });
 });

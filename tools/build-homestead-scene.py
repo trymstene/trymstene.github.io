@@ -1212,8 +1212,11 @@ if HAVE_PACK:
     # to ONE box — the union of them all, centred on her standing body, bottom-aligned — so a swap never moves her feet and
     # a turn never slides her. c-dogidle.png above stays the four-beat idle: the phone's rows and the page's field guide
     # draw frame 0 of a 400% strip.
+    # 💤 and SLEEP (Trym: "does the dog have any sleep-position outside the doghouse?"): the row the sheet calls SLEEP IN
+    # DOGHOUSE is her curled up on her own — eight breathing frames, facing you — so she can lie down anywhere. It sits one
+    # art pixel (3 px) lower in its cells than her standing feet: cut 3 px lower, so she lies down exactly where she stood.
     DROWS = {'c-dog-idle.png': (192, 6), 'c-dog-walk.png': (384, 6), 'c-dog-run.png': (576, 6),
-             'c-dog-eat.png': (768, 6), 'c-dog-bark.png': (960, 3)}
+             'c-dog-eat.png': (768, 6), 'c-dog-bark.png': (960, 3), 'c-dog-sleep.png': (1155, 8)}
     dcells = {nm: [dsh.crop((k * 144, y0, k * 144 + 144, y0 + 96)) for k in range(n)] for nm, (y0, n) in DROWS.items()}
     _stand = [c.getbbox() for c in dcells['c-dog-idle.png'] + dcells['c-dog-walk.png']]
     _cx = sum(b[0] + b[2] for b in _stand) / (2.0 * len(_stand))
@@ -1223,10 +1226,14 @@ if HAVE_PACK:
     _half = max(_cx - _x0, _x1 - _cx)
     _bx0, _bx1 = int(round(_cx - _half)), int(round(_cx + _half))
     DGW, DGH = _bx1 - _bx0, _y1 - _y0
+    # the curled pose is drawn for the doghouse door, off her standing centre: centre it, so she lies down where she stood
+    _sb = [c.getbbox() for c in dcells['c-dog-sleep.png']]
+    _sdx = int(round(sum(b[0] + b[2] for b in _sb) / (2.0 * len(_sb)) - _cx))
     for nm, cs in dcells.items():
         dst = Image.new('RGBA', (DGW * len(cs), DGH), (0, 0, 0, 0))
+        _dx = _sdx if nm == 'c-dog-sleep.png' else 0
         for i, c in enumerate(cs):
-            dst.alpha_composite(c.crop((_bx0, _y0, _bx1, _y1)), (i * DGW, 0))
+            dst.alpha_composite(c.crop((_bx0 + _dx, _y0, _bx1 + _dx, _y1)), (i * DGW, 0))
         dst.save(os.path.join(OUT, nm), optimize=True)
         print('  %s %dx%d (%d frames of %dx%d)' % (nm, dst.width, dst.height, len(cs), DGW, DGH))
     # 🐣 THE YOUNG (slice 5.6): bought animals arrive as babies and grow

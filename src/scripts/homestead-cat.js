@@ -307,13 +307,14 @@ const WARM = /^(fireplace|woodstove)$/, SOFT = /bed|couch|sofa|beanbag/;
 let R = null;
 // her spots in this room: where she walks to, and for furniture the seat she hops up onto (drawn in front of it)
 function roomSpots(t) {
-  const out = [], B = C.roomBounds(t);
+  const out = [], B = C.roomBounds(t), dog = C.petRoom('dog');
   for (const it of ((C.state.inItems || {})[t] || [])) {
     const d = C.DEX[it.id];
     if (!d) continue;
     if (WARM.test(it.id)) out.push({ x: it.x, y: Math.min(B[3] - 6, it.y + 18), w: 5 });
     else if (d.rug && d.h >= 40) out.push({ x: it.x, y: it.y - d.h * 0.4, w: 3 });
     else if (SOFT.test(it.id)) out.push({ x: it.x, y: Math.min(B[3] - 6, it.y + 12), up: [it.y - Math.min(22, d.h * 0.42), it.y + 2], w: 2 });
+    if (dog && out.length && !out[out.length - 1].up && Math.hypot(dog.x - out[out.length - 1].x, dog.y - out[out.length - 1].y) < 44) out.pop();   // the dog is there
   }
   if (!out.length) out.push({ x: B[0] + 30 + Math.random() * (B[2] - B[0] - 60), y: B[1] + 16, w: 1 });
   return out;
