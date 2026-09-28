@@ -579,7 +579,12 @@ export function bootTownCafe(ctx, cfg0) {
     if (me) me.classList.remove('is-serving');
   }
   // the café stands its banana in the kiosk's window; the stand steps its banana round the back of the table
-  const standIn = cfg.standIn || cafeStandIn, stepOut = cfg.stepOut || cafeStepOut;
+  const standIn0 = cfg.standIn || cafeStandIn, stepOut = cfg.stepOut || cafeStepOut;
+  // 🎯 …and the figure carries its counter's rope — the lowest foot a customer stands on — so the framing that places it
+  // (banana-town.js shiftFrameY) never leaves the queue's feet under the tray: at 360×640 it framed the barista alone and
+  // stood the café's customers 3–6 px behind the counter UI (29 Sep 2026)
+  const ropeLow = Math.max(...cfg.rope.map((r) => r[1]));
+  const standIn = () => { standIn0(); const f = world.querySelector('.tw-atwork'); if (f) f.dataset.rope = String(ropeLow); };
 
   // ---- the queue ---------------------------------------------------------------------------------
   const seedAt = (n) => Math.abs(Math.floor(Date.now() / 60000) * 2654435761 + n * 40503) >>> 0;

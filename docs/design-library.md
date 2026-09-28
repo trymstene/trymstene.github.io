@@ -912,6 +912,11 @@ the top while a tray is up (§25). Measured at 393×852: the stand at y 298–36
   from the toast's own style) and the tray. MEASURED every quarter second, never a number per counter: the notes fold
   and unfold, the strip grows a line, a tray is its own height. Indoors the framing may pass the world's edge, because
   outside a room is dark already (§22).
+- **…and the QUEUE in front of it** (29 Sep 2026). A counter's customers stand at its rope, and at 360×640 the band under
+  the work note is shorter than the barista, so the figure went to the band's top and the café's customers stood 3–6 px
+  behind the tray. The shift puts its counter's lowest rope foot on the figure (`data-rope`, town-cafe.js), and the
+  framing keeps that line above the band's bottom — lifting the figure into the toast's room if it must, never into the
+  notes. `tests/town-cafe.spec.mjs` measures the rope's feet against the tray at 360×640, 375×667, 393×852 and 360×740.
 - **A toast uses its width.** Placed from the middle of the view (`left: 50%` + `translateX(-50%)`), an absolutely
   positioned box shrinks to fit HALF the view — a line of the town's took five rows. `width: max-content` under the same
   `max-width` gives it the whole 92%, and the same line takes two. A short toast is also a smaller slot to keep clear.

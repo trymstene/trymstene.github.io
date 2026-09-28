@@ -290,6 +290,10 @@ function shiftFrameY(now) {
   const top = Math.max(14, low + 10) + (parseFloat(cs.lineHeight) || 18) * 3 + (parseFloat(cs.paddingTop) || 8) * 2 + 14, bot = tray.getBoundingClientRect().top - v.top - 8;
   const y0 = f.top - wr.top, y1 = f.bottom - wr.top;   // the figure, in the world's own scaled pixels
   frameY = bot - top >= y1 - y0 ? (y0 + y1) / 2 - (top + bot) / 2 : y0 - top;   // centred in the band, or its top at the band's top
+  // ☕ …and never with the queue under the tray: the counter's rope (its lowest customer foot, which town-cafe.js sets on the
+  // figure) stays above the band's bottom, even when that lifts the figure into the toast's room — never into the notes
+  const rope = +fig.dataset.rope;
+  if (rope) frameY = Math.max(frameY, Math.min(rope * scale - bot, y0 - Math.max(14, low + 10)));
   return frameY;
 }
 // 🔓 THE SQUARE IS THE ON-CALL JOBS' TOO, AND THE CAFÉ'S KEYHOLDER TIDIES IT (the ladder's slice 3, 23–24 Sep 2026). The room
