@@ -989,11 +989,27 @@ function init(visitDoc, visitMiss) {
   // a picture's base line: centred on the face, and never reaching above it
   const wallY = (d, t = inside) => { const w = wallOf(t); return w ? Math.round(Math.max(w[1] + d.h, (w[1] + w[3] + d.h) / 2)) : 0; };
   const onWall = (d) => !!d && d.surface === 'wall';
-  // 🍳 TIGHT AGAINST THE WALL (Trym, 28 Sep 2026: "the stove is the correct distance sitting tight into the wall, while
-  // the counters are a bit too much forward"). A kitchen-height piece (decor `back`: its own height, top edge to base)
-  // pushed to the wall stands with its top edge 16 px above the floor line — plate row 92 in both wood rooms — where
-  // the stove he called right stands; one grid row from the wall snaps there, so a kitchen lines up along the wall.
-  const tightY = (d, t = inside) => (d && d.back && WALL_FACE[t] ? INTERIORS[t].box[1] + 92 - 16 + d.back : 0);
+  // 🍳 THE KITCHEN LINE (Trym, 28 Sep 2026: the counters stood "a bit too much forward", then "the stove could stick more
+  // to the wall from the back aswell, and yeah, countertops kind of should stick together or be built like a chain").
+  // A kitchen piece (decor `tight`: [empty rows under its front, its side border]) placed within a grid row of the wall
+  // stands with its FRONT 26 px below the floor line (plate row 92 in both wood rooms): a counter's top edge then meets
+  // the wall, and the stove and the fridge stand flush with it. Next to another on the same line it butts up to it,
+  // borders merged into one — the builder's own grammar for its long counters (IN_OVERLAP 3).
+  const tightY = (d, t = inside) => (d && d.tight && WALL_FACE[t] ? INTERIORS[t].box[1] + 92 + 26 + d.tight[0] : 0);
+  function chainX(d, x, y, t) {
+    const front = y - d.tight[0];
+    let best = null, gap = 25;   // within a grid step of a neighbour's side
+    for (const it of (state.inItems[t] || [])) {
+      if (placing && placing.moving === it) continue;
+      const o = DEX[it.id];
+      if (!o || !o.tight || Math.abs(it.y - o.tight[0] - front) > 16) continue;
+      const seam = Math.min(d.tight[1], o.tight[1]);
+      for (const cx of [it.x - (o.w + d.w) / 2 + seam, it.x + (o.w + d.w) / 2 - seam]) {
+        if (Math.abs(cx - x) < gap) { gap = Math.abs(cx - x); best = { x: Math.round(cx), y: it.y - o.tight[0] + d.tight[0] }; }
+      }
+    }
+    return best;
+  }
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
   // ---- 🌦 THE WEATHER -----------------------------------------------------
@@ -4542,9 +4558,11 @@ function init(visitDoc, visitMiss) {
       placing.y = snap(Math.max(P[1] + 26, Math.min(P[3] - 8, wy)));
       const dw = DEX[placing.id];
       if (placing.room && onWall(dw)) placing.y = wallY(dw, placing.room);   // 🖼 the tap says WHERE along the wall; the wall says how high
-      else if (placing.room) {   // 🍳 within a grid row of the wall: tight against it
+      else if (placing.room && dw.tight) {   // 🍳 the kitchen line: flush along the wall, butted to its neighbour
         const ty = tightY(dw, placing.room);
         if (ty && placing.y < ty + 24) placing.y = ty;
+        const c = chainX(dw, placing.x, placing.y, placing.room);
+        if (c && inSpotOk(dw, c.x, c.y, placing.room)) { placing.x = c.x; placing.y = c.y; }
       }
     }
     updateGhost();

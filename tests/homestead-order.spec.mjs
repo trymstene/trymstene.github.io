@@ -88,9 +88,10 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   expect([by('toykeys').cat, by('toydrum').cat]).toEqual(['music', 'music']);
   expect(by('soapsink').name).toBe('Bathtub');
   expect(by('openfridge').retired, 'one fridge on the shelf; the open one is its door').toBe(1);
-  // every counter and the stove know their own height, so build mode can stand them tight against the wall
-  for (const id of ['kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar']) expect(by(id).back, id + ' is counter-high').toBe(42);
-  expect(by('stove').back, 'the stove, top edge to base').toBe(60);
+  // the kitchen line: every counter, the stove and the fridge know the empty rows under their front and their side border
+  for (const id of ['kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar']) expect(by(id).tight, id).toEqual([0, 3]);
+  expect(by('stove').tight, 'the stove: 12 empty rows under it, drawn at 2/3').toEqual([12, 2]);
+  expect(by('fridge').tight, 'the fridge').toEqual([12, 2]);
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
   for (const d of REWARDS) expect(d.price, d.id + ' is never sold, so it is never priced').toBe(0);
   expect(new Set(DECOR.map((d) => d.id)).size, 'every id once').toBe(DECOR.length);
@@ -348,11 +349,11 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   expect(errs).toEqual([]);
 });
 
-// 🍳 Trym, 28 Sep 2026: "the placement of countertops should go closer into the wall … the stove is the correct distance
-// sitting tight into the wall, while the counters are a bit too much forward - this goes for all already implemented
-// counters". Each piece comes out of the shed and a tap ON the wall puts it down: the counters and the stove stand tight
-// against the wall with their top edges in one line — the line the stove already had.
-test('in the house: counters and the stove pushed to the wall stand tight against it, their top edges in one line', async ({ page }) => {
+// 🍳 Trym, 28 Sep 2026: "the placement of countertops should go closer into the wall … this goes for all already
+// implemented counters", then "the stove could stick more to the wall from the back aswell, and yeah, countertops kind
+// of should stick together or be built like a chain". Each piece comes out of the shed and a tap on the wall, near the
+// last one, puts it down: fronts flush along the wall, and each butted to its neighbour with one border between them.
+test('in the house: a kitchen built along the wall is one run — fronts flush, each piece butted to the next', async ({ page }) => {
   test.setTimeout(120000);
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
@@ -377,19 +378,25 @@ test('in the house: counters and the stove pushed to the wall stand tight agains
     await page.click('#hsPlaceGo');
     await page.waitForTimeout(600);
   };
+  // each tap lands a little off the last piece's side, the way a thumb does
   await put('The fridge', 648);
-  await put('Kitchen sink', 720);
-  await put('Toaster counter', 816);
-  await put('The stove', 888);
-  const tops = [];
-  for (const id of ['sinkcounter', 'toastcounter', 'stove']) {
+  await put('Kitchen sink', 700);
+  await put('Toaster counter', 790);
+  await put('The stove', 850);
+  const run = [];
+  for (const id of ['fridge', 'sinkcounter', 'toastcounter', 'stove']) {
     const it = await inRoom(page, id), d = DECOR.find((x) => x.id === id);
     expect(it, id + ' is in').toBeTruthy();
-    expect(it.y, id + ' stands tight against the wall').toBe(await page.evaluate((i) => window.__hs.geo.tightY(i, 3), id));
-    tops.push(it.y - d.back);
+    expect(it.y, id + ' stands against the wall').toBe(await page.evaluate((i) => window.__hs.geo.tightY(i, 3), id));
+    run.push({ id, front: it.y - d.tight[0], l: it.x - d.w / 2, r: it.x + d.w / 2, seam: d.tight[1] });
   }
-  expect(new Set(tops).size, 'their top edges in one line: ' + tops.join(', ')).toBe(1);
-  expect(tops[0], 'the line the stove stood on before (y 468, top 408)').toBe(408);
+  expect(new Set(run.map((p) => p.front)).size, 'fronts flush: ' + run.map((p) => p.front).join(', ')).toBe(1);
+  expect(run[0].front, 'on the counters’ line: a counter’s top edge meets the wall').toBe(450);
+  run.sort((a, b) => a.l - b.l);
+  for (let i = 1; i < run.length; i++) {
+    const a = run[i - 1], b = run[i];
+    expect(Math.abs(a.r - b.l - Math.min(a.seam, b.seam)), a.id + ' and ' + b.id + ' butted, one border between them').toBeLessThanOrEqual(0.5);
+  }
   await page.screenshot({ path: SHOT + '13-kitchen-tight.png' });
   expect(errs).toEqual([]);
 });

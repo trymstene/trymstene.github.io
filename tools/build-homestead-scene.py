@@ -994,10 +994,11 @@ def _on(path):
 
 
 ON_TOP = 12
-# 🍳 TIGHT AGAINST THE WALL (Trym, 28 Sep 2026: "the stove is the correct distance sitting tight into the wall, while the
-# counters are a bit too much forward"): the kitchen-height pieces carry `back`, their own height from the top edge to
-# the base, and build mode stands that top edge on one line up the wall (banana-homestead.js tightY).
-WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar', 'stove'}
+# 🍳 THE KITCHEN LINE (Trym, 28 Sep 2026: counters "a bit too much forward", then "the stove could stick more to the wall
+# from the back aswell, and yeah, countertops kind of should stick together or be built like a chain"): these pieces
+# carry `tight` = [empty rows under their front, their side border in px] — build mode stands their fronts on one line
+# along the wall and butts a neighbour against them, borders merged (banana-homestead.js tightY / chainX).
+WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar', 'stove', 'fridge'}
 IN_COMPOSE = {
     # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window.
     # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:
@@ -1197,8 +1198,6 @@ if HAVE_PACK:
         s = indoor_sprite(path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
         if s is None:
             continue
-        if did in WALL_TIGHT:   # the piece's own top edge (not what stands on it, not a canvas's empty rows) down to its base
-            EXTRA_OUT[did]['back'] = int((s.height - (s.getbbox() or (0, 0))[1]) * sc)
         parts = []
         for ppath, px_, by, *pscale in IN_COMPOSE.get(did, []):   # an optional 4th value: the part's own scale (2/3 stays crisp)
             pt = indoor_sprite(ppath, pscale[0] if pscale else 1.0)
@@ -1208,6 +1207,8 @@ if HAVE_PACK:
             s = compose_on(s, parts)
         if sc != 1.0:
             s = s.resize((max(1, int(s.width * sc)), max(1, int(s.height * sc))), Image.NEAREST)
+        if did in WALL_TIGHT:   # the rows a pack canvas leaves empty under the front, and the side border (1 art px)
+            EXTRA_OUT[did]['tight'] = [s.height - s.getbbox()[3], round(3 * sc)]
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
         DECOR_OUT.append((did, name, cat, price, stage, s.width, s.height, None))
         print('  d-%s.png %dx%d (%s s%d)' % (did, s.width, s.height, cat, stage))
@@ -1516,8 +1517,8 @@ def emit():
     D.append('// ⚡ PACKED, one row per piece (28 Sep 2026): the object keys cost more than the catalog, so each row is')
     D.append('// [id, name, cat, price, stage, w, h, solid, extra] and DECOR expands them to the objects every reader keeps.')
     D.append('// extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), retired')
-    D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), back (a kitchen-height piece's own")
-    D.append('// height: pushed to the wall it stands tight against it), gif.')
+    D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), tight (the kitchen line: [empty rows")
+    D.append('// under its front, its side border] — fronts flush along the wall, neighbours butted), gif.')
     D.append('const IN = new Set(%s);' % json.dumps(INDOOR_CATS).replace('"', "'"))
     D.append('const ROWS = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
@@ -1537,8 +1538,8 @@ def emit():
             extra.append('retired: 1')
         if ex.get('wall'):
             extra.append('wall: 1')
-        if ex.get('back'):
-            extra.append('back: %d' % ex['back'])
+        if ex.get('tight'):
+            extra.append('tight: [%d, %d]' % tuple(ex['tight']))
         if did == 'fountain':
             extra.append('gif: 1')
         tail = ''
