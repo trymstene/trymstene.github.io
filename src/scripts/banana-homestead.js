@@ -1099,6 +1099,8 @@ function init(visitDoc, visitMiss) {
   // ---- placed decor -------------------------------------------------------
   const DEX = {};
   DECOR.forEach((d) => { DEX[d.id] = d; });
+  // ↻ a turned piece goes into the shed as the piece: one stack per object, placed facing the way the shop shows it
+  const boxed = (id) => (DEX[id] && DEX[id].fam) || id;
   // 🎁 COMMUNITY DECOR (M3b): forge-made pieces ride the catalog as inline
   // SVG (kind 'decor', never worn) — they join the mailbox with maker credit,
   // and a visitor's yard re-renders once the catalog lands.
@@ -1192,7 +1194,11 @@ function init(visitDoc, visitMiss) {
     el.__alt = 1;
     el.style.backgroundImage = "url('" + altImg(it.id) + "')";
     el.style.width = pct(d.alt[0], W);
-    setTimeout(() => { el.__alt = 0; el.style.backgroundImage = "url('" + d.img + "')"; el.style.width = pct(d.w, W); }, ALT_MS[it.id] || 2400);
+    if (d.side === 'r') el.style.left = pct(it.x + d.w / 2 - d.alt[0], W);   // ↻ turned to face left, its door opens to the left
+    setTimeout(() => {
+      el.__alt = 0; el.style.backgroundImage = "url('" + d.img + "')"; el.style.width = pct(d.w, W);
+      el.style.left = pct(it.x - d.w / 2, W);
+    }, ALT_MS[it.id] || 2400);
   }
   function inSpotOk(d, x, y, t = inside) {
     const I = INTERIORS[t];
@@ -1208,8 +1214,11 @@ function init(visitDoc, visitMiss) {
       return true;
     }
     const B = roomBounds(t), ty = tightY(d, t);
+    // ↻ a piece turned to a side wall may stand with its back against it: what you see of it touches the wall's face
+    const toL = d.side === 'l' && t !== 1, toR = d.side === 'r' && t !== 1, fb = d.fb || [0, 0, 0];
+    const x0 = toL ? Math.min(B[0], I.cols[1][2] - fb[0]) : B[0], x1 = toR ? Math.max(B[2], I.cols[2][0] + fb[1]) : B[2];
     // 🚽 a piece with its own wall line may stand on it, though that is closer than the room's top line
-    if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y < (ty ? Math.min(B[1] + 10, ty) : B[1] + 10) || y > B[3]) return false;
+    if (x - d.w / 2 < x0 || x + d.w / 2 > x1 || y < (ty ? Math.min(B[1] + 10, ty) : B[1] + 10) || y > B[3]) return false;
     // the DOOR CORRIDOR only — the gap's own width (+4), never the floor
     // beside it: standing a lamp NEXT to the door is what real rooms do
     if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 4 && x - d.w / 2 < I.exit[2] + 4 && y > I.exit[1] - (t === 1 ? 36 : 90)) return false;
@@ -1219,6 +1228,7 @@ function init(visitDoc, visitMiss) {
     if (t !== 1) {
       for (const c of I.cols) {
         if (ty && y >= ty && c === I.cols[0]) continue;   // 🚽 its own wall line is the back wall's say
+        if ((toL && c === I.cols[1]) || (toR && c === I.cols[2])) continue;   // ↻ and the side wall's, turned to it
         if (x + d.w / 2 > c[0] && x - d.w / 2 < c[2] && y > c[1] && y - 8 < c[3]) return false;
       }
     }
@@ -2938,6 +2948,7 @@ function init(visitDoc, visitMiss) {
   const cookEl = document.getElementById('hsCook');
   const tailorEl = document.getElementById('hsTailor');
   const confirmEl = document.getElementById('hsConfirm');
+  const turnBtn = document.getElementById('hsPlaceTurn');   // ↻ shown for a piece the pack draws from several sides
   const seedEl = document.getElementById('hsSeed');
   const petEl = document.getElementById('hsPet');
   const panelOpen = () => !document.getElementById('hsLetters').hidden || !claimEl.hidden || !shopEl.hidden || !guestEl.hidden || !cookEl.hidden || !tailorEl.hidden
@@ -3676,7 +3687,8 @@ function init(visitDoc, visitMiss) {
     if (tab === 'order') {
       // category chips — the catalog reads as SHELVES, not a corridor
       // 🏆 a reward piece (decor.js `reward: 1`) is never for sale: it arrives in the shed when it is earned
-      const HERE = (d2) => !d2.reward && !d2.retired && isIndoorItem(d2) === !!inside;
+      // ↻ a turned side (`fam`) is the piece itself: the shop sells it once, build mode turns it
+      const HERE = (d2) => !d2.reward && !d2.retired && !d2.fam && isIndoorItem(d2) === !!inside;
       const cats = ['all', ...new Set(DECOR.filter(HERE).map((d) => d.cat))];
       const curCat = shopEl.dataset.cat || 'all';
       catsRow.hidden = cats.length <= 2;   // one shelf needs no chips
@@ -3756,7 +3768,7 @@ function init(visitDoc, visitMiss) {
       const grid = document.createElement('div');
       grid.className = 'hs-grid';
       const counts = {};
-      state.shed.forEach((s) => { if (DEX[s.id]) counts[s.id] = (counts[s.id] || 0) + 1; });
+      state.shed.forEach((s) => { if (DEX[s.id]) counts[boxed(s.id)] = (counts[boxed(s.id)] || 0) + 1; });
       Object.keys(counts).forEach((id) => {
         const d = DEX[id];
         const tile = shopTile(d, 'place', () => {
@@ -3769,7 +3781,7 @@ function init(visitDoc, visitMiss) {
             toast(inside ? 'this room is full (' + INCAP[inside] + ' spots)' : 'the plot is full');
             return;
           }
-          const i = state.shed.findIndex((s) => s.id === id);
+          const i = state.shed.findIndex((s) => boxed(s.id) === id);
           if (i < 0) return;
           state.shed.splice(i, 1);
           save();
@@ -3788,7 +3800,7 @@ function init(visitDoc, visitMiss) {
           sell.className = 'hs-btn hs-btn--ghost';
           sell.innerHTML = 'sell · ' + sale + ' ' + COIN;
           sell.addEventListener('click', () => {
-            const i = state.shed.findIndex((s) => s.id === id);
+            const i = state.shed.findIndex((s) => boxed(s.id) === id);
             if (i < 0) return;
             state.shed.splice(i, 1);
             passStat('coins_earned', sale, 'shed');
@@ -4149,7 +4161,7 @@ function init(visitDoc, visitMiss) {
     });
     if (swept.length) {
       state.items = kept;
-      swept.forEach((it) => state.shed.push({ id: it.id }));
+      swept.forEach((it) => state.shed.push({ id: boxed(it.id) }));
       toast('🧰 ' + swept.length + ' thing' + (swept.length > 1 ? 's' : '') + ' moved to the shed to make room');
     }
     const key = placing.key;
@@ -4237,6 +4249,7 @@ function init(visitDoc, visitMiss) {
 
   function updateGhost() {
     if (!placing) return;
+    if (turnBtn) turnBtn.hidden = !!placing.home || !(DEX[placing.id] || {}).turn;
     if (placing.home) {
       const d = fixDims();
       placing.el.style.left = pct(placing.x - d.w / 2, W);
@@ -4283,7 +4296,7 @@ function init(visitDoc, visitMiss) {
     const backId = placing.id;
     placing = null;
     confirmEl.hidden = true;
-    if (wasBuy) { state.shed.push({ id: backId }); save(); toast('into the shed — place it any time'); }
+    if (wasBuy) { state.shed.push({ id: boxed(backId) }); save(); toast('into the shed — place it any time'); }
     refreshItems();
     refreshInItems();
     plannerAfterPlace(keepX, keepY);
@@ -4297,7 +4310,7 @@ function init(visitDoc, visitMiss) {
     // a move MUTATES the piece already in state (it keeps its extras — a lit
     // campfire used to be rebuilt cold); only a buy pushes a new one
     const it = placing.moving || { id: placing.id, x: placing.x, y: placing.y };
-    it.x = placing.x; it.y = placing.y;
+    it.x = placing.x; it.y = placing.y; it.id = placing.id;   // ↻ and the side it was turned to
     placing.el.remove();
     const moved = !!placing.moving;
     placing = null;
@@ -4571,20 +4584,55 @@ function init(visitDoc, visitMiss) {
       const P = placing.room ? roomBounds(placing.room) : plotNow();
       placing.x = snap(Math.max(P[0] + 12, Math.min(P[2] - 12, wx)));
       placing.y = snap(Math.max(P[1] + 26, Math.min(P[3] - 8, wy)));
-      const dw = DEX[placing.id];
-      if (placing.room && onWall(dw)) placing.y = wallY(dw, placing.room);   // 🖼 the tap says WHERE along the wall; the wall says how high
-      else if (placing.room && dw.tight) {   // 🍳 the kitchen line: flush along the wall, butted to its neighbour
-        // the room's first TWO rows by the wall: against it (Trym: "its important that these things also can be placed in
-        // the middle of the room if users want it - but close to the wall means always stick to the wall") — one row out
-        // left a gap a thumb lands in; from the third row the tap is where it stands
-        const ty = tightY(dw, placing.room);
-        if (ty && placing.y <= snap(P[1] + 26) + 24) placing.y = ty;
-        const c = chainAt(dw, placing.x, placing.y, placing.room).find((p) => inSpotOk(dw, p.x, p.y, placing.room));
-        if (c) { placing.x = c.x; placing.y = c.y; }
-      }
+      if (placing.room) wallSnap(DEX[placing.id]);
     }
     updateGhost();
   }
+  // 🧱 the walls have their say on a spot — after a tap, and after a turn
+  function wallSnap(dw) {
+    const t = placing.room, P = roomBounds(t), I = INTERIORS[t];
+    if (onWall(dw)) { placing.y = wallY(dw, t); return; }   // 🖼 the tap says WHERE along the wall; the wall says how high
+    // ↻ turned to face along the room, it stands with its back to the side wall it is close to (Trym, 28 Sep 2026: "so you
+    // can put the things … that HAS a side view sprite, on the side-walls aswell. these also must stick to the wall") —
+    // within two columns of it; anywhere else the tap is where it stands
+    if (dw.side === 'l' || dw.side === 'r') {
+      const fb = dw.fb || [0, 0, 0];
+      if (!WALL_FACE[t]) return;
+      if (dw.side === 'l' && placing.x - dw.w / 2 + fb[0] <= I.cols[1][2] + 48) placing.x = Math.round(I.cols[1][2] - fb[0] + dw.w / 2);
+      if (dw.side === 'r' && placing.x + dw.w / 2 - fb[1] >= I.cols[2][0] - 48) placing.x = Math.round(I.cols[2][0] + fb[1] - dw.w / 2);
+      return;
+    }
+    if (dw.tight) {   // 🍳 the kitchen line: flush along the wall, butted to its neighbour
+      // the room's first TWO rows by the wall: against it (Trym: "its important that these things also can be placed in
+      // the middle of the room if users want it - but close to the wall means always stick to the wall") — one row out
+      // left a gap a thumb lands in; from the third row the tap is where it stands
+      const ty = tightY(dw, t);
+      if (ty && placing.y <= snap(P[1] + 26) + 24) placing.y = ty;
+      const c = chainAt(dw, placing.x, placing.y, t).find((p) => inSpotOk(dw, p.x, p.y, t));
+      if (c) { placing.x = c.x; placing.y = c.y; }
+    }
+  }
+  // ↻ THE TURN — the next side of a piece the pack draws from several (decor `turn`): the same spot, its feet where they
+  // stood (the sides' canvases pad the feet differently: `fb`), then the walls have their say again
+  function turnPlacing() {
+    if (!placing || placing.home) return;
+    const d0 = DEX[placing.id], d1 = d0 && d0.turn ? DEX[d0.turn] : null;
+    if (!d1) return;
+    placing.y += (d1.fb ? d1.fb[2] : 0) - (d0.fb ? d0.fb[2] : 0);
+    placing.id = d1.id;
+    placing.el.remove();
+    placing.el = itemDiv({ id: d1.id, x: placing.x, y: placing.y }, true);
+    if (placing.room) {
+      placing.el.classList.add('hs-it--in');
+      const B = roomBounds(placing.room);   // turned off its side wall, it steps back onto the floor
+      placing.x = Math.round(Math.max(B[0] + d1.w / 2, Math.min(B[2] - d1.w / 2, placing.x)));
+      placing.y = Math.max(B[1] + 10, Math.min(B[3], placing.y));
+      wallSnap(d1);
+    }
+    updateGhost();
+    track1('homestead_turn', { id: d1.fam || d1.id });
+  }
+  if (turnBtn) turnBtn.addEventListener('click', turnPlacing);
   view.addEventListener('pointerdown', (e) => {
     if ((!placing && !digging && !fencing && !clearing && !arranging) || panelOpen()) return;
     if (onChrome(e.target)) return;
@@ -4736,7 +4784,7 @@ function init(visitDoc, visitMiss) {
           const d4 = DEX[it4.id];
           if (d4 && Math.abs(wx - it4.x) < Math.max(24, d4.w / 2) && wy > it4.y - d4.h - 8 && wy < it4.y + 10) {
             L4.splice(k4, 1);
-            state.shed.push({ id: it4.id });
+            state.shed.push({ id: boxed(it4.id) });
             save(); refreshInItems();
             float(it4.x, it4.y - 30, '📦');
             track('homestead_pickup', { id: it4.id, via: 'planner' });
@@ -4749,7 +4797,7 @@ function init(visitDoc, visitMiss) {
       if (k >= 0) {
         const it = state.items[k];
         state.items.splice(k, 1);
-        state.shed.push({ id: it.id });
+        state.shed.push({ id: boxed(it.id) });
         save(); refreshItems();
         float(it.x, it.y - 40, '📦');
         track('homestead_pickup', { id: it.id, via: 'planner' });

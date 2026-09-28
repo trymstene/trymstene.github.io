@@ -13,7 +13,7 @@ export const POOLS = {
   basic:  ['sunflower', 'redflower', 'blueflower', 'whiteflower', 'bush', 'bush2', 'mushrooms', 'stump', 'flowerbush', 'trough'],
   common: ['pinkvase', 'bluevase', 'bench', 'chair', 'armchair', 'campfire', 'lantern2', 'crate', 'birdhouse', 'flowerbush2', 'pottedplant', 'tlantern',
     'aloe', 'pottedpalm', 'paintpots', 'yogaball', 'giftred', 'jackolantern'],   // 📦 the second delivery (28 Sep 2026) in circulation here too
-  good:   ['table', 'benchv', 'marshfire', 'scarecrow', 'bananacrate', 'sprout', 'sproutvase', 'birdhouse2', 'readlamp', 'teatable', 'dinette',
+  good:   ['table', 'marshfire', 'scarecrow', 'bananacrate', 'sprout', 'sproutvase', 'birdhouse2', 'readlamp', 'teatable', 'dinette',
     'globe', 'bluelamp', 'rotaryphone', 'boombox', 'easel', 'acoustic', 'nutcracker'],
   rare:   ['statue', 'fountain', 'sunvase', 'whitevase', 'famtable', 'dressercurio', 'aquarium', 'fireplace', 'xmastree', 'amphora'],
 };

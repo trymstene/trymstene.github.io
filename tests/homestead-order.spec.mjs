@@ -570,3 +570,202 @@ test('in the house: close to the wall sticks to it, the middle of the room is fr
   await page.screenshot({ path: SHOT + '18-wall-or-room.png' });
   expect(errs).toEqual([]);
 });
+
+// ↻ the families as data: each side knows the next and the turn comes back round; every side is the piece (one name, shelf,
+// price and rung) and only the first is sold
+test('the families: one piece, every side it is drawn from, one turn through them all', () => {
+  const by = (id) => DECOR.find((d) => d.id === id);
+  const fams = {};
+  for (const d of DECOR.filter((x) => x.turn)) (fams[d.fam || d.id] = fams[d.fam || d.id] || []).push(d);
+  expect(Object.keys(fams).sort()).toEqual(['arcade', 'bench', 'dinchair', 'fridge', 'telly']);
+  for (const [base, L] of Object.entries(fams)) {
+    const b = by(base);
+    expect(b.fam, base + ' is its family’s first').toBeUndefined();
+    const seen = [base];
+    for (let id = b.turn; id !== base; id = by(id).turn) {
+      expect(seen, base + ' turns through ' + id + ' once').not.toContain(id);
+      seen.push(id);
+    }
+    expect(seen.sort(), base + ': the turn reaches every side').toEqual(L.map((d) => d.id).sort());
+    for (const d of L) {
+      expect([d.name, d.cat, d.price, d.stage], d.id + ' is the ' + base).toEqual([b.name, b.cat, b.price, b.stage]);
+      expect(d.fb && d.fb.length, d.id + ' knows its empty edges').toBe(3);
+      if (d.side) expect(['l', 'r', 'f'], d.id).toContain(d.side);
+    }
+  }
+  // a turned fridge still opens, and the arcade cabinet facing the room stands against the wall like the fridge
+  expect([by('fridgeside').alt, by('fridgeside2').alt]).toEqual([[53, 85], [53, 85]]);
+  expect(by('arcade').tight).toEqual([10, 0, 26]);
+});
+
+// ↻ Trym, 28 Sep 2026: "its the same object, but you can rotate it in the build mode so you can put the things and objects
+// that HAS a side view sprite, on the side-walls aswell. these also must stick to the wall … Its a bit bad user experience
+// to have the same object just from different angles, buying them separate - it can easily also bloat the shop with
+// duplicate objects". The shop sells each piece once; the ghost's ↻ steps through its sides; a side turned to a side wall
+// stands with its back against it; a turned piece goes back into the shed as the piece.
+test('in the house: one of each on the shelf, ↻ turns it, and a side turned to a side wall sticks to it', async ({ page }) => {
+  test.setTimeout(150000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('order-seeded')) return;
+    sessionStorage.setItem('order-seeded', '1');
+    // two fridges, a chair and an arcade cabinet, and a chair and a cabinet bought as sides before the turn existed
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [], inItems: {},
+      shed: [{ id: 'fridge' }, { id: 'fridge' }, { id: 'dinchair' }, { id: 'dinchair2' }, { id: 'arcade' }, { id: 'pinball' }],
+      bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.__hs.enter());
+  await page.waitForTimeout(800);
+
+  // ── the shop: each piece once, whatever the pack draws of it
+  await page.evaluate(() => window.__hs.shop('order'));
+  await page.waitForSelector('#hsShopList .hs-tile', { timeout: 8000 });
+  const names = await page.locator('#hsShopList .hs-tile b').allTextContents();
+  for (const n of ['The fridge', 'Dining chair', 'Arcade cabinet', 'The telly']) expect(names.filter((t) => t.startsWith(n)).length, n + ' on the shelf once').toBe(1);
+  // ── the shed: a side bought before stacks with its piece
+  await page.evaluate(() => window.__hs.shop('shed'));
+  await page.waitForTimeout(700);
+  for (const n of ['The fridge', 'Dining chair', 'Arcade cabinet']) {
+    const rows = page.locator('#hsShopList .hs-tile, #hsShopList .hs-row', { hasText: n });
+    expect(await rows.count(), n + ': one stack').toBe(1);
+    await expect(rows.first(), n + ': both in it').toContainText(/×\s?2/);
+  }
+  await page.screenshot({ path: SHOT + '19-shed-stacks.png' });
+
+  const R = await page.evaluate(() => window.__hs.geo.INTERIORS[3]), L = R.cols[1][2], Rw = R.cols[2][0];
+  const turnTo = async (id) => {
+    for (let i = 0; i < 4; i++) {
+      await expect(page.locator('#hsPlaceTurn'), 'the ghost of a piece with sides offers the turn').toBeVisible();
+      await page.click('#hsPlaceTurn');
+      await page.waitForTimeout(150);
+      if (await page.evaluate((i2) => !!document.querySelector('.hs-it--ghost[style*="/d-' + i2 + '."]'), id)) return;
+    }
+    throw new Error('never turned to ' + id);
+  };
+  const put = async (name, wx, wy, id) => {
+    await placeFromShed(page, name);
+    await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+    await page.mouse.click(...(await screenAt(page, wx, wy)));
+    await page.waitForTimeout(300);
+    if (id) await turnTo(id);
+    await page.screenshot({ path: SHOT + '20-turn-' + (id || name) + '.png' });
+    await page.click('#hsPlaceGo');
+    await page.waitForTimeout(600);
+  };
+  // ── a fridge tapped two columns off the left wall, turned to face right: its back against the left wall
+  await put('The fridge', 640, 560, 'fridgeside');
+  const fl = await inRoom(page, 'fridgeside'), FL = DECOR.find((x) => x.id === 'fridgeside');
+  expect(fl, 'the fridge stands turned').toBeTruthy();
+  expect(fl.x - FL.w / 2 + FL.fb[0], 'what you see of it touches the left wall').toBe(L);
+  // ── the other, near the right wall, turned to face left: its back against the right wall
+  await put('The fridge', 1150, 600, 'fridgeside2');
+  const fr = await inRoom(page, 'fridgeside2'), FR = DECOR.find((x) => x.id === 'fridgeside2');
+  expect(fr.x + FR.w / 2 - FR.fb[1], 'against the right wall').toBe(Rw);
+  // ── the arcade cabinet turned to its side at the right wall too, lower down
+  await put('Arcade cabinet', 1150, 680, 'arcadeside');
+  const ar = await inRoom(page, 'arcadeside'), AR = DECOR.find((x) => x.id === 'arcadeside');
+  expect(ar.x + AR.w / 2 - AR.fb[1], 'the cabinet’s back on the right wall').toBe(Rw);
+  // ── a chair turned in the middle of the room stays where it was tapped, its feet where they stood
+  await put('Dining chair', 900, 600, 'dinchair2');
+  const ch = await inRoom(page, 'dinchair2');
+  expect([ch.x, ch.y], 'the middle of the room: right where it was tapped').toEqual([912, 600]);
+  expect(await page.evaluate(() => window.__hs.inv().shed), 'every one of them came out of the shed').toEqual(['dinchair2', 'pinball']);
+  await page.screenshot({ path: SHOT + '21-turned-room.png' });
+
+  // ── a tap opens each turned fridge's door the way it faces: the left one's to the right, the right one's to the left
+  const box = (id) => page.evaluate((i) => {
+    const el = [...document.querySelectorAll('.hs-it--in')].find((e) => (e.style.backgroundImage || '').includes('/d-' + i + '.') || (e.style.backgroundImage || '').includes('/d-' + i + '-alt.'));
+    // in world px: the camera follows the banana after a tap, so screen px drift
+    const r = el.getBoundingClientRect(), wr = document.getElementById('hsWorld').getBoundingClientRect(), k = wr.width / window.__hs.signGeo().W;
+    return { l: (r.left - wr.left) / k, r: (r.right - wr.left) / k, alt: el.style.backgroundImage.includes('-alt') };
+  }, id);
+  for (const [id, it, dx] of [['fridgeside', fl, 90], ['fridgeside2', fr, -90]]) {
+    await page.evaluate(([x, y]) => window.__hs.warp(x, y + 60), [it.x + dx, it.y]);   // beside it, clear of the door
+    await page.waitForTimeout(500);
+    const b0 = await box(id), p = await drawn(page, id);
+    await page.mouse.click(p.x, p.y);
+    await page.waitForTimeout(250);
+    const b1 = await box(id);
+    expect(b1.alt, id + ' opens').toBe(true);
+    expect(b1.r - b1.l, id + '’s door swings out').toBeGreaterThan((b0.r - b0.l) * 1.4);
+    // its back stays on the wall: the left one's left edge, the right one's right edge
+    if (id === 'fridgeside') expect(Math.abs(b1.l - b0.l), 'the door swings right, into the room').toBeLessThan(1);
+    else expect(Math.abs(b1.r - b0.r), 'the door swings left, into the room').toBeLessThan(1);
+    if (id === 'fridgeside2') await page.screenshot({ path: SHOT + '22-turned-fridge-open.png' });
+    await page.waitForTimeout(2600);
+    const b2 = await box(id);
+    expect([b2.alt, Math.abs(b2.l - b0.l) < 1, Math.abs(b2.r - b0.r) < 1], id + ' shuts by itself, where it stood').toEqual([false, true, true]);
+  }
+
+  // ── 🔨 build mode turns a piece that is already standing: the fridge on the left wall turns to face the room, the same
+  // piece (nothing new in the room), stepped off the wall onto the floor
+  const n0 = (await page.evaluate(() => window.__hs.inv().inItems[3])).length;
+  await page.click('#hsBuild');
+  await page.waitForTimeout(700);
+  const f0 = await drawn(page, 'fridgeside');
+  await page.mouse.click(f0.x, f0.y);
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await turnTo('fridge');
+  await expect(page.locator('#hsPlaceGo'), 'a good spot').toBeEnabled();
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  const room = await page.evaluate(() => window.__hs.inv().inItems[3]);
+  expect(room.length, 'the same piece, turned').toBe(n0);
+  expect([room.some((x) => x.id === 'fridge'), room.some((x) => x.id === 'fridgeside')], 'facing the room now').toEqual([true, false]);
+  // ── and a turned piece put back goes into the shed as the piece: the second cabinet, turned, then "not now"
+  await page.click('#hsPlanDone');
+  await page.waitForTimeout(900);
+  await placeFromShed(page, 'Arcade cabinet');
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await turnTo('arcadeback');
+  await page.click('#hsPlaceNo');
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.__hs.inv().shed), 'back as the cabinet, the way the shop shows it').toEqual(['dinchair2', 'arcade']);
+  expect(errs).toEqual([]);
+});
+
+// 📱 the confirm bar with the turn in it, on a small phone: three buttons on one line, inside the screen
+test('the confirm bar holds ↻ turn on a 360-px phone', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('order-seeded')) return;
+    sessionStorage.setItem('order-seeded', '1');
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [], inItems: {},
+      shed: [{ id: 'fridge' }, { id: 'bookcase' }], bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
+  });
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.__hs.enter());
+  await page.waitForTimeout(800);
+  await placeFromShed(page, 'The fridge');
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await page.mouse.click(...(await floorAt(page, 0.4, 0.4)));   // a spot on open floor
+  await page.waitForTimeout(300);
+  await page.click('#hsPlaceTurn');
+  await page.waitForTimeout(200);
+  await expect(page.locator('#hsPlaceGo'), 'a good spot, turned').toBeEnabled();
+  const bar = await page.evaluate(() => {
+    const r = (el) => el.getBoundingClientRect();
+    return { bar: r(document.getElementById('hsConfirm')), btns: ['hsPlaceGo', 'hsPlaceTurn', 'hsPlaceNo'].map((id) => r(document.getElementById(id))) };
+  });
+  expect(bar.bar.left >= 0 && bar.bar.right <= 360, 'the bar fits the screen: ' + Math.round(bar.bar.left) + '–' + Math.round(bar.bar.right)).toBe(true);
+  expect(new Set(bar.btns.map((b) => Math.round(b.top))).size, 'one row').toBe(1);
+  for (const b of bar.btns) expect(b.height, 'each label on one line').toBeLessThan(40);
+  await page.screenshot({ path: SHOT + '23-phone-turn-bar.png' });
+  // a piece with one side has no turn
+  await page.click('#hsPlaceNo');
+  await page.waitForTimeout(400);
+  await placeFromShed(page, 'Bookcase');
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await expect(page.locator('#hsPlaceTurn'), 'no turn for a piece the pack draws once').toBeHidden();
+  expect(errs).toEqual([]);
+});

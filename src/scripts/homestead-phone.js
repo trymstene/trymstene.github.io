@@ -563,7 +563,8 @@ export function shedRows(list) {
     // 📱 shed as app rows: thumb, name, count, two small buttons
     list.classList.add('hs-list--rows');
     const counts2 = {};
-    C.state.shed.forEach((s) => { if (DEX[s.id]) counts2[s.id] = (counts2[s.id] || 0) + 1; });
+    const bx = (id) => DEX[id].fam || id;   // ↻ a turned piece stacks with the piece
+    C.state.shed.forEach((s) => { if (DEX[s.id]) counts2[bx(s.id)] = (counts2[bx(s.id)] || 0) + 1; });
     Object.keys(counts2).forEach((id) => {
       const d = DEX[id];
       const sale2 = Math.floor((d.price || 0) / 2);
@@ -578,7 +579,7 @@ export function shedRows(list) {
           toast(C.inside ? 'this room is full (' + INCAP[C.inside] + ' spots)' : 'the plot is full');
           return;
         }
-        const i3 = C.state.shed.findIndex((sx) => sx.id === id);
+        const i3 = C.state.shed.findIndex((sx) => DEX[sx.id] && bx(sx.id) === id);
         if (i3 < 0) return;
         C.state.shed.splice(i3, 1);
         save();
@@ -586,7 +587,7 @@ export function shedRows(list) {
         startPlacing(d.id);
       })];
       if (sale2 > 0) acts.push(btnEl('sell · ' + sale2 + ' ' + COIN, true, () => {
-        const i3 = C.state.shed.findIndex((sx) => sx.id === id);
+        const i3 = C.state.shed.findIndex((sx) => DEX[sx.id] && bx(sx.id) === id);
         if (i3 < 0) return;
         C.state.shed.splice(i3, 1);
         passStat('coins_earned', sale2, 'shed');

@@ -639,7 +639,7 @@ DECOR_DEF = [
     ('flowerbush', 'Flower bush', 'nature', 9, 0, ['ME_Singles_City_Props_48x48_Flower_Bush_1.png'], True),
     # ── stage 1: the tent is up ──
     ('bench', 'Garden bench', 'furniture', 18, 1, ['ME_Singles_Garden_48x48_Big_Bench_Horizontal.png'], True),
-    ('benchv', 'Side bench', 'furniture', 18, 1, ['ME_Singles_Garden_48x48_Big_Bench_Vertical.png'], True),
+    ('benchv', 'Garden bench', 'furniture', 18, 1, ['ME_Singles_Garden_48x48_Big_Bench_Vertical.png'], True),   # the bench turned (FAMILIES)
     ('table', 'Picnic table', 'furniture', 22, 1, ['ME_Singles_Camping_48x48_Benched_Table_1.png'], True),
     ('chair', 'Camp chair', 'furniture', 12, 1, ['ME_Singles_Camping_48x48_Chair_1.png'], True),
     ('armchair', 'Armchair', 'furniture', 16, 1, ['ME_Singles_Camping_48x48_Armchair_1.png'], True),
@@ -768,9 +768,11 @@ INDOOR_DEF = [
     ('stove', 'The stove', 'kitchen', 42, 2, _ts(KIT, 150)),
     ('coffeemk', 'Baking counter', 'kitchen', 26, 2, [_ts(KIT, 121)] * 3),   # K185 on it is a stand mixer, not coffee
     ('dinchair', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 284)),
-    ('dinchair2', 'Dining chair (right)', 'kitchen', 10, 2, _ts(KIT, 280)),
-    ('dinchair3', 'Dining chair (away)', 'kitchen', 10, 2, _ts(KIT, 279)),
+    ('dinchair2', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 280)),   # facing right — the chair turned (FAMILIES)
+    ('dinchair3', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 279)),   # from behind
     ('fridge', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 161)),
+    ('fridgeside', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 166)),   # facing right (its door opens on K167)
+    ('fridgeside2', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 170)),  # facing left (K171)
     ('kcounter', 'Kitchen counter', 'kitchen', 18, 2, [_ts(KIT, 121)] * 3),
     ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, [_ts(KIT, 121)] * 3),
     ('dinette', 'Small table', 'kitchen', 20, 2, _ts(KIT, 272)),
@@ -791,7 +793,7 @@ INDOOR_DEF = [
     ('bigcabinet', 'Grand cabinet', 'living', 44, 3, _ts(LIV, 103)),
     ('tvset', 'Home cinema', 'living', 50, 3,
      ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (330, 2270, 505, 2400))),
-    ('tvback', 'Telly (back)', 'living', 44, 3, [_ts(BASE, 160), _ts(BASE, 161), _ts(BASE, 162)]),
+    ('tvback', 'The telly', 'living', 44, 3, [_ts(BASE, 157), _ts(BASE, 158), _ts(BASE, 159)]),   # the telly turned: its own white stand (it stood on the grey one, B160-162)
     ('whitechair', 'White armchair', 'living', 22, 3, _ts(BASE, 203)),
     ('bigcouch', 'Big couch', 'living', 56, 3,
      ('crop', os.path.join(TS, '..', 'Theme_Sorter_48x48', '14_Basement_48x48.png'), (290, 10, 428, 95))),
@@ -836,7 +838,9 @@ INDOOR_DEF = [
     ('pingpong', 'Ping pong table', 'music', 55, 3, _ts(BASE, 241)),
     ('pingpong2', 'Green ping pong', 'music', 55, 3, _ts(BASE, 243)),
     ('arcade', 'Arcade cabinet', 'music', 40, 3, _ts(BASE, 219)),
-    ('pinball', 'Pinball machine', 'music', 44, 3, _ts(BASE, 222)),
+    ('pinball', 'Arcade cabinet', 'music', 44, 3, _ts(BASE, 222)),   # was "Pinball machine": it is the arcade from its side
+    ('arcadeback', 'Arcade cabinet', 'music', 40, 3, _ts(BASE, 220)),
+    ('arcadeside', 'Arcade cabinet', 'music', 40, 3, _ts(BASE, 223)),
     ('unicycle', 'Unicycle', 'music', 16, 2, _ts(MUS, 61)),
     ('eguitar', 'Electric guitar', 'music', 24, 2, _ts(MUS, 55)),
     ('theamp', 'The amp', 'music', 20, 2, _ts(MUS, 43)),
@@ -1013,6 +1017,9 @@ WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcount
 # "do the same for the wash stand and washing machine": the same 18 (the washer's old closest was 24). Then "do the same
 # for the standing mirror and bookcases … close to the wall means always stick to the wall".
 WALL_HUG = {'toilet': 18, 'towelrack': 18, 'bvanity': 18, 'washer': 18, 'floormirror': 18, 'bookcase': 18, 'bookshelf': 18}
+# ↻ turned to a side wall the arcade cabinet sticks to it (FAMILIES), so facing the room it stands against the back one:
+# its base is 26 px deep in its side view (B223), the kitchen line's own depth
+WALL_HUG['arcade'] = 26
 IN_COMPOSE = {
     # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window.
     # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:
@@ -1060,6 +1067,20 @@ IN_ALT = {
     'towelrack': _ts(BATH, 137),
     'laundry': _ts(BATH, 96),
 }
+IN_ALT.update({'fridgeside': _ts(KIT, 167), 'fridgeside2': _ts(KIT, 171)})   # a turned fridge still opens
+
+# ↻ FAMILIES — one piece seen from several sides (Trym, 28 Sep 2026: "its the same object, but you can rotate it in the
+# build mode … Its a bit bad user experience to have the same object just from different angles, buying them separate").
+# The shop sells the first; build mode's ↻ steps through the rest (`turn`), each its own id so a save, a second device and
+# a visitor all draw the side it was left on. `side`: the wall its back goes against — l(eft) or r(ight), f = facing away
+# (no wall); none = the back wall, like everything else.
+FAMILIES = [
+    ('dinchair', [('dinchair', 'r'), ('dinchair3', 'f'), ('dinchair2', 'l')]),   # faces left, away, faces right
+    ('fridge', [('fridge', None), ('fridgeside2', 'r'), ('fridgeside', 'l')]),
+    ('arcade', [('arcade', None), ('arcadeside', 'r'), ('arcadeback', 'f'), ('pinball', 'l')]),
+    ('telly', [('telly', None), ('tvback', 'f')]),
+    ('bench', [('bench', None), ('benchv', None)]),   # in the yard: no walls to turn to
+]
 if HAVE_PACK:
     # cardboard and wicker share the floor's tan: the flood ate them. And the wash stand (Trym, 28 Sep 2026: "has lost
     # some color and pixels, its transparent in the middle of the sprite and on the left side"): its wood is the bathroom
@@ -1548,6 +1569,19 @@ INTERIORS_OUT[1] = {
 
 # ---- emit the contract ----------------------------------------------------
 def emit():
+    for base, members in FAMILIES:   # ↻ each member knows the next side and its family; the shop shows the first
+        for i, (mid, side) in enumerate(members):
+            ex = EXTRA_OUT.setdefault(mid, {})
+            ex['turn'] = members[(i + 1) % len(members)][0]
+            if mid != base:
+                ex['fam'] = base
+            if side:
+                ex['side'] = side
+            # the empty px left, right and under the feet: a turn keeps the feet where they stood, and a piece turned to a
+            # side wall touches it with what you see of it (the pack's canvases pad each side differently)
+            im = Image.open(os.path.join(OUT, 'd-%s.png' % mid))
+            bb = im.getbbox()
+            ex['fb'] = [bb[0], im.width - bb[2], im.height - bb[3]]
     L = []
     L.append('// GENERATED by tools/build-homestead-scene.py — DO NOT EDIT.')
     L.append('export const WORLD = { w: %d, h: %d };' % (W, H))
@@ -1588,10 +1622,15 @@ def emit():
     D.append('// extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), retired')
     D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), tight (the kitchen line: [empty rows")
     D.append('// under its front, its side border] — fronts flush along the wall, neighbours butted), alt ([w, h] of its other')
-    D.append('// state, d-<id>-alt.png, shown for a moment on a tap), gif.')
+    D.append('// state, d-<id>-alt.png, shown for a moment on a tap), turn / fam / side (one piece from several sides: the next')
+    D.append("// side's id, the family it belongs to — never sold on its own — and the wall its back goes against), gif.")
     D.append('const IN = new Set(%s);' % json.dumps(INDOOR_CATS).replace('"', "'"))
     D.append('const ROWS = [')
+    fam_base = {mid: base for base, members in FAMILIES for mid, _ in members}
+    base_row = {r[0]: r for r in DECOR_OUT}
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
+        if fam_base.get(did, did) != did:   # ↻ a side is the piece: its name, shelf, price and rung
+            name, cat, price, stage = base_row[fam_base[did]][1:5]
         if did == 'fountain':
             w, h = 64, 96
         ex = EXTRA_OUT.get(did, {})
@@ -1612,6 +1651,14 @@ def emit():
             extra.append('tight: [%s]' % ', '.join(str(v) for v in ex['tight']))
         if ex.get('alt'):
             extra.append('alt: [%d, %d]' % tuple(ex['alt']))
+        if ex.get('turn'):
+            extra.append("turn: '%s'" % ex['turn'])
+        if ex.get('fam'):
+            extra.append("fam: '%s'" % ex['fam'])
+        if ex.get('side'):
+            extra.append("side: '%s'" % ex['side'])
+        if ex.get('fb'):
+            extra.append('fb: [%d, %d, %d]' % tuple(ex['fb']))
         if did == 'fountain':
             extra.append('gif: 1')
         tail = ''

@@ -5,7 +5,8 @@
 // extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), retired
 // (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), tight (the kitchen line: [empty rows
 // under its front, its side border] — fronts flush along the wall, neighbours butted), alt ([w, h] of its other
-// state, d-<id>-alt.png, shown for a moment on a tap), gif.
+// state, d-<id>-alt.png, shown for a moment on a tap), turn / fam / side (one piece from several sides: the next
+// side's id, the family it belongs to — never sold on its own — and the wall its back goes against), gif.
 const IN = new Set(['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music', 'hobby', 'party']);
 const ROWS = [
   ['sunflower', 'Sunflower', 'garden', 8, 0, 27, 51],
@@ -19,8 +20,8 @@ const ROWS = [
   ['stump', 'Stump seat', 'nature', 6, 0, 35, 29, [-13, -12, 13, 2], { sit: 's' }],
   ['mushrooms', 'Mushroom patch', 'nature', 7, 0, 31, 27],
   ['flowerbush', 'Flower bush', 'nature', 9, 0, 65, 31, [-24, -12, 24, 2]],
-  ['bench', 'Garden bench', 'furniture', 18, 1, 97, 33, [-36, -12, 36, 2], { sit: 's' }],
-  ['benchv', 'Side bench', 'furniture', 18, 1, 27, 97, [-10, -12, 10, 2], { sit: 's' }],
+  ['bench', 'Garden bench', 'furniture', 18, 1, 97, 33, [-36, -12, 36, 2], { sit: 's', turn: 'benchv', fb: [0, 0, 0] }],
+  ['benchv', 'Garden bench', 'furniture', 18, 1, 27, 97, [-10, -12, 10, 2], { sit: 's', turn: 'bench', fam: 'bench', fb: [0, 0, 0] }],
   ['table', 'Picnic table', 'furniture', 22, 1, 65, 63, [-24, -12, 24, 2]],
   ['chair', 'Camp chair', 'furniture', 12, 1, 29, 39, [-11, -12, 11, 2], { sit: 's' }],
   ['armchair', 'Armchair', 'furniture', 16, 1, 33, 63, [-12, -12, 12, 2], { sit: 's' }],
@@ -46,10 +47,12 @@ const ROWS = [
   ['bananastatue', 'Banana statue', 'display', 55, 3, 76, 82, [-28, -12, 28, 2]],
   ['stove', 'The stove', 'kitchen', 42, 2, 32, 64, null, { tight: [12, 2], alt: [32, 64] }],
   ['coffeemk', 'Baking counter', 'kitchen', 26, 2, 255, 75, null, { tight: [0, 3], alt: [255, 75] }],
-  ['dinchair', 'Dining chair', 'kitchen', 10, 2, 32, 64, null, { sit: 'l' }],
-  ['dinchair2', 'Dining chair (right)', 'kitchen', 10, 2, 32, 64, null, { sit: 'r' }],
-  ['dinchair3', 'Dining chair (away)', 'kitchen', 10, 2, 32, 32, null, { sit: 's' }],
-  ['fridge', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { tight: [12, 2], alt: [53, 85] }],
+  ['dinchair', 'Dining chair', 'kitchen', 10, 2, 32, 64, null, { sit: 'l', turn: 'dinchair3', side: 'r', fb: [2, 4, 20] }],
+  ['dinchair2', 'Dining chair', 'kitchen', 10, 2, 32, 64, null, { sit: 'r', turn: 'dinchair', fam: 'dinchair', side: 'l', fb: [4, 2, 20] }],
+  ['dinchair3', 'Dining chair', 'kitchen', 10, 2, 32, 32, null, { sit: 's', turn: 'dinchair2', fam: 'dinchair', side: 'f', fb: [2, 2, 2] }],
+  ['fridge', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { tight: [12, 2], alt: [53, 85], turn: 'fridgeside2', fb: [0, 0, 12] }],
+  ['fridgeside', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { alt: [53, 85], turn: 'fridge', fam: 'fridge', side: 'l', fb: [0, 6, 2] }],
+  ['fridgeside2', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { alt: [53, 85], turn: 'fridgeside', fam: 'fridge', side: 'r', fb: [6, 0, 2] }],
   ['kcounter', 'Kitchen counter', 'kitchen', 18, 2, 255, 42, null, { tight: [0, 3], alt: [255, 42] }],
   ['stockcounter', 'Stocked counter', 'kitchen', 30, 2, 255, 84, null, { tight: [0, 3], alt: [255, 84] }],
   ['dinette', 'Small table', 'kitchen', 20, 2, 32, 32],
@@ -68,12 +71,12 @@ const ROWS = [
   ['dressercurio', 'Curio dresser', 'living', 30, 2, 64, 64],
   ['bigcabinet', 'Grand cabinet', 'living', 44, 3, 64, 96],
   ['tvset', 'Home cinema', 'living', 50, 3, 112, 74],
-  ['tvback', 'Telly (back)', 'living', 44, 3, 88, 76],
+  ['tvback', 'The telly', 'living', 40, 2, 88, 76, null, { turn: 'telly', fam: 'telly', side: 'f', fb: [2, 2, 2] }],
   ['whitechair', 'White armchair', 'living', 22, 3, 42, 64, null, { sit: 's' }],
   ['bigcouch', 'Big couch', 'living', 56, 3, 92, 53, null, { sit: 's' }],
   ['sofa', 'Navy sofa', 'living', 30, 2, 64, 32, null, { sit: 's' }],
   ['navychair', 'Navy armchair', 'living', 18, 2, 32, 53, null, { sit: 's' }],
-  ['telly', 'The telly', 'living', 40, 2, 88, 76],
+  ['telly', 'The telly', 'living', 40, 2, 88, 76, null, { turn: 'tvback', fb: [2, 2, 2] }],
   ['furnace', 'Old furnace', 'living', 26, 2, 64, 96],
   ['parlorplant', 'Parlor tree', 'living', 12, 3, 42, 85],
   ['sleepbag', 'Sleeping bag', 'bedroom', 8, 1, 32, 64],
@@ -107,8 +110,10 @@ const ROWS = [
   ['bluepool', 'Blue pool table', 'music', 60, 3, 74, 106],
   ['pingpong', 'Ping pong table', 'music', 55, 3, 74, 128],
   ['pingpong2', 'Green ping pong', 'music', 55, 3, 74, 128],
-  ['arcade', 'Arcade cabinet', 'music', 40, 3, 32, 85],
-  ['pinball', 'Pinball machine', 'music', 44, 3, 42, 74],
+  ['arcade', 'Arcade cabinet', 'music', 40, 3, 32, 85, null, { tight: [10, 0, 26], turn: 'arcadeside', fb: [0, 0, 10] }],
+  ['pinball', 'Arcade cabinet', 'music', 40, 3, 42, 74, null, { turn: 'arcade', fam: 'arcade', side: 'l', fb: [2, 7, 2] }],
+  ['arcadeback', 'Arcade cabinet', 'music', 40, 3, 32, 64, null, { turn: 'pinball', fam: 'arcade', side: 'f', fb: [0, 0, 2] }],
+  ['arcadeside', 'Arcade cabinet', 'music', 40, 3, 42, 74, null, { turn: 'arcadeback', fam: 'arcade', side: 'r', fb: [7, 2, 2] }],
   ['unicycle', 'Unicycle', 'music', 16, 2, 32, 42],
   ['eguitar', 'Electric guitar', 'music', 24, 2, 32, 85],
   ['theamp', 'The amp', 'music', 20, 2, 32, 74],
