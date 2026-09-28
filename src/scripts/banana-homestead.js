@@ -1166,20 +1166,26 @@ function init(visitDoc, visitMiss) {
       el.classList.add('hs-it--in');   // indoor pieces survive the is-inside hide
       // rugs lie flat: always under the banana and any furniture on them; a picture is ON the wall, behind all of it
       el.style.zIndex = String(DEX[it.id].rug || onWall(DEX[it.id]) ? IN_Z : IN_Z + Math.round(it.y));
-      el.__it = it;   // 🧊 the fridge's door finds its own piece
+      el.__it = it;   // 🧊 a tap's other state finds its own piece
+      if (DEX[it.id].alt && !altSeen.has(it.id)) { altSeen.add(it.id); new Image().src = altImg(it.id); }   // no blank first tap
       inEls.push(el);
     });
   }
-  // 🧊 THE FRIDGE'S DOOR swings open on a tap and shuts by itself (Trym, 28 Sep 2026: "we have a Fridge already … maybe if
-  // we want to animate the existing closed fridge") — the pack's own open fridge (decor.js openfridge, retired from the
-  // shelf), the same body with its door out to the right, so the piece keeps its left edge and grows to the right
-  function fridgeDoor(it) {
-    const el = inEls.find((e) => e.__it === it), c = DEX.fridge, o = DEX.openfridge;
-    if (!el || !c || !o || el.__open) return;
-    el.__open = 1;
-    el.style.backgroundImage = "url('" + o.img + "')";
-    el.style.width = pct(o.w, W);
-    setTimeout(() => { el.__open = 0; el.style.backgroundImage = "url('" + c.img + "')"; el.style.width = pct(c.w, W); }, 2400);
+  // 🧊 A TAP WAKES A KITCHEN THING (Trym, 28 Sep 2026: "we have a Fridge already … maybe if we want to animate the
+  // existing closed fridge", then "i think many of the kitchen assessories has this"): a piece with `alt` shows its other
+  // state for a moment and goes back by itself — the fridge's door open, the stove's burners lit, the toast down (and up
+  // it pops), a cup under the coffee machine. The builder draws both states in one frame (d-<id>-alt.png), so the piece
+  // keeps its left edge and its base; only the fridge's door grows it to the right.
+  const ALT_MS = { toastcounter: 1400 };
+  const altSeen = new Set();
+  const altImg = (id) => '/assets/homestead/d-' + id + '-alt.png';
+  function altTap(it) {
+    const el = inEls.find((e) => e.__it === it), d = DEX[it.id];
+    if (!el || !d || !d.alt || el.__alt) return;
+    el.__alt = 1;
+    el.style.backgroundImage = "url('" + altImg(it.id) + "')";
+    el.style.width = pct(d.alt[0], W);
+    setTimeout(() => { el.__alt = 0; el.style.backgroundImage = "url('" + d.img + "')"; el.style.width = pct(d.w, W); }, ALT_MS[it.id] || 2400);
   }
   function inSpotOk(d, x, y, t = inside) {
     const I = INTERIORS[t];
@@ -4625,7 +4631,7 @@ function init(visitDoc, visitMiss) {
         if (d2 && Math.abs(wx - it.x) < Math.max(24, d2.w / 2) && wy > it.y - d2.h - 8 && wy < it.y + 10) {
           if (Math.hypot(pos.x - it.x, pos.y - it.y) < 160) {
             if (d2.sit) sitOn(it, d2);
-            if (it.id === 'fridge') fridgeDoor(it);   // 🧊 a peek inside, for guests too
+            if (d2.alt) altTap(it);   // 🧊 the fridge opens, the stove lights, the toast pops — for guests too
             if (visiting) return;   // sitting is hospitality; the chips are not
             clearChip();
             itChip = document.createElement('div');

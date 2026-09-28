@@ -766,7 +766,7 @@ def compose_on(base_img, parts):
 INDOOR_DEF = [
     # 🍳 kitchen
     ('stove', 'The stove', 'kitchen', 42, 2, _ts(KIT, 150)),
-    ('coffeemk', 'Coffee counter', 'kitchen', 26, 2, [_ts(KIT, 121)] * 3),
+    ('coffeemk', 'Baking counter', 'kitchen', 26, 2, [_ts(KIT, 121)] * 3),   # K185 on it is a stand mixer, not coffee
     ('dinchair', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 284)),
     ('dinchair2', 'Dining chair (right)', 'kitchen', 10, 2, _ts(KIT, 280)),
     ('dinchair3', 'Dining chair (away)', 'kitchen', 10, 2, _ts(KIT, 279)),
@@ -1008,7 +1008,9 @@ IN_COMPOSE = {
     # back in front of it, or the basin's left side is its light rim with no border (Trym: "on the left side its cut off").
     'sinkcounter': [([('crop', _ts(KIT, 142), (15, 3, 18, 45)), ('crop', _ts(KIT, 142), (42, 3, 87, 45))], 27, ON_TOP + 2, 2 / 3.0)],
     'toastcounter': [(_on(_ts(KIT, 136)), 26, ON_TOP)],
-    'microcounter': [(_on(_ts(KIT, 134)), 24, ON_TOP)],
+    # the pack's microwave (K188, its cord up the wall) — K134 was the toaster again without its toast (Trym: "the
+    # Microwave counter is actually a toaster")
+    'microcounter': [(_on(_ts(KIT, 188)), 18, ON_TOP)],
     'espressobar': [(_on(_ts(KIT, 178)), 12, ON_TOP), (_on(_ts(KIT, 184)), 118, ON_TOP)],
     'coffeemk': [(_on(_ts(KIT, 185)), 44, ON_TOP)],
     'stockcounter': [(_on(_ts(LIV, 49)), 22, ON_TOP), (_on(_ts(KIT, 172)), 168, ON_TOP)],
@@ -1018,6 +1020,17 @@ IN_COMPOSE = {
     'bluepool': [(_ts(BASE, 73), 24, 125), (_ts(BASE, 75), 32, 65)],
     'pingpong': [(_ts(BASE, 67), 20, 125), (('crop', _ts(BASE, 67), (18, 0, 64, 48)), 44, 50)],
     'pingpong2': [(_ts(BASE, 67), 34, 127), (('crop', _ts(BASE, 67), (18, 0, 64, 48)), 20, 52)],
+}
+# 🧊 THE OTHER STATE, for a tap (Trym, 28 Sep 2026: the fridge's open version "so that when its clicked - it opens - i
+# think many of the kitchen assessories has this"). The pack draws some kitchen things twice in one frame: the fridge
+# open (K162), the stove's burners lit (K152), the toast down (K135), a cup under the coffee machine (K180). A whole
+# other single, or the piece's own compose with the other part in the same place → d-<id>-alt.png, `alt: [w, h]`, and
+# banana-homestead.js altTap shows it for a moment.
+IN_ALT = {
+    'fridge': _ts(KIT, 162),
+    'stove': _ts(KIT, 152),
+    'toastcounter': [(_on(_ts(KIT, 135)), 26, ON_TOP)],
+    'espressobar': [(_on(_ts(KIT, 180)), 12, ON_TOP), (_on(_ts(KIT, 184)), 118, ON_TOP)],
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket'}   # cardboard and wicker share the floor's tan: the flood ate them
@@ -1210,6 +1223,24 @@ if HAVE_PACK:
         if did in WALL_TIGHT:   # the rows a pack canvas leaves empty under the front, and the side border (1 art px)
             EXTRA_OUT[did]['tight'] = [s.height - s.getbbox()[3], round(3 * sc)]
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
+        alt = IN_ALT.get(did)
+        if alt is not None:   # the other state: a whole single, or this piece's base with the other parts on it
+            if isinstance(alt, list):
+                a = indoor_sprite(path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
+                aps = []
+                for ppath, px_, by, *pscale in alt:
+                    pt = indoor_sprite(ppath, pscale[0] if pscale else 1.0)
+                    if pt is not None:
+                        aps.append((pt, px_, by))
+                a = compose_on(a, aps) if a is not None else None
+            else:
+                a = indoor_sprite(alt, 1.0, strip=did not in NO_STRIP)
+            if a is not None:
+                if sc != 1.0:
+                    a = a.resize((max(1, int(a.width * sc)), max(1, int(a.height * sc))), Image.NEAREST)
+                a.save(os.path.join(OUT, 'd-%s-alt.png' % did), optimize=True)
+                EXTRA_OUT[did]['alt'] = [a.width, a.height]
+                print('  d-%s-alt.png %dx%d' % (did, a.width, a.height))
         DECOR_OUT.append((did, name, cat, price, stage, s.width, s.height, None))
         print('  d-%s.png %dx%d (%s s%d)' % (did, s.width, s.height, cat, stage))
 
@@ -1518,7 +1549,8 @@ def emit():
     D.append('// [id, name, cat, price, stage, w, h, solid, extra] and DECOR expands them to the objects every reader keeps.')
     D.append('// extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), retired')
     D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), tight (the kitchen line: [empty rows")
-    D.append('// under its front, its side border] — fronts flush along the wall, neighbours butted), gif.')
+    D.append('// under its front, its side border] — fronts flush along the wall, neighbours butted), alt ([w, h] of its other')
+    D.append('// state, d-<id>-alt.png, shown for a moment on a tap), gif.')
     D.append('const IN = new Set(%s);' % json.dumps(INDOOR_CATS).replace('"', "'"))
     D.append('const ROWS = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
@@ -1540,6 +1572,8 @@ def emit():
             extra.append('wall: 1')
         if ex.get('tight'):
             extra.append('tight: [%d, %d]' % tuple(ex['tight']))
+        if ex.get('alt'):
+            extra.append('alt: [%d, %d]' % tuple(ex['alt']))
         if did == 'fountain':
             extra.append('gif: 1')
         tail = ''

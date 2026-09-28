@@ -4,7 +4,8 @@
 // [id, name, cat, price, stage, w, h, solid, extra] and DECOR expands them to the objects every reader keeps.
 // extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), retired
 // (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), tight (the kitchen line: [empty rows
-// under its front, its side border] — fronts flush along the wall, neighbours butted), gif.
+// under its front, its side border] — fronts flush along the wall, neighbours butted), alt ([w, h] of its other
+// state, d-<id>-alt.png, shown for a moment on a tap), gif.
 const IN = new Set(['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music', 'hobby', 'party']);
 const ROWS = [
   ['sunflower', 'Sunflower', 'garden', 8, 0, 27, 51],
@@ -43,12 +44,12 @@ const ROWS = [
   ['cheesemk', 'Cheese machine', 'farm', 60, 0, 162, 111, [-61, -12, 61, 2]],
   ['tailor', 'Tailor table', 'farm', 45, 0, 78, 90, [-31, -12, 31, 2]],
   ['bananastatue', 'Banana statue', 'display', 55, 3, 76, 82, [-28, -12, 28, 2]],
-  ['stove', 'The stove', 'kitchen', 42, 2, 32, 64, null, { tight: [12, 2] }],
-  ['coffeemk', 'Coffee counter', 'kitchen', 26, 2, 255, 75, null, { tight: [0, 3] }],
+  ['stove', 'The stove', 'kitchen', 42, 2, 32, 64, null, { tight: [12, 2], alt: [32, 64] }],
+  ['coffeemk', 'Baking counter', 'kitchen', 26, 2, 255, 75, null, { tight: [0, 3] }],
   ['dinchair', 'Dining chair', 'kitchen', 10, 2, 32, 64, null, { sit: 'l' }],
   ['dinchair2', 'Dining chair (right)', 'kitchen', 10, 2, 32, 64, null, { sit: 'r' }],
   ['dinchair3', 'Dining chair (away)', 'kitchen', 10, 2, 32, 32, null, { sit: 's' }],
-  ['fridge', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { tight: [12, 2] }],
+  ['fridge', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { tight: [12, 2], alt: [53, 85] }],
   ['kcounter', 'Kitchen counter', 'kitchen', 18, 2, 255, 42, null, { tight: [0, 3] }],
   ['stockcounter', 'Stocked counter', 'kitchen', 30, 2, 255, 84, null, { tight: [0, 3] }],
   ['dinette', 'Small table', 'kitchen', 20, 2, 32, 32],
@@ -115,9 +116,9 @@ const ROWS = [
   ['gpiano', 'Grand piano', 'music', 60, 3, 64, 74],
   ['sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, 87, 56, null, { ship: 45, tight: [0, 3] }],
   ['openfridge', 'Open fridge', 'kitchen', 38, 2, 53, 85, null, { ship: 60, retired: 1 }],
-  ['toastcounter', 'Toaster counter', 'kitchen', 16, 2, 87, 84, null, { ship: 30, tight: [0, 3] }],
-  ['microcounter', 'Microwave counter', 'kitchen', 24, 2, 87, 63, null, { ship: 45, tight: [0, 3] }],
-  ['espressobar', 'Espresso bar', 'kitchen', 30, 3, 171, 87, null, { ship: 60, tight: [0, 3] }],
+  ['toastcounter', 'Toaster counter', 'kitchen', 16, 2, 87, 84, null, { ship: 30, tight: [0, 3], alt: [87, 84] }],
+  ['microcounter', 'Microwave counter', 'kitchen', 24, 2, 87, 87, null, { ship: 45, tight: [0, 3] }],
+  ['espressobar', 'Espresso bar', 'kitchen', 30, 3, 171, 87, null, { ship: 60, tight: [0, 3], alt: [171, 87] }],
   ['picnicbasket', 'Picnic basket', 'kitchen', 10, 1, 32, 53, null, { ship: 15 }],
   ['leafprint', 'Leaf print', 'kitchen', 8, 2, 20, 26, null, { ship: 15, wall: 1 }],
   ['fireplace', 'Fireplace', 'living', 58, 3, 64, 74, null, { ship: 150 }],
