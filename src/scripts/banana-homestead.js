@@ -4574,8 +4574,11 @@ function init(visitDoc, visitMiss) {
       const dw = DEX[placing.id];
       if (placing.room && onWall(dw)) placing.y = wallY(dw, placing.room);   // 🖼 the tap says WHERE along the wall; the wall says how high
       else if (placing.room && dw.tight) {   // 🍳 the kitchen line: flush along the wall, butted to its neighbour
-        const ty = tightY(dw, placing.room);   // the room's first row by the wall, or a row from its own line: against the wall
-        if (ty && (placing.y <= snap(P[1] + 26) || placing.y < ty + 24)) placing.y = ty;
+        // the room's first TWO rows by the wall: against it (Trym: "its important that these things also can be placed in
+        // the middle of the room if users want it - but close to the wall means always stick to the wall") — one row out
+        // left a gap a thumb lands in; from the third row the tap is where it stands
+        const ty = tightY(dw, placing.room);
+        if (ty && placing.y <= snap(P[1] + 26) + 24) placing.y = ty;
         const c = chainAt(dw, placing.x, placing.y, placing.room).find((p) => inSpotOk(dw, p.x, p.y, placing.room));
         if (c) { placing.x = c.x; placing.y = c.y; }
       }

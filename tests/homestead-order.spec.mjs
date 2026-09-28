@@ -111,6 +111,8 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   expect([by('toilet').tight, by('towelrack').tight]).toEqual([[14, 0, 18], [8, 0, 18]]);
   // and the wash stand and the washing machine the same way (Trym: "do the same for the wash stand and washing machine")
   expect([by('bvanity').tight, by('washer').tight]).toEqual([[14, 0, 18], [8, 0, 18]]);
+  // and the standing mirror and the bookcases (Trym: "do the same for the standing mirror and bookcases")
+  expect([by('floormirror').tight, by('bookcase').tight, by('bookshelf').tight]).toEqual([[14, 0, 18], [14, 0, 18], [18, 0, 18]]);
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
@@ -523,5 +525,48 @@ test('in the house: the bathroom stands tight to the wall and answers a tap — 
   await page.screenshot({ path: SHOT + '16-bathroom-awake.png' });
   await page.waitForTimeout(2600);
   for (const id of ['toilet', 'towelrack', 'laundry']) expect(await bg(id), id + ' back by itself').not.toContain('-alt');
+  expect(errs).toEqual([]);
+});
+
+// 📚 Trym, 28 Sep 2026: "do the same for the standing mirror and bookcases. remember, its important that these things also
+// can be placed in the middle of the room if users want it - but close to the wall means always stick to the wall". A tap
+// on the wall, or one row out, stands a piece on its wall line; a tap in the middle of the room stands it right there.
+test('in the house: close to the wall sticks to it, the middle of the room is free', async ({ page }) => {
+  test.setTimeout(120000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('order-seeded')) return;
+    sessionStorage.setItem('order-seeded', '1');
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [], inItems: {},
+      shed: [{ id: 'bookcase' }, { id: 'bookshelf' }, { id: 'floormirror' }, { id: 'kcounter' }],
+      bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.__hs.enter());
+  await page.waitForTimeout(800);
+  const put = async (name, wx, wy) => {
+    await placeFromShed(page, name);
+    await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+    await page.mouse.click(...(await screenAt(page, wx, wy)));
+    await page.waitForTimeout(300);
+    await page.click('#hsPlaceGo');
+    await page.waitForTimeout(600);
+  };
+  const wallLine = (id) => page.evaluate((i) => window.__hs.geo.tightY(i, 3), id);
+  await put('Bookcase', 700, 390);             // on the wall
+  await put('Tall bookshelf', 820, 478);       // one row out: close still means the wall
+  await put('Standing mirror', 960, 600);      // the middle of the room
+  await put('Kitchen counter', 1060, 478);     // the kitchen line keeps the same two rows
+  expect((await inRoom(page, 'bookcase')).y, 'a tap on the wall: on its wall line').toBe(await wallLine('bookcase'));
+  expect((await inRoom(page, 'bookshelf')).y, 'a tap a row out: still on its wall line').toBe(await wallLine('bookshelf'));
+  expect((await inRoom(page, 'kcounter')).y, 'the kitchen counter a row out: at the wall too').toBe(await wallLine('kcounter'));
+  const m = await inRoom(page, 'floormirror');
+  expect(m.y, 'the middle of the room: right where it was tapped').toBe(600);
+  expect(m.y > await wallLine('floormirror'), 'not pulled to the wall').toBe(true);
+  await page.screenshot({ path: SHOT + '18-wall-or-room.png' });
   expect(errs).toEqual([]);
 });
