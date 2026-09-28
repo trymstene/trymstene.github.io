@@ -1031,6 +1031,13 @@ IN_ALT = {
     'stove': _ts(KIT, 152),
     'toastcounter': [(_on(_ts(KIT, 135)), 26, ON_TOP)],
     'espressobar': [(_on(_ts(KIT, 180)), 12, ON_TOP), (_on(_ts(KIT, 184)), 118, ON_TOP)],
+    # ('base', other base, parts): a counter's cupboard open, dishes on its shelf — K122 is K121 with its right door open
+    # (Trym, next: "add tap states to more kitchen things too")
+    'kcounter': ('base', [_ts(KIT, 121), _ts(KIT, 122), _ts(KIT, 121)], []),
+    'coffeemk': ('base', [_ts(KIT, 121), _ts(KIT, 121), _ts(KIT, 122)], IN_COMPOSE['coffeemk']),
+    'stockcounter': ('base', [_ts(KIT, 121), _ts(KIT, 122), _ts(KIT, 121)], IN_COMPOSE['stockcounter']),
+    'sinkcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['sinkcounter']),
+    'microcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['microcounter']),
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket'}   # cardboard and wicker share the floor's tan: the flood ate them
@@ -1224,17 +1231,21 @@ if HAVE_PACK:
             EXTRA_OUT[did]['tight'] = [s.height - s.getbbox()[3], round(3 * sc)]
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
         alt = IN_ALT.get(did)
-        if alt is not None:   # the other state: a whole single, or this piece's base with the other parts on it
+        if alt is not None:   # the other state: a whole single, this piece's base with other parts, or another base
             if isinstance(alt, list):
-                a = indoor_sprite(path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
+                base_path, alt_parts = path, alt
+            elif isinstance(alt, tuple) and alt and alt[0] == 'base':
+                base_path, alt_parts = alt[1], alt[2]
+            else:
+                base_path, alt_parts = alt, []
+            a = indoor_sprite(base_path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
+            if a is not None and alt_parts:
                 aps = []
-                for ppath, px_, by, *pscale in alt:
+                for ppath, px_, by, *pscale in alt_parts:
                     pt = indoor_sprite(ppath, pscale[0] if pscale else 1.0)
                     if pt is not None:
                         aps.append((pt, px_, by))
-                a = compose_on(a, aps) if a is not None else None
-            else:
-                a = indoor_sprite(alt, 1.0, strip=did not in NO_STRIP)
+                a = compose_on(a, aps)
             if a is not None:
                 if sc != 1.0:
                     a = a.resize((max(1, int(a.width * sc)), max(1, int(a.height * sc))), Image.NEAREST)

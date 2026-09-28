@@ -93,9 +93,10 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   expect(by('stove').tight, 'the stove: 12 empty rows under it, drawn at 2/3').toEqual([12, 2]);
   expect(by('fridge').tight, 'the fridge').toEqual([12, 2]);
   // a tap's other state, drawn in the same frame: the fridge open (its door grows it right), the stove lit, the toast
-  // down, a cup under the coffee machine; the microwave (the pack has it closed only) and the mixer have none
+  // down, a cup under the coffee machine — and every other counter's cupboard open (Trym: "add tap states to more
+  // kitchen things too"), each the size of the piece itself
   expect([by('fridge').alt, by('stove').alt, by('toastcounter').alt, by('espressobar').alt]).toEqual([[53, 85], [32, 64], [87, 84], [171, 87]]);
-  expect([by('microcounter').alt, by('coffeemk').alt]).toEqual([undefined, undefined]);
+  for (const id of ['kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'microcounter']) expect(by(id).alt, id + '’s cupboard').toEqual([by(id).w, by(id).h]);
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
@@ -405,21 +406,26 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   }
   await page.screenshot({ path: SHOT + '13-kitchen-tight.png' });
 
-  // ── a tap (not in build mode) wakes each one: the stove's burners light, the toast goes down, and both come back by themselves
-  const bg =(id) => page.evaluate((i) => { const el = [...document.querySelectorAll('.hs-it--in')].find((e) => (e.style.backgroundImage || '').includes('/d-' + i)); return el ? el.style.backgroundImage : ''; }, id);
+  // ── a tap (not in build mode) wakes each one: the stove's burners light, the toast goes down, the sink's cupboard
+  // opens — and each comes back by itself
+  const bg = (id) => page.evaluate((i) => { const el = [...document.querySelectorAll('.hs-it--in')].find((e) => (e.style.backgroundImage || '').includes('/d-' + i)); return el ? el.style.backgroundImage : ''; }, id);
   const stove = await inRoom(page, 'stove');
   await page.evaluate(([x, y]) => window.__hs.warp(x - 40, y + 40), [stove.x, stove.y]);
   await page.waitForTimeout(500);
   const s0 = await drawn(page, 'stove');
   await page.mouse.click(s0.x, s0.y);
+  const k0 = await drawn(page, 'sinkcounter');
+  await page.mouse.click(k0.x, k0.y + 10);
   const t0 = await drawn(page, 'toastcounter');
   await page.mouse.click(t0.x, t0.y + 20);
   await page.waitForTimeout(250);
   expect(await bg('stove'), 'the burners light').toContain('d-stove-alt');
+  expect(await bg('sinkcounter'), 'the cupboard under the sink opens').toContain('d-sinkcounter-alt');
   expect(await bg('toastcounter'), 'the toast goes down').toContain('d-toastcounter-alt');
   await page.screenshot({ path: SHOT + '14-kitchen-awake.png' });
   await page.waitForTimeout(2600);
   expect(await bg('stove'), 'the burners go out').not.toContain('-alt');
+  expect(await bg('sinkcounter'), 'the cupboard shuts').not.toContain('-alt');
   expect(await bg('toastcounter'), 'and up it pops').not.toContain('-alt');
   expect(errs).toEqual([]);
 });
