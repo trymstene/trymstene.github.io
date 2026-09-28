@@ -573,6 +573,7 @@ export function shedRows(list) {
         if (indoorItem && !C.inside) { shopNote('🛋 that belongs indoors — step inside first'); return; }
         if (!indoorItem && C.inside) { shopNote('🌳 that belongs in the yard — step outside first'); return; }
         if (d.surface === 'wall' && !C.wallOf(C.inside)) { shopNote('🖼 ' + C.HW.wallOnly); return; }   // a picture needs a wall: the cabin's or the house's
+        if (d.on && !C.hasCounter()) { shopNote('🍳 ' + C.HW.counterOnly); return; }   // a toaster needs a counter in this room
         // a reward waits for the home it fits (a bought piece was checked at the till, and what you own is never locked away)
         if (d.reward && d.stage > (C.state.stage | 0)) { shopNote('🏠 ' + C.HW.bigHome); return; }
         if (C.inside ? inList().length >= INCAP[C.inside] : C.state.items.length >= cap()) {

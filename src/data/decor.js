@@ -6,7 +6,8 @@
 // (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), tight (the kitchen line: [empty rows
 // under its front, its side border] — fronts flush along the wall, neighbours butted), alt ([w, h] of its other
 // state, d-<id>-alt.png, shown for a moment on a tap), turn / fam / side (one piece from several sides: the next
-// side's id, the family it belongs to — never sold on its own — and the wall its back goes against), gif.
+// side's id, the family it belongs to — never sold on its own — and the wall its back goes against), top (a
+// counter: how far above its base things stand on it), on (it stands on a counter, and only there), gif.
 const IN = new Set(['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music', 'hobby', 'party']);
 const ROWS = [
   ['sunflower', 'Sunflower', 'garden', 8, 0, 27, 51],
@@ -46,15 +47,15 @@ const ROWS = [
   ['tailor', 'Tailor table', 'farm', 45, 0, 78, 90, [-31, -12, 31, 2]],
   ['bananastatue', 'Banana statue', 'display', 55, 3, 76, 82, [-28, -12, 28, 2]],
   ['stove', 'The stove', 'kitchen', 42, 2, 32, 64, null, { tight: [12, 2], alt: [32, 64] }],
-  ['coffeemk', 'Baking counter', 'kitchen', 26, 2, 255, 75, null, { tight: [0, 3], alt: [255, 75] }],
+  ['coffeemk', 'Baking counter', 'kitchen', 26, 2, 255, 75, null, { retired: 1, tight: [0, 3], alt: [255, 75] }],
   ['dinchair', 'Dining chair', 'kitchen', 10, 2, 32, 64, null, { sit: 'l', turn: 'dinchair3', side: 'r', fb: [2, 4, 20] }],
   ['dinchair2', 'Dining chair', 'kitchen', 10, 2, 32, 64, null, { sit: 'r', turn: 'dinchair', fam: 'dinchair', side: 'l', fb: [4, 2, 20] }],
   ['dinchair3', 'Dining chair', 'kitchen', 10, 2, 32, 32, null, { sit: 's', turn: 'dinchair2', fam: 'dinchair', side: 'f', fb: [2, 2, 2] }],
   ['fridge', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { tight: [12, 2], alt: [53, 85], turn: 'fridgeside2', fb: [0, 0, 12] }],
   ['fridgeside', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { alt: [53, 85], turn: 'fridge', fam: 'fridge', side: 'l', fb: [0, 6, 2] }],
   ['fridgeside2', 'The fridge', 'kitchen', 32, 2, 32, 85, null, { alt: [53, 85], turn: 'fridgeside', fam: 'fridge', side: 'r', fb: [6, 0, 2] }],
-  ['kcounter', 'Kitchen counter', 'kitchen', 18, 2, 255, 42, null, { tight: [0, 3], alt: [255, 42] }],
-  ['stockcounter', 'Stocked counter', 'kitchen', 30, 2, 255, 84, null, { tight: [0, 3], alt: [255, 84] }],
+  ['kcounter', 'Kitchen counter', 'kitchen', 18, 2, 255, 42, null, { retired: 1, tight: [0, 3], alt: [255, 42], top: 30 }],
+  ['stockcounter', 'Stocked counter', 'kitchen', 30, 2, 255, 84, null, { retired: 1, tight: [0, 3], alt: [255, 84] }],
   ['dinette', 'Small table', 'kitchen', 20, 2, 32, 32],
   ['famtable', 'Family table', 'kitchen', 44, 3, 64, 64],
   ['tlantern', 'Camp lantern', 'living', 8, 1, 32, 32],
@@ -119,11 +120,11 @@ const ROWS = [
   ['theamp', 'The amp', 'music', 20, 2, 32, 74],
   ['drumkit', 'Drum kit', 'music', 38, 3, 86, 62],
   ['gpiano', 'Grand piano', 'music', 60, 3, 64, 74],
-  ['sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, 87, 56, null, { ship: 45, tight: [0, 3], alt: [87, 56] }],
+  ['sinkcounter', 'Sink counter', 'kitchen', 20, 2, 87, 56, null, { ship: 45, retired: 1, tight: [0, 3], alt: [87, 56] }],
   ['openfridge', 'Open fridge', 'kitchen', 38, 2, 53, 85, null, { ship: 60, retired: 1 }],
-  ['toastcounter', 'Toaster counter', 'kitchen', 16, 2, 87, 84, null, { ship: 30, tight: [0, 3], alt: [87, 84] }],
-  ['microcounter', 'Microwave counter', 'kitchen', 24, 2, 87, 87, null, { ship: 45, tight: [0, 3], alt: [87, 87] }],
-  ['espressobar', 'Espresso bar', 'kitchen', 30, 3, 171, 87, null, { ship: 60, tight: [0, 3], alt: [171, 87] }],
+  ['toastcounter', 'Toaster counter', 'kitchen', 16, 2, 87, 84, null, { ship: 30, retired: 1, tight: [0, 3], alt: [87, 84] }],
+  ['microcounter', 'Microwave counter', 'kitchen', 24, 2, 87, 87, null, { ship: 45, retired: 1, tight: [0, 3], alt: [87, 87] }],
+  ['espressobar', 'Espresso bar', 'kitchen', 30, 3, 171, 87, null, { ship: 60, retired: 1, tight: [0, 3], alt: [171, 87] }],
   ['drinkscooler', 'Kitchen grill', 'kitchen', 38, 3, 46, 56, null, { ship: 90, tight: [2, 2], alt: [46, 56] }],
   ['picnicbasket', 'Picnic basket', 'kitchen', 10, 1, 32, 53, null, { ship: 15 }],
   ['leafprint', 'Leaf print', 'kitchen', 8, 2, 20, 26, null, { ship: 15, wall: 1 }],
@@ -204,6 +205,22 @@ const ROWS = [
   ['smilinglady', 'Smiling lady portrait', 'living', 0, 2, 32, 46, null, { reward: 1, wall: 1 }],
   ['goldharp', 'Golden harp', 'music', 0, 3, 53, 64, null, { reward: 1 }],
   ['snowglobe', 'Snow globe', 'party', 0, 1, 32, 32, null, { reward: 1 }],
+  ['ctrwhite', 'White counter', 'kitchen', 14, 2, 64, 40, null, { ship: 30, tight: [0, 2], top: 27 }],
+  ['ctrgrey', 'Grey counter', 'kitchen', 14, 2, 64, 40, null, { ship: 30, tight: [0, 2], top: 27 }],
+  ['ctrred', 'Red counter', 'kitchen', 16, 2, 64, 40, null, { ship: 30, tight: [0, 2], top: 27 }],
+  ['ctroak', 'Oak counter', 'kitchen', 14, 2, 64, 40, null, { ship: 30, tight: [0, 2], top: 27 }],
+  ['ctrwalnut', 'Walnut counter', 'kitchen', 16, 2, 64, 40, null, { ship: 30, tight: [0, 2], top: 27 }],
+  ['ctrhoney', 'Honey counter', 'kitchen', 14, 2, 64, 40, null, { ship: 30, tight: [0, 2], top: 27 }],
+  ['toaster', 'Toaster', 'kitchen', 8, 2, 26, 36, null, { ship: 20, alt: [26, 36], on: 1 }],
+  ['microwave', 'Microwave', 'kitchen', 14, 2, 32, 28, null, { ship: 30, on: 1 }],
+  ['coffeemachine', 'Coffee machine', 'kitchen', 16, 2, 28, 38, null, { ship: 30, alt: [28, 38], on: 1 }],
+  ['blender', 'Blender', 'kitchen', 10, 2, 18, 30, null, { ship: 20, on: 1 }],
+  ['mixer', 'Stand mixer', 'kitchen', 14, 2, 30, 30, null, { ship: 30, on: 1 }],
+  ['kettle', 'Kettle', 'kitchen', 6, 2, 22, 20, null, { ship: 15, on: 1 }],
+  ['ricecooker', 'Rice cooker', 'kitchen', 10, 2, 32, 34, null, { ship: 20, on: 1 }],
+  ['dishrack', 'Dish rack', 'kitchen', 6, 2, 28, 22, null, { ship: 15, on: 1 }],
+  ['sink', 'Kitchen sink', 'kitchen', 12, 2, 48, 28, null, { ship: 30, on: 1 }],
+  ['steelsink', 'Steel sink', 'kitchen', 14, 2, 48, 28, null, { ship: 30, on: 1 }],
 ];
 export const DECOR = ROWS.map(([id, name, cat, price, stage, w, h, solid = null, x = {}]) => ({ id, name, cat, price, stage, w, h,
   surface: x.wall ? 'wall' : IN.has(cat) ? 'floor' : 'ground', ...x, img: '/assets/homestead/d-' + id + (x.gif ? '.gif' : '.png'), solid }));

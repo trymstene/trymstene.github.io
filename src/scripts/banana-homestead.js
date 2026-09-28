@@ -1134,7 +1134,7 @@ function init(visitDoc, visitMiss) {
     const el = document.createElement('div');
     el.className = 'hs-it' + (ghost ? ' hs-it--ghost' : '');
     el.style.left = pct(it.x - d.w / 2, W);
-    el.style.top = pct(it.y - d.h, H);
+    el.style.top = pct(it.y - d.h - liftOf(it), H);   // 🍳 a thing on a counter stands on its top
     el.style.width = pct(d.w, W);
     el.style.height = pct(d.h, H);
     if (d.svg) el.innerHTML = d.svg;
@@ -1170,11 +1170,13 @@ function init(visitDoc, visitMiss) {
     if (!inside) return;
     ((state.inItems || {})[inside] || []).forEach((it) => {
       if (placing && placing.moving === it) return;   // its ghost is up
+      if (placing && placing.riders && placing.riders.some((r) => r.it === it)) return;   // 🍳 they ride the counter's ghost
       if (!DEX[it.id]) return;
       const el = itemDiv(it);
       el.classList.add('hs-it--in');   // indoor pieces survive the is-inside hide
-      // rugs lie flat: always under the banana and any furniture on them; a picture is ON the wall, behind all of it
-      el.style.zIndex = String(DEX[it.id].rug || onWall(DEX[it.id]) ? IN_Z : IN_Z + Math.round(it.y));
+      // rugs lie flat: always under the banana and any furniture on them; a picture is ON the wall, behind all of it;
+      // a thing on a counter just in front of its counter
+      el.style.zIndex = String(DEX[it.id].rug || onWall(DEX[it.id]) ? IN_Z : IN_Z + Math.round(it.y) + (DEX[it.id].on ? 1 : 0));
       el.__it = it;   // 🧊 a tap's other state finds its own piece
       if (DEX[it.id].alt && !altSeen.has(it.id)) { altSeen.add(it.id); new Image().src = altImg(it.id); }   // no blank first tap
       inEls.push(el);
@@ -1185,9 +1187,43 @@ function init(visitDoc, visitMiss) {
   // state for a moment and goes back by itself — the fridge's door open, the stove's burners lit, the toast down (and up
   // it pops), a cup under the coffee machine. The builder draws both states in one frame (d-<id>-alt.png), so the piece
   // keeps its left edge and its base; only the fridge's door grows it to the right.
-  const ALT_MS = { toastcounter: 1400 };
+  const ALT_MS = { toastcounter: 1400, toaster: 1400 };
   const altSeen = new Set();
   const altImg = (id) => '/assets/homestead/d-' + id + '-alt.png';
+  // 🍳 ON A COUNTER (Trym, 28 Sep 2026: "separate sinks, microwaves, coffee machine, blender, toaster FROM the kitchen
+  // counter … so kitchen accessories can stand on different types of counters - but that demands a rule that kitchen
+  // accessories have a belonging to standing on counters"). A thing that stands on one (decor `on`) keeps its counter's
+  // base line as its own y — it sorts just in front of it, and the pair is found again from x and y alone (a save keeps
+  // id, x, y) — and is drawn the counter's `top` higher. It belongs to the counter under its middle.
+  const ON_LIFT = 27;
+  const inL = (t = inside) => ((state.inItems || {})[t] || []);
+  const counterAt = (x, y, t = inside) => inL(t).find((c) => DEX[c.id] && DEX[c.id].top && c.y === y && Math.abs(x - c.x) <= DEX[c.id].w / 2) || null;
+  const ridersOf = (c, t = inside) => inL(t).filter((o) => o !== c && DEX[o.id] && DEX[o.id].on && o.y === c.y && Math.abs(o.x - c.x) <= DEX[c.id].w / 2);
+  const liftOf = (it, t = inside) => {
+    if (!DEX[it.id] || !DEX[it.id].on) return 0;
+    const c = counterAt(it.x, it.y, t);
+    return c ? DEX[c.id].top : ON_LIFT;
+  };
+  const hasCounter = (t = inside) => inL(t).some((c) => DEX[c.id] && DEX[c.id].top);
+  // over a counter end to end (a run of them butted together counts as one), and never over another thing on it
+  function onSpotOk(d, x, y, t) {
+    const e = d.w / 2 - 2;
+    if (!counterAt(x, y, t) || !counterAt(x - e, y, t) || !counterAt(x + e, y, t)) return false;
+    return !inL(t).some((o) => o !== (placing && placing.moving) && DEX[o.id] && DEX[o.id].on && o.y === y && Math.abs(o.x - x) < (d.w + DEX[o.id].w) / 2 - 2);
+  }
+  // the piece under a tap indoors: what stands on a counter first (it is drawn over it), then the rest, newest first
+  function pieceAt(L, wx, wy) {
+    for (const on of [true, false]) {
+      for (let k = L.length - 1; k >= 0; k--) {
+        const it = L[k], d = DEX[it.id];
+        if (!d || !!d.on !== on) continue;
+        const b = it.y - liftOf(it);
+        if (on ? Math.abs(wx - it.x) < Math.max(10, d.w / 2) && wy > b - d.h - 2 && wy < b + 3
+          : Math.abs(wx - it.x) < Math.max(24, d.w / 2) && wy > b - d.h - 8 && wy < b + 10) return k;
+      }
+    }
+    return -1;
+  }
   function altTap(it) {
     const el = inEls.find((e) => e.__it === it), d = DEX[it.id];
     if (!el || !d || !d.alt || el.__alt) return;
@@ -1203,6 +1239,7 @@ function init(visitDoc, visitMiss) {
   function inSpotOk(d, x, y, t = inside) {
     const I = INTERIORS[t];
     if (!I) return false;
+    if (d.on) return onSpotOk(d, x, y, t);   // 🍳 on a counter, and only there
     if (onWall(d)) {   // 🖼 along the wall, never over another picture
       const w = wallOf(t);
       if (!w || x - d.w / 2 < w[0] || x + d.w / 2 > w[2]) return false;
@@ -1236,7 +1273,7 @@ function init(visitDoc, visitMiss) {
       for (const it of (state.inItems[t] || [])) {
         if (placing && placing.moving === it) continue;
         const o = DEX[it.id];
-        if (o && !o.rug && !onWall(o) && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
+        if (o && !o.rug && !onWall(o) && !o.on && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
       }
     }
     return true;
@@ -2668,8 +2705,10 @@ function init(visitDoc, visitMiss) {
     buildBtn.setAttribute('aria-pressed', 'true');
     planBar.hidden = false;
     if (inside) {
-      // indoors the room IS the grid — fence/soil/clear stay outside
-      toolF.style.display = toolS.style.display = toolC.style.display = 'none';
+      // indoors the room IS the grid — fence and soil stay outside; 🧹 puts a piece back in the shed (it was hidden
+      // here too, so nothing placed indoors could ever go back)
+      toolF.style.display = toolS.style.display = 'none';
+      toolC.style.display = '';
       setTool('move');
       view.classList.add('is-placing');
       // ⚠️ the placing camera, indoors too: without camFree every finger-down
@@ -3576,6 +3615,7 @@ function init(visitDoc, visitMiss) {
   const phoneCtx = {
     get state() { return state; }, get inside() { return inside; }, get visiting() { return visiting; },
     get wallOf() { return wallOf; }, get HW() { return HW; },   // 🖼 a picture needs a wall (the shed's place button asks)
+    get hasCounter() { return hasCounter; },   // 🍳 and a toaster a counter
     get BABY_W() { return BABY_W; }, get SPOT_W() { return SPOT_W; }, get isOld() { return isOld; }, get toGrass() { return toGrass; },
     get CHEESE_C() { return CHEESE_C; },
     get COIN() { return COIN; },
@@ -3775,7 +3815,8 @@ function init(visitDoc, visitMiss) {
           const indoorItem = isIndoorItem(d);
           if (indoorItem && !inside) { shopNote('🛋 that belongs indoors — step inside first'); return; }
           if (!indoorItem && inside) { shopNote('🌳 that belongs in the yard — step outside first'); return; }
-          if (onWall(d) && !wallOf()) { shopNote('🖼 ' + HW.wallOnly); return; }   // the same two rules as the phone's shed rows
+          if (onWall(d) && !wallOf()) { shopNote('🖼 ' + HW.wallOnly); return; }   // the same rules as the phone's shed rows
+          if (d.on && !hasCounter()) { shopNote('🍳 ' + HW.counterOnly); return; }
           if (d.reward && d.stage > (state.stage | 0)) { shopNote('🏠 ' + HW.bigHome); return; }
           if (inside ? inList().length >= INCAP[inside] : state.items.length >= cap()) {
             toast(inside ? 'this room is full (' + INCAP[inside] + ' spots)' : 'the plot is full');
@@ -4038,14 +4079,19 @@ function init(visitDoc, visitMiss) {
     cancelPlacing();
     const d = DEX[id];
     const P = inside ? roomBounds() : plotNow();
-    const x = snap(moving ? moving.x : Math.max(P[0] + 40, Math.min(P[2] - 40, pos.x)));
-    const y = inside && onWall(d) ? wallY(d) : snap(moving ? moving.y : Math.max(P[1] + 40, Math.min(P[3] - 20, pos.y)));
+    // a lifted piece's ghost starts exactly where it stands (a counter's line, a toaster's place on it are off the grid)
+    const x = moving ? moving.x : snap(Math.max(P[0] + 40, Math.min(P[2] - 40, pos.x)));
+    const y = inside && onWall(d) ? wallY(d) : moving ? moving.y : snap(Math.max(P[1] + 40, Math.min(P[3] - 20, pos.y)));
     placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null, room: inside };
     if (inside) {
       placing.el.classList.add('hs-it--in');
       placing.el.style.zIndex = String(d.rug ? IN_Z : onWall(d) ? IN_Z + 4000 : IN_Z + Math.round(y));   // a picture's ghost shows over a bookcase
+      // 🍳 what stands on a lifted counter goes where it goes; a thing for a counter comes out onto the one nearest you
+      if (moving && d.top) placing.riders = ridersOf(moving).map((o) => ({ it: o, dx: o.x - moving.x, el: itemDiv(o, true) }));
+      (placing.riders || []).forEach((r) => r.el.classList.add('hs-it--in'));
+      if (!moving && d.on) counterSnap(d, inside, Infinity);
     }
-    camFree = { x, y };   // one glide to the ghost — after this, only drags pan
+    camFree = { x: placing.x, y: placing.y };   // one glide to the ghost — after this, only drags pan
     // 💀 THE GHOST WINDOW (the lost-decor bug): a lift used to SPLICE the piece
     // out of state with no save, so any save landing mid-ghost (a delivery, a
     // purchase from the phone) wrote the yard without it — and cancel put it
@@ -4058,7 +4104,7 @@ function init(visitDoc, visitMiss) {
     confirmEl.hidden = false;
     requestAnimationFrame(() => alignFrame(true));   // the ✓ bar must not open under the cookie banner
     moved = true; hint(false);
-    toast(inside && onWall(d) ? '🖼 ' + HW.wallHang : 'drag to look around · tap to try a spot — then ✓', 3600);
+    toast(inside && onWall(d) ? '🖼 ' + HW.wallHang : inside && d.on ? '🍳 ' + HW.counterStand : 'drag to look around · tap to try a spot — then ✓', 3600);
   }
   // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
   // validity, and anything under the confirmed footprint sweeps to the shed.
@@ -4262,9 +4308,15 @@ function init(visitDoc, visitMiss) {
     }
     const d = DEX[placing.id];
     placing.el.style.left = pct(placing.x - d.w / 2, W);
-    placing.el.style.top = pct(placing.y - d.h, H);
+    placing.el.style.top = pct(placing.y - d.h - liftOf(placing, placing.room), H);
     depth(placing.el, placing.y);
-    if (placing.room) placing.el.style.zIndex = String(d.rug ? IN_Z : onWall(d) ? IN_Z + 4000 : IN_Z + Math.round(placing.y));
+    if (placing.room) placing.el.style.zIndex = String(d.rug ? IN_Z : onWall(d) ? IN_Z + 4000 : IN_Z + Math.round(placing.y) + (d.on ? 1 : 0));
+    (placing.riders || []).forEach((r) => {
+      const rd = DEX[r.it.id];
+      r.el.style.left = pct(placing.x + r.dx - rd.w / 2, W);
+      r.el.style.top = pct(placing.y - d.top - rd.h, H);
+      r.el.style.zIndex = String(IN_Z + Math.round(placing.y) + 1);
+    });
     const ok = placing.room ? inSpotOk(d, placing.x, placing.y, placing.room)
       : spotOk(d, placing.x, placing.y);
     placing.el.classList.toggle('is-bad', !ok);
@@ -4294,6 +4346,7 @@ function init(visitDoc, visitMiss) {
     }
     const wasBuy = !placing.moving;   // a lifted piece never left state — nothing to put back
     const backId = placing.id;
+    (placing.riders || []).forEach((r) => r.el.remove());
     placing = null;
     confirmEl.hidden = true;
     if (wasBuy) { state.shed.push({ id: boxed(backId) }); save(); toast('into the shed — place it any time'); }
@@ -4311,6 +4364,7 @@ function init(visitDoc, visitMiss) {
     // campfire used to be rebuilt cold); only a buy pushes a new one
     const it = placing.moving || { id: placing.id, x: placing.x, y: placing.y };
     it.x = placing.x; it.y = placing.y; it.id = placing.id;   // ↻ and the side it was turned to
+    (placing.riders || []).forEach((r) => { r.it.x = Math.round(placing.x + r.dx); r.it.y = placing.y; r.el.remove(); });
     placing.el.remove();
     const moved = !!placing.moving;
     placing = null;
@@ -4584,6 +4638,7 @@ function init(visitDoc, visitMiss) {
       const P = placing.room ? roomBounds(placing.room) : plotNow();
       placing.x = snap(Math.max(P[0] + 12, Math.min(P[2] - 12, wx)));
       placing.y = snap(Math.max(P[1] + 26, Math.min(P[3] - 8, wy)));
+      if (placing.room && DEX[placing.id].on) { placing.x = Math.round(wx); placing.y = Math.round(wy); }   // 🍳 off the grid
       if (placing.room) wallSnap(DEX[placing.id]);
     }
     updateGhost();
@@ -4592,6 +4647,7 @@ function init(visitDoc, visitMiss) {
   function wallSnap(dw) {
     const t = placing.room, P = roomBounds(t), I = INTERIORS[t];
     if (onWall(dw)) { placing.y = wallY(dw, t); return; }   // 🖼 the tap says WHERE along the wall; the wall says how high
+    if (dw.on) { counterSnap(dw, t, 48); return; }   // 🍳 onto the counter the tap is on or next to
     // ↻ turned to face along the room, it stands with its back to the side wall it is close to (Trym, 28 Sep 2026: "so you
     // can put the things … that HAS a side view sprite, on the side-walls aswell. these also must stick to the wall") —
     // within two columns of it; anywhere else the tap is where it stands
@@ -4611,6 +4667,34 @@ function init(visitDoc, visitMiss) {
       const c = chainAt(dw, placing.x, placing.y, t).find((p) => inSpotOk(dw, p.x, p.y, t));
       if (c) { placing.x = c.x; placing.y = c.y; }
     }
+  }
+  // 🍳 onto the counter nearest the spot (within `reach` of its box), along the run it belongs to (counters butted
+  // together are one worktop), and beside anything already standing there rather than on it
+  function counterSnap(dw, t, reach) {
+    let best = null, bd = reach;
+    for (const c of inL(t)) {
+      const o = DEX[c.id];
+      if (!o || !o.top) continue;
+      const dd = Math.hypot(Math.max(0, Math.abs(placing.x - c.x) - o.w / 2), Math.max(0, placing.y - c.y, c.y - o.h - placing.y));
+      if (dd < bd) { bd = dd; best = c; }
+    }
+    if (!best) return;
+    let l = best.x - DEX[best.id].w / 2, r = best.x + DEX[best.id].w / 2;
+    for (let c2 = counterAt(l - 1, best.y, t); c2; c2 = counterAt(l - 1, best.y, t)) l = c2.x - DEX[c2.id].w / 2;
+    for (let c2 = counterAt(r + 1, best.y, t); c2; c2 = counterAt(r + 1, best.y, t)) r = c2.x + DEX[c2.id].w / 2;
+    const h = dw.w / 2 + 1;
+    placing.y = best.y;
+    placing.x = Math.round(Math.max(l + h, Math.min(r - h, placing.x)));
+    if (onSpotOk(dw, placing.x, placing.y, t)) return;
+    const beside = [];
+    for (const o of inL(t)) {
+      if (o === placing.moving || !DEX[o.id] || !DEX[o.id].on || o.y !== best.y) continue;
+      const g = (DEX[o.id].w + dw.w) / 2;
+      beside.push(Math.round(o.x - g), Math.round(o.x + g));
+    }
+    const px = placing.x;
+    const free = beside.filter((x) => onSpotOk(dw, x, best.y, t)).sort((p1, p2) => Math.abs(p1 - px) - Math.abs(p2 - px));
+    if (free.length) placing.x = free[0];
   }
   // ↻ THE TURN — the next side of a piece the pack draws from several (decor `turn`): the same spot, its feet where they
   // stood (the sides' canvases pad the feet differently: `fb`), then the walls have their say again
@@ -4634,6 +4718,7 @@ function init(visitDoc, visitMiss) {
   }
   if (turnBtn) turnBtn.addEventListener('click', turnPlacing);
   view.addEventListener('pointerdown', (e) => {
+    justPanned = false;   // a new press: the last gesture's pan is over (it once swallowed the tap after a pan and a ✓)
     if ((!placing && !digging && !fencing && !clearing && !arranging) || panelOpen()) return;
     if (onChrome(e.target)) return;
     if (!camFree) camFree = { x: pos.x, y: pos.y };   // a tool that forgot the camera degrades, never throws
@@ -4666,16 +4751,25 @@ function init(visitDoc, visitMiss) {
     pendCell = null;   // a new tap is a new plan
     if (placing) return;   // pointerdown/drag owns the ghost
     if (inside) {          // indoors: the stove answers, furniture chats, else walks
+      // ✋ a look around with a finger is never also a lift or a clear (the yard's rule, below)
+      if (justPanned) { justPanned = false; if (clearing || arranging) return; }
+      if (clearing && !visiting) {   // 🧹 build mode: indoor furniture goes back to the shed
+        const L4 = (state.inItems || {})[inside] || [];
+        const k4 = pieceAt(L4, wx, wy);
+        if (k4 >= 0) {
+          const it4 = L4[k4];
+          // 🍳 a counter goes to the shed with what stands on it
+          [it4, ...(DEX[it4.id].top ? ridersOf(it4) : [])].forEach((o) => { L4.splice(L4.indexOf(o), 1); state.shed.push({ id: boxed(o.id) }); });
+          save(); refreshInItems();
+          float(it4.x, it4.y - 30, '📦');
+          track('homestead_pickup', { id: it4.id, via: 'planner' });
+        }
+        return;
+      }
       if (arranging && !visiting) {   // ✥ build mode: tap a piece, lift it
         const L3 = state.inItems[inside] || [];
-        for (let k3 = L3.length - 1; k3 >= 0; k3--) {
-          const it3 = L3[k3];
-          const d4 = DEX[it3.id];
-          if (d4 && Math.abs(wx - it3.x) < Math.max(24, d4.w / 2) && wy > it3.y - d4.h - 8 && wy < it3.y + 10) {
-            startPlacing(it3.id, it3);
-            return;
-          }
-        }
+        const k3 = pieceAt(L3, wx, wy);   // 🍳 the toaster before the counter under it
+        if (k3 >= 0) { startPlacing(L3[k3].id, L3[k3]); return; }
         // no piece under the tap — fall through, walking still works
       }
       // ⚠️ THE KITCHEN ZONE WAS NEVER BAKED. Both guards here read I.kitchen,
@@ -4685,34 +4779,33 @@ function init(visitDoc, visitMiss) {
       // way in: tent 50 + cabin 300 + stove 42 + a 45-min van. Nobody has ever
       // cooked. Removed rather than left looking live; the fire replaces it.
       const L2 = (state.inItems || {})[inside] || [];
-      for (let k = L2.length - 1; k >= 0; k--) {
+      const k = pieceAt(L2, wx, wy);
+      if (k >= 0) {
         const it = L2[k];
         const d2 = DEX[it.id];
-        if (d2 && Math.abs(wx - it.x) < Math.max(24, d2.w / 2) && wy > it.y - d2.h - 8 && wy < it.y + 10) {
-          if (Math.hypot(pos.x - it.x, pos.y - it.y) < 160) {
-            if (d2.sit) sitOn(it, d2);
-            if (d2.alt) altTap(it);   // 🧊 the fridge opens, the stove lights, the toast pops — for guests too
-            if (visiting) return;   // sitting is hospitality; the chips are not
-            clearChip();
-            itChip = document.createElement('div');
-            itChip.className = 'hs-chip';
-            if (it.id === 'stove') {   // 🍳 a bought stove grants cooking
-              const ck2 = document.createElement('button');
-              ck2.className = 'hs-btn';
-              ck2.textContent = '🍳 cook';
-              ck2.addEventListener('click', () => { clearChip(); openCook('stove'); });
-              itChip.append(ck2);
-            }
-            // moving / putting away is build mode's job indoors too (✥ lifts,
-            // 🧹 sends to the shed) — a chair just seats you, no menu
-            if (!itChip.children.length) { itChip = null; return; }
-            itChip.style.left = pct(it.x, W);
-            itChip.style.top = pct(it.y - (d2.h || 30) - 10, H);
-            itChip.style.zIndex = '3200';
-            world.appendChild(itChip);
-          } else { tgt.x = it.x; tgt.y = it.y + 26; }
-          return;
-        }
+        if (Math.hypot(pos.x - it.x, pos.y - it.y) < 160) {
+          if (d2.sit) sitOn(it, d2);
+          if (d2.alt) altTap(it);   // 🧊 the fridge opens, the stove lights, the toast pops — for guests too
+          if (visiting) return;   // sitting is hospitality; the chips are not
+          clearChip();
+          itChip = document.createElement('div');
+          itChip.className = 'hs-chip';
+          if (it.id === 'stove') {   // 🍳 a bought stove grants cooking
+            const ck2 = document.createElement('button');
+            ck2.className = 'hs-btn';
+            ck2.textContent = '🍳 cook';
+            ck2.addEventListener('click', () => { clearChip(); openCook('stove'); });
+            itChip.append(ck2);
+          }
+          // moving / putting away is build mode's job indoors too (✥ lifts,
+          // 🧹 sends to the shed) — a chair just seats you, no menu
+          if (!itChip.children.length) { itChip = null; return; }
+          itChip.style.left = pct(it.x, W);
+          itChip.style.top = pct(it.y - (d2.h || 30) - 10, H);
+          itChip.style.zIndex = '3200';
+          world.appendChild(itChip);
+        } else { tgt.x = it.x; tgt.y = it.y + 26; }
+        return;
       }
       tgt.x = wx; tgt.y = wy;
       return;
@@ -4777,22 +4870,6 @@ function init(visitDoc, visitMiss) {
     }
     // 🧹 clear mode: one demolish tool — decor → shed, fence down, soil filled
     if (clearing && !visiting) {
-      if (inside) {   // 📦 indoor furniture goes back to the shed from here
-        const L4 = (state.inItems || {})[inside] || [];
-        for (let k4 = L4.length - 1; k4 >= 0; k4--) {
-          const it4 = L4[k4];
-          const d4 = DEX[it4.id];
-          if (d4 && Math.abs(wx - it4.x) < Math.max(24, d4.w / 2) && wy > it4.y - d4.h - 8 && wy < it4.y + 10) {
-            L4.splice(k4, 1);
-            state.shed.push({ id: boxed(it4.id) });
-            save(); refreshInItems();
-            float(it4.x, it4.y - 30, '📦');
-            track('homestead_pickup', { id: it4.id, via: 'planner' });
-            return;
-          }
-        }
-        return;
-      }
       const k = itemAt(wx, wy);
       if (k >= 0) {
         const it = state.items[k];

@@ -41,6 +41,16 @@ const screenAt = (page, wx, wy) => page.evaluate(([x, y]) => {
   const wr = document.getElementById('hsWorld').getBoundingClientRect(), k = wr.width / window.__hs.signGeo().W;
   return [wr.left + x * k, wr.top + y * k];
 }, [wx, wy]);
+// the camera glides to a new ghost or a moved banana: wait until the world stands still before a world point becomes a tap
+const settle = async (page) => {
+  let last = null;
+  for (let i = 0; i < 40; i++) {
+    const r = await page.evaluate(() => { const b = document.getElementById('hsWorld').getBoundingClientRect(); return Math.round(b.left * 4) + ',' + Math.round(b.top * 4); });
+    if (r === last) return;
+    last = r;
+    await page.waitForTimeout(80);
+  }
+};
 const placeFromShed = async (page, name) => {
   await page.evaluate(() => window.__hs.shop('shed'));
   await page.waitForSelector('#hsShopList', { timeout: 8000 });
@@ -359,7 +369,7 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   up.sort((a, b) => a.l - b.l);
   for (let i = 1; i < up.length; i++) expect(up[i].l, 'side by side, never one over the other').toBeGreaterThanOrEqual(up[i - 1].r);
   // 🍳 and a counter under them, pushed to the wall: a tap on the wall stands it tight against the cabin's wall too
-  await placeFromShed(page, 'Kitchen sink');
+  await placeFromShed(page, 'Sink counter');
   await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
   await page.mouse.click(...(await screenAt(page, 900, 420)));
   await page.waitForTimeout(300);
@@ -412,7 +422,7 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   };
   // each tap lands a little off the last piece's side, the way a thumb does
   await put('The fridge', 648);
-  await put('Kitchen sink', 700);
+  await put('Sink counter', 700);
   await put('Toaster counter', 790);
   await put('The stove', 850);
   await put('Kitchen grill', 890);
@@ -650,6 +660,7 @@ test('in the house: one of each on the shelf, ↻ turns it, and a side turned to
   const put = async (name, wx, wy, id) => {
     await placeFromShed(page, name);
     await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+    await settle(page);
     await page.mouse.click(...(await screenAt(page, wx, wy)));
     await page.waitForTimeout(300);
     if (id) await turnTo(id);
@@ -671,7 +682,7 @@ test('in the house: one of each on the shelf, ↻ turns it, and a side turned to
   const ar = await inRoom(page, 'arcadeside'), AR = DECOR.find((x) => x.id === 'arcadeside');
   expect(ar.x + AR.w / 2 - AR.fb[1], 'the cabinet’s back on the right wall').toBe(Rw);
   // ── a chair turned in the middle of the room stays where it was tapped, its feet where they stood
-  await put('Dining chair', 900, 600, 'dinchair2');
+  await put('Dining chair', 905, 600, 'dinchair2');
   const ch = await inRoom(page, 'dinchair2');
   expect([ch.x, ch.y], 'the middle of the room: right where it was tapped').toEqual([912, 600]);
   expect(await page.evaluate(() => window.__hs.inv().shed), 'every one of them came out of the shed').toEqual(['dinchair2', 'pinball']);
@@ -767,5 +778,182 @@ test('the confirm bar holds ↻ turn on a 360-px phone', async ({ page }) => {
   await placeFromShed(page, 'Bookcase');
   await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
   await expect(page.locator('#hsPlaceTurn'), 'no turn for a piece the pack draws once').toBeHidden();
+  expect(errs).toEqual([]);
+});
+
+// 🍳 Trym, 28 Sep 2026: "separate sinks, microwaves, coffee machine, blender, toaster FROM the kitchen counter - because i
+// think theres more than one type of kitchen counter - so kitchen accessories can stand on different types of counters -
+// but that demands a rule that kitchen accessories have a belonging to standing on counters".
+test('the counters as data: six finishes, ten things that stand on them, the old counters with things on them off the shelf', () => {
+  const by = (id) => DECOR.find((d) => d.id === id);
+  const counters = DECOR.filter((d) => d.top && !d.retired), things = DECOR.filter((d) => d.on);
+  expect(counters.map((d) => d.id)).toEqual(['ctrwhite', 'ctrgrey', 'ctrred', 'ctroak', 'ctrwalnut', 'ctrhoney']);
+  for (const d of counters) {
+    expect([d.cat, d.stage, d.w, d.h, d.top], d.id + ': two tiles at 2/3, things stand 27 px above its base').toEqual(['kitchen', 2, 64, 40, 27]);
+    expect(d.tight, d.id + ' joins the kitchen line, its 2-px border merged').toEqual([0, 2]);
+    expect(d.ship, d.id + ' comes by van').toBeGreaterThan(0);
+  }
+  expect(things.map((d) => d.id)).toEqual(['toaster', 'microwave', 'coffeemachine', 'blender', 'mixer', 'kettle', 'ricecooker', 'dishrack', 'sink', 'steelsink']);
+  for (const d of things) {
+    expect([d.cat, d.stage, d.surface], d.id).toEqual(['kitchen', 2, 'floor']);
+    expect(d.w, d.id + ' fits on one counter').toBeLessThanOrEqual(60);
+    expect(d.tight, d.id + ' is no part of the kitchen line').toBeUndefined();
+  }
+  expect([by('toaster').alt, by('coffeemachine').alt], 'the toast goes down, a cup comes').toEqual([[26, 36], [28, 38]]);
+  // the counters with things baked on: off the shelf, still owned; the long wooden one still carries things
+  for (const id of ['kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar']) expect(by(id).retired, id).toBe(1);
+  expect(by('kcounter').top, 'things stand on the wooden counter too').toBe(30);
+  expect(by('sinkcounter').name, 'not the new Kitchen sink').toBe('Sink counter');
+});
+
+test('in the house: counters in a row, a toaster and a sink stand on them, a counter carries what stands on it', async ({ page }) => {
+  test.setTimeout(150000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('order-seeded')) return;
+    sessionStorage.setItem('order-seeded', '1');
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [], inItems: {},
+      shed: [{ id: 'toaster' }, { id: 'ctrwhite' }, { id: 'ctrwhite' }, { id: 'ctrred' }, { id: 'sink' }, { id: 'coffeemachine' }, { id: 'kettle' }],
+      bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.__hs.enter());
+  await page.waitForTimeout(800);
+  const C = (id) => DECOR.find((x) => x.id === id);
+  const room = () => page.evaluate(() => window.__hs.inv().inItems[3] || []);
+  const box = (id) => page.evaluate((i) => {   // a piece as drawn, in world px
+    const el = [...document.querySelectorAll('.hs-it--in')].find((e) => (e.style.backgroundImage || '').includes('/d-' + i + '.') || (e.style.backgroundImage || '').includes('/d-' + i + '-alt.'));
+    if (!el) return null;
+    const r = el.getBoundingClientRect(), wr = document.getElementById('hsWorld').getBoundingClientRect(), k = wr.width / window.__hs.signGeo().W;
+    return { l: (r.left - wr.left) / k, r: (r.right - wr.left) / k, t: (r.top - wr.top) / k, b: (r.bottom - wr.top) / k, z: +el.style.zIndex, alt: el.style.backgroundImage.includes('-alt') };
+  }, id);
+
+  // ── the kitchen shelf: six counters and the things that stand on them; the counters with things baked on are gone
+  await page.evaluate(() => window.__hs.shop('order'));
+  await page.waitForSelector('#hsShopList .hs-tile', { timeout: 8000 });
+  await page.locator('#hsShopCats button', { hasText: 'Kitchen' }).click();
+  await page.waitForTimeout(400);
+  const shelf = await page.locator('#hsShopList .hs-tile b').allTextContents();
+  for (const d of DECOR.filter((x) => (x.top || x.on) && !x.retired)) expect(shelf.some((t) => t.startsWith(d.name)), d.name + ' on the shelf').toBe(true);
+  for (const n of ['Toaster counter', 'Microwave counter', 'Espresso bar', 'Baking counter', 'Stocked counter', 'Sink counter', 'Kitchen counter']) expect(shelf.some((t) => t.startsWith(n)), n + ' is off the shelf').toBe(false);
+  await page.locator('#hsShopList .hs-tile', { hasText: 'White counter' }).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: SHOT + '28-kitchen-shelf.png' });
+  await page.locator('#hsShopList .hs-tile', { hasText: 'Stand mixer' }).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: SHOT + '29-kitchen-shelf-things.png' });
+  await page.evaluate(() => window.__hs.shop('shed'));
+  // ── no counter yet: the toaster will not come out of the shed
+  await expect(page.locator('#hsToast.is-on'), 'the arrival line has had its say').toHaveCount(0, { timeout: 8000 });
+  await placeFromShed(page, 'Toaster');
+  await page.waitForTimeout(500);
+  expect(await page.locator('#hsConfirm:not([hidden])').count(), 'no ghost comes up').toBe(0);
+  await expect(page.getByText(HW.counterOnly).first(), 'the phone says why').toBeVisible();
+  await page.screenshot({ path: SHOT + '24-no-counter.png' });
+
+  // ── three counters along the back wall, each tap a little off the last one's side: one run, borders merged
+  const put = async (name, wx, wy) => {
+    await placeFromShed(page, name);
+    await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+    await settle(page);
+    await page.mouse.click(...(await screenAt(page, wx, wy)));
+    await page.waitForTimeout(300);
+    await page.click('#hsPlaceGo');
+    await page.waitForTimeout(600);
+  };
+  await put('White counter', 700, 390);
+  await put('White counter', 770, 390);
+  await put('Red counter', 830, 390);
+  const run = (await room()).filter((x) => C(x.id).top).sort((a, b) => a.x - b.x);
+  expect(run.length, 'three counters').toBe(3);
+  const line = await page.evaluate(() => window.__hs.geo.tightY('ctrwhite', 3));
+  for (const c of run) expect(c.y, c.id + ' against the wall').toBe(line);
+  for (let i = 1; i < 3; i++) expect(run[i].x - run[i - 1].x, 'butted, one border between them').toBe(64 - 2);
+
+  // ── the toaster, from the shed onto the counter nearest the banana; a tap on the first counter's worktop puts it there
+  await put('Toaster', run[0].x - 12, line - 30);
+  const toaster = (await room()).find((x) => x.id === 'toaster');
+  expect(toaster, 'the toaster is in').toBeTruthy();
+  expect(toaster.y, 'on the counter’s line').toBe(line);
+  expect(Math.abs(toaster.x - run[0].x) <= 32, 'over the first counter').toBe(true);
+  const tb = await box('toaster'), cb = await box('ctrwhite');
+  expect(Math.round(tb.b - (line - C('ctrwhite').top)), 'standing on its worktop, 27 px above the counter’s base').toBe(0);
+  expect(tb.z, 'drawn in front of the counter').toBeGreaterThan(cb.z);
+  // ── the sink on the second counter; the coffee machine, tapped right onto the toaster, stands beside it instead
+  await put('Kitchen sink', run[1].x, line - 28);
+  await put('Coffee machine', toaster.x, line - 30);
+  const now = await room(), sink = now.find((x) => x.id === 'sink'), cm = now.find((x) => x.id === 'coffeemachine');
+  expect([sink.y, cm.y], 'both on the counters’ line').toEqual([line, line]);
+  expect(Math.abs(cm.x - toaster.x) >= (C('coffeemachine').w + C('toaster').w) / 2 - 2, 'beside the toaster, never on it').toBe(true);
+  // ── the kettle, tapped on the open floor, finds no counter there: the ghost says no until a counter is tapped
+  await placeFromShed(page, 'Kettle');
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await settle(page);
+  await page.mouse.click(...(await screenAt(page, 900, 560)));   // open floor, clear of the bar at the bottom
+  await page.waitForTimeout(300);
+  await expect(page.locator('#hsPlaceGo'), 'no counter under it').toBeDisabled();
+  await settle(page);
+  await page.mouse.click(...(await screenAt(page, run[2].x + 10, line - 30)));
+  await page.waitForTimeout(300);
+  await expect(page.locator('#hsPlaceGo'), 'on the red counter').toBeEnabled();
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  expect((await room()).find((x) => x.id === 'kettle').y, 'the kettle on the counter').toBe(line);
+  await page.screenshot({ path: SHOT + '25-counters-and-things.png' });
+
+  // ── a tap wakes the toaster: the toast goes down, and pops back up by itself
+  await page.evaluate(([x, y]) => window.__hs.warp(x, y + 60), [toaster.x, line]);
+  await page.waitForTimeout(500);
+  await settle(page);
+  const t1 = await box('toaster');
+  await page.mouse.click(...(await screenAt(page, (t1.l + t1.r) / 2, (t1.t + t1.b) / 2)));
+  await page.waitForTimeout(250);
+  expect((await box('toaster')).alt, 'the toast goes down').toBe(true);
+  await page.waitForTimeout(1800);
+  expect((await box('toaster')).alt, 'and pops up').toBe(false);
+
+  // ── 🔨 build mode: the first counter, lifted by its doors, goes to the middle of the room with its toaster and coffee machine
+  await page.click('#hsBuild');
+  await page.waitForTimeout(700);
+  await settle(page);
+  await page.mouse.click(...(await screenAt(page, run[0].x, line - 6)));
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await settle(page);
+  await page.mouse.click(...(await screenAt(page, 760, 620)));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: SHOT + '26-counter-lifted.png' });
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  const after = await room(), moved = after.find((x) => x.id === 'ctrwhite' && x.y !== line);
+  expect(moved, 'the counter stands in the room').toBeTruthy();
+  for (const [id, was] of [['toaster', toaster], ['coffeemachine', cm]]) {
+    const it = after.find((x) => x.id === id);
+    expect([it.x - moved.x, it.y], id + ' rode along').toEqual([was.x - run[0].x, moved.y]);
+  }
+  await page.screenshot({ path: SHOT + '27-counter-moved.png' });
+  // ── and the toaster alone, lifted off it (a tap on the toaster lifts the toaster), goes back onto the red counter
+  await settle(page);
+  const t2 = await box('toaster');
+  await page.mouse.click(...(await screenAt(page, (t2.l + t2.r) / 2, (t2.t + t2.b) / 2)));
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  expect(await page.evaluate(() => !!document.querySelector('.hs-it--ghost[style*="/d-toaster."]')), 'the toaster is up, not its counter').toBe(true);
+  await settle(page);
+  await page.mouse.click(...(await screenAt(page, run[2].x - 16, line - 30)));
+  await page.waitForTimeout(300);
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  expect((await room()).find((x) => x.id === 'toaster').y, 'back on the wall run').toBe(line);
+  // ── 🧹 clear the moved counter: it goes to the shed with the coffee machine on it
+  await page.click('#hsToolClear');
+  await page.waitForTimeout(300);
+  await settle(page);
+  await page.mouse.click(...(await screenAt(page, moved.x, moved.y - 6)));
+  await page.waitForTimeout(500);
+  const end = await room(), shed = await page.evaluate(() => window.__hs.inv().shed);
+  expect([end.some((x) => x.id === 'coffeemachine'), shed.includes('coffeemachine'), shed.includes('ctrwhite')], 'into the shed together').toEqual([false, true, true]);
   expect(errs).toEqual([]);
 });

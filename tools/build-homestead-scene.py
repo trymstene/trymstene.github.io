@@ -717,7 +717,19 @@ def indoor_sprite(path, scale, strip=True, overlap=0):
     # overlap: closed-ended modules (counters) merge their butted borders into
     # one divider; open-ended rug columns need exact abutment (overlap 0).
     try:
-        if isinstance(path, tuple) and path and path[0] == 'crop':
+        if isinstance(path, tuple) and path and path[0] == 'counter':
+            # 🍳 the pack's two-part counter (COUNTER_DEF): two worktop tiles over a cabinet front of doors and drawers,
+            # the end pieces' outer border columns spliced on, the floor-shadow band left off
+            (tl, tr), (lf, dr, dw, rt) = path[1], path[2]
+            cut = lambda p, box: Image.open(p).convert('RGBA').crop(box)
+            img = Image.new('RGBA', (96, 60), (0, 0, 0, 0))
+            img.alpha_composite(cut(tl, (0, 2, 48, 32)), (0, 0))
+            img.alpha_composite(cut(tr, (0, 2, 48, 32)), (48, 0))
+            img.alpha_composite(cut(lf, (3, 0, 6, 30)), (0, 30))
+            img.alpha_composite(cut(dr, (3, 0, 48, 30)), (3, 30))
+            img.alpha_composite(cut(dw, (0, 0, 45, 30)), (48, 30))
+            img.alpha_composite(cut(rt, (42, 0, 45, 30)), (93, 30))
+        elif isinstance(path, tuple) and path and path[0] == 'crop':
             img = Image.open(path[1]).convert('RGBA').crop(path[2])
             img = img.crop(img.getbbox())
         elif isinstance(path, (list, tuple)):
@@ -766,15 +778,15 @@ def compose_on(base_img, parts):
 INDOOR_DEF = [
     # 🍳 kitchen
     ('stove', 'The stove', 'kitchen', 42, 2, _ts(KIT, 150)),
-    ('coffeemk', 'Baking counter', 'kitchen', 26, 2, [_ts(KIT, 121)] * 3),   # K185 on it is a stand mixer, not coffee
+    ('coffeemk', 'Baking counter', 'kitchen', 26, 2, [_ts(KIT, 121)] * 3, {'retired': 1}),   # K185 on it is a stand mixer, not coffee
     ('dinchair', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 284)),
     ('dinchair2', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 280)),   # facing right — the chair turned (FAMILIES)
     ('dinchair3', 'Dining chair', 'kitchen', 10, 2, _ts(KIT, 279)),   # from behind
     ('fridge', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 161)),
     ('fridgeside', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 166)),   # facing right (its door opens on K167)
     ('fridgeside2', 'The fridge', 'kitchen', 32, 2, _ts(KIT, 170)),  # facing left (K171)
-    ('kcounter', 'Kitchen counter', 'kitchen', 18, 2, [_ts(KIT, 121)] * 3),
-    ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, [_ts(KIT, 121)] * 3),
+    ('kcounter', 'Kitchen counter', 'kitchen', 18, 2, [_ts(KIT, 121)] * 3, {'retired': 1}),
+    ('stockcounter', 'Stocked counter', 'kitchen', 30, 2, [_ts(KIT, 121)] * 3, {'retired': 1}),
     ('dinette', 'Small table', 'kitchen', 20, 2, _ts(KIT, 272)),
     ('famtable', 'Family table', 'kitchen', 44, 3, _ts(KIT, 310)),
     # 🛋 living room
@@ -876,11 +888,11 @@ HWEEN = ('11_Halloween_Singles_48x48', 'Halloween_Singles_48x48')
 WALL = {'wall': 1}
 INDOOR_DEF += [
     # 🍳 kitchen: a sink, and the small machines each on a counter of their own
-    ('sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, [_ts(KIT, 121)], {'ship': 45}),
+    ('sinkcounter', 'Sink counter', 'kitchen', 20, 2, [_ts(KIT, 121)], {'ship': 45, 'retired': 1}),
     ('openfridge', 'Open fridge', 'kitchen', 38, 2, _ts(KIT, 162), {'ship': 60, 'retired': 1}),   # the fridge's door (fridgeDoor)
-    ('toastcounter', 'Toaster counter', 'kitchen', 16, 2, [_ts(KIT, 121)], {'ship': 30}),
-    ('microcounter', 'Microwave counter', 'kitchen', 24, 2, [_ts(KIT, 121)], {'ship': 45}),
-    ('espressobar', 'Espresso bar', 'kitchen', 30, 3, [_ts(KIT, 121)] * 2, {'ship': 60}),
+    ('toastcounter', 'Toaster counter', 'kitchen', 16, 2, [_ts(KIT, 121)], {'ship': 30, 'retired': 1}),
+    ('microcounter', 'Microwave counter', 'kitchen', 24, 2, [_ts(KIT, 121)], {'ship': 45, 'retired': 1}),
+    ('espressobar', 'Espresso bar', 'kitchen', 30, 3, [_ts(KIT, 121)] * 2, {'ship': 60, 'retired': 1}),
     # the pack's steel grill (K192 shut; K193 its fryer baskets, K194 its skewers), cropped to its own pixels (its canvas
     # has 15 empty px each side), at the appliances' 2/3; a tap opens it on the skewers (IN_ALT). Added 28 Sep 2026 as a
     # "Drinks cooler" (the skewers read as bottles to me); Trym: "i think your Drinks Cooler actually is a kitchen grill
@@ -1069,6 +1081,42 @@ IN_ALT = {
 }
 IN_ALT.update({'fridgeside': _ts(KIT, 167), 'fridgeside2': _ts(KIT, 171)})   # a turned fridge still opens
 
+# 🍳 THE COUNTERS, AND WHAT STANDS ON THEM (Trym, 28 Sep 2026: "separate sinks, microwaves, coffee machine, blender,
+# toaster FROM the kitchen counter - because i think theres more than one type of kitchen counter - so kitchen
+# accessories can stand on different types of counters - but that demands a rule that kitchen accessories have a
+# belonging to standing on counters"). The pack draws a counter in two parts: a worktop in ten colours (K1-K90, a left
+# and a right end each) over a cabinet front in three finishes (K91-K120). Two tiles of each ('counter' in indoor_sprite)
+# at the furniture's 2/3 = 64 x 40: the stove's and the fridge's scale, as tall as the K121 counter, chaining with its
+# 2-px borders merged. The counters with things baked on are off the shelf; whoever owns one keeps it.
+COUNTER_DEF = [  # id, name, price, worktop left + right end, fronts: left end, doors, drawers, right end
+    ('ctrwhite', 'White counter', 14, (4, 6), (102, 104, 108, 110)),
+    ('ctrgrey', 'Grey counter', 14, (22, 24), (102, 104, 108, 110)),
+    ('ctrred', 'Red counter', 16, (49, 51), (102, 104, 108, 110)),
+    ('ctroak', 'Oak counter', 14, (76, 78), (92, 94, 98, 100)),
+    ('ctrwalnut', 'Walnut counter', 16, (85, 87), (92, 94, 98, 100)),
+    ('ctrhoney', 'Honey counter', 14, (67, 69), (112, 114, 118, 120)),
+]
+# what stands on a counter, and only there (decor `on`): the pack's appliance cropped to its own pixels, at the same 2/3.
+# A counter's `top` is how far above its base line things stand: 13 rows down its 20-row worktop (the K121's row 12).
+ON_DEF = [  # id, name, price, van minutes, single, its other state for a tap
+    ('toaster', 'Toaster', 8, 20, 136, 135),
+    ('microwave', 'Microwave', 14, 30, 187, None),
+    ('coffeemachine', 'Coffee machine', 16, 30, 177, 179),
+    ('blender', 'Blender', 10, 20, 184, None),
+    ('mixer', 'Stand mixer', 14, 30, 185, None),
+    ('kettle', 'Kettle', 6, 15, 182, None),
+    ('ricecooker', 'Rice cooker', 10, 20, 195, None),
+    ('dishrack', 'Dish rack', 6, 15, 147, None),
+    ('sink', 'Kitchen sink', 12, 30, 141, None),
+    ('steelsink', 'Steel sink', 14, 30, 143, None),
+]
+INDOOR_DEF += [(cid, nm, 'kitchen', pr, 2, ('counter', tuple(_ts(KIT, n) for n in tops), tuple(_ts(KIT, n) for n in fr)),
+                {'ship': 30}) for cid, nm, pr, tops, fr in COUNTER_DEF]
+INDOOR_DEF += [(oid, nm, 'kitchen', pr, 2, _on(_ts(KIT, n)), {'ship': sh, 'on': 1}) for oid, nm, pr, sh, n, _a in ON_DEF]
+IN_ALT.update({oid: _on(_ts(KIT, a)) for oid, _n, _p, _s, _k, a in ON_DEF if a})
+WALL_TIGHT |= {c[0] for c in COUNTER_DEF}
+COUNTER_STAND = {'kcounter': ON_TOP, **{c[0]: 13 for c in COUNTER_DEF}}
+
 # ↻ FAMILIES — one piece seen from several sides (Trym, 28 Sep 2026: "its the same object, but you can rotate it in the
 # build mode … Its a bit bad user experience to have the same object just from different angles, buying them separate").
 # The shop sells the first; build mode's ↻ steps through the rest (`turn`), each its own id so a save, a second device and
@@ -1086,7 +1134,7 @@ if HAVE_PACK:
     # some color and pixels, its transparent in the middle of the sprite and on the left side"): its wood is the bathroom
     # tile's tan and its drawer divider the floor shadow's mauve, so the flood climbed from its one shadow row up the
     # divider into the drawers, and in at the worktop's edge. It keeps all its pixels and that one-pixel shadow line.
-    NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket', 'bvanity'}
+    NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket', 'bvanity'} | {c[0] for c in COUNTER_DEF} | {o[0] for o in ON_DEF}   # clean pack art
     IN_OVERLAP = {'kcounter': 3, 'coffeemk': 3, 'stockcounter': 3, 'espressobar': 3}
     HENS = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animals_48x48/Chickens_and_Roosters_48x48')
     for hi, hname in enumerate(['Chicken_Brown_48x48.png', 'Chicken_White_48x48.png', 'Chicken_Golden_48x48.png']):
@@ -1277,6 +1325,8 @@ if HAVE_PACK:
             EXTRA_OUT[did]['tight'] = [s.height - s.getbbox()[3], round(3 * sc)]
         elif did in WALL_HUG:   # the same rows, no chain, and its own distance from the wall
             EXTRA_OUT[did]['tight'] = [s.height - s.getbbox()[3], 0, WALL_HUG[did]]
+        if did in COUNTER_STAND:   # 🍳 how far above its base line things stand on it
+            EXTRA_OUT[did]['top'] = s.height - COUNTER_STAND[did]
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
         alt = IN_ALT.get(did)
         if alt is not None:   # the other state: a whole single, this piece's base with other parts, or another base
@@ -1623,7 +1673,8 @@ def emit():
     D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), tight (the kitchen line: [empty rows")
     D.append('// under its front, its side border] — fronts flush along the wall, neighbours butted), alt ([w, h] of its other')
     D.append('// state, d-<id>-alt.png, shown for a moment on a tap), turn / fam / side (one piece from several sides: the next')
-    D.append("// side's id, the family it belongs to — never sold on its own — and the wall its back goes against), gif.")
+    D.append("// side's id, the family it belongs to — never sold on its own — and the wall its back goes against), top (a")
+    D.append('// counter: how far above its base things stand on it), on (it stands on a counter, and only there), gif.')
     D.append('const IN = new Set(%s);' % json.dumps(INDOOR_CATS).replace('"', "'"))
     D.append('const ROWS = [')
     fam_base = {mid: base for base, members in FAMILIES for mid, _ in members}
@@ -1659,6 +1710,10 @@ def emit():
             extra.append("side: '%s'" % ex['side'])
         if ex.get('fb'):
             extra.append('fb: [%d, %d, %d]' % tuple(ex['fb']))
+        if ex.get('top'):
+            extra.append('top: %d' % ex['top'])
+        if ex.get('on'):
+            extra.append('on: 1')
         if did == 'fountain':
             extra.append('gif: 1')
         tail = ''
