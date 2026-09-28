@@ -97,6 +97,10 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   // kitchen things too"), each the size of the piece itself
   expect([by('fridge').alt, by('stove').alt, by('toastcounter').alt, by('espressobar').alt]).toEqual([[53, 85], [32, 64], [87, 84], [171, 87]]);
   for (const id of ['kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'microcounter']) expect(by(id).alt, id + '’s cupboard').toEqual([by(id).w, by(id).h]);
+  // the drinks cooler (Trym: "yes add the drinks cooler"): the house's, a kitchen-line piece, its doors open on bottles
+  const dc = by('drinkscooler');
+  expect([dc.name, dc.cat, dc.stage, dc.ship, dc.alt]).toEqual(['Drinks cooler', 'kitchen', 3, 90, [dc.w, dc.h]]);
+  expect(dc.tight, 'it stands in the kitchen line').toBeTruthy();
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
@@ -368,7 +372,7 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
     if (sessionStorage.getItem('order-seeded')) return;
     sessionStorage.setItem('order-seeded', '1');
     localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [],
-      shed: [{ id: 'fridge' }, { id: 'sinkcounter' }, { id: 'toastcounter' }, { id: 'stove' }],
+      shed: [{ id: 'fridge' }, { id: 'sinkcounter' }, { id: 'toastcounter' }, { id: 'stove' }, { id: 'drinkscooler' }],
       inItems: {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
   });
   await page.setViewportSize({ width: 1280, height: 900 });   // the whole house on one screen: every tap lands on it
@@ -390,8 +394,9 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   await put('Kitchen sink', 700);
   await put('Toaster counter', 790);
   await put('The stove', 850);
+  await put('Drinks cooler', 890);
   const run = [];
-  for (const id of ['fridge', 'sinkcounter', 'toastcounter', 'stove']) {
+  for (const id of ['fridge', 'sinkcounter', 'toastcounter', 'stove', 'drinkscooler']) {
     const it = await inRoom(page, id), d = DECOR.find((x) => x.id === id);
     expect(it, id + ' is in').toBeTruthy();
     expect(it.y, id + ' stands against the wall').toBe(await page.evaluate((i) => window.__hs.geo.tightY(i, 3), id));
@@ -418,7 +423,10 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   await page.mouse.click(k0.x, k0.y + 10);
   const t0 = await drawn(page, 'toastcounter');
   await page.mouse.click(t0.x, t0.y + 20);
+  const c0 = await drawn(page, 'drinkscooler');
+  await page.mouse.click(c0.x, c0.y);
   await page.waitForTimeout(250);
+  expect(await bg('drinkscooler'), 'the cooler opens on its bottles').toContain('d-drinkscooler-alt');
   expect(await bg('stove'), 'the burners light').toContain('d-stove-alt');
   expect(await bg('sinkcounter'), 'the cupboard under the sink opens').toContain('d-sinkcounter-alt');
   expect(await bg('toastcounter'), 'the toast goes down').toContain('d-toastcounter-alt');
@@ -427,5 +435,6 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   expect(await bg('stove'), 'the burners go out').not.toContain('-alt');
   expect(await bg('sinkcounter'), 'the cupboard shuts').not.toContain('-alt');
   expect(await bg('toastcounter'), 'and up it pops').not.toContain('-alt');
+  expect(await bg('drinkscooler'), 'the cooler shuts').not.toContain('-alt');
   expect(errs).toEqual([]);
 });

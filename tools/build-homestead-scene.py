@@ -877,6 +877,9 @@ INDOOR_DEF += [
     ('toastcounter', 'Toaster counter', 'kitchen', 16, 2, [_ts(KIT, 121)], {'ship': 30}),
     ('microcounter', 'Microwave counter', 'kitchen', 24, 2, [_ts(KIT, 121)], {'ship': 45}),
     ('espressobar', 'Espresso bar', 'kitchen', 30, 3, [_ts(KIT, 121)] * 2, {'ship': 60}),
+    # the pack's steel under-counter unit, cropped to its own pixels (its canvas has 15 empty px each side), at the
+    # appliances' 2/3; a tap opens it on its bottles (IN_ALT). Trym, 28 Sep 2026: "yes add the drinks cooler"
+    ('drinkscooler', 'Drinks cooler', 'kitchen', 38, 3, ('crop', _ts(KIT, 192), (15, 0, 84, 96)), {'ship': 90}),
     ('picnicbasket', 'Picnic basket', 'kitchen', 10, 1, _ts(BASE, 83), {'ship': 15}),
     ('leafprint', 'Leaf print', 'kitchen', 8, 2, _ts(KIT, 271), {'ship': 15, **WALL}),
     # 🛋 living room
@@ -998,7 +1001,8 @@ ON_TOP = 12
 # from the back aswell, and yeah, countertops kind of should stick together or be built like a chain"): these pieces
 # carry `tight` = [empty rows under their front, their side border in px] — build mode stands their fronts on one line
 # along the wall and butts a neighbour against them, borders merged (banana-homestead.js tightY / chainX).
-WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar', 'stove', 'fridge'}
+WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar', 'stove', 'fridge',
+              'drinkscooler'}
 IN_COMPOSE = {
     # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window.
     # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:
@@ -1038,6 +1042,7 @@ IN_ALT = {
     'stockcounter': ('base', [_ts(KIT, 121), _ts(KIT, 122), _ts(KIT, 121)], IN_COMPOSE['stockcounter']),
     'sinkcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['sinkcounter']),
     'microcounter': ('base', [_ts(KIT, 122)], IN_COMPOSE['microcounter']),
+    'drinkscooler': ('crop', _ts(KIT, 194), (15, 0, 84, 96)),   # its doors open on the bottles, the same frame as K192
 }
 if HAVE_PACK:
     NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket'}   # cardboard and wicker share the floor's tan: the flood ate them
