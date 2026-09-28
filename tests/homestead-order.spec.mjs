@@ -109,6 +109,8 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   // 🚽 tall on tiny feet: by the wall they stand 18 px out (Trym: "the 18 old is the correct position") and never join a
   // kitchen chain (the 0 border)
   expect([by('toilet').tight, by('towelrack').tight]).toEqual([[14, 0, 18], [8, 0, 18]]);
+  // and the wash stand and the washing machine the same way (Trym: "do the same for the wash stand and washing machine")
+  expect([by('bvanity').tight, by('washer').tight]).toEqual([[14, 0, 18], [8, 0, 18]]);
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
@@ -486,7 +488,7 @@ test('in the house: the bathroom stands tight to the wall and answers a tap — 
     if (sessionStorage.getItem('order-seeded')) return;
     sessionStorage.setItem('order-seeded', '1');
     localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [],
-      shed: [{ id: 'toilet' }, { id: 'towelrack' }], inItems: { 3: [{ id: 'laundry', x: 840, y: 504 }] },
+      shed: [{ id: 'toilet' }, { id: 'towelrack' }, { id: 'bvanity' }, { id: 'washer' }], inItems: { 3: [{ id: 'laundry', x: 840, y: 504 }] },
       bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
   });
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -495,7 +497,7 @@ test('in the house: the bathroom stands tight to the wall and answers a tap — 
   await page.waitForTimeout(1200);
   await page.evaluate(() => window.__hs.enter());
   await page.waitForTimeout(800);
-  for (const [name, id, wx] of [['The toilet', 'toilet', 700], ['Bathroom cabinet', 'towelrack', 760]]) {
+  for (const [name, id, wx] of [['The toilet', 'toilet', 700], ['Bathroom cabinet', 'towelrack', 760], ['Wash stand', 'bvanity', 880], ['Washing machine', 'washer', 960]]) {
     await placeFromShed(page, name);
     await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
     await page.mouse.click(...(await screenAt(page, wx, 390)));   // on the wall
