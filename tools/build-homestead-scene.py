@@ -1008,8 +1008,9 @@ WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcount
 # 🚽 AGAINST THE WALL, ON TINY FEET (Trym, 28 Sep 2026: "the toilet and the cabinet … have a small ground platform …
 # because they are tall and not wide objects, so they should be much tighter into the wall … close to the wall means more
 # into the wall"): placed by the wall, their feet stand this many px in front of the floor line, the rest up the wall.
-# `tight` = [foot, 0 (no chain), this]; the kitchen line's front is 26 px out.
-WALL_HUG = {'toilet': 2, 'towelrack': 2}
+# `tight` = [foot, 0 (no chain), this]; the kitchen line's front is 26 px out. 18, picked by Trym off a strip of 0/6/12/18
+# ("the 18 old is the correct position") — what build mode's old closest row gave the toilet; now exact for both.
+WALL_HUG = {'toilet': 18, 'towelrack': 18}
 IN_COMPOSE = {
     # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window.
     # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:

@@ -995,8 +995,8 @@ function init(visitDoc, visitMiss) {
   // stands with its FRONT 26 px below the floor line (plate row 92 in both wood rooms): a counter's top edge then meets
   // the wall, and the stove and the fridge stand flush with it. Next to another on the same line it butts up to it,
   // borders merged into one — the builder's own grammar for its long counters (IN_OVERLAP 3).
-  // 🚽 a third value is the piece's own distance: the toilet and the cabinet stand on tiny feet 2 px out, the rest up the
-  // wall (Trym: "close to the wall means more into the wall") — and a 0 border means it never joins a chain
+  // 🚽 a third value is the piece's own distance: the toilet and the cabinet stand on tiny feet 18 px out, the rest up
+  // the wall (Trym picked 18 off a strip) — and a 0 border means it never joins a chain
   const tightY = (d, t = inside) => (d && d.tight && WALL_FACE[t] ? INTERIORS[t].box[1] + 92 + (d.tight[2] != null ? d.tight[2] : 26) + d.tight[0] : 0);
   // ⚠️ FORGIVING, or it reads as broken (Trym, 28 Sep: "make the counters snap together in build mode too" — it did,
   // but only for a tap within 25 px and the same row): a tap anywhere within half the piece of a neighbour's side

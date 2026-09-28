@@ -106,8 +106,9 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   // a towel rack), the laundry — each other state the size of the piece
   for (const id of ['toilet', 'towelrack', 'laundry']) expect(by(id).alt, id).toEqual([by(id).w, by(id).h]);
   expect(by('towelrack').name, 'B133 is a cabinet with a mirror on top').toBe('Bathroom cabinet');
-  // 🚽 tall on tiny feet, so by the wall they stand 2 px out and never join a kitchen chain (the 0 border)
-  expect([by('toilet').tight, by('towelrack').tight]).toEqual([[14, 0, 2], [8, 0, 2]]);
+  // 🚽 tall on tiny feet: by the wall they stand 18 px out (Trym: "the 18 old is the correct position") and never join a
+  // kitchen chain (the 0 border)
+  expect([by('toilet').tight, by('towelrack').tight]).toEqual([[14, 0, 18], [8, 0, 18]]);
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
@@ -363,7 +364,7 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   const sink = await inRoom(page, 'sinkcounter');
   expect(sink, 'the sink counter is in').toBeTruthy();
   expect(sink.y, 'tight against the cabin’s wall').toBe(await page.evaluate(() => window.__hs.geo.tightY('sinkcounter', 2)));
-  // 🚽 and a toilet by the cabin's wall: its feet 2 px in front of the cabin's floor line, too
+  // 🚽 and a toilet by the cabin's wall: its feet 18 px in front of the cabin's floor line, too
   await placeFromShed(page, 'The toilet');
   await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
   await page.mouse.click(...(await screenAt(page, 790, 430)));
@@ -371,7 +372,7 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   await page.click('#hsPlaceGo');
   await page.waitForTimeout(600);
   const loo = await inRoom(page, 'toilet');
-  expect(loo && loo.y - DECOR.find((x) => x.id === 'toilet').tight[0], 'the toilet’s feet at the cabin’s wall').toBe(372 + 92 + 2);
+  expect(loo && loo.y - DECOR.find((x) => x.id === 'toilet').tight[0], 'the toilet’s feet at the cabin’s wall').toBe(372 + 92 + 18);
   await page.screenshot({ path: SHOT + '11-cabin-wall.png' });
   expect(errs).toEqual([]);
 });
@@ -474,7 +475,8 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
 
 // 🛁 Trym, 28 Sep 2026: "add tap states to the bathroom things too", then "the toilet and the cabinet needs to have its
 // default position further back to the wall … they are tall and not wide objects, so they should be much tighter into the
-// wall". Each comes out of the shed and a tap on the wall stands it there: feet 2 px out, the rest up the wall. Then a
+// wall", and of four distances "the 18 old is the correct position". Each comes out of the shed and a tap on the wall
+// stands it there: feet 18 px out, the rest up the wall. Then a
 // tap closes the toilet's lid, opens the cabinet on its towels and shows the laundry — and each goes back by itself.
 test('in the house: the bathroom stands tight to the wall and answers a tap — the toilet lid, the cabinet, the laundry', async ({ page }) => {
   test.setTimeout(120000);
@@ -502,7 +504,7 @@ test('in the house: the bathroom stands tight to the wall and answers a tap — 
     await page.waitForTimeout(600);
     const it = await inRoom(page, id), d = DECOR.find((x) => x.id === id);
     expect(it.y, id + ' stands on its own wall line').toBe(await page.evaluate((i) => window.__hs.geo.tightY(i, 3), id));
-    expect(it.y - d.tight[0], id + '’s feet 2 px in front of the floor line (plate row 92)').toBe(332 + 92 + 2);
+    expect(it.y - d.tight[0], id + '’s feet 18 px in front of the floor line (plate row 92)').toBe(332 + 92 + 18);
   }
   await page.screenshot({ path: SHOT + '17-bathroom-wall.png' });
   await page.evaluate(() => window.__hs.warp(760, 560));
