@@ -721,7 +721,9 @@ def indoor_sprite(path, scale, strip=True, overlap=0):
             img = Image.open(path[1]).convert('RGBA').crop(path[2])
             img = img.crop(img.getbbox())
         elif isinstance(path, (list, tuple)):
-            parts = [Image.open(p2).convert('RGBA') for p2 in path]
+            # a list may mix whole singles and ('crop', path, box) pieces of one (the sink's own outline column)
+            parts = [Image.open(p2[1]).convert('RGBA').crop(p2[2]) if isinstance(p2, tuple) else Image.open(p2).convert('RGBA')
+                     for p2 in path]
             # crop phantom canvas padding (no-op for rug columns — their
             # pattern fills the canvas edge); overlap then merges borders
             parts = [p2.crop(p2.getbbox()) for p2 in parts]
@@ -1001,8 +1003,9 @@ IN_COMPOSE = {
     # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:
     # "the sink part looks a bit over-dimensioned to the counter it sits on"); the same counter as the toaster's keeps the
     # row. And only its basin half (Trym, next look: "could probably be a bit smaller"): the sponge tray is cropped off
-    # at x 42, on the art's 3-px grid, so the 2/3 stays crisp.
-    'sinkcounter': [(('crop', _ts(KIT, 142), (42, 3, 87, 45)), 28, ON_TOP + 2, 2 / 3.0)],
+    # at x 42, on the art's 3-px grid, so the 2/3 stays crisp — and the slab's own left outline column (x 15-17) goes
+    # back in front of it, or the basin's left side is its light rim with no border (Trym: "on the left side its cut off").
+    'sinkcounter': [([('crop', _ts(KIT, 142), (15, 3, 18, 45)), ('crop', _ts(KIT, 142), (42, 3, 87, 45))], 27, ON_TOP + 2, 2 / 3.0)],
     'toastcounter': [(_on(_ts(KIT, 136)), 26, ON_TOP)],
     'microcounter': [(_on(_ts(KIT, 134)), 24, ON_TOP)],
     'espressobar': [(_on(_ts(KIT, 178)), 12, ON_TOP), (_on(_ts(KIT, 184)), 118, ON_TOP)],
