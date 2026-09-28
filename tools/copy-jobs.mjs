@@ -2455,7 +2455,7 @@ export const JOBS = {
     what: 'Toasts in the homestead: a save that failed, a neighbour’s phone and mailbox, build mode’s soil tool and the ground it digs, the tent that comes first, land that grows, a full trough, and watering a neighbour’s beds.',
     approved: 'src/data/copy/homestead-toasts.json',
     reads: 'src/scripts/banana-homestead.js (a static import)',
-    top: ['saveFailed', 'notYourPhone', 'soilTool', 'tentFirst', 'landGrows', 'fedWatered', 'wateredNeighbour', 'groundDug', 'theirMailbox'],
+    top: ['saveFailed', 'notYourPhone', 'soilTool', 'tentFirst', 'landGrows', 'fedWatered', 'wateredNeighbour', 'groundDug', 'theirMailbox', 'wallOnly', 'wallHang', 'bigHome'],
     fields: {
       saveFailed: toastLine(100, 'The homestead could not be saved online after several tries: it is safe on this device and that is what you see. Plain, no server talk. The game puts ⚠️ in front.'),
       notYourPhone: toastLine(48, 'Tapping the Banana Phone while visiting somebody else’s homestead: it is theirs. {name} is the owner.', holdsAll('name')),
@@ -2466,6 +2466,10 @@ export const JOBS = {
       wateredNeighbour: toastLine(60, 'Watering the beds at a neighbour’s homestead: {name} is the neighbour; the beds grow overnight. The game puts 💧 in front.', holdsAll('name')),
       groundDug: toastLine(48, 'Trying to build on soil that is dug up: fill it in first.'),
       theirMailbox: toastLine(40, 'Tapping the mailbox at somebody else’s homestead: it is {name}’s. The game puts 📬 in front.', holdsAll('name')),
+      // 🖼 pictures hang on walls (28 Sep 2026): only the cabin and the house have them
+      wallOnly: toastLine(56, 'Trying to place a picture, a mirror or a framed piece inside the tent: it hangs on a wall, and the tent has none — the cabin, the next home up, does. The game puts 🖼 in front.'),
+      wallHang: toastLine(56, 'Placing a picture indoors: it slides along the wall; tap where it should hang, then press the tick. The game puts 🖼 in front.'),
+      bigHome: toastLine(56, 'Trying to place a reward piece that is too big for your home (a dinosaur skeleton in a tent): it stays in the shed until the bigger home is built. The game puts 🏠 in front.'),
     },
     shape: () => [],
   },

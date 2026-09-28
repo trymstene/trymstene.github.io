@@ -805,8 +805,8 @@ INDOOR_DEF = [
     ('dresser', 'Chest of drawers', 'bedroom', 22, 2, _ts(LIV, 51)),
     ('teddy', 'Teddy bear', 'bedroom', 10, 1, _ts(BEDS, 302)),
     ('bunnyplush', 'Bunny plush', 'bedroom', 12, 1, _ts(BEDS, 305)),
-    ('whaleplush', 'Whale plush', 'bedroom', 14, 2, _ts(BEDS, 390)),
-    ('robottoy', 'Toy robot', 'bedroom', 20, 2, _ts(BEDS, 509)),
+    ('whaleplush', 'Whale plush', 'bedroom', 14, 1, _ts(BEDS, 390)),
+    ('robottoy', 'Toy robot', 'bedroom', 20, 1, _ts(BEDS, 509)),
     ('dresserlamp', 'Dresser + lamp', 'bedroom', 30, 2, _ts(LIV, 58)),
     ('bunkbed', 'Bunk bed', 'bedroom', 44, 2, _ts(BEDS, 126)),
     ('vanity', 'Vanity table', 'bedroom', 24, 2, _ts(LIV, 21)),
@@ -819,7 +819,7 @@ INDOOR_DEF = [
     ('floormirror', 'Standing mirror', 'bathroom', 16, 2, _ts(BATH, 66)),
     ('towelrack', 'Towel rack', 'bathroom', 10, 2, _ts(BATH, 133)),
     ('washer', 'Washing machine', 'bathroom', 34, 2, _ts(BATH, 87)),
-    ('bathtub', 'Bathtub', 'bathroom', 46, 3, _ts(BATH, 157)),
+    ('bathtub', 'Sunken bath', 'bathroom', 46, 3, _ts(BATH, 157)),
     # 🚪 hallway
     ('backpack', 'Backpack', 'hallway', 6, 1, os.path.join(CAMP, 'ME_Singles_Camping_48x48_Backpack_1.png')),
     ('hallchair', 'Hall chair', 'hallway', 10, 2, _ts(LIV, 92)),
@@ -836,7 +836,7 @@ INDOOR_DEF = [
     ('arcade', 'Arcade cabinet', 'music', 40, 3, _ts(BASE, 219)),
     ('pinball', 'Pinball machine', 'music', 44, 3, _ts(BASE, 222)),
     ('unicycle', 'Unicycle', 'music', 16, 2, _ts(MUS, 61)),
-    ('eguitar', 'Electric guitar', 'music', 24, 1, _ts(MUS, 55)),
+    ('eguitar', 'Electric guitar', 'music', 24, 2, _ts(MUS, 55)),
     ('theamp', 'The amp', 'music', 20, 2, _ts(MUS, 43)),
     ('drumkit', 'Drum kit', 'music', 38, 3, [_ts(MUS, 41), _ts(MUS, 42)]),
     ('gpiano', 'Grand piano', 'music', 60, 3, _ts(MUS, 31)),
@@ -846,10 +846,17 @@ INDOOR_DEF = [
 # before … make sure they are moveable through the build-mode, and that the objects have a certain delivery time, and a
 # cost that makes sense … at least 50 more items spread around the different categories on the banana phone order").
 # Chosen off labelled contact sheets of the pack's own themes (art, gym, fishing, library, film studio, birthday,
-# Christmas, Halloween, museum, music) and the rooms the catalogue already had. Two new shelves: 🎨 hobbies and 🎉 party.
-# A 7th field carries what a row adds: `ship` — its own van time in minutes (small things are quick, a fireplace is an
-# afternoon; hours, never days), and `reward` — never sold: handed out as a reward (grantReward in
-# src/lib/homestead-inventory.js), priced 0 so the shed never offers to sell it.
+# Christmas, Halloween, museum, music, bedroom) and the rooms the catalogue already had. Two new shelves: 🎨 hobbies and
+# 🎉 party. A 7th field carries what a row adds: `ship` — its own van time in minutes (small things are quick, a
+# fireplace is an afternoon; hours, never days); `wall` — it HANGS on a wall (the cabin's or the house's, never the
+# tent's canvas) and only ever slides along it (banana-homestead.js wallOf); `reward` — never sold: handed out as a
+# reward (grantReward in src/lib/homestead-inventory.js), priced 0 so the shed never offers to sell it; `retired` — off
+# the shelf, still owned by whoever has one.
+# 🏠 WHICH HOME, which is the `stage` (Trym, 28 Sep: "not all should be available if you only have a tent, and not all
+# if you have a cabin, but all that have upgraded to House should have everything available"): the TENT takes what you
+# could carry in — bedding, a lantern, plush toys, small plants, a picnic basket, a guitar, party bits; the CABIN is a
+# small wooden home — a kitchen, a bathroom, beds and desks, lamps, rugs, and walls to hang pictures on; the HOUSE adds
+# the big and the grand — a fireplace, an aquarium, pianos and a harp, the games tables, a treadmill, a bathtub.
 ART = ('7_Art_Singles_48x48', 'Art_Singles_48x48')
 BDAY = ('10_Birthday_Party_Singles_48x48', 'Birthday_Party_Singles_48x48')
 FISH = ('9_Fishing_Singles_48x48', 'Fishing_Singles_48x48')
@@ -860,17 +867,19 @@ XMAS = ('15_Christmas_Singles_48x48', 'Christmas_SIngles_48x48')
 GYM = ('8_Gym_Singles_48x48', 'Gym_Singles_48x48')
 MUSEUM = ('22_Museum_Singles_48x48', 'Museum_Singles_48x48')
 HWEEN = ('11_Halloween_Singles_48x48', 'Halloween_Singles_48x48')
+WALL = {'wall': 1}
 INDOOR_DEF += [
-    # 🍳 kitchen: the sink, the fridge left open, and the small machines on a counter of their own
-    ('sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, _ts(KIT, 123), {'ship': 45}),
-    ('openfridge', 'Open fridge', 'kitchen', 38, 2, _ts(KIT, 162), {'ship': 60}),
-    ('toastcounter', 'Toaster counter', 'kitchen', 16, 2, _ts(KIT, 121), {'ship': 30}),
-    ('microcounter', 'Microwave counter', 'kitchen', 24, 2, _ts(KIT, 121), {'ship': 45}),
+    # 🍳 kitchen: a sink, and the small machines each on a counter of their own
+    ('sinkcounter', 'Kitchen sink', 'kitchen', 20, 2, [_ts(KIT, 121)], {'ship': 45}),
+    ('openfridge', 'Open fridge', 'kitchen', 38, 2, _ts(KIT, 162), {'ship': 60, 'retired': 1}),   # the fridge's door (fridgeDoor)
+    ('toastcounter', 'Toaster counter', 'kitchen', 16, 2, [_ts(KIT, 121)], {'ship': 30}),
+    ('microcounter', 'Microwave counter', 'kitchen', 24, 2, [_ts(KIT, 121)], {'ship': 45}),
     ('espressobar', 'Espresso bar', 'kitchen', 30, 3, [_ts(KIT, 121)] * 2, {'ship': 60}),
     ('picnicbasket', 'Picnic basket', 'kitchen', 10, 1, _ts(BASE, 83), {'ship': 15}),
+    ('leafprint', 'Leaf print', 'kitchen', 8, 2, _ts(KIT, 271), {'ship': 15, **WALL}),
     # 🛋 living room
     ('fireplace', 'Fireplace', 'living', 58, 3, _ts(XMAS, 68), {'ship': 150}),
-    ('bookshelf', 'Tall bookshelf', 'living', 32, 2, _ts(LIB, 43), {'ship': 60}),
+    ('bookshelf', 'Tall bookshelf', 'living', 32, 3, _ts(LIB, 43), {'ship': 60}),
     ('bookcase', 'Bookcase', 'living', 26, 2, _ts(LIB, 57), {'ship': 45}),
     ('globe', 'Globe', 'living', 20, 2, _ts(LIB, 34), {'ship': 30}),
     ('aquarium', 'Aquarium', 'living', 48, 3, _ts(FISH, 53), {'ship': 90}),
@@ -878,14 +887,20 @@ INDOOR_DEF += [
     ('aloe', 'Aloe in a pot', 'living', 10, 1, _ts(LIV, 15), {'ship': 15}),
     ('bluelamp', 'Blue floor lamp', 'living', 16, 2, _ts(LIV, 79), {'ship': 30}),
     ('woodstove', 'Wood stove', 'living', 40, 2, _ts(LIV, 107), {'ship': 90}),
+    ('sunsetpic', 'Sunset picture', 'living', 12, 2, _ts(FISH, 50), {'ship': 20, **WALL}),
+    ('fishpic', 'Clownfish picture', 'living', 10, 2, _ts(FISH, 51), {'ship': 20, **WALL}),
+    ('sunflowers', 'Sunflower painting', 'living', 18, 2, _ts(MUSEUM, 95), {'ship': 30, **WALL}),
     # 🛏 bedroom
     ('pumpkinbed', 'Pumpkin bed', 'bedroom', 34, 2, _ts(HWEEN, 139), {'ship': 60}),
-    ('toykeys', 'Toy keyboard', 'bedroom', 14, 1, _ts(MUS, 67), {'ship': 20}),
-    ('toydrum', 'Toy drum', 'bedroom', 12, 1, _ts(MUS, 71), {'ship': 20}),
-    ('locker', 'School locker', 'bedroom', 20, 2, _ts(LIB, 40), {'ship': 30}),
     ('beanbag', 'Bean bag', 'bedroom', 14, 1, _ts(GYM, 80), {'ship': 20}),
+    ('toytrain', 'Toy train', 'bedroom', 10, 1, _ts(BEDS, 462), {'ship': 20}),
+    ('toycar', 'Toy car', 'bedroom', 6, 1, _ts(BEDS, 457), {'ship': 15}),
+    ('lavalamp', 'Lava lamp', 'bedroom', 12, 2, _ts(BEDS, 475), {'ship': 20}),
+    ('playmat', 'Town play mat', 'bedroom', 16, 2, _ts(BEDS, 454), {'ship': 30}),
+    ('fairylights', 'Fairy lights', 'bedroom', 10, 2, _ts(BEDS, 464), {'ship': 20, **WALL}),
+    ('moonposter', 'Moon poster', 'bedroom', 6, 2, _ts(BEDS, 433), {'ship': 15, **WALL}),
     # 🛁 bathroom
-    ('soapsink', 'Pedestal sink', 'bathroom', 24, 2, _ts(BATH, 152), {'ship': 45}),
+    ('soapsink', 'Bathtub', 'bathroom', 48, 3, _ts(BATH, 152), {'ship': 120}),
     ('duckshelf', 'Rubber duck shelf', 'bathroom', 18, 2, _ts(BATH, 84), {'ship': 30}),
     ('laundry', 'Laundry basket', 'bathroom', 10, 2, _ts(BATH, 95), {'ship': 20}),
     ('striperug', 'Striped bath rug', 'bathroom', 8, 2, _ts(BATH, 76), {'ship': 15}),
@@ -893,58 +908,67 @@ INDOOR_DEF += [
     # 🚪 hallway
     ('welcomemat', 'Welcome mat', 'hallway', 8, 1, _ts(CONDO, 66), {'ship': 15}),
     ('boxes', 'Moving boxes', 'hallway', 6, 1, _ts(CONDO, 71), {'ship': 10}),
-    ('goldmirror', 'Gold mirror', 'hallway', 24, 2, _ts(HWEEN, 83), {'ship': 45}),
+    ('goldmirror', 'Gold mirror', 'hallway', 24, 2, _ts(HWEEN, 83), {'ship': 45, **WALL}),
+    ('worldmap', 'World map', 'hallway', 14, 2, _ts(LIB, 31), {'ship': 30, **WALL}),
     ('rotaryphone', 'Rotary phone', 'hallway', 12, 2, _ts(HWEEN, 127), {'ship': 20}),
     ('amphora', 'Bronze amphora', 'hallway', 30, 3, _ts(MUSEUM, 43), {'ship': 60}),
     ('bigpalm', 'Big potted palm', 'hallway', 22, 3, _ts(MUSEUM, 197), {'ship': 45}),
     # 🎸 music
     ('acoustic', 'Acoustic guitar', 'music', 22, 1, _ts(MUS, 45), {'ship': 30}),
+    ('toykeys', 'Toy keyboard', 'music', 14, 1, _ts(MUS, 67), {'ship': 20}),
+    ('toydrum', 'Toy drum', 'music', 12, 1, _ts(MUS, 71), {'ship': 20}),
+    ('boombox', 'Boombox', 'music', 18, 1, _ts(GYM, 100), {'ship': 30}),
+    ('synth', 'Synthesizer', 'music', 30, 2, _ts(MUS, 66), {'ship': 45}),
     ('harp', 'Harp', 'music', 48, 3, _ts(MUS, 58), {'ship': 120}),
     ('upright', 'Upright piano', 'music', 50, 3, _ts(MUS, 3), {'ship': 120}),
-    ('synth', 'Synthesizer', 'music', 30, 2, _ts(MUS, 66), {'ship': 45}),
-    ('boombox', 'Boombox', 'music', 18, 2, _ts(GYM, 100), {'ship': 30}),
     # 🎨 hobbies: the easel, the gym corner, the fishing wall, the film set
-    ('easel', 'Landscape easel', 'hobby', 18, 1, _ts(ART, 40), {'ship': 30}),
-    ('easel2', 'Flower easel', 'hobby', 18, 1, _ts(ART, 38), {'ship': 30}),
-    ('paintpots', 'Paint pots', 'hobby', 8, 1, _ts(ART, 19), {'ship': 15}),
+    ('easel', 'Landscape easel', 'hobby', 18, 2, _ts(ART, 40), {'ship': 30}),
+    ('easel2', 'Flower easel', 'hobby', 18, 2, _ts(ART, 38), {'ship': 30}),
+    ('paintpots', 'Paint pots', 'hobby', 8, 2, _ts(ART, 19), {'ship': 15}),
     ('arttable', 'Art table', 'hobby', 26, 2, _ts(ART, 23), {'ship': 45}),
-    ('treadmill', 'Treadmill', 'hobby', 42, 3, _ts(GYM, 186), {'ship': 90}),
-    ('punchbag', 'Punching bag', 'hobby', 24, 2, _ts(GYM, 67), {'ship': 45}),
     ('yogaball', 'Yoga ball', 'hobby', 8, 1, _ts(GYM, 125), {'ship': 15}),
     ('yogamat', 'Yoga mat', 'hobby', 8, 1, _ts(GYM, 195), {'ship': 15}),
-    ('dumbbells', 'Dumbbell rack', 'hobby', 30, 2, _ts(GYM, 167), {'ship': 60}),
-    ('rodrack', 'Fishing rod rack', 'hobby', 20, 2, _ts(FISH, 65), {'ship': 30}),
     ('tacklebox', 'Tackle box', 'hobby', 12, 1, _ts(FISH, 31), {'ship': 20}),
+    ('punchbag', 'Punching bag', 'hobby', 24, 2, _ts(GYM, 67), {'ship': 45}),
+    ('dumbbells', 'Dumbbell rack', 'hobby', 30, 2, _ts(GYM, 167), {'ship': 60}),
+    ('locker', 'Metal locker', 'hobby', 20, 2, _ts(LIB, 40), {'ship': 30}),
+    ('rodrack', 'Fishing rod rack', 'hobby', 20, 2, _ts(FISH, 65), {'ship': 30}),
+    ('chalkboard', 'Chalkboard', 'hobby', 16, 2, _ts(LIB, 36), {'ship': 30, **WALL}),
+    ('treadmill', 'Treadmill', 'hobby', 42, 3, _ts(GYM, 186), {'ship': 90}),
     ('filmcamera', 'Film camera', 'hobby', 34, 3, _ts(FILM, 1), {'ship': 60}),
-    ('chalkboard', 'Chalkboard', 'hobby', 16, 2, _ts(LIB, 36), {'ship': 30}),
     # 🎉 party: birthdays, Christmas and Halloween, all year round
-    ('xmastree', 'Christmas tree', 'party', 44, 2, _ts(XMAS, 2), {'ship': 60}),
-    ('nutcracker', 'Nutcracker', 'party', 16, 2, _ts(XMAS, 69), {'ship': 30}),
-    ('santasack', 'Sack of presents', 'party', 18, 2, _ts(XMAS, 90), {'ship': 30}),
     ('giftred', 'Big red present', 'party', 12, 1, _ts(BDAY, 1), {'ship': 20}),
     ('giftblue', 'Big blue present', 'party', 12, 1, _ts(BDAY, 2), {'ship': 20}),
-    ('partycake', 'Party cake', 'party', 24, 2, _ts(BDAY, 39), {'ship': 45}),
     ('balloonred', 'Red balloon', 'party', 4, 1, _ts(BDAY, 35), {'ship': 10}),
     ('balloonblue', 'Blue balloon', 'party', 4, 1, _ts(BDAY, 34), {'ship': 10}),
     ('jackolantern', 'Jack-o’-lantern', 'party', 8, 1, _ts(HWEEN, 8), {'ship': 15}),
     ('pumpkins', 'Pumpkin pile', 'party', 12, 1, _ts(HWEEN, 10), {'ship': 20}),
+    ('santasack', 'Sack of presents', 'party', 18, 1, _ts(XMAS, 90), {'ship': 30}),
+    ('partycake', 'Party cake', 'party', 24, 2, _ts(BDAY, 39), {'ship': 45}),
+    ('xmastree', 'Christmas tree', 'party', 44, 2, _ts(XMAS, 2), {'ship': 60}),
+    ('nutcracker', 'Nutcracker', 'party', 16, 2, _ts(XMAS, 69), {'ship': 30}),
     ('cauldron', 'Bubbling cauldron', 'party', 22, 2, _ts(HWEEN, 54), {'ship': 45}),
     ('sheetghost', 'Sheet ghost', 'party', 14, 2, _ts(HWEEN, 74), {'ship': 30}),
-    # 🏆 THE REWARDS — never in the shop; each one is given for something (grantReward)
-    ('goldtrophy', 'Golden trophy', 'hobby', 0, 1, _ts(MUS, 141), {'reward': 1}),
-    ('goldmedal', 'Framed gold medal', 'hobby', 0, 1, _ts(MUS, 129), {'reward': 1}),
-    ('dinoskeleton', 'Dinosaur skeleton', 'hobby', 0, 1, _ts(MUSEUM, 366), {'reward': 1}),
-    ('triceratops', 'Triceratops model', 'hobby', 0, 1, _ts(MUSEUM, 358), {'reward': 1}),
-    ('butterflies', 'Butterfly collection', 'hobby', 0, 1, _ts(MUSEUM, 178), {'reward': 1}),
-    ('starrynight', 'Starry night painting', 'living', 0, 1, _ts(MUSEUM, 122), {'reward': 1}),
-    ('greatwave', 'Great wave painting', 'living', 0, 1, _ts(MUSEUM, 116), {'reward': 1}),
-    ('smilinglady', 'Smiling lady portrait', 'living', 0, 1, _ts(MUSEUM, 123), {'reward': 1}),
-    ('goldharp', 'Golden harp', 'music', 0, 1, _ts(MUS, 60), {'reward': 1}),
+    ('snowmanpic', 'Snowman picture', 'party', 8, 2, _ts(XMAS, 65), {'ship': 15, **WALL}),
+    ('santapic', 'Santa picture', 'party', 8, 2, _ts(XMAS, 66), {'ship': 15, **WALL}),
+    # 🏆 THE REWARDS — never in the shop; each one is given for something (grantReward). Each has the home it fits, like
+    # the shop's pieces (a picture needs the cabin's walls, a dinosaur the house), and waits in the shed until that is up.
+    ('goldtrophy', 'Golden trophy', 'hobby', 0, 1, [_ts(MUS, 153)], {'reward': 1}),   # cropped: the single has an empty floor band
+    ('goldmedal', 'Framed gold medal', 'hobby', 0, 2, _ts(MUS, 129), {'reward': 1, **WALL}),
+    ('dinoskeleton', 'Dinosaur skeleton', 'hobby', 0, 3, _ts(MUSEUM, 366), {'reward': 1}),
+    ('triceratops', 'Triceratops model', 'hobby', 0, 3, _ts(MUSEUM, 358), {'reward': 1}),
+    ('butterflies', 'Butterfly collection', 'hobby', 0, 2, _ts(MUSEUM, 164), {'reward': 1, **WALL}),
+    ('starrynight', 'Starry night painting', 'living', 0, 2, _ts(MUSEUM, 121), {'reward': 1, **WALL}),
+    ('greatwave', 'Great wave painting', 'living', 0, 2, _ts(MUSEUM, 115), {'reward': 1, **WALL}),
+    ('smilinglady', 'Smiling lady portrait', 'living', 0, 2, _ts(MUSEUM, 104), {'reward': 1, **WALL}),
+    ('goldharp', 'Golden harp', 'music', 0, 3, _ts(MUS, 60), {'reward': 1}),
     ('snowglobe', 'Snow globe', 'party', 0, 1, _ts(XMAS, 101), {'reward': 1}),
 ]
+# a picture is cropped to its own pixels (a one-part list): its footprint is the frame, so it centres on the wall face
+INDOOR_DEF = [r[:5] + ([r[5]],) + r[6:] if len(r) > 6 and r[6].get('wall') and isinstance(r[5], str) else r for r in INDOOR_DEF]
 INDOOR_CATS = ['kitchen', 'living', 'bedroom', 'bathroom', 'hallway', 'music', 'hobby', 'party']
 RUG_IDS = {'bathmat', 'starryrug', 'longrug', 'greyrug', 'ovalrug', 'orangerug', 'whitemat', 'whiteoval',
-           'striperug', 'welcomemat', 'yogamat'}
+           'striperug', 'welcomemat', 'yogamat', 'playmat'}
 SIT_DIRS = {'dinchair': 'l', 'dinchair2': 'r', 'dinchair3': 's', 'hallchair': 's',
             'navychair': 's', 'whitechair': 's', 'sofa': 's', 'bigcouch': 's',
             'bench': 's', 'benchv': 's', 'armchair': 's', 'chair': 's', 'stump': 's', 'beanbag': 's'}
@@ -954,14 +978,28 @@ IN_SCALE = {'kcounter': 1.0, 'coffeemk': 1.0, 'stockcounter': 1.0,
             'starryrug': 4 / 3.0, 'longrug': 1.5, 'greyrug': 1.0, 'ovalrug': 1.0,
             'orangerug': 1.0, 'whitemat': 1.0, 'whiteoval': 1.0,
             'sinkcounter': 1.0, 'toastcounter': 1.0, 'microcounter': 1.0, 'espressobar': 1.0,
-            'dinoskeleton': 0.5}   # a whole dinosaur at 2/3 filled a room
-# accessory parts baked onto the K121 counter (native px, base-line y, x)
+            'goldtrophy': 1.0}   # at 2/3 the cup was eleven art pixels wide and read as a lamp (Trym: "not like a golden trophy")
+# accessory parts baked onto the K121 counter: (part, x, base line) in native px, the base line counted from the top of
+# the (cropped) counter. ⚠️ ON THE COUNTER, NOT OVER ITS EDGE (Trym, 28 Sep 2026: "the toaster seems to stretch over the
+# edge of the bench … reposition the items on the counter and anchor them a bit higher"): the K121 top is rows 0-15 of
+# the cropped counter and its doors start at 16, so a part is cropped to its own pixels (_on) and stands with its
+# visible bottom at row 12 — a strip of worktop still showing in front of it.
+def _on(path):
+    try:
+        return ('crop', path, Image.open(path).getbbox())
+    except Exception:
+        return path
+
+
+ON_TOP = 12
 IN_COMPOSE = {
-    'toastcounter': [(_ts(KIT, 136), 22, 38)],
-    'microcounter': [(_ts(KIT, 134), 22, 34)],
-    'espressobar': [(_ts(KIT, 178), 8, 36), (_ts(KIT, 184), 100, 38)],
-    'coffeemk': [(_ts(KIT, 185), 44, 30)],
-    'stockcounter': [(_ts(LIV, 49), 22, 30), (_ts(KIT, 172), 168, 24)],
+    # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window
+    'sinkcounter': [(_on(_ts(KIT, 142)), 8, ON_TOP + 2)],
+    'toastcounter': [(_on(_ts(KIT, 136)), 26, ON_TOP)],
+    'microcounter': [(_on(_ts(KIT, 134)), 24, ON_TOP)],
+    'espressobar': [(_on(_ts(KIT, 178)), 12, ON_TOP), (_on(_ts(KIT, 184)), 118, ON_TOP)],
+    'coffeemk': [(_on(_ts(KIT, 185)), 44, ON_TOP)],
+    'stockcounter': [(_on(_ts(LIV, 49)), 22, ON_TOP), (_on(_ts(KIT, 172)), 168, ON_TOP)],
     'telly': [(_ts(BASE, 164), 14, 26)],
     'tvback': [(_ts(BASE, 163), 14, 26)],
     'pooltable': [(_ts(BASE, 74), 32, 95)],
@@ -1464,7 +1502,8 @@ def emit():
     D.append('// The decor catalog: footprints measured from the exported sprites. stage = house-ladder gate (0 = from the plot).')
     D.append('// ⚡ PACKED, one row per piece (28 Sep 2026): the object keys cost more than the catalog, so each row is')
     D.append('// [id, name, cat, price, stage, w, h, solid, extra] and DECOR expands them to the objects every reader keeps.')
-    D.append('// extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), gif.')
+    D.append('// extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), retired')
+    D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), gif.")
     D.append('const IN = new Set(%s);' % json.dumps(INDOOR_CATS).replace('"', "'"))
     D.append('const ROWS = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
@@ -1480,6 +1519,10 @@ def emit():
             extra.append('ship: %d' % ex['ship'])
         if ex.get('reward'):
             extra.append('reward: 1')
+        if ex.get('retired'):
+            extra.append('retired: 1')
+        if ex.get('wall'):
+            extra.append('wall: 1')
         if did == 'fountain':
             extra.append('gif: 1')
         tail = ''
@@ -1490,7 +1533,7 @@ def emit():
         D.append("  ['%s', '%s', '%s', %d, %d, %d, %d%s]," % (did, name, cat, price, stage, w, h, tail))
     D.append('];')
     D.append("export const DECOR = ROWS.map(([id, name, cat, price, stage, w, h, solid = null, x = {}]) => ({ id, name, cat, price, stage, w, h,")
-    D.append("  surface: IN.has(cat) ? 'floor' : 'ground', ...x, img: '/assets/homestead/d-' + id + (x.gif ? '.gif' : '.png'), solid }));")
+    D.append("  surface: x.wall ? 'wall' : IN.has(cat) ? 'floor' : 'ground', ...x, img: '/assets/homestead/d-' + id + (x.gif ? '.gif' : '.png'), solid }));")
     with open(os.path.join(SITE, 'src', 'data', 'decor.js'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(D) + '\n')
     print('wrote src/data/decor.js (%d items)' % len(DECOR_OUT))

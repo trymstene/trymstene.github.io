@@ -976,6 +976,19 @@ function init(visitDoc, visitMiss) {
     const [ins, top, bot] = ROOM_INSETS[t] || [34, 116, 12];
     return [I.box[0] + ins, I.box[1] + top, I.box[0] + I.box[2] - ins, I.box[1] + I.box[3] - bot];
   };
+  // 🖼 THE WALLS A PICTURE HANGS ON (28 Sep 2026, Trym: "images in frames, portraits and paintings - they should be only
+  // placable on walls, in the cabin or house, but it needs to look like they fit on the actual walls and not weirdly
+  // placed underneath the wall"). Rows measured off the room plates themselves (in-wood2/3.png): the wall face runs from
+  // under the top trim (row 18) to the cabin's skirting line (row 92) and the house's baseboard (row 81), inside the side
+  // walls. A picture only ever moves along it; the tent's canvas takes no nails. [x0, top, x1, bottom] in world px.
+  const WALL_FACE = { 2: [20, 90], 3: [20, 80] };
+  const wallOf = (t = inside) => {
+    const I = INTERIORS[t], f = WALL_FACE[t];
+    return I && f ? [I.box[0] + 18, I.box[1] + f[0], I.box[0] + I.box[2] - 18, I.box[1] + f[1]] : null;
+  };
+  // a picture's base line: centred on the face, and never reaching above it
+  const wallY = (d, t = inside) => { const w = wallOf(t); return w ? Math.round(Math.max(w[1] + d.h, (w[1] + w[3] + d.h) / 2)) : 0; };
+  const onWall = (d) => !!d && d.surface === 'wall';
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
   // ---- 🌦 THE WEATHER -----------------------------------------------------
@@ -1130,14 +1143,36 @@ function init(visitDoc, visitMiss) {
       if (!DEX[it.id]) return;
       const el = itemDiv(it);
       el.classList.add('hs-it--in');   // indoor pieces survive the is-inside hide
-      // rugs lie flat: always under the banana and any furniture on them
-      el.style.zIndex = String(DEX[it.id].rug ? IN_Z : IN_Z + Math.round(it.y));
+      // rugs lie flat: always under the banana and any furniture on them; a picture is ON the wall, behind all of it
+      el.style.zIndex = String(DEX[it.id].rug || onWall(DEX[it.id]) ? IN_Z : IN_Z + Math.round(it.y));
+      el.__it = it;   // 🧊 the fridge's door finds its own piece
       inEls.push(el);
     });
+  }
+  // 🧊 THE FRIDGE'S DOOR swings open on a tap and shuts by itself (Trym, 28 Sep 2026: "we have a Fridge already … maybe if
+  // we want to animate the existing closed fridge") — the pack's own open fridge (decor.js openfridge, retired from the
+  // shelf), the same body with its door out to the right, so the piece keeps its left edge and grows to the right
+  function fridgeDoor(it) {
+    const el = inEls.find((e) => e.__it === it), c = DEX.fridge, o = DEX.openfridge;
+    if (!el || !c || !o || el.__open) return;
+    el.__open = 1;
+    el.style.backgroundImage = "url('" + o.img + "')";
+    el.style.width = pct(o.w, W);
+    setTimeout(() => { el.__open = 0; el.style.backgroundImage = "url('" + c.img + "')"; el.style.width = pct(c.w, W); }, 2400);
   }
   function inSpotOk(d, x, y, t = inside) {
     const I = INTERIORS[t];
     if (!I) return false;
+    if (onWall(d)) {   // 🖼 along the wall, never over another picture
+      const w = wallOf(t);
+      if (!w || x - d.w / 2 < w[0] || x + d.w / 2 > w[2]) return false;
+      for (const it of (state.inItems[t] || [])) {
+        if (placing && placing.moving === it) continue;
+        const o = DEX[it.id];
+        if (onWall(o) && Math.abs(x - it.x) < (d.w + o.w) / 2 + 2) return false;
+      }
+      return true;
+    }
     const B = roomBounds(t);
     if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y - 10 < B[1] || y > B[3]) return false;
     // the DOOR CORRIDOR only — the gap's own width (+4), never the floor
@@ -1155,7 +1190,7 @@ function init(visitDoc, visitMiss) {
       for (const it of (state.inItems[t] || [])) {
         if (placing && placing.moving === it) continue;
         const o = DEX[it.id];
-        if (o && !o.rug && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
+        if (o && !o.rug && !onWall(o) && Math.abs(x - it.x) < (d.w + o.w) * 0.32 && Math.abs(y - it.y) < 34) return false;
       }
     }
     return true;
@@ -3493,6 +3528,7 @@ function init(visitDoc, visitMiss) {
   let phoneMod = null, renderTok = 0;
   const phoneCtx = {
     get state() { return state; }, get inside() { return inside; }, get visiting() { return visiting; },
+    get wallOf() { return wallOf; }, get HW() { return HW; },   // 🖼 a picture needs a wall (the shed's place button asks)
     get BABY_W() { return BABY_W; }, get SPOT_W() { return SPOT_W; }, get isOld() { return isOld; }, get toGrass() { return toGrass; },
     get CHEESE_C() { return CHEESE_C; },
     get COIN() { return COIN; },
@@ -3604,7 +3640,7 @@ function init(visitDoc, visitMiss) {
     if (tab === 'order') {
       // category chips — the catalog reads as SHELVES, not a corridor
       // 🏆 a reward piece (decor.js `reward: 1`) is never for sale: it arrives in the shed when it is earned
-      const HERE = (d2) => !d2.reward && isIndoorItem(d2) === !!inside;
+      const HERE = (d2) => !d2.reward && !d2.retired && isIndoorItem(d2) === !!inside;
       const cats = ['all', ...new Set(DECOR.filter(HERE).map((d) => d.cat))];
       const curCat = shopEl.dataset.cat || 'all';
       catsRow.hidden = cats.length <= 2;   // one shelf needs no chips
@@ -3691,6 +3727,8 @@ function init(visitDoc, visitMiss) {
           const indoorItem = isIndoorItem(d);
           if (indoorItem && !inside) { shopNote('🛋 that belongs indoors — step inside first'); return; }
           if (!indoorItem && inside) { shopNote('🌳 that belongs in the yard — step outside first'); return; }
+          if (onWall(d) && !wallOf()) { shopNote('🖼 ' + HW.wallOnly); return; }   // the same two rules as the phone's shed rows
+          if (d.reward && d.stage > (state.stage | 0)) { shopNote('🏠 ' + HW.bigHome); return; }
           if (inside ? inList().length >= INCAP[inside] : state.items.length >= cap()) {
             toast(inside ? 'this room is full (' + INCAP[inside] + ' spots)' : 'the plot is full');
             return;
@@ -3953,11 +3991,11 @@ function init(visitDoc, visitMiss) {
     const d = DEX[id];
     const P = inside ? roomBounds() : plotNow();
     const x = snap(moving ? moving.x : Math.max(P[0] + 40, Math.min(P[2] - 40, pos.x)));
-    const y = snap(moving ? moving.y : Math.max(P[1] + 40, Math.min(P[3] - 20, pos.y)));
+    const y = inside && onWall(d) ? wallY(d) : snap(moving ? moving.y : Math.max(P[1] + 40, Math.min(P[3] - 20, pos.y)));
     placing = { id, x, y, el: itemDiv({ id, x, y }, true), moving: moving || null, room: inside };
     if (inside) {
       placing.el.classList.add('hs-it--in');
-      placing.el.style.zIndex = String(d.rug ? IN_Z : IN_Z + Math.round(y));
+      placing.el.style.zIndex = String(d.rug ? IN_Z : onWall(d) ? IN_Z + 4000 : IN_Z + Math.round(y));   // a picture's ghost shows over a bookcase
     }
     camFree = { x, y };   // one glide to the ghost — after this, only drags pan
     // 💀 THE GHOST WINDOW (the lost-decor bug): a lift used to SPLICE the piece
@@ -3972,7 +4010,7 @@ function init(visitDoc, visitMiss) {
     confirmEl.hidden = false;
     requestAnimationFrame(() => alignFrame(true));   // the ✓ bar must not open under the cookie banner
     moved = true; hint(false);
-    toast('drag to look around · tap to try a spot — then ✓', 3600);
+    toast(inside && onWall(d) ? '🖼 ' + HW.wallHang : 'drag to look around · tap to try a spot — then ✓', 3600);
   }
   // 🏠 placing the STRUCTURE itself (buy or move): same gestures, its own
   // validity, and anything under the confirmed footprint sweeps to the shed.
@@ -4177,7 +4215,7 @@ function init(visitDoc, visitMiss) {
     placing.el.style.left = pct(placing.x - d.w / 2, W);
     placing.el.style.top = pct(placing.y - d.h, H);
     depth(placing.el, placing.y);
-    if (placing.room) placing.el.style.zIndex = String(d.rug ? IN_Z : IN_Z + Math.round(placing.y));
+    if (placing.room) placing.el.style.zIndex = String(d.rug ? IN_Z : onWall(d) ? IN_Z + 4000 : IN_Z + Math.round(placing.y));
     const ok = placing.room ? inSpotOk(d, placing.x, placing.y, placing.room)
       : spotOk(d, placing.x, placing.y);
     placing.el.classList.toggle('is-bad', !ok);
@@ -4474,10 +4512,14 @@ function init(visitDoc, visitMiss) {
 
   // 🖐 placing gestures: DRAG pans the camera, TAP tries the spot. Never both
   // from one action — the pan threshold decides which one this gesture was.
-  // ⚠️ ONE chrome list, three guards (pointerdown, the tap dispatch, the steer):
+  // ⚠️ ONE chrome test, three guards (pointerdown, the tap dispatch, the steer):
   // .hs-visit was missing from all three, so a deliberate press on the visiting
-  // banner's only way home armed a steer instead of following the link.
-  const UI_CHROME = '.wh, .hs-actions, .hs-chip, .hs-confirm, .hs-visit';
+  // banner's only way home armed a steer instead of following the link. And (28 Sep 2026) build mode's bar, the tour chip
+  // and the quest chip were never on the list: "✓ done" in the house also walked you to the bar and out through the door
+  // beneath it, and a tool button acted on the ground under it. So the list is not the whole rule — a button or link on
+  // the view that is not part of the world is chrome, whoever put it there. The order walk checks every one.
+  const UI_CHROME = '.wh, .hs-actions, .hs-chip, .hs-confirm, .hs-visit, .hs-planbar';
+  const onChrome = (t) => !!(t && t.closest && (t.closest(UI_CHROME) || (t.closest('button, a, input, select, textarea') && !world.contains(t))));
   let gest = null, justPanned = false;   // { x0, y0, cam0x, cam0y, panning }
   function ghostTo(e) {
     const r = view.getBoundingClientRect();
@@ -4493,12 +4535,14 @@ function init(visitDoc, visitMiss) {
       const P = placing.room ? roomBounds(placing.room) : plotNow();
       placing.x = snap(Math.max(P[0] + 12, Math.min(P[2] - 12, wx)));
       placing.y = snap(Math.max(P[1] + 26, Math.min(P[3] - 8, wy)));
+      const dw = DEX[placing.id];
+      if (placing.room && onWall(dw)) placing.y = wallY(dw, placing.room);   // 🖼 the tap says WHERE along the wall; the wall says how high
     }
     updateGhost();
   }
   view.addEventListener('pointerdown', (e) => {
     if ((!placing && !digging && !fencing && !clearing && !arranging) || panelOpen()) return;
-    if (e.target.closest(UI_CHROME)) return;
+    if (onChrome(e.target)) return;
     if (!camFree) camFree = { x: pos.x, y: pos.y };   // a tool that forgot the camera degrades, never throws
     gest = { x0: e.clientX, y0: e.clientY, cam0x: camFree.x, cam0y: camFree.y, panning: false };
   });
@@ -4519,7 +4563,7 @@ function init(visitDoc, visitMiss) {
 
   // ---- taps ---------------------------------------------------------------
   view.addEventListener('click', (e) => {
-    if (e.target.closest(UI_CHROME)) return;
+    if (onChrome(e.target)) return;
     if (panelOpen()) return;
     const r = view.getBoundingClientRect();
     const wx = (e.clientX - r.left + camX) / scale;
@@ -4554,6 +4598,7 @@ function init(visitDoc, visitMiss) {
         if (d2 && Math.abs(wx - it.x) < Math.max(24, d2.w / 2) && wy > it.y - d2.h - 8 && wy < it.y + 10) {
           if (Math.hypot(pos.x - it.x, pos.y - it.y) < 160) {
             if (d2.sit) sitOn(it, d2);
+            if (it.id === 'fridge') fridgeDoor(it);   // 🧊 a peek inside, for guests too
             if (visiting) return;   // sitting is hospitality; the chips are not
             clearChip();
             itChip = document.createElement('div');
@@ -4848,7 +4893,7 @@ function init(visitDoc, visitMiss) {
   initSteer({
     view,
     blocked: (e) => panelOpen() || placing || digging || fencing || clearing || arranging
-      || e.target.closest(UI_CHROME),
+      || onChrome(e.target),
     toWorld: (cx, cy) => { const r = view.getBoundingClientRect(); return { x: (cx - r.left + camX) / scale, y: (cy - r.top + camY) / scale }; },
     onArm: () => { moved = true; hint(false); clearChip(); clearBedChip(); },
     onMove: (w) => { tgt.x = w.x; tgt.y = w.y; },
@@ -5254,7 +5299,8 @@ function init(visitDoc, visitMiss) {
       // 📦 the second delivery's walk (tests/homestead-order.spec.mjs): step in, open a phone tab, earn a reward piece
       enter: () => enterHome(), shop: (tab) => openShop(tab), reward: (id) => grantReward(id, state),
       inv: () => ({ shed: state.shed.map((x) => x.id), orders: state.orders.map((o) => ({ id: o.id, at: o.at })), inItems: state.inItems || {} }),
-      geo: { INTERIORS, roomBounds },
+      geo: { INTERIORS, roomBounds, wallOf },
+      onChrome: (el) => onChrome(el),   // the walk checks every control on the view is chrome
     };
   }
 

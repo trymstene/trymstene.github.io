@@ -7,5 +7,8 @@
   "fedWatered": "fed & watered — your animals give double tomorrow",
   "wateredNeighbour": "you watered {name}’s beds — they grow overnight",
   "groundDug": "that ground is dug up — fill it first",
-  "theirMailbox": "this is {name}’s mailbox"
+  "theirMailbox": "this is {name}’s mailbox",
+  "wallOnly": "that hangs on a wall — walls come with the cabin",
+  "wallHang": "tap along the wall where it should hang — then ✓",
+  "bigHome": "that needs a bigger home — it waits in the shed"
 }
