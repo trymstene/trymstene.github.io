@@ -992,11 +992,17 @@ def _on(path):
 
 
 ON_TOP = 12
+# 🍳 TIGHT AGAINST THE WALL (Trym, 28 Sep 2026: "the stove is the correct distance sitting tight into the wall, while the
+# counters are a bit too much forward"): the kitchen-height pieces carry `back`, their own height from the top edge to
+# the base, and build mode stands that top edge on one line up the wall (banana-homestead.js tightY).
+WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar', 'stove'}
 IN_COMPOSE = {
     # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window.
     # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:
-    # "the sink part looks a bit over-dimensioned to the counter it sits on"); the same counter as the toaster's keeps the row
-    'sinkcounter': [(_on(_ts(KIT, 142)), 20, ON_TOP + 2, 2 / 3.0)],
+    # "the sink part looks a bit over-dimensioned to the counter it sits on"); the same counter as the toaster's keeps the
+    # row. And only its basin half (Trym, next look: "could probably be a bit smaller"): the sponge tray is cropped off
+    # at x 42, on the art's 3-px grid, so the 2/3 stays crisp.
+    'sinkcounter': [(('crop', _ts(KIT, 142), (42, 3, 87, 45)), 28, ON_TOP + 2, 2 / 3.0)],
     'toastcounter': [(_on(_ts(KIT, 136)), 26, ON_TOP)],
     'microcounter': [(_on(_ts(KIT, 134)), 24, ON_TOP)],
     'espressobar': [(_on(_ts(KIT, 178)), 12, ON_TOP), (_on(_ts(KIT, 184)), 118, ON_TOP)],
@@ -1183,11 +1189,13 @@ if HAVE_PACK:
     shutil.copy(os.path.join(ANIM, 'Garden_Fountain_1_48x48.gif'), os.path.join(OUT, 'd-fountain.gif'))
     for row in INDOOR_DEF:
         did, name, cat, price, stage, path = row[:6]
-        EXTRA_OUT[did] = row[6] if len(row) > 6 else {}
+        EXTRA_OUT[did] = dict(row[6]) if len(row) > 6 else {}
         sc = IN_SCALE.get(did, DECOR_DEFAULT)
         s = indoor_sprite(path, 1.0, strip=did not in NO_STRIP, overlap=IN_OVERLAP.get(did, 0))
         if s is None:
             continue
+        if did in WALL_TIGHT:   # the piece's own top edge (not what stands on it, not a canvas's empty rows) down to its base
+            EXTRA_OUT[did]['back'] = int((s.height - (s.getbbox() or (0, 0))[1]) * sc)
         parts = []
         for ppath, px_, by, *pscale in IN_COMPOSE.get(did, []):   # an optional 4th value: the part's own scale (2/3 stays crisp)
             pt = indoor_sprite(ppath, pscale[0] if pscale else 1.0)
@@ -1505,7 +1513,8 @@ def emit():
     D.append('// ⚡ PACKED, one row per piece (28 Sep 2026): the object keys cost more than the catalog, so each row is')
     D.append('// [id, name, cat, price, stage, w, h, solid, extra] and DECOR expands them to the objects every reader keeps.')
     D.append('// extra holds what only some pieces have: rug, sit, ship (their own van minutes), reward (never sold), retired')
-    D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), gif.")
+    D.append("// (off the shelf, still owned), wall (it hangs on a wall: surface 'wall'), back (a kitchen-height piece's own")
+    D.append('// height: pushed to the wall it stands tight against it), gif.')
     D.append('const IN = new Set(%s);' % json.dumps(INDOOR_CATS).replace('"', "'"))
     D.append('const ROWS = [')
     for did, name, cat, price, stage, w, h, box in DECOR_OUT:
@@ -1525,6 +1534,8 @@ def emit():
             extra.append('retired: 1')
         if ex.get('wall'):
             extra.append('wall: 1')
+        if ex.get('back'):
+            extra.append('back: %d' % ex['back'])
         if did == 'fountain':
             extra.append('gif: 1')
         tail = ''

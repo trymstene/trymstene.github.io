@@ -36,6 +36,11 @@ const drawn = (page, id) => page.evaluate((i) => {
   return { x: r.left + r.width / 2, y: r.top + r.height * 0.6, top: r.top, bottom: r.bottom, left: r.left, w: r.width, z: +el.style.zIndex, bg: el.style.backgroundImage };
 }, id);
 const inRoom = (page, id) => page.evaluate((i) => Object.values(window.__hs.inv().inItems).flat().find((x) => x.id === i) || null, id);
+// a world point on the screen, through the world element as it is drawn (its rect already carries the camera)
+const screenAt = (page, wx, wy) => page.evaluate(([x, y]) => {
+  const wr = document.getElementById('hsWorld').getBoundingClientRect(), k = wr.width / window.__hs.signGeo().W;
+  return [wr.left + x * k, wr.top + y * k];
+}, [wx, wy]);
 const placeFromShed = async (page, name) => {
   await page.evaluate(() => window.__hs.shop('shed'));
   await page.waitForSelector('#hsShopList', { timeout: 8000 });
@@ -83,6 +88,9 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   expect([by('toykeys').cat, by('toydrum').cat]).toEqual(['music', 'music']);
   expect(by('soapsink').name).toBe('Bathtub');
   expect(by('openfridge').retired, 'one fridge on the shelf; the open one is its door').toBe(1);
+  // every counter and the stove know their own height, so build mode can stand them tight against the wall
+  for (const id of ['kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar']) expect(by(id).back, id + ' is counter-high').toBe(42);
+  expect(by('stove').back, 'the stove, top edge to base').toBe(60);
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
   for (const d of REWARDS) expect(d.price, d.id + ' is never sold, so it is never priced').toBe(0);
   expect(new Set(DECOR.map((d) => d.id)).size, 'every id once').toBe(DECOR.length);
@@ -289,7 +297,7 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   await page.addInitScript(() => {
     if (sessionStorage.getItem('order-seeded')) return;
     sessionStorage.setItem('order-seeded', '1');
-    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 2, items: [], shed: [{ id: 'sunsetpic' }, { id: 'fairylights' }, { id: 'moonposter' }], orders: [],
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 2, items: [], shed: [{ id: 'sunsetpic' }, { id: 'fairylights' }, { id: 'moonposter' }, { id: 'sinkcounter' }], orders: [],
       inItems: {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
   });
   await page.setViewportSize({ width: 393, height: 852 });
@@ -326,6 +334,62 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   }
   up.sort((a, b) => a.l - b.l);
   for (let i = 1; i < up.length; i++) expect(up[i].l, 'side by side, never one over the other').toBeGreaterThanOrEqual(up[i - 1].r);
+  // 🍳 and a counter under them, pushed to the wall: a tap on the wall stands it tight against the cabin's wall too
+  await placeFromShed(page, 'Kitchen sink');
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await page.mouse.click(...(await screenAt(page, 900, 420)));
+  await page.waitForTimeout(300);
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  const sink = await inRoom(page, 'sinkcounter');
+  expect(sink, 'the sink counter is in').toBeTruthy();
+  expect(sink.y, 'tight against the cabin’s wall').toBe(await page.evaluate(() => window.__hs.geo.tightY('sinkcounter', 2)));
   await page.screenshot({ path: SHOT + '11-cabin-wall.png' });
+  expect(errs).toEqual([]);
+});
+
+// 🍳 Trym, 28 Sep 2026: "the placement of countertops should go closer into the wall … the stove is the correct distance
+// sitting tight into the wall, while the counters are a bit too much forward - this goes for all already implemented
+// counters". Each piece comes out of the shed and a tap ON the wall puts it down: the counters and the stove stand tight
+// against the wall with their top edges in one line — the line the stove already had.
+test('in the house: counters and the stove pushed to the wall stand tight against it, their top edges in one line', async ({ page }) => {
+  test.setTimeout(120000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('order-seeded')) return;
+    sessionStorage.setItem('order-seeded', '1');
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [],
+      shed: [{ id: 'fridge' }, { id: 'sinkcounter' }, { id: 'toastcounter' }, { id: 'stove' }],
+      inItems: {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });   // the whole house on one screen: every tap lands on it
+  await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.__hs.enter());
+  await page.waitForTimeout(800);
+  const put = async (name, wx) => {
+    await placeFromShed(page, name);
+    await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+    await page.mouse.click(...(await screenAt(page, wx, 380)));   // on the wall, above where it should stand
+    await page.waitForTimeout(300);
+    await page.click('#hsPlaceGo');
+    await page.waitForTimeout(600);
+  };
+  await put('The fridge', 648);
+  await put('Kitchen sink', 720);
+  await put('Toaster counter', 816);
+  await put('The stove', 888);
+  const tops = [];
+  for (const id of ['sinkcounter', 'toastcounter', 'stove']) {
+    const it = await inRoom(page, id), d = DECOR.find((x) => x.id === id);
+    expect(it, id + ' is in').toBeTruthy();
+    expect(it.y, id + ' stands tight against the wall').toBe(await page.evaluate((i) => window.__hs.geo.tightY(i, 3), id));
+    tops.push(it.y - d.back);
+  }
+  expect(new Set(tops).size, 'their top edges in one line: ' + tops.join(', ')).toBe(1);
+  expect(tops[0], 'the line the stove stood on before (y 468, top 408)').toBe(408);
+  await page.screenshot({ path: SHOT + '13-kitchen-tight.png' });
   expect(errs).toEqual([]);
 });

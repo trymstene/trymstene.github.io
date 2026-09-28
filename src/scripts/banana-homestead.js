@@ -989,6 +989,11 @@ function init(visitDoc, visitMiss) {
   // a picture's base line: centred on the face, and never reaching above it
   const wallY = (d, t = inside) => { const w = wallOf(t); return w ? Math.round(Math.max(w[1] + d.h, (w[1] + w[3] + d.h) / 2)) : 0; };
   const onWall = (d) => !!d && d.surface === 'wall';
+  // 🍳 TIGHT AGAINST THE WALL (Trym, 28 Sep 2026: "the stove is the correct distance sitting tight into the wall, while
+  // the counters are a bit too much forward"). A kitchen-height piece (decor `back`: its own height, top edge to base)
+  // pushed to the wall stands with its top edge 16 px above the floor line — plate row 92 in both wood rooms — where
+  // the stove he called right stands; one grid row from the wall snaps there, so a kitchen lines up along the wall.
+  const tightY = (d, t = inside) => (d && d.back && WALL_FACE[t] ? INTERIORS[t].box[1] + 92 - 16 + d.back : 0);
   function camSnap() { const t = camTarget(); camX = t.x; camY = t.y; }
   const homeTier = () => STYLE_RUNG[curStyleKey()] || Math.max(1, Math.min(state.stage, 3));
   // ---- 🌦 THE WEATHER -----------------------------------------------------
@@ -4537,6 +4542,10 @@ function init(visitDoc, visitMiss) {
       placing.y = snap(Math.max(P[1] + 26, Math.min(P[3] - 8, wy)));
       const dw = DEX[placing.id];
       if (placing.room && onWall(dw)) placing.y = wallY(dw, placing.room);   // 🖼 the tap says WHERE along the wall; the wall says how high
+      else if (placing.room) {   // 🍳 within a grid row of the wall: tight against it
+        const ty = tightY(dw, placing.room);
+        if (ty && placing.y < ty + 24) placing.y = ty;
+      }
     }
     updateGhost();
   }
@@ -5299,7 +5308,7 @@ function init(visitDoc, visitMiss) {
       // 📦 the second delivery's walk (tests/homestead-order.spec.mjs): step in, open a phone tab, earn a reward piece
       enter: () => enterHome(), shop: (tab) => openShop(tab), reward: (id) => grantReward(id, state),
       inv: () => ({ shed: state.shed.map((x) => x.id), orders: state.orders.map((o) => ({ id: o.id, at: o.at })), inItems: state.inItems || {} }),
-      geo: { INTERIORS, roomBounds, wallOf },
+      geo: { INTERIORS, roomBounds, wallOf, tightY: (id, t) => tightY(DEX[id], t) },
       onChrome: (el) => onChrome(el),   // the walk checks every control on the view is chrome
     };
   }
