@@ -415,12 +415,29 @@ const appLd = {
     .hs-stallrow--wrap { flex-wrap: wrap; }
     .hs-hen--cow { width: 3.8%; }
     .hs-hen--roost { width: 1.7%; }
-    .hs-hen--dog { width: 3.1%; }
-    .hs-hen--dog .hs-henimg { aspect-ratio: 104 / 66; }
+    .hs-hen--dog { width: 3.13%; }   /* 105px frames (her rows re-baked 28 Sep 2026): the old 104 at 3.1% */
+    .hs-hen--dog .hs-henimg { aspect-ratio: 105 / 66; background-size: 600% 100%; }
+    /* 🐕 asleep in her doghouse: the pack's own sleeping frames laid exactly over the doghouse (d-doghouse-sleep.png) */
+    .hs-dogsleep { position: absolute; pointer-events: none; image-rendering: pixelated;
+      background: url(/assets/homestead/d-doghouse-sleep.png) 0 0 / 800% 100% no-repeat; animation: hs-dogsleep 2.6s steps(8) infinite; }
+    @keyframes hs-dogsleep { to { background-position: 114.2857% 0; } }
+    @media (prefers-reduced-motion: reduce) { .hs-dogsleep { animation: none; } }
     /* 🐈 the cat: square 90px frames, strips of 3, 6 or 8 (the brain sets the size per strip). 2.6% draws
        her pack pixel at the dog's size (1.56 vs 1.61 units) — a cat, a head shorter than the Labrador */
     .hs-hen--cat { width: 2.6%; }
     .hs-hen--cat .hs-henimg { aspect-ratio: 1; background-size: 600% 100%; }
+    /* 🐈 the cat indoors: her yard size, on the room's own layer (the yard's .hs-hen hides indoors); up onto a sofa with a hop */
+    .hs-incat { position: absolute; left: 0; top: 0; width: 2.6%; pointer-events: none; }
+    .hs-incat .hs-henimg { display: block; width: 100%; aspect-ratio: 1; background-size: 600% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+    .hs-incat.is-hop { animation: hs-hop 0.6s ease-out; }
+    /* 🎁 her gift on the doorstep: a flower from the park's own sprites, glowing like an egg, bobbing a little */
+    .hs-gift {
+      position: absolute; width: 24px; height: 30px; pointer-events: none; transform: translate(-50%, -100%);
+      background: center bottom / contain no-repeat; image-rendering: pixelated;
+      filter: drop-shadow(0 0 6px rgba(255, 240, 180, 0.9)); animation: hs-giftbob 1.4s ease-in-out infinite alternate;
+    }
+    @keyframes hs-giftbob { to { translate: 0 -3px; } }
+    @media (prefers-reduced-motion: reduce) { .hs-gift { animation: none; } }
     .hs-hen--ycow { width: 2.65%; }
     .hs-hen--ycow .hs-henimg { aspect-ratio: 96 / 60; }
     .hs-hen--chick { width: 1.1%; }

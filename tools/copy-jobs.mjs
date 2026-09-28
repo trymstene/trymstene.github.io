@@ -2480,16 +2480,36 @@ export const JOBS = {
   // 🐈 THE CAT (28 Sep 2026) — Trym: "add that to the farm/homestead? in the same way you can get a dog", and "give the
   // cat a cat-style personality". She is bought on the Banana Phone like the dog, gives no goods, and comes to you when
   // SHE decides (src/scripts/banana-homestead.js catBrain). Every trait word below is something the yard really does.
+  // 🐕 THE DOG, upgraded (28 Sep 2026) — Trym: "we can probably do some more on the poor dog". Her card finally says who she
+  // is, the way the cat's does; every word is something her brain really does (src/scripts/homestead-dog.js).
+  'homestead-dog': {
+    id: 'homestead-dog',
+    title: 'The Homestead — the dog',
+    what: 'The trait words on the dog’s card, read off her personality seed: her pace, how long she rests, how close she keeps to you, and where she naps.',
+    approved: 'src/data/copy/homestead-dog.json',
+    reads: 'src/scripts/homestead-phone.js (a static import)',
+    top: ['traits'],
+    fields: {
+      'traits.pace0': { kind: 'label', max: 24, note: 'A trait on her card for a dog who walks and runs slower than most. A compliment, lower case.' },
+      'traits.pace2': { kind: 'label', max: 24, note: 'A trait for a dog who walks and runs quicker than most. A compliment, lower case.' },
+      'traits.pat0': { kind: 'label', max: 24, note: 'A trait for a dog who never rests for long and naps less. Lower case.' },
+      'traits.pat2': { kind: 'label', max: 24, note: 'A trait for a dog who rests long and naps in her doghouse more. Lower case.' },
+      'traits.bold0': { kind: 'label', max: 24, note: 'A trait for a dog who checks on you less often than most. Kindly said. Lower case.' },
+      'traits.bold1': { kind: 'label', max: 24, note: 'A trait for a dog who checks on you more often than most. Lower case.' },
+      'traits.house': { kind: 'label', max: 26, note: 'Shown once the yard has a doghouse: she naps in it (the pack’s own sleeping-in-the-doghouse frames). Lower case.' },
+    },
+    shape: () => [],
+  },
   'homestead-cat': {
     id: 'homestead-cat',
     title: 'The Homestead — the cat',
-    what: 'The cat’s words: her row in the Banana Phone’s animal market, the toast when she is bought, the name of what her card counts, her favourite dish, what level 5 brings her, and the trait words on her card.',
+    what: 'The cat’s words: her row in the Banana Phone’s animal market, the toast when she is bought, the name of what her card counts, her favourite dish, what level 5 brings her, the trait words on her card, and her doorstep gift.',
     approved: 'src/data/copy/homestead-cat.json',
-    reads: 'src/scripts/homestead-phone.js and src/scripts/homestead-kitchen.js (static imports)',
-    top: ['shop', 'arrive', 'goods', 'fave', 'next5', 'traits'],
+    reads: 'src/scripts/homestead-phone.js, homestead-kitchen.js and homestead-cat.js (static imports)',
+    top: ['shop', 'arrive', 'goods', 'fave', 'next5', 'traits', 'gift'],
     fields: {
       'shop.name': { kind: 'label', max: 14, note: 'Her row’s title in the animal market, beside the dog’s “the dog”. Lower case, with “the”: there is only ever one.' },
-      'shop.buy': { kind: 'label', aim: 26, max: 34, note: 'Her row’s line while she can be bought, under her name: what she gives. The dog’s says “no goods — just love”; this one says the same thing her way — she gives nothing to sell, and she keeps her own hours. Lower case.' },
+      'shop.buy': { kind: 'label', aim: 30, max: 34, note: 'Her row’s line while she can be bought, under her name: what she gives. The dog’s says “no goods — just love”; this one says the same thing her way — she gives nothing to sell, and she keeps her own hours. Lower case.' },
       'shop.home': { kind: 'label', max: 20, note: 'Her row’s line once she is yours, where the dog’s says “at your heel” and the hens’ “all home”. Where she is, in two or three words. Lower case.' },
       arrive: toastLine(64, 'Buying the cat on the Banana Phone: she is yours, and she will come to you in her own time (the dog, by contrast, is at your heel at once). The game puts 🐈 in front.'),
       goods: { kind: 'label', max: 10, note: 'On her card, under a number, where a hen’s says “eggs” and the dog’s says “visits”: what the number counts — each time she came to you and purred at your feet. One word, lower case.' },
@@ -2503,6 +2523,11 @@ export const JOBS = {
       'traits.bold1': { kind: 'label', max: 24, note: 'A trait for a nosy cat: her walks often end near you, and she comes to you more. Lower case.' },
       'traits.spot': { kind: 'label', max: 24, holds: ['{spot}'], needs: [[/\{spot\}/, 'must carry {spot} — the game names the place']], note: 'Where she naps when nobody has carried her anywhere: {spot} is “the trough”, “the well”, “the house”, “the coop” or “the fence”. Lower case.' },
       'traits.spotHere': { kind: 'label', max: 30, note: 'Where she naps once you have carried her somewhere with the move tool: that spot is hers now. Lower case.' },
+      // 🎁 the doorstep gift (28 Sep 2026, Trym: "add the extra cat ideas"): at most one a day, a daisy or a sunflower by the door
+      'gift.news': toastLine(48, 'A morning line, after the farm’s own news: the cat has left something on the doorstep (a flower lies by the door to walk over). Say THAT something is there, not what — finding out is the fun. The game puts 🐈 in front.'),
+      'gift.got': toastLine(56, 'Walking over her gift picks it up: {item} is “a daisy” or “a sunflower” (the lines below); it goes on the kitchen shelf, where a bouquet wants one of each. The game puts 🐈 in front.', holdsAll('item')),
+      'gift.items.daisy': { kind: 'label', max: 14, note: 'The daisy, as the gift line names it, with its article: lower case.' },
+      'gift.items.sunflower': { kind: 'label', max: 14, note: 'The sunflower, as the gift line names it, with its article: lower case.' },
     },
     shape: () => [],
   },

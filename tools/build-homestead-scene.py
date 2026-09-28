@@ -1199,11 +1199,36 @@ if HAVE_PACK:
         dtrim[nm] = [c.crop((0, t2, 104, b2)) for c in cs]
         dH = max(dH, b2 - t2)
     for nm, cs in dtrim.items():
+        if nm != 'c-dogidle.png':   # 🐕 only the idle beats are still drawn this way: the thumb strip (see below)
+            continue
         dst = Image.new('RGBA', (104 * 4, dH), (0, 0, 0, 0))
         for i, c in enumerate(cs):
             dst.alpha_composite(c, (i * 104, dH - c.height))
         dst.save(os.path.join(OUT, nm), optimize=True)
         print('  %s %dx%d (frame 104x%d)' % (nm, dst.width, dst.height, dH))
+    # 🐕 THE DOG, RE-BAKED (28 Sep 2026 — Trym: "we can probably do some more on the poor dog"): the Labrador's own rows,
+    # ALL their frames (the engine runs strips of any length since the cat): IDLE (the wag), WALK, RUN (the gallop), EAT
+    # (the ground-sniff), six each, and BARK, three. A frame cell is 144x96, rows every 192 px from y 192. Every frame is cut
+    # to ONE box — the union of them all, centred on her standing body, bottom-aligned — so a swap never moves her feet and
+    # a turn never slides her. c-dogidle.png above stays the four-beat idle: the phone's rows and the page's field guide
+    # draw frame 0 of a 400% strip.
+    DROWS = {'c-dog-idle.png': (192, 6), 'c-dog-walk.png': (384, 6), 'c-dog-run.png': (576, 6),
+             'c-dog-eat.png': (768, 6), 'c-dog-bark.png': (960, 3)}
+    dcells = {nm: [dsh.crop((k * 144, y0, k * 144 + 144, y0 + 96)) for k in range(n)] for nm, (y0, n) in DROWS.items()}
+    _stand = [c.getbbox() for c in dcells['c-dog-idle.png'] + dcells['c-dog-walk.png']]
+    _cx = sum(b[0] + b[2] for b in _stand) / (2.0 * len(_stand))
+    _all = [c.getbbox() for cs in dcells.values() for c in cs]
+    _x0, _y0 = min(b[0] for b in _all), min(b[1] for b in _all)
+    _x1, _y1 = max(b[2] for b in _all), max(b[3] for b in _all)
+    _half = max(_cx - _x0, _x1 - _cx)
+    _bx0, _bx1 = int(round(_cx - _half)), int(round(_cx + _half))
+    DGW, DGH = _bx1 - _bx0, _y1 - _y0
+    for nm, cs in dcells.items():
+        dst = Image.new('RGBA', (DGW * len(cs), DGH), (0, 0, 0, 0))
+        for i, c in enumerate(cs):
+            dst.alpha_composite(c.crop((_bx0, _y0, _bx1, _y1)), (i * DGW, 0))
+        dst.save(os.path.join(OUT, nm), optimize=True)
+        print('  %s %dx%d (%d frames of %dx%d)' % (nm, dst.width, dst.height, len(cs), DGW, DGH))
     # 🐣 THE YOUNG (slice 5.6): bought animals arrive as babies and grow
     # up one fed morning at a time. Baby quadrupeds: stride 96, WALK is
     # row 2; the chick swaps rows (WALK is row 3, stride 48). Side group =
@@ -1236,6 +1261,26 @@ if HAVE_PACK:
     _chw = max(10, int(f0.width * 0.38))
     DECOR_OUT.append(('cheesemk', 'Cheese machine', 'farm', 60, 0, f0.width, f0.height, [-_chw, -12, _chw, 2]))
     print('  d-cheesemk.png %dx%d (+catalog)' % (f0.width, f0.height))
+    # 🏠🐕 HER DOGHOUSE AND HER BOWL (28 Sep 2026): the pack's own, and the pack's own sleeping-in-the-doghouse sheet, so she
+    # naps IN it. Raw pack art at the decor scale (2/3 of 3x-chunky art = 2x2 blocks, crisp), NOT the DECOR_DEF pipeline:
+    # its colour pass would shift the doghouse between the empty sprite and the sleeping frames. The sheet's row 0 (her own
+    # golden Labrador) sits 3 px higher than the single: frame y 0 = the single's y 3 (the roof matches pixel for pixel
+    # there); a frame is 143 tall (her nose past the door), padded to 144 so both scale by exactly 1.5 from one art row.
+    _FT = os.path.join(FARM, 'Single_Files_48x48', '0_Complete_Tileset_48x48')
+    _two3 = lambda im: im.resize((im.width * 2 // 3, im.height * 2 // 3), Image.NEAREST)
+    _dh = _two3(Image.open(os.path.join(_FT, 'Doghouse_48x48.png')).convert('RGBA').crop((0, 3, 96, 132)))
+    _dh.save(os.path.join(OUT, 'd-doghouse.png'), optimize=True)
+    _dhw = max(10, int(_dh.width * 0.38))
+    DECOR_OUT.append(('doghouse', 'Doghouse', 'farm', 30, 0, _dh.width, _dh.height, [-_dhw, -12, _dhw, 2]))
+    _dsl = Image.open(os.path.join(ANI, 'Dogs_48x48', 'Dogs_Doghouse_Sleeping_48x48.png')).convert('RGBA')
+    _sl = Image.new('RGBA', (96 * 8, 144), (0, 0, 0, 0))
+    for k in range(8):
+        _sl.alpha_composite(_dsl.crop((k * 96, 0, k * 96 + 96, 143)), (k * 96, 0))
+    _two3(_sl).save(os.path.join(OUT, 'd-doghouse-sleep.png'), optimize=True)   # eight frames of 64x96
+    for _st, _fn in (('', 'Dog_Bowl_Red_Full_48x48.png'), ('-empty', 'Dog_Bowl_Red_Empty_48x48.png')):
+        _two3(Image.open(os.path.join(_FT, _fn)).convert('RGBA').crop((9, 9, 39, 39))).save(os.path.join(OUT, 'd-dogbowl%s.png' % _st), optimize=True)
+    DECOR_OUT.append(('dogbowl', 'Dog bowl', 'farm', 8, 0, 20, 20, None))
+    print('  d-doghouse.png %dx%d, d-doghouse-sleep.png, d-dogbowl(-empty).png (+catalog)' % (_dh.width, _dh.height))
     # 🧶 THE TAILOR TABLE — the work desk (Modern Interiors clothing-store
     # single 260) with a BANANA tailor's dummy: the engine's own hands-up
     # frame (banana-dance.png frame 2) sampled back to its 12px logical grid

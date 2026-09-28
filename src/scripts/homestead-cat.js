@@ -1,6 +1,7 @@
 // 🐈 THE CAT'S MIND — a lazy chunk (28 Sep 2026), loaded only by a yard that has a cat: banana-homestead.js calls
 // brain() for her every frame, stuck() when a wall stops her and pet() when she is tapped. Everything it needs from
 // the yard arrives once through init(ctx); `state` and `huddle` are LIVE getters because the yard reassigns them.
+import W from '../data/copy/homestead-cat.json';   // her words: the doorstep gift's news and thanks
 let C = null, pos, hens, birdsLive, lvOf, traitsOf, spotOf, isYoungA;
 export function init(ctx) {
   C = ctx;
@@ -80,7 +81,18 @@ export function brain(h, now) {
   const g = h.cg || (h.cg = { m: 'sit', ph: 0, until: now + 2500, pMoveAt: now, px: pos.x, py: pos.y, wasIn: true,
     visitAt: now + 20000 + Math.random() * 20000, meowAt: 0, shunAt: 0 });
   g.now = now;
+  if (!giftSeen) giftCheck(h);   // 🎁 the day's doorstep gift, once a load
   const P = C.plotNow();
+  // 🐕 the dog came barking (homestead-dog.js): she bolts, away from the dog, and has a zoomie about it
+  if (g.spook) {
+    const k = g.spook, d = Math.hypot(h.x - k.x, h.y - k.y) || 1;
+    g.spook = null;
+    if (now - k.t < 1500 && g.m !== 'nap' && g.m !== 'shelter') {
+      Object.assign(g, { m: 'zoom', ph: 1, dash: 1, dashing: true, gapUntil: 0, prey: null, until: 0 });
+      h.tx = Math.max(P[0] + 30, Math.min(P[2] - 30, h.x + (h.x - k.x) / d * 170));
+      h.ty = Math.max(P[1] + 50, Math.min(P[3] - 12, h.y + (h.y - k.y) / d * 100));
+    }
+  }
   const cx = (x) => Math.max(P[0] + 30, Math.min(P[2] - 30, x));
   const cy = (y) => Math.max(P[1] + 50, Math.min(P[3] - 12, y));
   const pIn = pos.x > P[0] - 24 && pos.x < P[2] + 24 && pos.y > P[1] - 24 && pos.y < P[3] + 50;
@@ -278,10 +290,174 @@ export function brain(h, now) {
 // a tap: asleep she stays asleep (a stroke is a longer nap), a stranger or a shy one walks off,
 // anyone else purrs at you. The hug itself is henMood's, the same as every animal's.
 export function pet(h) {
+  if (R && R.h === h) { roomPet(); return; }   // 🏠 indoors, her indoor self answers
   const g = h.cg;
   if (!g || !h.a) return;
   if ((g.m === 'nap' || g.m === 'shelter') && g.ph === 1) { if (g.until) g.until += 4000; return; }
   const t = h.tr || traitsOf(h.a);
   if (lvOf(h.a) < 3 && t.bold === 0) { g.m = 'shun'; g.ph = 0; return; }
   g.m = 'purr'; g.ph = 0; g.until = (g.now || 0) + 2600;
+}
+// ---- 🏠 INDOORS (28 Sep 2026) ------------------------------------------------------------------------------------------
+// Trym: "add the extra cat ideas" — the cat asleep on a rug. She follows you in when she is near the house (or it rains)
+// and comes back out with you. Inside she keeps a small day: a nap in her spot (by the fire, else on a rug, else up ON a
+// bed, the sofa or the beanbag, else along the back wall), a stroll, a sit to watch you, and a purr at your feet once you
+// have stood still. A tap is the yard's own (the day's hug): awake she purrs, asleep she sleeps on.
+const WARM = /^(fireplace|woodstove)$/, SOFT = /bed|couch|sofa|beanbag/;
+let R = null;
+// her spots in this room: where she walks to, and for furniture the seat she hops up onto (drawn in front of it)
+function roomSpots(t) {
+  const out = [], B = C.roomBounds(t);
+  for (const it of ((C.state.inItems || {})[t] || [])) {
+    const d = C.DEX[it.id];
+    if (!d) continue;
+    if (WARM.test(it.id)) out.push({ x: it.x, y: Math.min(B[3] - 6, it.y + 18), w: 5 });
+    else if (d.rug && d.h >= 40) out.push({ x: it.x, y: it.y - d.h * 0.4, w: 3 });
+    else if (SOFT.test(it.id)) out.push({ x: it.x, y: Math.min(B[3] - 6, it.y + 12), up: [it.y - Math.min(22, d.h * 0.42), it.y + 2], w: 2 });
+  }
+  if (!out.length) out.push({ x: B[0] + 30 + Math.random() * (B[2] - B[0] - 60), y: B[1] + 16, w: 1 });
+  return out;
+}
+export function roomEnter(h, t, now) {
+  roomLeave(true);
+  const g = h.cg, home = C.state.home;
+  if (!g || !h.a || !(C.huddle || g.m === 'shelter' || Math.hypot(h.x - home.x, h.y - home.y - 34) < 320)) return;   // off on her own business
+  const I = C.INTERIORS[t], el = document.createElement('div'), img = document.createElement('span');
+  el.className = 'hs-incat';
+  img.className = 'hs-henimg';
+  el.appendChild(img);
+  C.world.appendChild(el);
+  R = { h, t, el, img, x: I.spawn[0] + 26, y: I.spawn[1] + 6, m: 'nap', ph: 0, until: 0, z: 0, now,
+    frameAt: now, pMoveAt: now, px: pos.x, py: pos.y, fl: '' };
+  R.tx = R.x; R.ty = R.y;
+  C.track1('homestead_cat_inside');
+}
+// out with you: she sits by the door, and her yard day goes on from there
+export function roomLeave(quiet) {
+  if (!R) return;
+  const h = R.h;
+  R.el.remove();
+  R = null;
+  if (quiet || !h.cg) return;
+  h.x = h.tx = C.state.home.x + 34; h.y = h.ty = C.state.home.y + 46;
+  Object.assign(h.cg, { m: 'sit', ph: 0, until: performance.now() + 2500, prey: null });
+}
+export const roomAt = (wx, wy) => !!R && Math.hypot(wx - R.x, wy - (R.y - 12)) < 30;
+// the QA seam's read of her indoor self
+export const roomRead = () => R && { m: R.m, ph: R.ph, x: R.x, y: R.y, z: R.z, strip: R.cstrip, frame: R.frame, nf: R.nf,
+  size: R.img.style.backgroundSize, pos: R.img.style.backgroundPosition, up: !!(R.spot && R.spot.up && R.z) };
+export const roomMood = (m, o) => { if (R) Object.assign(R, { m, ph: 0, until: 0 }, o || {}); return !!R; };
+function roomPet() {
+  if (R.m === 'nap' && R.ph === 1) { R.until += 4000; return; }
+  if (lvOf(R.h.a) < 3 && (R.h.tr || traitsOf(R.h.a)).bold === 0) { R.m = 'stroll'; R.ph = 0; return; }
+  if (R.z) { R.y = R.spot.y; R.z = 0; }   // down off the sofa to purr at you
+  R.m = 'purr'; R.ph = 0; R.until = R.now + 2600;
+}
+export function roomTick(now, dt) {
+  if (!R) return;
+  const h = R.h, a = h.a, t = h.tr || traitsOf(a), pace = [0.8, 1, 1.2][t.pace] || 1, B = C.roomBounds(R.t);
+  R.now = now;
+  if (Math.hypot(pos.x - R.px, pos.y - R.py) > 1.5) R.pMoveAt = now;
+  R.px = pos.x; R.py = pos.y;
+  const pd = Math.hypot(pos.x - R.x, pos.y - R.y), still = now - R.pMoveAt;
+  const go = (m, ms) => { if (R.z) { R.y = R.spot.y; R.z = 0; } R.m = m; R.ph = 0; R.until = ms ? now + ms : 0; };   // off the sofa first
+  const aim = (x, y) => { R.tx = Math.max(B[0] + 14, Math.min(B[2] - 14, x)); R.ty = Math.max(B[1] + 8, Math.min(B[3] - 4, y)); };
+  const there = () => Math.hypot(R.tx - R.x, R.ty - R.y) < 4;
+  let strip = 'c-catidle.png', spd = 0, fr = 0;
+  if ((R.m === 'sit' || R.m === 'stroll') && !R.calm && still > 5000 && now > (h.cg.visitAt || 0) && pd > 50 && pd < 420) go('visit');
+  if (R.m === 'nap') {
+    if (!R.ph) {
+      const S = roomSpots(R.t);
+      let r = Math.random() * S.reduce((n, s) => n + s.w, 0);
+      R.spot = S.find((s) => (r -= s.w) < 0) || S[0];
+      aim(R.spot.x, R.spot.y); R.ph = 0.5;
+    }
+    if (R.ph === 0.5) {
+      strip = 'c-cat.png'; spd = 28 * pace; fr = 105 / pace;
+      if (there()) {
+        R.ph = 1; R.until = now + (22000 + Math.random() * 26000) * (t.pat === 2 ? 1.5 : t.pat === 0 ? 0.6 : 1);
+        if (R.spot.up) { R.y = R.spot.up[0]; R.z = R.spot.up[1]; R.el.classList.add('is-hop'); setTimeout(() => R && R.el.classList.remove('is-hop'), 650); }
+      }
+    }
+    if (R.ph === 1) {
+      strip = 'c-catsleep.png';
+      if (now > R.until) go('sit', 2000 + Math.random() * 1500);
+    }
+  } else if (R.m === 'sit') {
+    if (pd < 260) { const f = pos.x < R.x ? 'scaleX(-1)' : ''; if (R.fl !== f) { R.fl = f; R.img.style.transform = f; } }
+    if (!R.until) R.until = now + 3000 + Math.random() * 3000;
+    if (now > R.until) { const r = Math.random(); go(r < 0.6 ? 'nap' : r < 0.85 ? 'stroll' : 'sit'); }
+  } else if (R.m === 'stroll') {
+    if (!R.ph) { R.ph = 1; aim(B[0] + 20 + Math.random() * (B[2] - B[0] - 40), B[1] + 12 + Math.random() * (B[3] - B[1] - 20)); }
+    strip = 'c-cat.png'; spd = 28 * pace; fr = 105 / pace;
+    if (there()) go('sit', 2000 + Math.random() * 2500);
+  } else if (R.m === 'visit') {
+    if (!R.ph) {
+      if (still < 800) go('sit', 2500);   // a cat does not chase you round the house either
+      else {
+        aim(pos.x + (R.x < pos.x ? -30 : 30), pos.y + 6);
+        strip = 'c-cat.png'; spd = 34 * pace; fr = 90 / pace;
+        if (there() || pd < 36) { R.ph = 1; R.until = now + 3000 + Math.random() * 1500; C.float(R.x, R.y - 36, '❤️'); a.gs = (a.gs || 0) + 1; }
+      }
+    } else {
+      strip = 'c-cathappy.png';
+      if (now > R.until) {
+        h.cg.visitAt = now + catGap(a, t);
+        go('nap');
+        if (Math.random() < 0.4) { R.spot = { x: R.x, y: R.y }; R.ph = 1; R.until = now + 20000 + Math.random() * 20000; strip = 'c-catsleep.png'; }   // down beside you
+      }
+    }
+  } else if (R.m === 'purr') {
+    strip = 'c-cathappy.png';
+    if (now > R.until) go('sit', 2000 + Math.random() * 2000);
+  }
+  if (spd) {
+    const dx = R.tx - R.x, dy = R.ty - R.y, d = Math.hypot(dx, dy);
+    if (d > 1) {
+      const s = Math.min(d, spd * dt);
+      R.x += dx / d * s; R.y += dy / d * s;
+      const f = dx < -0.5 ? 'scaleX(-1)' : dx > 0.5 ? '' : R.fl;
+      if (R.fl !== f) { R.fl = f; R.img.style.transform = f; }
+    }
+  }
+  catStrip(R, strip, now);
+  if (now - R.frameAt > (fr || CAT[strip][1])) { R.frameAt = now; R.frame = (R.frame + 1) % R.nf; }
+  if (R.pf !== R.frame) { R.pf = R.frame; R.img.style.backgroundPosition = (R.frame * 100 / (R.nf - 1)) + '% 0'; }
+  R.el.style.left = C.pct(R.x - 23, C.W); R.el.style.top = C.pct(R.y - 47, C.H);
+  R.el.style.zIndex = String(C.IN_Z + Math.round(R.z || R.y));
+  h.x = R.x; h.y = R.y;   // her yard self stands where she is: a tap's heart floats over her
+}
+
+// ---- 🎁 A GIFT ON THE DOORSTEP (28 Sep 2026) ----------------------------------------------------------------------------
+// Trym: "add the extra cat ideas" — little gifts at the door. At most one a day (the pass keeps the day, so a pull never
+// brings a second), likelier the more she trusts you: a daisy or a sunflower, the two a bouquet wants, left by the door
+// to walk over; it goes on the kitchen shelf. Her own yard only.
+let giftSeen = false;
+export function giftCheck(h, force) {
+  giftSeen = true;
+  if (C.visiting || !C.state.claimedAt || !h.a) return false;
+  if (!force) {
+    const today = C.dayNum(), last = C.stats().hs_catgift || 0, lv = lvOf(h.a);
+    if (last >= today) return false;
+    C.passStat('hs_catgift', today - last);
+    if (Math.random() > (lv >= 5 ? 0.7 : lv >= 3 ? 0.55 : 0.4)) return false;
+  }
+  const item = Math.random() < 0.55 ? 'daisy' : 'sunflower', x = C.state.home.x + 52, y = C.state.home.y + 46;
+  const el = document.createElement('div');
+  el.className = 'hs-gift';
+  el.style.backgroundImage = "url('/assets/park/g-" + item + ".png')";
+  el.style.left = C.pct(x, C.W); el.style.top = C.pct(y, C.H);
+  C.depth(el, y);
+  C.world.appendChild(el);
+  C.eggEls.push({ x, y, el, kind: 'gift', item });
+  if (!force) setTimeout(() => C.toast('🐈 ' + W.gift.news, 4600), C.mornN * 4800 + 400);   // after the morning's own news
+  return item;
+}
+export function gotGift(c) {
+  const P = C.state.pantry || (C.state.pantry = {});
+  P[c.item] = (P[c.item] || 0) + 1;
+  C.float(c.x, c.y - 22, "<img src='/assets/park/g-" + c.item + ".png' alt='' class='hs-toastico'> +1");
+  C.toast('🐈 ' + W.gift.got.replace('{item}', W.gift.items[c.item] || c.item), 3600);
+  C.track1('homestead_cat_gift', { item: c.item });
+  C.save();
 }

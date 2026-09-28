@@ -4,6 +4,7 @@
 // `visiting` are LIVE getters because the main module reassigns them.
 import { buildTree } from './homestead-tree.js';
 import CATW from '../data/copy/homestead-cat.json';   // 🐈 the cat's words (28 Sep 2026)
+import DOGW from '../data/copy/homestead-dog.json';   // 🐕 the dog's card words (28 Sep 2026)
 // 🎨 pixel icons come BUNDLED from src/icons/pixelart (copy an SVG in to use
 // it) — the full pack under public/assets is gitignored and 404s on the live site
 import pxEdit from '../icons/pixelart/edit.svg?raw';
@@ -166,8 +167,11 @@ export function petRename(a) {
 }
 // brief: character only — no friend, no spot (the ones who left have neither)
 export function traitLine(a, brief) {
-  if (a.sp === 'dog') return '';
-  if (a.sp === 'cat') return catTraits(a, brief);
+  if (a.sp === 'dog') return petTraits(a, brief, DOGW.traits, C.state.items.some((i) => i.id === 'doghouse') ? DOGW.traits.house : '');
+  if (a.sp === 'cat') {
+    const sp = spotOf(a);
+    return petTraits(a, brief, CATW.traits, a.hm ? CATW.traits.spotHere : sp ? CATW.traits.spot.replace('{spot}', SPOT_W[sp.k]) : '');
+  }
   const t = traitsOf(a), he = he0(a);
   const w = [];
   if (t.pace === 0) w.push('a dawdler'); else if (t.pace === 2) w.push('quick on ' + (he ? 'his' : 'her') + ' feet');
@@ -180,17 +184,14 @@ export function traitLine(a, brief) {
   if (sp) w.push('you’ll find ' + (he ? 'him' : 'her') + ' by ' + SPOT_W[sp.k]);
   return w.join(' · ');
 }
-// 🐈 her card's words: the traits her brain really acts on (catBrain: her pace, her naps, how shy she is)
-// and where she naps — where you carried her, else her favourite spot
-function catTraits(a, brief) {
-  const t = traitsOf(a), T = CATW.traits;
-  const w = [];
+// 🐈🐕 the cat's and the dog's card words: the traits their brains really act on (their pace, their rests and naps, how
+// close they keep to you) and where they nap
+function petTraits(a, brief, T, where) {
+  const t = traitsOf(a), w = [];
   if (t.pace === 0) w.push(T.pace0); else if (t.pace === 2) w.push(T.pace2);
   if (t.pat === 0) w.push(T.pat0); else if (t.pat === 2) w.push(T.pat2);
   if (t.bold === 0) w.push(T.bold0); else if (t.bold === 1) w.push(T.bold1);
-  if (brief) return w.join(' · ');
-  if (a.hm) w.push(T.spotHere);
-  else { const sp = spotOf(a); if (sp) w.push(T.spot.replace('{spot}', SPOT_W[sp.k])); }
+  if (!brief && where) w.push(where);
   return w.join(' · ');
 }
 // needs = the locked-row line; it speaks the SAME size-words as the

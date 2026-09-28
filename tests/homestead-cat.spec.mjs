@@ -23,16 +23,16 @@ const CAT = (o) => ({ sp: 'cat', b: 0, pd: 0, name: '', wd: 0, id: 424242, ad: t
 const HEN = (i) => ({ sp: 'hen', b: 0, pd: 0, name: '', wd: 0, id: 100100 + i, ad: today() - 10, gs: 0, sd: 11 + i });
 const DOG = { sp: 'dog', b: 0, pd: 0, name: '', wd: 0, id: 200200, ad: today() - 5, gs: 0, sd: 5 };
 
-async function open(page, animals) {
+async function open(page, animals, inItems) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
-  await page.addInitScript((an) => {
+  await page.addInitScript(([an, room]) => {
     if (sessionStorage.getItem('cat-seeded')) return;
     sessionStorage.setItem('cat-seeded', '1');
     localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], shed: [], orders: [],
-      inItems: {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
+      inItems: room || {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 },
       animals: an, animalsV: 3, hens: an.filter((a) => a.sp === 'hen').length }));
-  }, animals);
+  }, [animals, inItems || null]);
   await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__hs && window.__hs.enter && window.__hs.wx, null, { timeout: 30000 });
   await page.evaluate(() => window.__hs.wx('clear'));   // the real sky may be raining: she would be under the eaves
@@ -344,6 +344,101 @@ test.describe('the cat', () => {
     await page.waitForTimeout(1200);
     await settle(page);
     await page.screenshot({ path: SHOT + '07-size.png' });
+    expect(errs, 'no page errors').toEqual([]);
+  });
+
+  test('indoors she naps on a rug or up on the couch, purrs, comes to you, and comes back out with you', async ({ page }) => {
+    test.setTimeout(180000);
+    // a house with a rug and a big couch and nothing warmer: her two spots
+    const errs = await open(page, [HEN(0), HEN(1), CAT({ b: 3 })], { 3: [{ id: 'greyrug', x: 800, y: 640 }, { id: 'bigcouch', x: 980, y: 560 }] });
+    await mood(page, 'sit', 60000, { ...NO_VISIT, at: [780, 520] });   // by the house: she will come in with you
+    await page.evaluate(() => window.__hs.enter());
+    await page.waitForTimeout(400);
+    let r = await page.evaluate(() => window.__hs.catRoom());
+    expect(r, 'she followed you in').toBeTruthy();
+    // she walks to one of her spots and lies down there: on the rug, or up on the couch (a hop, drawn in front of it)
+    const seen = new Set();
+    for (let i = 0; i < 160; i++) {
+      r = await page.evaluate(() => window.__hs.catRoom());
+      seen.add(r.strip);
+      if (r.strip === 'c-catsleep.png') break;
+      await page.waitForTimeout(100);
+    }
+    expect([...seen], 'she walked in and lay down').toEqual(expect.arrayContaining(['c-cat.png', 'c-catsleep.png']));
+    const onRug = Math.abs(r.x - 800) < 40 && Math.abs(r.y - (640 - 90 * 0.4)) < 12;
+    const onCouch = r.up && Math.abs(r.x - 980) < 40;
+    expect(onRug || onCouch, 'asleep on the rug or up on the couch: ' + JSON.stringify(r)).toBe(true);
+    if (onCouch) expect(r.z, 'up on the couch she is drawn in front of it').toBe(562);
+    // the sleep row runs its frames, at its own size
+    const frames = new Set();
+    for (let i = 0; i < 40; i++) {
+      const q = await page.evaluate(() => window.__hs.catRoom());
+      frames.add(q.frame);
+      expect(q.size, 'the sleep row is sized for eight frames').toBe('800% 100%');
+      await page.waitForTimeout(90);
+    }
+    expect(frames.size, 'the sleep row breathes').toBeGreaterThanOrEqual(7);
+    await page.screenshot({ path: SHOT + '08-indoors.png' });
+    // a tap: asleep she sleeps on, and it is still the day's hug
+    const b0 = (await cat(page)).b;
+    let [sx, sy] = await screenAt(page, r.x, r.y - 10);
+    await page.mouse.click(sx, sy);
+    await page.waitForTimeout(700);
+    expect((await page.evaluate(() => window.__hs.catRoom())).strip, 'a tap does not wake her').toBe('c-catsleep.png');
+    expect((await cat(page)).b, 'the hug counts indoors too').toBe(b0 + 1);
+    // awake, a tap is a purr
+    await page.evaluate(() => window.__hs.catRoomMood('sit', { calm: true, until: 1e12 }));
+    await page.waitForTimeout(300);
+    r = await page.evaluate(() => window.__hs.catRoom());
+    [sx, sy] = await screenAt(page, r.x, r.y - 12);
+    await page.mouse.click(sx, sy);
+    await page.waitForTimeout(400);
+    expect((await page.evaluate(() => window.__hs.catRoom())).strip, 'she purrs').toBe('c-cathappy.png');
+    // stand still, and she comes to purr at your feet
+    await page.evaluate(() => { window.__hs.catMood('sit', 0, { visitAt: 0 }); window.__hs.catRoomMood('sit', { calm: false, until: 1e12 }); });
+    const gs0 = (await cat(page)).gs;
+    let visited = false;
+    for (let i = 0; i < 160 && !visited; i++) {
+      const q = await page.evaluate(() => window.__hs.catRoom());
+      visited = q.m === 'visit' && q.strip === 'c-cathappy.png';
+      await page.waitForTimeout(100);
+    }
+    expect(visited, 'she came to purr at your feet').toBe(true);
+    expect((await cat(page)).gs, 'a purr counted on her card').toBe(gs0 + 1);
+    await page.screenshot({ path: SHOT + '09-indoor-visit.png' });
+    // out through the door: she comes out with you and sits by it
+    await page.evaluate(() => window.__hs.warp(900, 755));
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => window.__hs.catRoom()), 'nobody left indoors').toBeFalsy();
+    const out = await cat(page);
+    expect(Math.abs(out.x - 794) < 30 && Math.abs(out.y - 476) < 30, 'she came out by the door: ' + Math.round(out.x) + ',' + Math.round(out.y)).toBe(true);
+    // off on her own business across the yard, she stays out
+    await mood(page, 'sit', 60000, { ...NO_VISIT, at: [1250, 760] });
+    await page.evaluate(() => window.__hs.enter());
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => window.__hs.catRoom()), 'far from the house, she stays out').toBeFalsy();
+    expect(errs, 'no page errors').toEqual([]);
+  });
+
+  test('she leaves a gift on the doorstep: a flower for the kitchen shelf', async ({ page }) => {
+    test.setTimeout(90000);
+    const errs = await open(page, [HEN(0), HEN(1), CAT({ b: 5 })]);
+    // the day's own gift may already be there (Lv 5: most days); if not, she leaves one now
+    let item;
+    if (await page.locator('.hs-gift').count()) item = (await page.locator('.hs-gift').getAttribute('style')).match(/g-(\w+)\.png/)[1];
+    else item = await page.evaluate(() => window.__hs.catGift());
+    expect(['daisy', 'sunflower'], 'a flower a bouquet wants').toContain(item);
+    await expect(page.locator('.hs-gift'), 'it lies by the door').toHaveCount(1);
+    await page.evaluate(() => window.__hs.warp(760 + 52 + 80, 430 + 70));   // near the door, not on it yet
+    await page.waitForTimeout(900);
+    await settle(page);
+    await page.screenshot({ path: SHOT + '10-gift.png' });
+    await page.evaluate(() => window.__hs.warp(760 + 52, 430 + 46));        // and over it
+    await page.waitForTimeout(500);
+    await expect(page.locator('.hs-gift'), 'picked up').toHaveCount(0);
+    await expect(page.locator('#hsToast')).toContainText(CATW.gift.got.replace('{item}', CATW.gift.items[item]));
+    const pantry = await page.evaluate(() => JSON.parse(localStorage.getItem('hs-v1')).pantry || {});
+    expect(pantry[item], 'on the kitchen shelf').toBe(1);
     expect(errs, 'no page errors').toEqual([]);
   });
 });

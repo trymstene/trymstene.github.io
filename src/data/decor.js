@@ -44,6 +44,8 @@ const ROWS = [
   ['sunvase', 'Sunflower vase', 'garden', 20, 3, 31, 65, [-11, -12, 11, 2]],
   ['whitevase', 'White flower vase', 'garden', 20, 3, 31, 53, [-11, -12, 11, 2]],
   ['cheesemk', 'Cheese machine', 'farm', 60, 0, 162, 111, [-61, -12, 61, 2]],
+  ['doghouse', 'Doghouse', 'farm', 30, 0, 64, 86, [-24, -12, 24, 2]],
+  ['dogbowl', 'Dog bowl', 'farm', 8, 0, 20, 20],
   ['tailor', 'Tailor table', 'farm', 45, 0, 78, 90, [-31, -12, 31, 2]],
   ['bananastatue', 'Banana statue', 'display', 55, 3, 76, 82, [-28, -12, 28, 2]],
   ['stove', 'The stove', 'kitchen', 42, 2, 32, 64, null, { tight: [12, 2], alt: [32, 64] }],

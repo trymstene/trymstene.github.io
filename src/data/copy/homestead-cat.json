@@ -17,5 +17,13 @@
     "bold1": "follows you about",
     "spot": "naps by {spot}",
     "spotHere": "naps where you carried her"
+  },
+  "gift": {
+    "news": "the cat left something on the doorstep",
+    "got": "{item} from the cat — it’s on the kitchen shelf",
+    "items": {
+      "daisy": "a daisy",
+      "sunflower": "a sunflower"
+    }
   }
 }
