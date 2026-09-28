@@ -2988,7 +2988,10 @@ const sanLvl = (v) => { const n = Math.round(Number(v)); return n >= 1 && n <= 9
 // guestbook, vis:<slug> visits, wat:<slug> neighbour waterings, seen:<slug>,
 // 'index' → the doors list. The OWNER's truth stays in their browser (hs-v1);
 // this room is the copy the neighbours see — a lost row costs one re-save.
-const YARD_ITEM_CAP = 64, GUEST_CAP = 40, VIS_CAP = 40, WAT_CAP = 20;
+// 🏡 what a save keeps: a house's yard holds 96 pieces (banana-homestead.js CAPS — 64 here cut the top rung short from
+// 30 Aug) and a room 60, the house's 50 on the floor + 10 on its counters (Trym, 28 Sep 2026: "yes go ahead with 50 + 10
+// (things on counters) - and 96 in the yard"). Raise the game's with these, this worker deployed first.
+const YARD_ITEM_CAP = 96, ROOM_ITEM_CAP = 60, GUEST_CAP = 40, VIS_CAP = 40, WAT_CAP = 20;
 // 🤗 a neighbour's hugs and 🌾 their trough. Both are per-yard, per-day lists
 // the owner folds in on their next visit — a visitor NEVER writes the owner's
 // doc.state, because the owner's own save replaces it wholesale.
@@ -3425,7 +3428,7 @@ export class YardRoom {
     // id discipline as the yard, capped — visitors walk the rooms read-only
     out.inItems = {};
     [1, 2, 3].forEach((r) => {
-      const list = s.inItems && Array.isArray(s.inItems[r]) ? s.inItems[r].slice(0, 20) : [];
+      const list = s.inItems && Array.isArray(s.inItems[r]) ? s.inItems[r].slice(0, ROOM_ITEM_CAP) : [];
       const clean = [];
       list.forEach((it) => {
         if (it && typeof it.id === 'string' && /^([a-z0-9]{1,24}|c_[a-f0-9]{6,32})$/.test(it.id)) {

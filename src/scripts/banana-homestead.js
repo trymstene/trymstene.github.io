@@ -83,6 +83,8 @@ const HS_KEY = 'hs-v1';
 // biggest purchase in the world at 900 coins, so it gets the big jump: room to
 // actually furnish the land you paid for, at ~41% covered, walking space kept.
 const CAPS = [12, 28, 42, 96];   // placement spots per stage — each rung adds room
+// 🛋 what a save keeps of a room: the house's 50 on the floor + 10 on its counters (worker-rave ROOM_ITEM_CAP — raise both)
+const ROOM_MAX = 60;
 // 🏠 the ladder: every rung is a WARDROBE — pick a style, then place it
 const STRUCT_LADDER = [
   { key: 'tent', price: 50, name: 'Pitch a tent', icon: '⛺',
@@ -402,7 +404,7 @@ function init(visitDoc, visitMiss) {
       // per-tier furnishing lists, trimmed to what the worker will keep
       const pubIn = {};
       [1, 2, 3].forEach((t2) => {
-        const l = ((state.inItems || {})[t2] || []).slice(0, 20)
+        const l = ((state.inItems || {})[t2] || []).slice(0, ROOM_MAX)
           .map((it) => ({ id: it.id, x: Math.round(it.x), y: Math.round(it.y) }));
         if (l.length) pubIn[t2] = l;
       });
@@ -962,14 +964,15 @@ function init(visitDoc, visitMiss) {
   let inside = 0, inShade = null, inPlate = null, inPlateKey = '';
   const IN_Z = 2100;
   // 🛋 M4.5: each room keeps its own furniture (state.inItems[tier])
-  const INCAP = { 1: 6, 2: 12, 3: 16 };
+  // floor spots a room: the house has 3.6 times the cabin's floor and held 16 (Trym, 28 Sep 2026: "yes go ahead with 50 + 10
+  // (things on counters) - and 96 in the yard")
+  const INCAP = { 1: 6, 2: 12, 3: 50 };
   const inList = () => (state.inItems[inside] = state.inItems[inside] || []);
   // 🍳 the spots a room has are floor: a toaster on a counter takes none (split from its counter, a kitchen would have
   // cost twice the spots it did)
   const inFloor = () => inList().filter((it) => !(DEX[it.id] && DEX[it.id].on)).length;
-  // ⚠️ and never past what a save keeps: worker-rave's yardSan holds 20 pieces a room (s.inItems[r].slice(0, 20))
-  const ROOM_MAX = 20;
-  const roomFull = (d) => inList().length >= ROOM_MAX ? ROOM_MAX : !d.on && inFloor() >= INCAP[inside] ? INCAP[inside] : 0;
+  const ON_MAX = 10;   // and ten things on its counters, any room — together never past what a save keeps (ROOM_MAX)
+  const roomFull = (d) => d.on ? inList().length - inFloor() >= ON_MAX : inFloor() >= INCAP[inside];
   // per-room placement insets: the wood rooms wear a ~100px wall band up top;
   // the tent is groundsheet to the brim. ⚠️ THE VISIBLE FLOOR IS THE PROMISE
   // (Trym, 7 Aug — third red-ghost round): every inset here must map to
@@ -3622,7 +3625,7 @@ function init(visitDoc, visitMiss) {
     get state() { return state; }, get inside() { return inside; }, get visiting() { return visiting; },
     get wallOf() { return wallOf; }, get HW() { return HW; },   // 🖼 a picture needs a wall (the shed's place button asks)
     get hasCounter() { return hasCounter; },   // 🍳 and a toaster a counter
-    get roomFull() { return roomFull; },   // the floor's spots, and what a save keeps
+    get roomFull() { return roomFull; }, get ON_MAX() { return ON_MAX; },   // the floor's spots, and the counters' ten
     get BABY_W() { return BABY_W; }, get SPOT_W() { return SPOT_W; }, get isOld() { return isOld; }, get toGrass() { return toGrass; },
     get CHEESE_C() { return CHEESE_C; },
     get COIN() { return COIN; },
@@ -3826,7 +3829,7 @@ function init(visitDoc, visitMiss) {
           if (d.on && !hasCounter()) { shopNote('🍳 ' + HW.counterOnly); return; }
           if (d.reward && d.stage > (state.stage | 0)) { shopNote('🏠 ' + HW.bigHome); return; }
           if (inside ? roomFull(d) : state.items.length >= cap()) {
-            toast(inside ? 'this room is full (' + roomFull(d) + ' spots)' : 'the plot is full');
+            toast(!inside ? 'the plot is full' : d.on ? '🍳 ' + fillWords(HW.countersFull, { n: ON_MAX }) : 'this room is full (' + INCAP[inside] + ' spots)');
             return;
           }
           const i = state.shed.findIndex((s) => boxed(s.id) === id);

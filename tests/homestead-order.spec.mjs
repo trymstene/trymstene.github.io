@@ -958,20 +958,22 @@ test('in the house: counters in a row, a toaster and a sink stand on them, a cou
   expect(errs).toEqual([]);
 });
 
-// 🍳 the room's spots are floor: a full floor still takes a toaster on its counter — and a room stops at the 20 pieces a
-// save keeps (worker-rave yardSan), or the server would drop the rest
-test('a full floor still takes a toaster; a room stops at the twenty pieces a save keeps', async ({ page }) => {
+// 🍳 a house holds 50 on its floor and 10 on its counters (Trym, 28 Sep 2026: "yes go ahead with 50 + 10 (things on
+// counters) - and 96 in the yard") — 60 in all, what a save keeps (worker-rave ROOM_ITEM_CAP)
+test('a house holds fifty on the floor and ten things on its counters', async ({ page }) => {
   test.setTimeout(90000);
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.addInitScript(() => {
     if (sessionStorage.getItem('order-seeded')) return;
     sessionStorage.setItem('order-seeded', '1');
-    // two counters at the wall and fourteen pots: sixteen floor pieces, the house's spots
-    const room = [{ id: 'ctrwhite', x: 700, y: 450 }, { id: 'ctrwhite', x: 762, y: 450 }];
-    for (let i = 0; i < 14; i++) room.push({ id: 'aloe', x: 640 + (i % 7) * 72, y: 560 + Math.floor(i / 7) * 90 });
+    // six counters along the wall and forty-four pots: fifty floor pieces; nine kettles on the first five counters
+    const cx = [640, 702, 764, 826, 888, 950];
+    const room = cx.map((x) => ({ id: 'ctrwhite', x, y: 450 }));
+    for (let i = 0; i < 44; i++) room.push({ id: 'aloe', x: 630 + (i % 11) * 50, y: 540 + Math.floor(i / 11) * 60 });
+    for (let i = 0; i < 9; i++) room.push({ id: 'kettle', x: cx[Math.floor(i / 2)] + (i % 2 ? 14 : -14), y: 450 });
     localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [],
-      inItems: { 3: room }, shed: [{ id: 'aloe' }, { id: 'toaster' }, { id: 'kettle' }, { id: 'blender' }, { id: 'dishrack' }, { id: 'mixer' }],
+      inItems: { 3: room }, shed: [{ id: 'aloe' }, { id: 'blender' }, { id: 'dishrack' }],
       bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
   });
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -981,28 +983,26 @@ test('a full floor still takes a toaster; a room stops at the twenty pieces a sa
   await page.evaluate(() => window.__hs.enter());
   await page.waitForTimeout(800);
   await expect(page.locator('#hsToast.is-on'), 'the arrival line has had its say').toHaveCount(0, { timeout: 8000 });
+  const room = () => page.evaluate(() => window.__hs.inv().inItems[3] || []);
   // the floor is full: another pot waits in the shed
   await placeFromShed(page, 'Aloe in a pot');
   await page.waitForTimeout(500);
   expect(await page.locator('#hsConfirm:not([hidden])').count(), 'no room for a pot').toBe(0);
-  await expect(page.getByText('this room is full (16 spots)').first()).toBeVisible();
-  // …but four things go on the counters, one after another, up to twenty pieces
-  const room = () => page.evaluate(() => window.__hs.inv().inItems[3] || []);
-  for (const [name, dx] of [['Toaster', -20], ['Kettle', 8], ['Blender', 40], ['Dish rack', 72]]) {
-    await placeFromShed(page, name);
-    await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
-    await settle(page);
-    await page.mouse.click(...(await screenAt(page, 700 + dx, 420)));
-    await page.waitForTimeout(300);
-    await expect(page.locator('#hsPlaceGo'), name + ' on a counter').toBeEnabled();
-    await page.click('#hsPlaceGo');
-    await page.waitForTimeout(600);
-  }
-  expect((await room()).length, 'twenty pieces').toBe(20);
-  // the twenty-first, even for a counter: the room is as full as a save keeps
-  await placeFromShed(page, 'Stand mixer');
+  await expect(page.getByText('this room is full (50 spots)').first()).toBeVisible();
+  // …but a tenth thing goes on the sixth counter
+  await placeFromShed(page, 'Blender');
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await settle(page);
+  await page.mouse.click(...(await screenAt(page, 950, 420)));
+  await page.waitForTimeout(300);
+  await expect(page.locator('#hsPlaceGo'), 'on the sixth counter').toBeEnabled();
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  expect((await room()).length, 'fifty on the floor, ten on the counters').toBe(60);
+  // and the eleventh thing waits: the counters are full
+  await placeFromShed(page, 'Dish rack');
   await page.waitForTimeout(500);
-  expect(await page.locator('#hsConfirm:not([hidden])').count(), 'no twenty-first').toBe(0);
-  await expect(page.getByText('this room is full (20 spots)').first()).toBeVisible();
+  expect(await page.locator('#hsConfirm:not([hidden])').count(), 'no eleventh thing').toBe(0);
+  await expect(page.getByText(HW.countersFull.replace('{n}', '10')).first()).toBeVisible();
   expect(errs).toEqual([]);
 });

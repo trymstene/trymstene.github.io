@@ -2455,7 +2455,7 @@ export const JOBS = {
     what: 'Toasts in the homestead: a save that failed, a neighbour’s phone and mailbox, build mode’s soil tool and the ground it digs, the tent that comes first, land that grows, a full trough, watering a neighbour’s beds, pictures that need a wall and kitchen things that need a counter.',
     approved: 'src/data/copy/homestead-toasts.json',
     reads: 'src/scripts/banana-homestead.js (a static import)',
-    top: ['saveFailed', 'notYourPhone', 'soilTool', 'tentFirst', 'landGrows', 'fedWatered', 'wateredNeighbour', 'groundDug', 'theirMailbox', 'wallOnly', 'wallHang', 'bigHome', 'counterOnly', 'counterStand'],
+    top: ['saveFailed', 'notYourPhone', 'soilTool', 'tentFirst', 'landGrows', 'fedWatered', 'wateredNeighbour', 'groundDug', 'theirMailbox', 'wallOnly', 'wallHang', 'bigHome', 'counterOnly', 'counterStand', 'countersFull'],
     fields: {
       saveFailed: toastLine(100, 'The homestead could not be saved online after several tries: it is safe on this device and that is what you see. Plain, no server talk. The game puts ⚠️ in front.'),
       notYourPhone: toastLine(48, 'Tapping the Banana Phone while visiting somebody else’s homestead: it is theirs. {name} is the owner.', holdsAll('name')),
@@ -2473,6 +2473,7 @@ export const JOBS = {
       // 🍳 kitchen things stand on counters (28 Sep 2026): a toaster, a sink, a microwave… only ever on a counter
       counterOnly: toastLine(56, 'Trying to place a kitchen thing (a toaster, a sink, a microwave) in a room with no counter in it: it stands on a counter, so a counter goes down first. The game puts 🍳 in front.'),
       counterStand: toastLine(52, 'Placing a kitchen thing indoors: it goes on a counter; tap the counter where it should stand, then press the tick. The game puts 🍳 in front.'),
+      countersFull: toastLine(56, 'Trying to place a kitchen thing when the counters in this room already hold the most there can be: {n} is that number. The game puts 🍳 in front.', holdsAll('n')),
     },
     shape: () => [],
   },

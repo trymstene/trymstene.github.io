@@ -12,5 +12,6 @@
   "wallHang": "tap along the wall where it should hang — then ✓",
   "bigHome": "that needs a bigger home — it waits in the shed",
   "counterOnly": "that stands on a counter — put a counter down first",
-  "counterStand": "tap the counter where it should stand — then ✓"
+  "counterStand": "tap the counter where it should stand — then ✓",
+  "countersFull": "the counters here are full — {n} things is the most"
 }
