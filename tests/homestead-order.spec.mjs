@@ -106,6 +106,8 @@ test('the catalogue: sixty-odd new pieces on every indoor shelf, each with a van
   // a towel rack), the laundry — each other state the size of the piece
   for (const id of ['toilet', 'towelrack', 'laundry']) expect(by(id).alt, id).toEqual([by(id).w, by(id).h]);
   expect(by('towelrack').name, 'B133 is a cabinet with a mirror on top').toBe('Bathroom cabinet');
+  // 🚽 tall on tiny feet, so by the wall they stand 2 px out and never join a kitchen chain (the 0 border)
+  expect([by('toilet').tight, by('towelrack').tight]).toEqual([[14, 0, 2], [8, 0, 2]]);
   // names say what the picture shows (Trym: "the Microwave counter is actually a toaster")
   expect(by('coffeemk').name, 'a stand mixer on a counter').toBe('Baking counter');
   expect(REWARDS.length, 'ten reward pieces').toBe(10);
@@ -314,7 +316,7 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   await page.addInitScript(() => {
     if (sessionStorage.getItem('order-seeded')) return;
     sessionStorage.setItem('order-seeded', '1');
-    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 2, items: [], shed: [{ id: 'sunsetpic' }, { id: 'fairylights' }, { id: 'moonposter' }, { id: 'sinkcounter' }], orders: [],
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 2, items: [], shed: [{ id: 'sunsetpic' }, { id: 'fairylights' }, { id: 'moonposter' }, { id: 'sinkcounter' }, { id: 'toilet' }], orders: [],
       inItems: {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
   });
   await page.setViewportSize({ width: 393, height: 852 });
@@ -361,6 +363,15 @@ test('in the cabin: pictures hang on the cabin’s own wall, side by side, never
   const sink = await inRoom(page, 'sinkcounter');
   expect(sink, 'the sink counter is in').toBeTruthy();
   expect(sink.y, 'tight against the cabin’s wall').toBe(await page.evaluate(() => window.__hs.geo.tightY('sinkcounter', 2)));
+  // 🚽 and a toilet by the cabin's wall: its feet 2 px in front of the cabin's floor line, too
+  await placeFromShed(page, 'The toilet');
+  await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+  await page.mouse.click(...(await screenAt(page, 790, 430)));
+  await page.waitForTimeout(300);
+  await page.click('#hsPlaceGo');
+  await page.waitForTimeout(600);
+  const loo = await inRoom(page, 'toilet');
+  expect(loo && loo.y - DECOR.find((x) => x.id === 'toilet').tight[0], 'the toilet’s feet at the cabin’s wall').toBe(372 + 92 + 2);
   await page.screenshot({ path: SHOT + '11-cabin-wall.png' });
   expect(errs).toEqual([]);
 });
@@ -461,17 +472,19 @@ test('in the house: a kitchen built along the wall is one run — fronts flush, 
   expect(errs).toEqual([]);
 });
 
-// 🛁 Trym, 28 Sep 2026: "add tap states to the bathroom things too". The three the pack draws twice, standing in the
-// house: a tap closes the toilet's lid, opens the cabinet on its towels and shows the laundry — and each goes back by itself.
-test('in the house: the bathroom answers a tap — the toilet lid, the cabinet, the laundry', async ({ page }) => {
-  test.setTimeout(90000);
+// 🛁 Trym, 28 Sep 2026: "add tap states to the bathroom things too", then "the toilet and the cabinet needs to have its
+// default position further back to the wall … they are tall and not wide objects, so they should be much tighter into the
+// wall". Each comes out of the shed and a tap on the wall stands it there: feet 2 px out, the rest up the wall. Then a
+// tap closes the toilet's lid, opens the cabinet on its towels and shows the laundry — and each goes back by itself.
+test('in the house: the bathroom stands tight to the wall and answers a tap — the toilet lid, the cabinet, the laundry', async ({ page }) => {
+  test.setTimeout(120000);
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   await page.addInitScript(() => {
     if (sessionStorage.getItem('order-seeded')) return;
     sessionStorage.setItem('order-seeded', '1');
-    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], shed: [], orders: [],
-      inItems: { 3: [{ id: 'toilet', x: 700, y: 480 }, { id: 'towelrack', x: 760, y: 480 }, { id: 'laundry', x: 820, y: 504 }] },
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [],
+      shed: [{ id: 'toilet' }, { id: 'towelrack' }], inItems: { 3: [{ id: 'laundry', x: 840, y: 504 }] },
       bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
   });
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -479,6 +492,19 @@ test('in the house: the bathroom answers a tap — the toilet lid, the cabinet, 
   await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
   await page.waitForTimeout(1200);
   await page.evaluate(() => window.__hs.enter());
+  await page.waitForTimeout(800);
+  for (const [name, id, wx] of [['The toilet', 'toilet', 700], ['Bathroom cabinet', 'towelrack', 760]]) {
+    await placeFromShed(page, name);
+    await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+    await page.mouse.click(...(await screenAt(page, wx, 390)));   // on the wall
+    await page.waitForTimeout(300);
+    await page.click('#hsPlaceGo');
+    await page.waitForTimeout(600);
+    const it = await inRoom(page, id), d = DECOR.find((x) => x.id === id);
+    expect(it.y, id + ' stands on its own wall line').toBe(await page.evaluate((i) => window.__hs.geo.tightY(i, 3), id));
+    expect(it.y - d.tight[0], id + '’s feet 2 px in front of the floor line (plate row 92)').toBe(332 + 92 + 2);
+  }
+  await page.screenshot({ path: SHOT + '17-bathroom-wall.png' });
   await page.evaluate(() => window.__hs.warp(760, 560));
   await page.waitForTimeout(900);
   const bg = (id) => page.evaluate((i) => { const el = [...document.querySelectorAll('.hs-it--in')].find((e) => (e.style.backgroundImage || '').includes('/d-' + i)); return el ? el.style.backgroundImage : ''; }, id);

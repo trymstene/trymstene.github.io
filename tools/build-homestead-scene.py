@@ -1005,6 +1005,11 @@ ON_TOP = 12
 # along the wall and butts a neighbour against them, borders merged (banana-homestead.js tightY / chainX).
 WALL_TIGHT = {'kcounter', 'coffeemk', 'stockcounter', 'sinkcounter', 'toastcounter', 'microcounter', 'espressobar', 'stove', 'fridge',
               'drinkscooler'}
+# 🚽 AGAINST THE WALL, ON TINY FEET (Trym, 28 Sep 2026: "the toilet and the cabinet … have a small ground platform …
+# because they are tall and not wide objects, so they should be much tighter into the wall … close to the wall means more
+# into the wall"): placed by the wall, their feet stand this many px in front of the floor line, the rest up the wall.
+# `tight` = [foot, 0 (no chain), this]; the kitchen line's front is 26 px out.
+WALL_HUG = {'toilet': 2, 'towelrack': 2}
 IN_COMPOSE = {
     # the kitchen sink: the pack's sink top (basin, tap, sponge) set on a counter — its own K123 front was an oven window.
     # At 2/3: the pack draws it for a deep 48-px worktop, so at full size it was as tall as this whole counter (Trym:
@@ -1242,6 +1247,8 @@ if HAVE_PACK:
             s = s.resize((max(1, int(s.width * sc)), max(1, int(s.height * sc))), Image.NEAREST)
         if did in WALL_TIGHT:   # the rows a pack canvas leaves empty under the front, and the side border (1 art px)
             EXTRA_OUT[did]['tight'] = [s.height - s.getbbox()[3], round(3 * sc)]
+        elif did in WALL_HUG:   # the same rows, no chain, and its own distance from the wall
+            EXTRA_OUT[did]['tight'] = [s.height - s.getbbox()[3], 0, WALL_HUG[did]]
         s.save(os.path.join(OUT, 'd-%s.png' % did), optimize=True)
         alt = IN_ALT.get(did)
         if alt is not None:   # the other state: a whole single, this piece's base with other parts, or another base
@@ -1595,7 +1602,7 @@ def emit():
         if ex.get('wall'):
             extra.append('wall: 1')
         if ex.get('tight'):
-            extra.append('tight: [%d, %d]' % tuple(ex['tight']))
+            extra.append('tight: [%s]' % ', '.join(str(v) for v in ex['tight']))
         if ex.get('alt'):
             extra.append('alt: [%d, %d]' % tuple(ex['alt']))
         if did == 'fountain':

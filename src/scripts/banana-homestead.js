@@ -995,7 +995,9 @@ function init(visitDoc, visitMiss) {
   // stands with its FRONT 26 px below the floor line (plate row 92 in both wood rooms): a counter's top edge then meets
   // the wall, and the stove and the fridge stand flush with it. Next to another on the same line it butts up to it,
   // borders merged into one — the builder's own grammar for its long counters (IN_OVERLAP 3).
-  const tightY = (d, t = inside) => (d && d.tight && WALL_FACE[t] ? INTERIORS[t].box[1] + 92 + 26 + d.tight[0] : 0);
+  // 🚽 a third value is the piece's own distance: the toilet and the cabinet stand on tiny feet 2 px out, the rest up the
+  // wall (Trym: "close to the wall means more into the wall") — and a 0 border means it never joins a chain
+  const tightY = (d, t = inside) => (d && d.tight && WALL_FACE[t] ? INTERIORS[t].box[1] + 92 + (d.tight[2] != null ? d.tight[2] : 26) + d.tight[0] : 0);
   // ⚠️ FORGIVING, or it reads as broken (Trym, 28 Sep: "make the counters snap together in build mode too" — it did,
   // but only for a tap within 25 px and the same row): a tap anywhere within half the piece of a neighbour's side
   // butts it there, even one that would overlap it, and a row off joins the neighbour's line. At the wall it only joins
@@ -1003,10 +1005,11 @@ function init(visitDoc, visitMiss) {
   // first: the caller takes the first one that is free.
   function chainAt(d, x, y, t) {
     const front = y - d.tight[0], atWall = y === tightY(d, t), reach = Math.max(25, d.w / 2 + 8), out = [];
+    if (!d.tight[1]) return out;
     for (const it of (state.inItems[t] || [])) {
       if (placing && placing.moving === it) continue;
       const o = DEX[it.id];
-      if (!o || !o.tight || Math.abs(it.y - o.tight[0] - front) > (atWall ? 2 : 24)) continue;
+      if (!o || !o.tight || !o.tight[1] || Math.abs(it.y - o.tight[0] - front) > (atWall ? 2 : 24)) continue;
       const seam = Math.min(d.tight[1], o.tight[1]);
       for (const cx of [it.x - (o.w + d.w) / 2 + seam, it.x + (o.w + d.w) / 2 - seam]) {
         if (Math.abs(cx - x) < reach) out.push({ x: Math.round(cx), y: it.y - o.tight[0] + d.tight[0], far: Math.abs(cx - x) });
@@ -1204,8 +1207,9 @@ function init(visitDoc, visitMiss) {
       }
       return true;
     }
-    const B = roomBounds(t);
-    if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y - 10 < B[1] || y > B[3]) return false;
+    const B = roomBounds(t), ty = tightY(d, t);
+    // 🚽 a piece with its own wall line may stand on it, though that is closer than the room's top line
+    if (x - d.w / 2 < B[0] || x + d.w / 2 > B[2] || y < (ty ? Math.min(B[1] + 10, ty) : B[1] + 10) || y > B[3]) return false;
     // the DOOR CORRIDOR only — the gap's own width (+4), never the floor
     // beside it: standing a lamp NEXT to the door is what real rooms do
     if (!d.rug && I.exit && x + d.w / 2 > I.exit[0] - 4 && x - d.w / 2 < I.exit[2] + 4 && y > I.exit[1] - (t === 1 ? 36 : 90)) return false;
@@ -1214,6 +1218,7 @@ function init(visitDoc, visitMiss) {
     // `y - 8`: a base 8px under the wall face = standing against the wall.
     if (t !== 1) {
       for (const c of I.cols) {
+        if (ty && y >= ty && c === I.cols[0]) continue;   // 🚽 its own wall line is the back wall's say
         if (x + d.w / 2 > c[0] && x - d.w / 2 < c[2] && y > c[1] && y - 8 < c[3]) return false;
       }
     }
@@ -4569,8 +4574,8 @@ function init(visitDoc, visitMiss) {
       const dw = DEX[placing.id];
       if (placing.room && onWall(dw)) placing.y = wallY(dw, placing.room);   // 🖼 the tap says WHERE along the wall; the wall says how high
       else if (placing.room && dw.tight) {   // 🍳 the kitchen line: flush along the wall, butted to its neighbour
-        const ty = tightY(dw, placing.room);
-        if (ty && placing.y < ty + 24) placing.y = ty;
+        const ty = tightY(dw, placing.room);   // the room's first row by the wall, or a row from its own line: against the wall
+        if (ty && (placing.y <= snap(P[1] + 26) || placing.y < ty + 24)) placing.y = ty;
         const c = chainAt(dw, placing.x, placing.y, placing.room).find((p) => inSpotOk(dw, p.x, p.y, placing.room));
         if (c) { placing.x = c.x; placing.y = c.y; }
       }
