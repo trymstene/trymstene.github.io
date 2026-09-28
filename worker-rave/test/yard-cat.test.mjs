@@ -28,5 +28,5 @@ ok('the dog still does', out.animals.some((a) => a.sp === 'dog'));
 ok('a species the yard does not have is still dropped', !out.animals.some((a) => a.sp === 'lion'), out.animals);
 ok('a cat at rest stays in the long grass', out.grass.length === 1 && out.grass[0].sp === 'cat' && out.grass[0].name === 'Old Tom', out.grass);
 ok('a rehomed cat is still remembered', out.memory.length === 1 && out.memory[0].sp === 'cat', out.memory);
-console.log(fail ? `✗ ${fail} failed, ${pass} passed` : `✓ all ${pass} passed`);
+console.log(`${pass} passed, ${fail} failed`);   // the summary line tools/run-worker-tests.mjs reads
 process.exit(fail ? 1 : 0);
