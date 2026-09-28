@@ -180,6 +180,9 @@ test.describe('the cat', () => {
   test('she lives like a cat: every strip frame by frame, and each mood doing what it says', async ({ page }) => {
     test.setTimeout(240000);
     const errs = await open(page, [HEN(0), HEN(1), DOG, CAT({ b: 1 })]);
+    // ⚠️ the dog is here for the size picture at the end, and nothing else: her own play sends her after the cat now and then,
+    // and a chase in the middle of the hunt made the cat bolt before the pounce — so she stays calm and at rest throughout
+    await page.evaluate(() => window.__hs.dogMood('rest', { calm: true, heelAt: 1e12, greetAt: 1e12, pMoveAt: 1e12, wasIn: true, until: 1e12 }));
     await expect(page.locator('.hs-hen--cat')).toHaveCount(1);
     expect(Object.keys(NF), 'she wears one of her own strips').toContain((await cat(page)).strip);   // the real sky may have sent her under the eaves
 

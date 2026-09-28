@@ -14,17 +14,19 @@ import HOUSE from '../icons/pixelart/home.svg?raw';
 import { fillWords } from './fill-words.js';
 import HAND from '../icons/pixelart/hand-solid.svg?raw';
 import W from '../data/copy/world-social.json';
+import { ECHO_ROUTES } from '../data/echo-routes.js';   // 🚶 where an echo walks in the park and the bay
 
 const API = 'https://banana-rave.trymstene.workers.dev/yards';
 const KEY = 'bw-social-v1';
 const MAX_OUT = 2;   // echoes in one area at once: company, not a crowd
 // 🗺 each area: its view, its world and your banana; how wide a banana is there (% of the plate); and where an echo may
-// be — `spots` to stand at, a `road` to stroll along, or `own`: the town's own visitors wear them (town-folk.js).
+// be — a `route` to stroll between places on (src/data/echo-routes.js), a `road` to stroll along, or `own`: the town's own
+// visitors wear them (town-folk.js).
 // ⚠️ never the rave: its floor promises that every banana on it is a real one, here right now.
 const AREAS = {
   town: { view: '#twView', world: '#twWorld', me: '.tw-me', own: 1 },
-  park: { view: '#pkView', world: '#pkWorld', W: 2760, H: 1100, size: 3.6, me: '#pkMe', spots: [[1235, 455], [1575, 480], [1190, 690], [1330, 715]] },   // the plaza round the fountain, clear of Old Peel's bench
-  beach: { view: '#bhView', world: '#bhWorld', W: 2760, H: 1100, size: 3.6, me: '#bhMe', spots: [[560, 560], [1010, 485], [1290, 560], [1640, 880]] },   // open sand on the paths: never the court, the hut, the boathouse or a stall
+  park: { view: '#pkView', world: '#pkWorld', W: 2760, H: 1100, size: 3.6, me: '#pkMe', route: ECHO_ROUTES.park },   // the plaza round the fountain, clear of Old Peel's bench
+  beach: { view: '#bhView', world: '#bhWorld', W: 2760, H: 1100, size: 3.6, me: '#bhMe', route: ECHO_ROUTES.beach },   // the sand paths: never the court, the hut, the bar or a stall
   homestead: { view: '.hs-view', world: '#hsWorld', W: 1800, H: 1100, size: 5.5, me: '#hsMe', road: 900, rest: [380, 640, 1480] },
 };
 
@@ -134,7 +136,7 @@ let A = null, area = '', view = null, world = null, api = null;
 let rows = [], queue = [], nextAt = 0;
 const out = new Map();   // slug → the echo that is out now (a sprite of ours, or the town's visitor wearing it)
 let notes = [], seen = 0, openedAt = 0, echoOn, waited = false;
-let root = null, list = null, card = null, veil = null;
+let root = null, list = null, card = null, veil = null, cardSlug = '';   // cardSlug: whose echo card is open (it stands while you read)
 let press = null, quietUntil = 0, lastLive = 0;
 
 // ---- the server, with the proof it asks for -------------------------------------------------------------------------
@@ -186,7 +188,7 @@ function takeEcho() {
   return null;
 }
 
-// 🚶 our own sprites (every area but the town): one stands at a spot for a while, or strolls the road past your gate
+// 🚶 our own sprites (every area but the town): one strolls between places on its area's route, or along the road past your gate
 function spawnEcho(now) {
   const e = takeEcho();
   if (!e) return;
@@ -197,10 +199,12 @@ function spawnEcho(now) {
     s.y = A.road + Math.round((Math.random() - 0.5) * 30);
     s.pauseAt = A.rest[Math.floor(Math.random() * A.rest.length)];   // a stop on open road (homestead-geo: the sign, gate and mailbox are 1010–1252)
   } else {
-    const taken = [...out.values()];
-    const free = A.spots.filter(([x, y]) => !taken.some((o) => o.x === x && o.y === y));
+    // 🚶 in at a place on the area's route that no other echo holds; it stands a moment, then strolls
+    const held = heldBy(null), free = A.route.pts.map((q, i) => i).filter((i) => !held.has(i));
     if (!free.length) return;
-    [s.x, s.y] = free[Math.floor(Math.random() * free.length)];
+    s.node = free[Math.floor(Math.random() * free.length)];
+    [s.x, s.y] = A.route.pts[s.node];
+    s.rest = now + 2500 + Math.random() * 5000;
     s.until = now + 50000 + Math.random() * 50000;
   }
   const el = s.el;
@@ -233,25 +237,54 @@ function dropSprite(s, fade) {
   s.el.classList.remove('is-on');
   setTimeout(() => s.el.remove(), 1300);
 }
+// the places another echo holds: where it stands, or where it is walking to
+function heldBy(me) {
+  const h = new Set();
+  for (const o of out.values()) if (o !== me && o.el) { if (o.node >= 0) h.add(o.node); if (o.leg != null) h.add(o.leg); }
+  return h;
+}
 function stepSprite(s, now, dt) {
-  let walk = 0;
-  if (A.road) {
+  let walk = 0, moving = false;
+  if (A.route) {
+    // 🚶 THE PARK AND THE BAY (Trym, 29 Sep 2026: "Echoes can move around in those areas too"): stand a while at a place,
+    // then stroll to one beside it along the route; a card you opened on it holds it where it is while you read
+    const R = A.route;
+    if (s.leg != null) {
+      if (cardSlug !== s.e.slug) {
+        const [tx, ty] = R.pts[s.leg], dx = tx - s.x, dy = ty - s.y, d = Math.hypot(dx, dy), st = STROLL * dt;
+        if (d <= st) { s.x = tx; s.y = ty; s.node = s.leg; s.leg = null; s.rest = now + 3000 + Math.random() * 7000; }
+        else { s.x += dx / d * st; s.y += dy / d * st; moving = true; walk = Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : 0; }
+        placeSprite(s);
+      }
+    } else if (cardSlug === s.e.slug) { /* its card is open: it stays for you */ }
+    else if (now > s.until) { dropSprite(s, true); return; }
+    else if (now > s.rest) {
+      const held = heldBy(s);
+      // off the route (a QA walk stood it somewhere): back to the nearest free place first
+      const next = s.node >= 0
+        ? R.links.filter((l) => l[0] === s.node || l[1] === s.node).map((l) => (l[0] === s.node ? l[1] : l[0])).filter((j) => !held.has(j))
+        : R.pts.map((q, i) => i).filter((i) => !held.has(i)).sort((a, b) => Math.hypot(R.pts[a][0] - s.x, R.pts[a][1] - s.y) - Math.hypot(R.pts[b][0] - s.x, R.pts[b][1] - s.y)).slice(0, 1);
+      if (next.length) { s.leg = next[Math.floor(Math.random() * next.length)]; s.node = -1; }
+      else s.rest = now + 2000;   // every way on is held: wait a moment
+    }
+  } else if (A.road) {
     const dir = Math.sign(s.to - s.x);
     if (s.rest > now) walk = 0;
     else if (!s.rested && (dir > 0 ? s.x >= s.pauseAt : s.x <= s.pauseAt)) { s.rested = 1; s.rest = now + 4000 + Math.random() * 5000; }
     else {
       s.x += dir * STROLL * dt;
-      walk = dir;
+      walk = dir; moving = true;
       if ((dir > 0 && s.x >= s.to) || (dir < 0 && s.x <= s.to)) { dropSprite(s); return; }
       placeSprite(s);
     }
-  } else if (now > s.until) { dropSprite(s, true); return; }
-  // ⚠️ the engine's labels are inverted: 4/5 is the pair that visibly walks LEFT, 0/1 right (town-folk.js paint)
-  if (now - s.bobAt > (walk ? 260 : 900)) { s.bobAt = now; s.bob = s.bob ? 0 : 1; }
+  }
+  // ⚠️ the engine's labels are inverted: 4/5 is the pair that visibly walks LEFT, 0/1 right (town-folk.js paint); walking
+  // mostly up or down the screen is the front pair at the walking step, as the town's visitors do it
+  if (now - s.bobAt > (moving ? 260 : 900)) { s.bobAt = now; s.bob = s.bob ? 0 : 1; }
   let f = walk < 0 ? 4 + s.bob : walk > 0 ? s.bob : 2 + s.bob;
   // ⭐ never a statue: now and then two bars of the dance, the way a resident at their post has them (§23)
-  if (!walk && now > s.danceAt) {
-    if (now < s.danceAt + 1600) f = Math.floor(now / 100) % 8;
+  if (!moving && now > s.danceAt) {
+    if (now < s.danceAt + 1600) f = Math.floor((now - s.danceAt) / 100) % 8;   // from its own first frame, each a whole 100 ms
     else s.danceAt = now + 7000 + Math.random() * 7000;
   }
   if (f !== s.drawn) {
@@ -263,7 +296,7 @@ function stepSprite(s, now, dt) {
 // ⭐ ON THE FRAME, like every other banana (Trym, 28 Sep 2026: "the echoes of other banana users walking by in the homestead
 // are choppy in their movements, not fluid movement like normal"). A stroll was 8.4 px on a 120 ms beat: eight hops a second
 // beside a yard that moves sixty times. The beat still brings one out; while one is out, the frame walks it.
-const STROLL = 70;   // world px a second: a stroll
+const STROLL = 96;   // world px a second: a stroll, the town's visitors' own pace (town-folk.js WALK)
 let raf = 0, lastAt = 0;
 function tickEchoes() {
   if (document.hidden || !rows.length) return;
@@ -394,6 +427,7 @@ function closeCard() {
   if (veil) veil.remove();
   if (card) card.remove();
   veil = card = null;
+  cardSlug = '';
 }
 // 🃏 THE CARD, one shape for everything the social layer shows (an echo, Nib's present): a veil that closes it, a ✕, the
 // portrait over its corner, and every tap kept off the world until it closes
@@ -425,6 +459,7 @@ function openEcho(e) {
     + '<a class="bws-alt" href="/homestead/?yard=' + encodeURIComponent(e.slug) + '"' + (e.house ? ' aria-label="' + esc(W.card.visit + ': ' + e.house) + '"' : '') + '>' + ico(HOUSE, 16) + '<span>' + esc(W.card.visit) + '</span></a></div>'
     + '<p class="bws-note" hidden></p>');
   portrait(card.querySelector('canvas'), DRAW(e.fit));
+  cardSlug = e.slug;
   card.querySelector('.bws-alt').addEventListener('click', () => track('wave_visit', { area, from: 'echo' }));
   const go = card.querySelector('.bws-go');
   go.addEventListener('click', () => echoWave(e, go));
@@ -640,7 +675,11 @@ export function bootSocial(name) {
       spawn: () => { if (!A.own) spawnEcho(performance.now()); return [...out.keys()]; },
       hold: () => { nextAt = Infinity; },   // QA: no echo comes out on its own clock while a walk is looking
       // QA: stand an echo at a world point (the walk cannot wait for one to land in view)
-      put: (x, y, slug) => { const s = slug ? out.get(slug) : [...out.values()].pop(); if (!s || !s.el) return false; s.x = x; s.y = y; s.pauseAt = x; s.until = performance.now() + 120000; placeSprite(s); return true; },
+      put: (x, y, slug) => { const s = slug ? out.get(slug) : [...out.values()].pop(); if (!s || !s.el) return false; s.x = x; s.y = y; s.pauseAt = x; s.until = performance.now() + 120000; s.leg = null; s.node = -1; s.rest = s.until; placeSprite(s); return true; },
+      // QA: every echo out steps off now (a walk cannot wait out the stand), and where each is
+      stroll: () => { for (const s of out.values()) if (s.el) { s.rest = 0; s.until = Math.max(s.until || 0, performance.now() + 60000); } return out.size; },
+      where: () => [...out.values()].filter((s) => s.el).map((s) => ({ slug: s.e.slug, x: s.x, y: s.y, node: s.node, leg: s.leg })),
+      route: () => A.route || null,
       open: (slug) => { const e = rows.find((r) => r.slug === slug); if (e) openEcho(e); return !!e; },
       notes: () => notes.map((x) => ({ k: x.k, n: x.n || '', live: !!x.live, s: x.s || '', h: x.h || '', t: x.t })),
       unread,

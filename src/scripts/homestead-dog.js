@@ -191,7 +191,8 @@ export function brain(h, now) {
     if (!g.dash && !g.gapUntil) {
       g.dash = 2 + Math.floor(Math.random() * 3);
       // now and then a chase instead: a bird on the ground, or the cat if she is about
-      const b = birdNear(h, 360), c = !b && Math.random() < 0.35 ? catNear(h, 340) : null;
+      // (`calm`, a walk's knob as it is the cat's: no chase while a mood is being looked at)
+      const b = g.calm ? null : birdNear(h, 360), c = !b && !g.calm && Math.random() < 0.35 ? catNear(h, 340) : null;
       if (b || c) { g.m = 'chase'; g.prey = b ? { b } : { c }; g.ph = 0; }
     }
     if (g.m === 'play') {

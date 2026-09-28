@@ -27,6 +27,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { routeFaults, routeAreas } from './echo-routes-check.mjs';   // 🚶 §42 where an echo may walk
 
 // ⚠️ a URL pathname keeps its %20 — this repo lives under "Web Development"
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -569,6 +570,16 @@ for (const f of files) {
       else if (!drawsCoin(body)) problems.push([rel, '§45: ' + n + '() writes its line without coinText() — a coin in it would show as the stock emoji (src/lib/coin.js)']);
     }
   }
+}
+
+// 🚶 §42 AN ECHO WALKS ONLY ON OPEN GROUND (Trym, 29 Sep 2026: "Echoes can move around in those areas too"). The park's and
+// the bay's echoes stroll the points and links of src/data/echo-routes.js; every point and every step of every link is
+// walked against the area's own colliders and the places a stranger never stands (tools/echo-routes-check.mjs). It proves
+// it bites first: a walk straight across Sandy's court must be caught.
+{
+  const bites = routeFaults('beach', { pts: [[560, 560], [930, 770]], links: [[0, 1]] }).some((f) => /the court/.test(f));
+  if (!bites) problems.push(['tools/echo-routes-check.mjs', '§42: the echo route check let a walk across the court through — it no longer checks what it says']);
+  for (const a of routeAreas()) for (const why of routeFaults(a)) problems.push(['src/data/echo-routes.js', '§42: ' + why + ' — an echo walks only on open ground']);
 }
 
 let cssN = 0;

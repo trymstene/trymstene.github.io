@@ -229,6 +229,53 @@ test('the homestead: an echo strolls the road past your gate', async ({ page }) 
   expect(errs).toEqual([]);
 });
 
+// 🚶 THE PARK AND THE BAY (29 Sep 2026, Trym: "Echoes can move around in those areas too"): an echo strolls between the
+// places of its area's route (src/data/echo-routes.js) — filmed on every frame through a whole leg, it moves on every one
+// and never hops, keeps to the route's lines (the check in check-design keeps those clear of every solid), arrives at the
+// next place and stands there a while. The route itself is proven clear by tools/echo-routes-check.mjs.
+const onRoute = (R, x, y) => Math.min(...R.links.map(([a, b]) => {
+  const [x1, y1] = R.pts[a], [x2, y2] = R.pts[b], dx = x2 - x1, dy = y2 - y1;
+  const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy));
+}));
+for (const [name, url] of [['park', '/park/'], ['bay', '/beach/']]) {
+  test(`the ${name}: an echo strolls its route on every frame, keeps to it, and stands at the next place`, async ({ page }) => {
+    const { errs } = await area(page, url);
+    await page.waitForFunction(() => window.__bws.echoes().length === 3, null, { timeout: 15000 });
+    const slug = await page.evaluate(() => { window.__bws.hold(); return window.__bws.spawn().at(-1); });
+    await page.waitForTimeout(600);
+    const R = await page.evaluate(() => window.__bws.route());
+    expect(R && R.pts.length, 'the area walks a route').toBeGreaterThan(3);
+    const start = (await page.evaluate(() => window.__bws.where())).find((e) => e.slug === slug);
+    expect(start && start.node, 'it comes in at one of the route’s places').toBeGreaterThanOrEqual(0);
+    await page.evaluate(() => window.__bws.stroll());
+    // every frame, what is DRAWN (the element's left/top) and where the walk says it is going
+    const film = await page.evaluate(([sl, W, H]) => new Promise((res) => {
+      const el = document.querySelector('.bws-echo[data-slug="' + sl + '"]'), out = [], t0 = performance.now();
+      const tick = () => {
+        const e = window.__bws.where().find((q) => q.slug === sl);
+        out.push({ t: performance.now() - t0, x: parseFloat(el.style.left) / 100 * W, y: parseFloat(el.style.top) / 100 * H, node: e ? e.node : -9, leg: e ? e.leg : null });
+        const arrived = out.length > 20 && e && e.leg == null && e.node >= 0;
+        if (performance.now() - t0 < 12000 && !arrived) requestAnimationFrame(tick); else res(out);
+      };
+      requestAnimationFrame(tick);
+    }), [slug, 2760, 1100]);
+    const walking = film.filter((r) => r.leg != null);
+    expect(walking.length, 'it walked a leg (' + film.length + ' frames filmed)').toBeGreaterThan(20);
+    const steps = film.slice(1).map((r, i) => Math.hypot(r.x - film[i].x, r.y - film[i].y)).filter((d, i) => film[i + 1].leg != null);
+    expect(steps.filter((d) => d > 0.01).length / steps.length, 'it moves on every frame it walks').toBeGreaterThan(0.9);
+    expect(Math.max(...steps), 'and never hops').toBeLessThan(4);
+    expect(Math.max(...film.map((r) => onRoute(R, r.x, r.y))), 'every frame on the route’s lines').toBeLessThan(2);
+    const end = film[film.length - 1], leg = walking[0].leg;
+    expect(end.node, 'it arrived at the place it set out for').toBe(leg);
+    expect(R.links.some(([a, b]) => (a === start.node && b === leg) || (b === start.node && a === leg)), 'next to where it stood').toBe(true);
+    await page.waitForTimeout(1000);
+    const still = (await page.evaluate(() => window.__bws.where())).find((e) => e.slug === slug);
+    expect([Math.round(still.x), Math.round(still.y)], 'and stands there a while').toEqual(R.pts[leg]);
+    expect(errs).toEqual([]);
+  });
+}
+
 test('the beach: an echo stands on the sand', async ({ page }) => {
   const { errs } = await area(page, '/beach/');
   await page.waitForFunction(() => window.__bws.echoes().length === 3, null, { timeout: 15000 });

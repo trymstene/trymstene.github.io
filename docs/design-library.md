@@ -735,6 +735,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 41 | A fitting that opens a card looks like what it does in its own art, its keeper stands behind it (feet hidden by its front, round its end to leave, a tap on them is them and a tap on the counter is the counter), the whole drawn piece answers a tap, the banana walks to it before the card opens, and a customer sees it lit once until first use — never its own staff, never while shut | `tests/town-store-till.spec.mjs` (the register's counter lit for a new customer and visible above the plate, a real tap on its right third walks there and opens the shop on arrival, the light gone for good after, none for the staff, none when shut) + Pip behind the counter (the front above him, out at noon with the room saying so, his tap and the counter’s kept apart, walking out round the counter’s end for his staff) + tests/town-spinner.spec.mjs (nobody on the floor you work) — a behaviour, so a walk rather than a grep; the odd-errand rule is in check-design.mjs |
 | 15 | The HUD strip is one line on a phone | `tests/hud-one-line.spec.mjs` (every area at 360, 375, 390 and 393 with LVL 99, five-digit coins and the save ask on: one row, inside the frame) |
 | 40 | Every letter opens on the world's paper, under a veil that covers the screen | `tests/town-post.spec.mjs` (an open letter is `.bw-paper` in the hand, signed, no cream box) + `tests/homestead-letters.spec.mjs` (Moss's note on the same paper; the veil edge to edge on a scrolled phone) |
+| 42 | An echo walks only on open ground | `check-design.mjs` via `tools/echo-routes-check.mjs` (every point and every 4 px of every link of `src/data/echo-routes.js` against the area's colliders and the places a stranger never stands; it proves it bites on a walk across the court) + `tests/world-social.spec.mjs` (a leg filmed on every frame, on the route's lines) |
 | 45 | The bananacoin is the stand's coin, never the stock emoji | `check-design.mjs` (the emoji in a page's markup fails; in a script it must ride a line writer, and every world toast, float and say draws it through `src/lib/coin.js`; the check proves it bites every run) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
@@ -1340,15 +1341,19 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
 - **An echo is a real player, drawn as one, and never pretends to be here.** The players the address book already shows
   (a Pass, a Homestead, a name, about in the last two weeks) walk about the world under their own name, in their own
   banana, a little see-through. The town's visitors wear them (at most two at once, never at the café's rope); the park and
-  the bay stand them at fixed open spots (`AREAS.spots`: the plaza round the fountain, the paths on the sand — never a
-  court, a hut, a stall, a bench already taken or Old Peel's); the homestead lets them stroll the PUBLIC road past your
-  gate and stop on open road, never in your yard. A tap opens THEIR card — the NPC card's grammar — and its line says
+  the bay let them STROLL a route of places on open ground (`src/data/echo-routes.js`, Trym 29 Sep 2026: *"Echoes can move
+  around in those areas too"*): a loop round the fountain on the plaza's paving and out along three paths; the bay's sand
+  trail — never the court, the hut, the bar, a stall, the water, a bench already taken or Old Peel's. One stands a while at
+  a place (swaying, now and then two bars of the dance), then walks to a place beside it that no other echo holds; the
+  homestead lets them stroll the PUBLIC road past your gate and stop on open road, never in your yard. An echo whose card
+  you opened stands where it is until you close it. A tap opens THEIR card — the NPC card's grammar — and its line says
   plainly they are not here: an echo that could be mistaken for a live player breaks trust, doubly with children.
 - **Never on the rave floor.** Its copy promises that every banana on it is a real one, here now.
 - **An echo walks on the animation frame, like every banana** (Trym, 28 Sep 2026: *"the echoes of other banana users
   walking by in the homestead are choppy in their movements"*). The stroll stepped 8.4 px on a 120 ms beat, eight hops a
-  second; the beat now only brings one out, and while one is out the frame walks it (70 px a second, dt-scaled). The
-  homestead walk samples an echo every frame and fails on a hop. An echo is yard traffic: indoors it is in the
+  second; the beat now only brings one out, and while one is out the frame walks it — at the town visitors' own 96 px a
+  second (town-folk.js WALK), dt-scaled, the two-frame step every 260 ms. The walks film an echo every frame (the homestead
+  road, and a whole leg of the park's and the bay's routes) and fail on a hop or a step off the route. An echo is yard traffic: indoors it is in the
   homestead's `.is-inside` hide list, so under the shade it neither paints nor takes a tap (a tap on the dark over the
   road opened the card of a stranger nobody could see).
 - **A live player wears a green dot on their name tag; an echo does not.** A person is a person (the Quiet Rule is about

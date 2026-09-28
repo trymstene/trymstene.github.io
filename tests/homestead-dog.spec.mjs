@@ -304,8 +304,14 @@ test.describe('the dog', () => {
     const atFire = Math.abs(slept.x - 760) < 40 && Math.abs(slept.y - 490) < 14;
     expect(onRug || atFire, 'on the rug or by the fire, whichever the cat left her: ' + Math.round(slept.x) + ',' + Math.round(slept.y)).toBe(true);
     await page.screenshot({ path: SHOT + '06-indoors.png' });
+    // ⚠️ the room is wider than a phone: by the fire she lies past the screen's left edge, where a tap meets nothing (the
+    // cat takes the rug three times in eight). Walk over first — close enough that she sleeps on — then tap her where she is.
+    if (atFire) { await page.evaluate(([x, y]) => window.__hs.warp(x, y), [slept.x + 90, slept.y + 70]); await page.waitForTimeout(900); await settle(page); }
     // a tap wakes her, wagging
     const [sx, sy] = await screenAt(page, slept.x, slept.y - 12);
+    const vr = await page.evaluate(() => { const r = document.querySelector('.hs-view').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; });
+    expect(sx > vr[0] && sx < vr[2] && sy > vr[1] && sy < vr[3], 'she is on the screen where the tap goes: ' + Math.round(sx) + ',' + Math.round(sy)).toBe(true);
+    expect((await page.evaluate(() => window.__hs.dogRoom())).strip, 'and still asleep when it comes').toBe('c-dog-sleep.png');
     await page.mouse.click(sx, sy);
     await page.waitForTimeout(400);
     expect((await page.evaluate(() => window.__hs.dogRoom())).m, 'up, and with you').toBe('follow');
