@@ -1060,7 +1060,11 @@ IN_ALT = {
     'laundry': _ts(BATH, 96),
 }
 if HAVE_PACK:
-    NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket'}   # cardboard and wicker share the floor's tan: the flood ate them
+    # cardboard and wicker share the floor's tan: the flood ate them. And the wash stand (Trym, 28 Sep 2026: "has lost
+    # some color and pixels, its transparent in the middle of the sprite and on the left side"): its wood is the bathroom
+    # tile's tan and its drawer divider the floor shadow's mauve, so the flood climbed from its one shadow row up the
+    # divider into the drawers, and in at the worktop's edge. It keeps all its pixels and that one-pixel shadow line.
+    NO_STRIP = RUG_IDS | {'boxes', 'picnicbasket', 'bvanity'}
     IN_OVERLAP = {'kcounter': 3, 'coffeemk': 3, 'stockcounter': 3, 'espressobar': 3}
     HENS = os.path.expanduser('~/OneDrive/banana-art-pack/Modern_Farm_v1.2/48x48/Animals_48x48/Chickens_and_Roosters_48x48')
     for hi, hname in enumerate(['Chicken_Brown_48x48.png', 'Chicken_White_48x48.png', 'Chicken_Golden_48x48.png']):
