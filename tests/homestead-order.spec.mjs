@@ -957,3 +957,52 @@ test('in the house: counters in a row, a toaster and a sink stand on them, a cou
   expect([end.some((x) => x.id === 'coffeemachine'), shed.includes('coffeemachine'), shed.includes('ctrwhite')], 'into the shed together').toEqual([false, true, true]);
   expect(errs).toEqual([]);
 });
+
+// 🍳 the room's spots are floor: a full floor still takes a toaster on its counter — and a room stops at the 20 pieces a
+// save keeps (worker-rave yardSan), or the server would drop the rest
+test('a full floor still takes a toaster; a room stops at the twenty pieces a save keeps', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('order-seeded')) return;
+    sessionStorage.setItem('order-seeded', '1');
+    // two counters at the wall and fourteen pots: sixteen floor pieces, the house's spots
+    const room = [{ id: 'ctrwhite', x: 700, y: 450 }, { id: 'ctrwhite', x: 762, y: 450 }];
+    for (let i = 0; i < 14; i++) room.push({ id: 'aloe', x: 640 + (i % 7) * 72, y: 560 + Math.floor(i / 7) * 90 });
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [], orders: [],
+      inItems: { 3: room }, shed: [{ id: 'aloe' }, { id: 'toaster' }, { id: 'kettle' }, { id: 'blender' }, { id: 'dishrack' }, { id: 'mixer' }],
+      bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 } }));
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/homestead/?hstest=rich', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.enter, null, { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => window.__hs.enter());
+  await page.waitForTimeout(800);
+  await expect(page.locator('#hsToast.is-on'), 'the arrival line has had its say').toHaveCount(0, { timeout: 8000 });
+  // the floor is full: another pot waits in the shed
+  await placeFromShed(page, 'Aloe in a pot');
+  await page.waitForTimeout(500);
+  expect(await page.locator('#hsConfirm:not([hidden])').count(), 'no room for a pot').toBe(0);
+  await expect(page.getByText('this room is full (16 spots)').first()).toBeVisible();
+  // …but four things go on the counters, one after another, up to twenty pieces
+  const room = () => page.evaluate(() => window.__hs.inv().inItems[3] || []);
+  for (const [name, dx] of [['Toaster', -20], ['Kettle', 8], ['Blender', 40], ['Dish rack', 72]]) {
+    await placeFromShed(page, name);
+    await page.waitForSelector('#hsConfirm:not([hidden])', { timeout: 6000 });
+    await settle(page);
+    await page.mouse.click(...(await screenAt(page, 700 + dx, 420)));
+    await page.waitForTimeout(300);
+    await expect(page.locator('#hsPlaceGo'), name + ' on a counter').toBeEnabled();
+    await page.click('#hsPlaceGo');
+    await page.waitForTimeout(600);
+  }
+  expect((await room()).length, 'twenty pieces').toBe(20);
+  // the twenty-first, even for a counter: the room is as full as a save keeps
+  await placeFromShed(page, 'Stand mixer');
+  await page.waitForTimeout(500);
+  expect(await page.locator('#hsConfirm:not([hidden])').count(), 'no twenty-first').toBe(0);
+  await expect(page.getByText('this room is full (20 spots)').first()).toBeVisible();
+  expect(errs).toEqual([]);
+});

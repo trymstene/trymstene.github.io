@@ -576,8 +576,9 @@ export function shedRows(list) {
         if (d.on && !C.hasCounter()) { shopNote('🍳 ' + C.HW.counterOnly); return; }   // a toaster needs a counter in this room
         // a reward waits for the home it fits (a bought piece was checked at the till, and what you own is never locked away)
         if (d.reward && d.stage > (C.state.stage | 0)) { shopNote('🏠 ' + C.HW.bigHome); return; }
-        if (C.inside ? inList().length >= INCAP[C.inside] : C.state.items.length >= cap()) {
-          toast(C.inside ? 'this room is full (' + INCAP[C.inside] + ' spots)' : 'the plot is full');
+        // 🍳 a thing on a counter takes no floor spot (the room still stops where a save does)
+        if (C.inside ? C.roomFull(d) : C.state.items.length >= cap()) {
+          toast(C.inside ? 'this room is full (' + C.roomFull(d) + ' spots)' : 'the plot is full');
           return;
         }
         const i3 = C.state.shed.findIndex((sx) => DEX[sx.id] && bx(sx.id) === id);
