@@ -3445,7 +3445,7 @@ export class YardRoom {
     // save; this is the backstop, not the filter)
     out.animals = [];
     (Array.isArray(s.animals) ? s.animals.slice(0, 24) : []).forEach((a) => {
-      if (!a || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog'].includes(a.sp)) return;
+      if (!a || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog', 'cat'].includes(a.sp)) return;
       const nm = typeof a.name === 'string' ? a.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       const a2 = { sp: a.sp, b: num(a.b, 0, 999), name: nm, wd: num(a.wd, 0, 3) };
       if (a.gd != null) a2.gd = num(a.gd, 0, 9);   // 🐣 growth stage; absent = grown
@@ -3463,7 +3463,7 @@ export class YardRoom {
     // 🌾 the long grass — the album's residents, same discipline
     out.grass = [];
     (Array.isArray(s.grass) ? s.grass.slice(0, 40) : []).forEach((g) => {
-      if (!g || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog'].includes(g.sp)) return;
+      if (!g || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog', 'cat'].includes(g.sp)) return;
       const nm3 = typeof g.name === 'string' ? g.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       const g2 = { sp: g.sp, name: nm3, b: num(g.b, 0, 999), gs: num(g.gs, 0, 999999) };
       if (g.ad != null) g2.ad = num(g.ad, 0, 99999);
@@ -3476,7 +3476,7 @@ export class YardRoom {
     // 💛 sold-but-remembered animals — same discipline as the flock
     out.memory = [];
     (Array.isArray(s.memory) ? s.memory.slice(0, 12) : []).forEach((m) => {
-      if (!m || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog'].includes(m.sp)) return;
+      if (!m || !['hen', 'goat', 'sheep', 'cow', 'rooster', 'dog', 'cat'].includes(m.sp)) return;
       const nm2 = typeof m.name === 'string' ? m.name.replace(/[^\w\s'’-]/g, '').trim().slice(0, 20) : '';
       const m2 = { sp: m.sp, b: num(m.b, 0, 999), name: nm2 };
       if (m.gd != null) m2.gd = num(m.gd, 0, 9);

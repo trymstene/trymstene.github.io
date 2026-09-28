@@ -417,6 +417,10 @@ const appLd = {
     .hs-hen--roost { width: 1.7%; }
     .hs-hen--dog { width: 3.1%; }
     .hs-hen--dog .hs-henimg { aspect-ratio: 104 / 66; }
+    /* 🐈 the cat: square 90px frames, strips of 3, 6 or 8 (the brain sets the size per strip). 2.6% draws
+       her pack pixel at the dog's size (1.56 vs 1.61 units) — a cat, a head shorter than the Labrador */
+    .hs-hen--cat { width: 2.6%; }
+    .hs-hen--cat .hs-henimg { aspect-ratio: 1; background-size: 600% 100%; }
     .hs-hen--ycow { width: 2.65%; }
     .hs-hen--ycow .hs-henimg { aspect-ratio: 96 / 60; }
     .hs-hen--chick { width: 1.1%; }

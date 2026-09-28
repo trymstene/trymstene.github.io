@@ -3,6 +3,7 @@
 // Everything it needs arrives once through ctx (the phone chunk's ctx);
 // `state`, `inside` and `visiting` are LIVE getters.
 import { KNIT_SVG } from '../data/knitwear.js';
+import CATW from '../data/copy/homestead-cat.json';   // 🐈 the cat's words (her favourite dish's possessive)
 let C = null;
 let bondUp, buffGet, buffSet, coinsPaid, cookEl, CROP_EMO, DISHES, farmAnimals, farmStats, he0, hens, passStat, phone, refreshHud, save, syncLock, tailorEl, toast, track, track1;
 export function init(ctx) {
@@ -30,8 +31,8 @@ const dishOf = (id) => DISHES.find((d) => d.id === id);
 // has ONE favourite dish worth +2 more — said on the recipe row (so you cook
 // for someone) and again on her tile in the picker
 const TREAT_BASE = { fried: 1, greens: 2, bouquet: 2, soup: 3, board: 4 };
-const FAVE = { hen: 'greens', rooster: 'fried', goat: 'bouquet', sheep: 'soup', cow: 'board', dog: 'fried' };
-const FAVE_W = { hen: 'hens’', rooster: 'roosters’', goat: 'goats’', sheep: 'sheep’s', cow: 'cows’', dog: 'dogs’' };
+const FAVE = { hen: 'greens', rooster: 'fried', goat: 'bouquet', sheep: 'soup', cow: 'board', dog: 'fried', cat: 'board' };
+const FAVE_W = { hen: 'hens’', rooster: 'roosters’', goat: 'goats’', sheep: 'sheep’s', cow: 'cows’', dog: 'dogs’', cat: CATW.fave };
 const isFave = (d, a) => !!a && FAVE[a.sp] === d.id;
 const treatN = (d, a) => (TREAT_BASE[d.id] || 1) + (isFave(d, a) ? 2 : 0);
 const faveWord = (d) => {

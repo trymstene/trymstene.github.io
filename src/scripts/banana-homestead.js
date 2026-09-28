@@ -1439,7 +1439,7 @@ function init(visitDoc, visitMiss) {
   let carryA = null;        // ✥ move tool: the animal in your arms
   let henGreeted = false;   // the bond-7 gate greeting fires once per visit
   // the most-bonded animal of any species but the dog (she has her own brain)
-  const bestBond = () => farmAnimals().filter((a) => a.sp !== 'dog')
+  const bestBond = () => farmAnimals().filter((a) => !brainy(a))
     .reduce((m, a) => (!m || (a.b || 0) > (m.b || 0) ? a : m), null);
   // ⚠️ the ONE owner of "who meets you at the gate": the toast that promises
   // it and the arrival that delivers it both ask here. Any other test was a
@@ -1568,6 +1568,8 @@ function init(visitDoc, visitMiss) {
           h4.img.style.backgroundImage = dr.img;
           h4.hw = dr.hw; h4.hv = dr.hv;
           h4.fluff = undefined; h4.dstrip = undefined; h4.dg = undefined;
+          // 🐈 the cat's strips carry their own frame count and size; a slot re-dressed as anyone else drops them
+          h4.cg = undefined; h4.cstrip = undefined; h4.nf = undefined; h4.frame = 0; h4.img.style.backgroundSize = '';
         }
         h4.yng = yn4;
         h4.tr = na ? traitsOf(na) : null;
@@ -1593,6 +1595,9 @@ function init(visitDoc, visitMiss) {
       // as part of the banana's own animation). Pens and ✥ pins still
       // never bind her — dogBrain owns her targets every frame.
       if (h.a && h.a.sp === 'dog' && !h.follow) dogBrain(h, now);
+      if (h.a && h.a.sp === 'cat') {   // 🐈 and the cat has her own
+        if (catMod) catMod.brain(h, now); else { catChunk(); h.tx = h.x; h.ty = h.y; }
+      }
       // 🎉 rituals that walk: a graduate comes over to you once; on
       // naming day her best friend comes to hear the new name
       if (h.a && h.a.greet) { delete h.a.greet; walkTo(h, pos.x + 58, pos.y + 10); h.shyAt = now + 40000; }
@@ -1603,7 +1608,7 @@ function init(visitDoc, visitMiss) {
       }
       // 🎲 a shy one keeps her distance: you within 70px → she steps
       // 60px away (a 3s cooldown keeps it from jitter); nosy is the opposite
-      if (h.a && h.tr && h.tr.bold === 0 && !h.follow) {
+      if (h.a && h.tr && h.tr.bold === 0 && !h.follow && !brainy(h.a)) {
         const sdx = h.x - pos.x, sdy = h.y - pos.y, sdd = Math.hypot(sdx, sdy);
         if (sdd < 70 && now > (h.shyAt || 0)) {
           h.shyAt = now + 3000;
@@ -1620,7 +1625,7 @@ function init(visitDoc, visitMiss) {
         h.tx = v[0]; h.ty = v[1]; h.waitUntil = 0;
         continue;
       }
-      if (d < 3 && !(h.a && h.a.sp === 'dog')) {
+      if (d < 3 && !brainy(h.a)) {
         if (!h.waitUntil) h.waitUntil = now + (h.tr && h.tr.pat === 0 ? 1000 + Math.random() * 2000   // 🎲 restless
           : h.tr && h.tr.pat === 2 ? 5000 + Math.random() * 9000                                 // a dreamer
           : 1500 + Math.random() * 5000);
@@ -1703,7 +1708,7 @@ function init(visitDoc, visitMiss) {
         // 🐕 gait comes from her brain: trot 150 / zoomies 210 /
         // sprint 280 (the banana walks 168 — a slower dog never catches
         // a leaver). Everything else ambles.
-        const spd = h.a && h.a.sp === 'dog' ? (h.dspd != null ? h.dspd : 150)
+        const spd = brainy(h.a) ? (h.dspd != null ? h.dspd : 150)
           : 34 * (h.tr ? [0.75, 1, 1.3][h.tr.pace] : 1);   // 🎲 a dawdler, or quick on her feet
         let nx = h.x + dx / d * spd * dt, ny = h.y + dy / d * spd * dt;
         // 🚧 the yard's solids are solid for every animal (Trym: "the dog runs
@@ -1731,6 +1736,7 @@ function init(visitDoc, visitMiss) {
           if (stuck) {
             nx = h.x; ny = h.y;
             if (h.a.sp === 'dog') { if (h.dg) { h.dg.m = 'rest'; h.dg.until = now + 2500; h.dg.heelAt = now; } }
+            else if (h.a.sp === 'cat') { if (catMod) catMod.stuck(h, now); else { h.tx = h.x; h.ty = h.y; } }
             else { h.tx = h.x; h.ty = h.y; h.waitUntil = 0; h.via = null; }
           }
         }
@@ -1744,20 +1750,23 @@ function init(visitDoc, visitMiss) {
         if (h.fl !== fl) { h.fl = fl; h.img.style.transform = fl; }
         if (now - h.frameAt > (h.dfr || 140)) {
           h.frameAt = now;
-          h.frame = (h.frame + 1) % 4;
+          h.frame = (h.frame + 1) % (h.nf || 4);   // 🐈 the cat's strips run 3, 6 or 8 frames
         }
       }
       // 🐾 ...and standing animals ease apart (36px) — 20 px/s, so it
-      // reads as shuffling room, never as a shove
-      for (const o of hens) {
-        if (o === h) continue;
-        const ox = h.x - o.x, oy = h.y - o.y, od = Math.hypot(ox, oy);
-        if (od < 36 && od > 0.01) { h.x += ox / od * 20 * dt; h.y += oy / od * 20 * dt; }
+      // reads as shuffling room, never as a shove. A sleeping cat is not
+      // shuffled: the others step round her.
+      if (!(h.cg && h.cstrip === 'c-catsleep.png')) {
+        for (const o of hens) {
+          if (o === h) continue;
+          const ox = h.x - o.x, oy = h.y - o.y, od = Math.hypot(ox, oy);
+          if (od < 36 && od > 0.01) { h.x += ox / od * 20 * dt; h.y += oy / od * 20 * dt; }
+        }
       }
       // ⚡ write-on-change only — an idle hen costs zero DOM
       if (h.pf !== h.frame) {
         h.pf = h.frame;
-        h.img.style.backgroundPosition = (h.frame * 100 / 3) + '% 0';
+        h.img.style.backgroundPosition = (h.frame * 100 / ((h.nf || 4) - 1)) + '% 0';
       }
       if (h.px !== h.x || h.py !== h.y) {
         h.px = h.x; h.py = h.y;
@@ -1783,6 +1792,9 @@ function init(visitDoc, visitMiss) {
   // old ternary chains doubled per species and young forms would have
   // tripled them.
   function isYoungA(a) { return !!a && a.gd != null && a.gd < 5; }
+  // 🐕🐈 the two with a mind of their own: their brains own every target, pens never bind them,
+  // they lay no eggs, and neither is the one who meets you at the gate
+  function brainy(a) { return !!a && (a.sp === 'dog' || a.sp === 'cat'); }
   function dressFor(a, i) {
     const y = isYoungA(a) ? 1 : 0;
     const sp = a && a.sp;
@@ -1793,6 +1805,7 @@ function init(visitDoc, visitMiss) {
     else if (sp === 'sheep') r = y ? ['ysheep', 'c-ysheep.png', 23, 28]
       : ['sheep', (a.wd || 0) >= 3 ? 'c-sheepf.png' : 'c-sheeps.png', 26, 38];
     else if (sp === 'dog') r = ['dog', 'c-dog.png', 31, 36];
+    else if (sp === 'cat') r = ['cat', 'c-catidle.png', 23, 47];   // 🐈 no kitten in the art: she arrives grown
     else r = y ? ['chick', 'c-chick.png', 11, 12] : ['', 'c-hen' + (i % 3) + '.png', 16, 30];
     return { y, cls: 'hs-hen' + (r[0] ? ' hs-hen--' + r[0] : ''),
       img: "url('/assets/homestead/" + r[1] + "')", hw: r[2], hv: r[3] };
@@ -1903,6 +1916,22 @@ function init(visitDoc, visitMiss) {
     // she wags even when she isn't going anywhere
     if (spd === 0 && now - h.frameAt > 300) { h.frameAt = now; h.frame = (h.frame + 1) % 4; }
   }
+  // ---- 🐈 THE CAT -----------------------------------------------------
+  // Trym, 28 Sep 2026: "give the cat a cat-style personality". Her mind is its own lazy chunk (homestead-cat.js,
+  // where her moods are listed): only a yard that has a cat downloads it. Until it lands she stands in her idle strip.
+  // ⚠️ GETTERS, every one: this object is built at boot, above `pos` and `birdsLive` (a plain reference is a TDZ crash).
+  let catMod = null, catLoading = false;
+  const catCtx = {
+    get pos() { return pos; }, get hens() { return hens; }, get birdsLive() { return birdsLive; },
+    get state() { return state; }, get huddle() { return huddle; },
+    plotNow: () => plotNow(), float: (x, y, t) => float(x, y, t),
+    lvOf: (a) => lvOf(a), traitsOf: (a) => traitsOf(a), spotOf: (a) => spotOf(a), isYoungA: (a) => isYoungA(a),
+  };
+  function catChunk() {
+    if (catMod || catLoading) return;
+    catLoading = true;
+    import('./homestead-cat.js').then((m) => { m.init(catCtx); catMod = m; }).catch(() => { catLoading = false; });
+  }
   // ---- 🐾 LEVELS ------------------------------------------------------
   // Hearts are the XP (hugs, never falling); the LEVEL is read off them,
   // with a real ceiling: Lv 10 = best friends — a state you live in, never
@@ -1939,7 +1968,7 @@ function init(visitDoc, visitMiss) {
   function bestFriend(a) {
     let best = null, bd = 1e9;
     farmAnimals().forEach((o) => {
-      if (o === a || o.sp === 'dog') return;
+      if (o === a || brainy(o)) return;
       const d = Math.abs((o.sd || 0) - (a.sd || 0));
       if (d < bd) { bd = d; best = o; }
     });
@@ -2068,7 +2097,8 @@ function init(visitDoc, visitMiss) {
       sheep: big && big.int >= 12 ? 2 : 0,
       cow: big && big.int >= 20 ? 1 : 0,
       rooster: 1,
-      dog: 1 };   // 🐕 pens are for keeping animals IN — she keeps herself on you
+      dog: 1,     // 🐕 pens are for keeping animals IN — she keeps herself on you
+      cat: 1 };   // 🐈 and the cat keeps herself to herself
   }
   const spCount = (sp) => farmAnimals().filter((a) => a.sp === sp).length;
   // 🟩 THE LIVE TINT — closed pens light up WHILE the fence tool is in hand
@@ -2272,7 +2302,7 @@ function init(visitDoc, visitMiss) {
     // hatches the morning there is room for her species, else it waits
     let eggLine = '', bornLine = '';
     flock.forEach((a) => {
-      if (a.sp === 'dog' || isYoungA(a) || a.egg) return;
+      if (brainy(a) || isYoungA(a) || a.egg) return;
       if (isOld(a) && lvOf(a) >= 10) { a.egg = 1; if (!eggLine) eggLine = '🥚 ' + (a.name || 'the ' + a.sp) + ' has an egg'; }
     });
     const caps0 = penCaps();
@@ -2291,7 +2321,7 @@ function init(visitDoc, visitMiss) {
       ? '🧶 the sheep is woolly — tap her to shear' : '';
     // 🎉 RITUALS (Trym: care and emotion is what can shine here)
     // her first egg / can gets her name on it
-    const firstA = flock.find((a) => a.name && prevGs.get(a) === 0 && (a.gs || 0) > 0 && a.sp !== 'dog');
+    const firstA = flock.find((a) => a.name && prevGs.get(a) === 0 && (a.gs || 0) > 0 && !brainy(a));
     const firstLine = firstA
       ? '🥚 ' + firstA.name + '’s first ' + (firstA.sp === 'hen' ? 'egg' : 'can of milk')
         + ' — ' + (he0(firstA) ? 'he’s very pleased with himself' : 'she’s very pleased with herself')
@@ -2344,6 +2374,7 @@ function init(visitDoc, visitMiss) {
     // and never, ever falls — pd is the only gate, there is no decay anywhere.
     const a = h.a;
     if (!a) return;
+    if (a.sp === 'cat' && catMod) catMod.pet(h);   // 🐈 purrs, walks off, or sleeps on — the hug below is the same
     if (visiting) { visitorHug(a, h); return; }
     // 🧶 THE SHEAR (slice 3): a woolly sheep gives her coat on the tap —
     // one wool, the drawn Sheared sprite takes over, three days grow it back
@@ -2427,7 +2458,7 @@ function init(visitDoc, visitMiss) {
   const birdsLive = [];
   const birdTick = (() => {
     if (REDUCED || !BIRDS.length) return () => {};
-    let nextAt = 6000 + Math.random() * 9000;
+    let nextAt = 6000 + Math.random() * 9000, birdN = 0;
     const birdCap = () => Math.min(3, 1 + state.items.filter((i) => i.id.indexOf('birdhouse') === 0).length);
     // ⚠️ AN EMPTY YARD USED TO GET NO BIRDS AT ALL. The pool was state.items
     // alone, so `if (!pool.length) return null` bailed for every player who had
@@ -2464,7 +2495,7 @@ function init(visitDoc, visitMiss) {
       const img = document.createElement('span');
       el.appendChild(img);
       world.appendChild(el);
-      const b = { el, img, key: BIRDS[(Math.random() * BIRDS.length) | 0],
+      const b = { el, img, id: ++birdN, key: BIRDS[(Math.random() * BIRDS.length) | 0],
         x: Math.random() < 0.5 ? -30 : W + 30, y: Math.max(60, spot.y - 320),
         tx: spot.x, ty: spot.y, mode: 'in', strip: '',
         until: 0, frame: 0, frameAt: 0, hopAt: 0 };
@@ -2505,8 +2536,8 @@ function init(visitDoc, visitMiss) {
             b.y += dy / d * 300 * dt;
             if (Math.abs(dx) > 4) b.img.style.transform = dx > 0 ? 'scaleX(-1)' : '';
           }
-        } else if (huddle === 2 || Math.hypot(pos.x - b.x, pos.y - b.y) < 80 || now > b.until) {
-          b.mode = 'out';   // scared, bored, or the sky opened — off over the treeline
+        } else if (huddle === 2 || b.scare || Math.hypot(pos.x - b.x, pos.y - b.y) < 80 || now > b.until) {
+          b.mode = 'out';   // scared (by you, or by the cat's pounce), bored, or the sky opened — off over the treeline
           b.tx = b.x + (b.x > W / 2 ? 600 : -600);
           b.ty = -80;
         } else if (now > b.hopAt) {
@@ -5468,6 +5499,28 @@ function init(visitDoc, visitMiss) {
       grow: (i, g2) => { const a = farmAnimals()[i || 0]; if (a) { a.gd = g2; save(); } return a; },
       feed: () => { passStat('hs_fed', dayNum() - (farmStats().hs_fed || 0)); return farmStats().hs_fed; },
       dog: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'dog'); return h2 && h2.dg; },
+      // 🐈 the cat: where she is, her mind, and a way to hand her a mood (a walk cannot wait for chance)
+      catAt: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'cat'); return h2 && [h2.x, h2.y]; },
+      cat: () => { const h2 = hens.find((x) => x.a && x.a.sp === 'cat');
+        return h2 && h2.cg && { m: h2.cg.m, ph: h2.cg.ph, strip: h2.cstrip, frame: h2.frame, nf: h2.nf, fl: h2.fl || '',
+          x: h2.x, y: h2.y, until: h2.cg.until, now: h2.cg.now, prey: h2.cg.prey ? (h2.cg.prey.b ? 'bird' : 'hen') : '',
+          preyId: h2.cg.prey && h2.cg.prey.b ? h2.cg.prey.b.id : 0,
+          size: h2.img.style.backgroundSize, pos: h2.img.style.backgroundPosition, left: h2.el.style.left, top: h2.el.style.top,
+          plot: plotNow(), b: h2.a.b || 0, gs: h2.a.gs || 0, fr: h2.dfr, spd: h2.dspd }; },
+      catMood: (m, ms, o) => { const h2 = hens.find((x) => x.a && x.a.sp === 'cat'); if (!h2 || !h2.cg) return false;
+        const { at, to, ...rest } = o || {};
+        if (at) { h2.x = h2.tx = at[0]; h2.y = h2.ty = at[1]; }   // set down on open grass, for a walk that needs her there
+        if (to) { h2.tx = to[0]; h2.ty = to[1]; }                 // and where a stroll (ph 1) goes
+        Object.assign(h2.cg, { m, ph: 0, until: ms ? h2.cg.now + ms : 0, prey: null }, rest); return true; },
+      // her hunt on demand: 'bird' (a garden bird on the ground) or 'hen'; answers what she went for
+      catHunt: (kind, near) => { const h2 = hens.find((x) => x.a && x.a.sp === 'cat'); if (!h2 || !h2.cg) return '';
+        let prey = null;
+        if (kind === 'hen') { const o = hens.find((x) => x !== h2 && x.a && x.a.sp === 'hen' && !isYoungA(x.a)); if (o) prey = { h: o }; }
+        else { const b = birdsLive.find((x) => x.mode === 'ground' && !x.scare); if (b) prey = { b }; }
+        if (!prey) return '';
+        if (near) { const o = prey.b || prey.h; h2.x = h2.tx = o.x - near; h2.y = h2.ty = o.y + 6; }   // a film starts her close
+        Object.assign(h2.cg, { m: 'hunt', ph: 0, until: 0, prey }); return prey.b ? 'bird' : 'hen'; },
+      birds: () => birdsLive.map((b) => ({ id: b.id, x: Math.round(b.x), y: Math.round(b.y), mode: b.mode, scare: !!b.scare })),
       pens: () => penCaps(),
       wool: (i, d) => { const a = farmAnimals()[i || 0]; if (a) { a.wd = d; save(); } return a; },
       goods: () => ({ eggs: state.eggs || 0, milk: state.milk || 0, wool: state.wool || 0, cheese: state.cheese || 0 }),

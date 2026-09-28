@@ -2477,6 +2477,35 @@ export const JOBS = {
     },
     shape: () => [],
   },
+  // 🐈 THE CAT (28 Sep 2026) — Trym: "add that to the farm/homestead? in the same way you can get a dog", and "give the
+  // cat a cat-style personality". She is bought on the Banana Phone like the dog, gives no goods, and comes to you when
+  // SHE decides (src/scripts/banana-homestead.js catBrain). Every trait word below is something the yard really does.
+  'homestead-cat': {
+    id: 'homestead-cat',
+    title: 'The Homestead — the cat',
+    what: 'The cat’s words: her row in the Banana Phone’s animal market, the toast when she is bought, the name of what her card counts, her favourite dish, what level 5 brings her, and the trait words on her card.',
+    approved: 'src/data/copy/homestead-cat.json',
+    reads: 'src/scripts/homestead-phone.js and src/scripts/homestead-kitchen.js (static imports)',
+    top: ['shop', 'arrive', 'goods', 'fave', 'next5', 'traits'],
+    fields: {
+      'shop.name': { kind: 'label', max: 14, note: 'Her row’s title in the animal market, beside the dog’s “the dog”. Lower case, with “the”: there is only ever one.' },
+      'shop.buy': { kind: 'label', aim: 26, max: 34, note: 'Her row’s line while she can be bought, under her name: what she gives. The dog’s says “no goods — just love”; this one says the same thing her way — she gives nothing to sell, and she keeps her own hours. Lower case.' },
+      'shop.home': { kind: 'label', max: 20, note: 'Her row’s line once she is yours, where the dog’s says “at your heel” and the hens’ “all home”. Where she is, in two or three words. Lower case.' },
+      arrive: toastLine(64, 'Buying the cat on the Banana Phone: she is yours, and she will come to you in her own time (the dog, by contrast, is at your heel at once). The game puts 🐈 in front.'),
+      goods: { kind: 'label', max: 10, note: 'On her card, under a number, where a hen’s says “eggs” and the dog’s says “visits”: what the number counts — each time she came to you and purred at your feet. One word, lower case.' },
+      fave: { kind: 'label', max: 10, note: 'The possessive on a kitchen recipe row, “· cows’ and cats’ favourite”: her species’ plural possessive, with the curly apostrophe.' },
+      next5: { kind: 'prose', max: 40, note: 'Said on her card after “N hugs to Lv 5 — ”: what level 5 brings her. Other animals meet you at the gate; the cat does not, but from level 5 she comes to you more often (the engine shortens the wait between her visits). Lower case.' },
+      'traits.pace0': { kind: 'label', max: 24, note: 'A trait on her card for a cat who walks slower than most. A compliment, lower case.' },
+      'traits.pace2': { kind: 'label', max: 24, note: 'A trait for a cat who walks quicker than most. A compliment, lower case.' },
+      'traits.pat0': { kind: 'label', max: 24, note: 'A trait for a restless cat: short naps, more dashes about the yard. Lower case.' },
+      'traits.pat2': { kind: 'label', max: 24, note: 'A trait for a sleepy cat: long naps, more of them. Lower case.' },
+      'traits.bold0': { kind: 'label', max: 24, note: 'A trait for a shy cat: she comes to you rarely and steps away while she does not know you well. Lower case.' },
+      'traits.bold1': { kind: 'label', max: 24, note: 'A trait for a nosy cat: her walks often end near you, and she comes to you more. Lower case.' },
+      'traits.spot': { kind: 'label', max: 24, holds: ['{spot}'], needs: [[/\{spot\}/, 'must carry {spot} — the game names the place']], note: 'Where she naps when nobody has carried her anywhere: {spot} is “the trough”, “the well”, “the house”, “the coop” or “the fence”. Lower case.' },
+      'traits.spotHere': { kind: 'label', max: 30, note: 'Where she naps once you have carried her somewhere with the move tool: that spot is hers now. Lower case.' },
+    },
+    shape: () => [],
+  },
   'homestead-seeds': {
     id: 'homestead-seeds',
     title: 'The Homestead — planting the seeds from the park',

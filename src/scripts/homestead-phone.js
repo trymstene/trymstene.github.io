@@ -3,6 +3,7 @@
 // Everything it needs arrives once through ctx; `state`, `inside` and
 // `visiting` are LIVE getters because the main module reassigns them.
 import { buildTree } from './homestead-tree.js';
+import CATW from '../data/copy/homestead-cat.json';   // 🐈 the cat's words (28 Sep 2026)
 // 🎨 pixel icons come BUNDLED from src/icons/pixelart (copy an SVG in to use
 // it) — the full pack under public/assets is gitignored and 404s on the live site
 import pxEdit from '../icons/pixelart/edit.svg?raw';
@@ -48,7 +49,7 @@ export function openPet(a, kind) {
   const sp = THUMB[(young ? 'y' : '') + a.sp] || THUMB.hen;
   const badge = lv >= 10 ? 'crown-solid' : lv >= 5 ? 'star-solid' : '';
   const GOOD = { hen: ['m-egg.png', 'eggs'], goat: ['m-milk.png', 'cans'], cow: ['m-milk.png', 'cans'],
-    sheep: ['m-wool.png', 'wool'], rooster: ['', 'mornings'], dog: ['', 'visits'] };
+    sheep: ['m-wool.png', 'wool'], rooster: ['', 'mornings'], dog: ['', 'visits'], cat: ['', CATW.goods] };
   const g = GOOD[a.sp] || GOOD.hen;
   const days = Math.max(0, (a.ld == null ? dayNum() : a.ld) - (a.ad == null ? dayNum() : a.ad));
   const goodsN = a.sp === 'rooster' ? days : (a.gs || 0);
@@ -60,7 +61,8 @@ export function openPet(a, kind) {
     : lv >= 10 ? ''
     : lvNext(a) + ' hug' + (lvNext(a) === 1 ? '' : 's') + ' to Lv ' + (lv + 1)
       + (lv + 1 === 3 && !a.name ? ' — then you can name ' + (he ? 'him' : 'her')
-        : lv + 1 === 5 ? ' — ' + (he ? 'he' : 'she') + '’ll meet you at the gate' : '');
+        : lv + 1 === 5 && a.sp === 'cat' ? ' — ' + CATW.next5
+        : lv + 1 === 5 && a.sp !== 'dog' ? ' — ' + (he ? 'he' : 'she') + '’ll meet you at the gate' : '');
   const icon = (nm, col) => "<span class='hs-petico' style='color:" + col + "'>" + ico(nm, 18) + "</span>";
   box.innerHTML = "<div class='hs-pethead'><span class='hs-petport" + (lv >= 10 ? ' hs-petport--best' : '') + (kind === 'grass' ? ' hs-petport--rest' : kind === 'away' ? ' hs-petport--away' : '') + "'>"
     + "<i style=\"background-image:url('/assets/homestead/" + sp[0] + "');width:" + Math.round(sp[3] * 1.45) + "px;aspect-ratio:" + sp[1] + "/" + sp[2] + "\"></i>"
@@ -72,7 +74,7 @@ export function openPet(a, kind) {
     + (traitLine(a, gone) ? "<p class='hs-pettrait'></p>" : '')
     + "<div class='hs-petstats'>"
     + "<div class='hs-petstat'>" + icon('heart-solid', '#e5566d') + "<div><span class='n'>" + (a.b || 0) + "</span><span class='l'>hugs</span></div></div>"
-    + "<div class='hs-petstat'>" + (g[0] ? "<img src='/assets/homestead/" + g[0] + "' alt=''>" : icon(a.sp === 'dog' ? 'heart' : 'cake', '#b07d00'))
+    + "<div class='hs-petstat'>" + (g[0] ? "<img src='/assets/homestead/" + g[0] + "' alt=''>" : icon(a.sp === 'dog' || a.sp === 'cat' ? 'heart' : 'cake', '#b07d00'))
     + "<div><span class='n'>" + goodsN + "</span><span class='l'>" + g[1] + "</span></div></div>"
     + "<div class='hs-petstat'>" + icon('calendar', '#4a6b8a') + "<div><span class='n'>" + days + "</span><span class='l'>days</span></div></div>"
     + "</div><div class='hs-petacts'></div>";
@@ -165,6 +167,7 @@ export function petRename(a) {
 // brief: character only — no friend, no spot (the ones who left have neither)
 export function traitLine(a, brief) {
   if (a.sp === 'dog') return '';
+  if (a.sp === 'cat') return catTraits(a, brief);
   const t = traitsOf(a), he = he0(a);
   const w = [];
   if (t.pace === 0) w.push('a dawdler'); else if (t.pace === 2) w.push('quick on ' + (he ? 'his' : 'her') + ' feet');
@@ -177,6 +180,19 @@ export function traitLine(a, brief) {
   if (sp) w.push('you’ll find ' + (he ? 'him' : 'her') + ' by ' + SPOT_W[sp.k]);
   return w.join(' · ');
 }
+// 🐈 her card's words: the traits her brain really acts on (catBrain: her pace, her naps, how shy she is)
+// and where she naps — where you carried her, else her favourite spot
+function catTraits(a, brief) {
+  const t = traitsOf(a), T = CATW.traits;
+  const w = [];
+  if (t.pace === 0) w.push(T.pace0); else if (t.pace === 2) w.push(T.pace2);
+  if (t.pat === 0) w.push(T.pat0); else if (t.pat === 2) w.push(T.pat2);
+  if (t.bold === 0) w.push(T.bold0); else if (t.bold === 1) w.push(T.bold1);
+  if (brief) return w.join(' · ');
+  if (a.hm) w.push(T.spotHere);
+  else { const sp = spotOf(a); if (sp) w.push(T.spot.replace('{spot}', SPOT_W[sp.k])); }
+  return w.join(' · ');
+}
 // needs = the locked-row line; it speaks the SAME size-words as the
 // fence card and the build-mode fence label, so they explain each other
 const ANIMAL_SHOP = [
@@ -186,6 +202,7 @@ const ANIMAL_SHOP = [
   { sp: 'sheep', name: 'a sheep', price: 45, needs: 'needs a sheep-sized fence' },
   { sp: 'cow', name: 'the cow', price: 90, needs: 'needs a cow-sized fence' },
   { sp: 'dog', name: 'the dog', price: 40, needs: '' },
+  { sp: 'cat', name: CATW.shop.name, price: 40, needs: '' },
 ];
 // ---- 📱 THE PHONE ROW -------------------------------------------
 // One shape for stall/market/animals/shed (Trym: "game UI, not web UI" —
@@ -194,7 +211,7 @@ const ANIMAL_SHOP = [
 const THUMB = {
   hen: ['c-hen0.png', 32, 32, 32], rooster: ['c-roost.png', 48, 48, 40],
   goat: ['c-goat.png', 96, 78, 46], sheep: ['c-sheepf.png', 96, 57, 48],
-  cow: ['c-cow.png', 144, 81, 52], dog: ['c-dogidle.png', 104, 66, 48],
+  cow: ['c-cow.png', 144, 81, 52], dog: ['c-dogidle.png', 104, 66, 48], cat: ['c-catthumb.png', 90, 90, 44],
   yhen: ['c-chick.png', 48, 30, 30], yrooster: ['c-chick.png', 48, 30, 30],
   ygoat: ['c-ygoat.png', 96, 57, 42], ysheep: ['c-ysheep.png', 96, 48, 38],
   ycow: ['c-ycow.png', 96, 60, 42],
@@ -300,9 +317,10 @@ const BUY_SUB = {
   sheep: 'grows wool for shearing',
   cow: 'fills two cans a day',
   dog: 'no goods — just love',
+  cat: CATW.shop.buy,
 };
 const HOME_W = { hen: 'all home', rooster: 'he’s home', goat: 'she’s home',
-  sheep: 'both home', cow: 'she’s home', dog: 'at your heel' };
+  sheep: 'both home', cow: 'she’s home', dog: 'at your heel', cat: CATW.shop.home };
 export function renderBuy(list) {
   list.classList.add('hs-list--rows');
   const caps = penCaps();
@@ -344,11 +362,12 @@ function buyAnimal(an) {
   const na2 = { sp: an.sp, b: mem ? mem.b : 0, pd: 0, name: mem ? mem.name : '', wd: 0,
     id: mem && mem.id ? mem.id : mintId(), ad: mem && mem.ad != null ? mem.ad : dayNum(),
     gs: mem ? (mem.gs || 0) : 0, sd: mem && mem.sd != null ? mem.sd : Math.floor(Math.random() * 10000) };
-  if (an.sp !== 'dog') na2.gd = mem ? (mem.gd == null ? 5 : mem.gd) : 0;
+  if (an.sp !== 'dog' && an.sp !== 'cat') na2.gd = mem ? (mem.gd == null ? 5 : mem.gd) : 0;   // 🐈 no kitten either
   farmAnimals().push(na2);
   C.state.hens = C.state.animals.filter((a2) => a2.sp === 'hen').length;
   save(); refreshHud(); renderShop();
-  toast(mem && mem.name
+  const catLine = an.sp === 'cat' && !(mem && mem.name) ? '🐈 ' + CATW.arrive : '';
+  toast(catLine || (mem && mem.name
     ? '💛 ' + mem.name + '! ' + (an.sp === 'rooster' ? 'he remembers you' : 'she remembers you')
     : an.sp === 'dog' ? '🐕 the dog is yours — she’s already at your heel'
     // ⚠️ an UNNAMED remembered adult also lands here — only a real kid
@@ -357,8 +376,9 @@ function buyAnimal(an) {
       ? '🐣 a ' + BABY_W[an.sp] + '! fill the trough 5 mornings and '
         + (an.sp === 'rooster' ? 'he’ll' : 'she’ll') + ' grow up'
     : an.name + ' is back — '
-      + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet'), 3600);
+      + (an.sp === 'rooster' ? 'he’s already bossing the yard' : 'she’s finding her feet')), 3600);
   track1('homestead_buy_animal', { sp: an.sp });
+  if (an.sp === 'cat') track1('homestead_buy_cat');   // 🐈 GA4 counts an event NAME, not its sp
 }
 // 🐔 MY ANIMALS — the roster: her own sprite (babies look like
 // babies), her hearts, her C.state, and a SMALL rehome button (the pick is

@@ -1,0 +1,21 @@
+{
+  "shop": {
+    "name": "the cat",
+    "buy": "no goods — she comes and goes",
+    "home": "asleep somewhere"
+  },
+  "arrive": "the cat is yours — she’ll come to you when she’s ready",
+  "goods": "purrs",
+  "fave": "cats’",
+  "next5": "she’ll come to you more often",
+  "traits": {
+    "pace0": "takes her time",
+    "pace2": "quick on her feet",
+    "pat0": "never still for long",
+    "pat2": "sleeps most of the day",
+    "bold0": "keeps to herself",
+    "bold1": "follows you about",
+    "spot": "naps by {spot}",
+    "spotHere": "naps where you carried her"
+  }
+}
