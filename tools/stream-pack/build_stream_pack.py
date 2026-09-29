@@ -390,36 +390,56 @@ for k, o in enumerate(crew):
     ban.alpha_composite(b, (x, 840 - h - 30))
 ban.convert('RGB').save(os.path.join(SHOPART, 'shop-banner-3360x840.png'), optimize=True)
 
-README = """THE OFFICIAL DANCING BANANA - STREAM PACK
-==========================================
-The dancing banana, by Trym Stene, the artist who made it in 1999.
-
-EMOTES (emotes/<name>/)
+# ── what each download says it holds: a README per zip, listing only what is in THAT zip ─────────────────────
+# ⚠️ one README for every zip had the single emote's buyer reading about twelve emotes, alerts and scenes they never got
+TXT = {
+    'emotes': """EMOTES (emotes/<name>/)
   twitch-112.png, twitch-56.png, twitch-28.png            still emote, the three sizes Twitch asks for
   twitch-animated-112.gif, -56.gif, -28.gif               animated emote (8 frames, loops)
   discord-128.png, discord-animated-128.gif               for Discord
   dance, hype, love, cool, lol, gg, rip, evil, gn, gm, vibe, shiny
-
-SUB BADGES (sub-badges/)
+""",
+    'classic': """THE CLASSIC DANCE (emotes/dance/)
+  twitch-112.png, twitch-56.png, twitch-28.png            still emote, the three sizes Twitch asks for
+  twitch-animated-112.gif, -56.gif, -28.gif               animated emote (8 frames, loops)
+  discord-128.png, discord-animated-128.gif               for Discord
+""",
+    'badges': """SUB BADGES (sub-badges/)
   01, 02, 03, 06, 09 and 12 months, each at 72, 36 and 18 px - the banana dresses up the longer they stay.
-
-ALERTS (alerts/)
+""",
+    'alerts': """ALERTS (alerts/)
   follow-500.gif, subscribe-500.gif, raid-500.gif         transparent, loops; add your own text in your alert tool
   dancing-banana-600.gif                                  the classic dance on its own, for any scene
-
-SCENES (scenes/, 1920 x 1080)
+""",
+    'scenes': """SCENES (scenes/, 1920 x 1080)
   starting-soon, be-right-back, stream-ending             put dancing-banana-600.gif over them for a dancing banana
-
-PANELS (panels/, 320 x 100)
+""",
+    'panels': """PANELS (panels/, 320 x 100)
   about-me, schedule, discord, support, rules, socials
-
-LICENCE
+""",
+}
+LICENCE = """LICENCE
   For use on your own streams and channels (Twitch, YouTube, Kick, Discord and the like).
   Do not resell, share or redistribute the files, and do not use them in a logo or trademark.
   (c) Trym Stene. The dancing banana - trymstene.com
 """
-with open(os.path.join(OUT, 'README.txt'), 'w', encoding='utf-8', newline='\r\n') as fh:
-    fh.write(README)
+
+
+NL = chr(10)   # ⚠️ built, never typed: a shell heredoc once ate this file's backslashes (windows-shell-traps)
+
+
+def readme(title, parts):
+    head = title + NL + '=' * len(title) + NL + 'The dancing banana, by Trym Stene, the artist who made it in 1999.' + NL + NL
+    return head + NL.join(TXT[p] for p in parts) + NL + LICENCE
+
+
+def crlf(t):
+    return t.replace(NL, chr(13) + NL)   # a README opened in Windows Notepad keeps its lines
+
+
+FULL = ['emotes', 'badges', 'alerts', 'scenes', 'panels']
+with open(os.path.join(OUT, 'README.txt'), 'w', encoding='utf-8', newline='') as fh:
+    fh.write(crlf(readme('THE OFFICIAL DANCING BANANA - STREAM PACK', FULL)))
 
 # ── the zips a shop sells: the whole pack, and the smaller listings that lead to it (each carries the licence) ──
 import zipfile  # noqa: E402
@@ -429,13 +449,18 @@ os.makedirs(SHOP, exist_ok=True)
 for fn in os.listdir(SHOP):
     os.remove(os.path.join(SHOP, fn))
 PARTS = {
-    'official-dancing-banana-stream-pack.zip': lambda rel: not rel.startswith('preview-'),
-    'official-dancing-banana-emote-pack.zip': lambda rel: rel.startswith('emotes/') or rel == 'README.txt',
-    'official-dancing-banana-sub-badges.zip': lambda rel: rel.startswith('sub-badges/') or rel == 'README.txt',
-    'official-dancing-banana-classic-emote.zip': lambda rel: rel.startswith('emotes/dance/') or rel == 'README.txt',
+    'official-dancing-banana-stream-pack.zip': ('THE OFFICIAL DANCING BANANA - STREAM PACK', FULL,
+                                                lambda rel: not rel.startswith('preview-') and rel != 'README.txt'),
+    'official-dancing-banana-emote-pack.zip': ('THE OFFICIAL DANCING BANANA - EMOTE PACK', ['emotes'],
+                                               lambda rel: rel.startswith('emotes/')),
+    'official-dancing-banana-sub-badges.zip': ('THE OFFICIAL DANCING BANANA - SUB BADGES', ['badges'],
+                                               lambda rel: rel.startswith('sub-badges/')),
+    'official-dancing-banana-classic-emote.zip': ('THE OFFICIAL DANCING BANANA - THE CLASSIC EMOTE', ['classic'],
+                                                  lambda rel: rel.startswith('emotes/dance/')),
 }
-for zname, keep in PARTS.items():
+for zname, (title, parts, keep) in PARTS.items():
     with zipfile.ZipFile(os.path.join(SHOP, zname), 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('README.txt', crlf(readme(title, parts)))
         for root, _, files in os.walk(OUT):
             for fn in files:
                 full = os.path.join(root, fn)
