@@ -56,6 +56,20 @@ SVGS = dict(re.findall(r"(\w+): '(<svg[^']+</svg>)'", ART_SRC))
 PNGS = dict(re.findall(r"(\w+): '(/assets/[^']+\.png)'", ART_SRC))
 assert 'fishbowl' in SVGS and 'plushbanana' in PNGS, 'art parse drifted'
 
+# 🧶🕹🏘️ THE THREE PACKS THE ENGINE SPREADS IN FRONT OF IT (29 Sep 2026). banana-engine.js builds its art map as
+# { ...KNIT_SVG, ...ARCADE_SVG, ...TOWN_SVG, ...the wearart } — the tailor's knitwear, the Arcade's prizes and the town's
+# hand tools live in their own modules, two of them BUILT by JS helpers (no literal to regex). This mirror read only the
+# wearart, so a winner in a wool scarf rendered as a bare banana on the front page (the render threw on 'woolscarf' and the
+# bake fell back). They are imported for real, like the manifest, and the wearart still wins a clash, as in the engine.
+_PACKS_NODE = ("import { KNIT_SVG } from './src/data/knitwear.js';"
+               "import { ARCADE_SVG } from './src/data/arcadewear.js';"
+               "import { TOWN_SVG } from './src/data/townwear.js';"
+               'process.stdout.write(JSON.stringify({ ...KNIT_SVG, ...ARCADE_SVG, ...TOWN_SVG }));')
+for _k, _v in json.loads(subprocess.run(['node', '--input-type=module', '-e', _PACKS_NODE], cwd=SITE,
+                                        capture_output=True, text=True, check=True).stdout).items():
+    SVGS.setdefault(_k, _v)
+assert 'woolscarf' in SVGS and 'arcvisor' in SVGS, 'pack import drifted'
+
 FRAMES = []
 # every separator is \s* — the table is column-ALIGNED, so short values carry a
 # second padding space ("face: 'left',  hands:") that a single literal space misses
@@ -104,26 +118,49 @@ def sheet():
 
 # ---- drawing --------------------------------------------------------------
 
+def _vb(svg, i):
+    return int(re.search(r'viewBox="0 0 (\d+) (\d+)"', svg).group(i)) / 10
+
+
 def grid_w(key):
-    return int(re.search(r'viewBox="0 0 (\d+)', SVGS[key]).group(1)) / 10
+    return _vb(SVGS[key], 1)
 
 
 def grid_h(key):
-    return int(re.search(r'viewBox="0 0 \d+ (\d+)', SVGS[key]).group(1)) / 10
+    return _vb(SVGS[key], 2)
+
+
+def _svg_raster(svg, w, h, flip=False):
+    im = Image.new('RGBA', (max(1, _r(w)), max(1, _r(h))), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    vb = re.search(r'viewBox="0 0 (\d+) (\d+)"', svg)
+    sx, sy = im.width / int(vb.group(1)), im.height / int(vb.group(2))
+    for r in re.finditer(r'<rect x="(-?\d+)" y="(-?\d+)" width="(\d+)" height="(\d+)" fill="([^"]+)"', svg):
+        x, y, w0, h0 = (int(r.group(i)) for i in range(1, 5))
+        d.rectangle([_r(x * sx), _r(y * sy),
+                     _r((x + w0) * sx) - 1, _r((y + h0) * sy) - 1], fill=r.group(5))
+    return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
 
 
 def svg_layer(key, w, h, flip=False):
     """Rasterise a rect-grid SVG at exactly w*h. Rectangles, never a resample —
     that is why an accessory stays as crisp as the sprite at any print size."""
-    im = Image.new('RGBA', (max(1, _r(w)), max(1, _r(h))), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    vb = re.search(r'viewBox="0 0 (\d+) (\d+)"', SVGS[key])
-    sx, sy = im.width / int(vb.group(1)), im.height / int(vb.group(2))
-    for r in re.finditer(r'<rect x="(-?\d+)" y="(-?\d+)" width="(\d+)" height="(\d+)" fill="([^"]+)"', SVGS[key]):
-        x, y, w0, h0 = (int(r.group(i)) for i in range(1, 5))
-        d.rectangle([_r(x * sx), _r(y * sy),
-                     _r((x + w0) * sx) - 1, _r((y + h0) * sy) - 1], fill=r.group(5))
-    return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
+    return _svg_raster(SVGS[key], w, h, flip)
+
+
+def wear_anchor(idx, kind, hand=None):
+    """banana-engine.js wearAnchor — where a community item (the `custom` channel) hangs on frame `idx`."""
+    F = FRAMES[idx] if 0 <= idx < len(FRAMES) else FRAMES[2]
+    if kind == 'face':
+        return F['eyeCx'], F['eyeCy']
+    if kind in ('chest', 'body'):
+        return F['btCx'], F['eyeCy']
+    if kind == 'feet':
+        return (F['feetX'][0] + F['feetX'][1]) / 2, FEET_BOTTOM
+    if kind == 'hand':
+        h = F['hands'][0] if hand == 'left' else F['hands'][1]
+        return h[0], h[1]
+    return F['hatCx'], F['tipY']   # head (default)
 
 
 def png_layer(key, h, flip=False):
@@ -149,14 +186,19 @@ def _resolve_hands(extras):
     return glove
 
 
-def render(idx, outfit=None, scale=8):
+def render(idx, outfit=None, scale=8, lenient=False):
     """Frame `idx` wearing `outfit`, at `scale`x the engine's 469x498 space.
     Returns RGBA on transparency, uncropped (call .crop(im.getbbox())).
 
-    outfit: {'hat': id, 'glasses': id, 'extras': [ids]}
+    outfit: {'hat': id, 'glasses': id, 'extras': [ids] or {id: on}, 'custom': [engine custom payloads]}
+    `custom` is the engine's community-item channel ({art: svg, anchor, hand, ox, oy, scale, mirror}; build it with
+    wear-render.js wearToCustom). `lenient` skips a piece with no art instead of raising — for a picture of a player
+    (the citizens' frames), never for print, where a missing piece must stop the file.
     """
     o = outfit or {}
-    extras = list(o.get('extras') or [])
+    ex = o.get('extras') or []
+    # the site keeps extras as {id: true|false} (a switched-OFF item is still a key) — only the ones that are on
+    extras = [k for k, v in ex.items() if v] if isinstance(ex, dict) else list(ex)
     S = scale
     unit = PX * S
     F = FRAMES[idx]
@@ -174,10 +216,16 @@ def render(idx, outfit=None, scale=8):
 
     def acc(name, x, y, w, h, flip=False):
         """`name` is a manifest `art:` value — an SVG key or a PNG one."""
+        if lenient and name not in SVGS and name not in PNGS:
+            print('  banana_render: no art for', name, '- left off')
+            return
         paste(svg_layer(name, w, h, flip) if name in SVGS else png_layer(PNGS[name], h, flip), x, y)
 
     def draw_held(gside, d):
         hx, hy = F['hands'][0 if gside == 'left' else 1]
+        if lenient and d['art'] not in SVGS and d['art'] not in PNGS:
+            print('  banana_render: no art for', d['art'], '- left off')
+            return
         if d['art'] not in SVGS:          # PNG art sizes off manifest `gh`, not a viewBox
             gh = (d.get('gh') or 24) * unit
             lay = png_layer(PNGS[d['art']], gh)
@@ -189,12 +237,21 @@ def render(idx, outfit=None, scale=8):
     def draw_hat(hd):
         turns = side and hd.get('side')
         art = hd['side'] if turns else hd['art']
+        if lenient and art not in SVGS and art not in PNGS:
+            print('  banana_render: no art for', art, '- left off')
+            return
         hw, hh = grid_w(art) * unit, grid_h(art) * unit
         seat_units = hd['sideSeat'] if (turns and hd.get('sideSeat') is not None) else hd.get('seat', 0)
         h_bottom = fy + F['tipY'] * S + (HAT_OVERLAP + seat_units) * unit
         acc(art, fx + F['hatCx'] * S - hw / 2, h_bottom - hh, hw, hh,
             bool(turns) and F['face'] == 'left')
 
+    if lenient:   # a piece whose art this mirror cannot find is left off whole, before anything measures it
+        def _has(d):
+            return all(a in SVGS or a in PNGS for a in (d.get('art'), d.get('front'), d.get('side')) if a)
+        for i in [i for i in extras if i in EXTRAS and not _has(EXTRAS[i])]:
+            print('  banana_render: no art for', i, '- left off')
+        extras = [i for i in extras if i not in EXTRAS or _has(EXTRAS[i])]
     hat_def = HATS.get(o.get('hat'))
     hat_behind = bool(hat_def and hat_def.get('behindFront') and not side)
     glove = _resolve_hands(extras)
@@ -223,6 +280,9 @@ def render(idx, outfit=None, scale=8):
     if hat_def and not hat_behind:
         draw_hat(hat_def)
     sd = SHADES.get(o.get('glasses'))
+    if sd and lenient and (sd['side'] if side else sd['front']) not in SVGS:
+        print('  banana_render: no art for', o.get('glasses'), '- left off')
+        sd = None
     if sd:
         art = sd['side'] if side else sd['front']
         gw, gh = grid_w(art) * unit, grid_h(art) * unit
@@ -261,6 +321,21 @@ def render(idx, outfit=None, scale=8):
     for gs in ('left', 'right'):
         if gs in glove and not glove[gs].get('behind'):
             draw_held(gs, glove[gs])
+
+    # 🧢 COMMUNITY ITEMS — drawComposite's `custom` channel, the same maths: the item's top-left sits at the anchor plus the
+    # offset captured when it was drawn (ox/oy in sprite units), scaled by `scale`; a turned-away frame mirrors it around the
+    # anchor, and `mirror` (the opposite glove) cancels that out
+    for c in (o.get('custom') or []):
+        svg = (c or {}).get('art') or ''
+        if not svg.startswith('<svg') or 'viewBox="0 0 ' not in svg:
+            continue
+        s = c.get('scale') or 1
+        cw, ch = _vb(svg, 1) * unit * s, _vb(svg, 2) * unit * s
+        ax, ay = wear_anchor(idx, c.get('anchor'), c.get('hand'))
+        flip = (F['face'] == 'left') != bool(c.get('mirror'))
+        ox, oy = (c.get('ox') or 0) * unit, (c.get('oy') or 0) * unit
+        px = fx + ax * S - (ox + cw) if flip else fx + ax * S + ox
+        paste(_svg_raster(svg, cw, ch, flip), px, fy + ay * S + oy)
     return im
 
 

@@ -741,6 +741,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 46.1 | No raw control characters in source | `check-design.mjs` §46.1 (src, tools, tests, docs, workers, public js/css; a self-test first) + `tests/pass-layout.spec.mjs` ("1 day on the pass") |
 | 47 | A badge wears a coloured drawing of what it is for, never the nav's mono glyphs | `check-design.mjs` §47 (every PATCHES icon exists in PixelIcon.astro and is not mono; a parse self-check first) |
 | 48 | The pass page is one column in reading order with the account under the card, big iconed tabs, read news folded, and nothing outside the card under 12 px | `tests/pass-layout.spec.mjs` (a busy pass at 360 and 1280: the order, the shared column, the room, no sideways scroll, the type floor in every tab and the open drawer, whole 16-px tabs; the newcomer, the logged-out account, the news fold) |
+| 49 | The citizens' frames carry a real-text brass plate sized off the frame (nothing under 11.5 px, long names break between their parts), and every winner is drawn in their own things, catalog items included | `check-design.mjs` §49 (every engine art pack is read by the Python mirror; every wearable's art is reachable) + `tests/citizens-frames.spec.mjs` (both surfaces at 393 and 1280: order, names, sizes, nothing cut, the big frame wide, the squid hat on the park's Citizen) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1559,3 +1560,33 @@ categorize the information better and make it less cluttery."*
   reading order in one shared column with room between, nothing wider than the screen, no text under 12 px outside the card
   in any tab or the open account drawer, the tabs whole and 16 px; plus the newcomer's doors, the logged-out account opening
   under the card, and the news fold.
+
+## §49 THE CITIZENS' FRAMES: A PLATE YOU CAN READ, A BANANA IN ITS OWN THINGS (29 Sep 2026, Trym on the front page)
+
+Trym: *"the tiny name-badge-signs are a bit small and tight, they could be a bit more readable, and look visually a bit
+better. I think this also goes for the board in the Park … especially the titles like Farmer and Gardener … very small … not
+much space between title and name … also it doesnt look like their wearables are showing in the pictures of them … they
+are all clean bananas"*.
+
+- **The plate is real text, never baked into the picture.** The front page's plate was drawn by the bake at 15 px on a
+  480-px frame shown at 197 px — its title read at 6 px. One brass plate (`src/styles/citizen-plate.css`: a brass gradient,
+  a screw at each end, the title in spaced capitals, the name in Archivo Black, air between) is worn by the front page's
+  frames and the park's card; both pages inline the file at build time (`?raw`), so the front page makes no extra request.
+- **Sized off its own frame**, never a fixed px: the frame is a size container and the plate's type follows its width. No
+  title under 11.5 px, no name under 11.5 px; a long name steps down a size (11+, 14+, 18+ letters) and breaks between its
+  capitalised parts (a `<wbr>` the page puts there: "KiwiRainbow / Rain") — never mid-letter, never an ellipsis.
+- ⚠️ **A size container needs a real width.** The Citizen's frame sits between auto margins; as a container it shrank to
+  nothing (a sliver of plate) until it was given `width: 100%`.
+- **The winner wears what they wear.** The bake's renderer (`tools/banana_render.py`, which also makes the print files)
+  read only the wearart source, so the tailor's knitwear, the Arcade's prizes and the town's tools had no art there, and
+  the site stores extras as `{id: on/off}` — a switched-OFF wool scarf still reached it. It threw on the scarf and the bake
+  fell back to a bare banana for four frames of five. Now it reads every art pack the engine does, draws only what is on,
+  leaves off a piece it cannot draw instead of the outfit (for pictures only — print stays strict), shows member hats, and
+  hangs the winner's own catalog items on them (their look's `c`, converted by `wear-render.js`, placed by the engine's
+  anchor maths). The frame shows the banana hat to hips, as wide as the paper allows, so what they hold is in the picture.
+  The park's card draws with the engine itself and now adds the catalog items too.
+- `tools/check-design.mjs` §49: every art pack `banana-engine.js` imports is named in the mirror, and every wearable's art
+  is in what the mirror reads. `tests/citizens-frames.spec.mjs`: both surfaces at 393 and 1280 — five plates in order,
+  the front page's names from the week's file, nothing under 11.5 px, nothing cut, air between title and name, the
+  Citizen's frame wide, the pictures decorative (the plate names them); the park's card from a fixed board with a long
+  camel-cased name, and its Citizen drawn in the squid hat's lilac.

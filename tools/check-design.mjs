@@ -25,7 +25,7 @@
 // Run: node tools/check-design.mjs
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { routeFaults, routeAreas } from './echo-routes-check.mjs';   // 🚶 §42 where an echo may walk
 
@@ -676,6 +676,29 @@ const ctlFaults = (text) => [...text.matchAll(CTL)].map((m) => 'line ' + (text.s
     for (const why of ctlFaults(text).slice(0, 3)) problems.push([relative(ROOT, f).replace(/\\/g, '/'), '§46.1: ' + why]);
   }
   if (!ctlFaults('/s' + String.fromCharCode(8) + '/').length) problems.push(['tools/check-design.mjs', '§46.1: the control-character check let a backspace through']);
+}
+
+// 🖨 §49 THE PYTHON MIRROR DRAWS EVERY WEARABLE THE ENGINE DOES (Trym, 29 Sep 2026, on the citizens' frames: "it doesnt look
+// like their wearables are showing … they are all clean bananas"). tools/banana_render.py renders the front page's frames and
+// the print files; it read only the wearart source, so the tailor's knitwear, the Arcade's prizes and the town's tools had no
+// art there — a winner in a wool scarf threw, and the bake fell back to a bare banana for four frames of five. Every art pack
+// banana-engine.js imports must be named in the mirror, and every wearable's art must be in what the mirror reads.
+{
+  const eng = readFileSync(join(ROOT, 'src/lib/banana-engine.js'), 'utf8');
+  const py = readFileSync(join(ROOT, 'tools/banana_render.py'), 'utf8');
+  const packs = [...eng.matchAll(/import \{ (\w+_SVG) \} from '\.\.\/data\/([\w-]+)\.js'/g)].map((m) => [m[1], m[2]]);
+  if (packs.length < 3) problems.push(['tools/check-design.mjs', '§49: found ' + packs.length + ' art packs in banana-engine.js — the import line moved; update this check']);
+  const have = new Set([...readFileSync(join(ROOT, 'tools/wearart-source.js'), 'utf8').matchAll(/(\w+): '(?:<svg|\/assets\/)/g)].map((m) => m[1]));
+  for (const [name, file] of packs) {
+    if (!py.includes(name)) problems.push(['tools/banana_render.py', `§49: the engine draws ${name} (src/data/${file}.js) and the Python mirror never reads it — a winner wearing one renders bare on the front page, and it could not be printed`]);
+    const mod = await import(pathToFileURL(join(ROOT, 'src/data', file + '.js')).href);
+    for (const k of Object.keys(mod[name] || {})) have.add(k);
+  }
+  const { WEARABLE_PACKS } = await import(pathToFileURL(join(ROOT, 'src/data/wearables.js')).href);
+  const items = Object.values(WEARABLE_PACKS).flatMap((p) => Object.values(p).flat()).filter((x) => x && x.id);
+  for (const it of items) for (const k of [it.art, it.front, it.side].filter((a) => typeof a === 'string')) {
+    if (!have.has(k)) problems.push(['tools/wearart-source.js', `§49: the wearable "${it.id}" needs art "${k}", which neither the wearart source nor a pack the mirror reads carries`]);
+  }
 }
 
 let cssN = 0;

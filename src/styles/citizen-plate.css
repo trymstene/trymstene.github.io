@@ -1,0 +1,40 @@
+/* 🏅 THE CITIZENS' BRASS PLATE — the ONE plate the front page's frames and the park's card both wear (29 Sep 2026, Trym:
+   "the tiny name-badge-signs are a bit small and tight, they could be a bit more readable, and look visually a bit better
+   … especially the titles like Farmer and Gardener … very small … not much space between title and name").
+   Both pages inline this file at build time (`?raw`): one source, no extra request on the front page (§39).
+
+   Real text, never baked into the picture, so it stays crisp at every size. A frame sets the plate's font-size from its
+   own width (container units); from that the title never drops under 11.5 px, the name is the biggest thing on the plate,
+   and there is air between them. A long name steps down a size (--long 11+, --longer 14+, --longest 18+ letters) and
+   never breaks mid-letter. ⚠️ a frame that is a size container needs a real width (width: 100%) — between auto margins
+   it shrinks to nothing. */
+.cit-plate {
+  position: relative; display: grid; gap: 0.32em; justify-items: center; min-width: 0;
+  padding: 0.55em 0.95em 0.6em; text-align: center; line-height: 1.1; color: #2a1c04;
+  background: linear-gradient(180deg, #f4de8a 0%, #ddb53e 40%, #c69624 72%, #a97c14 100%);
+  border: 2px solid #5c3f08; border-radius: 0.45em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 0 rgba(80, 50, 0, 0.28), 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+/* a brass screw at each end */
+.cit-plate::before, .cit-plate::after {
+  content: ''; position: absolute; top: 50%; width: 0.36em; height: 0.36em; margin-top: -0.18em; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff3c4 0 22%, #8a6412 62%, #5c3f08 100%);
+}
+.cit-plate::before { left: 0.38em; }
+.cit-plate::after { right: 0.38em; }
+.cit-plate small, .cit-plate b { display: block; max-width: 100%; overflow: hidden; }
+.cit-plate small { white-space: nowrap; text-overflow: ellipsis; }
+/* a name keeps one line while it fits; a long one breaks where the eye does — between its capitalised parts (the <wbr>s
+   the page puts there: "KiwiRainbow / Rain") — never mid-letter and never shrunk past reading */
+.cit-plate b { text-wrap: balance; }
+.cit-plate small {
+  font-size: max(11.5px, 0.72em); font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; color: #5a3d07;
+}
+.cit-plate b {
+  font-family: "Archivo Black", sans-serif; font-weight: 400; font-size: 1.2em; letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgba(255, 245, 200, 0.55);
+}
+.cit-plate--long b { font-size: max(12.5px, 1.05em); }
+.cit-plate--longer b { font-size: max(12px, 0.95em); }
+.cit-plate--longest b { font-size: max(11.5px, 0.85em); }
+.cit-plate--empty b { color: rgba(42, 28, 4, 0.45); }

@@ -320,9 +320,13 @@ function init() {
   const citLoggedIn = () => { try { const l = JSON.parse(localStorage.getItem('pass-link') || 'null'); return !!(l && l.credId && !String(l.credId).startsWith('a:')); } catch (e) { return false; } };
   const citNamed = () => { try { return !!(localStorage.getItem('ps-name-v1') || '').trim(); } catch (e) { return false; } };
   const citEsc = (v) => String(v == null ? '' : v).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+  // 🏅 a long name steps the plate's type down, the front page's rule (src/styles/citizen-plate.css)
+  const citLen = (n) => { const k = String(n || '').length; return !k ? ' cit-plate--empty' : k > 17 ? ' cit-plate--longest' : k > 13 ? ' cit-plate--longer' : k > 10 ? ' cit-plate--long' : ''; };
+  // the winner as they walk the world: their catalog items too (the look's `c`), the way their own banana draws them
   function citDraw(cv, look) {
     try {
-      drawComposite(cv.getContext('2d'), 176, 2, { hat: 'none', glasses: 'none', extras: {}, ...(look || {}), top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
+      const lk = look || {};
+      drawComposite(cv.getContext('2d'), 176, 2, { hat: 'none', glasses: 'none', extras: {}, ...lk, custom: lk.c ? catCustom(lk.c) : undefined, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' });
     } catch (e) {}
   }
   function citFrame(p, title, w) {
@@ -330,7 +334,7 @@ function init() {
       + (p === 'citizen' ? '<span class="pk-frame__pin">new frames in <b>' + citNext() + '</b></span>' : '')
       + '<span class="pk-frame__paper"><canvas class="pk-frame__cv" data-plaque="' + p + '" width="176" height="176"></canvas>'
       + (w ? '' : '<i class="pk-frame__empty">your banana here?</i>') + '</span>'
-      + '<figcaption class="pk-frame__plate"><small>' + citEsc(title) + '</small><b>' + citEsc(w ? w.name : '—') + '</b></figcaption></figure>';
+      + '<figcaption class="pk-frame__plate cit-plate' + citLen(w ? w.name : '') + '"><small>' + citEsc(title) + '</small><b>' + (w ? citEsc(w.name).replace(/([a-z])(?=[A-Z0-9])/g, '$1<wbr>') : '—') + '</b></figcaption></figure>';
   }
   function citPaint() {
     const live = (citFeed && citFeed.live) || null;
@@ -364,7 +368,7 @@ function init() {
     citBody.innerHTML = out;
     const keep = citBody.querySelector('.pk-cta--keep');
     if (keep) keep.addEventListener('click', () => track('citizens_keep'));
-    assetsReady().then(() => {
+    Promise.all([assetsReady(), loadCatalog()]).then(() => {
       citBody.querySelectorAll('canvas[data-plaque]').forEach((cv) => { const w = wins[cv.dataset.plaque]; if (w) citDraw(cv, w.look); });
     });
   }
