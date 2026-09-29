@@ -14,7 +14,7 @@ import os
 import shutil
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOLS = os.path.dirname(HERE)
@@ -44,15 +44,21 @@ EMOTES = [
     ('vibe', {'hat': 'djheadphones', 'extras': ['glowstick']}, None),
     ('shiny', {'extras': ['goldbanana']}, 'sparkle'),
 ]
-# ── the sub badges: a banana that dresses up the longer you stay ───────────────────────────────────────────────
+# ── the sub badges: a banana that dresses up the longer you stay, on a medal that climbs bronze → silver → gold ──
 BADGES = [
-    ('01-month', {}),
-    ('02-months', {'hat': 'party'}),
-    ('03-months', {'glasses': 'shades'}),
-    ('06-months', {'hat': 'cowboy', 'glasses': 'shades'}),
-    ('09-months', {'hat': 'crown'}),
-    ('12-months', {'hat': 'pixelcrown', 'glasses': 'shades', 'extras': ['goldchain']}),
+    ('01-month', {}, 'bronze'),
+    ('02-months', {'hat': 'party'}, 'bronze'),
+    ('03-months', {'glasses': 'shades'}, 'silver'),
+    ('06-months', {'hat': 'cowboy', 'glasses': 'shades'}, 'silver'),
+    ('09-months', {'hat': 'crown'}, 'gold'),
+    ('12-months', {'hat': 'pixelcrown', 'glasses': 'shades', 'extras': ['goldchain']}, 'gold'),
 ]
+# the metals: (light, mid, dark, the rays' tint)
+METAL = {
+    'bronze': ((242, 196, 150), (186, 112, 52), (104, 54, 20), (222, 150, 88)),
+    'silver': ((255, 255, 255), (200, 210, 222), (110, 122, 138), (232, 238, 246)),
+    'gold': ((255, 246, 170), (246, 196, 40), (160, 104, 0), (255, 226, 110)),
+}
 STILL = 3   # the frame a still is taken from: facing you, hands up by the face (a held thing is in the picture)
 
 # ── the builder's effects, redrawn exactly (banana-engine.js drawSparks / drawConfetti), on the square's own size ──
@@ -266,13 +272,90 @@ def badge_art(outfit, idx=2, below=88):
     return sq
 
 
+# ── the finish that makes it look like it cost something (Trym: "it has to actually look a little expensive") ──
+def lerp(c1, c2, t):
+    return tuple(round(a + (b - a) * t) for a, b in zip(c1, c2))
+
+
+def vgrad(size, top, bottom):
+    w, h = size
+    g = Image.new('RGBA', size)
+    d = ImageDraw.Draw(g)
+    for y in range(h):
+        d.line((0, y, w, y), fill=lerp(top, bottom, y / max(1, h - 1)) + (255,))
+    return g
+
+
+def ray_layer(size, cx, cy, n, col, start=0.0):
+    """the scene screens' rays as a transparent layer: every other wedge of n, in col"""
+    w, h = size
+    m = Image.new('L', size, 0)
+    d = ImageDraw.Draw(m)
+    R = math.hypot(w, h) * 2
+    for k in range(n):
+        a0 = start + 2 * math.pi * k / n
+        a1 = a0 + math.pi / n
+        d.polygon([(cx, cy), (cx + R * math.cos(a0), cy + R * math.sin(a0)), (cx + R * math.cos(a1), cy + R * math.sin(a1))], fill=255)
+    layer = Image.new('RGBA', size, col)
+    layer.putalpha(m)
+    return layer
+
+
+def sparkle(d, cx, cy, r, col=(255, 255, 255, 255)):
+    """a four-point star: the glint on something precious"""
+    t = r * 0.22
+    d.polygon([(cx, cy - r), (cx + t, cy - t), (cx + r, cy), (cx + t, cy + t), (cx, cy + r), (cx - t, cy + t),
+               (cx - r, cy), (cx - t, cy - t)], fill=col)
+
+
+# ⭐ THE BADGE IS A MEDAL (Trym, 29 Sep: "the badges needs the same stripey shade … like the stream scenes have …
+# maybe just a glare … to make them less plain"). A rim lit from above, the scenes' rays in the face, a bevel, the
+# banana's head as the bust, a soft glare and a glint. The metal says how long they have stayed; at 18 px a bright
+# coin reads better than a narrow head ever did.
+def medallion(head, metal, N=288):
+    light, mid, dark, ray = METAL[metal]
+    im = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    c = N / 2
+
+    def disc(r):
+        m = Image.new('L', (N, N), 0)
+        ImageDraw.Draw(m).ellipse((c - r, c - r, c + r, c + r), fill=255)
+        return m
+
+    R = N / 2 - 3
+    im.paste(INK, mask=disc(R))                                   # the ink outline
+    im.paste(vgrad((N, N), light, dark), mask=disc(R - 5))         # the rim, lit from above
+    inner = R - 5 - N * 0.075
+    face = vgrad((N, N), mid, lerp(mid, dark, 0.55))
+    face.alpha_composite(ray_layer((N, N), c, c * 1.05, 16, ray + (150,), start=-math.pi / 2))
+    im.paste(face, mask=disc(inner))
+    groove = Image.new('L', (N, N), 0)                             # the bevel between rim and face
+    ImageDraw.Draw(groove).ellipse((c - inner - 2, c - inner - 2, c + inner + 2, c + inner + 2), outline=255, width=3)
+    im.paste(dark + (255,), mask=groove)
+    k = (inner * 1.62) / max(head.size)                            # the bust, standing on the face's lower rim
+    bust = head.resize((max(1, round(head.width * k)), max(1, round(head.height * k))), Image.Resampling.BOX)
+    bust = edge(bust, 3)
+    layer = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    layer.alpha_composite(bust, (round(c - bust.width / 2), round(c + inner * 0.92 - bust.height)))
+    layer.putalpha(ImageChops.multiply(layer.getchannel('A'), disc(inner)))
+    im.alpha_composite(layer)
+    glare = Image.new('L', (N, N), 0)                              # a soft crescent of light, upper left
+    gl = ImageDraw.Draw(glare)
+    gl.ellipse((c - R * 0.86, c - R * 0.9, c + R * 0.5, c + R * 0.2), fill=110)
+    gl.ellipse((c - R * 0.74, c - R * 0.72, c + R * 0.66, c + R * 0.42), fill=0)
+    glare = ImageChops.multiply(glare.filter(ImageFilter.GaussianBlur(N / 90)), disc(R - 5))
+    im.paste((255, 255, 255, 255), mask=glare)
+    sparkle(ImageDraw.Draw(im), c + R * 0.62, c - R * 0.58, N * 0.07)
+    return im
+
+
 badge_arts = {}
-for name, outfit in BADGES:
+for name, outfit, metal in BADGES:
     d = os.path.join(OUT, 'sub-badges')
     os.makedirs(d, exist_ok=True)
-    art = badge_arts[name] = badge_art(outfit)
+    art = badge_arts[name] = medallion(badge_art(outfit), metal)
     for size in (72, 36, 18):
-        cut(art, (0, 0, art.width, art.height), size).save(os.path.join(d, '%s-%d.png' % (name, size)), optimize=True)
+        art.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(d, '%s-%d.png' % (name, size)), optimize=True)
     print('badge', name)
 
 # ── alerts: the whole banana, dancing, on transparency (a streaming app lays its own words over it) ─────────────
@@ -330,25 +413,102 @@ for name, words in SCENES:
     im.convert('RGB').save(os.path.join(OUT, 'scenes', name + '-1920x1080.png'), optimize=True)
     print('scene', name)
 
-# ── panels, 320×100: a yellow card with a black edge, the word, and a banana peeking in ───────────────────────
-PANELS = ['ABOUT ME', 'SCHEDULE', 'DISCORD', 'SUPPORT', 'RULES', 'SOCIALS']
-os.makedirs(os.path.join(OUT, 'panels'))
-head = br.render(STILL, {}, scale=S)
-F = br.FRAMES[STILL]
-hb = head.crop((0, 0, head.width, PAD + (F['eyeCy'] + 150) * S)).getbbox()
-hbox = square((PAD + (F['eyeCx'] - 150) * S, hb[1], PAD + (F['eyeCx'] + 150) * S, hb[3]), 0)
-face = cut(head, hbox, 84)
-for words in PANELS:
-    im = Image.new('RGBA', (320, 100), (0, 0, 0, 0))
+# ── panels, 320×150: a lacquered sign with the whole banana standing on it ─────────────────────────────────────
+# ⚠️ Trym, on the first ones: "the banana hand is cut off, and the banner text doesnt look horizontally centered
+# properly - could use some more texture and quality overall, they look very plain". So: the WHOLE banana (a face
+# crop sliced its arm), each panel a different frame of the dance, drawn at exactly 3 px an art pixel (crisp); the
+# scenes' rays shining from behind it, a lit lip and a shaded lip, a glare, a glint; the word centred on its own INK
+# (Pillow's anchor centres the font box), all six at ONE size; the site's ink border and hard shadow, and a white
+# edge round the lot so Twitch's dark page does not swallow the border.
+PANELS = [('ABOUT ME', 2), ('SCHEDULE', 3), ('DISCORD', 6), ('SUPPORT', 7), ('RULES', 1), ('SOCIALS', 5)]
+PW, PH = 320, 150
+CARD = (6, 52, 306, 138)
+COL, BORDER, RADIUS, SHADOW = 118, 4, 14, 6
+CELL, FILE_PX = br.PX, 3
+
+
+def grid_offset():
+    px = br.sheet().load()
+    xs = [x for x in range(br.FW) if any(px[x, y][3] > 0 for y in range(0, br.FH, 2))]
+    ys = [y for y in range(br.FH) if any(px[x, y][3] > 0 for x in range(0, br.FW, 2))]
+    return xs[0] % CELL, ys[0] % CELL
+
+
+def crisp_banana(idx):
+    """the whole banana, cropped on its own 13-px art grid and resized once to exactly FILE_PX a pixel"""
+    im = br.render(idx, {}, scale=1)
+    pad1 = br.pad_for(1)
+    ox, oy = grid_offset()
+    l, t, r, b = im.getbbox()
+    gx, gy = (pad1 + ox) % CELL, (pad1 + oy) % CELL
+    x0 = gx + CELL * math.floor((l - gx) / CELL)
+    y0 = gy + CELL * math.floor((t - gy) / CELL)
+    cols, rows = math.ceil((r - x0) / CELL), math.ceil((b - y0) / CELL)
+    return im.crop((x0, y0, x0 + cols * CELL, y0 + rows * CELL)).resize((cols * FILE_PX, rows * FILE_PX), Image.Resampling.BOX)
+
+
+def rmask(box, radius, inset=0):
+    m = Image.new('L', (PW, PH), 0)
+    x0, y0, x1, y1 = box
+    ImageDraw.Draw(m).rounded_rectangle((x0 + inset, y0 + inset, x1 - inset, y1 - inset), max(1, radius - inset), fill=255)
+    return m
+
+
+REGION = (CARD[0] + COL + 8, CARD[2] - BORDER - 10)   # where the word goes: right of the banana
+
+
+def panel_font():
+    """one size for all six: the largest that fits the longest word"""
+    d = ImageDraw.Draw(Image.new('RGBA', (PW, PH)))
+    size = 36
+    while size > 14:
+        f = font(size)
+        if all(d.textbbox((0, 0), w, font=f, anchor='ls', stroke_width=3)[2] - d.textbbox((0, 0), w, font=f, anchor='ls', stroke_width=3)[0]
+               <= REGION[1] - REGION[0] for w, _ in PANELS):
+            return f
+        size -= 1
+    return font(size)
+
+
+def panel(words, idx, f):
+    im = Image.new('RGBA', (PW, PH), (0, 0, 0, 0))
+    im.paste(INK, mask=rmask((CARD[0] + SHADOW, CARD[1] + SHADOW, CARD[2] + SHADOW, CARD[3] + SHADOW), RADIUS))
+    im.paste(INK, mask=rmask(CARD, RADIUS))
+    bcx = CARD[0] + COL // 2 + 4
+    face = vgrad((PW, PH), (255, 225, 53), (245, 196, 0))
+    face.alpha_composite(ray_layer((PW, PH), bcx, CARD[3] - 20, 22, (255, 244, 170, 200), start=-math.pi / 2 + 0.07))
+    halo = Image.new('L', (PW, PH), 0)
+    ImageDraw.Draw(halo).ellipse((bcx - 70, CARD[1] - 20, bcx + 70, CARD[3] + 40), fill=150)
+    face.paste((255, 250, 215, 255), mask=halo.filter(ImageFilter.GaussianBlur(18)))
+    lip = Image.new('L', (PW, PH), 0)
+    ImageDraw.Draw(lip).rectangle((0, CARD[1] + BORDER, PW, CARD[1] + BORDER + 3), fill=190)
+    face.paste((255, 252, 225, 255), mask=lip)
+    lip = Image.new('L', (PW, PH), 0)
+    ImageDraw.Draw(lip).rectangle((0, CARD[3] - BORDER - 5, PW, CARD[3] - BORDER), fill=255)
+    face.paste((226, 170, 0, 255), mask=lip)
+    gl = Image.new('L', (PW, PH), 0)
+    g = ImageDraw.Draw(gl)
+    for x, w, a in ((196, 22, 70), (226, 7, 90)):
+        g.polygon([(x, CARD[3]), (x + w, CARD[3]), (x + w + 60, CARD[1]), (x + 60, CARD[1])], fill=a)
+    face.paste((255, 255, 255, 255), mask=gl.filter(ImageFilter.GaussianBlur(1.2)))
+    im.paste(face, mask=rmask(CARD, RADIUS, BORDER))
+    ban = edge(crisp_banana(idx), 2)
+    im.alpha_composite(ban, (bcx - ban.width // 2, max(0, CARD[3] - BORDER - 5 - ban.height + 3)))
     d = ImageDraw.Draw(im)
-    d.rounded_rectangle((6, 6, 319, 99), 14, fill=INK)                 # the hard shadow
-    d.rounded_rectangle((0, 0, 312, 92), 14, fill=BANANA + (255,), outline=INK, width=4)
-    im.alpha_composite(face, (6, 6))
-    f = font(34)
-    while d.textlength(words, font=f) > 196:
-        f = font(f.size - 2)
-    d.text((202, 46), words, font=f, fill=INK, anchor='mm')
-    im.save(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x100.png'), optimize=True)
+    bb = d.textbbox((0, 0), words, font=f, anchor='ls', stroke_width=3)
+    tw, th = bb[2] - bb[0], bb[3] - bb[1]
+    x = round((REGION[0] + REGION[1]) / 2 - tw / 2 - bb[0])
+    y = round((CARD[1] + BORDER + CARD[3] - BORDER - 5) / 2 - th / 2 - bb[1])
+    d.text((x + 3, y + 3), words, font=f, fill=INK, anchor='ls', stroke_width=3, stroke_fill=INK)
+    d.text((x, y), words, font=f, fill=(255, 255, 255), anchor='ls', stroke_width=3, stroke_fill=INK)
+    sparkle(d, CARD[2] - 22, CARD[1] + 14, 7)
+    return edge(im, 2)
+
+
+os.makedirs(os.path.join(OUT, 'panels'))
+pf = panel_font()
+for words, idx in PANELS:
+    panel(words, idx, pf).save(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x150.png'), optimize=True)
     print('panel', words)
 
 # ── the preview: every emote on a chat-dark board, at a size a shop listing shows ─────────────────────────────
@@ -377,9 +537,8 @@ pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
 d = ImageDraw.Draw(pv)
 outlined(d, (1000, 150), 'OFFICIAL DANCING BANANA', font(96), fill=BANANA, sw=8, shadow=0)
 d.text((1000, 265), '6 SUB BADGES  ·  1 TO 12 MONTHS  ·  TWITCH', font=font(38), fill=(255, 255, 255), anchor='mm')
-for k, (name, outfit) in enumerate(BADGES):
-    art = badge_arts[name]
-    tile = cut(art, (0, 0, art.width, art.height), 420)
+for k, (name, _, _) in enumerate(BADGES):
+    tile = badge_arts[name].resize((420, 420), Image.Resampling.LANCZOS)
     x, y = 150 + (k % 3) * 600, 420 + (k // 3) * 700
     pv.paste(tile, (x, y), tile)
     months = int(name.split('-')[0])
@@ -413,14 +572,16 @@ pv.save(os.path.join(OUT, 'preview-classic-emote-2000.png'), optimize=True)
 pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
 d = ImageDraw.Draw(pv)
 outlined(d, (1000, 140), 'SUB BADGES & PANELS', font(96), fill=BANANA, sw=8, shadow=0)
-for k, (name, _) in enumerate(BADGES):
-    b = Image.open(os.path.join(OUT, 'sub-badges', name + '-72.png')).resize((216, 216), Image.Resampling.NEAREST)
+for k, (name, _, _) in enumerate(BADGES):
+    b = badge_arts[name].resize((216, 216), Image.Resampling.LANCZOS)
     x = 130 + k * 300
     pv.paste(b, (x, 300), b)
-    d.text((x + 108, 560), name.split('-')[0].lstrip('0') + (' MONTH' if name.startswith('01') else ' MONTHS'), font=font(30), fill=(200, 200, 215), anchor='mm')
-for k, words in enumerate(PANELS):
-    p = Image.open(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x100.png')).resize((640, 200), Image.Resampling.LANCZOS)
-    pv.paste(p, (330 + (k % 2) * 700, 700 + (k // 2) * 330), p)
+    d.text((x + 108, 565), name.split('-')[0].lstrip('0') + (' MONTH' if name.startswith('01') else ' MONTHS'), font=font(30), fill=(200, 200, 215), anchor='mm')
+for k, (words, _) in enumerate(PANELS):
+    p = Image.open(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x150.png'))
+    p = p.resize((p.width * 2, p.height * 2), Image.Resampling.NEAREST)   # 2x exactly: the banana's pixels stay whole
+    pv.paste(p, (340 + (k % 2) * 680, 700 + (k // 2) * 390), p)
+d.text((1000, 1930), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
 pv.save(os.path.join(OUT, 'preview-badges-panels-2000.png'), optimize=True)
 
 pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
@@ -501,7 +662,8 @@ TXT = {
   discord-128.png, discord-animated-128.gif               for Discord
 """,
     'badges': """SUB BADGES (sub-badges/)
-  01, 02, 03, 06, 09 and 12 months, each at 72, 36 and 18 px - the banana dresses up the longer they stay.
+  01, 02, 03, 06, 09 and 12 months, each at 72, 36 and 18 px - bronze, silver and gold medals, and the banana
+  dresses up the longer they stay.
 """,
     'alerts': """ALERTS (alerts/)
   follow-500.gif, subscribe-500.gif, raid-500.gif         transparent, loops; add your own text in your alert tool
@@ -510,7 +672,7 @@ TXT = {
     'scenes': """SCENES (scenes/, 1920 x 1080)
   starting-soon, be-right-back, stream-ending             put dancing-banana-600.gif over them for a dancing banana
 """,
-    'panels': """PANELS (panels/, 320 x 100)
+    'panels': """PANELS (panels/, 320 x 150)
   about-me, schedule, discord, support, rules, socials
 """,
 }
