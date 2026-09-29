@@ -338,13 +338,41 @@ for k, (name, _) in enumerate(SCENES):
 d.text((1000, 1800), 'Starting soon  ·  Be right back  ·  Thanks for watching  ·  1920 × 1080', font=font(40), fill=(200, 200, 215), anchor='mm')
 pv.save(os.path.join(OUT, 'preview-scenes-2000.png'), optimize=True)
 
-# ── the shop's own face: its icon (Etsy shows it round, so the banana keeps clear of the corners) and its banner ──
+# ── the shop's own face: its icon and its banner ──────────────────────────────────────────────────────────────
+# ⚠️ ETSY SHOWS THE ICON ROUND. The first one was a face close-up, and the round crop took both hands (Trym: "the logo
+# has his arms cut off"). Now the WHOLE banana, arms up (frame 7), as big as the smallest circle round every one of its
+# pixels allows, that circle 93 % of the icon's: hands and shoes whole, nothing cut.
 SHOPART = os.path.join(HERE, 'out', 'shop-art')
 os.makedirs(SHOPART, exist_ok=True)
-f = br.render(2, {}, scale=S)
+
+
+def smallest_circle(pts):
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    best = None
+    cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    best = (max(math.hypot(x - cx, y - cy) for x, y in pts), cx, cy)
+    step = (max(xs) - min(xs)) / 8
+    while step > 0.5:
+        moved = True
+        while moved:
+            moved = False
+            for dx, dy in ((step, 0), (-step, 0), (0, step), (0, -step)):
+                nx, ny = best[1] + dx, best[2] + dy
+                r = max(math.hypot(x - nx, y - ny) for x, y in pts)
+                if r < best[0]:
+                    best, moved = (r, nx, ny), True
+        step /= 2
+    return best
+
+
+f = br.render(7, {}, scale=S)
+crop = f.crop(f.getbbox())
+alpha = crop.getchannel('A').load()
+r, ccx, ccy = smallest_circle([(x, y) for y in range(0, crop.height, 3) for x in range(0, crop.width, 3) if alpha[x, y] > 0])
+k = 500 * 0.93 / r
+sm = crop.resize((round(crop.width * k), round(crop.height * k)), Image.Resampling.BOX)
 icon = Image.new('RGBA', (1000, 1000), HOT + (255,))
-face = cut(f, square(head_box(f, 2, below=150), 0.02), 700, rim=False)
-icon.alpha_composite(face, (150, 170))
+icon.alpha_composite(sm, (round(500 - ccx * k), round(500 - ccy * k)))
 icon.convert('RGB').save(os.path.join(SHOPART, 'shop-icon-1000.png'), optimize=True)
 ban = rays(3360, 840, 1680, 1400, 28).convert('RGBA')
 d = ImageDraw.Draw(ban)
