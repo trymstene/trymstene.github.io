@@ -338,6 +338,30 @@ for k, (name, _) in enumerate(SCENES):
 d.text((1000, 1800), 'Starting soon  ·  Be right back  ·  Thanks for watching  ·  1920 × 1080', font=font(40), fill=(200, 200, 215), anchor='mm')
 pv.save(os.path.join(OUT, 'preview-scenes-2000.png'), optimize=True)
 
+# ── the shop's own face: its icon (Etsy shows it round, so the banana keeps clear of the corners) and its banner ──
+SHOPART = os.path.join(HERE, 'out', 'shop-art')
+os.makedirs(SHOPART, exist_ok=True)
+f = br.render(2, {}, scale=S)
+icon = Image.new('RGBA', (1000, 1000), HOT + (255,))
+face = cut(f, square(head_box(f, 2, below=150), 0.02), 700, rim=False)
+icon.alpha_composite(face, (150, 170))
+icon.convert('RGB').save(os.path.join(SHOPART, 'shop-icon-1000.png'), optimize=True)
+ban = rays(3360, 840, 1680, 1400, 28).convert('RGBA')
+d = ImageDraw.Draw(ban)
+outlined(d, (1680, 350), 'THE OFFICIAL DANCING BANANA', font(128), sw=10, shadow=8)
+d.text((1680, 510), 'BY TRYM STENE  ·  SINCE 1999', font=font(60), fill=INK, anchor='mm')
+crew = [{}, {'hat': 'party'}, {'hat': 'crown', 'glasses': 'shades'}, {'glasses': 'hearts'}]
+for k, o in enumerate(crew):
+    fr = br.render([2, 3, 6, 7][k], o, scale=S)
+    bb = fr.getbbox()
+    b = Image.new('RGBA', (bb[2] - bb[0], bb[3] - bb[1]))
+    b.alpha_composite(fr.crop(bb))
+    h = 470
+    b = b.resize((round(b.width * h / b.height), h), Image.Resampling.BOX)
+    x = [170, 440, 3190, 2920][k] - b.width // 2
+    ban.alpha_composite(b, (x, 840 - h - 30))
+ban.convert('RGB').save(os.path.join(SHOPART, 'shop-banner-3360x840.png'), optimize=True)
+
 README = """THE OFFICIAL DANCING BANANA - STREAM PACK
 ==========================================
 The dancing banana, by Trym Stene, the artist who made it in 1999.
