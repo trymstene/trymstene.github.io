@@ -76,3 +76,6 @@ tools/ga4.local.json
 tools/reel/frames/
 tools/reel/out/
 tools/trymstene-com-*.json
+
+# the lens kit is built from the masters (tools/lens/build_lens_kit.py)
+tools/lens/out/
