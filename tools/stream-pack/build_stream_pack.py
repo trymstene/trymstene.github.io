@@ -193,6 +193,43 @@ def font(size):
     return ImageFont.truetype(FONT, size)
 
 
+# ── the banana at WHOLE pixels: cropped on its own 13-px art grid, resized once to exactly `px` an art pixel ────
+CELL = br.PX
+
+
+def grid_offset():
+    sheet = br.sheet().load()
+    xs = [x for x in range(br.FW) if any(sheet[x, y][3] > 0 for y in range(0, br.FH, 2))]
+    ys = [y for y in range(br.FH) if any(sheet[x, y][3] > 0 for x in range(0, br.FW, 2))]
+    return xs[0] % CELL, ys[0] % CELL
+
+
+def grid_box(boxes):
+    """the smallest box on the art grid round all of `boxes` (render space, scale 1)"""
+    pad1 = br.pad_for(1)
+    ox, oy = grid_offset()
+    l, t = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    r, b = max(bb[2] for bb in boxes), max(bb[3] for bb in boxes)
+    gx, gy = (pad1 + ox) % CELL, (pad1 + oy) % CELL
+    x0 = gx + CELL * math.floor((l - gx) / CELL)
+    y0 = gy + CELL * math.floor((t - gy) / CELL)
+    return x0, y0, math.ceil((r - x0) / CELL), math.ceil((b - y0) / CELL)
+
+
+def crisp_banana(idx, px):
+    """one frame, its own box"""
+    im = br.render(idx, {}, scale=1)
+    x0, y0, cols, rows = grid_box([im.getbbox()])
+    return im.crop((x0, y0, x0 + cols * CELL, y0 + rows * CELL)).resize((cols * px, rows * px), Image.Resampling.BOX)
+
+
+def crisp_dance(px):
+    """all eight frames in ONE box, so the feet stay on one line and nothing slides while it dances"""
+    ims = [br.render(i, {}, scale=1) for i in range(br.NFRAMES)]
+    x0, y0, cols, rows = grid_box([im.getbbox() for im in ims])
+    return [im.crop((x0, y0, x0 + cols * CELL, y0 + rows * CELL)).resize((cols * px, rows * px), Image.Resampling.BOX) for im in ims]
+
+
 # ════════════════════════════════════════════ build ═════════════════════════════════════════════════════════════
 # emptied, never removed: a shell standing in the folder holds it open on Windows
 os.makedirs(OUT, exist_ok=True)
@@ -393,25 +430,142 @@ def outlined(d, xy, text, f, fill=(255, 255, 255), stroke=INK, sw=10, anchor='mm
     d.text((x, y), text, font=f, fill=fill, anchor=anchor, stroke_width=sw, stroke_fill=stroke)
 
 
+# ⭐ THE SCENES GET THE MEDALS' FINISH (Trym, 29 Sep: "the scenes need the same premium treatment too"): a spotlit
+# stage (a radial glow and a vignette), rays that fade out from behind the banana, confetti and glints, the title
+# on the panels' lacquered sign, and the banana at whole pixels with its white edge and a soft shadow at its feet.
+# Each scene comes twice: with the banana, and as an empty STAGE for the full-screen dancing overlay (OBS), which
+# dances in exactly the spot the still banana stands.
 SCENES = [('starting-soon', 'STARTING SOON'), ('be-right-back', 'BE RIGHT BACK'), ('stream-ending', 'THANKS FOR WATCHING')]
-os.makedirs(os.path.join(OUT, 'scenes'))
-still = br.render(STILL, {}, scale=S)
-sb = still.getbbox()
-for name, words in SCENES:
-    im = rays(1920, 1080, 960, 700)
+SW, SH = 1920, 1080
+SPOT = (960, 690)          # the light's centre: behind the banana's chest
+FLOOR = 1012               # where its feet stand
+SCENE_PX = 16              # scene px an art pixel
+
+
+def radial(size, cx, cy, stops, small=8):
+    """a smooth radial gradient: computed small, scaled up (a per-pixel loop at full HD is needlessly slow)"""
+    w, h = size[0] // small, size[1] // small
+    g = Image.new('RGB', (w, h))
+    px = g.load()
+    far = math.hypot(max(cx, size[0] - cx), max(cy, size[1] - cy)) / small
+    for y in range(h):
+        for x in range(w):
+            t = min(1.0, math.hypot(x - cx / small, y - cy / small) / far)
+            for (t0, c0), (t1, c1) in zip(stops, stops[1:]):
+                if t <= t1:
+                    px[x, y] = lerp(c0, c1, (t - t0) / max(1e-6, t1 - t0))
+                    break
+    return g.resize(size, Image.Resampling.BICUBIC).convert('RGBA')
+
+
+def fade_mask(size, cx, cy, r0, r1, peak=255, small=8):
+    """alpha that is `peak` inside r0 and fades to nothing at r1"""
+    w, h = size[0] // small, size[1] // small
+    m = Image.new('L', (w, h))
+    px = m.load()
+    for y in range(h):
+        for x in range(w):
+            r = math.hypot(x * small - cx, y * small - cy)
+            px[x, y] = round(peak * max(0.0, min(1.0, (r1 - r) / (r1 - r0))))
+    return m.resize(size, Image.Resampling.BICUBIC)
+
+
+def sign(words, fsize=132):
+    """the panels' lacquered sign, scene size: ink border, hard shadow, lit and shaded lips, glare, glint"""
+    f = font(fsize)
+    probe = ImageDraw.Draw(Image.new('RGBA', (10, 10)))
+    while True:
+        bb = probe.textbbox((0, 0), words, font=f, anchor='ls', stroke_width=10)
+        if bb[2] - bb[0] <= 1560 or f.size <= 40:
+            break
+        f = font(f.size - 4)
+    tw, th = bb[2] - bb[0], bb[3] - bb[1]
+    pw, ph = tw + 150, th + 96
+    bd, rad, sh = 9, 34, 16
+    im = Image.new('RGBA', (pw + sh + 4, ph + sh + 4), (0, 0, 0, 0))
+
+    def rr(box, r, inset=0):
+        m = Image.new('L', im.size, 0)
+        ImageDraw.Draw(m).rounded_rectangle((box[0] + inset, box[1] + inset, box[2] - inset, box[3] - inset), max(1, r - inset), fill=255)
+        return m
+
+    card = (2, 2, 2 + pw, 2 + ph)
+    im.paste(INK, mask=rr((card[0] + sh, card[1] + sh, card[2] + sh, card[3] + sh), rad))
+    im.paste(INK, mask=rr(card, rad))
+    face = vgrad(im.size, (255, 230, 70), (245, 192, 0))
+    lip = Image.new('L', im.size, 0)
+    ImageDraw.Draw(lip).rectangle((0, card[1] + bd, im.width, card[1] + bd + 8), fill=200)
+    face.paste((255, 252, 225, 255), mask=lip)
+    lip = Image.new('L', im.size, 0)
+    ImageDraw.Draw(lip).rectangle((0, card[3] - bd - 13, im.width, card[3] - bd), fill=255)
+    face.paste((226, 168, 0, 255), mask=lip)
+    gl = Image.new('L', im.size, 0)
+    g = ImageDraw.Draw(gl)
+    for x, w, a in ((int(pw * 0.62), 70, 70), (int(pw * 0.62) + 95, 22, 95)):
+        g.polygon([(x, card[3]), (x + w, card[3]), (x + w + ph * 0.7, card[1]), (x + ph * 0.7, card[1])], fill=a)
+    face.paste((255, 255, 255, 255), mask=gl.filter(ImageFilter.GaussianBlur(3)))
+    im.paste(face, mask=rr(card, rad, bd))
     d = ImageDraw.Draw(im)
-    f = font(150)
-    while d.textlength(words, font=f) > 1700:
-        f = font(f.size - 6)
-    outlined(d, (960, 250), words, f)
-    ban = Image.new('RGBA', (sb[2] - sb[0], sb[3] - sb[1]))
-    ban.alpha_composite(still.crop(sb))
-    h = 620
-    ban = ban.resize((round(ban.width * h / ban.height), h), Image.Resampling.BOX)
-    im = im.convert('RGBA')
-    im.alpha_composite(ban, ((1920 - ban.width) // 2, 1080 - h - 20))
-    im.convert('RGB').save(os.path.join(OUT, 'scenes', name + '-1920x1080.png'), optimize=True)
+    x = round(card[0] + pw / 2 - tw / 2 - bb[0])
+    y = round(card[1] + (ph - 13) / 2 - th / 2 - bb[1] + 4)
+    d.text((x + 9, y + 9), words, font=f, fill=INK, anchor='ls', stroke_width=10, stroke_fill=INK)
+    d.text((x, y), words, font=f, fill=(255, 255, 255), anchor='ls', stroke_width=10, stroke_fill=INK)
+    sparkle(d, card[2] - 46, card[1] + 34, 20)
+    return im
+
+
+def stage(words):
+    """the scene without its banana: the light, the rays, the confetti, the title, the shadow on the floor"""
+    im = radial((SW, SH), SPOT[0], SPOT[1], [(0.0, (255, 250, 214)), (0.34, (255, 226, 60)), (0.75, (248, 200, 10)), (1.0, (222, 160, 0))])
+    rl = ray_layer((SW, SH), SPOT[0], SPOT[1], 28, (255, 252, 225, 255), start=-math.pi / 2 + 0.05)
+    rl.putalpha(ImageChops.multiply(rl.getchannel('A'), fade_mask((SW, SH), SPOT[0], SPOT[1], 120, 1150, 150)))
+    im.alpha_composite(rl)
+    halo = Image.new('L', (SW, SH), 0)
+    ImageDraw.Draw(halo).ellipse((SPOT[0] - 360, SPOT[1] - 330, SPOT[0] + 360, SPOT[1] + 330), fill=175)
+    im.paste((255, 253, 235, 255), mask=halo.filter(ImageFilter.GaussianBlur(70)))
+    d = ImageDraw.Draw(im)
+    # the builder's own confetti colours, squares and strips, scattered by a fixed hand (the same every build)
+    cols = [(255, 77, 109), (77, 184, 255), (242, 194, 0), (55, 214, 122), (179, 136, 255)]
+    for k in range(46):
+        x = (k * 397 + 131) % SW
+        y = (k * 211 + 57) % 900
+        if abs(x - SPOT[0]) < 330 and y > 380:
+            continue                                     # never on the banana
+        s = 14 + (k * 7) % 12
+        hgt = s if k % 3 else int(s * 1.7)
+        d.rectangle((x, y, x + s - 1, y + hgt - 1), fill=cols[k % 5] + (255,))
+    for k in range(9):                                   # glints
+        x, y = (k * 523 + 210) % SW, (k * 277 + 330) % 1000
+        if abs(x - SPOT[0]) < 330 and y > 380:
+            continue
+        sparkle(d, x, y, 14 + (k * 5) % 16)
+    sh = Image.new('L', (SW, SH), 0)                     # the shadow at its feet
+    ImageDraw.Draw(sh).ellipse((SPOT[0] - 230, FLOOR - 26, SPOT[0] + 230, FLOOR + 30), fill=95)
+    im.paste((120, 70, 0, 255), mask=sh.filter(ImageFilter.GaussianBlur(14)))
+    s = sign(words)
+    im.alpha_composite(s, ((SW - s.width) // 2 + 8, 70))
+    return im
+
+
+os.makedirs(os.path.join(OUT, 'scenes'))
+dance = [edge(f, 6) for f in crisp_dance(SCENE_PX)]
+DX = SPOT[0] - dance[0].width // 2
+DY = FLOOR + 14 - dance[0].height                         # the white edge's bottom sits just under the floor line
+for name, words in SCENES:
+    st = stage(words)
+    st.convert('RGB').save(os.path.join(OUT, 'scenes', name + '-stage-1920x1080.png'), optimize=True)
+    full = st.copy()
+    full.alpha_composite(dance[7], (DX, DY))
+    full.convert('RGB').save(os.path.join(OUT, 'scenes', name + '-1920x1080.png'), optimize=True)
     print('scene', name)
+# the overlay: the whole frame, transparent but for the banana dancing on the stage's spot
+overlay = []
+for f in dance:
+    o = Image.new('RGBA', (SW, SH), (0, 0, 0, 0))
+    o.alpha_composite(f, (DX, DY))
+    overlay.append(o)
+save_gif(overlay, os.path.join(OUT, 'scenes', 'dancing-banana-overlay-1920x1080.gif'))
+print('overlay', os.path.getsize(os.path.join(OUT, 'scenes', 'dancing-banana-overlay-1920x1080.gif')) // 1024, 'KB')
 
 # ── panels, 320×150: a lacquered sign with the whole banana standing on it ─────────────────────────────────────
 # ⚠️ Trym, on the first ones: "the banana hand is cut off, and the banner text doesnt look horizontally centered
@@ -424,27 +578,6 @@ PANELS = [('ABOUT ME', 2), ('SCHEDULE', 3), ('DISCORD', 6), ('SUPPORT', 7), ('RU
 PW, PH = 320, 150
 CARD = (6, 52, 306, 138)
 COL, BORDER, RADIUS, SHADOW = 118, 4, 14, 6
-CELL, FILE_PX = br.PX, 3
-
-
-def grid_offset():
-    px = br.sheet().load()
-    xs = [x for x in range(br.FW) if any(px[x, y][3] > 0 for y in range(0, br.FH, 2))]
-    ys = [y for y in range(br.FH) if any(px[x, y][3] > 0 for x in range(0, br.FW, 2))]
-    return xs[0] % CELL, ys[0] % CELL
-
-
-def crisp_banana(idx):
-    """the whole banana, cropped on its own 13-px art grid and resized once to exactly FILE_PX a pixel"""
-    im = br.render(idx, {}, scale=1)
-    pad1 = br.pad_for(1)
-    ox, oy = grid_offset()
-    l, t, r, b = im.getbbox()
-    gx, gy = (pad1 + ox) % CELL, (pad1 + oy) % CELL
-    x0 = gx + CELL * math.floor((l - gx) / CELL)
-    y0 = gy + CELL * math.floor((t - gy) / CELL)
-    cols, rows = math.ceil((r - x0) / CELL), math.ceil((b - y0) / CELL)
-    return im.crop((x0, y0, x0 + cols * CELL, y0 + rows * CELL)).resize((cols * FILE_PX, rows * FILE_PX), Image.Resampling.BOX)
 
 
 def rmask(box, radius, inset=0):
@@ -492,7 +625,7 @@ def panel(words, idx, f):
         g.polygon([(x, CARD[3]), (x + w, CARD[3]), (x + w + 60, CARD[1]), (x + 60, CARD[1])], fill=a)
     face.paste((255, 255, 255, 255), mask=gl.filter(ImageFilter.GaussianBlur(1.2)))
     im.paste(face, mask=rmask(CARD, RADIUS, BORDER))
-    ban = edge(crisp_banana(idx), 2)
+    ban = edge(crisp_banana(idx, 3), 2)
     im.alpha_composite(ban, (bcx - ban.width // 2, max(0, CARD[3] - BORDER - 5 - ban.height + 3)))
     d = ImageDraw.Draw(im)
     bb = d.textbbox((0, 0), words, font=f, anchor='ls', stroke_width=3)
@@ -670,7 +803,10 @@ TXT = {
   dancing-banana-600.gif                                  the classic dance on its own, for any scene
 """,
     'scenes': """SCENES (scenes/, 1920 x 1080)
-  starting-soon, be-right-back, stream-ending             put dancing-banana-600.gif over them for a dancing banana
+  starting-soon, be-right-back, stream-ending             ready to use, with the banana
+  ...-stage versions                                      the same scenes with an empty spotlight
+  dancing-banana-overlay-1920x1080.gif                    lay it full screen over a stage scene (in OBS: an Image
+                                                          source, fit to screen) and the banana dances in the light
 """,
     'panels': """PANELS (panels/, 320 x 150)
   about-me, schedule, discord, support, rules, socials
@@ -726,3 +862,31 @@ for zname, (title, parts, keep) in PARTS.items():
                 if keep(rel):
                     z.write(full, rel)
     print('zip', zname, os.path.getsize(os.path.join(SHOP, zname)) // 1024, 'KB')
+
+# ── ONE FOLDER TO UPLOAD FROM (Trym: "give me the full folder path so i dont have to click around to find the
+# files"): out/etsy/<n>-<listing>/ holds that listing's zip and its pictures, numbered in the order Etsy wants them
+# (the first is the thumbnail), and shop-look/ holds the shop's icon and cover banner.
+ETSY = os.path.join(HERE, 'out', 'etsy')
+if os.path.isdir(ETSY):
+    for fn in os.listdir(ETSY):
+        p = os.path.join(ETSY, fn)
+        shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+os.makedirs(ETSY, exist_ok=True)
+LISTINGS = [
+    ('1-full-stream-pack', 'official-dancing-banana-stream-pack.zip',
+     ['preview-emotes-2000.png', 'preview-badges-panels-2000.png', 'preview-scenes-2000.png']),
+    ('2-emote-pack', 'official-dancing-banana-emote-pack.zip', ['preview-emote-pack-2000.png']),
+    ('3-sub-badges', 'official-dancing-banana-sub-badges.zip', ['preview-sub-badges-2000.png']),
+    ('4-classic-emote', 'official-dancing-banana-classic-emote.zip', ['preview-classic-emote-2000.png']),
+]
+for folder, zname, pics in LISTINGS:
+    d = os.path.join(ETSY, folder)
+    os.makedirs(d)
+    shutil.copy2(os.path.join(SHOP, zname), os.path.join(d, zname))
+    for n, pic in enumerate(pics, 1):
+        shutil.copy2(os.path.join(OUT, pic), os.path.join(d, 'photo-%d-%s' % (n, pic)))
+look = os.path.join(ETSY, 'shop-look')
+os.makedirs(look)
+for fn in ('shop-icon-1000.png', 'shop-banner-3360x840.png'):
+    shutil.copy2(os.path.join(SHOPART, fn), os.path.join(look, fn))
+print('etsy folder', ETSY)
