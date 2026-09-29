@@ -158,12 +158,14 @@ function supPaintMeta() {
     ? 'Ending ' + supDate(end) + '. Nothing more will be charged, and your hat stays on until then.'
     : '$' + t.price + ' a month · renews ' + supDate(end) + '. Your hat and glow are on your banana everywhere, and your name is on the board in the park.';
   btn.textContent = SUP.ending ? 'Keep my membership' : 'Cancel membership';
-  // known === false: the membership predates us recording which Polar
-  // subscription it is, so we cannot honestly offer the button — say where the
-  // door is instead of pretending to be it
-  btn.hidden = SUP.known === false;
+  // known === true: the server matched this login to its Polar subscription, and only then is the button honest.
+  // known === false: it told us it cannot (the membership predates us recording which subscription it is), so say
+  // where the door is instead of pretending to be it. null: NO ANSWER — not logged in, or the call failed — and then
+  // the Polar link is the door and nothing is claimed (29 Sep 2026: a dropped call said "it was probably paid with a
+  // different email address", and a Cancel button stood on a membership that might already be ending)
+  btn.hidden = SUP.known !== true;
   const port = el('psSupPortal');
-  port.textContent = SUP.known === false ? 'Manage or cancel on Polar →' : 'Card & receipts →';
+  port.textContent = SUP.known === true ? 'Card & receipts →' : 'Manage or cancel on Polar →';
   // when we cannot see which subscription is theirs, say so — "you have no
   // membership" would be a lie, and it is the sentence that earns an angry email
   const miss = el('psSupMiss');
@@ -207,7 +209,8 @@ async function supCall(act, extra = {}) {
 }
 
 function supTake(d) {
-  if (!d || d.known === false) { SUP.known = false; return; }
+  if (!d) return;                                      // no answer (no login, a failed call) is not "cannot see it"
+  if (d.known === false) { SUP.known = false; return; }
   SUP.known = true;
   SUP.ending = !!d.ending;
   const e = Date.parse(d.endsAt || '');
@@ -221,7 +224,7 @@ async function supStatus() {
   const port = el('psSupPortal');
   port.href = MANAGE;                                  // the honest fallback, always live
   port.target = '_blank';
-  try { supTake(await supCall('status')); } catch (e) { SUP.known = false; }
+  try { supTake(await supCall('status')); } catch (e) {}   // a dropped call claims nothing: the Polar link stays the door
   supPaintMeta();
 }
 
@@ -589,7 +592,7 @@ function paint() {
   proud.forEach(([n, l], i) => {
     if (i) sline.appendChild(document.createTextNode('  ·  '));
     const u = document.createElement('span');
-    u.textContent = n + ' ' + (n === 1 ? l.replace(/s/, '') : l);
+    u.textContent = n + ' ' + (n === 1 ? l.replace(/s\b/, '') : l);
     sline.appendChild(u);
   });
   sline.hidden = !proud.length;
@@ -1089,25 +1092,25 @@ async function citizenLine() {
     const d = await (await fetch('https://banana-pass.trymstene.workers.dev/citizen')).json();
     const live = d && d.live;
     if (!live) return;
-    const TITLES = { citizen: 'Citizen', gardener: 'Gardener', neighbour: 'Neighbour', farmer: 'Farmer', raver: 'Raver' };
+    const W = PASS_WORDS.week, PLACE = [W.first, W.second, W.third];
+    // each place by its plaque's short name ("Farmer of the Week" → Farmer), best place first; a plaque this page has no
+    // badge for (the cut Maker) is left out rather than named by its key
     const mine = [];
-    for (const [p, list] of Object.entries(live.plaques || {})) {
-      const i = (list || []).findIndex((r) => r.tag === tag);
-      if (i >= 0) mine.push({ p, i });
+    for (const [p, list] of Object.entries({ citizen: live.citizen, ...(live.plaques || {}) })) {
+      const i = (list || []).findIndex((r) => r.tag === tag), def = PATCHES.find((x) => x.id === 'wk-' + p);
+      if (i >= 0 && PLACE[i] && def) mine.push({ i, name: def.title.replace(/ of the Week$/, '') });
     }
-    const ci = (live.citizen || []).findIndex((r) => r.tag === tag);
-    if (ci >= 0) mine.unshift({ p: 'citizen', i: ci });
     if (!mine.length) return;
-    const ord = ['1st', '2nd', '3rd'];
+    mine.sort((a, b) => a.i - b.i);
     txt.textContent = '';
     const b = document.createElement('b');
-    b.textContent = 'This week you are ' + mine.map((m) => ord[m.i] + ' for ' + TITLES[m.p]).join(', ') + '.';
+    b.textContent = W.running.replace('{places}', mine.map((m) => PLACE[m.i].replace('{plaque}', m.name)).join(', '));
     txt.appendChild(b);
     if (!loggedIn()) {
       txt.appendChild(document.createTextNode(' '));
       const a = document.createElement('a');
       a.href = '#';
-      a.textContent = 'Log in to get nominated';
+      a.textContent = W.login;
       a.addEventListener('click', (ev) => { ev.preventDefault(); const k = el('psKeep'); if (k) { k.open = true; k.scrollIntoView({ block: 'center' }); } const inp = el('psMailIn'); if (inp) setTimeout(() => inp.focus(), 250); if (window.gtag) window.gtag('event', 'citizens_keep', { via: 'pass' }); });
       txt.appendChild(a);
       txt.appendChild(document.createTextNode('.'));

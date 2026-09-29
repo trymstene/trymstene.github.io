@@ -582,6 +582,78 @@ for (const f of files) {
   for (const a of routeAreas()) for (const why of routeFaults(a)) problems.push(['src/data/echo-routes.js', '§42: ' + why + ' — an echo walks only on open ground']);
 }
 
+// 📐 §46 A PAGE THAT RE-ORDERS ITS BLOCKS STATES EVERY BLOCK'S PLACE (Trym, 29 Sep 2026, on his own pass: "something weird
+// showed up at the Pass page"). The pass page lays its blocks out with CSS `order` — one column on a phone, a rail and a body
+// on a laptop — and a block with no order is order 0, which is FIRST: the week's standing sat alone in the top-left corner
+// over the card, and on a phone it and the membership card both stood above the pass. Every block of the spine (a child of
+// .ps-wrap, .ps-rail or .ps-main) is named in an `order` rule outside the media blocks, and every block of the wrap but the
+// rail and the body spans both desktop columns. It bites first, on a copy with the week's order taken out.
+function spineFaults(src) {
+  const out = [];
+  const css = ((src.match(/<style[^>]*>([\s\S]*?)<\/style>/) || [])[1] || '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const media = [];
+  for (const m of css.matchAll(/@media[^{]*\{/g)) {
+    let i = m.index + m[0].length, depth = 1;
+    while (depth && i < css.length) { const ch = css[i++]; if (ch === '{') depth++; else if (ch === '}') depth--; }
+    media.push({ from: m.index, to: i, head: m[0] });
+  }
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sels: m[1].split(',').map((s) => s.trim()), body: m[2], in: media.find((b) => m.index >= b.from && m.index < b.to) }));
+  const desk = media.find((b) => /min-width:\s*900px/.test(b.head));
+  const ordered = new Set(rules.filter((r) => !r.in && /(^|[;\s])order\s*:/.test(r.body)).flatMap((r) => r.sels));
+  const spans = new Set(rules.filter((r) => desk && r.in === desk && /grid-column\s*:\s*1\s*\/\s*-1/.test(r.body)).flatMap((r) => r.sels));
+  const html = src.slice(src.indexOf('</style>')).replace(/<!--[\s\S]*?-->/g, '');
+  const VOID = new Set(['img', 'input', 'br', 'hr', 'meta', 'link', 'source', 'wbr']);
+  const stack = [];
+  for (const m of html.matchAll(/<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g)) {
+    const [, close, tag, attrs, self] = m;
+    if (close) { while (stack.length && stack[stack.length - 1].tag !== tag) stack.pop(); stack.pop(); continue; }
+    const cls = ((attrs.match(/class="([^"]*)"/) || [])[1] || '').split(/\s+/)[0];
+    const up = stack[stack.length - 1];
+    if (up && /^ps-(wrap|rail|main)$/.test(up.cls) && cls && !/^ps-(sr|rail|main)$/.test(cls)) {
+      if (!ordered.has('.' + cls)) out.push('.' + cls + ' (in .' + up.cls + ') has no place in the spine’s `order` list — it is order 0 and jumps above the card');
+      if (up.cls === 'ps-wrap' && !spans.has('.' + cls)) out.push('.' + cls + ' does not span both desktop columns (`grid-column: 1 / -1` at min-width 900px) — it lands in the rail’s narrow cell');
+    }
+    if (!self && !VOID.has(tag)) stack.push({ tag, cls });
+  }
+  return out;
+}
+{
+  const f = 'src/pages/pass.astro';
+  const src = readFileSync(join(ROOT, f), 'utf8');
+  for (const why of spineFaults(src)) problems.push([f, '§46: ' + why]);
+  // 🧪 it bites: the week's standing with its order taken out must be caught
+  const cut = src.replace(/\.ps-promise, \.ps-week \{ order: 2; \}/, '.ps-promise { order: 2; }');
+  if (cut === src || !spineFaults(cut).some((w) => w.startsWith('.ps-week'))) problems.push(['tools/check-design.mjs', '§46: the spine check did not catch a block with no order — it no longer checks what it says (or the week’s rule moved: update the bite)']);
+}
+
+// 🧹 §46.1 A SOURCE FILE HOLDS NO CONTROL CHARACTERS (29 Sep 2026). A Python edit that writes '\b' or '\x00' without r''
+// puts a raw BACKSPACE or NUL into the file, and nothing on screen shows it: the pass card said "1 DAYS ON THE PASS" because
+// its /s\b/ had become /s + BACKSPACE/, and six voice rules in tools/copy-jobs.mjs had never matched anything. Tab, newline
+// and carriage return are the only ones a text file here may hold.
+const CTL = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
+const ctlFaults = (text) => [...text.matchAll(CTL)].map((m) => 'line ' + (text.slice(0, m.index).split('\n').length) + ': a raw control character (0x' + m[0].charCodeAt(0).toString(16).padStart(2, '0') + ') — write it as an escape (\\b, \\x00 …); a Python string without r\'\' makes these');
+{
+  const TEXT = /\.(js|mjs|cjs|ts|astro|css|json|md|py|html|ya?ml|svg|txt|toml)$/;
+  const SKIP = new Set(['node_modules', 'dist', '.astro', '.wrangler', 'test-results', 'playwright-report']);
+  const walkText = (dir, out = []) => {
+    for (const e of readdirSync(dir)) {
+      if (SKIP.has(e)) continue;
+      const f = join(dir, e);
+      if (statSync(f).isDirectory()) walkText(f, out);
+      else if (TEXT.test(e)) out.push(f);
+    }
+    return out;
+  };
+  const roots = ['src', 'tools', 'tests', 'docs', 'shared', 'public/js', 'public/css', ...readdirSync(ROOT).filter((d) => /^worker/.test(d))];
+  const texts = roots.filter((d) => { try { return statSync(join(ROOT, d)).isDirectory(); } catch (e) { return false; } }).flatMap((d) => walkText(join(ROOT, d)));
+  for (const f of texts) {
+    const text = readFileSync(f, 'latin1');   // byte for byte: UTF-8's own bytes are all 0x80 and up, never a control
+    if (text.search(CTL) < 0) continue;
+    for (const why of ctlFaults(text).slice(0, 3)) problems.push([relative(ROOT, f).replace(/\\/g, '/'), '§46.1: ' + why]);
+  }
+  if (!ctlFaults('/s' + String.fromCharCode(8) + '/').length) problems.push(['tools/check-design.mjs', '§46.1: the control-character check let a backspace through']);
+}
+
 let cssN = 0;
 for (const f of walkCss(join(ROOT, 'public/css'))) {
   cssN++;

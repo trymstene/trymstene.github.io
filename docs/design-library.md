@@ -737,6 +737,8 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 40 | Every letter opens on the world's paper, under a veil that covers the screen | `tests/town-post.spec.mjs` (an open letter is `.bw-paper` in the hand, signed, no cream box) + `tests/homestead-letters.spec.mjs` (Moss's note on the same paper; the veil edge to edge on a scrolled phone) |
 | 42 | An echo walks only on open ground | `check-design.mjs` via `tools/echo-routes-check.mjs` (every point and every 4 px of every link of `src/data/echo-routes.js` against the area's colliders and the places a stranger never stands; it proves it bites on a walk across the court) + `tests/world-social.spec.mjs` (a leg filmed on every frame, on the route's lines) |
 | 45 | The bananacoin is the stand's coin, never the stock emoji | `check-design.mjs` (the emoji in a page's markup fails; in a script it must ride a line writer, and every world toast, float and say draws it through `src/lib/coin.js`; the check proves it bites every run) |
+| 46 | A page that orders its blocks with CSS states every block's place, and its standing line and membership card are where they belong | `check-design.mjs` §46 (every child of the pass page's spine is in its `order` list, every block of the wrap spans both desktop columns; a self-test first) + `tests/pass-layout.spec.mjs` (the card first at 393 and 1280, the standing under the promise with its sparkle and its words, the membership card below the piles and in the rail, its three answers) |
+| 46.1 | No raw control characters in source | `check-design.mjs` §46.1 (src, tools, tests, docs, workers, public js/css; a self-test first) + `tests/pass-layout.spec.mjs` ("1 day on the pass") |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1482,3 +1484,37 @@ grey disc; the world's coin is the Banana Stand's gold one (`/assets/banana-stan
   writer (toast, float, floatPlus, say, shopNote, phoneNote, payReward, coinText, coinHtml); a writer defined in the same
   file must draw through coin.js; and the world's own writers (HOSTS) are checked by name, so one that is rewritten
   without it fails. The check runs a catch-and-pass self-test first.
+
+## §46 A PAGE THAT RE-ORDERS ITS BLOCKS STATES EVERY BLOCK'S PLACE (29 Sep 2026, Trym on his own pass)
+
+Trym: *"something weird showed up at the Pass page on my profile - maybe do a little review of the Pass page if theres some
+bugs here that does this"*. The week's standing ("This week you are 2nd for Neighbour, 1st for Farmer.") sat alone in the
+top-left corner, above the card, behind a frame icon that read as an empty checkbox.
+
+- **The pass page lays its blocks out with CSS `order`** — one column on a phone, a rail and a body on a laptop — and a
+  block with no `order` is order 0, which is FIRST. The standing line and the membership card were both added without one:
+  on a laptop the line landed in the rail's 320-px cell above the card, and on a phone both stood over the pass. Every block
+  of the spine (a child of `.ps-wrap`, `.ps-rail` or `.ps-main`) is now named in the one `order` list at the top of the
+  page's style, equal numbers keeping the markup's order between them, and every block of the wrap but the rail and the
+  body spans both desktop columns. `tools/check-design.mjs` §46 reads the markup and the style and fails a block that is
+  not listed; it bites first, on a copy with the standing's order taken out.
+- **The standing reads as an honour, not a form**: under the promise, aligned as the promise is (left on a phone, centred
+  on a laptop), behind a small sparkle — never the Citizen's frame (a checkbox at 16 px), and never a plaque's own badge
+  inline (the Farmer's is the three-bar "burger", which reads as a menu). Best place first, in Trym's words for it: "in the
+  running" and "Log in to get nominated" (`pass-toasts.json` → `week`). The ask moves to its own line whole.
+- **A card claims only what the server said.** The membership card told a member their subscription "was probably paid with
+  a different email address" whenever its status call failed or they were not logged in — that sentence belongs to the
+  server's own `known: false`. No answer claims nothing: the Polar link is the door, and the Cancel button waits until the
+  server has matched the subscription.
+- Proof: `tests/pass-layout.spec.mjs` (the card first and the standing under its promise at 393 and 1280, the membership
+  card under the piles on a phone and under the tabs in the rail on a laptop, its three answers, "1 day on the pass").
+
+### §46.1 A source file holds no control characters
+
+The fresh pass said "1 DAYS ON THE PASS". Its singular rule was `/s\b/` — but a Python edit had written the `\b` without
+`r''`, which is a BACKSPACE, so the rule looked for "s" then a backspace and never matched. The same slip had killed six voice
+rules in `tools/copy-jobs.mjs` (the postcard's "a line never names its picture", the round's "no gesture", and a
+neighbour's letter never sounding like an app, a debt or pity) — every one of them silently true for weeks — and left raw
+NULs in the letter filter, so git called it a binary file. `tools/check-design.mjs` §46.1 fails any control character but
+tab, newline and carriage return in src, tools, tests, docs, the workers and the public scripts and styles. Write the
+escape; and in a Python edit, bytes that must be a backslash are `bytes([92])`, never a heredoc (it eats them too).

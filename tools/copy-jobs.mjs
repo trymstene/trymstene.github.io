@@ -953,7 +953,7 @@ function postShape(data) {
     if (/\?\s*$/.test(l)) say('card.lines[' + i + ']', 'asks a question — a postcard has no reply box, so it can never be answered');
     // ⚠️ A LINE THAT NAMES ITS PICTURE IS A LINE THAT IS WRONG UNDER THE OTHER TWO. The sender picks
     // the place and the line separately, so "the flowers are out" read at the rave is a mistake.
-    if (/(fountain|flowers?|garden|pond|beach|gate|fence|rave|dancing|beams?|music)/i.test(l)) {
+    if (/\b(fountain|flowers?|garden|pond|beach|gate|fence|rave|dancing|beams?|music)\b/i.test(l)) {
       say('card.lines[' + i + ']', 'names one of the three pictures — every line has to work under all of them');
     }
   }
@@ -975,7 +975,7 @@ function postShape(data) {
   if (!stamp) say('round.stamp', 'is empty');
   if (stamp && stamp !== stamp.toUpperCase()) say('round.stamp', 'is not in capitals, and a rubber stamp is');
   if (/\s/.test(stamp)) say('round.stamp', 'is more than one word');
-  if (/(press|hold)/i.test(String(ro.hint || ''))) say('round.hint', 'names a gesture; the notice says what the round wants, never which control');
+  if (/\b(press|hold)\b/i.test(String(ro.hint || ''))) say('round.hint', 'names a gesture; the notice says what the round wants, never which control');
   if (String(card.sent || '').trim().toLowerCase() === String(data.sent || '').trim().toLowerCase()) {
     say('card.sent', 'is the letter’s own line — a card and a letter are two different things happening');
   }
@@ -1280,9 +1280,9 @@ const noteFields = {
   'quiet[].text': { kind: 'prose', aim: 150, max: 260, note: 'A letter for no reason at all, when nothing has arrived for days — which is the reason: people who like you write when nothing is happening. ⚠️ it must NEVER mention that the box was empty, never suggest anybody was forgotten or lonely, and never ask why they have not written. Something small the writer noticed: the light over the square, the queue at their counter, what the night left behind.' },
 };
 // 🤐 what a letter from a neighbour may not sound like
-const NOTE_APP = /(welcome to|click|tap|button|menu|inbox|notification|account|feature|unlock|reward|coins?)/i;
-const NOTE_OWED = /(write back|reply|respond|let me know|get in touch|drop me a line|waiting to hear|hope to hear)/i;
-const NOTE_PITY = /(lonely|alone|forgotten|nobody has|empty|quiet in there|no one writes)/i;
+const NOTE_APP = /\b(welcome to|click|tap|button|menu|inbox|notification|account|feature|unlock|reward|coins?)\b/i;
+const NOTE_OWED = /\b(write back|reply|respond|let me know|get in touch|drop me a line|waiting to hear|hope to hear)\b/i;
+const NOTE_PITY = /\b(lonely|alone|forgotten|nobody has|empty|quiet in there|no one writes)\b/i;
 function noteShape(data) {
   const bad = [];
   const say = (path, msg) => bad.push({ path, msg, rule: 'shape' });   // an OBJECT: copy-rules reads p.path / p.msg; a pair printed as "undefined undefined"
@@ -2958,7 +2958,7 @@ export const JOBS = {
     what: 'The pass page’s notes and toasts: the membership (cancel, keep), a login link that failed, a rename sent for review, the family filter on a name, logging in, linking a device, a passkey, logging out, the news list, an email added.',
     approved: 'src/data/copy/pass-toasts.json',
     reads: 'src/scripts/banana-pass-page.js (a static import)',
-    top: ['member', 'landing', 'outbox', 'name', 'share', 'device', 'logout', 'passkey', 'welcome', 'news', 'email'],
+    top: ['member', 'landing', 'outbox', 'name', 'share', 'device', 'logout', 'passkey', 'welcome', 'news', 'email', 'week'],
     fields: {
       'member.cancelling': toastLine(30, 'While a membership cancel is sent.'),
       'member.wait': toastLine(30, 'While a membership change is sent.'),
@@ -2988,6 +2988,14 @@ export const JOBS = {
       'email.addedBody': toastLine(50, 'Under it.', NO_MARKUP),
       'email.inTitle': toastLine(20, 'In bold capitals: logged in with an email link. The game puts 🎫 in front.', NO_MARKUP),
       'email.inBody': toastLine(40, 'Under it.', NO_MARKUP),
+      // 🏆 the week's standing under the pass card (29 Sep 2026): the running top three on the Citizens of the week plaques.
+      // Trym's own words for it are "in the running" and "Log in to get nominated" (6 Sep 2026) — a plaque goes to a logged-in
+      // pass, so the login link follows for a pass that is not.
+      'week.running': toastLine(60, 'Under the pass card, bold, after a small sparkle: where this pass stands on this week’s plaques, best first. {places} is the list of places joined with commas.', { ...holdsAll('places'), ...NO_MARKUP }),
+      'week.first': toastLine(24, 'One place in {places}: first on a plaque. {plaque} is its short name (Citizen, Gardener, Neighbour, Farmer, Raver).', { ...holdsAll('plaque'), ...NO_MARKUP }),
+      'week.second': toastLine(24, 'Second on a plaque.', { ...holdsAll('plaque'), ...NO_MARKUP }),
+      'week.third': toastLine(24, 'Third on a plaque.', { ...holdsAll('plaque'), ...NO_MARKUP }),
+      'week.login': toastLine(30, 'A link after the line, only for a pass that is not logged in; it opens the email box. The game puts a full stop after it.', NO_MARKUP),
     },
     shape: () => [],
   },

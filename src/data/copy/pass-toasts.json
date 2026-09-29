@@ -48,5 +48,12 @@
     "addedBody": "You can log in with it on any device now.",
     "inTitle": "LOGGED IN",
     "inBody": "Welcome to Banana World."
+  },
+  "week": {
+    "running": "You’re in the running this week: {places}.",
+    "first": "1st for {plaque}",
+    "second": "2nd for {plaque}",
+    "third": "3rd for {plaque}",
+    "login": "Log in to get nominated"
   }
 }

@@ -55,12 +55,16 @@ const NUMBERS = [
       display: flex; flex-direction: column; gap: 0.5rem;
     }
     .ps-rail, .ps-main { display: contents; }
+    /* ⚠️ EVERY BLOCK OF THE SPINE STATES ITS PLACE (29 Sep 2026, Trym on his own pass: "something weird showed up"). A block
+       with no `order` is order 0 and jumps ABOVE the card: the week's standing sat alone in the top-left corner on a laptop,
+       and on a phone it and the membership card both stood over the pass. Equal numbers keep the markup's order between
+       them. tools/check-design.mjs §46 fails a block that is not listed here. */
     .ps-card { order: 1; }
-    .ps-promise { order: 2; }
+    .ps-promise, .ps-week { order: 2; }
     .ps-news { order: 3; }
     .ps-nav { order: 4; }
     .ps-panes { order: 5; }
-    .ps-doors { order: 6; }
+    .ps-sup, .ps-doors { order: 6; }
     .ps-keep { order: 7; }
 
     /* ── THE CARD — the page header. ONE size: the thing on screen IS the
@@ -163,9 +167,12 @@ const NUMBERS = [
     .ps-rankbar { display: block; height: 6px; background: rgba(17, 17, 17, 0.22); max-width: 200px; margin: 4px 0 1px; }
     .ps-rankbar i { display: block; height: 100%; background: var(--ink); }
     .ps-ranknote { display: block; font-size: 0.58rem; font-weight: 700; line-height: 1.35; opacity: 0.7; }
-    .ps-week { margin: 0.5rem auto 0; max-width: 62ch; font-size: 0.92rem; line-height: 1.4; }
-    .ps-week a { font-weight: 700; }
-    .ps-week svg { vertical-align: -3px; }
+    .ps-week { margin: 0; font-size: 0.92rem; line-height: 1.5; }   /* aligned as the promise above it is: left here, centred at 900 */
+    .ps-week a { font-weight: 700; white-space: nowrap; }   /* the ask moves down whole, never "Log in to get / nominated" */
+    /* ✦ a sparkle, not the Citizen's frame: at 16 px the frame read as an empty checkbox (and a plaque's own badge is no
+       better inline — the Farmer's is the three-bar "burger", a menu button). PixelIcon writes its size inline, so this
+       only states it */
+    .ps-week svg { vertical-align: -3px; margin-right: 0.15rem; }
     .ps-card__blabel {
       margin: 0.4rem 0 0.22rem; font-size: 0.52rem; font-weight: 800;
       letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7;
@@ -509,8 +516,11 @@ const NUMBERS = [
       .ps-rail { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; order: 3; }
       .ps-main { display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; order: 4; }
       .ps-card { order: 1; }
-      .ps-promise { order: 2; }
-      .ps-card, .ps-promise { grid-column: 1 / -1; }
+      .ps-promise, .ps-week { order: 2; }
+      /* ⚠️ a block of the wrap that is not the rail or the body spans BOTH columns, or it lands in the 320-px rail's cell
+         (the week's standing did, above the card). §46 checks this list too. */
+      .ps-card, .ps-promise, .ps-week { grid-column: 1 / -1; }
+      .ps-week { margin: -0.5rem auto 0; max-width: 62ch; text-align: center; }
       /* ⚠️ it is a CARD, not a banner: stretched to the full 1088 the content
          clustered left and the middle went empty. Capped near a real pass's
          proportions and centred, so the width reads as room around it. */
@@ -594,7 +604,7 @@ const NUMBERS = [
       <!-- ── 2. THE PROMISE — the one sentence that says what this page is for ── -->
       <p class="ps-promise">Everything you make and win saves automatically.<noscript> Turn on JavaScript to see it.</noscript></p>
       <!-- 🏆 where this pass stands on the week's plaques — above the tabs, so it is seen whatever pile is open -->
-      <p class="ps-week" id="psWeek" hidden><PixelIcon name="frame" size="16px" /> <span id="psWeekTxt"></span></p>
+      <p class="ps-week" id="psWeek" hidden><PixelIcon name="sparkle" size="16px" /> <span id="psWeekTxt"></span></p>
     <div class="ps-rail">
 
       <!-- ── 5. SUBNAV — three tabs, hidden until there is something in a pile ── -->
