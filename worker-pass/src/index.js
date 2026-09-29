@@ -989,7 +989,13 @@ function lookOf(bb) {
   if (!bb || typeof bb !== 'object') return null;
   const o = { hat: String(bb.hat || 'none').slice(0, 24), glasses: String(bb.glasses || 'none').slice(0, 24) };
   if (bb.extras && typeof bb.extras === 'object') o.extras = bb.extras;
-  if (bb.c) o.c = String(bb.c).slice(0, 48);
+  // 🧢 the catalog items a banana wears, WHOLE: a comma list (several since 2 Aug, one per spot). It was cut at 48 characters,
+  // which held three ids, so a fourth lost its tail ("c_3e2d093") and the citizens' frames dropped it (29 Sep 2026). Whole
+  // ids only, up to eight — a list is never cut through one.
+  if (bb.c) {
+    const ids = String(bb.c).split(',').map((t) => t.trim()).filter((t) => /^c_[\w-]{1,32}$/.test(t)).slice(0, 8);
+    if (ids.length) o.c = ids.join(',');
+  }
   return o;
 }
 function scorecard(rec, from, to, hood, gid) {

@@ -77,7 +77,9 @@ person('cccc3333', '', { kept: true, ev: [
   ...days(prevFrom, 7).map((at) => row(at, 'hs_fed', 1, 'homestead')),
 ] });
 // THIS WEEK: Be (kept) farms daily; Jade builds two bananas on the shelf
-person('dddd4444', 'Be', { kept: true, ev: [
+// …in FOUR catalog items: the board used to cut the list at 48 characters, and the fourth lost its tail (29 Sep 2026)
+const BE_C = 'c_72a05cca0b,c_18d4a0daa0,c_e43111617c,c_3e2d093ab1';
+person('dddd4444', 'Be', { kept: true, look: { hat: 'party', glasses: 'none', c: BE_C + ',<script>' }, ev: [
   ...days(curFrom, 3).map((at) => row(at, 'hs_fed', 1, 'homestead')),
   ...days(curFrom, 3).map((at) => row(at, 'hs_day', 1, 'homestead')),
   row(curFrom + DAY, 'coins_earned', 25, 'homestead', 'stall'),
@@ -104,6 +106,7 @@ ok('four plaques, no Maker', Object.keys(live.plaques).sort().join() === 'farmer
 ok('a nameless pass never appears', JSON.stringify(live).indexOf('cccc3333') < 0 && !Object.values(live.plaques).flat().some((x) => !x.name), live.plaques);
 ok('a QA home never appears', !JSON.stringify(live).includes('Proofy'), live.plaques.gardener);
 ok('rows carry a look for the frames and no id', live.plaques.farmer[0].look && live.plaques.farmer[0].look.hat === 'party' && !('home' in live.plaques.farmer[0]) && !('id' in live.plaques.farmer[0]), live.plaques.farmer[0]);
+ok('the look carries EVERY catalog item whole (and nothing that is not an id)', live.plaques.farmer[0].look.c === BE_C, live.plaques.farmer[0].look);
 
 console.log('2. last week was crowned on that first lap');
 const last = board.last;
