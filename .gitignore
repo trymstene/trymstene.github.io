@@ -79,3 +79,5 @@ tools/trymstene-com-*.json
 
 # the lens kit is built from the masters (tools/lens/build_lens_kit.py)
 tools/lens/out/
+# the stream pack is built from the renderer (tools/stream-pack/build_stream_pack.py)
+tools/stream-pack/out/
