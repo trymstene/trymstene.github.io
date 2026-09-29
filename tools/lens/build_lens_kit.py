@@ -98,6 +98,29 @@ has the current ones.
 with open(os.path.join(OUT, 'README.txt'), 'w', encoding='utf-8', newline='\r\n') as f:
     f.write(README)
 
+# the fallback when a Lens Studio version has no "2D Animation From Files": import the frames as plain textures and
+# let this script flip them on an Image
+DANCE_JS = """// banana_dance.js - plays the eight frames on an Image, 10 per second, forever.
+// Attach to the object that has the Image; fill in the fields in the Inspector.
+// @input Component.Image image
+// @input Asset.Texture[] frames
+// @input float fps = 10
+var i = 0;
+var t = 0;
+script.createEvent("UpdateEvent").bind(function () {
+    if (!script.image || !script.frames || script.frames.length === 0) { return; }
+    t += getDeltaTime();
+    var step = 1 / script.fps;
+    while (t >= step) {
+        t -= step;
+        i = (i + 1) % script.frames.length;
+    }
+    script.image.mainPass.baseTex = script.frames[i];
+});
+"""
+with open(os.path.join(OUT, 'banana_dance.js'), 'w', encoding='utf-8', newline='\n') as f:
+    f.write(DANCE_JS)
+
 zipbase = os.path.join(HERE, 'out', 'dancing-banana-lens-kit')
 if os.path.exists(zipbase + '.zip'):
     os.remove(zipbase + '.zip')
