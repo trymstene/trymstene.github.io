@@ -866,35 +866,71 @@ if os.path.isdir(RBD) and os.path.isdir(BASEMENT):
     wx, wy = RB.darkest(_wa, 48, 96)
     print('  arcade floor tile at', (fx, fy), 'wall at', (wx, wy))
     FT, WS = RB.tiles(_fl, _wa, fx, fy, wx, wy)
+    # 🎟 THE PRIZE COUNTER (29 Sep 2026, Trym: "a livingroom television-shelf with a tv, and two broken sprites of bar-stools
+    # … could we do something here and add some interior that matches an arcade? like a desk or reception"). The corner was
+    # the basement's TV unit (194 + 195) with two side-on bar stools. Now it is a front desk, in three other themes' art:
+    #   · the desk is the TV studio's news desk — end 54, the gold badge 57, the light bar 56, end 59: a white run with a
+    #     blue light strip, the one neon thing in the packs. ONE piece keyed `counter` (§41), a gold cup on its right end
+    #   · the Joy cap is one of the arcade's prizes, so the shelf behind is the clothing store's cap stand (232)
+    # Spinner keeps it from BEHIND, the store's way (§41): the desk goes out a second time as `over`, drawn over him.
+    # ⚠️ the cap stand and the desk ends bake the mauve theme floor into their feet: strip_floor, or it rides in.
+    STUDIO = os.path.join(MI48, 'Theme_Sorter_Singles_48x48', '23_Television_and_Film_Studio_SIngles_48x48')
+    CLOTHES = os.path.join(MI48, 'Theme_Sorter_Singles_48x48', '21_Clothing_Store_Singles_48x48')
+    SPORT = os.path.join(MI48, 'Theme_Sorter_Singles_48x48', '6_Music_and_Sport_48x48')
+
+    def prize_desk():
+        run = [RB.strip_floor(RB.single(STUDIO, k)) for k in (54, 57, 56, 59)]
+        cup = RB.single(SPORT, 153)
+        cup = cup.crop(cup.getbbox())
+        lift = max(0, cup.height - 40)   # the cup's feet stand 40 px down the desk's 80-px canvas, on its top
+        out = Image.new('RGBA', (sum(p.width for p in run), 80 + lift), (0, 0, 0, 0))
+        x_ = 0
+        for p in run:
+            out.alpha_composite(p, (x_, lift))
+            x_ += p.width
+        out.alpha_composite(cup, (142, lift + 40 - cup.height))
+        return out
+
+    def apiece(n):
+        if n == 'desk':
+            return prize_desk()
+        if n == 'caps':
+            return RB.strip_floor(RB.single(CLOTHES, 232))
+        return RB.single(BASEMENT, n)
+
     # the furniture, at 1:1: (single number, x, base y, collider rect rel. to (x, base) or None, spot key)
-    # back wall: five cabinets face the room; side walls: cabinets seen from the side; a counter with
-    # the TV and the consoles by the door, two stools at it
+    # back wall: five cabinets face the room; side walls: cabinets seen from the side; the prize counter in the corner
     FURN = [
         # the back wall: five cabinets pushed BACK INTO the wall band (Trym, 12 Sep: "further up / back into the
         # wall") — base 172 puts their top half over the wall; the collider runs up to the wall band (y 96) so a
         # banana can never stand between a cabinet and the wall and draw over it
         (218, 24, 172, (0, -76, 48, 0), 'g1'), (219, 88, 172, (0, -76, 48, 0), 'g2'), (218, 152, 172, (0, -76, 48, 0), 'g3'),
         (219, 216, 172, (0, -76, 48, 0), 'g4'), (218, 280, 172, (0, -76, 48, 0), 'g5'),
-        # the counter is a PAIR in the pack: 194 = the drinks and the shelf, 195 = the TV and the consoles; one half
-        # alone looks sawn off (Trym: "cut in half") — both, edge to edge, against the wall; two bar stools in front
-        (194, 366, 172, (0, -76, 96, 0), 'counter'), (195, 462, 172, (0, -76, 96, 0), 'counter'),
-        (151, 404, 236, (0, -10, 32, 0), None), (155, 484, 236, (0, -10, 32, 0), None),
+        # the desk, clear of g5 by 40 px (Spinner's way round its left end), and the cap stand against the wall behind it
+        # (feet at 112) with room for him between. The desk's box comes first, so a tap on either walks to the desk's front
+        ('desk', 368, 216, (6, -66, 186, 0), 'counter'),
+        ('caps', 416, 142, (0, -42, 96, -30), 'counter'),
         # the side walls: two cabinets seen from the side on each, below the back row so nothing cuts anything
         (221, 16, 330, (0, -40, 64, 0), 'g6'), (221, 16, 402, (0, -40, 64, 0), 'g7'),
         (223, 496, 330, (0, -40, 64, 0), 'g8'), (223, 496, 402, (0, -40, 64, 0), 'g9'),
     ]
     room, RW, RH, rcx = RB.shell(12, 9, FT, WS, (24, 20, 30, 255))
-    rcols, rspots = [], []
+    rcols, rspots, rover = [], [], {}
     for n, x, base, col, key in FURN:
-        im_ = RB.single(BASEMENT, n)
+        im_ = apiece(n)
         room.alpha_composite(im_, (x, base - im_.height))
         if col:
             rcols.append([x + col[0], base + col[1], x + col[2], base + col[3]])
         if key:
             rspots.append([key, x, base - im_.height, x + im_.width, base])
+        if n == 'desk':   # 🎟 its front, for Spinner to stand behind (town-room.js lays it over the plate at its foot)
+            im_.save(os.path.join(OUT, 's-overcounter-0.png'), optimize=True)
+            STATE['overcounter'] = [im_.width, im_.height, 1]
+            rover['counter'] = ['overcounter', x + im_.width // 2, base]
     room.save(os.path.join(OUT, 'in-arcade.png'), optimize=True)
     AX, AY = 300, 120   # where the plate floats in world coordinates (over the town's north-west)
     ARCADE = RB.contract('in-arcade.png', (AX, AY), RW, RH, rcx, rcols, rspots)
+    ARCADE['over'] = {k: [ok_, AX + cx, AY + b] for k, (ok_, cx, b) in rover.items()}
     print('  in-arcade.png %dx%d, %d cols, %d spots' % (RW, RH, len(ARCADE['cols']), len(ARCADE['spots'])))
 else:
     print('  ! interiors pack not found — no arcade room')

@@ -29,8 +29,8 @@ import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DA
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { DECOR } from '../data/decor.js';
 import { grantToShed, orderFor, takeFromShed, hasInShed, homeStage, canHold, shipMin } from '../lib/homestead-inventory.js';
-import { OB_RECTS, OB_CIRCLES, STORE, CAFE_WIN, OVERLAYS } from './town-geo.js';
-import { STATE, HOARD, INFO_WIN } from './town-geo-lazy.js';   // 📦 read only here: out of the first load   // 🕹 ARCADE moved with the arcade's week (town-arcade.js)
+import { OB_RECTS, OB_CIRCLES, STORE, ARCADE, CAFE_WIN, OVERLAYS } from './town-geo.js';   // 🎟 ARCADE: only its desk's front (the week is town-arcade.js)
+import { STATE, HOARD, INFO_WIN } from './town-geo-lazy.js';   // 📦 read only here: out of the first load
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { once, seen } from '../lib/once.js';   // 🧾 the counter's invitation, until the till is first opened
@@ -1524,12 +1524,12 @@ export function bootTownLife(ctx) {
     if (roomAt !== 'store') carryOn(false);   // a crate belongs to the shop it came from
     stocked.forEach(kill); stocked = [];
     kill(front); front = null;
-    if (roomAt !== 'store' || !STORE || !STORE.full) { hintShow(); return; }
     // 🧾 THE COUNTER'S FRONT, laid over the plate's own counter, pixel for pixel, at the depth of its foot (26 Sep 2026): Pip
     // keeps the store from BEHIND it now, and a plate cannot be in front of anybody — this copy is, so it hides his feet and the
-    // counter reads as between you. It is also what the customer's invitation lights.
-    const o = STORE.over && STORE.over.till;
+    // counter reads as between you. It is also what the customer's invitation lights. 🎟 Spinner's prize desk too (29 Sep 2026).
+    const o = roomAt === 'store' ? STORE && STORE.over && STORE.over.till : roomAt === 'condo' ? ARCADE.over && ARCADE.over.counter : null;
     if (o) front = sprite(o[0], o[1], o[2], { z: 2000 + o[2], cls: 'is-in is-front' });
+    if (roomAt !== 'store' || !STORE || !STORE.full) { hintShow(); return; }
     const n = (shelfFor() || []).length;
     for (const [, sk, cx, base] of STORE.full.slice(0, n)) {
       const sp = sprite(sk, cx, base, { z: 2000 + base, cls: 'is-in' });

@@ -166,8 +166,9 @@ const GLOW = { hall: [[1098, 468]], post: [[1694, 215]], condo: [[435, 400], [52
 // `via` is the way round the counter's left end between the doorway and the marks — straight, he walked through the tables and
 // the counter. `clip`: a tap below the counter top is the counter's (the till), never his — so tapping the counter still
 // opens the shop, and tapping HIM still opens his card. `talk`: the y a player stands at to talk to him, across the counter.
+// 🎟 THE ARCADE (29 Sep 2026): Spinner keeps its prize desk the same way — behind it, in round its left end past the last cabinet.
 const INSIDE = {
-  condo: { door: [588, 540], marks: [[752, 392, 'front'], [660, 388, 'left'], [470, 394, 'right']] },
+  condo: { door: [588, 540], via: [[652, 380], [652, 262]], marks: [[738, 296, 'front'], [770, 298, 'right']], clip: 264, talk: 362 },
   store: { door: [564, 996], via: [[566, 884], [612, 800]], marks: [[668, 770, 'front'], [686, 772, 'right']], clip: 744, talk: 836 },
 };
 const roomFor = (n, beat) => beat !== 5 && INSIDE[n.home];   // no glow for garden_w: a garden has no window (Trym, 15 Sep: "a glow under the bench")
