@@ -46,26 +46,19 @@ const NUMBERS = [
     [hidden] { display: none !important; }
     .ps-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-    /* ── THE SPINE ──────────────────────────────────────────────────────────
-       Phone = one column in the reading order the DOM already has. Desktop =
-       the same nodes re-flowed into a rail + a body, so `display: contents`
-       carries the order instead of a second markup tree. */
+    /* ── THE SPINE (29 Sep 2026, Trym: "it looks a bit cramped, small text, not much space … the gui need to breathe more on
+       desktop and mobile … categorize the information better and make it less cluttery"). ONE column, in the markup's own
+       reading order, on every screen: the card, the lines under it, your account, the news, your things behind three tabs,
+       the membership, where to next, the newsletter. A laptop gets the same column, wider: its old rail beside a body
+       crammed the tabs, the membership, the doors and the account into one 320-px strip. Nothing is re-ordered with CSS
+       (§46: a block with no place in an `order` list jumps above the card), nothing outside the card is set under 12 px
+       and no running text under 14 (§48), and the sections stand 24–32 px apart. */
     .ps-wrap {
-      max-width: 900px; margin: 0 auto; padding: 0.5rem 1rem 2.5rem;
-      display: flex; flex-direction: column; gap: 0.5rem;
+      --ps-muted: rgba(17, 17, 17, 0.72);
+      max-width: 920px; margin: 0 auto; padding: 1rem 1rem 3rem;
+      display: flex; flex-direction: column; gap: 1.5rem;
     }
-    .ps-rail, .ps-main { display: contents; }
-    /* ⚠️ EVERY BLOCK OF THE SPINE STATES ITS PLACE (29 Sep 2026, Trym on his own pass: "something weird showed up"). A block
-       with no `order` is order 0 and jumps ABOVE the card: the week's standing sat alone in the top-left corner on a laptop,
-       and on a phone it and the membership card both stood over the pass. Equal numbers keep the markup's order between
-       them. tools/check-design.mjs §46 fails a block that is not listed here. */
-    .ps-card { order: 1; }
-    .ps-promise, .ps-week { order: 2; }
-    .ps-news { order: 3; }
-    .ps-nav { order: 4; }
-    .ps-panes { order: 5; }
-    .ps-sup, .ps-doors { order: 6; }
-    .ps-keep { order: 7; }
+    .ps-wrap > section, .ps-wrap > details, .ps-wrap > div { min-width: 0; }
 
     /* ── THE CARD — the page header. ONE size: the thing on screen IS the
        keepsake, and the PNG people share is the same document. ── */
@@ -167,7 +160,9 @@ const NUMBERS = [
     .ps-rankbar { display: block; height: 6px; background: rgba(17, 17, 17, 0.22); max-width: 200px; margin: 4px 0 1px; }
     .ps-rankbar i { display: block; height: 100%; background: var(--ink); }
     .ps-ranknote { display: block; font-size: 0.58rem; font-weight: 700; line-height: 1.35; opacity: 0.7; }
-    .ps-week { margin: 0; font-size: 0.92rem; line-height: 1.5; }   /* aligned as the promise above it is: left here, centred at 900 */
+    /* the lines under the card belong to it: tucked up close, then the page's own spacing resumes */
+    .ps-under { display: grid; gap: 0.45rem; margin-top: -0.5rem; }
+    .ps-week { margin: 0; font-size: 1rem; line-height: 1.5; }   /* aligned as the promise above it is: left here, centred at 900 */
     .ps-week a { font-weight: 700; white-space: nowrap; }   /* the ask moves down whole, never "Log in to get / nominated" */
     /* ✦ a sparkle, not the Citizen's frame: at 16 px the frame read as an empty checkbox (and a plaque's own badge is no
        better inline — the Farmer's is the three-bar "burger", a menu button). PixelIcon writes its size inline, so this
@@ -220,92 +215,117 @@ const NUMBERS = [
     @keyframes psStamp { from { transform: rotate(-8deg) scale(3); opacity: 0; } 60% { opacity: 1; } to { transform: rotate(-8deg) scale(1); opacity: 0.85; } }
     @media (prefers-reduced-motion: reduce) { .ps-card--stamped .ps-stamp { animation: none; } }
 
-    .ps-promise { margin: 0; font-size: 0.8rem; line-height: 1.45; opacity: 0.8; }
+    .ps-promise { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--ps-muted); }
+
+    /* ── A SECTION'S HEAD: the one heading grammar under the card — a black-letter title, a count or a word of help beside
+       it. (The card keeps its own small print: it is a document, and its type is part of the look.) ── */
+    .ps-h { margin: 0; font-family: "Archivo Black", sans-serif; font-size: 1.2rem; line-height: 1.2; display: flex; align-items: center; gap: 0.55rem; }
+    .ps-h .pai { width: 22px; height: 22px; }
+
     /* 💛 the support block — the world's card furniture, tier-tinted */
-    .ps-sup { border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink); background: #fffdf5; padding: 0.8rem 0.9rem 0.9rem; }
-    .ps-sup__head { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.4rem; }
-    .ps-sup__hat { image-rendering: pixelated; height: 34px; width: auto; }
-    .ps-sup__kicker { margin: 0; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; }
-    .ps-sup__tier { margin: 0; font-family: "Archivo Black", sans-serif; font-size: 1rem; }
-    .ps-sup__meta { margin: 0 0 0.7rem; font-size: 0.82rem; line-height: 1.5; opacity: 0.85; }
-    .ps-sup__acts { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .ps-sup { border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: #fffdf5; padding: 1.1rem 1.2rem 1.2rem; }
+    .ps-sup__head { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem; }
+    .ps-sup__hat { image-rendering: pixelated; height: 40px; width: auto; }
+    .ps-sup__kicker { margin: 0; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ps-muted); }
+    .ps-sup__tier { margin: 0; font-family: "Archivo Black", sans-serif; font-size: 1.2rem; }
+    .ps-sup__meta { margin: 0 0 1rem; font-size: 0.95rem; line-height: 1.55; }
+    .ps-sup__acts { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; }
     .ps-sup__manage {
-      background: var(--banana); color: var(--ink); font-weight: 800; font-size: 0.84rem;
-      text-decoration: none; padding: 0.5rem 0.8rem; border: 2px solid var(--ink);
+      background: var(--banana); color: var(--ink); font-weight: 800; font-size: 0.95rem; min-height: 44px;
+      text-decoration: none; padding: 0.55rem 1rem; border: 3px solid var(--ink);
       box-shadow: 3px 3px 0 var(--ink); white-space: nowrap;
     }
     .ps-sup__manage:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-    .ps-sup__wall { font-size: 0.8rem; }
-    button.ps-sup__manage { font: inherit; font-weight: 800; font-size: 0.84rem; cursor: pointer; }
-    .ps-sup__ask { margin-top: 0.75rem; border-top: 2px dashed var(--ink); padding-top: 0.65rem; }
-    .ps-sup__askt { margin: 0 0 0.55rem; font-size: 0.82rem; line-height: 1.5; }
-    .ps-sup__why { display: block; font-size: 0.72rem; font-weight: 700; opacity: 0.75; margin-bottom: 0.6rem; }
-    .ps-sup__why small { font-weight: 400; }
-    .ps-sup__why select { display: block; margin-top: 0.25rem; font: inherit; font-size: 0.8rem; padding: 0.3rem; border: 2px solid var(--ink); background: #fff; max-width: 100%; }
-    .ps-sup__askrow { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ps-sup__wall { font-size: 0.95rem; font-weight: 700; }
+    button.ps-sup__manage { font: inherit; font-weight: 800; font-size: 0.95rem; cursor: pointer; }
+    .ps-sup__ask { margin-top: 1rem; border-top: 2px dashed var(--ink); padding-top: 0.9rem; }
+    .ps-sup__askt { margin: 0 0 0.75rem; font-size: 0.95rem; line-height: 1.55; }
+    .ps-sup__why { display: block; font-size: 0.875rem; font-weight: 700; margin-bottom: 0.85rem; }
+    .ps-sup__why small { font-weight: 400; color: var(--ps-muted); }
+    .ps-sup__why select { display: block; margin-top: 0.35rem; font: inherit; font-size: 0.95rem; padding: 0.45rem; border: 2px solid var(--ink); background: #fff; max-width: 100%; }
+    .ps-sup__askrow { display: flex; flex-wrap: wrap; gap: 0.6rem; }
     .ps-sup__yes, .ps-sup__no {
-      font: inherit; font-weight: 800; font-size: 0.82rem; cursor: pointer;
-      padding: 0.45rem 0.75rem; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+      font: inherit; font-weight: 800; font-size: 0.95rem; cursor: pointer; min-height: 44px;
+      padding: 0.5rem 1rem; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
     }
     .ps-sup__yes { background: #fffdf5; }
     .ps-sup__no { background: var(--banana); }
     .ps-sup__yes:active, .ps-sup__no:active, button.ps-sup__manage:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-    .ps-sup__note { margin: 0.6rem 0 0; font-size: 0.8rem; line-height: 1.5; font-weight: 700; }
+    .ps-sup__note { margin: 0.8rem 0 0; font-size: 0.95rem; line-height: 1.5; font-weight: 700; }
     .ps-sup--ending { background: #fff6e0; }
-    .ps-sup__miss { margin: 0.55rem 0 0; font-size: 0.76rem; line-height: 1.5; opacity: 0.75; }
+    .ps-sup__miss { margin: 0.8rem 0 0; font-size: 0.875rem; line-height: 1.55; color: var(--ps-muted); }
 
     /* ── NEWS FOR YOU — verdicts on YOUR stuff, never system chatter. Renders
        only when there is something to say (anti-fatigue). ── */
-    .ps-news__h { display: flex; align-items: center; gap: 0.35rem; margin: 0 0 0.4rem; font-size: 0.85rem; }
-    .ps-pendingline { font-size: 0.78rem; opacity: 0.75; margin: 0 0 0.5rem; }
+    .ps-news { display: grid; gap: 0.8rem; }
+    #psNotices { display: grid; gap: 0.7rem; }
+    #psNotices:empty { display: none; }
+    .ps-pendingline { font-size: 0.95rem; line-height: 1.5; color: var(--ps-muted); margin: 0; }
     .ps-notice {
-      display: flex; gap: 0.55rem; align-items: flex-start; cursor: pointer;
+      display: flex; gap: 0.8rem; align-items: flex-start; cursor: pointer;
       border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm);
-      padding: 0.35rem 0.5rem; margin-bottom: 0.35rem;
+      padding: 0.8rem 1rem;
     }
     .ps-notice--unread { background: var(--banana); }
-    .ps-notice__icon { font-size: 1.05rem; line-height: 1.2; }
+    .ps-notice__icon { flex: none; font-size: 1.3rem; line-height: 1.35; }
     .ps-notice__main { min-width: 0; flex: 1; }
     .ps-notice__side { flex: none; text-align: right; }
     /* ⚠️ CLAMPED ON PURPOSE. Unread notices are unbounded, and every line of
-       them pushes the subnav — the only route to the rest of the page — off the
+       them pushes the tabs — the route to the rest of the page — off the
        first screen. Two lines, then tap the notice for the whole thing. */
-    .ps-notice__body { font-size: 0.79rem; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .ps-notice__body { font-size: 0.95rem; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .ps-notice--open .ps-notice__body { display: block; }
-    .ps-notice__date { display: block; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; }
-    .ps-notice__side::after { content: '▾'; display: block; font-size: 0.7rem; font-weight: 800; opacity: 0.55; }
+    .ps-notice__date { display: block; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ps-muted); white-space: nowrap; }
+    .ps-notice__side::after { content: '▾'; display: block; font-size: 0.85rem; font-weight: 800; color: var(--ps-muted); }
     .ps-notice--open .ps-notice__side::after { content: '▴'; }
+    /* 🗞 news already read waits behind one row instead of standing on the page for ever */
+    .ps-news__old > summary { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; cursor: pointer; font-size: 0.95rem; font-weight: 800; list-style: none; color: var(--ps-muted); }
+    .ps-news__old > summary::-webkit-details-marker { display: none; }
+    .ps-news__old > summary::after { content: '▾'; }
+    .ps-news__old[open] > summary::after { content: '▴'; }
+    .ps-news__old > div { display: grid; gap: 0.7rem; margin-top: 0.4rem; }
+    .ps-news__old .ps-notice { box-shadow: none; }
 
-    /* 📣 THE ASK sits at the FOOT of the news strip — same subject as the block
-       above it, and nowhere near the login, so consent is never bundled with
-       the thing they came for. Its own form, its own double opt-in. */
-    .ps-ask { border-top: 3px dashed rgba(17, 17, 17, 0.2); }
-    #psNotices:empty + .ps-ask { border-top: 0; }   /* no strip above it = no rule */
-    .ps-ask__row { display: flex; align-items: center; gap: 0.4rem; min-height: 46px; cursor: pointer; font-size: 0.82rem; font-weight: 800; list-style: none; }
+    /* 📣 THE ASK — the newsletter, at the FOOT of the page: never the first thing a newcomer meets and nowhere near the login,
+       so consent is never bundled with the thing they came for. Its own form, its own double opt-in. */
+    .ps-ask { border-top: 3px dashed rgba(17, 17, 17, 0.2); padding-top: 0.5rem; }
+    .ps-ask__row { display: flex; align-items: center; gap: 0.55rem; min-height: 52px; cursor: pointer; font-size: 1rem; font-weight: 800; list-style: none; }
     .ps-ask__row::-webkit-details-marker { display: none; }
-    .ps-ask__row::after { content: ' ▾'; margin-left: auto; opacity: 0.6; }
+    .ps-ask__row::after { content: ' ▾'; margin-left: auto; color: var(--ps-muted); }
     .ps-ask[open] .ps-ask__row::after { content: ' ▴'; }
-    .ps-ask p { margin: 0 0 0.5rem; font-size: 0.78rem; line-height: 1.45; }
-    .ps-ask__note { margin: 0.4rem 0 0 !important; font-size: 0.72rem !important; opacity: 0.75; }
+    .ps-ask form { display: grid; gap: 0.7rem; padding: 0.2rem 0 0.4rem; }
+    .ps-ask p { margin: 0; font-size: 0.95rem; line-height: 1.55; }
+    .ps-ask__note { font-size: 0.875rem !important; color: var(--ps-muted); }
+    .ps-ask__note:empty { display: none; }
 
-    /* ── SUBNAV — three chips that always share one row. `flex: 1 1 0` +
-       `min-width: 0` is the whole fix: nowrap alone re-creates the clipped,
-       sideways-scrolling seven-tab wall this replaced. A FOURTH TAB OVERFLOWS;
-       the three-tab cap IS the design. ── */
-    .ps-nav { display: flex; gap: 0.4rem; border-bottom: 3px solid var(--ink); }
+    /* ── YOUR THINGS: three tabs over three panes. The tabs are one joined control across the column — the page's main
+       navigation, so they are big, labelled and iconed. `flex: 1 1 0` + `min-width: 0` keep all three on one row at
+       320 px; a label never wraps. ── */
+    .ps-things { display: grid; gap: 1.25rem; }
+    .ps-nav { display: flex; border: 3px solid var(--ink); box-shadow: var(--shadow-sm); background: var(--paper); }
     .ps-tab {
-      flex: 1 1 0; min-width: 0; min-height: 46px; font: inherit; font-weight: 800; font-size: 0.9rem;
-      cursor: pointer; background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
-      border-bottom: none; padding: 0.4rem 0.3rem; margin-bottom: -3px; overflow: hidden;
+      flex: 1 1 0; min-width: 0; min-height: 58px; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; background: transparent; color: var(--ink);
+      border: 0; border-left: 3px solid var(--ink); padding: 0.4rem 0.5rem; overflow: hidden;
     }
-    .ps-tab[aria-selected="true"] { background: var(--banana); box-shadow: 0 -3px 0 var(--ink) inset; }
-    .ps-tab:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+    .ps-tab:first-child { border-left: 0; }
+    .ps-tab .pai { width: 22px; height: 22px; }
+    .ps-tab[aria-selected="true"] { background: var(--banana); }
+    .ps-tab:not([aria-selected="true"]):hover { background: rgba(255, 225, 53, 0.3); }
+    .ps-tab:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; position: relative; z-index: 1; }
 
-    .ps-pane__h { margin: 0 0 0.7rem; font-size: 1rem; }
+    .ps-pane__h { margin: 0; font-family: "Archivo Black", sans-serif; font-size: 1.2rem; line-height: 1.25; }
+    /* ⚠️ the pane's rhythm out-ranks the heading's `margin: 0` (one class each, and the later rule won: the heading sat on
+       the chips and its grid on the heading) — a pane's blocks stand 16 px apart, a heading 10 px over what it names */
+    .ps-wrap .ps-pane > * + * { margin-top: 1rem; }
+    .ps-wrap .ps-pane__h + *, .ps-wrap .ps-pane__h + .ps-note + * { margin-top: 0.65rem; }
+    .ps-wrap #psLiveBlock { margin-top: 1.75rem; }
+    .ps-note { margin: 0.35rem 0 0; font-size: 0.95rem; line-height: 1.5; color: var(--ps-muted); }
+    .ps-count { font-family: "Space Grotesk", sans-serif; font-weight: 700; color: var(--ps-muted); margin-left: 0.15rem; }
     /* filter chips — the same grammar in both panes */
-    .ps-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.7rem; }
+    .ps-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .ps-chip {
-      min-height: 44px; padding: 0 0.8rem; font: inherit; font-weight: 800; font-size: 0.8rem;
+      min-height: 44px; padding: 0 1rem; font: inherit; font-weight: 800; font-size: 0.95rem;
       cursor: pointer; background: var(--paper); color: var(--ink); border: 3px solid var(--ink);
       box-shadow: 3px 3px 0 var(--ink);
     }
@@ -313,15 +333,16 @@ const NUMBERS = [
     .ps-chip:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
 
     /* ── THE DOORS — the world's "where to?" row grammar (see /dev/design/):
-       yellow slab, icon, bold name, arrow hard right. ── */
-    .ps-doors { display: grid; gap: 0.55rem; }
+       yellow slab, icon, bold name, arrow hard right. Side by side where they fit. ── */
+    .ps-next { display: grid; gap: 0.8rem; }
+    .ps-doors { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
     .ps-door {
-      display: flex; align-items: center; gap: 0.7rem; min-height: 52px; padding: 0.5rem 0.8rem;
+      display: flex; align-items: center; gap: 0.8rem; min-height: 60px; padding: 0.6rem 1rem;
       text-decoration: none; color: var(--ink); background: var(--banana);
       border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
     }
-    .ps-door b { font-size: 0.95rem; }
-    .ps-door span { margin-left: auto; font-size: 1.05rem; font-weight: 800; }
+    .ps-door b { font-size: 1rem; }
+    .ps-door span { margin-left: auto; font-size: 1.1rem; font-weight: 800; }
     .ps-door:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
     .ps-door--out { background: var(--paper); }
 
@@ -330,16 +351,16 @@ const NUMBERS = [
        one (...) that holds everything you can do to it. No card border — the
        pane already has edges and a row inside a card inside a pane is the
        third box (design library, "boxes"). A single rule separates them. */
-    .ps-live { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.2rem; border-top: 2px solid var(--ps-line, rgba(17,17,17,0.12)); }
+    .ps-live { display: flex; align-items: center; gap: 0.9rem; padding: 0.85rem 0.2rem; border-top: 2px solid var(--ps-line, rgba(17,17,17,0.12)); }
     .ps-live:first-child { border-top: 0; }
-    .ps-live__art { width: 56px; height: 56px; flex: none; image-rendering: pixelated; background: var(--paper, #faf6ee); border: 2px solid var(--ink, #111); }
+    .ps-live__art { width: 64px; height: 64px; flex: none; image-rendering: pixelated; background: var(--paper, #faf6ee); border: 2px solid var(--ink, #111); }
     .ps-live__art--gone { opacity: 0.4; }
-    .ps-live__t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
-    .ps-live__name { font-weight: 800; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ps-live__state { font-size: 0.72rem; font-weight: 700; opacity: 0.65; }
+    .ps-live__t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+    .ps-live__name { font-weight: 800; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ps-live__state { font-size: 0.875rem; font-weight: 700; color: var(--ps-muted); }
     /* the one number on this row that is a reward, so it is not the quiet grey
        the state line is — a value is never quieter than its own label */
-    .ps-live__have { font-size: 0.8rem; font-weight: 800; color: var(--ink, #111); }
+    .ps-live__have { font-size: 0.9rem; font-weight: 800; color: var(--ink, #111); }
     /* 44px, because a 20px dotted glyph is a miss on a phone and 85% of this
        world is on one */
     .ps-live__more { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font: inherit; font-size: 1.3rem; font-weight: 800; line-height: 1; cursor: pointer; background: none; border: 2px solid transparent; border-radius: 10px; }
@@ -358,18 +379,19 @@ const NUMBERS = [
     .ps-live__menu button { font: inherit; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem 0.7rem; min-height: 44px; background: var(--paper, #faf6ee); color: var(--ink, #111); border: 3px solid var(--ink, #111); box-shadow: 3px 3px 0 var(--ink, #111); }
     .ps-live__menu button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink, #111); }
     .ps-live__vers { display: flex; gap: 0.6rem; flex-wrap: wrap; padding: 0 0.2rem 0.9rem; }
-    .ps-live__ver { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-size: 0.66rem; font-weight: 800; opacity: 0.8; }
-    .ps-live__ver canvas { width: 56px; height: 56px; image-rendering: pixelated; background: var(--paper, #faf6ee); border: 2px solid var(--ink, #111); }
-    .ps-shelf { display: flex; flex-wrap: wrap; gap: 0.8rem; }
-    .shelf-empty { font-size: 0.85rem; opacity: 0.65; margin: 0; }
+    .ps-live__ver { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 800; color: var(--ps-muted); }
+    .ps-live__ver canvas { width: 64px; height: 64px; image-rendering: pixelated; background: var(--paper, #faf6ee); border: 2px solid var(--ink, #111); }
+    /* the shelf fills the column: tiles share its width (never a ragged row of fixed boxes), 3 across on a phone */
+    .ps-shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 0.9rem; }
+    .shelf-empty { font-size: 0.95rem; color: var(--ps-muted); margin: 0; }
     .shelf-item { position: relative; border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); cursor: pointer; padding-bottom: 44px; }
-    .shelf-item canvas { display: block; width: 88px; height: 88px; image-rendering: pixelated; }
+    .shelf-item canvas { display: block; width: 100%; height: auto; aspect-ratio: 1; image-rendering: pixelated; }
     /* 🛍 THE ASK AT THE LAST CLICK, ON THE ITEM — a labelled 44px button in the
        tile's foot, never a bare 🏷 glyph ([[cro-placement-doctrine]]). */
     .shelf-tag {
       position: absolute; left: 0; right: 0; bottom: 0; width: auto; height: 44px;
       display: flex; align-items: center; justify-content: center; gap: 0.25rem;
-      font-size: 0.62rem; font-weight: 800; text-decoration: none; border: 0;
+      font-size: 0.75rem; font-weight: 800; text-decoration: none; border: 0; white-space: nowrap;
       background: var(--ink); color: var(--banana); border-top: 3px solid var(--ink);
     }
     .shelf-tag:hover { transform: none; background: var(--hot, #ff4d6d); color: #fff; }
@@ -385,106 +407,112 @@ const NUMBERS = [
 
     /* the closet: earned wearables a banana models; unearned = grey silhouette,
        so the closet doubles as a feature map. Earned first, in CSS. */
-    .ps-gear { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    /* ── THE CLOSET AND THE BADGES. An earned one is a card with its shadow and the date it came; one still to earn is
+       only its outline — a dashed frame, the art in grey, and its hint in full-strength ink, because the hint is how to
+       earn it and it was the faintest text on the page (0.55 opacity over grey). Earned first, in CSS. ── */
+    .ps-gear { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .ps-gear__item {
       border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm);
-      padding: 0.7rem 0.7rem 0.6rem; text-align: center;
+      padding: 1rem 0.8rem 0.9rem; text-align: center;
     }
-    .ps-gear__item canvas { width: 84px; height: 84px; image-rendering: pixelated; }
-    .ps-gear__item h3 { margin: 0.3rem 0 0.15rem; font-size: 0.85rem; }
-    .ps-gear__item p { margin: 0 0 0.5rem; font-size: 0.72rem; opacity: 0.7; line-height: 1.4; }
-    .ps-gear__by { display: block; font-size: 0.68rem; font-weight: 800; color: #0e9fb5; margin: -0.3rem 0 0.45rem; } /* the maker's credit — "by Barty" */
-    .ps-gear__item:not(.ps-gear__item--earned) { opacity: 0.55; order: 1; }
-    .ps-gear__item:not(.ps-gear__item--earned) canvas { filter: grayscale(1) contrast(0.65) brightness(0.9); }
+    .ps-gear__item canvas { width: 88px; height: 88px; image-rendering: pixelated; }
+    .ps-gear__item h3 { margin: 0.45rem 0 0.3rem; font-size: 1rem; line-height: 1.25; }
+    .ps-gear__item p { margin: 0 0 0.7rem; font-size: 0.875rem; line-height: 1.45; color: var(--ps-muted); }
+    .ps-gear__by { display: block; font-size: 0.8rem; font-weight: 800; color: #0b7f91; margin: -0.4rem 0 0.6rem; } /* the maker's credit — "by Barty" */
+    .ps-gear__item:not(.ps-gear__item--earned) { order: 1; border-style: dashed; box-shadow: none; background: transparent; }
+    .ps-gear__item:not(.ps-gear__item--earned) canvas { filter: grayscale(1) contrast(0.65) brightness(0.9); opacity: 0.6; }
     .ps-gear__item--earned { outline: 3px solid var(--banana); outline-offset: -6px; }
     .ps-gear__btn {
-      min-height: 44px; padding: 0 0.8rem; font: inherit; border: 3px solid var(--ink);
-      background: var(--paper); font-weight: 800; font-size: 0.75rem; cursor: pointer;
+      min-height: 44px; padding: 0 1rem; font: inherit; border: 3px solid var(--ink);
+      background: var(--paper); font-weight: 800; font-size: 0.875rem; cursor: pointer;
       /* the wear-toggle is a LINK to the builder now — keep the button look */
       display: inline-flex; align-items: center; justify-content: center;
       text-decoration: none; color: var(--ink); text-align: center; white-space: nowrap;
     }
     .ps-gear__btn.on { background: var(--banana); }
 
-    .ps-patches { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .ps-patches { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .ps-patch {
       border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm);
-      padding: 0.7rem 0.7rem 0.6rem; text-align: center;
+      padding: 1rem 0.8rem 0.9rem; text-align: center;
     }
-    .ps-patch svg { width: 34px; height: 34px; }
-    .ps-patch h3 { margin: 0.4rem 0 0.15rem; font-size: 0.85rem; }
-    .ps-patch p { margin: 0; font-size: 0.72rem; opacity: 0.7; line-height: 1.4; }
-    .ps-patch .ps-patch__date { display: none; margin-top: 0.25rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; }
-    .ps-patch:not(.ps-patch--earned) { opacity: 0.55; order: 1; }
-    .ps-patch:not(.ps-patch--earned) svg { filter: grayscale(1) contrast(0.6) brightness(0.9); }
+    .ps-patch svg { width: 40px; height: 40px; }
+    .ps-patch h3 { margin: 0.5rem 0 0.3rem; font-size: 1rem; line-height: 1.25; }
+    .ps-patch p { margin: 0; font-size: 0.875rem; line-height: 1.45; color: var(--ps-muted); }
+    .ps-patch .ps-patch__date { display: none; margin-top: 0.5rem; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ps-muted); }
+    .ps-patch:not(.ps-patch--earned) { order: 1; border-style: dashed; box-shadow: none; background: transparent; }
+    .ps-patch:not(.ps-patch--earned) svg { filter: grayscale(1) contrast(0.6) brightness(0.9); opacity: 0.55; }
     .ps-patch--earned { outline: 3px solid var(--banana); outline-offset: -6px; }
     .ps-patch--earned .ps-patch__date { display: block; }
 
     /* ── NUMBERS — a zero keeps its tile and carries its earn hint (the badge
        pane's own pattern); non-zero ranks first. Never a grey list of failures. ── */
-    .ps-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; }
-    .ps-stat { border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); padding: 0.6rem 0.7rem; }
-    .ps-stat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.4rem; line-height: 1; }
-    .ps-stat span { display: block; margin-top: 0.25rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
-    .ps-stat i { display: none; margin-top: 0.3rem; font-size: 0.68rem; font-style: normal; line-height: 1.35; opacity: 0.85; }
-    .ps-stat--zero { order: 1; background: rgba(17, 17, 17, 0.04); }
-    .ps-stat--zero b { opacity: 0.35; }
+    .ps-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.9rem; }
+    .ps-stat { border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); padding: 0.9rem 1rem; }
+    .ps-stat b { display: block; font-family: "Archivo Black", sans-serif; font-size: 1.75rem; line-height: 1.05; }
+    .ps-stat span { display: block; margin-top: 0.4rem; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ps-muted); }
+    .ps-stat i { display: none; margin-top: 0.4rem; font-size: 0.875rem; font-style: normal; line-height: 1.45; }
+    .ps-stat--zero { order: 1; background: transparent; border-style: dashed; box-shadow: none; }
+    .ps-stat--zero b { opacity: 0.3; }
     .ps-stat--zero i { display: block; }
 
-    /* ── THE KEEP ROW — the account, as ONE row. Its summary IS the sync line,
-       so magic-link feedback and the offline apology can never hide inside a
-       collapsed drawer. Native <details>: the toggle costs no JS. ── */
-    .ps-keep { border: 3px solid var(--ink); background: var(--paper); }
+    /* ── YOUR ACCOUNT — one bar right under the card (it lived at the foot of the rail). Its summary IS the sync line, so
+       magic-link feedback and the offline apology are never inside a closed drawer, and it opens by itself with the email
+       box for anybody who has something to lose and is not logged in. Native <details>: the toggle costs no JS. ── */
+    .ps-keep { border: 3px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); }
     .ps-keep[open] { background: #fffdf5; }
     .ps-keep__row {
-      display: flex; align-items: center; gap: 0.5rem; min-height: 48px; padding: 0.3rem 0.7rem;
-      cursor: pointer; font-size: 0.82rem; font-weight: 700; list-style: none;
+      display: flex; align-items: center; gap: 0.7rem; min-height: 60px; padding: 0.55rem 1rem;
+      cursor: pointer; font-size: 1rem; font-weight: 700; line-height: 1.4; list-style: none;
     }
     .ps-keep__row::-webkit-details-marker { display: none; }
+    /* ⚠️ a summary that starts with a pixel icon is INLINE-flex site-wide (styles.css, `:has(> .pai:first-child)`, which
+       out-ranks one class): the row shrank to its words, "Account ▾" sat against them instead of the right edge, and on a
+       phone the sync line broke over three lines. The whole bar is the row. */
+    .ps-wrap .ps-keep > .ps-keep__row, .ps-wrap .ps-ask > .ps-ask__row { display: flex; width: 100%; justify-content: flex-start; }
+    .ps-keep__row .pai { width: 22px; height: 22px; }
     .ps-keep__line { min-width: 0; }
-    .ps-keep__more { margin-left: auto; font-size: 0.72rem; font-weight: 800; opacity: 0.65; white-space: nowrap; }
+    .ps-keep__more { margin-left: auto; font-size: 0.9rem; font-weight: 800; color: var(--ps-muted); white-space: nowrap; }
     .ps-keep__more::after { content: ' ▾'; }
     .ps-keep[open] .ps-keep__more::after { content: ' ▴'; }
-    .ps-keep__body { padding: 0 0.7rem 0.8rem; }
-    .ps-keep__claim { margin: 0 0 0.5rem; font-size: 0.82rem; line-height: 1.45; }
+    .ps-keep__body { padding: 0.25rem 1rem 1.2rem; display: grid; gap: 0.9rem; }
+    .ps-keep__claim { margin: 0; font-size: 1rem; line-height: 1.55; }
     /* the three phrases that are the whole answer to "why give you my address" */
-    .ps-perks { list-style: none; margin: 0 0 0.6rem; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .ps-perks li { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; background: rgba(0, 0, 0, 0.07); }
+    .ps-perks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.45rem; }
+    .ps-perks li { padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.875rem; font-weight: 700; background: rgba(0, 0, 0, 0.07); }
     /* ✉️ ONE FIELD, ONE BUTTON. The button must never wrap its label. */
-    .ps-mail { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .ps-mail { display: flex; gap: 0.6rem; flex-wrap: wrap; }
     .ps-mail__in {
-      flex: 1 1 200px; min-width: 0; padding: 0.55rem 0.65rem; font: inherit; font-size: 1rem;
+      flex: 1 1 220px; min-width: 0; min-height: 48px; padding: 0.6rem 0.8rem; font: inherit; font-size: 1rem;
       border: 3px solid var(--ink); background: #fffdf5; color: var(--ink);
     }
-    .ps-mail .btn { flex: none; padding: 0.6rem 1.1rem; }
-    .ps-mail__whose { margin: 0.35rem 0 0; font-size: 0.72rem; line-height: 1.45; opacity: 0.7; }
-    .ps-alt { margin-top: 0.7rem; font-size: 0.78rem; }
-    .ps-alt > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 800; opacity: 0.75; }
-    .ps-sync__row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
-    .ps-sync__row .btn { padding: 0.6rem 0.9rem; font-size: 0.85rem; }
-    .ps-link { margin-top: 0.7rem; }
-    .ps-link .btn { padding: 0.6rem 0.9rem; font-size: 0.85rem; }
+    .ps-mail .btn { flex: none; padding: 0.65rem 1.2rem; }
+    .ps-mail__whose { margin: 0; font-size: 0.875rem; line-height: 1.55; color: var(--ps-muted); }
+    .ps-alt { font-size: 0.95rem; }
+    .ps-alt > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 800; color: var(--ps-muted); }
+    .ps-sync__row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+    .ps-sync__row .btn { padding: 0.65rem 1rem; font-size: 0.95rem; }
+    .ps-link .btn { padding: 0.65rem 1rem; font-size: 0.95rem; }
     .ps-link__code {
-      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-      margin-top: 0.5rem; padding: 0.5rem 0.7rem; background: rgba(255, 225, 53, 0.16); border: 2px dashed var(--banana);
+      display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+      margin-top: 0.7rem; padding: 0.65rem 0.9rem; background: rgba(255, 225, 53, 0.16); border: 2px dashed var(--banana);
     }
-    .ps-link__code b { font-size: 1.25rem; font-weight: 800; letter-spacing: 0.16em; font-variant-numeric: tabular-nums; }
-    .ps-link__code span { font-size: 0.74rem; opacity: 0.8; }
-    .ps-link__lbl { display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 0.3rem; }
-    .ps-link__row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .ps-link__code b { font-size: 1.35rem; font-weight: 800; letter-spacing: 0.16em; font-variant-numeric: tabular-nums; }
+    .ps-link__code span { font-size: 0.875rem; color: var(--ps-muted); }
+    .ps-link__lbl { display: block; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .ps-link__row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
     .ps-link__in {
-      flex: 1 1 150px; min-width: 0; padding: 0.5rem 0.6rem; font: inherit; font-size: 1rem;
+      flex: 1 1 150px; min-width: 0; min-height: 48px; padding: 0.55rem 0.7rem; font: inherit; font-size: 1rem;
       letter-spacing: 0.12em; text-transform: uppercase; border: 3px solid var(--ink); background: #fffdf5; color: var(--ink);
     }
-    /* ⚠️ Log out is the most destructive control on the page: LAST, smallest,
+    /* ⚠️ Log out is the most destructive control on the page: LAST, quiet,
        and inside a drawer — never above the player's own things. */
-    .ps-out { margin-top: 0.9rem; }
     .ps-out__btn {
-      min-height: 44px; padding: 0 0.6rem; appearance: none; background: none; border: 0; cursor: pointer;
-      font: inherit; font-size: 0.74rem; font-weight: 700; opacity: 0.6; color: inherit;
+      min-height: 44px; padding: 0; appearance: none; background: none; border: 0; cursor: pointer;
+      font: inherit; font-size: 0.875rem; font-weight: 700; color: var(--ps-muted);
       text-decoration: underline; text-underline-offset: 3px;
     }
-    .ps-out__btn:hover { opacity: 1; }
+    .ps-out__btn:hover { color: var(--ink); }
 
     /* share-card lightbox — our own reveal (the OS sheet is previewless on
        Windows, so it is an opt-in button, not the default) */
@@ -502,26 +530,16 @@ const NUMBERS = [
     /* ── DESKTOP: a rail and a body. Only the CARD is sticky — a rail taller
        than the viewport pins its top and strands the doors at 1280×800. ── */
     @media (min-width: 900px) {
-      /* the CARD spans the top — it is a keepsake and it reads as one only
-         with room; squeezed into a 320px rail its rep line broke over three
-         lines. Under it: a nav rail, and the body. Nothing is sticky — a rail
-         taller than the viewport pins its top and strands the doors. */
-      .ps-wrap {
-        max-width: 1120px; display: grid; gap: 1.1rem 1.6rem;
-        grid-template-columns: 320px minmax(0, 1fr); padding-top: 1.4rem;
-      }
-      /* ⚠️ the rail/body become real grid items here, so they default to
-         order:0 and would jump ABOVE the card's mobile order:1 — the card
-         landed at the foot of the page. State the desktop order outright. */
-      .ps-rail { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; order: 3; }
-      .ps-main { display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; order: 4; }
-      .ps-card { order: 1; }
-      .ps-promise, .ps-week { order: 2; }
-      /* ⚠️ a block of the wrap that is not the rail or the body spans BOTH columns, or it lands in the 320-px rail's cell
-         (the week's standing did, above the card). §46 checks this list too. */
-      .ps-card, .ps-promise, .ps-week { grid-column: 1 / -1; }
-      .ps-week { margin: -0.5rem auto 0; max-width: 62ch; text-align: center; }
-      /* ⚠️ it is a CARD, not a banner: stretched to the full 1088 the content
+      /* ⭐ THE SAME ONE COLUMN, with more air. The card is a keepsake and reads as one only with room; under it everything
+         runs the column's width in reading order. Nothing is sticky: the site's own bar slides in on the way up. */
+      .ps-wrap { padding: 1.75rem 1.5rem 4rem; gap: 2rem; }
+      .ps-under { text-align: center; }
+      .ps-week { margin: 0 auto; max-width: 62ch; }
+      .ps-h, .ps-pane__h { font-size: 1.35rem; }
+      .ps-shelf { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 1rem; }
+      .ps-gear, .ps-patches { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+      .ps-stats { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 1rem; }
+      /* ⚠️ it is a CARD, not a banner: stretched to the column the content
          clustered left and the middle went empty. Capped near a real pass's
          proportions and centred, so the width reads as room around it. */
       .ps-card { max-width: 680px; margin: 0 auto; width: 100%; }
@@ -535,8 +553,6 @@ const NUMBERS = [
       .ps-stamp { bottom: 46px; right: 34px; font-size: 1rem; }   /* across the FEET, like the shared PNG */
       .ps-card__name { font-size: 1.75rem; }
       .ps-ranknote { max-width: none; }
-      .ps-promise { margin: 0; text-align: center; }
-      .ps-shelf { gap: 0.7rem; }
     }
     @media (max-width: 360px) {
       .ps-card__body { gap: 0.5rem; }
@@ -601,72 +617,19 @@ const NUMBERS = [
         <span class="ps-stamp" aria-hidden="true">OFFICIAL</span>
       </div>
 
-      <!-- ── 2. THE PROMISE — the one sentence that says what this page is for ── -->
-      <p class="ps-promise">Everything you make and win saves automatically.<noscript> Turn on JavaScript to see it.</noscript></p>
-      <!-- 🏆 where this pass stands on the week's plaques — above the tabs, so it is seen whatever pile is open -->
-      <p class="ps-week" id="psWeek" hidden><PixelIcon name="sparkle" size="16px" /> <span id="psWeekTxt"></span></p>
-    <div class="ps-rail">
-
-      <!-- ── 5. SUBNAV — three tabs, hidden until there is something in a pile ── -->
-      <div class="ps-nav" id="psNav" role="tablist" aria-label="Your pass" hidden>
-        <button class="ps-tab" role="tab" id="tab-made" data-tab="made" aria-controls="panel-made" aria-selected="true">Made</button>
-        <button class="ps-tab" role="tab" id="tab-earned" data-tab="earned" aria-controls="panel-earned" aria-selected="false" tabindex="-1">Earned</button>
-        <button class="ps-tab" role="tab" id="tab-numbers" data-tab="numbers" aria-controls="panel-numbers" aria-selected="false" tabindex="-1" hidden>Numbers</button>
+      <!-- ── 2. UNDER THE CARD: the one sentence that says what this page is for, and where this pass stands on the week's
+           plaques — above the tabs, so it is seen whatever pile is open ── -->
+      <div class="ps-under">
+        <p class="ps-promise">Everything you make and win saves automatically.<noscript> Turn on JavaScript to see it.</noscript></p>
+        <p class="ps-week" id="psWeek" hidden><PixelIcon name="sparkle" size="16px" /> <span id="psWeekTxt"></span></p>
       </div>
 
-      <!-- ── 6b. YOUR SUPPORT — only rendered for a live member. NOT a fourth
-           tab: the three-tab cap is the design (see the subnav note), and the
-           way to cancel must never be something you hunt for. ── -->
-      <section class="ps-sup" id="psSup" hidden>
-        <div class="ps-sup__head">
-          <img class="ps-sup__hat" id="psSupHat" src="/assets/supporters/hat-blue.png" alt="" width="34" height="31" />
-          <div>
-            <p class="ps-sup__kicker">your support</p>
-            <h2 class="ps-sup__tier" id="psSupTier">Friend of the Banana</h2>
-          </div>
-        </div>
-        <p class="ps-sup__meta" id="psSupMeta"></p>
-        <div class="ps-sup__acts" id="psSupActs">
-          <button class="ps-sup__manage" id="psSupCancel" type="button">Cancel membership</button>
-          <a class="ps-sup__wall" id="psSupPortal" href="#" rel="noopener">Card &amp; receipts →</a>
-          <a class="ps-sup__wall" href="/support/">See the wall</a>
-        </div>
-        <!-- the confirm opens IN the card. A membership's exit does not deserve
-             a modal on top of the page it lives on. -->
-        <div class="ps-sup__ask" id="psSupAsk" hidden>
-          <p class="ps-sup__askt" id="psSupAskT"></p>
-          <label class="ps-sup__why">If you like, say why <small>(optional)</small>
-            <select id="psSupWhy">
-              <option value="">—</option>
-              <option value="too_expensive">Too expensive</option>
-              <option value="unused">I wasn't using it</option>
-              <option value="missing_features">Missing something I wanted</option>
-              <option value="low_quality">Not what I hoped</option>
-              <option value="switched_service">Supporting something else</option>
-              <option value="other">Another reason</option>
-            </select>
-          </label>
-          <div class="ps-sup__askrow">
-            <button class="ps-sup__yes" id="psSupYes" type="button">Yes, cancel it</button>
-            <button class="ps-sup__no" id="psSupNo" type="button">Never mind</button>
-          </div>
-        </div>
-        <p class="ps-sup__note" id="psSupNote" hidden></p>
-        <p class="ps-sup__miss" id="psSupMiss" hidden>We can't see which membership this is from this login — it was probably paid with a different email address. Sign in with that one and the button appears here, or use the link above.</p>
-      </section>
-
-      <!-- ── 7. THE DOORS OUT ── -->
-      <div class="ps-doors" id="psDoors">
-        <a class="ps-door" id="psDoorMake" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
-        <a class="ps-door ps-door--out" href="/rave/"><PixelIcon name="sparkle" size="24px" /><b>To the dancefloor</b><span>→</span></a>
-      </div>
-
-      <!-- ── 8. THE KEEP ROW — the account, collapsed to one row. ⚠️ the summary
-           carries the sync line, so "Signing you in…" and the offline apology
-           are visible whether or not the drawer is open. ── -->
+      <!-- ── 3. YOUR ACCOUNT — one bar, right under the card. ⚠️ the summary carries the sync line, so "Signing you in…" and
+           the offline apology are visible whether or not the drawer is open; it opens by itself, email box first, for a pass
+           with something to lose that is not logged in. ── -->
       <details class="ps-keep" id="psKeep">
         <summary class="ps-keep__row">
-          <PixelArtIcon name="lock" size="18px" />
+          <PixelArtIcon name="lock" size="22px" />
           <span class="ps-keep__line" id="psSyncNote">Save this to your email later</span>
           <span class="ps-keep__more">Account</span>
         </summary>
@@ -718,100 +681,153 @@ const NUMBERS = [
           </div>
         </div>
       </details>
-    </div>
 
-    <div class="ps-main">
-      <!-- ── 3. NEWS FOR YOU + 4. THE ASK at its foot ── -->
+      <!-- ── 4. NEWS FOR YOU — verdicts on your things and the world's news. Unread ones stand; the ones you have read wait
+           behind a single row (renderNews). ── -->
       <section class="ps-news" id="psNewsSec" hidden>
-        <h2 class="ps-news__h" id="psNewsH" hidden><PixelArtIcon name="bell" size="20px" /> News for you</h2>
+        <h2 class="ps-h" id="psNewsH" hidden><PixelArtIcon name="bell" size="22px" /> News for you</h2>
         <div id="psNotices"></div>
-        <details class="ps-ask" id="psAsk" hidden>
-          <summary class="ps-ask__row"><PixelArtIcon name="mail" size="16px" /> Want a note when the world gets bigger?</summary>
-          <form id="psAskForm">
-            <p id="psAskLead">New areas, features, items and the odd bit of merch — one click unsubscribes.</p>
-            <div class="ps-mail" id="psAskMail">
-              <input class="ps-mail__in" id="psNewsIn" type="email" name="news" required
-                     autocomplete="email" inputmode="email" spellcheck="false" maxlength="160"
-                     placeholder="you@email.com" aria-label="Email for updates" />
-              <button class="btn btn--light" id="psNewsGo" type="submit">Keep me posted</button>
-            </div>
-            <p class="ps-ask__note" id="psNewsNote"></p>
-          </form>
-        </details>
       </section>
 
-      <!-- ── 6. THE PANE ── -->
-      <div class="ps-panes" id="psPanes">
-        <!-- ⚠️ THE ZERO STATE HAS NO NAVIGATION. A newcomer gets doors, not
-             three empty drawers and a wall of zeros. -->
-        <div class="ps-doors" id="psZero" hidden>
-          <a class="ps-door" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
-          <a class="ps-door" href="/forge/"><PixelIcon name="bolt" size="24px" /><b>Forge an emoji</b><span>→</span></a>
-          <a class="ps-door" href="/forge/items/"><PixelIcon name="palette" size="24px" /><b>Make an item</b><span>→</span></a>
+      <!-- ── 5. YOUR THINGS — three tabs over three panes. ⚠️ THE ZERO STATE HAS NO NAVIGATION: a newcomer gets doors, not
+           three empty drawers and a wall of zeros. ── -->
+      <section class="ps-things" aria-label="Your things">
+        <div class="ps-nav" id="psNav" role="tablist" aria-label="Your pass" hidden>
+          <button class="ps-tab" role="tab" id="tab-made" data-tab="made" aria-controls="panel-made" aria-selected="true"><PixelArtIcon name="image" size="22px" /> Made</button>
+          <button class="ps-tab" role="tab" id="tab-earned" data-tab="earned" aria-controls="panel-earned" aria-selected="false" tabindex="-1"><PixelArtIcon name="trophy" size="22px" /> Earned</button>
+          <button class="ps-tab" role="tab" id="tab-numbers" data-tab="numbers" aria-controls="panel-numbers" aria-selected="false" tabindex="-1" hidden><PixelArtIcon name="chart-column-increasing" size="22px" /> Stats</button>
         </div>
 
-        <section class="ps-pane" role="tabpanel" id="panel-made" aria-labelledby="tab-made" tabindex="0" hidden>
-          <!-- chips appear only when two kinds are actually non-empty; with one
-               kind the heading carries the count -->
-          <div class="ps-chips" id="psMadeChips" role="group" aria-label="Filter what you made" hidden>
-            <button class="ps-chip" type="button" data-kind="" data-h="Everything you've made" aria-pressed="true">All</button>
-            <button class="ps-chip" type="button" data-kind="banana" data-h="Bananas" aria-pressed="false" hidden>Bananas</button>
-            <button class="ps-chip" type="button" data-kind="wearable" data-h="Items" aria-pressed="false" hidden>Items</button>
-            <button class="ps-chip" type="button" data-kind="emoji" data-h="GIFs &amp; emotes" aria-pressed="false" hidden>GIFs</button>
+        <div class="ps-panes" id="psPanes">
+          <div class="ps-doors" id="psZero" hidden>
+            <a class="ps-door" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
+            <a class="ps-door" href="/forge/"><PixelIcon name="bolt" size="24px" /><b>Forge an emoji</b><span>→</span></a>
+            <a class="ps-door" href="/forge/items/"><PixelIcon name="palette" size="24px" /><b>Make an item</b><span>→</span></a>
           </div>
-          <h2 class="ps-pane__h" id="psMadeH">Everything you've made</h2>
-          <div class="ps-shelf" id="psMade"></div>
-          <div id="psOffer"></div>
 
-          <!-- 🏷 SEPARATE FROM THE SHELF ON PURPOSE. The shelf above is your
-               sketchbook, kept on this device; this is what other people can
-               actually get hold of. They are different things and the shelf
-               cannot answer "is mine live" — it identifies a creation by its
-               pixels, so an edit would sit beside the original as a near
-               duplicate. Hidden entirely until you have something out there. -->
-          <section id="psLiveBlock" hidden>
-            <h2 class="ps-pane__h">Out in the world</h2>
-            <p class="ps-note">Items of yours that other people can get. Only you can change them.</p>
-            <div id="psLive"></div>
+          <section class="ps-pane" role="tabpanel" id="panel-made" aria-labelledby="tab-made" tabindex="0" hidden>
+            <!-- chips appear only when two kinds are actually non-empty; with one
+                 kind the heading carries the count -->
+            <div class="ps-chips" id="psMadeChips" role="group" aria-label="Filter what you made" hidden>
+              <button class="ps-chip" type="button" data-kind="" data-h="Everything you've made" aria-pressed="true">All</button>
+              <button class="ps-chip" type="button" data-kind="banana" data-h="Bananas" aria-pressed="false" hidden>Bananas</button>
+              <button class="ps-chip" type="button" data-kind="wearable" data-h="Items" aria-pressed="false" hidden>Items</button>
+              <button class="ps-chip" type="button" data-kind="emoji" data-h="GIFs &amp; emotes" aria-pressed="false" hidden>GIFs</button>
+            </div>
+            <h2 class="ps-pane__h" id="psMadeH">Everything you've made</h2>
+            <div class="ps-shelf" id="psMade"></div>
+            <div id="psOffer"></div>
+
+            <!-- 🏷 SEPARATE FROM THE SHELF ON PURPOSE. The shelf above is your
+                 sketchbook, kept on this device; this is what other people can
+                 actually get hold of. They are different things and the shelf
+                 cannot answer "is mine live" — it identifies a creation by its
+                 pixels, so an edit would sit beside the original as a near
+                 duplicate. Hidden entirely until you have something out there. -->
+            <section id="psLiveBlock" hidden>
+              <h2 class="ps-pane__h">Out in the world</h2>
+              <p class="ps-note">Items of yours that other people can get. Only you can change them.</p>
+              <div id="psLive"></div>
+            </section>
           </section>
-        </section>
 
-        <!-- GEAR FIRST: it is the thing you DO here. Badges are a trophy case. -->
-        <section class="ps-pane" role="tabpanel" id="panel-earned" aria-labelledby="tab-earned" tabindex="0" hidden>
-          <div class="ps-chips" role="group" aria-label="Filter what you earned">
-            <button class="ps-chip" type="button" data-blk="psGearBlock" aria-pressed="true">Gear</button>
-            <button class="ps-chip" type="button" data-blk="psBadgeBlock" aria-pressed="false">Badges</button>
-          </div>
-          <div id="psGearBlock">
-            <h2 class="ps-pane__h" id="psGearH">Gear</h2>
-            <div class="ps-gear" id="psGear"></div>
-          </div>
-          <div id="psBadgeBlock" hidden>
-            <h2 class="ps-pane__h" id="psBadgeH">Badges</h2>
-            <div class="ps-patches">
-              {PATCHES.map((p) => (
-                <div class="ps-patch" data-patch={p.id}>
-                  <PixelIcon name={p.icon} size="34px" />
-                  <h3>{p.title}</h3>
-                  <p>{p.hint}</p>
-                  <span class="ps-patch__date"></span>
+          <!-- GEAR FIRST: it is the thing you DO here. Badges are a trophy case. -->
+          <section class="ps-pane" role="tabpanel" id="panel-earned" aria-labelledby="tab-earned" tabindex="0" hidden>
+            <div class="ps-chips" role="group" aria-label="Filter what you earned">
+              <button class="ps-chip" type="button" data-blk="psGearBlock" aria-pressed="true">Gear</button>
+              <button class="ps-chip" type="button" data-blk="psBadgeBlock" aria-pressed="false">Badges</button>
+            </div>
+            <div id="psGearBlock">
+              <h2 class="ps-pane__h" id="psGearH">Gear</h2>
+              <div class="ps-gear" id="psGear"></div>
+            </div>
+            <div id="psBadgeBlock" hidden>
+              <h2 class="ps-pane__h" id="psBadgeH">Badges</h2>
+              <div class="ps-patches">
+                {PATCHES.map((p) => (
+                  <div class="ps-patch" data-patch={p.id}>
+                    <PixelIcon name={p.icon} size="40px" />
+                    <h3>{p.title}</h3>
+                    <p>{p.hint}</p>
+                    <span class="ps-patch__date"></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section class="ps-pane" role="tabpanel" id="panel-numbers" aria-labelledby="tab-numbers" tabindex="0" hidden>
+            <div class="ps-stats">
+              {NUMBERS.map((n) => (
+                <div class="ps-stat" data-stat={n.k} data-free={n.free ? '1' : null} data-noshare={n.noshare ? '1' : null}>
+                  <b>0</b><span>{n.label}</span><i>{n.hint}</i>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
+      </section>
 
-        <section class="ps-pane" role="tabpanel" id="panel-numbers" aria-labelledby="tab-numbers" tabindex="0" hidden>
-          <div class="ps-stats">
-            {NUMBERS.map((n) => (
-              <div class="ps-stat" data-stat={n.k} data-free={n.free ? '1' : null} data-noshare={n.noshare ? '1' : null}>
-                <b>0</b><span>{n.label}</span><i>{n.hint}</i>
-              </div>
-            ))}
+      <!-- ── 6. YOUR SUPPORT — only rendered for a live member. NOT a tab: the
+           way to cancel must never be something you hunt for. ── -->
+      <section class="ps-sup" id="psSup" hidden>
+        <div class="ps-sup__head">
+          <img class="ps-sup__hat" id="psSupHat" src="/assets/supporters/hat-blue.png" alt="" width="34" height="31" />
+          <div>
+            <p class="ps-sup__kicker">your support</p>
+            <h2 class="ps-sup__tier" id="psSupTier">Friend of the Banana</h2>
           </div>
-        </section>
+        </div>
+        <p class="ps-sup__meta" id="psSupMeta"></p>
+        <div class="ps-sup__acts" id="psSupActs">
+          <button class="ps-sup__manage" id="psSupCancel" type="button">Cancel membership</button>
+          <a class="ps-sup__wall" id="psSupPortal" href="#" rel="noopener">Card &amp; receipts →</a>
+          <a class="ps-sup__wall" href="/support/">See the wall</a>
+        </div>
+        <!-- the confirm opens IN the card. A membership's exit does not deserve
+             a modal on top of the page it lives on. -->
+        <div class="ps-sup__ask" id="psSupAsk" hidden>
+          <p class="ps-sup__askt" id="psSupAskT"></p>
+          <label class="ps-sup__why">If you like, say why <small>(optional)</small>
+            <select id="psSupWhy">
+              <option value="">—</option>
+              <option value="too_expensive">Too expensive</option>
+              <option value="unused">I wasn't using it</option>
+              <option value="missing_features">Missing something I wanted</option>
+              <option value="low_quality">Not what I hoped</option>
+              <option value="switched_service">Supporting something else</option>
+              <option value="other">Another reason</option>
+            </select>
+          </label>
+          <div class="ps-sup__askrow">
+            <button class="ps-sup__yes" id="psSupYes" type="button">Yes, cancel it</button>
+            <button class="ps-sup__no" id="psSupNo" type="button">Never mind</button>
+          </div>
+        </div>
+        <p class="ps-sup__note" id="psSupNote" hidden></p>
+        <p class="ps-sup__miss" id="psSupMiss" hidden>We can't see which membership this is from this login — it was probably paid with a different email address. Sign in with that one and the button appears here, or use the link above.</p>
+      </section>
+
+      <!-- ── 7. THE DOORS OUT ── -->
+      <div class="ps-doors" id="psDoors">
+        <a class="ps-door" id="psDoorMake" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
+        <a class="ps-door ps-door--out" href="/rave/"><PixelIcon name="sparkle" size="24px" /><b>To the dancefloor</b><span>→</span></a>
       </div>
-    </div>
+
+      <!-- ── 8. THE ASK — the newsletter, last: earned by having something here or news above, never next to the login ── -->
+      <details class="ps-ask" id="psAsk" hidden>
+        <summary class="ps-ask__row"><PixelArtIcon name="mail" size="20px" /> Want a note when the world gets bigger?</summary>
+        <form id="psAskForm">
+          <p id="psAskLead">New areas, features, items and the odd bit of merch — one click unsubscribes.</p>
+          <div class="ps-mail" id="psAskMail">
+            <input class="ps-mail__in" id="psNewsIn" type="email" name="news" required
+                   autocomplete="email" inputmode="email" spellcheck="false" maxlength="160"
+                   placeholder="you@email.com" aria-label="Email for updates" />
+            <button class="btn btn--light" id="psNewsGo" type="submit">Keep me posted</button>
+          </div>
+          <p class="ps-ask__note" id="psNewsNote"></p>
+        </form>
+      </details>
   </div>
 
   <!-- share-card lightbox: our own reveal, the rave-card pattern in pass colours -->

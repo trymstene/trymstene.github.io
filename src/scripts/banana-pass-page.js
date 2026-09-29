@@ -78,6 +78,8 @@ const catalogReady = fetch('https://banana-share.trymstene.workers.dev/catalog/i
   .catch(() => {});
 
 const el = (id) => document.getElementById(id);
+// a pane's heading and its count, the count set quieter than the name (29 Sep 2026: the redesign) — textContent reads the same
+const headCount = (h, label, count) => { h.textContent = label + ' '; const c = document.createElement('span'); c.className = 'ps-count'; c.textContent = count; h.appendChild(c); };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ⚠️ EVERY MODULE CONST BELONGS ABOVE init() — it runs at module-eval time and
@@ -510,7 +512,7 @@ function paint() {
   }
   strip.hidden = !earned.length;   // an empty band says nothing; a door says it better
   el('psBadgeLabel').hidden = !earned.length;
-  el('psBadgeH').textContent = 'Badges ' + earned.length + '/' + PATCHES.length;
+  headCount(el('psBadgeH'), 'Badges', earned.length + '/' + PATCHES.length);
 
   const all = shelfList();
   const kinds = { banana: 0, wearable: 0, emoji: 0 };
@@ -792,7 +794,7 @@ function renderMade() {
   const on = chips.find((c) => c.dataset.kind === madeKind) || chips[0];
   chips.forEach((c) => c.setAttribute('aria-pressed', String(c === on)));
   const n = shelfList().filter((c) => !madeKind || c.kind === madeKind).length;
-  el('psMadeH').textContent = on.dataset.h + ' ' + n;
+  headCount(el('psMadeH'), on.dataset.h, n);
   renderOut();
   renderShelf(el('psMade'), {
     kinds: madeKind ? [madeKind] : undefined,
@@ -938,7 +940,7 @@ function renderGear() {
   });
   renderMine(host);
   const own = ownedCatalog().length;
-  el('psGearH').textContent = 'Gear ' + (GEAR.filter(gearEarned).length + own) + '/' + (GEAR.length + own);
+  headCount(el('psGearH'), 'Gear', (GEAR.filter(gearEarned).length + own) + '/' + (GEAR.length + own));
 }
 
 // 🎁 owned COMMUNITY items join the closet — caught at the rave, made by
@@ -1171,31 +1173,36 @@ function renderNews() {
   const list = passNotices();
   const pend = subsPending('gal-subs-v1'), catPend = subsPending('cat-subs-v1');
   const news = list.length || pend || catPend;
-  // ⚠️ ALL UNREAD + the two most recent read. passNoticesMarkRead() marks the
-  // whole store read a beat later, so a render capped below the unread count
-  // would make notices 3..N permanently unreachable — and a verdict on
-  // something you made would vanish having never been seen.
-  let k = 0;
+  // ⚠️ ALL UNREAD, always standing. passNoticesMarkRead() marks the whole store
+  // read a beat later, so a render capped below the unread count would make
+  // notices 3..N permanently unreachable — and a verdict on something you made
+  // would vanish having never been seen. What you have READ (the six newest)
+  // waits behind one row (29 Sep 2026, Trym: "less cluttery"): the farm's launch
+  // news stood on every visit for a month.
   const fmt = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const card = (n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
+    + '<span class="ps-notice__icon">' + n.icon + '</span>'
+    + '<div class="ps-notice__main"><div class="ps-notice__body">' + n.text
+    + (n.link ? ' <a href="' + n.link + '">→</a>' : '') + '</div></div>'
+    + '<span class="ps-notice__side"><span class="ps-notice__date">' + fmt(n.at) + '</span></span></div>';
+  const fresh = list.filter((n) => !n.read), old = list.filter((n) => n.read).slice(0, 6);
   el('psNewsH').hidden = !news;
   el('psNotices').innerHTML =
     (pend ? '<p class="ps-pendingline">' + pend + (pend === 1 ? ' banana is' : ' bananas are')
       + ' waiting for review — you’ll usually hear back within 48 hours.</p>' : '')
     + (catPend ? '<p class="ps-pendingline">' + catPend + (catPend === 1 ? ' item is' : ' items are')
       + ' waiting for review — approved pieces go on sale with your name on them.</p>' : '')
-    + list.filter((n) => !n.read || ++k <= 2)
-      .map((n) => '<div class="ps-notice' + (n.read ? '' : ' ps-notice--unread') + '">'
-        + '<span class="ps-notice__icon">' + n.icon + '</span>'
-        + '<div class="ps-notice__main"><div class="ps-notice__body">' + n.text
-        + (n.link ? ' <a href="' + n.link + '">→</a>' : '') + '</div></div>'
-        + '<span class="ps-notice__side"><span class="ps-notice__date">' + fmt(n.at) + '</span></span></div>').join('');
-  // 📣 the ask is EARNED by the strip above it: never the first thing a
-  // newcomer with nothing meets, never shown to somebody already on the list,
-  // and nowhere near the login — consent stays unbundled.
+    + fresh.map(card).join('')
+    + (old.length ? '<details class="ps-news__old"><summary>' + esc(PT.notices.earlier.replace('{n}', old.length)) + '</summary><div>'
+      + old.map(card).join('') + '</div></details>' : '');
+  // 📣 the ask is EARNED — by news or by having something here: never the first
+  // thing a newcomer with nothing meets, never shown to somebody already on the
+  // list, and at the foot of the page, nowhere near the login — consent stays
+  // unbundled.
   let sub = false;
   try { sub = localStorage.getItem(NEWS_KEY) === '1'; } catch (e) {}
   el('psAsk').hidden = sub || !(news || HAVE);
-  sec.hidden = !news && el('psAsk').hidden;
+  sec.hidden = !news;
 }
 
 // ---- share my card: the membership card as a 1200×630 PNG ---------------

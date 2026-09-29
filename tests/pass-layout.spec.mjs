@@ -7,6 +7,7 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import WORDS from '../src/data/copy/pass-toasts.json' with { type: 'json' };
+import { richPass } from './pass-fixture.mjs';
 
 const GID = 'qa-pass-layout-1';
 const TAG = createHash('sha256').update(GID).digest('hex').slice(0, 8);
@@ -71,15 +72,95 @@ test('on a phone the membership card waits below the piles, above the doors — 
   expect(errs).toEqual([]);
 });
 
-test('on a laptop the membership card is in the rail, under the tabs and above the doors', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  const errs = await pass(page, { made: true });
-  const nav = await box(page, '#psNav'), sup = await box(page, '#psSup'), panes = await box(page, '#psPanes'), doors = await box(page, '#psDoors');
-  expect(nav, 'something in a pile: the tabs are up').not.toBeNull();
-  expect(sup.x + sup.w, 'in the left rail').toBeLessThan(panes.x);
-  expect(sup.y, 'under the tabs, the rail’s first thing').toBeGreaterThanOrEqual(nav.b - 1);
-  expect(sup.b, 'above the doors').toBeLessThanOrEqual(doors.y + 1);
-  await page.screenshot({ path: 'test-results/pass-layout-rail.png' });
+// 📐 THE PAGE BREATHES (29 Sep 2026, the redesign). Trym: "it looks a bit cramped, small text, not much space, its a bit tight
+// view with small detailed text - i feel the gui need to breathe more on desktop and mobile … categorize the information
+// better and make it less cluttery". One column in reading order on every screen — the card, the lines under it, the
+// account, the news, the three tabs over your things, the membership, the doors, the newsletter — every section the
+// column's own width, nothing outside the card under 12 px, and the tabs one row with their labels whole at 320.
+const ORDER = ['.ps-card', '.ps-under', '#psKeep', '#psNewsSec', '#psNav', '#psPanes', '#psSup', '#psDoors', '#psAsk'];
+for (const [w, h] of [[360, 740], [1280, 800]]) {
+  test(`one column in reading order, the width of the page, and room between (${w}×${h})`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    const errs = await richPass(page);
+    const boxes = [];
+    for (const s of ORDER) boxes.push([s, await box(page, s)]);
+    const seen = boxes.filter(([, b]) => b);
+    expect(seen.map(([s]) => s), 'a busy pass shows every section').toEqual(ORDER);
+    for (let i = 1; i < seen.length; i++) {
+      expect(seen[i][1].y, seen[i][0] + ' comes after ' + seen[i - 1][0]).toBeGreaterThanOrEqual(seen[i - 1][1].b - 1);
+      if (seen[i][0] !== '.ps-under') expect(seen[i][1].y - seen[i - 1][1].b, 'with room before ' + seen[i][0]).toBeGreaterThanOrEqual(18);   // the card's own lines tuck up under it
+    }
+    const col = seen.filter(([s]) => s !== '.ps-card').map(([s, b]) => [s, Math.round(b.x), Math.round(b.w)]);
+    for (const [s, x, bw] of col) expect([s, x, bw], 'every section shares the one column').toEqual([s, col[0][1], col[0][2]]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), 'nothing wider than the screen').toBeLessThanOrEqual(w);
+    expect(errs).toEqual([]);
+  });
+
+  test(`nothing outside the card is set small, and the tabs fit whole (${w}×${h})`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    const errs = await richPass(page);
+    const small = async () => page.evaluate(() => {
+      const out = [];
+      const wrap = document.querySelector('.ps-wrap');
+      const walk = document.createTreeWalker(wrap, NodeFilter.SHOW_TEXT);
+      while (walk.nextNode()) {
+        const t = walk.currentNode, e = t.parentElement;
+        if (!t.textContent.trim() || !e || e.closest('.ps-card, .mir, [hidden]') || !e.getClientRects().length) continue;
+        const px = parseFloat(getComputedStyle(e).fontSize);
+        if (px < 12) out.push(px + 'px "' + t.textContent.trim().slice(0, 30) + '" (' + e.className + ')');
+      }
+      return out;
+    });
+    for (const tab of ['made', 'earned', 'numbers']) {
+      await page.locator('.ps-tab[data-tab="' + tab + '"]').click();
+      await page.waitForTimeout(250);
+      expect(await small(), 'no text under 12 px outside the card, in ' + tab).toEqual([]);
+    }
+    await page.locator('#psKeep > summary').click();   // the account drawer's own small print too
+    expect(await small(), 'nor in the open account drawer').toEqual([]);
+    const tabs = await page.evaluate(() => [...document.querySelectorAll('.ps-tab:not([hidden])')].map((t) => ({ t: t.textContent.trim(), fs: parseFloat(getComputedStyle(t).fontSize), clip: t.scrollWidth > t.clientWidth + 1, h: t.getBoundingClientRect().height, r: t.getBoundingClientRect().right })));
+    for (const t of tabs) {
+      expect(t.fs, t.t + ' is read at 16 px').toBeGreaterThanOrEqual(16);
+      expect(t.clip, t.t + ' fits its tab whole').toBe(false);
+      expect(t.h, t.t + ' is a real target').toBeGreaterThanOrEqual(48);
+      expect(t.r, t.t + ' is on the screen').toBeLessThanOrEqual(w);
+    }
+    await page.screenshot({ path: `test-results/pass-layout-busy-${w}.png` });
+    expect(errs).toEqual([]);
+  });
+}
+
+test('a newcomer gets doors, not empty tabs — and the account row is right under the card', async ({ page }) => {
+  const errs = await pass(page, { member: false, standing: false });
+  expect(await page.evaluate(() => document.getElementById('psNav').hidden), 'no tabs to empty drawers').toBe(true);
+  const card = await box(page, '.ps-card'), keep = await box(page, '#psKeep'), zero = await box(page, '#psZero');
+  expect(zero, 'the doors stand in the tabs’ place').not.toBeNull();
+  expect(keep.y, 'the account row').toBeGreaterThan(card.b);
+  expect(keep.b, '…before the doors').toBeLessThanOrEqual(zero.y);
+  expect(errs).toEqual([]);
+});
+
+test('a pass with things that is not logged in opens the account under the card, email box first', async ({ page }) => {
+  const errs = await richPass(page, { member: false, logged: false });
+  const card = await box(page, '.ps-card'), nav = await box(page, '#psNav');
+  const keep = await page.evaluate(() => { const k = document.getElementById('psKeep'), i = document.getElementById('psMailIn').getBoundingClientRect(); return { open: k.open, y: i.top + scrollY }; });
+  expect(keep.open, 'open by itself').toBe(true);
+  expect(keep.y, 'the email box under the card').toBeGreaterThan(card.b);
+  expect(keep.y, '…and above your things').toBeLessThan(nav.y);
+  expect(errs).toEqual([]);
+});
+
+test('news you have read waits behind one row; the new stands', async ({ page }) => {
+  const errs = await richPass(page);
+  const n = await page.evaluate(() => ({
+    fresh: [...document.querySelectorAll('#psNotices > .ps-notice')].length,
+    old: document.querySelector('.ps-news__old') && document.querySelector('.ps-news__old > summary').textContent.trim(),
+    closed: !(document.querySelector('.ps-news__old') || {}).open,
+    folded: document.querySelectorAll('.ps-news__old .ps-notice').length,
+  }));
+  expect(n.fresh, 'the unread verdict stands').toBe(1);
+  expect(n.old, 'the two read ones fold behind one row').toBe(WORDS.notices.earlier.replace('{n}', 2));
+  expect(n.closed && n.folded, 'closed, holding both').toBe(2);
   expect(errs).toEqual([]);
 });
 

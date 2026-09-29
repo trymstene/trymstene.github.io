@@ -739,6 +739,8 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 45 | The bananacoin is the stand's coin, never the stock emoji | `check-design.mjs` (the emoji in a page's markup fails; in a script it must ride a line writer, and every world toast, float and say draws it through `src/lib/coin.js`; the check proves it bites every run) |
 | 46 | A page that orders its blocks with CSS states every block's place, and its standing line and membership card are where they belong | `check-design.mjs` §46 (every child of the pass page's spine is in its `order` list, every block of the wrap spans both desktop columns; a self-test first) + `tests/pass-layout.spec.mjs` (the card first at 393 and 1280, the standing under the promise with its sparkle and its words, the membership card below the piles and in the rail, its three answers) |
 | 46.1 | No raw control characters in source | `check-design.mjs` §46.1 (src, tools, tests, docs, workers, public js/css; a self-test first) + `tests/pass-layout.spec.mjs` ("1 day on the pass") |
+| 47 | A badge wears a coloured drawing of what it is for, never the nav's mono glyphs | `check-design.mjs` §47 (every PATCHES icon exists in PixelIcon.astro and is not mono; a parse self-check first) |
+| 48 | The pass page is one column in reading order with the account under the card, big iconed tabs, read news folded, and nothing outside the card under 12 px | `tests/pass-layout.spec.mjs` (a busy pass at 360 and 1280: the order, the shared column, the room, no sideways scroll, the type floor in every tab and the open drawer, whole 16-px tabs; the newcomer, the logged-out account, the news fold) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1494,10 +1496,10 @@ top-left corner, above the card, behind a frame icon that read as an empty check
 - **The pass page lays its blocks out with CSS `order`** — one column on a phone, a rail and a body on a laptop — and a
   block with no `order` is order 0, which is FIRST. The standing line and the membership card were both added without one:
   on a laptop the line landed in the rail's 320-px cell above the card, and on a phone both stood over the pass. Every block
-  of the spine (a child of `.ps-wrap`, `.ps-rail` or `.ps-main`) is now named in the one `order` list at the top of the
-  page's style, equal numbers keeping the markup's order between them, and every block of the wrap but the rail and the
-  body spans both desktop columns. `tools/check-design.mjs` §46 reads the markup and the style and fails a block that is
-  not listed; it bites first, on a copy with the standing's order taken out.
+  of the spine was named in one `order` list that afternoon — and by the evening the page ordered nothing at all: it reads
+  in markup order since the redesign (§48). `tools/check-design.mjs` §46 reads the markup and the style and fails a spine
+  that places SOME blocks by `order` and not others, and — if the wrap is ever a grid on a laptop again — a block that does
+  not span its columns; it bites first, on a small page that orders two blocks and forgets a third.
 - **The standing reads as an honour, not a form**: under the promise, aligned as the promise is (left on a phone, centred
   on a laptop), behind a small sparkle — never the Citizen's frame (a checkbox at 16 px), and never a plaque's own badge
   inline (the Farmer's is the three-bar "burger", which reads as a menu). Best place first, in Trym's words for it: "in the
@@ -1518,3 +1520,42 @@ neighbour's letter never sounding like an app, a debt or pity) — every one of 
 NULs in the letter filter, so git called it a binary file. `tools/check-design.mjs` §46.1 fails any control character but
 tab, newline and carriage return in src, tools, tests, docs, the workers and the public scripts and styles. Write the
 escape; and in a Python edit, bytes that must be a backslash are `bytes([92])`, never a heredoc (it eats them too).
+
+## §47 A BADGE WEARS ITS OWN ART, NEVER THE SITE'S CONTROLS (29 Sep 2026, Trym on his pass)
+
+Trym: *"Make the Farmer badge icon farm-like, not a menu"*. Farmer of the Week and The Regular both wore `burger` — the
+site's own menu glyph, drawn in the text colour — so on the card's badge strip and in the Earned pane a badge looked like a
+button that opens a menu.
+
+- A badge's icon is one of `PixelIcon.astro`'s coloured drawings of what it is for: a red **barn** with its hayloft for
+  Farmer of the Week, a **calendar** with five days ticked green for The Regular ("Show up on five different days").
+- `burger` and `close` are the nav's controls and stay the nav's. `tools/check-design.mjs` §47 reads the PATCHES list and
+  the icon maps and fails a badge whose icon does not exist or is mono (drawn only in `M`, the text colour).
+
+## §48 THE PASS PAGE BREATHES (29 Sep 2026, Trym on his pass)
+
+Trym: *"it looks a bit cramped, small text, not much space, its a bit tight view with small detailed text - i feel the gui
+need to breathe more on desktop and mobile - maybe all of it needs a bit of a revision on the Pass page to open it up a bit -
+maybe change the navigation to make it better to navigate and see the information and the options better. The Membership
+pass up front is important, its a cool and nice visual, but everything else i think could use a modernized design, to
+categorize the information better and make it less cluttery."*
+
+- **The card stays exactly as it was** — it is the keepsake, and its small print is part of the document look.
+- **One column, in reading order, on every screen**: the card, its two lines (the promise, the week's standing), your
+  account, the news, your things behind the tabs, the membership, the doors out, the newsletter. A laptop gets the same
+  column wider (920 px) with 32 px between sections; the old 320-px rail beside a body mixed the tabs, the membership, the
+  doors and the account drawer into one strip, and that was the clutter.
+- **The account is one bar right under the card**, not the foot of the rail: its summary is the sync line, and it opens by
+  itself with the email box for a pass that has something to lose and is not logged in — the login ask is the first thing
+  under the card, where it was a collapsed row at the bottom.
+- **The tabs are the page's navigation**: one joined control across the column, 58 px tall, an icon and a label each —
+  Made, Earned, Stats (Trym's own word for it in July; it had become "Numbers"). A newcomer still gets doors, not empty tabs.
+- **News you have read waits behind one row** ("Earlier news (n)"); only unread news stands. The farm's launch notice had
+  stood on every visit for a month.
+- **Type and room**: running text 14–16 px, nothing outside the card under 12 px; cards padded 16–20 px; an earned badge
+  or piece of gear is a card with its date, one still to earn is a dashed outline with its how-to in full-strength ink (it
+  was the faintest text on the page); heading counts are set quieter than their names.
+- Proof: `tests/pass-layout.spec.mjs` walks a busy pass (`tests/pass-fixture.mjs`) at 360 and 1280: every section in
+  reading order in one shared column with room between, nothing wider than the screen, no text under 12 px outside the card
+  in any tab or the open account drawer, the tabs whole and 16 px; plus the newcomer's doors, the logged-out account opening
+  under the card, and the news fold.

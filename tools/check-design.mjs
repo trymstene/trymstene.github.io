@@ -583,11 +583,12 @@ for (const f of files) {
 }
 
 // 📐 §46 A PAGE THAT RE-ORDERS ITS BLOCKS STATES EVERY BLOCK'S PLACE (Trym, 29 Sep 2026, on his own pass: "something weird
-// showed up at the Pass page"). The pass page lays its blocks out with CSS `order` — one column on a phone, a rail and a body
+// showed up at the Pass page"). The pass page laid its blocks out with CSS `order` — one column on a phone, a rail and a body
 // on a laptop — and a block with no order is order 0, which is FIRST: the week's standing sat alone in the top-left corner
-// over the card, and on a phone it and the membership card both stood above the pass. Every block of the spine (a child of
-// .ps-wrap, .ps-rail or .ps-main) is named in an `order` rule outside the media blocks, and every block of the wrap but the
-// rail and the body spans both desktop columns. It bites first, on a copy with the week's order taken out.
+// over the card, and on a phone it and the membership card both stood above the pass. Since the redesign the same day it
+// reads in markup order and orders nothing. So: while ANY block of the spine (a child of .ps-wrap, .ps-rail or .ps-main) is
+// placed by an `order` rule, EVERY one must be; and if the wrap becomes a grid on a laptop, every block of it but a rail
+// and a body spans both columns. It bites first, on a small page with one block left out of its order list.
 function spineFaults(src) {
   const out = [];
   const css = ((src.match(/<style[^>]*>([\s\S]*?)<\/style>/) || [])[1] || '').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -601,19 +602,22 @@ function spineFaults(src) {
   const desk = media.find((b) => /min-width:\s*900px/.test(b.head));
   const ordered = new Set(rules.filter((r) => !r.in && /(^|[;\s])order\s*:/.test(r.body)).flatMap((r) => r.sels));
   const spans = new Set(rules.filter((r) => desk && r.in === desk && /grid-column\s*:\s*1\s*\/\s*-1/.test(r.body)).flatMap((r) => r.sels));
+  const grid = rules.some((r) => r.sels.includes('.ps-wrap') && /display\s*:\s*grid/.test(r.body));
   const html = src.slice(src.indexOf('</style>')).replace(/<!--[\s\S]*?-->/g, '');
   const VOID = new Set(['img', 'input', 'br', 'hr', 'meta', 'link', 'source', 'wbr']);
-  const stack = [];
+  const stack = [], spine = [];
   for (const m of html.matchAll(/<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g)) {
     const [, close, tag, attrs, self] = m;
     if (close) { while (stack.length && stack[stack.length - 1].tag !== tag) stack.pop(); stack.pop(); continue; }
     const cls = ((attrs.match(/class="([^"]*)"/) || [])[1] || '').split(/\s+/)[0];
     const up = stack[stack.length - 1];
-    if (up && /^ps-(wrap|rail|main)$/.test(up.cls) && cls && !/^ps-(sr|rail|main)$/.test(cls)) {
-      if (!ordered.has('.' + cls)) out.push('.' + cls + ' (in .' + up.cls + ') has no place in the spine’s `order` list — it is order 0 and jumps above the card');
-      if (up.cls === 'ps-wrap' && !spans.has('.' + cls)) out.push('.' + cls + ' does not span both desktop columns (`grid-column: 1 / -1` at min-width 900px) — it lands in the rail’s narrow cell');
-    }
+    if (up && /^ps-(wrap|rail|main)$/.test(up.cls) && cls && !/^ps-(sr|rail|main)$/.test(cls)) spine.push({ cls, up: up.cls });
     if (!self && !VOID.has(tag)) stack.push({ tag, cls });
+  }
+  const placed = spine.some((b) => ordered.has('.' + b.cls));
+  for (const b of spine) {
+    if (placed && !ordered.has('.' + b.cls)) out.push('.' + b.cls + ' (in .' + b.up + ') has no place in the spine’s `order` list while others do — it is order 0 and jumps above the card');
+    if (grid && b.up === 'ps-wrap' && !spans.has('.' + b.cls)) out.push('.' + b.cls + ' does not span both desktop columns (`grid-column: 1 / -1` at min-width 900px) — it lands in the rail’s narrow cell');
   }
   return out;
 }
@@ -621,9 +625,29 @@ function spineFaults(src) {
   const f = 'src/pages/pass.astro';
   const src = readFileSync(join(ROOT, f), 'utf8');
   for (const why of spineFaults(src)) problems.push([f, '§46: ' + why]);
-  // 🧪 it bites: the week's standing with its order taken out must be caught
-  const cut = src.replace(/\.ps-promise, \.ps-week \{ order: 2; \}/, '.ps-promise { order: 2; }');
-  if (cut === src || !spineFaults(cut).some((w) => w.startsWith('.ps-week'))) problems.push(['tools/check-design.mjs', '§46: the spine check did not catch a block with no order — it no longer checks what it says (or the week’s rule moved: update the bite)']);
+  // 🧪 it bites: a spine that orders two blocks and forgets the third must be caught
+  const bite = '<style>.ps-wrap { display: flex; } .ps-card { order: 1; } .ps-news { order: 2; }</style>\n'
+    + '<div class="ps-wrap"><div class="ps-card"></div><section class="ps-news"></section><p class="ps-week"></p></div>';
+  if (!spineFaults(bite).some((w) => w.startsWith('.ps-week'))) problems.push(['tools/check-design.mjs', '§46: the spine check did not catch a block left out of the order list — it no longer checks what it says']);
+}
+
+// 🏅 §47 A BADGE WEARS ITS OWN ART, NEVER THE SITE'S CONTROLS (Trym, 29 Sep 2026: "Make the Farmer badge icon farm-like, not
+// a menu"). Farmer of the Week and The Regular both wore `burger` — the nav's own menu glyph, a mono icon drawn in the
+// text colour (M) — so on the card's strip and in the Earned pane a badge looked like a button that opens a menu. A badge's
+// icon (src/lib/pass-defs.js PATCHES) is one of PixelIcon.astro's coloured drawings: it exists, and it is not mono.
+{
+  const pix = readFileSync(join(ROOT, 'src/components/PixelIcon.astro'), 'utf8');
+  const maps = Object.fromEntries([...pix.slice(pix.indexOf('const ICONS = {')).matchAll(/^ {2}([\w-]+):\s*`([^`]*)`/gm)].map((m) => [m[1], m[2]]));
+  const mono = (map) => /M/.test(map) && !/[KWLGgRSYOHCUZXENVPBDA]/.test(map);
+  const defs = readFileSync(join(ROOT, 'src/lib/pass-defs.js'), 'utf8');
+  const at = defs.indexOf('export const PATCHES');
+  const list = defs.slice(at, defs.indexOf('];', at));
+  const seen = [...list.matchAll(/id:\s*'([\w-]+)',\s*icon:\s*'([\w-]+)'/g)];
+  if (!seen.length || !('burger' in maps) || !mono(maps.burger)) problems.push(['tools/check-design.mjs', '§47: the badge-icon check reads nothing — the PATCHES list or the icon maps moved']);
+  for (const [, id, icon] of seen) {
+    if (!(icon in maps)) problems.push(['src/lib/pass-defs.js', `§47: the badge "${id}" names icon "${icon}", which PixelIcon.astro does not draw`]);
+    else if (mono(maps[icon])) problems.push(['src/lib/pass-defs.js', `§47: the badge "${id}" wears "${icon}", a mono UI glyph (the site's own ${icon === 'burger' ? 'menu button' : 'control'}) — give it a coloured drawing of what it is for`]);
+  }
 }
 
 // 🧹 §46.1 A SOURCE FILE HOLDS NO CONTROL CHARACTERS (29 Sep 2026). A Python edit that writes '\b' or '\x00' without r''

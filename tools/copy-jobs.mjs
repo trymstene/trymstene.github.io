@@ -2958,7 +2958,7 @@ export const JOBS = {
     what: 'The pass page’s notes and toasts: the membership (cancel, keep), a login link that failed, a rename sent for review, the family filter on a name, logging in, linking a device, a passkey, logging out, the news list, an email added.',
     approved: 'src/data/copy/pass-toasts.json',
     reads: 'src/scripts/banana-pass-page.js (a static import)',
-    top: ['member', 'landing', 'outbox', 'name', 'share', 'device', 'logout', 'passkey', 'welcome', 'news', 'email', 'week'],
+    top: ['member', 'landing', 'outbox', 'name', 'share', 'device', 'logout', 'passkey', 'welcome', 'news', 'email', 'notices', 'week'],
     fields: {
       'member.cancelling': toastLine(30, 'While a membership cancel is sent.'),
       'member.wait': toastLine(30, 'While a membership change is sent.'),
@@ -2988,6 +2988,8 @@ export const JOBS = {
       'email.addedBody': toastLine(50, 'Under it.', NO_MARKUP),
       'email.inTitle': toastLine(20, 'In bold capitals: logged in with an email link. The game puts 🎫 in front.', NO_MARKUP),
       'email.inBody': toastLine(40, 'Under it.', NO_MARKUP),
+      // 🗞 the news list's fold (29 Sep 2026, Trym: "less cluttery"): notices already read wait behind this one row
+      'notices.earlier': toastLine(24, 'The row the read notices fold behind, under the unread ones. {n} is how many are folded (1–6).', { ...holdsAll('n'), ...NO_MARKUP }),
       // 🏆 the week's standing under the pass card (29 Sep 2026): the running top three on the Citizens of the week plaques.
       // Trym's own words for it are "in the running" and "Log in to get nominated" (6 Sep 2026) — a plaque goes to a logged-in
       // pass, so the login link follows for a pass that is not.

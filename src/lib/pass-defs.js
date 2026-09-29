@@ -10,11 +10,12 @@
 export const PATCHES = [
   { id: 'maker',     icon: 'palette',  title: 'Maker',          hint: 'Take your first banana home from the workshop.' },
   // 🏆 the weekly plaques (6 Sep 2026) — stamped by the server on Monday's first walk, never by a phone.
-  // ⚠️ icons come from PixelIcon.astro's own hand-drawn set (frame, sparkle, heart, burger, flame, tag), not the pixelarticons pack
+  // ⚠️ icons come from PixelIcon.astro's own hand-drawn set (frame, sparkle, heart, barn, flame, tag), not the pixelarticons pack.
+  // ⚠️ never the nav's own glyphs (burger, close): Farmer wore the menu button until 29 Sep 2026 (check-design.mjs §47)
   { id: 'wk-citizen',   icon: 'frame',    title: 'Citizen of the Week', hint: 'Did the most different things in Banana World this week, with a saved pass.' },
   { id: 'wk-gardener',  icon: 'sparkle',  title: 'Gardener of the Week', hint: 'The park\'s best week: harvests, weeds, eggs.' },
   { id: 'wk-neighbour', icon: 'heart',    title: 'Neighbour of the Week', hint: 'Hugs, feeds and waterings in other people\'s yards.' },
-  { id: 'wk-farmer',    icon: 'burger',   title: 'Farmer of the Week', hint: 'The homestead\'s best week.' },
+  { id: 'wk-farmer',    icon: 'barn',     title: 'Farmer of the Week', hint: 'The homestead\'s best week.' },
   { id: 'wk-raver',     icon: 'flame',    title: 'Raver of the Week', hint: 'The floor\'s best week.' },
   { id: 'chaos',     icon: 'dice',     title: 'Agent of Chaos', hint: 'Let the dice dress the banana.' },
   { id: 'emoji',     icon: 'chat',     title: 'Chat Weapon',    hint: 'Download a chat-sized emoji GIF.' },
@@ -26,7 +27,7 @@ export const PATCHES = [
   { id: 'round',     icon: 'coffee',   title: 'First Round',    hint: 'Be first to the bar when Barty calls happy hour.' },
   { id: 'courier',   icon: 'floppy',   title: 'The Courier',    hint: 'Run a lost record to the DJ.' },
   { id: 'spotlight', icon: 'heart',    title: 'In the Light',   hint: 'Be standing in the spotlight when it lands.' },
-  { id: 'regular',   icon: 'burger',   title: 'The Regular',    hint: 'Show up on five different days.' },
+  { id: 'regular',   icon: 'calendar', title: 'The Regular',    hint: 'Show up on five different days.' },
   { id: 'patron',    icon: 'tag',      title: 'Sticker Patron', hint: 'Your banana, on real vinyl.' },
   { id: 'golden',    icon: 'sparkle',  title: 'The Golden One', hint: 'Once in a golden while, something rare hits the floor. Be there.' },
   { id: 'chain',     icon: 'link',     title: 'Chain Chaser',   hint: 'Keep a ten-pickup chain alive on the dance floor.' },

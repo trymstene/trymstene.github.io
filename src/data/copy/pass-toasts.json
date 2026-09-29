@@ -49,6 +49,9 @@
     "inTitle": "LOGGED IN",
     "inBody": "Welcome to Banana World."
   },
+  "notices": {
+    "earlier": "Earlier news ({n})"
+  },
   "week": {
     "running": "You’re in the running this week: {places}.",
     "first": "1st for {plaque}",
