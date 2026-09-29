@@ -37,7 +37,15 @@ const write = (p) => { try { localStorage.setItem(KEY, JSON.stringify({ ...read(
 const today = () => new Date().toISOString().slice(0, 10);
 // who this device waved at today: a card says Waved rather than offer a wave the server would count as the same one
 const sentToday = (k) => { const s = read(); return !!k && s.day === today() && (s.sent || []).includes(k); };
-const markSent = (k) => { const s = read(); const sent = s.day === today() ? (s.sent || []) : []; if (k && !sent.includes(k)) sent.push(k); write({ day: today(), sent: sent.slice(-60) }); };
+// ✋ …and WHEN you last waved to each (29 Sep 2026, Trym: "had 2 waves available for kiwi … one 2 days back … is there a
+// duplicate?"). "Waved" was kept for the day only, so at midnight every wave already answered offered a wave back again. A
+// wave is answered once you have waved to its sender after it came; the day's list still stands for the server's one a day.
+const markSent = (k) => {
+  const s = read(); const sent = s.day === today() ? (s.sent || []) : []; if (k && !sent.includes(k)) sent.push(k);
+  const back = Object.entries({ ...(s.back || {}), ...(k ? { [k]: Date.now() } : {}) }).sort((a, b) => b[1] - a[1]).slice(0, 80);
+  write({ day: today(), sent: sent.slice(-60), back: Object.fromEntries(back) });
+};
+const answered = (k, t) => !!k && ((+(read().back || {})[k] || 0) >= t || sentToday(k));
 
 const myName = () => { try { return (localStorage.getItem('ps-name-v1') || '').trim().slice(0, 24); } catch (e) { return ''; } };
 const myFit = () => { try { const o = JSON.parse(localStorage.getItem('bb-last') || 'null') || {}; return { hat: o.hat || '', glasses: o.glasses || '', extras: o.extras || {} }; } catch (e) { return {}; } };
@@ -495,7 +503,9 @@ function welcome(under) {
   render();
 }
 const isNew = (x) => (x.k === 'hi' ? !read().w : x.t > Math.max(seen, openedAt));
-const unread = () => notes.filter(isNew).length;
+// ONE ROW PER PERSON (the mailbox's own rule): their newest wave; notes are kept newest first
+const rowsOf = () => { const had = new Set(); return notes.map((x, i) => [x, i]).filter(([x]) => { if (x.k === 'hi') return true; const k = keyOf(x); if (!k) return true; if (had.has(k)) return false; had.add(k); return true; }); };
+const unread = () => rowsOf().filter(([x]) => isNew(x)).length;
 function ring() {
   if (!root) return;
   root.classList.remove('is-ring');
@@ -522,10 +532,10 @@ function render() {
   if (!list.hidden) fill();
 }
 function fill() {
-  list.querySelector('ol').innerHTML = notes.map((x, i) => {
+  list.querySelector('ol').innerHTML = rowsOf().map(([x, i]) => {
     if (x.k === 'hi') return '<li class="bws-li is-hi' + (isNew(x) ? ' is-new' : '') + '"><canvas width="120" height="120" data-i="' + i + '"></canvas><p>' + esc(W.list.welcome) + '<small>' + esc(W.list.nib) + '</small></p></li>';
     const can = x.live ? !!livePeer(x.pid) : !!(x.s || x.h);
-    const done = sentToday(keyOf(x));
+    const done = answered(keyOf(x), x.t);
     return '<li class="bws-li' + (isNew(x) ? ' is-new' : '') + '"><canvas width="120" height="120" data-i="' + i + '"></canvas>'
       + '<p><b>' + esc(x.n || W.list.someone) + '</b><small>' + esc(ago(x.t))
       + (x.s ? ' · <a class="bws-home" href="/homestead/?yard=' + encodeURIComponent(x.s) + '">' + esc(W.list.visit) + '</a>' : '') + '</small></p>'

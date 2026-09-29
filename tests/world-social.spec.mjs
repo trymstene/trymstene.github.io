@@ -28,15 +28,16 @@ async function area(page, url, opts = {}) {
   const errs = [], waves = [], seen = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   if (opts.w) await page.setViewportSize({ width: opts.w, height: opts.h || 740 });
-  await page.addInitScript((gid) => {
+  await page.addInitScript(([gid, social]) => {
     try {
       // a pass with a good proof, as every visitor has once they have done anything (the notices need it)
       localStorage.setItem('world-gid', gid);
       localStorage.setItem('world-wt', gid + '.' + (Date.now() + 86400000) + '..' + 'ab'.repeat(32));
       localStorage.setItem('ps-name-v1', 'Tester');
       localStorage.removeItem('bw-social-v1');
+      if (social) localStorage.setItem('bw-social-v1', JSON.stringify(social));   // what this device already did (waves back, the list opened)
     } catch (e) {}
-  }, GID);
+  }, [GID, opts.social || null]);
   await page.route('**/yards/echoes*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ echoes: opts.echoes || ECHOES }) }));
   await page.route('**/yards/notices', (r) => { const b = JSON.parse(r.request().postData() || '{}'); if (b.seen) seen.push(1); return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ notices: opts.notices || [], seen: 0, echo: 1 }) }); });
   await page.route('**/yards/wave', (r) => { waves.push(JSON.parse(r.request().postData() || '{}')); return r.fulfill({ contentType: 'application/json', body: '{"ok":1}' }); });
@@ -275,6 +276,35 @@ for (const [name, url] of [['park', '/park/'], ['bay', '/beach/']]) {
     expect(errs).toEqual([]);
   });
 }
+
+// ✋ ONE ROW PER PERSON, AND A WAVE YOU ANSWERED STAYS ANSWERED (29 Sep 2026, Trym: "had 2 waves available for kiwi … a wave 2
+// days back, and another one 2 hrs ago — so a duplicate"). "Waved" was kept for one day, so past midnight every wave already
+// answered offered a wave back again. Kiwi waved two days ago (answered yesterday) and again two hours ago; Mossy waved
+// yesterday (answered): the list shows each once, Kiwi at her newest wave — the one to answer — and Mossy still answered.
+test('the park: one row per person, and a wave you answered yesterday stays answered', async ({ page }) => {
+  const H = 3600000, now = Date.now(), yesterday = new Date(now - 24 * H).toISOString().slice(0, 10);
+  const notices = [
+    { k: 'wave', n: 'Kiwi', s: 'kiwi-orchard', h: '', fit: FIT, t: now - 2 * H },
+    { k: 'wave', n: 'Mossy', s: 'moss-meadow', h: '', fit: { hat: 'crown' }, t: now - 30 * H },
+    { k: 'wave', n: 'Kiwi', s: 'kiwi-orchard', h: '', fit: FIT, t: now - 50 * H },
+  ];
+  const social = { day: yesterday, sent: ['kiwi-orchard', 'moss-meadow'], back: { 'kiwi-orchard': now - 26 * H, 'moss-meadow': now - 26 * H }, w: 1, wf: now - 60 * H };
+  const { errs } = await area(page, '/park/', { notices, social });
+  await page.waitForFunction(() => window.__bws.notes().filter((x) => x.k === 'wave').length === 3, null, { timeout: 15000 });
+  await page.evaluate(() => window.__bws.list());
+  await page.waitForTimeout(400);
+  const rows = await page.evaluate(() => [...document.querySelectorAll('.bws-li:not(.is-hi)')].map((li) => {
+    const b = li.querySelector('.bws-back');
+    return { who: li.querySelector('b').textContent, when: li.querySelector('small').textContent, btn: b ? b.textContent : '', off: b ? b.disabled : null };
+  }));
+  expect(rows.map((r) => r.who), 'Kiwi once and Mossy once, newest first').toEqual(['Kiwi', 'Mossy']);
+  expect(rows[0].when, 'Kiwi at her newest wave').toContain(W.list.when.hours.replace('{n}', '2'));
+  expect([rows[0].btn, rows[0].off], '⭐ her new wave is the one to answer').toEqual([W.list.back, false]);
+  expect([rows[1].btn, rows[1].off], '⭐ and Mossy’s, answered yesterday, stays answered past midnight').toEqual([W.list.backed, true]);
+  expect(await page.evaluate(() => document.querySelector('.bws__n').textContent), 'the badge counts people, not waves').not.toBe('3');
+  await page.screenshot({ path: SHOT + 'waves-per-person.png' });
+  expect(errs).toEqual([]);
+});
 
 test('the beach: an echo stands on the sand', async ({ page }) => {
   const { errs } = await area(page, '/beach/');

@@ -1365,7 +1365,10 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
 - **Waves live in the corner, never in the letterbox.** The waves badge is the fourth of the top-left column's one 32 px
   circle (§28), UNDER whatever notes stand above it (the quest note, the town's work note, the pager), shown only while
   something new is in it and for the rest of that visit once opened. Its list: who waved, when, Wave back, and the
-  switch that keeps your own banana out of other people's echoes. It never starts empty: the first wave you send, or the
+  switch that keeps your own banana out of other people's echoes. ONE ROW PER PERSON, at their newest wave (the
+  mailbox's own rule), and a wave is answered once you have waved to them after it came — kept past midnight (Trym, 29
+  Sep 2026: *"had 2 waves available for kiwi … a wave 2 days back, and another one 2 hrs ago — so a duplicate"*: "Waved"
+  was kept for one day, so every answered wave offered itself again after midnight). The badge counts people too. It never starts empty: the first wave you send, or the
   first that comes for you, brings Nib's welcome, so the icon has said what it is for before it matters.
 - **Small, plain, aligned** (Trym, 26 Sep: *"not too much text not too big popups … make sure buttons are consistent in size
   and centered … dont take more view than needed … if we can cut text, cut it"*). The echo card is its name, its farm and
