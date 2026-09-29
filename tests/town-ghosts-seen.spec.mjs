@@ -19,8 +19,15 @@ test('on a phone at the lemon stand, the night’s roamer comes into view and ke
   await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); window.__town.life.set(21); });   // the town's own night
   await stand();
   await page.waitForFunction(() => window.__town.life.beat() === 5 && document.querySelectorAll('#twWorld .tw-state.is-haunt').length >= 3, null, { timeout: 30000 });
+  // ⭐ how near the roamer comes, on EVERY frame of the minute (29 Sep 2026): a look once a second missed a ghost walking
+  // straight through the banana between two looks — the walk passed at 17 px, and a frame film found it at 14
+  await page.evaluate(([ax, ay]) => {
+    window.__roamMin = Infinity;
+    const tick = () => { const g = window.__town.room.ghosts().find((q) => q.id === 'roam'); if (g) window.__roamMin = Math.min(window.__roamMin, Math.hypot(g.x - ax, g.y - ay)); if (!window.__roamStop) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }, AT);
   // a minute of the night, a look every second: how much of it has a ghost in a phone's view (it was 5 % before)
-  let seen = 0, n = 0, closest = Infinity, ids = new Set();
+  let seen = 0, n = 0, ids = new Set();
   for (let i = 0; i < 60; i++) {
     await page.waitForTimeout(1000);
     await stand();
@@ -28,15 +35,15 @@ test('on a phone at the lemon stand, the night’s roamer comes into view and ke
       const v = document.getElementById('twView').getBoundingClientRect(), w = document.getElementById('twWorld'), k = parseFloat(w.style.getPropertyValue('--ws')), o = w.getBoundingClientRect();
       return window.__town.room.ghosts().filter((g) => !g.hidden).filter((g) => { const x = o.left + g.x * k, y = o.top + g.y * k; return x > v.left + 8 && x < v.right - 8 && y > v.top + 8 && y < v.bottom - 8; }).map((g) => g.id);
     });
-    const roam = (await page.evaluate(() => window.__town.room.ghosts())).find((g) => g.id === 'roam');
-    if (roam) closest = Math.min(closest, Math.hypot(roam.x - AT[0], roam.y - AT[1]));
     if (await page.evaluate(() => window.__town.life.beat()) !== 5) continue;
     n++; if (r.length) { seen++; r.forEach((x) => ids.add(x)); }
   }
   expect(n, 'the minute was night').toBeGreaterThan(50);
   expect(seen / n, 'a ghost is in a phone’s view of the lemon stand for a good part of the night (it was 5 %)').toBeGreaterThan(0.15);
   expect([...ids], 'and it is the roamer that came').toContain('roam');
-  expect(closest, '…and never into a banana standing still (a ghost is caught at 42)').toBeGreaterThan(42);
+  // a ghost is caught at 42 by a banana that walks into it; one standing still it never closes on: it keeps 110 away
+  const closest = await page.evaluate(() => { window.__roamStop = 1; return window.__roamMin; });
+  expect(closest, '…and never walks into a banana standing still — it keeps its 110 (a ghost is caught at 42)').toBeGreaterThan(105);
   await page.screenshot({ path: 'test-results/ghosts-seen-stand.png' });
   expect(errs, 'nothing threw').toEqual([]);
 });

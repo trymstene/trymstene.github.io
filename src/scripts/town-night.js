@@ -79,6 +79,14 @@ export function bootTownNight(ctx) {
     for (const b of bananas) { const d = Math.hypot(b.x - x, b.y - y); if (d < best.d) best = { x: b.x, y: b.y, d }; }
     return best;
   }
+  // ⭐ NEVER INTO A BANANA STANDING STILL (29 Sep 2026: a phone at the lemon stand watched the roamer walk straight through
+  // the banana standing there, to 14 px, on its way from one rest in the ring round you to the one opposite). A ghost is
+  // caught at 42 by a banana that walks INTO it; the ghost must never be the one that closes the gap. So a leg is only a way
+  // when it never brings the ghost nearer any banana than KEEP — or, with one already that close (it walked up), nearer
+  // than it is now — and a step that would close on one is not taken (the roam tick below).
+  const KEEP = 110;
+  const segGap = (x0, y0, x1, y1, px, py) => { const dx = x1 - x0, dy = y1 - y0, t = Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(px - (x0 + t * dx), py - (y0 + t * dy)); };
+  const legOk = (x0, y0, x1, y1) => [ctx.pos, ...bananas].every((b) => segGap(x0, y0, x1, y1, b.x, b.y) >= Math.min(KEEP, Math.hypot(b.x - x0, b.y - y0)) - 0.5);
   // a roamer's next waypoint: reachable on a clear line, and by preference far from every banana
   // 💡 ⭐ A GHOST GOES FOR THE LIGHTS (Trym, 21 Sep: "maybe you actually see ghosts ruin the
   // streetlights aswell, they are causing it and frequently targets the streetlights?").
@@ -102,7 +110,7 @@ export function bootTownNight(ctx) {
       for (const w of ROAM) {
         const dd = Math.hypot(w[0] - g.x, w[1] - g.y);
         if (dd > 40 && dd < 700 && Math.hypot(w[0] - lx, w[1] - ly) < 120
-          && nearestBanana(w[0], w[1]).d > 160 && clearWay(g.x, g.y, w[0], w[1])) spots.push(w);
+          && nearestBanana(w[0], w[1]).d > 160 && clearWay(g.x, g.y, w[0], w[1]) && legOk(g.x, g.y, w[0], w[1])) spots.push(w);
       }
     }
     // 👀 and the lamp it goes for is one near YOU when there is one: the scene Trym asked for is watching it happen
@@ -118,12 +126,15 @@ export function bootTownNight(ctx) {
   const RX = [Math.min(...ROAM.map((w) => w[0])) - 60, Math.max(...ROAM.map((w) => w[0])) + 80];
   const RY = [Math.min(...ROAM.map((w) => w[1])) - 60, Math.max(...ROAM.map((w) => w[1])) + 40];
   function wayNearMe(g) {
+    // ↻ round you, not across you: most tries start from the side of you it is already on (±60°), so the leg is an arc a
+    // phone keeps on screen — a leg across you is never a way (legOk), and blind angles found none often enough to lose it
+    const a0 = Math.atan2((g.y - ctx.pos.y) / 0.8, g.x - ctx.pos.x), near0 = Math.hypot(g.x - ctx.pos.x, g.y - ctx.pos.y) < 420;
     for (let i = 0; i < 12; i++) {
-      const a = Math.random() * Math.PI * 2, r = RING[0] + Math.random() * (RING[1] - RING[0]);
+      const a = near0 && i < 8 ? a0 + (Math.random() - 0.5) * 2.1 : Math.random() * Math.PI * 2, r = RING[0] + Math.random() * (RING[1] - RING[0]);
       const x = Math.round(ctx.pos.x + Math.cos(a) * r), y = Math.round(ctx.pos.y + Math.sin(a) * r * 0.8);
       if (x < RX[0] || x > RX[1] || y < RY[0] || y > RY[1]) continue;
       if (BIG.some((q) => x > q[0] && x < q[2] && y > q[1] && y < q[3]) || OB_CIRCLES.some((c) => Math.hypot(x - c[0], y - c[1]) < c[2] + 24)) continue;
-      if (bananas.some((b) => Math.hypot(b.x - x, b.y - y) < 110) || !clearWay(g.x, g.y, x, y)) continue;
+      if (bananas.some((b) => Math.hypot(b.x - x, b.y - y) < KEEP) || !clearWay(g.x, g.y, x, y) || !legOk(g.x, g.y, x, y)) continue;   // round you, never across you
       return [x, y];
     }
     // not reachable in a straight line from where it is (the fountain, a building between): a leg across the square
@@ -131,7 +142,7 @@ export function bootTownNight(ctx) {
     let best = null, bd = Math.hypot(g.x - ctx.pos.x, g.y - ctx.pos.y) - 60;
     for (const w of ROAM) {
       const d = Math.hypot(w[0] - ctx.pos.x, w[1] - ctx.pos.y), dd = Math.hypot(w[0] - g.x, w[1] - g.y);
-      if (d < bd && dd > 40 && dd < 700 && nearestBanana(w[0], w[1]).d > 160 && clearWay(g.x, g.y, w[0], w[1])) { best = w; bd = d; }
+      if (d < bd && dd > 40 && dd < 700 && nearestBanana(w[0], w[1]).d > 160 && clearWay(g.x, g.y, w[0], w[1]) && legOk(g.x, g.y, w[0], w[1])) { best = w; bd = d; }
     }
     return best;
   }
@@ -142,14 +153,14 @@ export function bootTownNight(ctx) {
       const w = wayNearMe(g); if (w) return w;
     }
     if (Math.random() < LAMP_HUNT) { const w = wayNearLamp(g); if (w) return w; }
-    const can = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]); });
+    const can = ROAM.filter((w) => { const dd = Math.hypot(w[0] - g.x, w[1] - g.y); return dd > 40 && dd < 700 && clearWay(g.x, g.y, w[0], w[1]) && legOk(g.x, g.y, w[0], w[1]); });
     const far = can.filter((w) => nearestBanana(w[0], w[1]).d > 160);
-    const from = far.length ? far : can.length ? can : ROAM;
-    return from[Math.floor(Math.random() * from.length)];
+    const from = far.length ? far : can;
+    return from.length ? from[Math.floor(Math.random() * from.length)] : null;   // no way that keeps clear: it waits where it is
   }
   // …and when a banana comes close: the waypoint that puts the most ground between them
   function awayFrom(g, b) {
-    const can = ROAM.filter((w) => Math.hypot(w[0] - b.x, w[1] - b.y) > b.d + 60 && Math.hypot(w[0] - g.x, w[1] - g.y) < 700 && clearWay(g.x, g.y, w[0], w[1]));
+    const can = ROAM.filter((w) => Math.hypot(w[0] - b.x, w[1] - b.y) > b.d + 60 && Math.hypot(w[0] - g.x, w[1] - g.y) < 700 && clearWay(g.x, g.y, w[0], w[1]) && legOk(g.x, g.y, w[0], w[1]));
     can.sort((p, q) => Math.hypot(q[0] - b.x, q[1] - b.y) - Math.hypot(p[0] - b.x, p[1] - b.y));
     return can.length ? can[Math.floor(Math.random() * Math.min(3, can.length))] : null;
   }
@@ -286,13 +297,16 @@ export function bootTownNight(ctx) {
       } else if (d.roam) {   // 👣 roams: waypoint to waypoint over the whole town, a pause at each, facing where it goes
         // …and keeps away from bananas (Trym, 15 Sep): a banana within reach turns it toward open ground
         const b = nearestBanana(g.x, g.y);
-        if (b.d < 110 && now - (g.turnAt || 0) > 600) { g.turnAt = now; const w = awayFrom(g, b); if (w) { g.to = w; g.wait = 0; } }
+        if (b.d < KEEP && now - (g.turnAt || 0) > 600) { g.turnAt = now; const w = awayFrom(g, b); if (w) { g.to = w; g.wait = 0; } }
         if (g.wait > 0) { g.wait -= dt; continue; }
-        if (!g.to) g.to = pickWay(g);
+        if (!g.to) { g.to = pickWay(g); if (!g.to) { g.wait = 0.5; continue; } }
         const dx = g.to[0] - g.x, dy = g.to[1] - g.y, dist = Math.hypot(dx, dy);
         if (dist < 4) { g.to = null; g.wait = 0.8 + Math.random() * 1.4; mischief(g); continue; }
         const st = Math.min(dist, d.speed * (b.d < 150 ? 1.7 : 1) * dt);   // chased, it flees — near the banana's own pace, still catchable
-        moveGhost(g, g.x + dx / dist * st, g.y + dy / dist * st);
+        const nx = g.x + dx / dist * st, ny = g.y + dy / dist * st;
+        // ⭐ …and a step that closes on a banana within KEEP is never taken, whoever moved into its way: it stops and looks again
+        if ([ctx.pos, ...bananas].some((q) => { const now0 = Math.hypot(q.x - g.x, q.y - g.y); return Math.hypot(q.x - nx, q.y - ny) < Math.min(KEEP, now0) - 0.01; })) { g.to = null; g.wait = 0.3; continue; }
+        moveGhost(g, nx, ny);
         if (s.n === 32) faceGhost(g, s, dx, dy); else s.el.classList.toggle('is-flip', dx < 0);
       } else if (d.bob) {   // leaning at a door
         g.t = (g.t || 0) + dt;
