@@ -213,14 +213,66 @@ for name, outfit, effect in EMOTES:
     print('emote', name)
 
 # ── sub badges: the head alone, it is read at 18 px ────────────────────────────────────────────────────────────
+# ⚠️ THE HEAD, NOT A SQUARE ROUND THE FACE. A square wide enough for the hat took in the arms too, and at badge size they
+# were hooks in the corners. Now: as wide as the hat and the face (never the eye-high gloves), down to under the grin,
+# and only the shapes that belong to the head (a stub of arm that runs in from outside is a separate little shape).
+def only_head(img):
+    w, h = img.size
+    a = img.getchannel('A').load()
+    seen = bytearray(w * h)
+    comps = []
+    for y0 in range(h):
+        for x0 in range(w):
+            if a[x0, y0] < 96 or seen[y0 * w + x0]:
+                continue
+            stack, pts = [(x0, y0)], []
+            seen[y0 * w + x0] = 1
+            while stack:
+                x, y = stack.pop()
+                pts.append((x, y))
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < w and 0 <= ny < h and not seen[ny * w + nx] and a[nx, ny] >= 96:
+                            seen[ny * w + nx] = 1
+                            stack.append((nx, ny))
+            comps.append(pts)
+    big = max(len(c) for c in comps)
+    out = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    src, dst = img.load(), out.load()
+    for c in comps:
+        if len(c) >= big * 0.02:
+            for x, y in c:
+                dst[x, y] = src[x, y]
+    return out
+
+
+def badge_art(outfit, idx=2, below=88):
+    """the head, square, on transparency, at the render's size (frame 2: facing you)"""
+    f = br.render(idx, outfit, scale=S)
+    F = br.FRAMES[idx]
+    top = f.getbbox()[1]
+    bottom = PAD + (F['eyeCy'] + below) * S
+    hb = f.crop((0, top, f.width, PAD + (F['eyeCy'] - 45) * S)).getbbox()   # the hat and the crown of the head
+    l, r = hb[0] - 6 * S, hb[2] + 6 * S
+    x0 = PAD + (F['eyeCx'] - 70) * S
+    fb = f.crop((x0, PAD + (F['eyeCy'] - 30) * S, PAD + (F['eyeCx'] + 70) * S, PAD + (F['eyeCy'] + 30) * S)).getbbox()
+    if fb:   # the face and whatever sits on it (shades reach past a bare head)
+        l, r = min(l, x0 + fb[0] - 4 * S), max(r, x0 + fb[2] + 4 * S)
+    part = only_head(f.crop((l, top, r, bottom)))
+    side = max(part.width, part.height)
+    sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    sq.alpha_composite(part, ((side - part.width) // 2, side - part.height))
+    return sq
+
+
+badge_arts = {}
 for name, outfit in BADGES:
     d = os.path.join(OUT, 'sub-badges')
     os.makedirs(d, exist_ok=True)
-    # frame 2: facing you with both hands out wide at eye height, so the square round the face holds no stray hand
-    f = br.render(2, outfit, scale=S)
-    box = square(head_box(f, 2, below=80), 0.02)
+    art = badge_arts[name] = badge_art(outfit)
     for size in (72, 36, 18):
-        cut(f, box, size).save(os.path.join(d, '%s-%d.png' % (name, size)), optimize=True)
+        cut(art, (0, 0, art.width, art.height), size).save(os.path.join(d, '%s-%d.png' % (name, size)), optimize=True)
     print('badge', name)
 
 # ── alerts: the whole banana, dancing, on transparency (a streaming app lays its own words over it) ─────────────
@@ -300,18 +352,62 @@ for words in PANELS:
     print('panel', words)
 
 # ── the preview: every emote on a chat-dark board, at a size a shop listing shows ─────────────────────────────
+# ⚠️ ONE PICTURE PER LISTING, SAYING ONLY WHAT THAT LISTING SELLS: the emote board's line names the whole pack, so the
+# emote pack gets the same board with its own line, and the badges and the classic emote get boards of their own
+def emote_board(line, path):
+    pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
+    d = ImageDraw.Draw(pv)
+    outlined(d, (1000, 150), 'OFFICIAL DANCING BANANA', font(96), fill=BANANA, sw=8, shadow=0)
+    d.text((1000, 265), line, font=font(38), fill=(255, 255, 255), anchor='mm')
+    for k, (name, _, _) in enumerate(EMOTES):
+        fr, sbx, _, eff = emote_stills[name]
+        x, y = 170 + (k % 4) * 440, 390 + (k // 4) * 520
+        tile = cut(fr[STILL], sbx, 330, eff, 0)
+        pv.paste(tile, (x - 65, y), tile)
+        d.text((x + 100, y + 380), ':' + name + ':', font=font(40), fill=(200, 200, 215), anchor='mm')
+    d.text((1000, 1930), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
+    pv.save(os.path.join(OUT, path), optimize=True)
+
+
+emote_board('EMOTES  ·  SUB BADGES  ·  ALERTS  ·  SCENES  ·  PANELS', 'preview-emotes-2000.png')
+emote_board('12 EMOTES  ·  STILL + ANIMATED  ·  TWITCH + DISCORD', 'preview-emote-pack-2000.png')
+
+# the sub badges on their own: six, big, with the months under them
 pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
 d = ImageDraw.Draw(pv)
 outlined(d, (1000, 150), 'OFFICIAL DANCING BANANA', font(96), fill=BANANA, sw=8, shadow=0)
-d.text((1000, 265), 'EMOTES  ·  SUB BADGES  ·  ALERTS  ·  SCENES  ·  PANELS', font=font(38), fill=(255, 255, 255), anchor='mm')
-for k, (name, _, _) in enumerate(EMOTES):
-    fr, sbx, _, eff = emote_stills[name]
-    x, y = 170 + (k % 4) * 440, 390 + (k // 4) * 520
-    tile = cut(fr[STILL], sbx, 330, eff, 0)
-    pv.paste(tile, (x - 65, y), tile)
-    d.text((x + 100, y + 380), ':' + name + ':', font=font(40), fill=(200, 200, 215), anchor='mm')
+d.text((1000, 265), '6 SUB BADGES  ·  1 TO 12 MONTHS  ·  TWITCH', font=font(38), fill=(255, 255, 255), anchor='mm')
+for k, (name, outfit) in enumerate(BADGES):
+    art = badge_arts[name]
+    tile = cut(art, (0, 0, art.width, art.height), 420)
+    x, y = 150 + (k % 3) * 600, 420 + (k // 3) * 700
+    pv.paste(tile, (x, y), tile)
+    months = int(name.split('-')[0])
+    d.text((x + 210, y + 500), '%d MONTH%s' % (months, '' if months == 1 else 'S'), font=font(44), fill=(200, 200, 215), anchor='mm')
 d.text((1000, 1930), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
-pv.save(os.path.join(OUT, 'preview-emotes-2000.png'), optimize=True)
+pv.save(os.path.join(OUT, 'preview-sub-badges-2000.png'), optimize=True)
+
+# the classic emote on its own: the whole dancing banana big (a close-up cut an arm off at this size), then what the
+# buyer actually gets, the still emote and the eight frames of the animated one
+pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
+d = ImageDraw.Draw(pv)
+outlined(d, (1000, 150), 'THE CLASSIC DANCING BANANA', font(96), fill=BANANA, sw=8, shadow=0)
+d.text((1000, 265), 'ANIMATED + STILL EMOTE  ·  TWITCH + DISCORD', font=font(38), fill=(255, 255, 255), anchor='mm')
+fr, sbx, abx, _ = emote_stills['dance']
+whole = fr[7].crop(fr[7].getbbox())
+h = 860
+whole = whole.resize((round(whole.width * h / whole.height), h), Image.Resampling.BOX)
+pv.paste(whole, ((2000 - whole.width) // 2, 340), whole)
+still = cut(fr[STILL], sbx, 230, None, 0)
+pv.paste(still, (60, 1330), still)
+for i, f in enumerate(fr):
+    t = cut(f, abx, 190, None, i)
+    pv.paste(t, (340 + i * 205, 1350), t)
+d.text((175, 1600), 'still', font=font(36), fill=(200, 200, 215), anchor='mm')
+d.text((1160, 1600), 'animated: it dances in chat', font=font(36), fill=(200, 200, 215), anchor='mm')
+d.text((1000, 1720), '112 · 56 · 28 px for Twitch  ·  128 px for Discord', font=font(40), fill=(255, 255, 255), anchor='mm')
+d.text((1000, 1930), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
+pv.save(os.path.join(OUT, 'preview-classic-emote-2000.png'), optimize=True)
 
 # ── two more listing pictures: the badges and the panels, and the three scene screens ───────────────────────
 pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
