@@ -369,8 +369,25 @@ LICENCE
 with open(os.path.join(OUT, 'README.txt'), 'w', encoding='utf-8', newline='\r\n') as fh:
     fh.write(README)
 
-zipbase = os.path.join(HERE, 'out', 'official-dancing-banana-stream-pack')
-if os.path.exists(zipbase + '.zip'):
-    os.remove(zipbase + '.zip')
-shutil.make_archive(zipbase, 'zip', OUT)
-print('zip', os.path.getsize(zipbase + '.zip') // 1024, 'KB')
+# ── the zips a shop sells: the whole pack, and the smaller listings that lead to it (each carries the licence) ──
+import zipfile  # noqa: E402
+
+SHOP = os.path.join(HERE, 'out', 'shop')
+os.makedirs(SHOP, exist_ok=True)
+for fn in os.listdir(SHOP):
+    os.remove(os.path.join(SHOP, fn))
+PARTS = {
+    'official-dancing-banana-stream-pack.zip': lambda rel: not rel.startswith('preview-'),
+    'official-dancing-banana-emote-pack.zip': lambda rel: rel.startswith('emotes/') or rel == 'README.txt',
+    'official-dancing-banana-sub-badges.zip': lambda rel: rel.startswith('sub-badges/') or rel == 'README.txt',
+    'official-dancing-banana-classic-emote.zip': lambda rel: rel.startswith('emotes/dance/') or rel == 'README.txt',
+}
+for zname, keep in PARTS.items():
+    with zipfile.ZipFile(os.path.join(SHOP, zname), 'w', zipfile.ZIP_DEFLATED) as z:
+        for root, _, files in os.walk(OUT):
+            for fn in files:
+                full = os.path.join(root, fn)
+                rel = os.path.relpath(full, OUT).replace(os.sep, '/')
+                if keep(rel):
+                    z.write(full, rel)
+    print('zip', zname, os.path.getsize(os.path.join(SHOP, zname)) // 1024, 'KB')
