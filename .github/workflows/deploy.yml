@@ -60,6 +60,34 @@ jobs:
         run: |
           pip install --quiet pillow
           python tools/build-citizen-cards.py || echo "::warning::citizens bake skipped"
+      # 🏡 the front page's homesteads: four active yards photographed by the game itself (the live visitor view, in the
+      # runner's own Chrome, so no browser download), the rest of the active ones as pills, a new pick every UTC day
+      # (tools/build-yard-cards.mjs). The day's first deploy takes the photos; the day's later pushes reuse them from the
+      # cache. Fail-soft: without photos the committed homesteads stay, and the next deploy tries again.
+      - name: Today's date
+        id: day
+        run: echo "day=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+      - name: Today's homesteads, if already photographed
+        id: yards
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            public/assets/world/yard-*.webp
+            src/data/yard-cards.json
+          key: yard-cards-${{ steps.day.outputs.day }}
+      - name: Photograph today's homesteads
+        id: yardbake
+        if: steps.yards.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: node tools/build-yard-cards.mjs
+      - name: Keep today's homesteads for the day's other deploys
+        if: steps.yards.outputs.cache-hit != 'true' && steps.yardbake.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            public/assets/world/yard-*.webp
+            src/data/yard-cards.json
+          key: yard-cards-${{ steps.day.outputs.day }}
       # 📰 the front page ticker's all-time numbers, fresh from GA4 with every build (so at most a day old): the
       # GA4_SERVICE_ACCOUNT secret is the service account's key JSON, read-only on analytics. Fail-soft: with no
       # secret, or a GA4 that does not answer, the committed src/data/home-stats.json stays (and it never goes lower).

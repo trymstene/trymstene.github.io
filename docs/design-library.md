@@ -742,6 +742,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 47 | A badge wears a coloured drawing of what it is for, never the nav's mono glyphs | `check-design.mjs` §47 (every PATCHES icon exists in PixelIcon.astro and is not mono; a parse self-check first) |
 | 48 | The pass page is one column in reading order with the account under the card, big iconed tabs, read news folded, and nothing outside the card under 12 px | `tests/pass-layout.spec.mjs` (a busy pass at 360 and 1280: the order, the shared column, the room, no sideways scroll, the type floor in every tab and the open drawer, whole 16-px tabs; the newcomer, the logged-out account, the news fold) |
 | 49 | The citizens' frames carry a real-text brass plate sized off the frame (nothing under 11.5 px, long names break between their parts), and every winner is drawn in their own things, catalog items included | `check-design.mjs` §49 (every engine art pack is read by the Python mirror; every wearable's art is reachable) + `tests/citizens-frames.spec.mjs` (both surfaces at 393 and 1280: order, names, sizes, nothing cut, the big frame wide, the squid hat on the park's Citizen) |
+| 50 | The front page's homesteads are the game's own drawing of lived-in yards, picked fresh each day: four photos, then sticker pills | `tests/home-yards.spec.mjs` (the pick's rules without a browser; the page at 1280, 393 and 360: the manifest's photos in order, 4:3, tags whole, two to a row or one, pills whole on one line and on screen, no OS emoji) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1590,3 +1591,34 @@ are all clean bananas"*.
   the front page's names from the week's file, nothing under 11.5 px, nothing cut, air between title and name, the
   Citizen's frame wide, the pictures decorative (the plate names them); the park's card from a fixed board with a long
   camel-cased name, and its Citizen drawn in the squid hat's lilac.
+
+## §50 THE FRONT PAGE'S HOMESTEADS ARE TODAY'S, AND THE GAME DRAWS THEM (29 Sep 2026, Trym on the front page)
+
+Trym: *"this view over Homesteads on the frontpage needs some love too, they all look the same, and i think they in
+reality dont? probably all are very early snapshots of users homesteads and they all look empty - but maybe it could look
+nicer with 4 updated homesteads, or most active ones so you see their content, and underneath is more stickerpills of
+other homesteads - it could probably be shuffled amongst active homesteads so we dont show lots of inactive ones on the
+frontpage"*.
+
+- **A picture of a player's place is drawn by the game, never re-drawn.** The old strip was a PIL copy of each yard (the
+  house, the decor, the soil; no animals, no fences, no crops), run once on 6 Sep and never again: eight tents. Now
+  `tools/build-yard-cards.mjs` opens the live visitor view (`/homestead/?yard=<slug>`) in headless Chromium, lays the world
+  flat at scale 1 with the game's chrome hidden, and photographs it, so whatever the game draws next is in the picture
+  with nobody touching the bake. ⚠️ The network is shut except the site, the yard's public doc and the catalog: a photo
+  never counts as a visit, never mints a pass, never reaches analytics.
+- **The framing finds the yard.** Every 4:3 window is scored by what it holds (the house most, and never cut in half; then
+  animals, things, crops, soil, fences), and the smallest window that keeps 90 % of the most any window holds wins,
+  centred on the yard's weight: a small yard up close, a big one whole. 1:1 pixels, webp, 30 to 80 KB.
+- **Only lived-in yards, a new pick every day** (`tools/yard-pick.mjs`): a real yard (never testy, trym, qa, proofy), stage 1
+  or more, saved in the last 14 days and saved again at least 12 hours after it was made, one per owner. A weighted
+  shuffle seeded by the UTC day (weight = what is in it × how recent the last save), so the liveliest come up most days and
+  every active yard gets its turn; the first four furnished ones are photos, the next twelve are pills, never one name twice.
+- **Four photos, then sticker pills.** Two to a row up to 1000 px (one under 640 px), big enough to see what is in a yard;
+  the name on a tilted yellow tag with the pack's house (never 🏡), a dark "visit →"; under them the pills (yellow, white,
+  pink, tilted, a hard shadow, never on two lines) and a dashed "+ Claim a free plot" last. Words: `src/data/copy/home-yards.json`.
+- **The deploy keeps it fresh.** The day's first deploy photographs (the runner's own Chrome, no browser download) and
+  `actions/cache` keeps that day's set for the later pushes; without photos the committed set stays.
+- `tests/home-yards.spec.mjs`: the pick's rules without a browser (QA and one-sitting yards out, one per owner, the same
+  order all day and another the next, the fuller yard up on more days while a thin one still gets its turn, names whole
+  and never twice), then the page at 1280, 393 and 360: the manifest's photos in order, 4:3, tags whole and clear of the
+  button, two to a row on a desktop and one on a phone, pills whole on one line and on screen, no sideways scroll, no emoji.

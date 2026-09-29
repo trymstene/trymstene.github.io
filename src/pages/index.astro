@@ -42,8 +42,13 @@ const schema = {
 
 // 🌍 THE WORLD LANDING (13 Aug): the doors became a visual sell — feature
 // stills exported from the reel scenes (tools/reel/export_stills.py) and
-// REAL community homesteads (tools/build-yard-cards.py; re-run to refresh).
+// REAL community homesteads: 🏡 (29 Sep) four active yards photographed by the
+// game itself and the rest of the active ones as pills, a new pick every UTC
+// day (tools/build-yard-cards.mjs, run by the deploy). Design library §50.
 import yardCards from '../data/yard-cards.json';
+import YW from '../data/copy/home-yards.json';
+import { fillWords } from '../lib/fill-words.js';
+import PixelArtIcon from '../components/PixelArtIcon.astro';
 // 🏆 the citizens of the week — frames baked by tools/build-citizen-cards.py (the deploy runs it daily)
 import citizens from '../data/citizen.json';
 import CIT_PLATE_CSS from '../styles/citizen-plate.css?raw';   // 🏅 the brass plate the park's card wears too, inlined
@@ -286,37 +291,47 @@ const FEATURES = [
     .bwl-cit__rule { margin: 0.7rem 0 0; font-size: 0.86rem; opacity: 0.8; }
     @media (max-width: 640px) { .bwl-cit { grid-template-columns: repeat(2, minmax(0, 1fr)); } .bwl-cit__frame--big { max-width: 240px; } }
     .bwl-subnote { margin: 0.2rem 0 0; font-size: 0.92rem; opacity: 0.75; }
+    /* 🏡 four yard photos (2×2, one column on a phone), then the pills (§50) */
     .bwl-yards {
-      display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      max-width: 1160px; margin: 1.2rem auto 0;
+      display: grid; gap: 1.1rem; grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: 1000px; margin: 1.2rem auto 0;
     }
+    @media (max-width: 640px) { .bwl-yards { grid-template-columns: minmax(0, 1fr); } }
     .bwl-yard {
       display: block; position: relative; border: 3px solid var(--ink); border-radius: 14px;
       overflow: hidden; box-shadow: 5px 5px 0 var(--ink); text-decoration: none; color: var(--ink);
-      transition: transform 0.12s ease, box-shadow 0.12s ease; background: var(--paper);
+      transition: transform 0.12s ease, box-shadow 0.12s ease; background: #5b9d4f;
     }
     .bwl-yard:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
     .bwl-yard img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
     .bwl-yard__tag {
       position: absolute; left: 10px; top: 10px; max-width: calc(100% - 20px);
+      display: inline-flex; align-items: center; gap: 0.35rem;
       background: var(--banana); border: 2px solid var(--ink); border-radius: 6px;
-      padding: 0.2rem 0.5rem; font-size: 0.8rem; font-weight: 800;
-      transform: rotate(-2deg); box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      padding: 0.25rem 0.55rem; font-size: 0.88rem; font-weight: 800;
+      transform: rotate(-2deg); box-shadow: 2px 2px 0 var(--ink);
     }
+    .bwl-yard__tag .pai, .bwl-pill .pai { flex: none; }
+    .bwl-yard__tag > span, .bwl-pill > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bwl-yard__go {
       position: absolute; right: 10px; bottom: 10px;
       background: var(--ink); color: var(--banana); border-radius: 999px;
-      padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 800;
+      padding: 0.3rem 0.8rem; font-size: 0.82rem; font-weight: 800; white-space: nowrap;
     }
-    .bwl-yard--you {
-      display: grid; place-content: center; gap: 0.2rem; text-align: center;
-      background: repeating-linear-gradient(45deg, var(--paper) 0 14px, #f2ecdc 14px 28px);
-      min-height: 180px; border-style: dashed;
+    .bwl-yards-more { max-width: 1000px; margin: 1.5rem auto 0; text-align: center; }
+    .bwl-yards-more__h { margin: 0 0 0.7rem; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; }
+    .bwl-pills { list-style: none; margin: 0; padding: 0 4px; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem 0.6rem; }
+    .bwl-pills li { max-width: 100%; }
+    .bwl-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem; max-width: 100%;
+      padding: 0.42rem 0.9rem; border: 2px solid var(--ink); border-radius: 999px;
+      background: var(--banana); color: var(--ink); font-size: 0.9rem; font-weight: 800; text-decoration: none;
+      box-shadow: 3px 3px 0 var(--ink); transform: rotate(-1.5deg); transition: transform 0.12s ease, box-shadow 0.12s ease;
     }
-    .bwl-yard--you .bwl-yard__plus { font-family: "Archivo Black", sans-serif; font-size: 2.4rem; line-height: 1; }
-    .bwl-yard--you b { font-family: "Archivo Black", sans-serif; }
-    .bwl-yard--you span:last-child { font-size: 0.8rem; font-weight: 800; opacity: 0.7; }
+    .bwl-pills li:nth-child(3n+2) .bwl-pill { background: #fff; transform: rotate(1.2deg); }
+    .bwl-pills li:nth-child(3n) .bwl-pill { background: #ffd3dc; transform: rotate(-0.6deg); }
+    .bwl-pills .bwl-pill:hover { transform: rotate(0deg) translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+    .bwl-pills .bwl-pill--you { background: var(--paper); border-style: dashed; box-shadow: none; }
     .bwl-cta { text-align: center; margin-top: 2.2rem; }
     .bwl-fine { margin: 0.6rem 0 0; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.6; }
     .bwl-also { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; margin-top: 1.6rem; font-weight: 700; }
@@ -422,22 +437,26 @@ const FEATURES = [
     </div>
     <p class="bwl-cit__rule">Based on what you do in Banana World. <a href="/pass/?keep">Log in to get nominated →</a> · <a href="/park/?citizens">See the board in the park →</a></p>
 
-    <h3 class="bwl-sub">Real homesteads. Real bananas.</h3>
-    <p class="bwl-subnote">Built by visitors like you — knock on any door.</p>
+    <h3 class="bwl-sub">{YW.title}</h3>
+    <p class="bwl-subnote">{YW.sub}</p>
     <div class="bwl-yards">
-      {yardCards.map((y) => (
+      {yardCards.featured.map((y) => (
         <a class="bwl-yard" href={`/homestead/${y.slug}/`}>
-          <img src={`/assets/world/yard-${y.slug}.jpg`} alt={`${y.name} — a visitor's homestead in Banana World`}
-               width="640" height="480" loading="lazy" />
-          <span class="bwl-yard__tag">🏡 {y.name}</span>
-          <span class="bwl-yard__go">👋 visit →</span>
+          <img src={`/assets/world/yard-${y.slug}.webp`} alt={fillWords(YW.alt, { name: y.name })}
+               width="960" height="720" loading="lazy" decoding="async" />
+          <span class="bwl-yard__tag"><PixelArtIcon name="home" size="16px" /><span>{y.name}</span></span>
+          <span class="bwl-yard__go">{YW.visit} →</span>
         </a>
       ))}
-      <a class="bwl-yard bwl-yard--you" href="/homestead/">
-        <span class="bwl-yard__plus">+</span>
-        <b>Your name here</b>
-        <span>claim your plot →</span>
-      </a>
+    </div>
+    <div class="bwl-yards-more">
+      {yardCards.more.length > 0 && <p class="bwl-yards-more__h">{YW.more}</p>}
+      <ul class="bwl-pills">
+        {yardCards.more.map((y) => (
+          <li><a class="bwl-pill" href={`/homestead/${y.slug}/`}><PixelArtIcon name="home" size="16px" /><span>{y.name}</span></a></li>
+        ))}
+        <li><a class="bwl-pill bwl-pill--you" href="/homestead/"><PixelArtIcon name="plus" size="16px" /><span>{YW.claim}</span></a></li>
+      </ul>
     </div>
 
     <div class="bwl-cta">

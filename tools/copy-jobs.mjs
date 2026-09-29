@@ -2952,6 +2952,26 @@ export const JOBS = {
       return bad;
     },
   },
+  // 🏡 THE HOMEPAGE'S HOMESTEADS (29 Sep 2026). Trym: "4 updated homesteads … so you see their content, and underneath
+  // is more stickerpills of other homesteads". The deploy photographs four active yards a day (tools/build-yard-cards.mjs);
+  // the rest of the active ones are pills. Site words: plain. The page draws the arrow, the house and the "+".
+  'home-yards': {
+    id: 'home-yards',
+    title: 'The homepage homesteads — four yards in photos, the rest as pills',
+    what: 'The homepage section of real players’ homesteads: its heading and the line under it, the word on each photo’s button, the photos’ alt text, the line over the pills of more homesteads, and the last pill, which sends you to claim your own.',
+    approved: 'src/data/copy/home-yards.json',
+    reads: 'src/pages/index.astro (a static import at build time)',
+    top: ['title', 'sub', 'visit', 'alt', 'more', 'claim'],
+    fields: {
+      title: { kind: 'label', max: 36, note: 'The heading over the photos.' },
+      sub: { kind: 'prose', aim: 50, max: 64, note: 'Under the heading: these were made by players, and you can walk into any of them.' },
+      visit: { kind: 'label', max: 8, note: 'The small dark button in the corner of each photo, into that homestead. Lower case; the page draws the arrow.' },
+      alt: { kind: 'prose', max: 80, ...holdsAll('name'), ...NO_MARKUP, note: 'A photo’s alt text: {name} is the homestead’s own name.' },
+      more: { kind: 'label', max: 28, note: 'The small line over the pills: each pill is another homestead to walk into.' },
+      claim: { kind: 'label', max: 22, note: 'The last pill, to the Homestead to claim your own. No icon; the page draws the “+”.' },
+    },
+    shape: () => [],
+  },
   'pass-toasts': {
     id: 'pass-toasts',
     title: 'My Pass — what the pass page says back',
