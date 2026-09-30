@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Nana from '../components/Nana.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import PixelArtIcon from '../components/PixelArtIcon.astro';
 import { PATCHES } from '../lib/pass-defs.js';
@@ -341,6 +342,8 @@ const NUMBERS = [
       text-decoration: none; color: var(--ink); background: var(--banana);
       border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
     }
+    /* one 38 px slot for every door's picture: OUR banana is 38, the icons 24, and the words start on one line */
+    .ps-door > .pxi, .ps-door > .nana-mark { flex: 0 0 38px; }
     .ps-door b { font-size: 1rem; }
     .ps-door span { margin-left: auto; font-size: 1.1rem; font-weight: 800; }
     .ps-door:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
@@ -437,6 +440,7 @@ const NUMBERS = [
       padding: 1rem 0.8rem 0.9rem; text-align: center;
     }
     .ps-patch svg { width: 40px; height: 40px; }
+    .ps-patch .nana-mark { margin: 1px; }   /* OUR banana, 38 px, in the badges' 40 px slot */
     .ps-patch h3 { margin: 0.5rem 0 0.3rem; font-size: 1rem; line-height: 1.25; }
     .ps-patch p { margin: 0; font-size: 0.875rem; line-height: 1.45; color: var(--ps-muted); }
     .ps-patch .ps-patch__date { display: none; margin-top: 0.5rem; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ps-muted); }
@@ -700,7 +704,7 @@ const NUMBERS = [
 
         <div class="ps-panes" id="psPanes">
           <div class="ps-doors" id="psZero" hidden>
-            <a class="ps-door" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
+            <a class="ps-door" href="/make-a-banana/"><Nana /><b>Make a banana</b><span>→</span></a>
             <a class="ps-door" href="/forge/"><PixelIcon name="bolt" size="24px" /><b>Forge an emoji</b><span>→</span></a>
             <a class="ps-door" href="/forge/items/"><PixelIcon name="palette" size="24px" /><b>Make an item</b><span>→</span></a>
           </div>
@@ -746,7 +750,7 @@ const NUMBERS = [
               <div class="ps-patches">
                 {PATCHES.map((p) => (
                   <div class="ps-patch" data-patch={p.id}>
-                    <PixelIcon name={p.icon} size="40px" />
+                    {p.icon === 'nana' ? <Nana /> : <PixelIcon name={p.icon} size="40px" />}
                     <h3>{p.title}</h3>
                     <p>{p.hint}</p>
                     <span class="ps-patch__date"></span>
@@ -810,7 +814,7 @@ const NUMBERS = [
 
       <!-- ── 7. THE DOORS OUT ── -->
       <div class="ps-doors" id="psDoors">
-        <a class="ps-door" id="psDoorMake" href="/make-a-banana/"><PixelIcon name="banana" size="24px" /><b>Make a banana</b><span>→</span></a>
+        <a class="ps-door" id="psDoorMake" href="/make-a-banana/"><Nana /><b>Make a banana</b><span>→</span></a>
         <a class="ps-door ps-door--out" href="/rave/"><PixelIcon name="sparkle" size="24px" /><b>To the dancefloor</b><span>→</span></a>
       </div>
 

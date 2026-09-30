@@ -4,6 +4,7 @@ import CopyLine from '../components/CopyLine.astro';
 import { faqLd } from '../lib/faq.js';
 import PP from '../data/copy/pbjt-page.json';   // ❓ the questions: on the page and in its FAQPage, one list
 import PixelIcon from '../components/PixelIcon.astro';
+import Nana from '../components/Nana.astro';
 
 const title = "Peanut Butter Jelly Time — the Dancing Banana, Explained";
 const description = "Yes — the dancing banana in 'Peanut Butter Jelly Time' is the original 1999 GIF by Trym Stene, made years before the song. Who made what, explained.";
@@ -82,7 +83,7 @@ const faq = faqLd(PP.faq.items);
     <p class="kicker">Who made what</p>
     <h2>Three different things, three different people</h2>
     <div class="faq__item">
-      <h3><PixelIcon name="banana" /> The banana — me</h3>
+      <h3><Nana /> The banana — me</h3>
       <p>The Dancing Banana GIF, animated by <strong>Trym Stene in 1999</strong>. It started life as a little "celebration" emoticon on web forums, long before any song.</p>
     </div>
     <div class="faq__item">
@@ -107,7 +108,7 @@ const faq = faqLd(PP.faq.items);
         <a class="btn btn--light" href="/assets/dancing-banana-transparent.png" download="dancing-banana-transparent-trymstene.com.png">Transparent PNG ↓</a>
       </div>
     </div>
-    <p class="dl-door">It's yours <PixelIcon name="banana" /> — and it can also wear a hat. <a href="/make-a-banana/" data-place="post-dl-pbjt">Dress your own →</a></p>
+    <p class="dl-door">It's yours <Nana /> — and it can also wear a hat. <a href="/make-a-banana/" data-place="post-dl-pbjt">Dress your own →</a></p>
     <p style="margin-top:1.5rem;">
       <a class="btn btn--dark" href="/make-a-banana/"><PixelIcon name="palette" /> Make your own dancing banana →</a>
     </p>

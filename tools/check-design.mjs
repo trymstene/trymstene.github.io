@@ -645,6 +645,7 @@ function spineFaults(src) {
   const seen = [...list.matchAll(/id:\s*'([\w-]+)',\s*icon:\s*'([\w-]+)'/g)];
   if (!seen.length || !('burger' in maps) || !mono(maps.burger)) problems.push(['tools/check-design.mjs', '§47: the badge-icon check reads nothing — the PATCHES list or the icon maps moved']);
   for (const [, id, icon] of seen) {
+    if (icon === 'nana') continue;   // OUR banana, drawn by <Nana /> (§51): the real art, coloured, never a control
     if (!(icon in maps)) problems.push(['src/lib/pass-defs.js', `§47: the badge "${id}" names icon "${icon}", which PixelIcon.astro does not draw`]);
     else if (mono(maps[icon])) problems.push(['src/lib/pass-defs.js', `§47: the badge "${id}" wears "${icon}", a mono UI glyph (the site's own ${icon === 'burger' ? 'menu button' : 'control'}) — give it a coloured drawing of what it is for`]);
   }

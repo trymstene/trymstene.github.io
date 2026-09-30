@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import Nana from '../components/Nana.astro';
 import PixelArtIcon from '../components/PixelArtIcon.astro';
 import PRODUCTS from '../../shared/products.js';
 
@@ -406,7 +407,9 @@ const appSchema = {
     /* fake chat row — compact, one line, both sizes inline */
     .bb-chat { background: #313338; border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; border: 3px solid var(--ink); }
     .bb-chat__msg { display: flex; gap: 0.6rem; align-items: center; }
-    .bb-chat__avatar { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--banana); color: var(--ink); display: grid; place-items: center; font-size: 1rem; }
+    /* banana_guy's avatar is OUR banana (38 px, one art pixel each): a 40 px circle holds it whole, on paper so its
+       yellow reads */
+    .bb-chat__avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--paper); display: grid; place-items: center; overflow: hidden; }
     .bb-chat__meta { color: #f2c94c; font-weight: 700; font-size: 0.8rem; }
     .bb-chat__meta span { color: #949ba4; font-weight: 500; font-size: 0.7rem; margin-left: 0.4rem; }
     .bb-chat__text { color: #dbdee1; font-size: 0.88rem; margin: 0.1rem 0 0; display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
@@ -617,7 +620,7 @@ const appSchema = {
           <p>As an animated <strong>chat emoji</strong> — transparent, cropped tight, drops straight into Discord, Slack or Twitch. Here's yours at actual chat size:</p>
           <div class="bb-chat" aria-hidden="true">
             <div class="bb-chat__msg">
-              <span class="bb-chat__avatar"><PixelIcon name="banana" /></span>
+              <span class="bb-chat__avatar"><Nana /></span>
               <div>
                 <div class="bb-chat__meta">banana_guy <span>today at 19:99</span></div>
                 <p class="bb-chat__text">check out my new emoji <canvas id="bbEmoji32" width="32" height="32" aria-hidden="true"></canvas></p>
@@ -628,7 +631,7 @@ const appSchema = {
           <p class="bb-note">Captions are left off the emoji — they're too tiny to read at chat size.</p>
           <div class="bb-dl2">
             <p>Or as the <strong>full meme</strong> — captions, background and outfit. Animated GIF (the whole dance) or a still image of the frame you froze above:</p>
-            <button class="btn btn--dark" id="bbDownloadMemeGif"><PixelIcon name="banana" size="1.4em" /> Download meme GIF</button>
+            <button class="btn btn--dark" id="bbDownloadMemeGif"><Nana /> Download meme GIF</button>
             <button class="btn btn--light" id="bbDownloadPng"><PixelIcon name="download" size="1.4em" /> Download image (PNG)</button>
           </div>
           <div class="bb-dl2">

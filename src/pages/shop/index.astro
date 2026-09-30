@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
+import Nana from '../../components/Nana.astro';
 import PressBelt from '../../components/PressBelt.astro';
 import PackGrid from '../../components/PackGrid.astro';
 import { getProducts, money, colorHex } from '../../lib/shop.js';
@@ -110,7 +111,7 @@ const breadcrumbSchema = {
         ))}
       </div>
     ) : (
-      <p class="shop-status">The shop is being stocked — check back soon! <PixelIcon name="banana" /></p>
+      <p class="shop-status">The shop is being stocked — check back soon! <Nana /></p>
     )}
     <p class="shop-polline">Printed on demand · ships worldwide · <a href="/shop/policies/">shipping, returns &amp; policies</a></p>
     <PressBelt label="The banana, as featured in" />

@@ -4,6 +4,7 @@
 // the page source), noindex, absent from the sitemap allowlist. Over-the-top
 // corporate-mailroom theme on purpose — it's the admin room of a banana empire.
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Nana from '../components/Nana.astro';
 import PixelArtIcon from '../components/PixelArtIcon.astro';
 
 const title = 'Banana HQ';
@@ -776,7 +777,7 @@ const description = 'Authorized banana personnel only.';
 
   <div class="bm-wrap">
     <header class="bm-letterhead">
-      <img class="bm-letterhead__badge" src="/favicon.svg" width="38" height="38" alt="" />
+      <Nana cls="bm-letterhead__badge" />
       <div class="bm-letterhead__txt">
         <h1>Banana HQ</h1>
         <p class="bm-sub">Head office · Banana World</p>

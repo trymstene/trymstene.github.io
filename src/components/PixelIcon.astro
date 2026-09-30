@@ -33,21 +33,6 @@ const PALETTE = {
 };
 
 const ICONS = {
-  banana: `
-..........KKK.
-.........KKDK.
-........KHYYK.
-........KHYYK.
-.......KHYYOK.
-.......KHYYOK.
-......KHYYOK..
-.....KHYYYOK..
-....KHYYYOK...
-..KKHYYYOK....
-.KYYYYYOK.....
-KYYYYOOK......
-KYOOOK........
-.KKKK.........`,
   coffee: `
 ...G..G.......
 ..G..G........
@@ -303,7 +288,9 @@ KKKKKKKKKKK..`,
 
 const { name, size = '1.25em' } = Astro.props;
 const map = ICONS[name];
-if (!map) throw new Error(`PixelIcon: unknown icon "${name}"`);
+if (!map) throw new Error(name === 'banana'
+  ? 'PixelIcon: there is no banana fruit here on purpose: use <Nana /> (src/components/Nana.astro), OUR banana (design library §51)'
+  : `PixelIcon: unknown icon "${name}"`);
 const rows = map.trim().split('\n').map((r) => r.trimEnd());
 const w = Math.max(...rows.map((r) => r.length));
 const runs = [];

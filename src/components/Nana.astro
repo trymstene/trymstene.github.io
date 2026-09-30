@@ -1,0 +1,7 @@
+---
+// 🍌 OUR banana: the real dancing banana (public/favicon.svg, its art as 38×38 squares), wherever a banana stands for
+// Trym and the site. Never a stand-in: the generic fruit is gone from PixelIcon, and an OS 🍌 is not ours either
+// (design library §51). 38 px is one art pixel each, 76 is two; anything in between smears the face.
+const { size = 38, cls = '' } = Astro.props;
+---
+<img class={('nana-mark ' + cls).trim()} src="/favicon.svg" width={size} height={size} alt="" decoding="async" />

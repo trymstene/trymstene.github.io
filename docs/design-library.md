@@ -743,6 +743,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 48 | The pass page is one column in reading order with the account under the card, big iconed tabs, read news folded, and nothing outside the card under 12 px | `tests/pass-layout.spec.mjs` (a busy pass at 360 and 1280: the order, the shared column, the room, no sideways scroll, the type floor in every tab and the open drawer, whole 16-px tabs; the newcomer, the logged-out account, the news fold) |
 | 49 | The citizens' frames carry a real-text brass plate sized off the frame (nothing under 11.5 px, long names break between their parts), and every winner is drawn in their own things, catalog items included | `check-design.mjs` §49 (every engine art pack is read by the Python mirror; every wearable's art is reachable) + `tests/citizens-frames.spec.mjs` (both surfaces at 393 and 1280: order, names, sizes, nothing cut, the big frame wide, the squid hat on the park's Citizen) |
 | 50 | The front page's homesteads are the game's own drawing of lived-in yards, picked fresh each day: four photos, then sticker pills | `tests/home-yards.spec.mjs` (the pick's rules without a browser; the page at 1280, 393 and 360: the manifest's photos in order, 4:3, tags whole, two to a row or one, pills whole on one line and on screen, no OS emoji) |
+| 51 | Where a banana stands for Trym and the site, it is OUR banana (`<Nana />`, the favicon's art at 38 px), never the fruit icon or an OS 🍌 | `PixelIcon.astro` (it has no banana: `name="banana"` fails the build and names `<Nana />`) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1622,3 +1623,19 @@ frontpage"*.
   order all day and another the next, the fuller yard up on more days while a thin one still gets its turn, names whole
   and never twice), then the page at 1280, 393 and 360: the manifest's photos in order, 4:3, tags whole and clear of the
   button, two to a row on a desktop and one on a phone, pills whole on one line and on screen, no sideways scroll, no emoji.
+
+## §51 OUR BANANA, NEVER A STAND-IN (30 Sep 2026, Trym on the footer and his HQ)
+
+Trym: *"why does my HQ have a stock-banana emoji in its logo header and not our actual banana? And why does the footer
+on the site say 'Trym Stene - the banana guy' followed by a random pixel drawn banana, and not our actual banana?"*
+
+- **Where a banana stands for Trym or the site, it is THE dancing banana:** `<Nana />` (src/components/Nana.astro), the
+  real art in `/favicon.svg` (38×38 squares). The footer's signature, the HQ letterhead, the builder's banana_guy, the
+  "Get the GIF" and "Download meme GIF" buttons, the OG badge, "The banana — me", the doors to make one.
+- **38 px or 76, nothing in between.** 38 px is one art pixel each; any other size smears the face. In a button or a
+  pill it tucks into the padding (the control keeps its height); in a line of words that line grows.
+- **The generic fruit is gone.** `PixelIcon` had a code-drawn banana fruit; it stood in for him in 20 places and read as
+  "a random pixel drawn banana". It is deleted, and `<PixelIcon name="banana">` now fails the build with the way to
+  `<Nana />`. An OS 🍌 in chrome (a logo, a letterhead, a button) is the same mistake; in content strings (toasts, a
+  news line) emoji stay tolerated, as the icon set's house rule says.
+- **A smaller redraw of the character is Trym's call, never ours** (his character, his art).

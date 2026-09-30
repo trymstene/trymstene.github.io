@@ -8,6 +8,7 @@
 // Transient per-design page → noindex.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PixelIcon from '../../components/PixelIcon.astro';
+import Nana from '../../components/Nana.astro';
 import PressBelt from '../../components/PressBelt.astro';
 import PRODUCTS from '../../../shared/products.js';
 import { customFaqs } from '../../lib/product-faq.js';
@@ -192,7 +193,7 @@ const faqs = customFaqs({
       {p.live ? (
         <>
           <button class="btn btn--dark pdp-buy" id="pdpBuy"><PixelIcon name="tag" size="1.3em" /> Order — to checkout</button>
-          <button class="btn pdp-addmore" id="pdpAddMore"><PixelIcon name="banana" size="1.2em" /> Add to cart</button>
+          <button class="btn pdp-addmore" id="pdpAddMore"><Nana /> Add to cart</button>
         </>
       ) : (
         <button class="btn btn--dark pdp-buy" disabled style="opacity:.55;cursor:default;">Landing any day now 🍌</button>

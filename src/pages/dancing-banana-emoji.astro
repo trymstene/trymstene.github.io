@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Nana from '../components/Nana.astro';
 import PixelIcon from '../components/PixelIcon.astro';
 import CopyLine from '../components/CopyLine.astro';
 import { faqLd } from '../lib/faq.js';
@@ -108,7 +109,7 @@ const DL = {
     <ul class="bullets">
       <li>Grab the emoji file: <a class="btn btn--dark" style="margin-inline:0.3rem;" href={DL.emoji128[0]} download={DL.emoji128[1]}>Discord emoji (128px GIF) ↓</a></li>
       <li>In Discord: <strong>Server Settings → Emoji → Upload Emoji</strong> and pick the file.</li>
-      <li>Name it <code>:bananadance:</code> and save. Done. <PixelIcon name="banana" /></li>
+      <li>Name it <code>:bananadance:</code> and save. Done. <Nana /></li>
       <li><em>Good to know:</em> animated server emoji show for everyone, but members need Nitro to send them — the <a href={DL.png500[0]} download={DL.png500[1]}>still PNG</a> makes a static one anybody can use.</li>
     </ul>
   </section>
@@ -119,7 +120,7 @@ const DL = {
     <ul class="bullets">
       <li>Grab the emoji file: <a class="btn btn--dark" style="margin-inline:0.3rem;" href={DL.emoji128[0]} download={DL.emoji128[1]}>Slack emoji (128px GIF) ↓</a> — 13KB, comfortably under Slack's size cap.</li>
       <li>In any message field, click the <strong>smiley → Add emoji → Upload image</strong>.</li>
-      <li>Name it <code>:bananadance:</code> — it animates right in the message line. <PixelIcon name="banana" /></li>
+      <li>Name it <code>:bananadance:</code> — it animates right in the message line. <Nana /></li>
     </ul>
   </section>
 
@@ -129,7 +130,7 @@ const DL = {
     <ul class="bullets">
       <li>Easiest: send the <a class="btn btn--dark" style="margin-inline:0.3rem;" href={DL.gif512[0]} download={DL.gif512[1]}>512px GIF ↓</a> in any chat, tap it and choose <strong>Save to GIFs</strong> — it lives in your GIF drawer forever.</li>
       <li>Building a real <strong>sticker pack</strong>? Telegram's <strong>@Stickers</strong> bot takes static 512×512 PNGs: <a class="btn btn--light" style="margin-inline:0.3rem;" href={DL.png512[0]} download={DL.png512[1]}>sticker PNG (512px) ↓</a></li>
-      <li>Message <code>@Stickers</code> → <code>/newpack</code> → send the PNG → pick an emoji for it. <PixelIcon name="banana" /></li>
+      <li>Message <code>@Stickers</code> → <code>/newpack</code> → send the PNG → pick an emoji for it. <Nana /></li>
     </ul>
   </section>
 

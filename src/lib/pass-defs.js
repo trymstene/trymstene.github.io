@@ -34,7 +34,7 @@ export const PATCHES = [
   { id: 'hype',      icon: 'bolt',     title: 'Full of Jelly',  hint: 'Fill the JELLY meter and start jelly time yourself.' },
   // 'night1' (The First Shift) retired 19 Jul with the quest/nights mothball —
   // it was the only night-only badge; revive it alongside Act One if nights return.
-  { id: 'og',        icon: 'banana',   title: 'OG',             hint: 'Was here before the world arrived.' },
+  { id: 'og',        icon: 'nana',     title: 'OG',             hint: 'Was here before the world arrived.' },
   { id: 'collector', icon: 'sparkle',  title: 'Collector',      hint: 'Catch a wearable drop on the dance floor.' },
 ];
 

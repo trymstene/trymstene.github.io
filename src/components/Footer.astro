@@ -3,6 +3,7 @@
 // via showFooter={false}. Links are CATEGORIZED (15 Jul, Trym: the flat line
 // got unreadable) — keep every link, group by what the visitor is doing.
 import PixelIcon from './PixelIcon.astro';
+import Nana from './Nana.astro';
 import PrideFlag from './PrideFlag.astro';
 
 const COLS = [
@@ -74,7 +75,7 @@ const COLS = [
   <!-- 🏳️‍🌈 the safe-space line (12 Sep 2026): the pixel flag links to the rules -->
   <p class="footer__safe"><a href="/community/"><PrideFlag /> A safe space for everyone · the rules</a></p>
   {/* 🍌 the signature wears OUR banana (the favicon art, 38 px = one art pixel each), never the generic fruit icon */}
-  <p class="copyright"><span class="copyright__txt">© <span id="year">2026</span> Trym Stene · the banana guy</span><img class="copyright__nana" src="/favicon.svg" width="38" height="38" alt="" loading="lazy" decoding="async" /></p>
+  <p class="copyright"><span class="copyright__txt">© <span id="year">2026</span> Trym Stene · the banana guy</span><Nana cls="copyright__nana" /></p>
 </footer>
 
 <style>
