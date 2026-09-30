@@ -1,5 +1,5 @@
 {
-  "_what": "The four Etsy listings of the official dancing banana stream pack: what tools/etsy.mjs writes to Etsy (title, description, tags, price in NOK, photos and zip from tools/stream-pack/out/etsy/<folder>). Titles follow Etsy's 2025 guidance: under 15 words, 'Official Dancing Banana' first. 'ai' is the answer to Etsy's 'How is this digital content created?', which the API cannot set: set it in the listing editor.",
+  "_what": "The Etsy listings of the official dancing banana stream pack: what tools/etsy.mjs writes to Etsy (title, description, tags, price in NOK, photos and zip from tools/stream-pack/out/etsy/<folder>). Titles follow Etsy's 2025 guidance: under 15 words, 'Official Dancing Banana' first. 'ai' is the answer to Etsy's 'How is this digital content created?', which the API cannot set: set it in the listing editor.",
   "taxonomy": "Art & Collectibles > Drawing & Illustration > Digital",
   "taxonomy_id": 77,
   "quantity": 999,
@@ -10,13 +10,17 @@
       "price": 199,
       "ai": "With an AI generator",
       "title": "Official Dancing Banana Twitch Stream Pack | 12 Animated Emotes, Sub Badges, Alerts, Scenes",
-      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999. Now for your stream.\n\nINSTANT DOWNLOAD, one zip:\n• 12 emotes (dance, hype, love, cool, lol, gg, rip, evil, gn, gm, vibe, shiny), each still and animated, in Twitch's 112, 56 and 28 px, plus 128 px for Discord\n• 6 sub badges on bronze, silver and gold medals, for 1, 2, 3, 6, 9 and 12 months, at 72, 36 and 18 px\n• 3 animated alerts (follow, subscribe, raid) and the classic dance on its own, on transparent backgrounds\n• 3 scene screens, 1920 x 1080 (Starting soon, Be right back, Thanks for watching), each also as an empty stage, plus a full-screen overlay where the banana dances in the spotlight\n• 6 panels: About me, Schedule, Discord, Support, Rules, Socials\n\nMade for Twitch, Discord, YouTube and Kick. Animated emotes on Twitch need Affiliate or Partner.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; a few small pixel pieces (hats and props) were drawn in code with AI's help, and I checked every one.",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999. Now for your stream.\n\nINSTANT DOWNLOAD, one zip:\n• 12 emotes (dance, hype, love, cool, lol, gg, rip, evil, gn, gm, vibe, shiny), each still and animated, in Twitch's 112, 56 and 28 px, plus 128 px for Discord\n• 6 sub badges on bronze, silver and gold medals, for 1, 2, 3, 6, 9 and 12 months, and 9 bit badges on gems, for 1 to 100,000 bits, at 72, 36 and 18 px\n• 6 animated alerts (follow, subscribe, gift sub, cheer, tip, raid) and the classic dance on its own, on transparent backgrounds\n• 4 scene screens, 1920 x 1080 (Starting soon, Be right back, Thanks for watching, Stream offline), each animated (an MP4 that loops), still, and as an empty stage, plus a full-screen overlay where the banana dances in the spotlight\n• 13 panels: About me, Schedule, Discord, Support, Rules, Socials, Commands, Donate, Merch, FAQ, My setup, Contact, and a blank one\n• An animated webcam frame in 3 shapes, and a stinger transition for OBS and Streamlabs\n\nMade for Twitch, Discord, YouTube and Kick. Animated emotes on Twitch need Affiliate or Partner.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the hats, props, frames and screens around it were drawn in code with AI's help, and I checked every one.",
       "tags": ["dancing banana", "banana emote", "twitch emotes", "animated emotes", "stream pack", "sub badges", "twitch panels", "discord emotes", "pixel art emotes", "stream alerts", "meme emote", "starting soon screen", "streamer gift"],
       "alt": [
         "The official dancing banana full stream pack: a scene screen, emotes, medal sub badges and a panel",
         "Twelve dancing banana emotes: dance, hype, love, cool, lol, gg, rip, evil, gn, gm, vibe and shiny",
         "Six dancing banana sub badges on bronze, silver and gold medals, and six stream panels",
-        "Three dancing banana stream scenes: starting soon, be right back and thanks for watching"
+        "Three dancing banana stream scenes: starting soon, be right back and thanks for watching",
+        "Six dancing banana stream alerts: follow, subscribe, gift sub, cheer, tip and raid",
+        "The dancing banana webcam frame in 16:9, 4:3 and square",
+        "Four moments of the dancing banana stinger transition",
+        "Nine dancing banana bit badges on coloured gems, for 1 to 100,000 bits"
       ]
     },
     "emotes": {
@@ -56,6 +60,227 @@
       "alt": [
         "The classic 1999 dancing banana emote, big, on hot pink",
         "The classic dancing banana emote, still and animated frame by frame"
+      ]
+    },
+    "alerts": {
+      "folder": "5-stream-alerts",
+      "zip": "official-dancing-banana-stream-alerts.zip",
+      "price": 59,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Stream Alerts | 6 Animated Twitch Alerts, Follow, Sub, Raid",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, dancing on your stream every time someone follows, subscribes or raids.\n\nINSTANT DOWNLOAD, one zip:\n• 6 animated alerts: follow (party hat), subscribe (crown and shades), gift sub (balloons), cheer (jester hat and glowstick), tip (top hat and a gold coin) and raid (viking helmet)\n• Transparent GIFs, 500 x 500, that loop\n• The classic dance on its own too, 600 x 600, for any scene\n\nWorks with Streamlabs, StreamElements and OBS. Your alert tool lays the words (the name, the amount) over them.\n\nWant the emotes, badges, scenes and panels too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the hats and props were drawn in code with AI's help, and I checked every one.",
+      "tags": ["dancing banana", "stream alerts", "twitch alerts", "animated alerts", "follow alert", "sub alert", "raid alert", "banana alert", "streamlabs alerts", "pixel art alerts", "twitch overlay", "stream overlay", "streamer gift"],
+      "alt": [
+        "Six official dancing banana stream alerts: follow, subscribe, gift sub, cheer, tip and raid",
+        "The six dancing banana alerts with their names"
+      ]
+    },
+    "scenes": {
+      "folder": "6-animated-scenes",
+      "zip": "official-dancing-banana-stream-scenes.zip",
+      "price": 79,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Animated Stream Screens | Starting Soon, BRB, Offline, Ending",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, in the spotlight while your viewers wait.\n\nINSTANT DOWNLOAD, one zip:\n• 4 scene screens, 1920 x 1080: Starting soon, Be right back, Thanks for watching, Stream offline\n• Each one animated: an 8-second MP4 that loops, the banana dancing, the light turning, confetti falling\n• Each one still (PNG), and as an empty stage\n• A full-screen transparent overlay where the banana dances on the stage\n\nMade for OBS and Streamlabs: add the MP4 as a media source and tick Loop.\n\nWant the emotes, badges, alerts and panels too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the stage, its light and the signs were drawn in code with AI's help, and I checked every one.",
+      "tags": ["dancing banana", "starting soon", "stream screens", "animated screens", "brb screen", "offline screen", "stream ending", "twitch scenes", "stream overlay", "starting soon screen", "obs scenes", "banana stream", "pixel art stream"],
+      "alt": [
+        "Four animated dancing banana stream scenes: starting soon, be right back, thanks for watching and stream offline",
+        "The four dancing banana scene screens, each one animated"
+      ]
+    },
+    "panels": {
+      "folder": "7-twitch-panels",
+      "zip": "official-dancing-banana-twitch-panels.zip",
+      "price": 39,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Twitch Panels | 13 Pixel Art Panels, About Me, Schedule, Rules",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, on the panels under your stream.\n\nINSTANT DOWNLOAD, one zip:\n• 12 panels, 320 x 150: About me, Schedule, Discord, Support, Rules, Socials, Commands, Donate, Merch, FAQ, My setup, Contact\n• 1 blank panel for a word of your own\n• The whole banana in a different dance move on each, on a lacquered yellow sign that stands out on Twitch's dark page\n\nWant the emotes, badges, alerts and scenes too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the signs were drawn in code with AI's help, and I checked every one.",
+      "tags": ["dancing banana", "twitch panels", "stream panels", "about me panel", "pixel art panels", "cute twitch panels", "banana panels", "twitch profile", "schedule panel", "rules panel", "discord panel", "streamer gift", "yellow panels"],
+      "alt": [
+        "Six of the thirteen dancing banana Twitch panels",
+        "All thirteen dancing banana Twitch panels, a blank one among them"
+      ]
+    },
+    "webcam": {
+      "folder": "8-webcam-frame",
+      "zip": "official-dancing-banana-webcam-frame.zip",
+      "price": 49,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Animated Webcam Frame | Twitch Facecam Overlay for OBS",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, dancing on top of your camera.\n\nINSTANT DOWNLOAD, one zip:\n• A webcam frame in 3 shapes: 16:9, 4:3 and square\n• Each animated (a WebM that keeps its transparency, and a GIF) and still (PNG)\n• The middle is see-through, so your camera shows in it\n\nIn OBS or Streamlabs: add the WebM as a media source, tick Loop, and put it above your camera.\n\nWant the emotes, badges, alerts and scenes too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the frame was drawn in code with AI's help, and I checked it.",
+      "tags": ["dancing banana", "webcam frame", "webcam overlay", "cam overlay", "facecam frame", "animated webcam", "twitch overlay", "stream overlay", "cute webcam frame", "obs overlay", "banana overlay", "pixel art overlay", "streamer gift"],
+      "alt": [
+        "The dancing banana webcam frame, the banana dancing on top of the camera",
+        "The dancing banana webcam frame in 16:9, 4:3 and square"
+      ]
+    },
+    "stinger": {
+      "folder": "9-stinger",
+      "zip": "official-dancing-banana-stinger.zip",
+      "price": 49,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Stinger Transition | Animated Twitch Scene Transition for OBS",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, sweeping across your screen between scenes.\n\nINSTANT DOWNLOAD, one zip:\n• A stinger transition: 1.6 seconds, 1920 x 1080, a transparent WebM\n• A yellow wipe with the banana dancing in its own spotlight; the screen is covered at 800 ms, where your scene changes\n\nIn OBS: Scene Transitions, +, Stinger, then this file with a transition point of 800 ms. Streamlabs works the same way.\n\nWant the emotes, badges, alerts and scenes too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the wipe was drawn in code with AI's help, and I checked it.",
+      "tags": ["dancing banana", "stinger transition", "stream transition", "twitch transition", "obs transition", "animated stinger", "scene transition", "banana transition", "stream overlay", "streamlabs stinger", "twitch stinger", "pixel art stinger", "streamer gift"],
+      "alt": [
+        "The dancing banana stinger transition wiping across a stream scene",
+        "Four moments of the dancing banana stinger transition"
+      ]
+    },
+    "bits": {
+      "folder": "10-bit-badges",
+      "zip": "official-dancing-banana-bit-badges.zip",
+      "price": 49,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Twitch Bit Badges | 9 Cheer Badges, 1 to 100K Bits",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, as bit badges for the viewers who cheer.\n\nINSTANT DOWNLOAD, one zip:\n• 9 bit badges for 1, 100, 1,000, 5,000, 10,000, 25,000, 50,000, 75,000 and 100,000 bits\n• A gem for every tier, and the banana dresses up the more they cheer, from plain to a jewelled crown on a rainbow gem\n• Each at 72, 36 and 18 px, the three sizes Twitch asks for\n\nWant the sub badges, emotes, alerts and scenes too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the gems and the hats were drawn in code with AI's help, and I checked every one.",
+      "tags": ["dancing banana", "bit badges", "twitch bit badges", "cheer badges", "bits badges", "twitch badges", "banana badge", "pixel art badges", "gem badges", "twitch cheer", "stream badges", "cute bit badges", "streamer gift"],
+      "alt": [
+        "Nine dancing banana bit badges on coloured gems",
+        "The nine dancing banana bit badges, for 1 to 100,000 bits"
+      ]
+    },
+    "emote-hype": {
+      "folder": "11-emote-hype",
+      "zip": "official-dancing-banana-hype-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Hype Emote, Animated Party Banana for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, in a party hat, in a shower of confetti. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The hype emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the party hat and the confetti were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "hype emote", "party emote", "confetti emote", "party hat emote", "celebrate emote", "hype banana"],
+      "alt": [
+        "The official dancing banana hype emote, the banana in a party hat, in a shower of confetti",
+        "The hype emote, still and animated frame by frame"
+      ]
+    },
+    "emote-love": {
+      "folder": "12-emote-love",
+      "zip": "official-dancing-banana-love-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Love Emote, Heart Eyes, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, in heart glasses. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The love emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the heart glasses were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "love emote", "heart eyes emote", "heart emote", "cute emote", "love banana", "valentine emote"],
+      "alt": [
+        "The official dancing banana love emote, the banana in heart glasses",
+        "The love emote, still and animated frame by frame"
+      ]
+    },
+    "emote-cool": {
+      "folder": "13-emote-cool",
+      "zip": "official-dancing-banana-cool-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Cool Emote, Sunglasses, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, in shades. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The cool emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the shades were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "cool emote", "sunglasses emote", "shades emote", "chill emote", "cool banana", "deal with it emote"],
+      "alt": [
+        "The official dancing banana cool emote, the banana in shades",
+        "The cool emote, still and animated frame by frame"
+      ]
+    },
+    "emote-lol": {
+      "folder": "14-emote-lol",
+      "zip": "official-dancing-banana-lol-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana LOL Emote, Googly Eyes, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, with googly eyes. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The lol emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the googly eyes were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "lol emote", "googly eyes emote", "funny emote", "laugh emote", "silly emote", "lol banana"],
+      "alt": [
+        "The official dancing banana lol emote, the banana with googly eyes",
+        "The lol emote, still and animated frame by frame"
+      ]
+    },
+    "emote-gg": {
+      "folder": "15-emote-gg",
+      "zip": "official-dancing-banana-gg-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana GG Emote, Crown and Trophy, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, in a crown, holding a trophy. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The gg emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the crown and the trophy were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "gg emote", "good game emote", "winner emote", "trophy emote", "crown emote", "gg banana"],
+      "alt": [
+        "The official dancing banana gg emote, the banana in a crown, holding a trophy",
+        "The gg emote, still and animated frame by frame"
+      ]
+    },
+    "emote-rip": {
+      "folder": "16-emote-rip",
+      "zip": "official-dancing-banana-rip-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana RIP Emote, Halo and Candle, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, with a halo and a candle. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The rip emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the halo and the candle were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "rip emote", "press f emote", "sad emote", "halo emote", "candle emote", "rip banana"],
+      "alt": [
+        "The official dancing banana rip emote, the banana with a halo and a candle",
+        "The rip emote, still and animated frame by frame"
+      ]
+    },
+    "emote-evil": {
+      "folder": "17-emote-evil",
+      "zip": "official-dancing-banana-evil-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Evil Emote, Devil Horns, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, with devil horns. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The evil emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the devil horns were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "evil emote", "devil emote", "devil horns emote", "villain emote", "evil banana", "mischief emote"],
+      "alt": [
+        "The official dancing banana evil emote, the banana with devil horns",
+        "The evil emote, still and animated frame by frame"
+      ]
+    },
+    "emote-gn": {
+      "folder": "18-emote-gn",
+      "zip": "official-dancing-banana-gn-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Good Night Emote, GN, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, in a nightcap and nightshirt. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The gn emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the nightcap and the nightshirt were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "gn emote", "good night emote", "sleepy emote", "bedtime emote", "sleep emote", "nightcap emote"],
+      "alt": [
+        "The official dancing banana gn emote, the banana in a nightcap and nightshirt",
+        "The gn emote, still and animated frame by frame"
+      ]
+    },
+    "emote-gm": {
+      "folder": "19-emote-gm",
+      "zip": "official-dancing-banana-gm-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Good Morning Emote, GM Coffee, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, with a mug of coffee. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The gm emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the mug was drawn in code with AI's help, and I checked it.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "gm emote", "good morning emote", "coffee emote", "morning emote", "coffee mug emote", "gm banana"],
+      "alt": [
+        "The official dancing banana gm emote, the banana with a mug of coffee",
+        "The gm emote, still and animated frame by frame"
+      ]
+    },
+    "emote-vibe": {
+      "folder": "20-emote-vibe",
+      "zip": "official-dancing-banana-vibe-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Vibe Emote, DJ Headphones, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, in DJ headphones, with a glowstick. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The vibe emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the headphones and the glowstick were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "vibe emote", "vibing emote", "dj emote", "music emote", "headphones emote", "rave emote"],
+      "alt": [
+        "The official dancing banana vibe emote, the banana in DJ headphones, with a glowstick",
+        "The vibe emote, still and animated frame by frame"
+      ]
+    },
+    "emote-shiny": {
+      "folder": "21-emote-shiny",
+      "zip": "official-dancing-banana-shiny-emote.zip",
+      "price": 29,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Shiny Emote, Gold Banana, Animated for Twitch and Discord",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, holding a gold banana, sparkling. One emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The shiny emote, still and animated (it dances)\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nAll twelve emotes are in the emote pack in this shop, and everything is in the full stream pack.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; the gold banana and the sparkles were drawn in code with AI's help, and I checked them.",
+      "tags": ["dancing banana", "banana emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "shiny emote", "gold emote", "sparkle emote", "rich emote", "gold banana", "shiny banana"],
+      "alt": [
+        "The official dancing banana shiny emote, the banana holding a gold banana, sparkling",
+        "The shiny emote, still and animated frame by frame"
       ]
     }
   }

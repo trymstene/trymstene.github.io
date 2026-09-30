@@ -5,13 +5,17 @@ Every banana is tools/banana_render.py (the builder's own Python mirror, held to
 builder's own wearables, cropped at the source size and resized ONCE (design library 6). The banana never changes its
 face: an emote's mood is what it wears and holds, the way the builder dresses it.
 
-    python tools/stream-pack/build_stream_pack.py      # tools/stream-pack/out/ (ignored) + a zip beside it
+    python tools/stream-pack/build_stream_pack.py            # tools/stream-pack/out/ (ignored) + a zip beside it
+    python tools/stream-pack/build_stream_pack.py --quick    # the same, reusing last build's videos (they take minutes)
 
-Twitch: emotes 28/56/112 (animated: GIF, 60 frames at most, no fast flashing), sub badges 18/36/72. Discord: emotes 128.
+Twitch: emotes 28/56/112 (animated: GIF, 60 frames at most, no fast flashing), sub and bit badges 18/36/72. Discord:
+emotes 128. Videos: the animated scenes as MP4 (H.264), the stinger and the webcam frames as WebM (VP9 with its
+transparency, which OBS and Streamlabs play), by imageio-ffmpeg's own ffmpeg.
 """
 import math
 import os
 import shutil
+import subprocess
 import sys
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
@@ -28,6 +32,41 @@ INK = (17, 17, 17)
 PAPER = (255, 253, 245)
 HOT = (255, 77, 109)
 MS = 100   # a frame of the dance, the original GIF's timing
+FPS = 30   # the videos: a dance frame is three video frames
+LOOP = 8   # seconds a looping video lasts: the dance ten times over, so a player's restart is rarely seen
+QUICK = '--quick' in sys.argv
+VIDEO = os.path.join(HERE, 'out', 'video')   # kept between builds (the pack folder is emptied, this is not)
+try:
+    import imageio_ffmpeg
+    FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
+except ImportError:
+    FFMPEG = shutil.which('ffmpeg')
+
+
+def video(name, frames, size, alpha):
+    """RGBA frames into out/video/<name>: a WebM (VP9) that keeps its transparency, or an MP4 (H.264) any player
+    opens. `frames` is a generator, so --quick skips the drawing as well as the encoding."""
+    path = os.path.join(VIDEO, name)
+    if QUICK and os.path.exists(path):
+        return path
+    if not FFMPEG:
+        raise SystemExit('no ffmpeg: pip install imageio-ffmpeg')
+    os.makedirs(VIDEO, exist_ok=True)
+    cmd = [FFMPEG, '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgba' if alpha else 'rgb24',
+           '-s', '%dx%d' % size, '-r', str(FPS), '-i', '-']
+    if alpha:
+        cmd += ['-c:v', 'libvpx-vp9', '-pix_fmt', 'yuva420p', '-b:v', '0', '-crf', '30', '-row-mt', '1', '-auto-alt-ref', '0']
+    else:
+        cmd += ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '21', '-preset', 'slow', '-tune', 'animation',
+                '-movflags', '+faststart']
+    p = subprocess.Popen(cmd + [path], stdin=subprocess.PIPE)
+    for f in frames:
+        p.stdin.write(f.convert('RGBA' if alpha else 'RGB').tobytes())
+    p.stdin.close()
+    if p.wait():
+        raise SystemExit('ffmpeg could not write ' + name)
+    print('video', name, os.path.getsize(path) // 1024, 'KB')
+    return path
 
 # ── the emotes: a name, what it wears and holds, and an effect (the builder's own confetti / sparkles) ──────────
 EMOTES = [
@@ -154,6 +193,14 @@ def edge(img, px):
     out.paste((255, 255, 255, 255), mask=grown)
     out.alpha_composite(img)
     return out
+
+
+def edged(img, px):
+    """the white edge on a canvas grown to hold it: edge() alone loses it wherever the art touches the border (a
+    whole-pixel crop does: the top of the head, the soles, the outermost hand)"""
+    big = Image.new('RGBA', (img.width + 2 * px, img.height + 2 * px), (0, 0, 0, 0))
+    big.alpha_composite(img, (px, px))
+    return edge(big, px)
 
 
 def cut(img, box, size, effect=None, idx=0, rim=True):
@@ -395,14 +442,106 @@ for name, outfit, metal in BADGES:
         art.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(d, '%s-%d.png' % (name, size)), optimize=True)
     print('badge', name)
 
+# ── bit badges: the medal's finish cut as a GEM (a cheer is a gem on Twitch), a colour a tier, the banana dressing up
+# the more they cheer. The top tier's rim is every colour at once.
+GEMS = [
+    (1, {}, 'grey'),
+    (100, {'hat': 'party'}, 'purple'),
+    (1000, {'glasses': 'threed'}, 'green'),
+    (5000, {'hat': 'beanieprop'}, 'blue'),
+    (10000, {'hat': 'viking'}, 'red'),
+    (25000, {'hat': 'tophat', 'glasses': 'monocle'}, 'pink'),
+    (50000, {'hat': 'jester'}, 'orange'),
+    (75000, {'hat': 'crown', 'glasses': 'shades'}, 'teal'),
+    (100000, {'hat': 'pixelcrown', 'glasses': 'shades', 'extras': ['goldchain']}, 'prism'),
+]
+# (light, mid, dark, the rays' tint)
+GEM = {
+    'grey': ((246, 248, 252), (168, 174, 190), (78, 82, 98), (228, 232, 242)),
+    'purple': ((232, 210, 255), (150, 90, 236), (66, 26, 128), (206, 170, 255)),
+    'green': ((200, 255, 218), (36, 192, 108), (6, 92, 46), (150, 240, 182)),
+    'blue': ((204, 232, 255), (50, 140, 244), (12, 56, 142), (160, 206, 255)),
+    'red': ((255, 210, 210), (230, 50, 62), (112, 8, 20), (255, 152, 152)),
+    'pink': ((255, 218, 240), (240, 90, 170), (122, 16, 76), (255, 172, 216)),
+    'orange': ((255, 232, 190), (250, 142, 28), (140, 62, 0), (255, 198, 122)),
+    'teal': ((200, 255, 250), (26, 188, 188), (0, 92, 102), (150, 240, 236)),
+    'prism': ((255, 246, 170), (246, 196, 40), (160, 104, 0), (255, 226, 110)),
+}
+RAINBOW = [(255, 77, 109), (255, 146, 40), (255, 222, 50), (55, 214, 122), (40, 200, 224), (77, 136, 255), (156, 96, 255), (238, 86, 200)]
+
+
+def octagon(c, r):
+    """a flat-topped octagon round c, r to its corners"""
+    return [(c + r * math.cos(math.radians(22.5 + 45 * k)), c + r * math.sin(math.radians(22.5 + 45 * k))) for k in range(8)]
+
+
+def gem(head, colour, N=288):
+    light, mid, dark, ray = GEM[colour]
+    im = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    c = N / 2
+
+    def shape(pts):
+        m = Image.new('L', (N, N), 0)
+        ImageDraw.Draw(m).polygon(pts, fill=255)
+        return m
+
+    R = (N / 2 - 3) / math.cos(math.radians(22.5))                # the flat sides touch the edge
+    im.paste(INK, mask=shape(octagon(c, R)))                        # the ink outline
+    rim_o, rim_i = octagon(c, R - 6), octagon(c, (R - 6) * 0.78)
+    d = ImageDraw.Draw(im)
+    for k in range(8):                                              # eight facets, lit from the upper left
+        lit = 0.5 + 0.5 * math.cos(math.radians(45 + 45 * k - 225))
+        if colour == 'prism':
+            col = lerp(lerp(RAINBOW[k], (0, 0, 0), 0.3), lerp(RAINBOW[k], (255, 255, 255), 0.5), lit)
+        else:
+            col = lerp(dark, light, 0.12 + 0.88 * lit)
+        d.polygon([rim_o[k], rim_o[(k + 1) % 8], rim_i[(k + 1) % 8], rim_i[k]], fill=col + (255,))
+    for k in range(8):                                              # the cuts between them
+        d.line([rim_o[k], rim_i[k]], fill=lerp(dark, INK, 0.3) + (255,), width=2)
+    face_m = shape(rim_i)
+    face = vgrad((N, N), mid, lerp(mid, dark, 0.55))
+    face.alpha_composite(ray_layer((N, N), c, c * 1.05, 16, ray + (150,), start=-math.pi / 2))
+    im.paste(face, mask=face_m)
+    d.polygon(rim_i, outline=dark + (255,), width=3)                # the bevel into the face
+    inner = (R - 6) * 0.78 * math.cos(math.radians(22.5))           # the face's own half-width
+    k = (inner * 1.62) / max(head.size)                             # the bust, as on the medals
+    bust = edge(head.resize((max(1, round(head.width * k)), max(1, round(head.height * k))), Image.Resampling.BOX), 3)
+    layer = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    layer.alpha_composite(bust, (round(c - bust.width / 2), round(c + inner * 0.92 - bust.height)))
+    layer.putalpha(ImageChops.multiply(layer.getchannel('A'), face_m))
+    im.alpha_composite(layer)
+    glare = Image.new('L', (N, N), 0)                               # the crescent of light, as on the medals
+    gl = ImageDraw.Draw(glare)
+    gl.ellipse((c - R * 0.8, c - R * 0.84, c + R * 0.46, c + R * 0.18), fill=110)
+    gl.ellipse((c - R * 0.68, c - R * 0.66, c + R * 0.62, c + R * 0.4), fill=0)
+    glare = ImageChops.multiply(glare.filter(ImageFilter.GaussianBlur(N / 90)), shape(rim_o))
+    im.paste((255, 255, 255, 255), mask=glare)
+    sparkle(ImageDraw.Draw(im), c + R * 0.56, c - R * 0.54, N * 0.07)
+    return im
+
+
+gem_arts = {}
+os.makedirs(os.path.join(OUT, 'bit-badges'))
+for bits, outfit, colour in GEMS:
+    art = gem_arts[bits] = gem(badge_art(outfit), colour)
+    for size in (72, 36, 18):
+        art.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(OUT, 'bit-badges', '%d-bits-%d.png' % (bits, size)), optimize=True)
+    print('bits', bits)
+
 # ── alerts: the whole banana, dancing, on transparency (a streaming app lays its own words over it) ─────────────
 ALERTS = [('follow', {'hat': 'party'}, 'confetti'), ('subscribe', {'hat': 'crown', 'glasses': 'shades'}, 'sparkle'),
+          ('gift-sub', {'glasses': 'hearts', 'extras': ['balloons']}, 'confetti'),
+          ('cheer', {'hat': 'jester', 'extras': ['glowstick']}, 'sparkle'),
+          ('tip', {'hat': 'tophat', 'glasses': 'monocle', 'extras': ['goldtoken']}, 'sparkle'),
           ('raid', {'hat': 'viking'}, 'confetti')]
+ALERT_WORDS = {'follow': 'FOLLOW', 'subscribe': 'SUBSCRIBE', 'gift-sub': 'GIFT SUB', 'cheer': 'CHEER', 'tip': 'TIP', 'raid': 'RAID'}
+alert_src = {}                                  # (arms-up frame, its box, effect): the listing's pictures cut from it
 os.makedirs(os.path.join(OUT, 'alerts'))
 for name, outfit, effect in ALERTS:
     fr = frames_of(outfit, S)
     box = square(union([f.getbbox() for f in fr]), 0.06)
     save_gif([cut(f, box, 500, effect, i) for i, f in enumerate(fr)], os.path.join(OUT, 'alerts', name + '-500.gif'))
+    alert_src[name] = (fr[7], box, effect)
     print('alert', name)
 
 # ── the dancer for a scene: the classic dance on its own, big, for an OBS image source over a scene screen ─────
@@ -435,7 +574,8 @@ def outlined(d, xy, text, f, fill=(255, 255, 255), stroke=INK, sw=10, anchor='mm
 # on the panels' lacquered sign, and the banana at whole pixels with its white edge and a soft shadow at its feet.
 # Each scene comes twice: with the banana, and as an empty STAGE for the full-screen dancing overlay (OBS), which
 # dances in exactly the spot the still banana stands.
-SCENES = [('starting-soon', 'STARTING SOON'), ('be-right-back', 'BE RIGHT BACK'), ('stream-ending', 'THANKS FOR WATCHING')]
+SCENES = [('starting-soon', 'STARTING SOON'), ('be-right-back', 'BE RIGHT BACK'), ('stream-ending', 'THANKS FOR WATCHING'),
+          ('offline', 'STREAM OFFLINE')]
 SW, SH = 1920, 1080
 SPOT = (960, 690)          # the light's centre: behind the banana's chest
 FLOOR = 1012               # where its feet stand
@@ -514,41 +654,72 @@ def sign(words, fsize=132):
     return im
 
 
-def stage(words):
-    """the scene without its banana: the light, the rays, the confetti, the title, the shadow on the floor"""
-    im = radial((SW, SH), SPOT[0], SPOT[1], [(0.0, (255, 250, 214)), (0.34, (255, 226, 60)), (0.75, (248, 200, 10)), (1.0, (222, 160, 0))])
-    rl = ray_layer((SW, SH), SPOT[0], SPOT[1], 28, (255, 252, 225, 255), start=-math.pi / 2 + 0.05)
-    rl.putalpha(ImageChops.multiply(rl.getchannel('A'), fade_mask((SW, SH), SPOT[0], SPOT[1], 120, 1150, 150)))
+# what does not move, made once: the light, the rays' fade, the glow round the banana, the shadow at its feet, the signs
+_STAGE = {}
+
+
+def stage_parts():
+    if not _STAGE:
+        _STAGE['light'] = radial((SW, SH), SPOT[0], SPOT[1], [(0.0, (255, 250, 214)), (0.34, (255, 226, 60)), (0.75, (248, 200, 10)), (1.0, (222, 160, 0))])
+        _STAGE['fade'] = fade_mask((SW, SH), SPOT[0], SPOT[1], 120, 1150, 150)
+        halo = Image.new('L', (SW, SH), 0)
+        ImageDraw.Draw(halo).ellipse((SPOT[0] - 360, SPOT[1] - 330, SPOT[0] + 360, SPOT[1] + 330), fill=175)
+        _STAGE['halo'] = halo.filter(ImageFilter.GaussianBlur(70))
+        sh = Image.new('L', (SW, SH), 0)
+        ImageDraw.Draw(sh).ellipse((SPOT[0] - 230, FLOOR - 26, SPOT[0] + 230, FLOOR + 30), fill=95)
+        _STAGE['shadow'] = sh.filter(ImageFilter.GaussianBlur(14))
+    return _STAGE
+
+
+# the builder's own confetti colours, squares and strips, and the glints, scattered by a fixed hand (the same every
+# build), never on the banana
+CONF_COLS = [(255, 77, 109), (77, 184, 255), (242, 194, 0), (55, 214, 122), (179, 136, 255)]
+STAGE_CONFETTI = [((k * 397 + 131) % SW, (k * 211 + 57) % 900, 14 + (k * 7) % 12, k) for k in range(46)
+                  if not (abs((k * 397 + 131) % SW - SPOT[0]) < 330 and (k * 211 + 57) % 900 > 380)]
+STAGE_GLINTS = [((k * 523 + 210) % SW, (k * 277 + 330) % 1000, 14 + (k * 5) % 16, k) for k in range(9)
+                if not (abs((k * 523 + 210) % SW - SPOT[0]) < 330 and (k * 277 + 330) % 1000 > 380)]
+_SIGNS = {}
+
+
+def stage(words, t=0.0):
+    """the scene without its banana at loop time t (0 to 1; 0 is the still scene): the light, the rays turning, the
+    confetti falling, the glints twinkling, the title, the shadow on the floor. Every piece moves a WHOLE number of
+    times a loop (a fall of one or two screens, sways, tumbles, twinkles; the rays two turns of their own pattern),
+    so the loop has no seam."""
+    P = stage_parts()
+    im = P['light'].copy()
+    rl = ray_layer((SW, SH), SPOT[0], SPOT[1], 28, (255, 252, 225, 255), start=-math.pi / 2 + 0.05 + t * 4 * math.pi / 28)
+    rl.putalpha(ImageChops.multiply(rl.getchannel('A'), P['fade']))
     im.alpha_composite(rl)
-    halo = Image.new('L', (SW, SH), 0)
-    ImageDraw.Draw(halo).ellipse((SPOT[0] - 360, SPOT[1] - 330, SPOT[0] + 360, SPOT[1] + 330), fill=175)
-    im.paste((255, 253, 235, 255), mask=halo.filter(ImageFilter.GaussianBlur(70)))
+    im.paste((255, 253, 235, 255), mask=P['halo'])
     d = ImageDraw.Draw(im)
-    # the builder's own confetti colours, squares and strips, scattered by a fixed hand (the same every build)
-    cols = [(255, 77, 109), (77, 184, 255), (242, 194, 0), (55, 214, 122), (179, 136, 255)]
-    for k in range(46):
-        x = (k * 397 + 131) % SW
-        y = (k * 211 + 57) % 900
-        if abs(x - SPOT[0]) < 330 and y > 380:
-            continue                                     # never on the banana
-        s = 14 + (k * 7) % 12
-        hgt = s if k % 3 else int(s * 1.7)
-        d.rectangle((x, y, x + s - 1, y + hgt - 1), fill=cols[k % 5] + (255,))
-    for k in range(9):                                   # glints
-        x, y = (k * 523 + 210) % SW, (k * 277 + 330) % 1000
-        if abs(x - SPOT[0]) < 330 and y > 380:
-            continue
-        sparkle(d, x, y, 14 + (k * 5) % 16)
-    sh = Image.new('L', (SW, SH), 0)                     # the shadow at its feet
-    ImageDraw.Draw(sh).ellipse((SPOT[0] - 230, FLOOR - 26, SPOT[0] + 230, FLOOR + 30), fill=95)
-    im.paste((120, 70, 0, 255), mask=sh.filter(ImageFilter.GaussianBlur(14)))
-    s = sign(words)
+    span = SH + 120
+    for x, y, s, k in STAGE_CONFETTI:
+        yy = (y + 60 + (1 + k % 2) * span * t) % span - 60
+        xx = x + 12 * math.sin(2 * math.pi * (2 + k % 3) * t)
+        tall = s if k % 3 else int(s * 1.7)
+        hgt = max(3, round(tall * (0.3 + 0.7 * abs(math.cos(2 * math.pi * (5 + k % 4) * t)))))
+        d.rectangle((round(xx), round(yy), round(xx) + s - 1, round(yy) + hgt - 1), fill=CONF_COLS[k % 5] + (255,))
+    for x, y, r, k in STAGE_GLINTS:
+        sparkle(d, x, y, r * (0.4 + 0.3 * (1 + math.cos(2 * math.pi * (2 + k % 3) * t))))
+    im.paste((120, 70, 0, 255), mask=P['shadow'])
+    if words not in _SIGNS:
+        _SIGNS[words] = sign(words)
+    s = _SIGNS[words]
     im.alpha_composite(s, ((SW - s.width) // 2 + 8, 70))
     return im
 
 
+def scene_frames(words):
+    n = LOOP * FPS
+    for fi in range(n):
+        im = stage(words, fi / n)
+        im.alpha_composite(dance[(fi * 10 // FPS) % 8], (DX, DY))
+        yield im
+
+
 os.makedirs(os.path.join(OUT, 'scenes'))
-dance = [edge(f, 6) for f in crisp_dance(SCENE_PX)]
+dance = [edged(f, 6) for f in crisp_dance(SCENE_PX)]
 DX = SPOT[0] - dance[0].width // 2
 DY = FLOOR + 14 - dance[0].height                         # the white edge's bottom sits just under the floor line
 for name, words in SCENES:
@@ -557,6 +728,10 @@ for name, words in SCENES:
     full = st.copy()
     full.alpha_composite(dance[7], (DX, DY))
     full.convert('RGB').save(os.path.join(OUT, 'scenes', name + '-1920x1080.png'), optimize=True)
+    # ⭐ the same scene ANIMATED, the thing people search for ("animated starting soon screen"): an 8-second MP4
+    # that loops seamlessly in an OBS media source
+    mp4 = name + '-animated-1920x1080.mp4'
+    shutil.copy2(video(mp4, scene_frames(words), (SW, SH), False), os.path.join(OUT, 'scenes', mp4))
     print('scene', name)
 # the overlay: the whole frame, transparent but for the banana dancing on the stage's spot
 overlay = []
@@ -574,7 +749,8 @@ print('overlay', os.path.getsize(os.path.join(OUT, 'scenes', 'dancing-banana-ove
 # scenes' rays shining from behind it, a lit lip and a shaded lip, a glare, a glint; the word centred on its own INK
 # (Pillow's anchor centres the font box), all six at ONE size; the site's ink border and hard shadow, and a white
 # edge round the lot so Twitch's dark page does not swallow the border.
-PANELS = [('ABOUT ME', 2), ('SCHEDULE', 3), ('DISCORD', 6), ('SUPPORT', 7), ('RULES', 1), ('SOCIALS', 5)]
+PANELS = [('ABOUT ME', 2), ('SCHEDULE', 3), ('DISCORD', 6), ('SUPPORT', 7), ('RULES', 1), ('SOCIALS', 5),
+          ('COMMANDS', 0), ('DONATE', 4), ('MERCH', 2), ('FAQ', 3), ('MY SETUP', 6), ('CONTACT', 7)]
 PW, PH = 320, 150
 CARD = (6, 52, 306, 138)
 COL, BORDER, RADIUS, SHADOW = 118, 4, 14, 6
@@ -643,6 +819,200 @@ pf = panel_font()
 for words, idx in PANELS:
     panel(words, idx, pf).save(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x150.png'), optimize=True)
     print('panel', words)
+panel('', 5, pf).save(os.path.join(OUT, 'panels', 'blank-320x150.png'), optimize=True)   # for a word of their own
+
+
+# ── webcam frames: the panels' lacquer as a band round the camera, the banana dancing on its top edge ───────────
+# The hole is truly empty (the camera shows through it); the hard ink shadow falls outside the band only, never
+# across the face in the camera. Three shapes, each as a still PNG, a looping WebM that keeps its transparency, and
+# a GIF for an image source.
+CAMS = [('16x9', 1120, 630), ('4x3', 880, 660), ('square', 700, 700)]
+CAM_PX = 8                                        # frame px an art pixel
+C_IN, C_BAND, C_OUT, C_RAD, C_SH = 6, 44, 9, 34, 16
+cam_dance = [edged(f, 3) for f in crisp_dance(CAM_PX)]
+
+
+def cam_frame(iw, ih, sec=0.0, idx=7, inside=None, dancers=None):
+    """the frame round an iw x ih camera at `sec` seconds into its loop, the banana on dance frame `idx`; `inside`
+    fills the hole and `dancers` stands a bigger banana on it (for the listing's pictures only)"""
+    dancers = dancers or cam_dance
+    B = C_IN + C_BAND + C_OUT
+    bw, bh = dancers[0].size
+    sink = C_OUT + 5                              # the feet stand a little into the band
+    W, H = iw + 2 * B + C_SH + 4, bh - sink + ih + 2 * B + C_SH + 4
+    ox, oy = 2, bh - sink + 2
+    outer = (ox, oy, ox + iw + 2 * B - 1, oy + ih + 2 * B - 1)
+    hole = (ox + B, oy + B, ox + B + iw - 1, oy + B + ih - 1)
+
+    def rr(box, r, grow=0, dx=0, dy=0):
+        m = Image.new('L', (W, H), 0)
+        ImageDraw.Draw(m).rounded_rectangle((box[0] - grow + dx, box[1] - grow + dy, box[2] + grow + dx, box[3] + grow + dy),
+                                            max(1, r + grow), fill=255)
+        return m
+
+    hole_m = rr(hole, 8)
+    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    if inside is not None:
+        im.paste(inside.convert('RGBA').resize((iw, ih), Image.Resampling.LANCZOS), (hole[0], hole[1]))
+    im.paste(INK, mask=ImageChops.subtract(rr(outer, C_RAD, dx=C_SH, dy=C_SH), hole_m))
+    im.paste(INK, mask=ImageChops.subtract(rr(outer, C_RAD), hole_m))
+    band = ImageChops.subtract(rr(outer, C_RAD, grow=-C_OUT), rr(hole, 8, grow=C_IN))
+    face = vgrad((W, H), (255, 232, 80), (244, 188, 0))
+    stripes = Image.new('L', (W, H), 0)           # candy stripes along the band: the scenes' rays, as a band holds them
+    sd = ImageDraw.Draw(stripes)
+    for x in range(-H, W, 40):
+        sd.polygon([(x, H), (x + 18, H), (x + 18 + H, 0), (x + H, 0)], fill=120)
+    face.paste((255, 246, 180, 255), mask=stripes)
+    # the bevel, lit from the upper left: the band's outer edge bright at the top and left and shaded at the bottom
+    # and right, its inner edge (sloping down to the camera) the other way round
+    tl = Image.new('L', (W, H), 0)
+    ImageDraw.Draw(tl).polygon([(0, 0), (W, 0), (outer[2], outer[1]), (outer[0], outer[3]), (0, H)], fill=255)
+    br_ = ImageChops.invert(tl)
+    rim_out = ImageChops.subtract(rr(outer, C_RAD, grow=-C_OUT), rr(outer, C_RAD, grow=-(C_OUT + 6)))
+    rim_in = ImageChops.subtract(rr(hole, 8, grow=C_IN + 6), rr(hole, 8, grow=C_IN))
+    face.paste((255, 253, 230, 255), mask=ImageChops.multiply(rim_out, tl))
+    face.paste((214, 146, 0, 255), mask=ImageChops.multiply(rim_out, br_))
+    face.paste((214, 146, 0, 255), mask=ImageChops.multiply(rim_in, tl))
+    face.paste((255, 253, 230, 255), mask=ImageChops.multiply(rim_in, br_))
+    gl = Image.new('L', (W, H), 0)                # two streaks of glare across it, as on the signs
+    g = ImageDraw.Draw(gl)
+    for x, w, a in ((int(W * 0.56), 64, 80), (int(W * 0.56) + 92, 22, 105)):
+        g.polygon([(x, H), (x + w, H), (x + w + H * 0.5, 0), (x + H * 0.5, 0)], fill=a)
+    face.paste((255, 255, 255, 255), mask=gl.filter(ImageFilter.GaussianBlur(2)))
+    im.paste(face, mask=band)
+    d = ImageDraw.Draw(im)
+    mid = C_OUT + C_BAND // 2                     # glints on the band, twinkling once a dance (0.8 s)
+    for k, (gx, gy) in enumerate(((outer[0] + mid + 6, outer[1] + mid), (outer[2] - mid - 6, outer[3] - mid),
+                                  (outer[0] + mid, (outer[1] + outer[3]) // 2))):
+        tw = 0.5 + 0.5 * math.cos(2 * math.pi * (sec / 0.8 + k / 3))
+        sparkle(d, gx, gy, 13 + 8 * tw)
+    bx = ox + round((outer[2] - outer[0]) * 0.8) - bw // 2
+    sh = Image.new('L', (W, H), 0)                # its shadow on the band
+    ImageDraw.Draw(sh).ellipse((bx + bw * 0.14, oy + sink - 12, bx + bw * 0.86, oy + sink + 6), fill=110)
+    im.paste((150, 88, 0, 255), mask=ImageChops.multiply(sh.filter(ImageFilter.GaussianBlur(5)), band))
+    im.alpha_composite(dancers[idx], (bx, 2))
+    return im
+
+
+os.makedirs(os.path.join(OUT, 'webcam-frames'))
+for shape, iw, ih in CAMS:
+    base = 'webcam-frame-%s' % shape
+    cam_frame(iw, ih).save(os.path.join(OUT, 'webcam-frames', base + '.png'), optimize=True)
+    save_gif([cam_frame(iw, ih, i / 10, i) for i in range(8)], os.path.join(OUT, 'webcam-frames', base + '-animated.gif'))
+    size = cam_frame(iw, ih).size
+    size = (size[0] + size[0] % 2, size[1] + size[1] % 2)   # a video's sides are even
+
+    def cam_frames(iw=iw, ih=ih, size=size):
+        for fi in range(LOOP * FPS):
+            f = Image.new('RGBA', size, (0, 0, 0, 0))
+            f.alpha_composite(cam_frame(iw, ih, fi / FPS, (fi * 10 // FPS) % 8))
+            yield f
+    shutil.copy2(video(base + '-animated.webm', cam_frames(), size, True), os.path.join(OUT, 'webcam-frames', base + '-animated.webm'))
+    print('webcam frame', shape)
+
+
+# ── the stinger: a lacquered wipe with the banana riding it, for OBS and Streamlabs. It covers the whole screen from
+# about 0.45 s to 1.15 s; the scene changes under it at ST_POINT. The panel is a slanted band of the scenes' light,
+# rays and confetti, edged in the site's ink, white and hot pink, moving fast in and out and slowly while it covers.
+ST_N = 48                                  # 1.6 s
+ST_POINT = 800                             # ms: the transition point to type into OBS
+SLANT, PANEL_W = 260, 2800
+BANDS = [(HOT, 70), ((255, 255, 255), 22), (INK, 12)]   # outside in, on both edges
+BANDS_W = sum(w for _, w in BANDS)
+# the panel's centre: (seconds, x, speed px/s); cubic Hermite between them, fast in, slow across the middle, fast out
+ST_KEYS = [(0.0, SW + PANEL_W / 2 + SLANT / 2 + BANDS_W + 20, -7000), (0.5, 1110, -500), (1.1, 810, -500),
+           (1.6, -(PANEL_W / 2 + SLANT / 2 + BANDS_W + 20), -7000)]
+# the banana glides in its own light, slower than the panel under it (so it is on screen for most of the wipe and a
+# still of the wipe can show it); it stays inside the yellow the whole way
+ST_BANANA = [(0.0, 2400, -4000), (0.5, 1010, -170), (1.1, 910, -170), (1.6, -480, -4000)]
+ST_MARGIN = 3300                           # the moving layers are made once, this much wider than the screen each side
+
+
+def hermite(p0, p1, m0, m1, u):
+    return (2 * u ** 3 - 3 * u ** 2 + 1) * p0 + (u ** 3 - 2 * u ** 2 + u) * m0 + (-2 * u ** 3 + 3 * u ** 2) * p1 + (u ** 3 - u ** 2) * m1
+
+
+def st_x(sec, keys=ST_KEYS):
+    for (t0, x0, v0), (t1, x1, v1) in zip(keys, keys[1:]):
+        if sec <= t1:
+            h = t1 - t0
+            return hermite(x0, x1, v0 * h, v1 * h, (sec - t0) / h)
+    return keys[-1][1]
+
+
+_ST = {}
+
+
+def stinger_frame(fi):
+    if not _ST:
+        wide = (SW + 2 * ST_MARGIN, SH)
+        gc = _ST['gc'] = ST_MARGIN + SW // 2       # the centre of the made-once layers
+        _ST['glow'] = radial(wide, gc, 640, [(0.0, (255, 250, 214)), (0.05, (255, 232, 90)), (0.14, (250, 206, 20)), (0.3, (236, 176, 0)), (1.0, (226, 162, 0))])
+        _ST['fade'] = fade_mask(wide, gc, 640, 100, 1300, 150)
+        halo = Image.new('L', wide, 0)
+        ImageDraw.Draw(halo).ellipse((gc - 380, 640 - 350, gc + 380, 640 + 350), fill=170)
+        _ST['halo'] = halo.filter(ImageFilter.GaussianBlur(70))
+    gc, glow, fade, halo = _ST['gc'], _ST['glow'], _ST['fade'], _ST['halo']
+    bw, bh = dance[0].size
+    by = (SH - bh) // 2 + 30
+    feet = by + bh - 14
+    sec = fi / FPS
+    xc = st_x(sec)                             # the panel
+    bx = st_x(sec, ST_BANANA)                  # the banana and its light
+    xlb = xc - PANEL_W / 2 - SLANT / 2         # the yellow's bottom-left corner
+
+    def para(x0, x1):
+        return [(x0, SH), (x1, SH), (x1 + SLANT, 0), (x0 + SLANT, 0)]
+
+    im = Image.new('RGBA', (SW, SH), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    x = xlb - BANDS_W
+    for col, w in BANDS:                        # the leading edge: hot pink first
+        d.polygon(para(x, x + w), fill=col + (255,))
+        x += w
+    x = xlb + PANEL_W
+    for col, w in reversed(BANDS):              # the trailing edge: ink next to the yellow, pink last
+        d.polygon(para(x, x + w), fill=col + (255,))
+        x += w
+    win = round(gc - bx)
+    box = (win, 0, win + SW, SH)
+    panel_ = glow.crop(box)
+    rl = ray_layer((SW, SH), bx, 640, 28, (255, 252, 225, 255), start=-math.pi / 2 + sec * 0.7)
+    rl.putalpha(ImageChops.multiply(rl.getchannel('A'), fade.crop(box)))
+    panel_.alpha_composite(rl)
+    panel_.paste((255, 253, 235, 255), mask=halo.crop(box))
+    pd = ImageDraw.Draw(panel_)
+    for k in range(40):                         # confetti riding the panel, tumbling as it goes
+        rx = xc - 1300 + (k * 283) % 2600
+        ry = (k * 157 + 40 + sec * (120 + (k % 3) * 60)) % (SH + 60) - 30
+        if abs(rx - bx) < bw * 0.62 and by - 40 < ry < feet + 40:
+            continue
+        s = 16 + (k * 7) % 12
+        hgt = max(4, round(s * (1.6 if k % 3 == 0 else 1) * (0.3 + 0.7 * abs(math.cos(sec * (5 + k % 4) + k)))))
+        pd.rectangle((round(rx), round(ry), round(rx) + s - 1, round(ry) + hgt - 1), fill=CONF_COLS[k % 5] + (255,))
+    for k in range(7):
+        gx, gy = xc - 1100 + (k * 367) % 2200, 120 + (k * 211) % 840
+        if abs(gx - bx) < bw * 0.62 and by - 40 < gy < feet + 40:
+            continue
+        sparkle(pd, gx, gy, (14 + (k * 5) % 14) * (0.5 + 0.5 * abs(math.cos(sec * 4 + k))))
+    sh = Image.new('L', (SW, SH), 0)
+    ImageDraw.Draw(sh).ellipse((bx - 230, feet - 24, bx + 230, feet + 30), fill=95)
+    panel_.paste((120, 70, 0, 255), mask=sh.filter(ImageFilter.GaussianBlur(14)))
+    ym = Image.new('L', (SW, SH), 0)
+    ImageDraw.Draw(ym).polygon(para(xlb, xlb + PANEL_W), fill=255)
+    im.paste(panel_, mask=ym)
+    im.alpha_composite(dance[(fi * 10 // FPS) % 8], (round(bx - bw / 2), by))
+    return im
+
+
+def stinger_frames():
+    return (stinger_frame(fi) for fi in range(ST_N))
+
+
+os.makedirs(os.path.join(OUT, 'stinger'))
+st_name = 'dancing-banana-stinger-1920x1080.webm'
+shutil.copy2(video(st_name, stinger_frames(), (SW, SH), True), os.path.join(OUT, 'stinger', st_name))
+print('stinger')
 
 # ── the preview: every emote on a chat-dark board, at a size a shop listing shows ─────────────────────────────
 # ⚠️ ONE PICTURE PER LISTING, SAYING ONLY WHAT THAT LISTING SELLS: the emote board's line names the whole pack, so the
@@ -662,7 +1032,7 @@ def emote_board(line, path):
     pv.save(os.path.join(OUT, path), optimize=True)
 
 
-emote_board('EMOTES  ·  SUB BADGES  ·  ALERTS  ·  SCENES  ·  PANELS', 'preview-emotes-2000.png')
+emote_board('EMOTES  ·  BADGES  ·  ALERTS  ·  SCENES  ·  PANELS  ·  CAM FRAME  ·  STINGER', 'preview-emotes-2000.png')
 emote_board('12 EMOTES  ·  STILL + ANIMATED  ·  TWITCH + DISCORD', 'preview-emote-pack-2000.png')
 
 # the sub badges on their own: six, big, with the months under them
@@ -679,27 +1049,86 @@ for k, (name, _, _) in enumerate(BADGES):
 d.text((1000, 1930), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
 pv.save(os.path.join(OUT, 'preview-sub-badges-2000.png'), optimize=True)
 
-# the classic emote on its own: the whole dancing banana big (a close-up cut an arm off at this size), then what the
-# buyer actually gets, the still emote and the eight frames of the animated one
-pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
-d = ImageDraw.Draw(pv)
-outlined(d, (1000, 150), 'THE CLASSIC DANCING BANANA', font(96), fill=BANANA, sw=8, shadow=0)
-d.text((1000, 265), 'ANIMATED + STILL EMOTE  ·  TWITCH + DISCORD', font=font(38), fill=(255, 255, 255), anchor='mm')
-fr, sbx, abx, _ = emote_stills['dance']
-whole = fr[7].crop(fr[7].getbbox())
-h = 860
-whole = whole.resize((round(whole.width * h / whole.height), h), Image.Resampling.BOX)
-pv.paste(whole, ((2000 - whole.width) // 2, 340), whole)
-still = cut(fr[STILL], sbx, 230, None, 0)
-pv.paste(still, (60, 1330), still)
-for i, f in enumerate(fr):
-    t = cut(f, abx, 190, None, i)
-    pv.paste(t, (340 + i * 205, 1350), t)
-d.text((175, 1600), 'still', font=font(36), fill=(200, 200, 215), anchor='mm')
-d.text((1160, 1600), 'animated: it dances in chat', font=font(36), fill=(200, 200, 215), anchor='mm')
-d.text((1000, 1720), '112 · 56 · 28 px for Twitch  ·  128 px for Discord', font=font(40), fill=(255, 255, 255), anchor='mm')
-d.text((1000, 1930), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
-pv.save(os.path.join(OUT, 'preview-classic-emote-2000.png'), optimize=True)
+# ── one emote on its own (the classic, and each of the eleven sold singly): the whole banana big, dressed as that
+# emote (a close-up cut an arm off at this size), then what the buyer actually gets, the still emote and the eight
+# frames of the animated one
+def board(title, line, h=2000):
+    """a listing picture on the chat-dark board: the title, a line under it, the credit at the foot"""
+    pv = Image.new('RGB', (2000, h), (24, 24, 30))
+    d = ImageDraw.Draw(pv)
+    f = font(96)
+    while d.textlength(title, font=f) > 1800:
+        f = font(f.size - 4)
+    outlined(d, (1000, 150), title, f, fill=BANANA, sw=8, shadow=0)
+    if line:
+        d.text((1000, 265), line, font=font(38), fill=(255, 255, 255), anchor='mm')
+    d.text((1000, h - 70), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
+    return pv, d
+
+
+def emote_sheet(name, title, path):
+    pv, d = board(title, 'ANIMATED + STILL EMOTE  ·  TWITCH + DISCORD')
+    fr, sbx, abx, eff = emote_stills[name]
+    whole = fr[7].crop(fr[7].getbbox())
+    h = 860
+    whole = whole.resize((round(whole.width * h / whole.height), h), Image.Resampling.BOX)
+    pv.paste(whole, ((2000 - whole.width) // 2, 340), whole)
+    still = cut(fr[STILL], sbx, 230, eff, 0)
+    pv.paste(still, (60, 1330), still)
+    for i, f in enumerate(fr):
+        t = cut(f, abx, 190, eff, i)
+        pv.paste(t, (340 + i * 205, 1350), t)
+    d.text((175, 1600), 'still', font=font(36), fill=(200, 200, 215), anchor='mm')
+    d.text((1160, 1600), 'animated: it dances in chat', font=font(36), fill=(200, 200, 215), anchor='mm')
+    d.text((1000, 1720), '112 · 56 · 28 px for Twitch  ·  128 px for Discord', font=font(40), fill=(255, 255, 255), anchor='mm')
+    pv.save(os.path.join(OUT, path), optimize=True)
+
+
+emote_sheet('dance', 'THE CLASSIC DANCING BANANA', 'preview-classic-emote-2000.png')
+for name, _, _ in EMOTES[1:]:
+    emote_sheet(name, 'THE %s EMOTE' % name.upper(), 'preview-emote-%s-2000.png' % name)
+
+
+def play_pill(im, cx, y, k=1.0):
+    """a hot pink pill with a play mark, centred on cx: this one moves"""
+    d = ImageDraw.Draw(im)
+    f = font(round(30 * k))
+    w, h = round(d.textlength('ANIMATED', font=f) + 96 * k), round(58 * k)
+    x, sh = round(cx - w / 2), round(5 * k)
+    d.rounded_rectangle((x + sh, y + sh, x + w + sh, y + h + sh), h // 2, fill=INK)
+    d.rounded_rectangle((x, y, x + w, y + h), h // 2, fill=HOT, outline=INK, width=max(2, round(4 * k)))
+    tx, ty = x + 40 * k, y + h / 2
+    d.polygon([(tx - 11 * k, ty - 14 * k), (tx - 11 * k, ty + 14 * k), (tx + 14 * k, ty)], fill=(255, 255, 255))
+    d.text((x + 64 * k, ty), 'ANIMATED', font=f, fill=(255, 255, 255), anchor='lm')
+
+
+def cam_placeholder(w, h):
+    """a stand-in for the streamer in the camera (the listing's pictures only; the frame itself is empty)"""
+    im = vgrad((w, h), (74, 82, 110), (30, 34, 50))
+    d = ImageDraw.Draw(im)
+    col = (106, 116, 150, 255)
+    d.ellipse((w / 2 - h * 0.15, h * 0.24, w / 2 + h * 0.15, h * 0.56), fill=col)
+    d.rounded_rectangle((w / 2 - h * 0.36, h * 0.62, w / 2 + h * 0.36, h * 1.2), radius=round(h * 0.18), fill=col)
+    d.text((w / 2, h * 0.1), 'YOUR CAMERA', font=font(max(16, round(h * 0.05))), fill=(140, 150, 184), anchor='mm')
+    return im
+
+
+def scene_card(label, top, bottom):
+    """a stand-in for the streamer's own scene (the stinger's pictures only)"""
+    im = vgrad((SW, SH), top, bottom)
+    ImageDraw.Draw(im).text((SW // 2, SH // 2), label, font=font(170), fill=lerp(top, (255, 255, 255), 0.28) + (255,), anchor='mm')
+    return im
+
+
+SCENE_A = scene_card('SCENE 1', (42, 72, 112), (14, 24, 46))
+SCENE_B = scene_card('SCENE 2', (98, 42, 112), (36, 12, 46))
+
+
+def stinger_shot(fi, size):
+    im = (SCENE_A if fi * 1000 / FPS < ST_POINT else SCENE_B).copy()
+    im.alpha_composite(stinger_frame(fi))
+    return im.resize(size, Image.Resampling.LANCZOS)
+
 
 # ── two more listing pictures: the badges and the panels, and the three scene screens ───────────────────────
 pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
@@ -710,23 +1139,72 @@ for k, (name, _, _) in enumerate(BADGES):
     x = 130 + k * 300
     pv.paste(b, (x, 300), b)
     d.text((x + 108, 565), name.split('-')[0].lstrip('0') + (' MONTH' if name.startswith('01') else ' MONTHS'), font=font(30), fill=(200, 200, 215), anchor='mm')
-for k, (words, _) in enumerate(PANELS):
+for k, (words, _) in enumerate(PANELS[:6]):
     p = Image.open(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x150.png'))
     p = p.resize((p.width * 2, p.height * 2), Image.Resampling.NEAREST)   # 2x exactly: the banana's pixels stay whole
     pv.paste(p, (340 + (k % 2) * 680, 700 + (k // 2) * 390), p)
 d.text((1000, 1930), 'the dancing banana, by Trym Stene, since 1999', font=font(34), fill=(150, 150, 165), anchor='mm')
 pv.save(os.path.join(OUT, 'preview-badges-panels-2000.png'), optimize=True)
 
-pv = Image.new('RGB', (2000, 2000), (24, 24, 30))
-d = ImageDraw.Draw(pv)
-outlined(d, (1000, 140), 'STREAM SCENES', font(96), fill=BANANA, sw=8, shadow=0)
+pv, d = board('ANIMATED STREAM SCENES', None)
 for k, (name, _) in enumerate(SCENES):
     sc = Image.open(os.path.join(OUT, 'scenes', name + '-1920x1080.png')).resize((880, 495), Image.Resampling.LANCZOS)
-    x, y = (70, 330) if k == 0 else (1050, 330) if k == 1 else (560, 980)
+    x, y = 60 + (k % 2) * 1000, 300 + (k // 2) * 600
     d.rectangle((x - 8, y - 8, x + 888, y + 503), fill=INK)
     pv.paste(sc, (x, y))
-d.text((1000, 1800), 'Starting soon  ·  Be right back  ·  Thanks for watching  ·  1920 × 1080', font=font(40), fill=(200, 200, 215), anchor='mm')
+    play_pill(pv, x + 880 - 150, y + 495 - 84, 0.8)
+d.text((1000, 1560), 'Starting soon  ·  Be right back  ·  Thanks for watching  ·  Stream offline', font=font(40), fill=(200, 200, 215), anchor='mm')
+d.text((1000, 1650), 'each one animated (an MP4 that loops), still, and as an empty stage', font=font(36), fill=(255, 255, 255), anchor='mm')
+d.text((1000, 1720), 'with the dancing banana as a separate overlay  ·  1920 × 1080', font=font(36), fill=(255, 255, 255), anchor='mm')
 pv.save(os.path.join(OUT, 'preview-scenes-2000.png'), optimize=True)
+
+# ── what the new listings hold (30 Sep), one board each ────────────────────────────────────────────────────────
+pv, d = board('STREAM ALERTS', '6 ANIMATED ALERTS  ·  TRANSPARENT GIF  ·  500 × 500')
+for k, (name, _, _) in enumerate(ALERTS):
+    f7, box, eff = alert_src[name]
+    t = cut(f7, box, 460, eff, 7)
+    x, y = 150 + (k % 3) * 620, 360 + (k // 3) * 740
+    pv.paste(t, (x, y), t)
+    d.text((x + 230, y + 520), ALERT_WORDS[name], font=font(46), fill=(200, 200, 215), anchor='mm')
+d.text((1000, 1800), 'your alert tool lays the words (the name, the amount) over them', font=font(34), fill=(255, 255, 255), anchor='mm')
+pv.save(os.path.join(OUT, 'preview-alerts-2000.png'), optimize=True)
+
+pv, d = board('TWITCH PANELS', '12 PANELS + 1 BLANK  ·  320 × 150  ·  SHOWN AT TWICE THEIR SIZE', h=2760)
+for k, fn in enumerate([w.lower().replace(' ', '-') for w, _ in PANELS] + ['blank']):
+    p = Image.open(os.path.join(OUT, 'panels', fn + '-320x150.png'))
+    p = p.resize((p.width * 2, p.height * 2), Image.Resampling.NEAREST)   # 2x exactly: the banana's pixels stay whole
+    pv.paste(p, (340 + (k % 2) * 680 if k < 12 else 680, 360 + (k // 2) * 320), p)
+pv.save(os.path.join(OUT, 'preview-panels-2000.png'), optimize=True)
+
+pv, d = board('WEBCAM FRAMES', '16:9  ·  4:3  ·  SQUARE  ·  ANIMATED (WEBM + GIF) AND STILL (PNG)', h=2900)
+top = cam_frame(1120, 630, idx=7, inside=cam_placeholder(1120, 630))
+pv.paste(top, ((2000 - top.width) // 2, 330), top)
+d.text((1000, 330 + top.height + 40), '16:9', font=font(44), fill=(200, 200, 215), anchor='mm')
+row = [cam_frame(880, 660, idx=3, inside=cam_placeholder(880, 660)), cam_frame(700, 700, idx=5, inside=cam_placeholder(700, 700))]
+y2, low = 330 + top.height + 110, max(im.height for im in row)
+x = (2000 - (row[0].width + row[1].width + 60)) // 2
+for im, label in zip(row, ('4:3', 'SQUARE')):
+    pv.paste(im, (x, y2 + low - im.height), im)
+    d.text((x + im.width // 2, y2 + low + 40), label, font=font(44), fill=(200, 200, 215), anchor='mm')
+    x += im.width + 60
+pv.save(os.path.join(OUT, 'preview-webcam-2000.png'), optimize=True)
+
+pv, d = board('STINGER TRANSITION', 'FOR OBS + STREAMLABS  ·  1.6 SECONDS  ·  TRANSPARENT WEBM')
+for k, (fi, words) in enumerate(((6, '0.2 s'), (15, '0.5 s'), (24, '0.8 s: the scene changes'), (40, '1.3 s'))):
+    x, y = 60 + (k % 2) * 1000, 330 + (k // 2) * 640
+    d.rectangle((x - 8, y - 8, x + 888, y + 503), fill=INK)
+    pv.paste(stinger_shot(fi, (880, 495)), (x, y))
+    d.text((x + 440, y + 550), words, font=font(38), fill=(200, 200, 215), anchor='mm')
+d.text((1000, 1720), 'Transition point: 800 ms. The scene switches there, under the banana.', font=font(36), fill=(255, 255, 255), anchor='mm')
+pv.save(os.path.join(OUT, 'preview-stinger-2000.png'), optimize=True)
+
+pv, d = board('BIT BADGES', '9 GEMS  ·  1 TO 100,000 BITS  ·  72, 36 AND 18 PX FOR TWITCH')
+for k, (bits, _, _) in enumerate(GEMS):
+    g = gem_arts[bits].resize((360, 360), Image.Resampling.LANCZOS)
+    x, y = 260 + (k % 3) * 560, 340 + (k // 3) * 520
+    pv.paste(g, (x, y), g)
+    d.text((x + 180, y + 405), '{:,} BIT{}'.format(bits, '' if bits == 1 else 'S'), font=font(40), fill=(200, 200, 215), anchor='mm')
+pv.save(os.path.join(OUT, 'preview-bit-badges-2000.png'), optimize=True)
 
 # ── the shop's own face: its icon and its banner ──────────────────────────────────────────────────────────────
 # ⚠️ ETSY SHOWS THE ICON ROUND. The first one was a face close-up, and the round crop took both hands (Trym: "the logo
@@ -798,20 +1276,43 @@ TXT = {
   01, 02, 03, 06, 09 and 12 months, each at 72, 36 and 18 px - bronze, silver and gold medals, and the banana
   dresses up the longer they stay.
 """,
-    'alerts': """ALERTS (alerts/)
-  follow-500.gif, subscribe-500.gif, raid-500.gif         transparent, loops; add your own text in your alert tool
+    'bits': """BIT BADGES (bit-badges/)
+  1, 100, 1000, 5000, 10000, 25000, 50000, 75000 and 100000 bits, each at 72, 36 and 18 px - a gem for every
+  tier, and the banana dresses up the more they cheer.
+""",
+    'alerts': """ALERTS (alerts/, 500 x 500, transparent, they loop)
+  follow, subscribe, gift-sub, cheer, tip, raid           add your own words (the name, the amount) in your alert tool
   dancing-banana-600.gif                                  the classic dance on its own, for any scene
 """,
     'scenes': """SCENES (scenes/, 1920 x 1080)
-  starting-soon, be-right-back, stream-ending             ready to use, with the banana
+  starting-soon, be-right-back, stream-ending, offline    ready to use, with the banana (PNG)
+  ...-animated-1920x1080.mp4                              the same scenes animated: 8 seconds that loop. In OBS: a
+                                                          Media Source with Loop ticked
   ...-stage versions                                      the same scenes with an empty spotlight
   dancing-banana-overlay-1920x1080.gif                    lay it full screen over a stage scene (in OBS: an Image
                                                           source, fit to screen) and the banana dances in the light
 """,
     'panels': """PANELS (panels/, 320 x 150)
-  about-me, schedule, discord, support, rules, socials
+  about-me, schedule, discord, support, rules, socials, commands, donate, merch, faq, my-setup, contact
+  blank-320x150.png                                       for a word of your own
+""",
+    'webcam': """WEBCAM FRAMES (webcam-frames/): 16x9, 4x3 and square
+  webcam-frame-<shape>-animated.webm                      the banana dances on the frame, the middle is see-through.
+                                                          In OBS: a Media Source with Loop ticked, above your camera
+  webcam-frame-<shape>-animated.gif                       the same, for an Image source
+  webcam-frame-<shape>.png                                still
+""",
+    'stinger': """STINGER TRANSITION (stinger/)
+  dancing-banana-stinger-1920x1080.webm                   1.6 seconds, transparent
+  OBS: Scene Transitions, +, Stinger. Video File: this file. Transition Point: 800 ms.
+  Streamlabs: Scene Transitions, Add Transition, Stinger: the same file and 800 ms.
 """,
 }
+for _name, _, _ in EMOTES:
+    TXT['single-' + _name] = ('THE ' + _name.upper() + ' EMOTE (emotes/' + _name + '/)' + chr(10)
+                              + '  twitch-112.png, twitch-56.png, twitch-28.png            still emote, the three sizes Twitch asks for' + chr(10)
+                              + '  twitch-animated-112.gif, -56.gif, -28.gif               animated emote (8 frames, loops)' + chr(10)
+                              + '  discord-128.png, discord-animated-128.gif               for Discord' + chr(10))
 LICENCE = """LICENCE
   For use on your own streams and channels (Twitch, YouTube, Kick, Discord and the like).
   Do not resell, share or redistribute the files, and do not use them in a logo or trademark.
@@ -831,7 +1332,7 @@ def crlf(t):
     return t.replace(NL, chr(13) + NL)   # a README opened in Windows Notepad keeps its lines
 
 
-FULL = ['emotes', 'badges', 'alerts', 'scenes', 'panels']
+FULL = ['emotes', 'badges', 'bits', 'alerts', 'scenes', 'panels', 'webcam', 'stinger']
 with open(os.path.join(OUT, 'README.txt'), 'w', encoding='utf-8', newline='') as fh:
     fh.write(crlf(readme('THE OFFICIAL DANCING BANANA - STREAM PACK', FULL)))
 
@@ -844,14 +1345,29 @@ for fn in os.listdir(SHOP):
     os.remove(os.path.join(SHOP, fn))
 PARTS = {
     'official-dancing-banana-stream-pack.zip': ('THE OFFICIAL DANCING BANANA - STREAM PACK', FULL,
-                                                lambda rel: not rel.startswith('preview-') and rel != 'README.txt'),
+                                                lambda rel: not rel.startswith(('preview-', 'cover-')) and rel != 'README.txt'),
     'official-dancing-banana-emote-pack.zip': ('THE OFFICIAL DANCING BANANA - EMOTE PACK', ['emotes'],
                                                lambda rel: rel.startswith('emotes/')),
     'official-dancing-banana-sub-badges.zip': ('THE OFFICIAL DANCING BANANA - SUB BADGES', ['badges'],
                                                lambda rel: rel.startswith('sub-badges/')),
     'official-dancing-banana-classic-emote.zip': ('THE OFFICIAL DANCING BANANA - THE CLASSIC EMOTE', ['classic'],
                                                   lambda rel: rel.startswith('emotes/dance/')),
+    'official-dancing-banana-stream-alerts.zip': ('THE OFFICIAL DANCING BANANA - STREAM ALERTS', ['alerts'],
+                                                  lambda rel: rel.startswith('alerts/')),
+    'official-dancing-banana-stream-scenes.zip': ('THE OFFICIAL DANCING BANANA - ANIMATED STREAM SCENES', ['scenes'],
+                                                  lambda rel: rel.startswith('scenes/')),
+    'official-dancing-banana-twitch-panels.zip': ('THE OFFICIAL DANCING BANANA - TWITCH PANELS', ['panels'],
+                                                  lambda rel: rel.startswith('panels/')),
+    'official-dancing-banana-webcam-frame.zip': ('THE OFFICIAL DANCING BANANA - WEBCAM FRAMES', ['webcam'],
+                                                 lambda rel: rel.startswith('webcam-frames/')),
+    'official-dancing-banana-stinger.zip': ('THE OFFICIAL DANCING BANANA - STINGER TRANSITION', ['stinger'],
+                                            lambda rel: rel.startswith('stinger/')),
+    'official-dancing-banana-bit-badges.zip': ('THE OFFICIAL DANCING BANANA - BIT BADGES', ['bits'],
+                                               lambda rel: rel.startswith('bit-badges/')),
 }
+for _name, _, _ in EMOTES[1:]:   # the eleven emotes sold one at a time, like the classic
+    PARTS['official-dancing-banana-%s-emote.zip' % _name] = ('THE OFFICIAL DANCING BANANA - THE %s EMOTE' % _name.upper(),
+                                                             ['single-' + _name], lambda rel, n=_name: rel.startswith('emotes/%s/' % n))
 for zname, (title, parts, keep) in PARTS.items():
     with zipfile.ZipFile(os.path.join(SHOP, zname), 'w', zipfile.ZIP_DEFLATED) as z:
         z.writestr('README.txt', crlf(readme(title, parts)))
@@ -905,15 +1421,15 @@ def cover_text(im, title, line, ty=470, fill=(255, 255, 255), line_fill=(255, 25
 
 # 1 — the full pack: bright, everything in one picture
 cv = cover_bg([(0.0, (255, 250, 214)), (0.4, (255, 226, 60)), (1.0, (232, 176, 0))], (255, 252, 225, 255))
-cover_text(cv, 'FULL STREAM PACK', 'EMOTES  ·  SUB BADGES  ·  ALERTS  ·  SCENES  ·  PANELS')
+cover_text(cv, 'FULL STREAM PACK', 'EMOTES  ·  BADGES  ·  ALERTS  ·  SCENES  ·  PANELS  ·  CAM FRAME  ·  STINGER')
 scene = Image.open(os.path.join(OUT, 'scenes', 'starting-soon-1920x1080.png')).resize((1120, 630), Image.Resampling.LANCZOS)
 fs = framed(scene)
 cv.alpha_composite(fs, ((CV - fs.width) // 2, 720))
 row = [cut(emote_stills[n][0][STILL], emote_stills[n][1], 250, emote_stills[n][3], 0) for n in ('hype', 'love', 'gg', 'cool')]
 for k, t in enumerate(row):
     cv.alpha_composite(t, (560 + k * 330, 1410))
-for k, n in enumerate(('01-month', '06-months', '12-months')):
-    m = badge_arts[n].resize((250, 250), Image.Resampling.LANCZOS)
+for k, m in enumerate((badge_arts['01-month'], badge_arts['12-months'], gem_arts[100000])):
+    m = m.resize((250, 250), Image.Resampling.LANCZOS)
     cv.alpha_composite(m, (430 + k * 280, 1740))
 pn = Image.open(os.path.join(OUT, 'panels', 'about-me-320x150.png'))
 pn = pn.resize((pn.width * 2, pn.height * 2), Image.Resampling.NEAREST)
@@ -940,12 +1456,88 @@ cv.convert('RGB').save(os.path.join(OUT, 'cover-sub-badges-2400.png'), optimize=
 # 4 — the classic emote: hot pink, one big banana
 cv = cover_bg([(0.0, (255, 150, 170)), (0.45, (255, 90, 120)), (1.0, (214, 40, 78))], (255, 200, 212, 255), 120)
 cover_text(cv, 'THE CLASSIC EMOTE', 'THE 1999 ORIGINAL  ·  ANIMATED')
-big = edge(crisp_dance(30)[7], 10)
+big = edged(crisp_dance(30)[7], 10)
 sh = Image.new('L', (CV, CV), 0)
 ImageDraw.Draw(sh).ellipse((CV // 2 - 360, 1990, CV // 2 + 360, 2070), fill=90)
 cv.paste((120, 10, 40, 255), mask=sh.filter(ImageFilter.GaussianBlur(18)))
 cv.alpha_composite(big, ((CV - big.width) // 2, 2040 - big.height))
 cv.convert('RGB').save(os.path.join(OUT, 'cover-classic-emote-2400.png'), optimize=True)
+
+# 5 to 10 — the listings added 30 Sep, each in a colour of its own and showing only what it sells
+cv = cover_bg([(0.0, (238, 216, 255)), (0.45, (150, 92, 236)), (1.0, (66, 26, 132))], (216, 190, 255, 255), 120)
+cover_text(cv, '6 STREAM ALERTS', 'FOLLOW  ·  SUB  ·  GIFT SUB  ·  CHEER  ·  TIP  ·  RAID')
+for k, (name, _, _) in enumerate(ALERTS):
+    f7, box, eff = alert_src[name]
+    t = cut(f7, box, 520, eff, 7)
+    cv.alpha_composite(t, (380 + (k % 3) * 560, 720 + (k // 3) * 610))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-alerts-2400.png'), optimize=True)
+
+cv = cover_bg([(0.0, (214, 240, 255)), (0.45, (70, 170, 250)), (1.0, (18, 76, 164))], (196, 230, 255, 255), 120)
+cover_text(cv, 'ANIMATED SCENES', 'STARTING SOON  ·  BRB  ·  ENDING  ·  OFFLINE')
+for k, (name, _) in enumerate(SCENES):
+    sc = Image.open(os.path.join(OUT, 'scenes', name + '-1920x1080.png')).resize((780, 439), Image.Resampling.LANCZOS)
+    cv.alpha_composite(framed(sc), (382 + (k % 2) * 830, 740 + (k // 2) * 520))
+play_pill(cv, CV // 2, 1810, 1.5)
+cv.convert('RGB').save(os.path.join(OUT, 'cover-scenes-2400.png'), optimize=True)
+
+cv = cover_bg([(0.0, (222, 255, 214)), (0.45, (70, 200, 110)), (1.0, (14, 104, 52))], (204, 250, 204, 255), 120)
+cover_text(cv, '13 TWITCH PANELS', '12 READY-MADE  ·  1 BLANK  ·  320 × 150')
+for k, (words, _) in enumerate(PANELS[:6]):
+    pn = Image.open(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x150.png'))
+    pn = pn.resize((pn.width * 2, pn.height * 2), Image.Resampling.NEAREST)
+    cv.alpha_composite(pn, (530 + (k % 2) * 700, 740 + (k // 2) * 380))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-panels-2400.png'), optimize=True)
+
+cv = cover_bg([(0.0, (255, 214, 236)), (0.45, (230, 60, 140)), (1.0, (120, 10, 70))], (255, 190, 222, 255), 120)
+cover_text(cv, 'WEBCAM FRAME', 'ANIMATED  ·  16:9  ·  4:3  ·  SQUARE')
+cam = cam_frame(1400, 788, idx=7, inside=cam_placeholder(1400, 788), dancers=[edged(f, 4) for f in crisp_dance(10)])
+cv.alpha_composite(cam, ((CV - cam.width) // 2, 2050 - cam.height))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-webcam-2400.png'), optimize=True)
+
+cv = cover_bg([(0.0, (255, 236, 204)), (0.45, (255, 150, 50)), (1.0, (196, 76, 6))], (255, 214, 170, 255), 120)
+cover_text(cv, 'STINGER TRANSITION', 'FOR OBS + STREAMLABS  ·  TRANSPARENT WEBM')
+shot = framed(stinger_shot(6, (1560, 878)))
+cv.alpha_composite(shot, ((CV - shot.width) // 2, 760))
+play_pill(cv, CV // 2, 1760, 1.5)
+cv.convert('RGB').save(os.path.join(OUT, 'cover-stinger-2400.png'), optimize=True)
+
+cv = cover_bg([(0.0, (124, 94, 204)), (0.5, (60, 34, 130)), (1.0, (20, 10, 52))], (110, 84, 190, 255), 150)
+cover_text(cv, '9 BIT BADGES', '1 TO 100K BITS  ·  TWITCH CHEER BADGES', fill=BANANA)
+for k, (bits, _, _) in enumerate(GEMS):
+    g = gem_arts[bits].resize((400, 400), Image.Resampling.LANCZOS)
+    cv.alpha_composite(g, (540 + (k % 3) * 460, 720 + (k // 3) * 440))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-bit-badges-2400.png'), optimize=True)
+
+# 11 to 21 — the eleven emotes sold one at a time: the whole banana dressed as the emote, on a colour of its own
+SINGLE_BG = {
+    'hype': ((238, 216, 255), (160, 100, 240), (80, 34, 160)),
+    'love': ((255, 218, 232), (255, 104, 156), (190, 30, 90)),
+    'cool': ((214, 240, 255), (60, 170, 255), (18, 86, 190)),
+    'lol': ((236, 255, 208), (126, 212, 64), (52, 128, 16)),
+    'gg': ((216, 224, 255), (72, 100, 224), (26, 36, 124)),
+    'rip': ((236, 236, 246), (148, 148, 176), (70, 70, 96)),
+    'evil': ((255, 200, 192), (222, 48, 48), (110, 8, 18)),
+    'gn': ((104, 116, 196), (40, 48, 120), (12, 14, 46)),
+    'gm': ((255, 238, 204), (255, 164, 66), (206, 94, 14)),
+    'vibe': ((208, 255, 250), (28, 198, 190), (0, 104, 114)),
+    'shiny': ((96, 84, 60), (44, 36, 24), (12, 10, 6)),
+}
+for name, _, effect in EMOTES[1:]:
+    c0, c1, c2 = SINGLE_BG[name]
+    cv = cover_bg([(0.0, c0), (0.45, c1), (1.0, c2)], lerp(c0, (255, 255, 255), 0.3) + (255,), 120)
+    cover_text(cv, name.upper() + ' EMOTE', 'ANIMATED + STILL  ·  TWITCH + DISCORD', fill=BANANA if sum(c1) < 330 else (255, 255, 255))
+    f7 = emote_stills[name][0][7]
+    body = edged(f7.crop(f7.getbbox()), 10)
+    side = max(body.width, body.height) + 240
+    sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    sq.alpha_composite(body, ((side - body.width) // 2, side - body.height - 40))
+    if effect:
+        sq = fx(sq, effect, 7)
+    sh = Image.new('L', (CV, CV), 0)
+    ImageDraw.Draw(sh).ellipse((CV // 2 - 330, 1990, CV // 2 + 330, 2070), fill=90)
+    cv.paste(lerp(c2, (0, 0, 0), 0.4) + (255,), mask=sh.filter(ImageFilter.GaussianBlur(18)))
+    cv.alpha_composite(sq, ((CV - side) // 2, 2080 - side))
+    cv.convert('RGB').save(os.path.join(OUT, 'cover-emote-%s-2400.png' % name), optimize=True)
 print('covers')
 
 # ── ONE FOLDER TO UPLOAD FROM (Trym: "give me the full folder path so i dont have to click around to find the
@@ -959,11 +1551,19 @@ if os.path.isdir(ETSY):
 os.makedirs(ETSY, exist_ok=True)
 LISTINGS = [
     ('1-full-stream-pack', 'official-dancing-banana-stream-pack.zip',
-     ['cover-full-stream-pack-2400.png', 'preview-emotes-2000.png', 'preview-badges-panels-2000.png', 'preview-scenes-2000.png']),
+     ['cover-full-stream-pack-2400.png', 'preview-emotes-2000.png', 'preview-badges-panels-2000.png', 'preview-scenes-2000.png',
+      'preview-alerts-2000.png', 'preview-webcam-2000.png', 'preview-stinger-2000.png', 'preview-bit-badges-2000.png']),
     ('2-emote-pack', 'official-dancing-banana-emote-pack.zip', ['cover-emote-pack-2400.png', 'preview-emote-pack-2000.png']),
     ('3-sub-badges', 'official-dancing-banana-sub-badges.zip', ['cover-sub-badges-2400.png', 'preview-sub-badges-2000.png']),
     ('4-classic-emote', 'official-dancing-banana-classic-emote.zip', ['cover-classic-emote-2400.png', 'preview-classic-emote-2000.png']),
-]
+    ('5-stream-alerts', 'official-dancing-banana-stream-alerts.zip', ['cover-alerts-2400.png', 'preview-alerts-2000.png']),
+    ('6-animated-scenes', 'official-dancing-banana-stream-scenes.zip', ['cover-scenes-2400.png', 'preview-scenes-2000.png']),
+    ('7-twitch-panels', 'official-dancing-banana-twitch-panels.zip', ['cover-panels-2400.png', 'preview-panels-2000.png']),
+    ('8-webcam-frame', 'official-dancing-banana-webcam-frame.zip', ['cover-webcam-2400.png', 'preview-webcam-2000.png']),
+    ('9-stinger', 'official-dancing-banana-stinger.zip', ['cover-stinger-2400.png', 'preview-stinger-2000.png']),
+    ('10-bit-badges', 'official-dancing-banana-bit-badges.zip', ['cover-bit-badges-2400.png', 'preview-bit-badges-2000.png']),
+] + [('%d-emote-%s' % (11 + k, name), 'official-dancing-banana-%s-emote.zip' % name,
+      ['cover-emote-%s-2400.png' % name, 'preview-emote-%s-2000.png' % name]) for k, (name, _, _) in enumerate(EMOTES[1:])]
 for folder, zname, pics in LISTINGS:
     d = os.path.join(ETSY, folder)
     os.makedirs(d)

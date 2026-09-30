@@ -23,6 +23,7 @@
 //   node tools/etsy.mjs photos <id> <key>      replace a listing's photos with the pack's current ones       --apply
 //   node tools/etsy.mjs file <id> <key>        replace a listing's digital file with the pack's current zip  --apply
 //   node tools/etsy.mjs text <id> <key>        a listing's title, description and tags from listings.json    --apply
+//   node tools/etsy.mjs feature <id> [rank]    put a listing in the shop's featured row (rank 1 first)          --apply
 //   node tools/etsy.mjs publish <id>           make a draft live (Etsy charges its listing fee)              --apply
 //   node tools/etsy.mjs sales                  recent orders (dates, totals, items; never a buyer's details)
 import fs from 'node:fs';
@@ -327,7 +328,7 @@ const COMMANDS = {
       const files = packFiles(l);
       if (!files.photos.length) bad.push('no photos in ' + files.dir + ' (build the pack first)');
       if (!files.zip) bad.push('no ' + l.zip + ' in ' + files.dir);
-      console.log((bad.length ? '✗ ' : '✓ ') + key.padEnd(8) + l.title.length + ' chars · ' + l.tags.length + ' tags · '
+      console.log((bad.length ? '✗ ' : '✓ ') + key.padEnd(13) + l.title.length + ' chars · ' + l.tags.length + ' tags · '
         + files.photos.length + ' photos · ' + l.price + ' kr' + (bad.length ? '\n    ' + bad.join('\n    ') : ''));
       fails += bad.length;
     }
@@ -384,6 +385,16 @@ const COMMANDS = {
     if (!plan(['Listing ' + a1 + ':', '  title: ' + l.title, '  tags: ' + l.tags.join(', '), '  description: ' + l.description.split('\n')[0] + ' …'])) return;
     await api('PATCH', '/shops/' + (await shopId()) + '/listings/' + a1, { form: { title: l.title, description: l.description, tags: l.tags } });
     console.log('✓ updated');
+  },
+
+  // the shop's featured row: rank 1 sits first on the shop page
+  async feature() {
+    if (!a1) { console.error('usage: feature <listing id> [rank]'); process.exit(1); }
+    const rank = parseInt(a2 || '1', 10);
+    if (!(rank > 0)) { console.error('✗ the rank is a whole number from 1'); process.exit(1); }
+    if (!plan(['Listing ' + a1 + ' becomes featured at position ' + rank + ' on the shop page.'])) return;
+    await api('PATCH', '/shops/' + (await shopId()) + '/listings/' + a1, { form: { featured_rank: rank } });
+    console.log('✓ featured');
   },
 
   async publish() {
