@@ -197,7 +197,7 @@ export default {
           { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
       const want = String(url.searchParams.get('r') || 'analyst');
-      if (!['live', 'analyst', 'report', 'range'].includes(want)) {
+      if (!['live', 'analyst', 'report', 'range', 'etsy'].includes(want)) {   // 🛍 etsy: the Etsy shop's card, 30 Sep
         return new Response(JSON.stringify({ ok: false, err: 'bad room' }),
           { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
@@ -205,7 +205,7 @@ export default {
       // paste had one, and Pulse answers a wrong token with a plain 404 — so
       // an invisible character reads as "the whole dashboard is missing"
       const q = new URLSearchParams({ t: String(env.DASH_TOKEN).trim() });
-      if (want === 'range') {
+      if (want === 'range' || want === 'etsy') {
         q.set('from', String(url.searchParams.get('from') || 'today').slice(0, 12));
         q.set('to', String(url.searchParams.get('to') || 'today').slice(0, 12));
       }

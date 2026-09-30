@@ -30,7 +30,7 @@ export const REFUSAL = {
   price: 'under the price', item: 'an unknown item',
 };
 export const SOURCE = {
-  live: 'LIVE', goog: 'GOOGLE', serv: 'SERVER', mail: 'INBOX', shop: 'SHOPIFY', git: 'GITHUB',
+  live: 'LIVE', goog: 'GOOGLE', serv: 'SERVER', mail: 'INBOX', shop: 'SHOPIFY', git: 'GITHUB', etsy: 'ETSY',
 };
 // the plain name, or the key made readable and flagged so it gets a real one
 export const word = (dict, k) => {

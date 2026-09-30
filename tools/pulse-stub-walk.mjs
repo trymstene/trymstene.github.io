@@ -37,6 +37,15 @@ await new Promise((r) => server.listen(4398, r));
 // ── the synthetic world ────────────────────────────────────────────────────
 const day = (i) => { const d = new Date(Date.UTC(2026, 8, 5 - i)); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
 const dlDaily = Array.from({ length: 7 }, (_, i) => ({ d: day(6 - i), files: 20 + i * 3, shown: 22 + i * 3, click: 0, skip: 16 + i * 2, world: i < 2 ? 1 : 0, disc: 0, coffee: i < 2 ? 1 : 0, pack: i < 2 ? 0 : 2 + i, swap: i < 2 ? 0 : 4 + i }));
+// 🛍 the Etsy card's answer (worker-pulse/src/etsy.js apiEtsy): a window with views, hearts, one order, and a
+// partial history (the saves began inside the window)
+const ETSY = {
+  conn: 'ok', from: '2026-09-24', to: '2026-09-30', since: '2026-09-30', partial: true, views: 41, hearts: 3, orders: 1,
+  money: 199, currency: 'NOK', listings: 21, totals: [44, 3], renewed: null,
+  rows: [{ title: 'Twitch Stream Pack', v: 22, h: 2, tv: 25, th: 2 }, { title: 'Hype Emote', v: 9, h: 1, tv: 9, th: 1 },
+    { title: 'Animated Webcam Frame', v: 10, h: 0, tv: 10, th: 0 }, { title: 'Stinger Transition', v: 0, h: 0, tv: 0, th: 0 }],
+  recent: [{ day: '2026-09-30', total: 199, items: 'Twitch Stream Pack' }],
+};
 const RANGE = {
   at: Date.now(), from: '6daysAgo', to: 'today',
   downloads: [
@@ -138,6 +147,7 @@ async function openPage(width, height, opts = {}) {
       const r = u.searchParams.get('r');
       if (r === 'live') return json(route, LIVE);
       if (r === 'range') return json(route, RANGE);
+      if (r === 'etsy') return json(route, ETSY);
       if (r === 'analyst') return json(route, { verdict: 'quiet', headline: 'a quiet day', body: [], reads: [], recs: [], confidence: 'fine' });
       if (r === 'report') return json(route, { lines: [], notes: [] });
       return json(route, { err: 'stubbed out' }, 500);
@@ -198,7 +208,8 @@ async function walkFloor(page, f, name) {
   for (const f of FLOORS) T[f] = await walkFloor(page, f, 'desk');
   out.floors.now = { missing: missing(T.now, ['on the site now', 'in Banana World now', 'Pages open now', 'Cities', 'In Banana World now', 'Status board', 'Doors', 'tap a dot', 'took a door into Banana World']) };
   out.floors.visitors = { missing: missing(T.visitors, ['Visits in this window', 'visits', 'visitors', 'first-time visitors', 'Which pages they read', 'The GIF page', 'Where they came from', 'Where visitors were', 'What they did', 'visitors by country', 'took a door into Banana World']) };
-  out.floors.business = { missing: missing(T.business, ['Checkout works?', 'Money, as Google counts it', 'Free files', 'pack cards shown', 'tap rate', 'Files per day', 'Downloads by page', 'Downloads by country', 'The pack card', 'Which headline works', 'From a custom banana to an order', 'From the shop to a purchase', 'Where product clicks come from', 'Out to the Etsy shop']),
+  out.floors.business = { missing: missing(T.business, ['Checkout works?', 'Money, as Google counts it', 'Free files', 'pack cards shown', 'tap rate', 'Files per day', 'Downloads by page', 'Downloads by country', 'The pack card', 'Which headline works', 'From a custom banana to an order', 'From the shop to a purchase', 'Where product clicks come from', 'Out to the Etsy shop',
+      'The Etsy shop', 'Etsy orders', 'Twitch Stream Pack', 'Views and hearts count from']),
     oldWords: found(T.business, ['The download business', 'old asks', 'take rate', 'Every surface that hands', 'Custom banana funnel', 'Official merch funnel']) };
   out.floors.players = { missing: missing(T.players, ['Passes and who is active', 'Growing?', 'Coming back?', 'From a pass to a kept pass', 'Login links', 'not saved', 'Every pass', 'Kiwi', 'Names on the floor', 'Find a pass by email']) };
   out.floors.world = { missing: missing(T.world, ['Each place, one question', 'The rave', 'Banana Town', 'Waves', 'WAVE BACK', 'Nib’s present', 'COME BACK to open it', 'bananas here now', 'The shops inside', 'The homesteads', 'Neighbours', 'The Arcade boards', 'Kiwi leads with 31', 'The economy', 'coins by place', 'coins by source', 'the wishing fountain', 'the park', 'Refusals', 'the daily cap', 'a test grant', 'test coins', 'Every homestead']),

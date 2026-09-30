@@ -26,9 +26,11 @@
 //   node tools/etsy.mjs feature <id> [rank]    put a listing in the shop's featured row (rank 1 first)          --apply
 //   node tools/etsy.mjs publish <id>           make a draft live (Etsy charges its listing fee)              --apply
 //   node tools/etsy.mjs sales                  recent orders (dates, totals, items; never a buyer's details)
+//   node tools/etsy.mjs pulse-connect          give Banana Pulse (HQ) its own read-only connection to the shop
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import readline from 'node:readline';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -232,6 +234,51 @@ async function putFile(sid, id, files) {
   }
 }
 
+// the Allow click: Etsy's consent page in the browser, the one-time code pasted back (Etsy returns only to the registered
+// https address, public/etsy-callback/, which shows it)
+async function authorize(c, scopes) {
+  const verifier = b64url(crypto.randomBytes(48));
+  const challenge = b64url(crypto.createHash('sha256').update(verifier).digest());
+  const state = b64url(crypto.randomBytes(18));
+  const url = 'https://www.etsy.com/oauth/connect?' + new URLSearchParams({ response_type: 'code', client_id: c.keystring,
+    redirect_uri: REDIRECT, scope: scopes, state, code_challenge: challenge, code_challenge_method: 'S256' }).toString().replace(/\+/g, '%20');
+  console.log('Opening Etsy in your browser. Click Allow, and you land on trymstene.com with a code to copy.\n'
+    + 'If the browser does not open, open this address yourself:\n\n' + url + '\n');
+  try {
+    const opener = process.platform === 'win32' ? ['rundll32', ['url.dll,FileProtocolHandler', url]]
+      : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
+    spawn(opener[0], opener[1], { detached: true, stdio: 'ignore' }).unref();
+  } catch (e) { /* the address above is the way in */ }
+  const pasted = await ask('Paste the code (or the whole address) here: ');
+  let code = pasted;
+  if (/^https?:\/\//i.test(pasted)) {
+    const u = new URL(pasted);
+    code = u.searchParams.get('code') || '';
+    const back = u.searchParams.get('state');
+    if (back && back !== state) { console.error('✗ that code belongs to a different login attempt: start again'); process.exit(1); }
+  }
+  if (!code) { console.error('✗ no code'); process.exit(1); }
+  return { code, verifier };
+}
+
+// wrangler in a worker's folder; a secret goes in on stdin, and neither it nor wrangler's output is ever printed
+function wrangler(args, stdin, cwd) {
+  return new Promise((ok, fail) => {
+    // Windows runs npx through a shell, so the command goes as one line (no user input is in it)
+    const win = process.platform === 'win32';
+    const p = win
+      ? spawn(['npx.cmd', 'wrangler', ...args].map((a) => (/\s/.test(a) ? '"' + a + '"' : a)).join(' '),
+        { cwd, shell: true, stdio: [stdin == null ? 'ignore' : 'pipe', 'ignore', 'pipe'] })
+      : spawn('npx', ['wrangler', ...args], { cwd, stdio: [stdin == null ? 'ignore' : 'pipe', 'ignore', 'pipe'] });
+    let err = '';
+    p.stderr.on('data', (d) => { err += d; });
+    if (stdin != null) { p.stdin.write(stdin); p.stdin.end(); }   // no newline: a CRLF would ride into the secret
+    p.on('error', fail);
+    p.on('close', (code) => (code === 0 ? ok()
+      : fail(new Error('wrangler ' + args.slice(0, 3).join(' ') + ' failed: ' + err.split('\n').filter((l) => l.trim()).slice(-2).join(' ').slice(0, 200)))));
+  });
+}
+
 function plan(lines) {
   console.log(lines.join('\n'));
   if (!APPLY) { console.log('\n(dry run: nothing was sent. Add --apply to do it.)'); return false; }
@@ -254,27 +301,7 @@ const COMMANDS = {
   async login() {
     const c = readCfg();
     need(c, ['keystring', 'secret'], 'no app keys yet: run  node tools/etsy.mjs setup');
-    const verifier = b64url(crypto.randomBytes(48));
-    const challenge = b64url(crypto.createHash('sha256').update(verifier).digest());
-    const state = b64url(crypto.randomBytes(18));
-    const url = 'https://www.etsy.com/oauth/connect?' + new URLSearchParams({ response_type: 'code', client_id: c.keystring,
-      redirect_uri: REDIRECT, scope: SCOPES, state, code_challenge: challenge, code_challenge_method: 'S256' }).toString().replace(/\+/g, '%20');
-    console.log('Opening Etsy in your browser. Click Allow, and you land on trymstene.com with a code to copy.\n'
-      + 'If the browser does not open, open this address yourself:\n\n' + url + '\n');
-    try {
-      const opener = process.platform === 'win32' ? ['rundll32', ['url.dll,FileProtocolHandler', url]]
-        : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
-      spawn(opener[0], opener[1], { detached: true, stdio: 'ignore' }).unref();
-    } catch (e) { /* the address above is the way in */ }
-    const pasted = await ask('Paste the code (or the whole address) here: ');
-    let code = pasted;
-    if (/^https?:\/\//i.test(pasted)) {
-      const u = new URL(pasted);
-      code = u.searchParams.get('code') || '';
-      const back = u.searchParams.get('state');
-      if (back && back !== state) { console.error('✗ that code belongs to a different login attempt: run login again'); process.exit(1); }
-    }
-    if (!code) { console.error('✗ no code'); process.exit(1); }
+    const { code, verifier } = await authorize(c, SCOPES);
     await tokenRequest(c, { grant_type: 'authorization_code', redirect_uri: REDIRECT, code, code_verifier: verifier });
     delete c.shop_id;
     writeCfg(c);
@@ -406,6 +433,35 @@ const COMMANDS = {
     if (!plan(['Listing ' + a1 + ' goes LIVE on Etsy (Etsy charges its listing fee).'])) return;
     await api('PATCH', '/shops/' + (await shopId()) + '/listings/' + a1, { form: { state: 'active' } });
     console.log('✓ live');
+  },
+
+  // 🛍 Banana Pulse's own READ-ONLY connection (30 Sep 2026): its own Allow click, so this terminal's token and Pulse's
+  // never trip over each other. The token and the app's keys go straight to the Pulse worker (one KV key, two worker
+  // secrets): never into a chat, a log or git. Pulse renews it every day after that.
+  async 'pulse-connect'() {
+    const c = readCfg();
+    need(c, ['keystring', 'secret'], 'no app keys yet: run  node tools/etsy.mjs setup');
+    const sid = await shopId();
+    console.log('Banana Pulse asks to READ the shop (listings, orders): nothing it can change.\n');
+    const { code, verifier } = await authorize(c, 'listings_r shops_r transactions_r');
+    const r = await fetch(TOKEN_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: c.keystring, grant_type: 'authorization_code', redirect_uri: REDIRECT, code, code_verifier: verifier }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) { console.error('✗ Etsy refused the code (' + r.status + '): ' + (j.error_description || j.error || 'no reason given')); process.exit(1); }
+    const dir = path.join(ROOT, 'worker-pulse');
+    for (const [name, value] of [['ETSY_KEY', c.keystring], ['ETSY_SECRET', c.secret]]) {
+      await wrangler(['secret', 'put', name], value, dir);
+      console.log('  ✓ the Pulse worker holds ' + name);
+    }
+    const tmp = path.join(os.tmpdir(), 'pulse-etsy-' + crypto.randomBytes(6).toString('hex') + '.json');
+    fs.writeFileSync(tmp, JSON.stringify({ access_token: j.access_token, refresh_token: j.refresh_token,
+      expires_at: Date.now() + (j.expires_in || 3600) * 1000, shop_id: sid, connected: Date.now() }), { mode: 0o600 });
+    try {
+      await wrangler(['kv', 'key', 'put', 'token', '--binding', 'ETSY', '--remote', '--path', tmp], null, dir);
+    } finally {
+      fs.rmSync(tmp, { force: true });
+    }
+    console.log('  ✓ the Pulse worker holds its token\n✓ Pulse is connected to the shop, read-only. The Etsy card on Banana HQ\'s Business floor fills on its next load.');
   },
 
   async sales() {

@@ -10,6 +10,7 @@
 //     hosts.analystBtn the letterhead button that opens yesterday's report
 //     io.live()            -> /api/live          (Google realtime)
 //     io.range(from, to)   -> /api/range         (Google, the window)
+//     io.etsy(from, to)    -> /api/etsy          (Etsy's own numbers for the same window)
 //     io.analyst() / io.report()
 //     io.roll()            -> { roll, arcade }   (the pass worker; null without a key)
 //     io.world()           -> /yards/stats       (the rave worker; no key)
@@ -354,6 +355,9 @@ export function mountHQ(hosts, io) {
       io.range(pf, pt).catch(() => null),
     ]);
     S.prev = P;
+    // 🛍 the Etsy shop's numbers for the same window: their own call, so a slow Etsy never holds up Google's floors
+    const win = S.from + '|' + S.to;   // a slower answer for a window no longer on screen is dropped
+    if (io.etsy) io.etsy(S.from, S.to).then((e) => { if (win === S.from + '|' + S.to) { S.etsy = e; if (S.floor === 'business') paint(); } }).catch(() => {});
     if (R && R.__err) S.err = R.__err;
     if (R && !R.__err) { S.range = R; S.err = ''; }
     if (earthWin) earthWin.push({ range: S.range });

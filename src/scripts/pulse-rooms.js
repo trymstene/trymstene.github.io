@@ -472,10 +472,46 @@ export function renderBusiness(into, S, probe) {
 
   // 🛍 the Etsy shop (30 Sep): the stream pack sells there, so the site's part is the tap that sends people
   const etsy = (R.events || []).find((e) => e.name === 'etsy_click') || {};
-  const s5 = section(into, 'Out to the Etsy shop', 'Taps out to the Etsy shop, where the stream pack sells: the streamer button on the GIF page and its language pages. Sales show in Etsy’s own stats.', { src: 'goog', when: W });
+  const s5 = section(into, 'Out to the Etsy shop', 'Taps from this site to the Etsy shop: the streamer button on the GIF page and its language pages. The card under this one is the shop itself, in Etsy’s own numbers.', { src: 'goog', when: W });
   const ge = div('hqp-tiles', null, s5);
   tile(ge, 'taps', nfmt(+etsy.v || 0), 'out to the Etsy shop', '');
   tile(ge, 'people', nfmt(+etsy.u || 0), 'who tapped', '');
+
+  // the shop itself (worker-pulse/src/etsy.js): Etsy's clock, so a card of its own
+  const E = S.etsy;
+  const s6 = section(into, 'The Etsy shop', 'What the Etsy listings did in this window, in Etsy’s own numbers: views, hearts, orders and money. A heart is a favourite, the nearest thing to “almost bought” that Etsy shares. Etsy keeps only running totals, so Pulse saves them once a day and a window is the difference between two saves. Visits by source, carts and the conversion rate stay on Etsy’s own Stats page (Shop Manager › Stats).', { src: 'etsy', when: W });
+  const money = (n) => (E && E.currency && E.currency !== 'NOK' ? nfmt(+n || 0) + ' ' + E.currency : nfmt(Math.round(+n || 0)) + ' kr');
+  if (!E) div('hqp-empty', 'asking Etsy…', s6);
+  else if (E.__err) div('hqp-empty', 'Etsy’s card did not load: ' + E.__err, s6);
+  else if (E.conn === 'unconfigured') div('hqp-warn', '⚠ Pulse has no Etsy connection yet. In a terminal: node tools/etsy.mjs pulse-connect', s6);
+  else if (E.conn === 'reconnect') div('hqp-warn', '⚠ Etsy stopped answering Pulse' + (E.why ? ' (' + E.why + ')' : '') + '. Reconnect in a terminal: node tools/etsy.mjs pulse-connect', s6);
+  else if (E.conn === 'ok') {
+    const et = div('hqp-tiles', null, s6);
+    tile(et, 'views', nfmt(E.views), 'on the listings', '');
+    tile(et, 'hearts', (E.hearts > 0 ? '+' : '') + nfmt(E.hearts), 'favourited', '');
+    tile(et, 'orders', nfmt(E.orders), money(E.money), E.orders ? 'ok' : '');
+    if (E.partial) div('hqp-note', 'Views and hearts count from ' + E.since + ', the first day Pulse kept a save.', s6);
+    const moved = (E.rows || []).filter((r) => r.v || r.h);
+    const t6 = div('hqp-tbl', null, s6);
+    if (!moved.length) {
+      div('hqp-empty', 'No views or hearts in this window yet. All time: ' + nfmt(E.totals[0]) + ' views and ' + nfmt(E.totals[1])
+        + ' hearts across ' + E.listings + ' listings.', t6);
+    }
+    moved.slice(0, 10).forEach((r) => {
+      const row = div('hqp-trow', null, t6);
+      div('hqp-tk', r.title, row);
+      div('hqp-tv', nfmt(r.v) + ' views · ' + (r.h > 0 ? '+' : '') + nfmt(r.h) + (Math.abs(r.h) === 1 ? ' heart' : ' hearts'), row);
+    });
+    if ((E.recent || []).length) {
+      const s7 = section(into, 'Etsy orders', 'The latest orders in this window: the day, what was bought and the total. Never who bought.', { src: 'etsy', when: W });
+      const t7 = div('hqp-tbl', null, s7);
+      E.recent.forEach((o) => {
+        const row = div('hqp-trow', null, t7);
+        div('hqp-tk', o.day + ' · ' + o.items, row);
+        div('hqp-tv', money(o.total), row);
+      });
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

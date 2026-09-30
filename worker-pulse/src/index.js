@@ -6,6 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 import { analyse } from './analyst.js';
 import { writeReport } from './writer.js';
+import { apiEtsy, etsySnapshot } from './etsy.js';
 
 const GA = 'https://analyticsdata.googleapis.com/v1beta/properties/';
 
@@ -875,6 +876,10 @@ function movedPage() {
 }
 
 export default {
+  // 🛍 once a day: renew Pulse's Etsy connection (it would lapse after 90 days unused) and keep the day's totals
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(etsySnapshot(env).catch(() => null));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     const t = (url.searchParams.get('t') || '').trim();
@@ -900,6 +905,14 @@ export default {
         const from = url.searchParams.get('from') || 'today';
         const to = url.searchParams.get('to') || 'today';
         return new Response(JSON.stringify(await apiRange(env, from, to)), {
+          headers: noRobots({ 'Content-Type': 'application/json' }),
+        });
+      }
+      if (url.pathname === '/api/etsy') {
+        const from = url.searchParams.get('from') || 'today';
+        const to = url.searchParams.get('to') || 'today';
+        if (!RANGE_RE.test(from) || !RANGE_RE.test(to)) return deny();
+        return new Response(JSON.stringify(await apiEtsy(env, from, to)), {
           headers: noRobots({ 'Content-Type': 'application/json' }),
         });
       }

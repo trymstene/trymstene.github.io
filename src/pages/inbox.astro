@@ -704,6 +704,7 @@ const description = 'Authorized banana personnel only.';
     .hqp-chip.is-mail { background: rgba(255, 180, 94, 0.16); color: var(--org); }
     .hqp-chip.is-shop { background: rgba(255, 93, 143, 0.16); color: var(--hot2); }
     .hqp-chip.is-git { background: rgba(143, 182, 255, 0.16); color: #8fb6ff; }
+    .hqp-chip.is-etsy { background: rgba(241, 100, 30, 0.18); color: #ff9a5c; }
     .hqp-h { flex-wrap: wrap; gap: 0.5rem; }
     .hqp-h .hqp-chip { margin-left: 0.1rem; }
     /* the one visible sentence under every title, and the "more" that opens the rest */
@@ -1548,6 +1549,7 @@ const description = 'Authorized banana personnel only.';
           key: passKey,
           live: () => px('live'),
           range: (from, to) => px('range', '&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to)),
+          etsy: (from, to) => px('etsy', '&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to)),
           analyst: () => px('analyst'),
           report: () => px('report'),
           roll: () => {

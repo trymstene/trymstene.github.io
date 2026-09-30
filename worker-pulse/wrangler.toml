@@ -23,3 +23,14 @@ GSC_SITE = "https://trymstene.com/"
 [[services]]
 binding = "PASS"
 service = "banana-pass"
+
+# 🛍 THE ETSY SHOP (30 Sep 2026): Pulse's own read-only Etsy token (made by `node tools/etsy.mjs pulse-connect`) and one
+# snapshot a day of every listing's views and hearts. The app's keystring and shared secret are the secrets ETSY_KEY and
+# ETSY_SECRET.
+[[kv_namespaces]]
+binding = "ETSY"
+id = "a821d12e9ede4745bf0fcf69e488b7ca"
+
+# the daily Etsy snapshot, and the renewal that keeps the connection past its 90 days (04:17 UTC)
+[triggers]
+crons = ["17 4 * * *"]
