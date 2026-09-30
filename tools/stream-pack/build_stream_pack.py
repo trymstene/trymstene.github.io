@@ -863,6 +863,91 @@ for zname, (title, parts, keep) in PARTS.items():
                     z.write(full, rel)
     print('zip', zname, os.path.getsize(os.path.join(SHOP, zname)) // 1024, 'KB')
 
+# ── THE COVERS: each listing's FIRST photo, the one the shop grid and search show (Trym, 30 Sep: "photos makes them
+# look the same though" — both cards showed the same dark emote board). Four looks that cannot be mistaken for each
+# other: the full pack a bright yellow collage of everything, the emote pack the dark board, the badges deep navy with
+# the medals, the classic emote hot pink with one big banana. ⚠️ Etsy crops a thumbnail 4:3, 3:4 or 1:1 by device (the
+# first boards lost their title to the crop), so a cover is 2400 square with everything inside the centred 1700 square.
+CV = 2400
+SAFE = (350, 350, 2050, 2050)
+
+
+def cover_bg(stops, ray_col, ray_peak=120):
+    im = radial((CV, CV), CV // 2, CV // 2 + 100, stops)
+    rl = ray_layer((CV, CV), CV // 2, CV // 2 + 100, 30, ray_col, start=-math.pi / 2 + 0.05)
+    rl.putalpha(ImageChops.multiply(rl.getchannel('A'), fade_mask((CV, CV), CV // 2, CV // 2 + 100, 150, 1500, ray_peak)))
+    im.alpha_composite(rl)
+    return im
+
+
+def framed(img, border=10, sh=18):
+    """a picture in the pack's ink frame with its hard shadow"""
+    out = Image.new('RGBA', (img.width + 2 * border + sh, img.height + 2 * border + sh), (0, 0, 0, 0))
+    d = ImageDraw.Draw(out)
+    d.rectangle((sh, sh, out.width - 1, out.height - 1), fill=INK)
+    d.rectangle((0, 0, img.width + 2 * border - 1, img.height + 2 * border - 1), fill=INK)
+    out.alpha_composite(img.convert('RGBA'), (border, border))
+    return out
+
+
+def cover_text(im, title, line, ty=470, fill=(255, 255, 255), line_fill=(255, 255, 255)):
+    d = ImageDraw.Draw(im)
+    f = font(170)
+    while d.textlength(title, font=f) > SAFE[2] - SAFE[0] and f.size > 60:
+        f = font(f.size - 6)
+    outlined(d, (CV // 2, ty), title, f, fill=fill, sw=12, shadow=12)
+    if line:
+        f2 = font(56)
+        while d.textlength(line, font=f2) > SAFE[2] - SAFE[0] and f2.size > 24:
+            f2 = font(f2.size - 2)
+        outlined(d, (CV // 2, ty + 150), line, f2, fill=line_fill, sw=6, shadow=5)
+
+
+# 1 — the full pack: bright, everything in one picture
+cv = cover_bg([(0.0, (255, 250, 214)), (0.4, (255, 226, 60)), (1.0, (232, 176, 0))], (255, 252, 225, 255))
+cover_text(cv, 'FULL STREAM PACK', 'EMOTES  ·  SUB BADGES  ·  ALERTS  ·  SCENES  ·  PANELS')
+scene = Image.open(os.path.join(OUT, 'scenes', 'starting-soon-1920x1080.png')).resize((1120, 630), Image.Resampling.LANCZOS)
+fs = framed(scene)
+cv.alpha_composite(fs, ((CV - fs.width) // 2, 720))
+row = [cut(emote_stills[n][0][STILL], emote_stills[n][1], 250, emote_stills[n][3], 0) for n in ('hype', 'love', 'gg', 'cool')]
+for k, t in enumerate(row):
+    cv.alpha_composite(t, (560 + k * 330, 1410))
+for k, n in enumerate(('01-month', '06-months', '12-months')):
+    m = badge_arts[n].resize((250, 250), Image.Resampling.LANCZOS)
+    cv.alpha_composite(m, (430 + k * 280, 1740))
+pn = Image.open(os.path.join(OUT, 'panels', 'about-me-320x150.png'))
+pn = pn.resize((pn.width * 2, pn.height * 2), Image.Resampling.NEAREST)
+cv.alpha_composite(pn, (1300, 1720))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-full-stream-pack-2400.png'), optimize=True)
+
+# 2 — the emote pack: the dark board, twelve faces
+cv = cover_bg([(0.0, (44, 44, 56)), (0.5, (28, 28, 36)), (1.0, (16, 16, 20))], (60, 60, 74, 255), 160)
+cover_text(cv, '12 EMOTES', 'ANIMATED + STILL  ·  TWITCH + DISCORD', fill=BANANA)
+for k, (name, _, _) in enumerate(EMOTES):
+    fr, sbx, _, eff = emote_stills[name]
+    t = cut(fr[STILL], sbx, 330, eff, 0)
+    cv.alpha_composite(t, (450 + (k % 4) * 390, 790 + (k // 4) * 400))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-emote-pack-2400.png'), optimize=True)
+
+# 3 — the sub badges: deep navy, the medals
+cv = cover_bg([(0.0, (46, 58, 110)), (0.5, (24, 30, 64)), (1.0, (10, 12, 30))], (80, 96, 170, 255), 140)
+cover_text(cv, '6 SUB BADGES', 'BRONZE  ·  SILVER  ·  GOLD  ·  1 TO 12 MONTHS', fill=BANANA)
+for k, (name, _, _) in enumerate(BADGES):
+    m = badge_arts[name].resize((440, 440), Image.Resampling.LANCZOS)
+    cv.alpha_composite(m, (440 + (k % 3) * 540, 780 + (k // 3) * 600))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-sub-badges-2400.png'), optimize=True)
+
+# 4 — the classic emote: hot pink, one big banana
+cv = cover_bg([(0.0, (255, 150, 170)), (0.45, (255, 90, 120)), (1.0, (214, 40, 78))], (255, 200, 212, 255), 120)
+cover_text(cv, 'THE CLASSIC EMOTE', 'THE 1999 ORIGINAL  ·  ANIMATED')
+big = edge(crisp_dance(30)[7], 10)
+sh = Image.new('L', (CV, CV), 0)
+ImageDraw.Draw(sh).ellipse((CV // 2 - 360, 1990, CV // 2 + 360, 2070), fill=90)
+cv.paste((120, 10, 40, 255), mask=sh.filter(ImageFilter.GaussianBlur(18)))
+cv.alpha_composite(big, ((CV - big.width) // 2, 2040 - big.height))
+cv.convert('RGB').save(os.path.join(OUT, 'cover-classic-emote-2400.png'), optimize=True)
+print('covers')
+
 # ── ONE FOLDER TO UPLOAD FROM (Trym: "give me the full folder path so i dont have to click around to find the
 # files"): out/etsy/<n>-<listing>/ holds that listing's zip and its pictures, numbered in the order Etsy wants them
 # (the first is the thumbnail), and shop-look/ holds the shop's icon and cover banner.
@@ -874,10 +959,10 @@ if os.path.isdir(ETSY):
 os.makedirs(ETSY, exist_ok=True)
 LISTINGS = [
     ('1-full-stream-pack', 'official-dancing-banana-stream-pack.zip',
-     ['preview-emotes-2000.png', 'preview-badges-panels-2000.png', 'preview-scenes-2000.png']),
-    ('2-emote-pack', 'official-dancing-banana-emote-pack.zip', ['preview-emote-pack-2000.png']),
-    ('3-sub-badges', 'official-dancing-banana-sub-badges.zip', ['preview-sub-badges-2000.png']),
-    ('4-classic-emote', 'official-dancing-banana-classic-emote.zip', ['preview-classic-emote-2000.png']),
+     ['cover-full-stream-pack-2400.png', 'preview-emotes-2000.png', 'preview-badges-panels-2000.png', 'preview-scenes-2000.png']),
+    ('2-emote-pack', 'official-dancing-banana-emote-pack.zip', ['cover-emote-pack-2400.png', 'preview-emote-pack-2000.png']),
+    ('3-sub-badges', 'official-dancing-banana-sub-badges.zip', ['cover-sub-badges-2400.png', 'preview-sub-badges-2000.png']),
+    ('4-classic-emote', 'official-dancing-banana-classic-emote.zip', ['cover-classic-emote-2400.png', 'preview-classic-emote-2000.png']),
 ]
 for folder, zname, pics in LISTINGS:
     d = os.path.join(ETSY, folder)
