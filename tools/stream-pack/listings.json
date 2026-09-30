@@ -1,6 +1,7 @@
 {
   "_what": "The four Etsy listings of the official dancing banana stream pack: what tools/etsy.mjs writes to Etsy (title, description, tags, price in NOK, photos and zip from tools/stream-pack/out/etsy/<folder>). Titles follow Etsy's 2025 guidance: under 15 words, 'Official Dancing Banana' first. 'ai' is the answer to Etsy's 'How is this digital content created?', which the API cannot set: set it in the listing editor.",
   "taxonomy": "Art & Collectibles > Drawing & Illustration > Digital",
+  "taxonomy_id": 77,
   "quantity": 999,
   "listings": {
     "full": {
