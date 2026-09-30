@@ -311,7 +311,8 @@ const COMMANDS = {
     const sid = await shopId();
     const l = await api('GET', '/listings/' + a1, { query: { includes: ['Images'] } });
     console.log(l.title + '\n' + l.url + '\nstate ' + l.state + ' · ' + money(l.price) + ' · qty ' + l.quantity + ' · views ' + (l.views ?? '?')
-      + ' · ♥ ' + (l.num_favorers ?? 0) + ' · taxonomy ' + l.taxonomy_id + ' · type ' + (l.listing_type || '?'));
+      + ' · ♥ ' + (l.num_favorers ?? 0) + ' · taxonomy ' + l.taxonomy_id + ' · type ' + (l.listing_type || '?')
+      + (l.featured_rank >= 0 ? ' · featured #' + (l.featured_rank + 1) : ''));
     console.log('tags: ' + (l.tags || []).join(', '));
     if (l.suggested_title) console.log('Etsy suggests: ' + l.suggested_title);
     for (const im of l.images || []) console.log('  photo ' + im.rank + ': ' + im.listing_image_id + (im.alt_text ? ' — ' + im.alt_text : ''));
@@ -387,14 +388,17 @@ const COMMANDS = {
     console.log('✓ updated');
   },
 
-  // the shop's featured row: rank 1 sits first on the shop page
+  // the shop's featured row: rank 1 sits first on the shop page.
+  // ⚠️ Etsy answers 200 to a featured_rank update and may still leave the listing unfeatured (30 Sep: the first one
+  // took, three more came back -1), so the answer is read, never assumed; Shop Manager's star always works.
   async feature() {
     if (!a1) { console.error('usage: feature <listing id> [rank]'); process.exit(1); }
     const rank = parseInt(a2 || '1', 10);
     if (!(rank > 0)) { console.error('✗ the rank is a whole number from 1'); process.exit(1); }
     if (!plan(['Listing ' + a1 + ' becomes featured at position ' + rank + ' on the shop page.'])) return;
-    await api('PATCH', '/shops/' + (await shopId()) + '/listings/' + a1, { form: { featured_rank: rank } });
-    console.log('✓ featured');
+    const l = await api('PATCH', '/shops/' + (await shopId()) + '/listings/' + a1, { form: { featured_rank: rank } });
+    if (l && l.featured_rank >= 0) console.log('✓ featured (Etsy counts it as #' + (l.featured_rank + 1) + ')');
+    else { console.error('✗ Etsy took the call but did not feature it: star it in Shop Manager > Listings'); process.exitCode = 1; }
   },
 
   async publish() {

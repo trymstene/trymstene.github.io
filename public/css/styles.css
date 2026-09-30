@@ -445,6 +445,8 @@ a { color: inherit; }
 .btn--beach { background: linear-gradient(135deg, #7fd6f2 0%, #35a8e0 100%); color: var(--ink); }
 /* the park's own: lawn green, so the three doors read as three PLACES */
 .btn--park { background: linear-gradient(135deg, #9fd964 0%, #4e9e34 100%); color: var(--ink); }
+/* for streamers: Twitch's own purple, white on it (4.6:1) */
+.btn--twitch { background: #9146ff; color: #fff; }
 
 /* 💬 THE DISCORD CARD — the one place on the site that asks you to go somewhere
    ELSE, so it earns it: Discord's blurple against the paper, the world's ink

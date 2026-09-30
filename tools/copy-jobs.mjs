@@ -2972,6 +2972,19 @@ export const JOBS = {
     },
     shape: () => [],
   },
+  'gif-streamers': {
+    id: 'gif-streamers',
+    title: 'The GIF page — the streamer button to the Etsy shop',
+    what: 'One button in the GIF page’s hero, under the free downloads and their note: it sends streamers to the official stream pack on Etsy, in a new tab. A phone shows the short label, so the button never breaks a line.',
+    approved: 'src/data/copy/gif-streamers.json',
+    reads: 'src/pages/dancing-banana-gif-meme.astro (a static import at build time)',
+    top: ['button', 'short'],
+    fields: {
+      button: { kind: 'label', max: 34, note: 'The button on a wide screen, after the Twitch mark. It names Etsy because it leaves the site; the page draws the arrow.' },
+      short: { kind: 'label', max: 22, note: 'The same button on a phone: one line at 360 px.' },
+    },
+    shape: () => [],
+  },
   'pass-toasts': {
     id: 'pass-toasts',
     title: 'My Pass — what the pass page says back',

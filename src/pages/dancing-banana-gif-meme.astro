@@ -7,6 +7,9 @@ import PressBelt from '../components/PressBelt.astro';
 import Hreflang from '../components/Hreflang.astro';
 import LangSwitch from '../components/LangSwitch.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PixelArtIcon from '../components/PixelArtIcon.astro';
+import SWORDS from '../data/copy/gif-streamers.json';
+import { ETSY_SHOP } from '../data/pay-rail.js';
 import ShopStrip from '../components/ShopStrip.astro';
 import PackGrid from '../components/PackGrid.astro';
 import PackCarousel from '../components/PackCarousel.astro';
@@ -132,6 +135,11 @@ const person = {
           <a class="btn btn--light" href="/assets/dancing-banana-transparent.gif" download="dancing-banana-transparent-trymstene.com.gif">Transparent ↓</a>
         </div>
         <p class="gifhero__note">No sign-up, no watermark. <a href="#download">Every format ↓</a></p>
+        {/* 🎮 the streamers' door to the Etsy shop, after the note: the note belongs to the free files */}
+        <a class="btn btn--twitch gifhero__stream" href={ETSY_SHOP} target="_blank" rel="noopener" data-place="gif_hero_streamers">
+          <PixelArtIcon name="twitch" size="22px" />
+          <span class="gifhero__stream-long">{SWORDS.button} →</span><span class="gifhero__stream-short">{SWORDS.short} →</span>
+        </a>
         {/* 🎟 the one ask above the fold: a slim rotating pack under the free
             buttons, never above them — the download stays the page's job */}
         <div class="gifhero__packs"><PackCarousel place="gif_hero" /></div>

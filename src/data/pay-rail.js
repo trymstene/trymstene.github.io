@@ -51,3 +51,7 @@ export const MANAGE = {
   polar: 'https://polar.sh/trym-stene/portal',
   kofi: 'https://ko-fi.com/manage/supportreceived',   // Ko-fi members manage from their own Ko-fi account
 }[RAIL] || 'https://polar.sh/trym-stene/portal';
+
+// 🛍 THE ETSY SHOP (30 Sep 2026): the official stream pack, emotes and overlays. Linked from the GIF page's streamer
+// button; main.js counts a tap as `etsy_click`.
+export const ETSY_SHOP = 'https://www.etsy.com/shop/DancingBanana1999';

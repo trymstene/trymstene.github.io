@@ -34,7 +34,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const SRC = join(ROOT, 'src');
 // the one file allowed to name a payment host, plus the docs that explain why
 const OWNER = ['src/data/pay-rail.js'];
-const HOSTS = ['buymeacoffee.com', 'ko-fi.com', 'polar.sh/checkout'];
+const HOSTS = ['buymeacoffee.com', 'ko-fi.com', 'polar.sh/checkout', 'etsy.com'];
 // ⚡ properties a compositor cannot animate: a shadow or a filter re-rasterises, a box metric re-lays-out
 const KF_COSTLY = new Set(['filter', 'box-shadow', 'text-shadow', 'left', 'top', 'right', 'bottom',
   'width', 'height', 'margin', 'margin-top', 'margin-left', 'margin-right', 'margin-bottom', 'padding']);

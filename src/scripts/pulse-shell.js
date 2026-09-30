@@ -33,7 +33,8 @@ import { renderVisitors, renderBusiness, renderWorldCards, renderAsk, renderSync
 
 const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 'sticker_pdp_view',
   'checkout_redirect', 'begin_checkout', 'purchase', 'view_item', 'select_item', 'wallpaper_download',
-  'license_click', 'homestead_open', 'offer_pack', 'quest_step', 'arcade_board', 'town_open', 'post_open', 'wave_card'];
+  'license_click', 'homestead_open', 'offer_pack', 'quest_step', 'arcade_board', 'town_open', 'post_open', 'wave_card',
+  'etsy_click'];
 // ⚠️ THE HOROSCOPE RULE, kept: the analyst is allowed to say nothing
 // happened, and to say a sample is too small to call. One that finds a story
 // every single day is not an analyst — the silence is what makes a loud day

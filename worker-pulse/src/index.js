@@ -34,6 +34,7 @@ const LENS_EVENTS = [
   'park_citizens', 'citizens_keep',   // 🏆 the citizens' wall, 6 Sep
   'quest_step',                   // 🕯 chapter-1 funnel, live 13 Aug
   'shop_door',                    // 🚪 the world→commerce bridge, 31 Jul
+  'etsy_click',                   // 🛍 out to the Etsy shop (the stream pack), 30 Sep
   // 🏪 every in-world shopfront, 1 Aug — these are real storefronts and
   // deserve the map lens as much as any download does
   'stand_counter', 'stand_buy', 'stand_cart_view',
@@ -601,6 +602,7 @@ const ANALYST_EVENTS = [
   'builder_start', 'builder_boot', 'sticker_pdp_view', 'sticker_pdp_checkout',
   'pdp_add_to_order', 'add_to_cart', 'cart_open', 'checkout_redirect', 'gif_download', 'wallpaper_download', 'shop_view',
   'shop_door', 'view_item', 'offer_shown', 'offer_click',
+  'etsy_click',                    // 🛍 out to the Etsy shop, 30 Sep
   'offer_world', 'offer_discord', 'offer_support',
   'offer_pack', 'offer_swap',      // 🎟 the pack card, 5 Sep
   'rave_join', 'park_join', 'beach_join', 'forge_open', 'purchase',

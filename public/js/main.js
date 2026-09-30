@@ -346,6 +346,9 @@
       gtag('event', 'member_join_click', { placement: place });
     } else if (href.indexOf('license-the-dancing-banana') > -1) {
       gtag('event', 'license_click', { placement: place });
+    } else if (/^https:\/\/(www\.)?etsy\.com\//.test(href)) {
+      // 🛍 out to the Etsy shop (the stream pack): what they buy there, Etsy's stats say; the tap is ours
+      gtag('event', 'etsy_click', { from: place, transport_type: 'beacon' });
     }
   });
 })();

@@ -469,6 +469,13 @@ export function renderBusiness(into, S, probe) {
       });
     }
   }
+
+  // 🛍 the Etsy shop (30 Sep): the stream pack sells there, so the site's part is the tap that sends people
+  const etsy = (R.events || []).find((e) => e.name === 'etsy_click') || {};
+  const s5 = section(into, 'Out to the Etsy shop', 'Taps out to the Etsy shop, where the stream pack sells: today the streamer button on the GIF page. Sales show in Etsy’s own stats.', { src: 'goog', when: W });
+  const ge = div('hqp-tiles', null, s5);
+  tile(ge, 'taps', nfmt(+etsy.v || 0), 'out to the Etsy shop', '');
+  tile(ge, 'people', nfmt(+etsy.u || 0), 'who tapped', '');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

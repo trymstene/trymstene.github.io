@@ -36,6 +36,14 @@
 .gifhero__note { font-size: 0.86rem; opacity: 0.7; margin: 0.7rem 0 0; }
 .gifhero__packs { margin-top: 1.2rem; }
 .gifhero__packs { --pkc-max: 100%; }   /* the tile takes the column's own width */
+/* the streamers' door to the Etsy shop: the Twitch mark, then the words. A phone gets the short words (a button never
+   breaks a line) */
+.gifhero__stream { display: inline-flex; align-items: center; gap: 0.55rem; margin-top: 1rem; }
+.gifhero__stream-short { display: none; }
+@media (max-width: 430px) {
+  .gifhero__stream-long { display: none; }
+  .gifhero__stream-short { display: inline; }
+}
 @media (max-width: 640px) {
   .gifhero__packs { text-align: left; }
   /* on a phone the banana leads and the ask follows — same order as before, just without a screenful of air */
