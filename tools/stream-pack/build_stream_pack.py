@@ -344,10 +344,13 @@ def only_head(img):
     return out
 
 
-def badge_part(outfit, idx=2, below=88, bust=False):
-    """the head from the top of whatever is on it down to `below` under the eyes, cropped to the head's own width, on
-    transparency, at the render's size (frame 2: facing you). `bust`: under the eyes only the banana's own body column
-    is kept, as on a coin (the arms leave the body at the mouth, and cut there they were stubs or half hands)."""
+def badge_part(outfit, idx=2, below=88):
+    """the head from the top of whatever is on it down to `below` under the eyes, on transparency, at the render's size
+    (frame 2: facing you), for the medals and the gems. As on a coin, under the eyes only the banana's own body column
+    stays: the arms leave the body at the mouth, and cut there they were stubs or half hands.
+    ⚠️ The crop takes the BODY'S full width too (Trym, 30 Sep: "all bananas here lacks their black stroke on their right
+    side"): frame 2 leans right, its outline a few art pixels past the hat-and-eyes window, which sliced it off; the
+    medals' white edge had been drawn where the black line should be."""
     f = br.render(idx, outfit, scale=S)
     F = br.FRAMES[idx]
     top = f.getbbox()[1]
@@ -358,20 +361,20 @@ def badge_part(outfit, idx=2, below=88, bust=False):
     fb = f.crop((x0, PAD + (F['eyeCy'] - 30) * S, PAD + (F['eyeCx'] + 70) * S, PAD + (F['eyeCy'] + 30) * S)).getbbox()
     if fb:   # the face and whatever sits on it (shades reach past a bare head)
         l, r = min(l, x0 + fb[0] - 4 * S), max(r, x0 + fb[2] + 4 * S)
-    if bust:
-        a = f.getchannel('A')
-        px, row, x = a.load(), PAD + (F['eyeCy'] + 150) * S, round((l + r) / 2)   # the chest: no arm reaches it
-        bl = br_ = x
-        while bl > 0 and px[bl - 1, row] > 0:
-            bl -= 1
-        while br_ < f.width - 1 and px[br_ + 1, row] > 0:
-            br_ += 1
-        keep = Image.new('L', f.size, 255)
-        kd = ImageDraw.Draw(keep)
-        y0 = PAD + (F['eyeCy'] + 40) * S
-        kd.rectangle((0, y0, bl - 1, f.height), fill=0)
-        kd.rectangle((br_ + 1, y0, f.width, f.height), fill=0)
-        f.putalpha(ImageChops.multiply(a, keep))
+    a = f.getchannel('A')
+    px, row, x = a.load(), PAD + (F['eyeCy'] + 150) * S, round((l + r) / 2)   # the chest: no arm reaches it
+    bl = br_ = x
+    while bl > 0 and px[bl - 1, row] > 0:
+        bl -= 1
+    while br_ < f.width - 1 and px[br_ + 1, row] > 0:
+        br_ += 1
+    l, r = min(l, bl - 2 * S), max(r, br_ + 1 + 2 * S)
+    keep = Image.new('L', f.size, 255)
+    kd = ImageDraw.Draw(keep)
+    y0 = PAD + (F['eyeCy'] + 40) * S
+    kd.rectangle((0, y0, bl - 1, f.height), fill=0)
+    kd.rectangle((br_ + 1, y0, f.width, f.height), fill=0)
+    f.putalpha(ImageChops.multiply(a, keep))
     return only_head(f.crop((l, top, r, bottom)))
 
 
@@ -544,7 +547,7 @@ def gem(outfit, colour, N=288):
     k = (inner * 1.62) / max(head.size)
     top = c + inner * 0.92 - head.height * k                         # where the head's top stood before
     top -= max(0.0, top - (c - inner + inner * GEM_TOP))            # up to the margin, never down
-    body = badge_part(outfit, below=170, bust=True)                 # the same head, and more banana under it
+    body = badge_part(outfit, below=170)                            # the same head, and more banana under it
     bust = body.resize((max(1, round(body.width * k)), max(1, round(body.height * k))), Image.Resampling.BOX)
     layer = Image.new('RGBA', (N, N), (0, 0, 0, 0))
     layer.alpha_composite(bust, (round(c - bust.width / 2), round(top)))
