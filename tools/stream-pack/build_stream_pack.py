@@ -344,8 +344,10 @@ def only_head(img):
     return out
 
 
-def badge_art(outfit, idx=2, below=88):
-    """the head, square, on transparency, at the render's size (frame 2: facing you)"""
+def badge_part(outfit, idx=2, below=88, bust=False):
+    """the head from the top of whatever is on it down to `below` under the eyes, cropped to the head's own width, on
+    transparency, at the render's size (frame 2: facing you). `bust`: under the eyes only the banana's own body column
+    is kept, as on a coin (the arms leave the body at the mouth, and cut there they were stubs or half hands)."""
     f = br.render(idx, outfit, scale=S)
     F = br.FRAMES[idx]
     top = f.getbbox()[1]
@@ -356,7 +358,26 @@ def badge_art(outfit, idx=2, below=88):
     fb = f.crop((x0, PAD + (F['eyeCy'] - 30) * S, PAD + (F['eyeCx'] + 70) * S, PAD + (F['eyeCy'] + 30) * S)).getbbox()
     if fb:   # the face and whatever sits on it (shades reach past a bare head)
         l, r = min(l, x0 + fb[0] - 4 * S), max(r, x0 + fb[2] + 4 * S)
-    part = only_head(f.crop((l, top, r, bottom)))
+    if bust:
+        a = f.getchannel('A')
+        px, row, x = a.load(), PAD + (F['eyeCy'] + 150) * S, round((l + r) / 2)   # the chest: no arm reaches it
+        bl = br_ = x
+        while bl > 0 and px[bl - 1, row] > 0:
+            bl -= 1
+        while br_ < f.width - 1 and px[br_ + 1, row] > 0:
+            br_ += 1
+        keep = Image.new('L', f.size, 255)
+        kd = ImageDraw.Draw(keep)
+        y0 = PAD + (F['eyeCy'] + 40) * S
+        kd.rectangle((0, y0, bl - 1, f.height), fill=0)
+        kd.rectangle((br_ + 1, y0, f.width, f.height), fill=0)
+        f.putalpha(ImageChops.multiply(a, keep))
+    return only_head(f.crop((l, top, r, bottom)))
+
+
+def badge_art(outfit, idx=2, below=88):
+    """the head, square (standing on the square's floor), for the medals"""
+    part = badge_part(outfit, idx, below)
     side = max(part.width, part.height)
     sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
     sq.alpha_composite(part, ((side - part.width) // 2, side - part.height))
@@ -482,7 +503,10 @@ def octagon(c, r):
     return [(c + r * math.cos(math.radians(22.5 + 45 * k)), c + r * math.sin(math.radians(22.5 + 45 * k))) for k in range(8)]
 
 
-def gem(head, colour, N=288):
+GEM_TOP = 0.16   # the room a gem's banana keeps under the face's top, as a share of the face's half-width
+
+
+def gem(outfit, colour, N=288):
     light, mid, dark, ray = GEM[colour]
     im = Image.new('RGBA', (N, N), (0, 0, 0, 0))
     c = N / 2
@@ -511,10 +535,19 @@ def gem(head, colour, N=288):
     im.paste(face, mask=face_m)
     d.polygon(rim_i, outline=dark + (255,), width=3)                # the bevel into the face
     inner = (R - 6) * 0.78 * math.cos(math.radians(22.5))           # the face's own half-width
-    k = (inner * 1.62) / max(head.size)                             # the bust, as on the medals
-    bust = edge(head.resize((max(1, round(head.width * k)), max(1, round(head.height * k))), Image.Resampling.BOX), 3)
+    # ⭐ Trym, 30 Sep: "the bananas inside those badges dont need white outline since the badges have alot of coloring
+    # … half of the bananas could be a couple of pixel-lines more up … where there could be 'more banana'". No white
+    # edge: the art's own ink carries it on the rays. The size is still the hat-to-grin head's, as on the medals, but a
+    # head with room above it rises to GEM_TOP under the face's top, and the crop runs further down the body, so the
+    # banana still meets the rim instead of stopping in a flat cut.
+    head = badge_part(outfit)
+    k = (inner * 1.62) / max(head.size)
+    top = c + inner * 0.92 - head.height * k                         # where the head's top stood before
+    top -= max(0.0, top - (c - inner + inner * GEM_TOP))            # up to the margin, never down
+    body = badge_part(outfit, below=170, bust=True)                 # the same head, and more banana under it
+    bust = body.resize((max(1, round(body.width * k)), max(1, round(body.height * k))), Image.Resampling.BOX)
     layer = Image.new('RGBA', (N, N), (0, 0, 0, 0))
-    layer.alpha_composite(bust, (round(c - bust.width / 2), round(c + inner * 0.92 - bust.height)))
+    layer.alpha_composite(bust, (round(c - bust.width / 2), round(top)))
     layer.putalpha(ImageChops.multiply(layer.getchannel('A'), face_m))
     im.alpha_composite(layer)
     glare = Image.new('L', (N, N), 0)                               # the crescent of light, as on the medals
@@ -530,7 +563,7 @@ def gem(head, colour, N=288):
 gem_arts = {}
 os.makedirs(os.path.join(OUT, 'bit-badges'), exist_ok=True)
 for bits, outfit, colour in GEMS:
-    art = gem_arts[bits] = gem(badge_art(outfit), colour)
+    art = gem_arts[bits] = gem(outfit, colour)
     for size in (72, 36, 18):
         art.resize((size, size), Image.Resampling.LANCZOS).save(os.path.join(OUT, 'bit-badges', '%d-bits-%d.png' % (bits, size)), optimize=True)
     print('bits', bits)
