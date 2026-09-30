@@ -144,14 +144,6 @@ def square(box, margin=0.04):
     return (round(cx - side / 2), round(cy - side / 2), round(cx - side / 2) + side, round(cy - side / 2) + side)
 
 
-def upper_box(img, idx, scale):
-    """hat to chest: the content's own box between its top and a little under the mouth (arms and held things included)"""
-    pad = br.pad_for(scale)
-    bottom = pad + (br.FRAMES[idx]['eyeCy'] + 150) * scale
-    band = img.crop((0, 0, img.width, bottom))
-    return band.getbbox()
-
-
 def head_box(img, idx, below=110):
     """the face centred: from the top of whatever is on the head to just under the mouth, as wide as it is tall"""
     F = br.FRAMES[idx]
@@ -278,11 +270,24 @@ def crisp_dance(px):
 
 
 # ════════════════════════════════════════════ build ═════════════════════════════════════════════════════════════
-# emptied, never removed: a shell standing in the folder holds it open on Windows
-os.makedirs(OUT, exist_ok=True)
-for fn in os.listdir(OUT):
-    p = os.path.join(OUT, fn)
-    shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+def empty(path):
+    """a folder's contents gone, the folder itself kept wherever Windows refuses: a shell standing in it, or an Explorer
+    window or a photo viewer showing it, holds a FOLDER open (30 Sep: out/etsy/17-emote-evil stopped a build), while
+    the files inside still go"""
+    os.makedirs(path, exist_ok=True)
+    for fn in os.listdir(path):
+        q = os.path.join(path, fn)
+        if os.path.isdir(q):
+            empty(q)
+            try:
+                os.rmdir(q)
+            except OSError:
+                pass
+        else:
+            os.remove(q)
+
+
+empty(OUT)
 S = 2   # render at 2x the builder's space: every downscale is from plenty of pixels
 PAD = br.pad_for(S)
 
@@ -290,10 +295,12 @@ PAD = br.pad_for(S)
 emote_stills = {}
 for name, outfit, effect in EMOTES:
     d = os.path.join(OUT, 'emotes', name)
-    os.makedirs(d)
+    os.makedirs(d, exist_ok=True)
     fr = frames_of(outfit, S)
     still_box = face_box(fr[STILL], STILL, outfit)
-    anim_box = square(union([upper_box(f, i, S) for i, f in enumerate(fr)]))
+    # ⚠️ THE WHOLE BANANA, HEAD TO TOE, in every animated emote (Trym, 30 Sep: "all show the banana with cut off feet").
+    # A hat-to-chest band, squared up, sliced the legs at the shins; the dance is the whole body, props and all.
+    anim_box = square(union([f.getbbox() for f in fr]), 0.04)
     for size in (112, 56, 28):
         cut(fr[STILL], still_box, size, effect, 0).save(os.path.join(d, 'twitch-%d.png' % size), optimize=True)
         save_gif([cut(f, anim_box, size, effect, i) for i, f in enumerate(fr)], os.path.join(d, 'twitch-animated-%d.gif' % size))
@@ -521,7 +528,7 @@ def gem(head, colour, N=288):
 
 
 gem_arts = {}
-os.makedirs(os.path.join(OUT, 'bit-badges'))
+os.makedirs(os.path.join(OUT, 'bit-badges'), exist_ok=True)
 for bits, outfit, colour in GEMS:
     art = gem_arts[bits] = gem(badge_art(outfit), colour)
     for size in (72, 36, 18):
@@ -536,7 +543,7 @@ ALERTS = [('follow', {'hat': 'party'}, 'confetti'), ('subscribe', {'hat': 'crown
           ('raid', {'hat': 'viking'}, 'confetti')]
 ALERT_WORDS = {'follow': 'FOLLOW', 'subscribe': 'SUBSCRIBE', 'gift-sub': 'GIFT SUB', 'cheer': 'CHEER', 'tip': 'TIP', 'raid': 'RAID'}
 alert_src = {}                                  # (arms-up frame, its box, effect): the listing's pictures cut from it
-os.makedirs(os.path.join(OUT, 'alerts'))
+os.makedirs(os.path.join(OUT, 'alerts'), exist_ok=True)
 for name, outfit, effect in ALERTS:
     fr = frames_of(outfit, S)
     box = square(union([f.getbbox() for f in fr]), 0.06)
@@ -718,7 +725,7 @@ def scene_frames(words):
         yield im
 
 
-os.makedirs(os.path.join(OUT, 'scenes'))
+os.makedirs(os.path.join(OUT, 'scenes'), exist_ok=True)
 dance = [edged(f, 6) for f in crisp_dance(SCENE_PX)]
 DX = SPOT[0] - dance[0].width // 2
 DY = FLOOR + 14 - dance[0].height                         # the white edge's bottom sits just under the floor line
@@ -814,7 +821,7 @@ def panel(words, idx, f):
     return edge(im, 2)
 
 
-os.makedirs(os.path.join(OUT, 'panels'))
+os.makedirs(os.path.join(OUT, 'panels'), exist_ok=True)
 pf = panel_font()
 for words, idx in PANELS:
     panel(words, idx, pf).save(os.path.join(OUT, 'panels', words.lower().replace(' ', '-') + '-320x150.png'), optimize=True)
@@ -894,7 +901,7 @@ def cam_frame(iw, ih, sec=0.0, idx=7, inside=None, dancers=None):
     return im
 
 
-os.makedirs(os.path.join(OUT, 'webcam-frames'))
+os.makedirs(os.path.join(OUT, 'webcam-frames'), exist_ok=True)
 for shape, iw, ih in CAMS:
     base = 'webcam-frame-%s' % shape
     cam_frame(iw, ih).save(os.path.join(OUT, 'webcam-frames', base + '.png'), optimize=True)
@@ -1009,7 +1016,7 @@ def stinger_frames():
     return (stinger_frame(fi) for fi in range(ST_N))
 
 
-os.makedirs(os.path.join(OUT, 'stinger'))
+os.makedirs(os.path.join(OUT, 'stinger'), exist_ok=True)
 st_name = 'dancing-banana-stinger-1920x1080.webm'
 shutil.copy2(video(st_name, stinger_frames(), (SW, SH), True), os.path.join(OUT, 'stinger', st_name))
 print('stinger')
@@ -1544,11 +1551,7 @@ print('covers')
 # files"): out/etsy/<n>-<listing>/ holds that listing's zip and its pictures, numbered in the order Etsy wants them
 # (the first is the thumbnail), and shop-look/ holds the shop's icon and cover banner.
 ETSY = os.path.join(HERE, 'out', 'etsy')
-if os.path.isdir(ETSY):
-    for fn in os.listdir(ETSY):
-        p = os.path.join(ETSY, fn)
-        shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
-os.makedirs(ETSY, exist_ok=True)
+empty(ETSY)
 LISTINGS = [
     ('1-full-stream-pack', 'official-dancing-banana-stream-pack.zip',
      ['cover-full-stream-pack-2400.png', 'preview-emotes-2000.png', 'preview-badges-panels-2000.png', 'preview-scenes-2000.png',
@@ -1566,19 +1569,19 @@ LISTINGS = [
       ['cover-emote-%s-2400.png' % name, 'preview-emote-%s-2000.png' % name]) for k, (name, _, _) in enumerate(EMOTES[1:])]
 for folder, zname, pics in LISTINGS:
     d = os.path.join(ETSY, folder)
-    os.makedirs(d)
+    os.makedirs(d, exist_ok=True)
     shutil.copy2(os.path.join(SHOP, zname), os.path.join(d, zname))
     for n, pic in enumerate(pics, 1):
         shutil.copy2(os.path.join(OUT, pic), os.path.join(d, 'photo-%d-%s' % (n, pic)))
 look = os.path.join(ETSY, 'shop-look')
-os.makedirs(look)
+os.makedirs(look, exist_ok=True)
 for fn in ('shop-icon-1000.png', 'shop-banner-3360x840.png'):
     shutil.copy2(os.path.join(SHOPART, fn), os.path.join(look, fn))
 print('etsy folder', ETSY)
 
 # ── the shop's About section: the eight original frames on the stage's light, and Trym's own photos from the site ──
 ABOUT = os.path.join(ETSY, 'about-photos')
-os.makedirs(ABOUT)
+os.makedirs(ABOUT, exist_ok=True)
 pic = radial((2000, 1200), 1000, 700, [(0.0, (255, 250, 214)), (0.4, (255, 226, 60)), (1.0, (232, 176, 0))])
 rl = ray_layer((2000, 1200), 1000, 700, 28, (255, 252, 225, 255), start=-math.pi / 2 + 0.05)
 rl.putalpha(ImageChops.multiply(rl.getchannel('A'), fade_mask((2000, 1200), 1000, 700, 120, 1200, 140)))
