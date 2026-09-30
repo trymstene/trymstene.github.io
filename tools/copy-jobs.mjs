@@ -1740,6 +1740,8 @@ const localeFields = {
   'hero.alt': lp(120, 'Alt text of the dancing GIF; also its title in the image sitemap.'),
   'hero.note': lp(50, 'Under the two download buttons: no sign-up, no watermark.'),
   'hero.more': ll(30, 'A small link to every format further down (ends with ↓).'),
+  'hero.stream': ll(36, 'The streamer button under the note, on a wide screen: Twitch emotes and overlays, on Etsy. It names Etsy because it leaves the site; the page draws the Twitch mark and the arrow.'),
+  'hero.streamShort': ll(25, 'The same button on a phone, which must stay one line at 360 px: Twitch emotes, on Etsy.'),
   intro: lp(440, 'The answer-first paragraph: what the dancing banana is, who made it and when, the song it was set to, and what the page lets you do. **bold** the banana’s name and Trym Stene in 1999.'),
   'jump.label': ll(24, 'The on-page menu’s name for a screen reader: “On this page”.'),
   'jump.download': ll(22, 'On-page menu: the downloads.'), 'jump.make': ll(22, 'On-page menu: make your own.'),

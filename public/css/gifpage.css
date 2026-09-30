@@ -41,7 +41,7 @@
    (:is(.btn…):has(> .pai:first-child), 0-3-0) made it inline-flex and centred at one class */
 .gifhero .btn.gifhero__stream { display: flex; align-items: center; justify-content: flex-start; gap: 0.55rem; margin-top: 1rem; }
 .gifhero__stream-short { display: none; }
-@media (max-width: 430px) {
+@media (max-width: 560px) {   /* 560, not 430: a German or Spanish long label needs ~420 px */
   .gifhero__stream-long { display: none; }
   .gifhero__stream-short { display: inline; }
 }

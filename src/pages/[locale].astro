@@ -12,10 +12,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hreflang from '../components/Hreflang.astro';
 import LangSwitch from '../components/LangSwitch.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import PixelArtIcon from '../components/PixelArtIcon.astro';
 import PackGrid from '../components/PackGrid.astro';
 import PackCarousel from '../components/PackCarousel.astro';
 import { locales } from '../data/locales.js';
-import { TIP_URL } from '../data/pay-rail.js';
+import { TIP_URL, ETSY_SHOP } from '../data/pay-rail.js';
 import remixes from '../data/remixes.json';
 
 export function getStaticPaths() {
@@ -136,6 +137,11 @@ const F = W.download.files;
           <a class="btn btn--light" href="/assets/dancing-banana-transparent.gif" download={F.transparentGif}>{W.download.transparentGif}</a>
         </div>
         <p class="gifhero__note">{W.hero.note} <a href="#download">{W.hero.more}</a></p>
+        {/* 🎮 the streamers' door to the Etsy shop, as on the English hub */}
+        <a class="btn btn--twitch gifhero__stream" href={ETSY_SHOP} target="_blank" rel="noopener" data-place={'intl_streamers_' + loc.code}>
+          <PixelArtIcon name="twitch" size="22px" />
+          <span class="gifhero__stream-long">{W.hero.stream} →</span><span class="gifhero__stream-short">{W.hero.streamShort} →</span>
+        </a>
         <div class="gifhero__packs"><PackCarousel place={'intl_' + loc.code} t={carouselWords} /></div>
       </div>
     </div>
