@@ -1,0 +1,61 @@
+{
+  "_what": "The four Etsy listings of the official dancing banana stream pack: what tools/etsy.mjs writes to Etsy (title, description, tags, price in NOK, photos and zip from tools/stream-pack/out/etsy/<folder>). Titles follow Etsy's 2025 guidance: under 15 words, 'Official Dancing Banana' first. 'ai' is the answer to Etsy's 'How is this digital content created?', which the API cannot set: set it in the listing editor.",
+  "taxonomy": "Art & Collectibles > Drawing & Illustration > Digital",
+  "quantity": 999,
+  "listings": {
+    "full": {
+      "folder": "1-full-stream-pack",
+      "zip": "official-dancing-banana-stream-pack.zip",
+      "price": 199,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Twitch Stream Pack | 12 Animated Emotes, Sub Badges, Alerts, Scenes",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999. Now for your stream.\n\nINSTANT DOWNLOAD, one zip:\n• 12 emotes (dance, hype, love, cool, lol, gg, rip, evil, gn, gm, vibe, shiny), each still and animated, in Twitch's 112, 56 and 28 px, plus 128 px for Discord\n• 6 sub badges on bronze, silver and gold medals, for 1, 2, 3, 6, 9 and 12 months, at 72, 36 and 18 px\n• 3 animated alerts (follow, subscribe, raid) and the classic dance on its own, on transparent backgrounds\n• 3 scene screens, 1920 x 1080 (Starting soon, Be right back, Thanks for watching), each also as an empty stage, plus a full-screen overlay where the banana dances in the spotlight\n• 6 panels: About me, Schedule, Discord, Support, Rules, Socials\n\nMade for Twitch, Discord, YouTube and Kick. Animated emotes on Twitch need Affiliate or Partner.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; a few small pixel pieces (hats and props) were drawn in code with AI's help, and I checked every one.",
+      "tags": ["dancing banana", "banana emote", "twitch emotes", "animated emotes", "stream pack", "sub badges", "twitch panels", "discord emotes", "pixel art emotes", "stream alerts", "meme emote", "starting soon screen", "streamer gift"],
+      "alt": [
+        "The official dancing banana full stream pack: a scene screen, emotes, medal sub badges and a panel",
+        "Twelve dancing banana emotes: dance, hype, love, cool, lol, gg, rip, evil, gn, gm, vibe and shiny",
+        "Six dancing banana sub badges on bronze, silver and gold medals, and six stream panels",
+        "Three dancing banana stream scenes: starting soon, be right back and thanks for watching"
+      ]
+    },
+    "emotes": {
+      "folder": "2-emote-pack",
+      "zip": "official-dancing-banana-emote-pack.zip",
+      "price": 99,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Emotes | 12 Animated Pixel Art Twitch & Discord Pack",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999. Twelve emotes for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• 12 emotes: dance, hype, love, cool, lol, gg, rip, evil, gn, gm, vibe, shiny\n• Each one still and animated, in Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nWant the sub badges, alerts, scenes and panels too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; a few small pixel pieces (hats and props) were drawn in code with AI's help, and I checked every one.",
+      "tags": ["dancing banana", "banana emote", "twitch emotes", "animated emotes", "discord emotes", "emote pack", "twitch emote pack", "pixel art emotes", "meme emote", "funny emotes", "cute emotes", "chat emotes", "streamer gift"],
+      "alt": [
+        "Twelve official dancing banana emotes on a dark board",
+        "The twelve dancing banana emotes with their names"
+      ]
+    },
+    "badges": {
+      "folder": "3-sub-badges",
+      "zip": "official-dancing-banana-sub-badges.zip",
+      "price": 49,
+      "ai": "With an AI generator",
+      "title": "Official Dancing Banana Twitch Sub Badges: 6 Medals, 1 to 12 Months",
+      "description": "The official dancing banana, by Trym Stene, the artist who made it in 1999, as sub badges.\n\nINSTANT DOWNLOAD, one zip:\n• 6 badges for 1, 2, 3, 6, 9 and 12 months: bronze, silver and gold medals, and the banana dresses up the longer your subscribers stay, from plain to a jewelled crown\n• Each at 72, 36 and 18 px, the three sizes Twitch asks for\n\nWant the emotes, alerts, scenes and panels too? They're all in the full stream pack in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.\n\nNo AI image generators were used. The dancing banana is my own pixel art from 1999; a few small pixel pieces (hats and props) were drawn in code with AI's help, and I checked every one.",
+      "tags": ["dancing banana", "sub badges", "twitch sub badges", "twitch badges", "loyalty badges", "banana badge", "pixel art badges", "twitch emotes", "subscriber badges", "stream badges", "cute sub badges", "meme badge", "streamer gift"],
+      "alt": [
+        "Six official dancing banana sub badges on bronze, silver and gold medals",
+        "The six dancing banana sub badge medals, for 1, 2, 3, 6, 9 and 12 months"
+      ]
+    },
+    "classic": {
+      "folder": "4-classic-emote",
+      "zip": "official-dancing-banana-classic-emote.zip",
+      "price": 29,
+      "ai": "Created by me",
+      "title": "Official Dancing Banana Emote, the 1999 Original, Animated for Twitch and Discord",
+      "description": "The one that started it all: the dancing banana, by Trym Stene, the artist who made it in 1999, as an emote for your chat.\n\nINSTANT DOWNLOAD, one zip:\n• The classic dance, animated (it loops) and still\n• Twitch's 112, 56 and 28 px, plus 128 px for Discord\n\nAnimated emotes on Twitch need Affiliate or Partner.\n\nEleven more emotes, and the full stream pack, are in this shop.\n\nLicence: for your own streams and channels. Please don't resell, share or use in a logo.",
+      "tags": ["dancing banana", "banana emote", "dancing emote", "twitch emote", "discord emote", "animated emote", "pixel art emote", "meme emote", "1999 meme", "banana gif", "retro emote", "funny emote", "classic meme"],
+      "alt": [
+        "The classic 1999 dancing banana emote, big, on hot pink",
+        "The classic dancing banana emote, still and animated frame by frame"
+      ]
+    }
+  }
+}
