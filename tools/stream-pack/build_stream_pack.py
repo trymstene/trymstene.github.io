@@ -890,3 +890,25 @@ os.makedirs(look)
 for fn in ('shop-icon-1000.png', 'shop-banner-3360x840.png'):
     shutil.copy2(os.path.join(SHOPART, fn), os.path.join(look, fn))
 print('etsy folder', ETSY)
+
+# ── the shop's About section: the eight original frames on the stage's light, and Trym's own photos from the site ──
+ABOUT = os.path.join(ETSY, 'about-photos')
+os.makedirs(ABOUT)
+pic = radial((2000, 1200), 1000, 700, [(0.0, (255, 250, 214)), (0.4, (255, 226, 60)), (1.0, (232, 176, 0))])
+rl = ray_layer((2000, 1200), 1000, 700, 28, (255, 252, 225, 255), start=-math.pi / 2 + 0.05)
+rl.putalpha(ImageChops.multiply(rl.getchannel('A'), fade_mask((2000, 1200), 1000, 700, 120, 1200, 140)))
+pic.alpha_composite(rl)
+d = ImageDraw.Draw(pic)
+outlined(d, (1000, 140), 'THE ORIGINAL DANCE  ·  1999', font(100), sw=9, shadow=8)
+frames8 = crisp_dance(8)
+fw, fh = frames8[0].size
+gap = 40
+x0 = (2000 - (4 * fw + 3 * gap)) // 2
+for i, f in enumerate(frames8):
+    pic.alpha_composite(f, (x0 + (i % 4) * (fw + gap), 290 + (i // 4) * (fh + 50)))
+pic.convert('RGB').save(os.path.join(ABOUT, '1-the-original-1999.png'), optimize=True)
+ASSETS = os.path.join(TOOLS, '..', 'public', 'assets')
+shutil.copy2(os.path.join(ASSETS, 'trym-stene-studio.png'), os.path.join(ABOUT, '2-trym-in-the-studio.png'))
+shutil.copy2(os.path.join(ASSETS, 'world', 'door-town.jpg'), os.path.join(ABOUT, '3-banana-world-the-town.jpg'))
+shutil.copy2(os.path.join(ASSETS, 'trym-stene-profile-photo.jpg'), os.path.join(look, 'profile-photo-trym.jpg'))
+print('about photos', ABOUT)
