@@ -633,7 +633,7 @@ BEATS = [
      'cam': [(0, 640, 1150, 1.18), (0.95, 640, 1010, 1.12), (1.34, 640, 930, 1.38, out_cubic), (2.1, 640, 990, 1.42)],
      'words': [{'text': C['job']['line'], 'at': 0.12}, {'kind': 'pill', 'text': C['job']['sub'], 'at': 0.7}]},
     {'name': 'arcade', 'secs': 2, 'fn': beat_panel, 'cut_in': 'punch',
-     'cuts': [(0.0, 'town-arcade-stack', 38), (1.05, 'town-arcade-snake', 69)],
+     'cuts': [(0.0, 'town-arcade-stack', 38), (1.05, 'town-arcade-snake', 77)],
      'words': [{'text': C['arcade']['line'], 'at': 0.12}]},
     {'name': 'wheel', 'secs': 1.5, 'fn': beat_footage, 'shot': 'town-wheel-clean', 'frames': (68, 119), 'cut_in': 'whip',
      'cam': [(0, 640, 1040, 1.22), (0.93, 640, 1030, 1.26), (1.1, 640, 1025, 1.36, out_cubic), (1.5, 640, 1020, 1.4)],
