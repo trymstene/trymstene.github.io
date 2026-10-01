@@ -13,6 +13,7 @@
 //   · the Visitors floor lists pages with visits; the Business floor speaks the new words and none of the old
 //   · the World floor prints no raw code — no `qa`, no `deny`, no `src` — only plain words
 //   · Reported letters is drawn in all three states, and a clear removes a row
+//   · the post office card (1 Oct 2026) draws its counts on the World floor, and says what it needs without a key
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -121,6 +122,16 @@ const LETTERS = { rows: [
   { k: 'Q:1', kind: 'reported', from: 'Kiwi', to: 'Gran Fig', text: 'a letter somebody did not like', queuedAt: Date.now() - 600000 },
   { k: 'Q:2', kind: 'flagged', from: 'Spinner', to: 'Kiwi', text: 'a letter the filter was unsure about', queuedAt: Date.now() - 3600000 },
 ], n: 2 };
+// ✉️📊 the post office's count: counts and shapes only — the rave worker never sends a name or a word
+const day0 = Date.now() - 30 * 864e5;
+const POST_STATS = { counting: false, lap: null, stats: { days: 30, at: Date.now() - 12 * 60000, posts: 64, letters: 52, cards: 12, notes: 30,
+  tone: { warm: 41, neutral: 9, unkind: 2 }, flagged: 1, stopped: { words: 3, contact: 2, other: 0 }, stoppedBy: 3, reported: 1,
+  writers: 18, receivers: 22, people: 27, pairs: 31, penPals: 9, circle: 14,
+  replies: { cohort: 40, answered: 17, n: 21, medianH: 9.5 }, opened: 50, openable: 58, waiting: 2,
+  longest: [{ a: 'A', b: 'B', n: 11, turns: 9, ways: [6, 5], days: 12 }, { a: 'A', b: 'C', n: 6, turns: 5, ways: [3, 3], days: 8 }, { a: 'D', b: 'E', n: 4, turns: 4, ways: [2, 2], days: 3 }],
+  value: { gotPost: 22, cameBack: 19, withPost: { n: 20, about: 15 }, without: { n: 160, about: 31 } },
+  perDay: Array.from({ length: 31 }, (_, i) => ({ d: new Date(day0 + i * 864e5).toISOString().slice(0, 10), letters: i % 4, cards: i % 3 ? 0 : 1, warm: i % 4, unkind: 0 })),
+  homes: 201, lapS: 14 } };
 
 const browser = await chromium.launch();
 const out = { errs: [], console: [], floors: {} };
@@ -167,6 +178,7 @@ async function openPage(width, height, opts = {}) {
     if (u.pathname in counts) return json(route, { count: counts[u.pathname] });
     if (u.pathname === '/yards/stats') return json(route, YARDS);
     if (u.pathname === '/names') return json(route, { live: ['Kiwi'], names: [{ n: 'Kiwi', at: Date.now(), count: 1 }], strikes: [] });
+    if (u.pathname === '/post-stats') return json(route, POST_STATS);
     if (u.pathname === '/post-review') {
       if (route.request().method() === 'POST') return json(route, { ok: true, gone: 1 });
       return lettersMode === 'ok' ? json(route, LETTERS) : route.fulfill({ status: 404, body: 'nope' });
@@ -212,7 +224,10 @@ async function walkFloor(page, f, name) {
       'The Etsy shop', 'Etsy orders', 'Twitch Stream Pack', 'Views and hearts count from']),
     oldWords: found(T.business, ['The download business', 'old asks', 'take rate', 'Every surface that hands', 'Custom banana funnel', 'Official merch funnel']) };
   out.floors.players = { missing: missing(T.players, ['Passes and who is active', 'Growing?', 'Coming back?', 'From a pass to a kept pass', 'Login links', 'not saved', 'Every pass', 'Kiwi', 'Names on the floor', 'Find a pass by email']) };
-  out.floors.world = { missing: missing(T.world, ['Each place, one question', 'The rave', 'Banana Town', 'Waves', 'WAVE BACK', 'Nib’s present', 'COME BACK to open it', 'bananas here now', 'The shops inside', 'The homesteads', 'Neighbours', 'The Arcade boards', 'Kiwi leads with 31', 'The economy', 'coins by place', 'coins by source', 'the wishing fountain', 'the park', 'Refusals', 'the daily cap', 'a test grant', 'test coins', 'Every homestead']),
+  out.floors.world = { missing: missing(T.world, ['Each place, one question', 'The rave', 'Banana Town', 'Waves', 'WAVE BACK', 'Nib’s present', 'COME BACK to open it', 'bananas here now', 'The shops inside', 'The homesteads', 'Neighbours', 'The Arcade boards', 'Kiwi leads with 31', 'The economy', 'coins by place', 'coins by source', 'the wishing fountain', 'the park', 'Refusals', 'the daily cap', 'a test grant', 'test coins', 'Every homestead',
+      'The post office', 'pen pals', 'of 31 pairs wrote both ways', 'the biggest circle', 'how the letters sound', '79% warm', 'At the door: 3 stopped for their words',
+      'answered within a week', '17 of 40', 'the middle answer takes 10 h', 'A ↔ B', 'A ↔ C', 'the longest conversations', 'came back after their first post',
+      'about this week · got post', 'Does post bring people back?', 'post per day: by letter (yellow) and by postcard (blue)', 'between', '201 mailboxes counted']),
     rawCodes: ['qa', 'deny', 'src', 'unruled', 'faucet'].filter((w) => new RegExp('\\b' + w + '\\b', 'i').test(T.world)) };
   out.floors.mail = { missing: missing(T.mail, ['Letters to HQ', 'hello from the form', 'Reported letters', 'did not open with this key']) };
   out.floors.reviews = { missing: missing(T.reviews, ['GIFs for the gallery', 'Items for the catalog', 'The live gallery', 'The catalog']) };
@@ -283,7 +298,7 @@ async function walkFloor(page, f, name) {
   const m = await walkFloor(page, 'mail', 'desk-nokey');
   const p = await walkFloor(page, 'players', 'desk-nokey');
   const w = await walkFloor(page, 'world', 'desk-nokey');
-  out.noKey = { mail: has(m, 'Needs the pass admin key'), players: has(p, 'Paste the pass admin key'), world: has(w, 'need the pass admin key') };
+  out.noKey = { mail: has(m, 'Needs the pass admin key'), players: has(p, 'Paste the pass admin key'), world: has(w, 'need the pass admin key'), post: has(w, 'the post office opens here') };
   await ctx.close();
 }
 // ── the phone: every floor, never sideways ─────────────────────────────────
@@ -308,7 +323,7 @@ for (const [f, v] of Object.entries(out.floors)) { if (v.missing.length) bad.pus
 if (!out.pins || out.pins.err || !out.pins.after1 || !out.pins.after1.length || (out.pins.after2 && out.pins.after2.length) || !out.pins.unpinShown) bad.push('a tapped dot does not stick and let go: ' + JSON.stringify(out.pins));
 if (out.layout.mapW < 900 || out.layout.stageX <= out.layout.railRight - 4 || out.layout.railW > 260) bad.push('the desk layout is not a rail beside a wide floor: ' + JSON.stringify(out.layout));
 if (out.letters.rows !== 2 || out.letters.afterClear !== 1 || out.letters.text.length || out.letters.badge !== '3') bad.push('reported letters: ' + JSON.stringify(out.letters));
-if (!out.noKey.mail || !out.noKey.players || !out.noKey.world) bad.push('the no-key states: ' + JSON.stringify(out.noKey));
+if (!out.noKey.mail || !out.noKey.players || !out.noKey.world || !out.noKey.post) bad.push('the no-key states: ' + JSON.stringify(out.noKey));
 for (const [f, w] of Object.entries(out.phone)) if (w > 393) bad.push('the phone scrolls sideways on ' + f + ' (' + w + 'px)');
 out.verdict = bad.length ? bad : 'ok';
 console.log(JSON.stringify(out, null, 1));

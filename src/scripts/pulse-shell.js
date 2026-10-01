@@ -15,6 +15,7 @@
 //     io.roll()            -> { roll, arcade }   (the pass worker; null without a key)
 //     io.world()           -> /yards/stats       (the rave worker; no key)
 //     io.letters()         -> { state, rows }    (the post review queue)
+//     io.post()            -> { state, data }    (the post office's count: counts only, never a word)
 //     io.letterDrop(keys) · io.arcadeWipe(game) · io.key() · io.onLetters(state)
 //
 // ⚠️ THE DISCIPLINE THAT KEEPS GA4 FROM 429ing: live is polled every 60s and
@@ -29,7 +30,7 @@ import { buildEarth, HOTTXT } from './pulse-map.js';
 import * as MAP from '../data/pulse-map.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
 import { flag, inWorld } from '../data/pulse-dicts.js';
-import { div, nfmt, chip, renderPlayersRoll, renderEconomy, renderHomesteads, renderArcade, renderHealth, renderLetters } from './hq-pulse.js';
+import { div, nfmt, chip, renderPlayersRoll, renderEconomy, renderHomesteads, renderArcade, renderHealth, renderLetters, renderPostOffice } from './hq-pulse.js';
 import { renderVisitors, renderBusiness, renderWorldCards, renderAsk, renderSync, renderNowLists, prevWindow, windowBar } from './pulse-rooms.js';
 
 const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 'sticker_pdp_view',
@@ -64,7 +65,8 @@ export function mountHQ(hosts, io) {
   const H = hosts;
   const S = { floor: '', from: 'today', to: 'today', winLens: '', live: null, range: null, prev: null,
     analyst: null, roll: null, arcade: null, rollErr: false, rollBusy: false, world: null,
-    letters: { state: io.key() ? 'loading' : 'nokey', rows: [] }, counts: {}, probe: null, err: '' };
+    letters: { state: io.key() ? 'loading' : 'nokey', rows: [] }, post: { state: io.key() ? 'loading' : 'nokey' }, postAsked: false,
+    counts: {}, probe: null, err: '' };
   const timers = new Set();
   const every = (fn, ms) => { const t = setInterval(fn, ms); timers.add(t); return t; };
 
@@ -246,6 +248,7 @@ export function mountHQ(hosts, io) {
       errLine(H.world);
       renderWorldCards(H.world, S);
       renderHomesteads(H.world, { world: S.world || {} });
+      renderPostOffice(H.world, S.post);
       if (S.roll) {
         renderArcade(H.world, { arcade: S.arcade, arcadeWipe: io.arcadeWipe });
         renderEconomy(H.world, { roll: S.roll });
@@ -278,6 +281,7 @@ export function mountHQ(hosts, io) {
     if (io.key() && !S.roll && !S.rollBusy && ['players', 'world', 'dev'].includes(f)) loadRoll();
     if (f === 'mail' && io.key() && (S.letters.state === 'nokey' || S.letters.state === 'loading')) loadLetters();
     if (!S.world && ['world', 'dev'].includes(f)) loadWorld();
+    if (f === 'world' && !S.postAsked) { S.postAsked = true; loadPost(); }
   }
 
   // ── 🍌📊 THE ANALYST — the judgement, not the numbers ───────────────────
@@ -375,6 +379,13 @@ export function mountHQ(hosts, io) {
     S.world = (await io.world().catch(() => null)) || {};
     if (['world', 'dev'].includes(S.floor)) paint();
   }
+  // ✉️📊 the post office: one answer, and while it says it is counting, a few more a little later
+  let postTries = 0;
+  async function loadPost() {
+    S.post = io.key() && io.post ? await io.post().catch(() => ({ state: 'error' })) : { state: 'nokey' };
+    if (S.floor === 'world') paint();
+    if (S.post.state === 'ok' && S.post.data && S.post.data.counting && postTries++ < 6) setTimeout(loadPost, 15000);
+  }
   async function loadLetters() {
     if (!io.key()) S.letters = { state: 'nokey', rows: [] };
     else S.letters = (await io.letters().catch(() => null)) || { state: 'error', rows: [] };
@@ -395,7 +406,11 @@ export function mountHQ(hosts, io) {
     show, paint, openAnalyst,
     counts(c) { S.counts = { ...S.counts, ...(c || {}) }; if (S.floor === 'world') paint(); },
     probe(v) { S.probe = v; if (S.floor === 'business') paint(); },
-    keyChanged() { S.roll = null; S.rollErr = false; S.rollBusy = false; loadRoll(); loadLetters(); },
+    keyChanged() {
+      S.roll = null; S.rollErr = false; S.rollBusy = false; loadRoll(); loadLetters();
+      S.postAsked = S.floor === 'world'; postTries = 0;
+      if (S.postAsked) loadPost(); else S.post = { state: io.key() ? 'loading' : 'nokey' };
+    },
     refreshLetters() { return loadLetters(); },
     letters: () => S.letters,
     pins: () => (earthNow ? earthNow.pins() : []),

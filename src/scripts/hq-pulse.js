@@ -11,6 +11,7 @@
 //   renderArcade(el, { arcade, arcadeWipe })   the five boards
 //   renderHealth(el, { roll, world })          the ledger's own checks
 //   renderLetters(el, letters, drop)           the post review queue, in one of three honest states
+//   renderPostOffice(el, post)                 the post as a social layer: how much, how warm, answered, worth it
 //
 // ⚠️ EVERY SECTION WEARS A CHIP (22 Sep 2026). A card says where its number
 // comes from and what time it measures, or the reader cannot tell a rollup
@@ -26,7 +27,7 @@ import { faucet, area as areaName, refusal, SOURCE } from '../data/hq-words.js';
 const CAT = ['#6E45E0', '#1F8A70', '#C85A1E', '#2F7BD6', '#A8447C'];
 const AREA_C = { rave: CAT[0], park: CAT[1], homestead: CAT[2], beach: CAT[3], pass: CAT[4] };
 const INK = '#f4eeff', DIM = '#9a90b8', GRID = 'rgba(244,238,255,.10)', LINE = '#ffe135';
-const BAD = '#ff5d8f';
+const BAD = '#ff5d8f', OK = '#5ee08a';
 const catOf = (name, i) => AREA_C[name] || CAT[i % CAT.length];
 const svgNS = 'http://www.w3.org/2000/svg';
 
@@ -160,6 +161,9 @@ export function lineChart(host, pts, opts) {
     mk('path', { d: `${d} L${x(pts.length - 1)},${y(0)} L${x(0)},${y(0)} Z`, fill: 'url(#' + gid + ')' }, svg);
   }
   mk('path', { d, fill: 'none', stroke: o.color || LINE, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+  // the two end labels sit on the sides AWAY from each other: the higher line's label above it, the lower's below,
+  // or a second series that ends above the first prints its label straight through the first one's
+  const hi2 = k2 && y(+pts[pts.length - 1][k2] || 0) < y(pts[pts.length - 1].v);
   if (k2) {
     const d2 = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(+p[k2] || 0).toFixed(1)}`).join(' ');
     mk('path', { d: d2, fill: 'none', stroke: o.second.color || '#5ec8e0', 'stroke-width': 2,
@@ -167,14 +171,14 @@ export function lineChart(host, pts, opts) {
     const l2 = pts[pts.length - 1][k2] || 0;
     mk('circle', { cx: x(pts.length - 1), cy: y(l2), r: 4, fill: o.second.color || '#5ec8e0',
       stroke: '#171326', 'stroke-width': 2 }, svg);
-    const t2 = mk('text', { x: x(pts.length - 1) - 8, y: Math.min(H - B - 4, y(l2) + 16), fill: o.second.color || '#5ec8e0',
+    const t2 = mk('text', { x: x(pts.length - 1) - 8, y: hi2 ? Math.max(T + 12, y(l2) - 10) : Math.min(H - B - 4, y(l2) + 16), fill: o.second.color || '#5ec8e0',
       'font-size': 12, 'font-weight': 700, 'text-anchor': 'end' }, svg);
     t2.textContent = nfmt(l2) + ' ' + (o.second.label || '');
   }
   const last = pts[pts.length - 1];
   mk('circle', { cx: x(pts.length - 1), cy: y(last.v), r: 4, fill: o.color || LINE, stroke: '#171326', 'stroke-width': 2 }, svg);
   const lx = x(pts.length - 1);
-  const t1 = mk('text', { x: lx - 8, y: Math.max(T + 12, y(last.v) - 10), fill: INK, 'font-size': 13,
+  const t1 = mk('text', { x: lx - 8, y: hi2 ? Math.min(H - B - 4, y(last.v) + 16) : Math.max(T + 12, y(last.v) - 10), fill: INK, 'font-size': 13,
     'font-weight': 700, 'text-anchor': 'end' }, svg);
   t1.textContent = nfmt(last.v) + (k2 ? ' ' + (o.label1 || '') : '');
   [0, pts.length - 1].forEach((i) => {
@@ -216,7 +220,7 @@ export function barsH(host, rows, opts) {
     const track = div('hqp-btrack', null, row);
     const fill = div('hqp-bfill', null, track);
     fill.style.width = (r.v ? Math.max(2, (r.v / max) * 100) : 0) + '%';
-    fill.style.background = o.mono || catOf(r.raw || r.k, i);
+    fill.style.background = r.c || o.mono || catOf(r.raw || r.k, i);
     div('hqp-bval', nfmt(r.v), row);
   });
 }
@@ -447,6 +451,73 @@ export function renderLetters(el, letters, drop) {
       head.appendChild(b);
     }
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ✉️ THE POST OFFICE — is the post a social layer, and is it a warm one? (1 Oct 2026)
+// ═══════════════════════════════════════════════════════════════════════════
+// Trym: "i want this place to be feelgood and warm … understand if users are actually using this as the social
+// layer its ment to be … figure out the value in it". Counts and shapes only: each mailbox labels its own letters'
+// tone beside the letter and hands out the label, and no name leaves the rave worker — a conversation is "A ↔ B".
+const dur = (h) => (h < 1 ? Math.max(1, Math.round(h * 60)) + ' min' : h < 48 ? Math.round(h) + ' h' : Math.round(h / 24) + ' days');
+export function renderPostOffice(el, post) {
+  const P = post || { state: 'nokey' };
+  const S = P.data && P.data.stats;
+  const s = section(el, 'The post office', 'Letters and postcards between homes, counted inside the mailboxes: nobody reads a word, and no name leaves. A letter is warm when it says hello, thanks or something kind, unkind when it carries an insult or tells somebody to go away, and neutral when it is neither, or both. Trym’s own homestead and the test farms are left out. A mailbox keeps a letter 30 days, so this is the whole of the post that is still around.', { src: 'serv', when: 'last 30 days' + (S ? ' · counted ' + when(S.at) : '') });
+  if (P.state === 'nokey') { div('hqp-empty', 'Needs the pass admin key — paste it once on the Players floor and the post office opens here.', s); return; }
+  if (P.state === 'closed') { div('hqp-empty', 'The post office did not open with this key. The rave worker’s POST_ADMIN_KEY must be the same string as the pass admin key.', s); return; }
+  if (P.state !== 'ok') { div('hqp-empty', P.state === 'loading' ? 'reading the post office…' : 'The rave worker did not answer — try again in a moment.', s); return; }
+  if (!S) { div('hqp-empty', 'Counting every mailbox for the first time. It takes about a minute, and this card fills in by itself.', s); return; }
+
+  let g = div('hqp-tiles', null, s);
+  tile(g, 'letters', nfmt(S.letters), nfmt(S.cards) + ' postcards too');
+  tile(g, 'writing', nfmt(S.writers), 'to ' + nfmt(S.receivers) + (S.receivers === 1 ? ' home' : ' homes'));
+  tile(g, 'pen pals', nfmt(S.penPals), 'of ' + nfmt(S.pairs) + ' pairs wrote both ways');
+  tile(g, 'the biggest circle', nfmt(S.circle), 'homes joined by post');
+
+  const t = S.tone || {};
+  barsH(s, S.letters ? [{ k: 'warm', v: t.warm || 0, c: OK }, { k: 'neutral', v: t.neutral || 0, c: DIM }, { k: 'unkind', v: t.unkind || 0, c: BAD }] : [],
+    { empty: 'no letters in the last 30 days' });
+  const st = S.stopped || {};
+  const door = [st.words ? st.words + ' stopped for their words' : '', st.contact ? st.contact + ' for contact details' : '',
+    st.other ? st.other + ' for their shape' : ''].filter(Boolean);
+  div('hqp-cap', 'how the letters sound' + (S.letters ? ' · ' + pct(t.warm || 0, S.letters) + '% warm' : '') + ' · postcards say the deck’s own lines, so they are not in it', s);
+  div('hqp-cap', (door.length ? 'At the door: ' + door.join(', ') + ' (from ' + S.stoppedBy + (S.stoppedBy === 1 ? ' person' : ' people') + ')' : 'Nothing was stopped at the door')
+    + ' · ' + (S.reported || 0) + ' reported · ' + (S.flagged || 0) + ' flagged for naming a platform', s);
+
+  g = div('hqp-rates is-2', null, s);
+  rate(g, 'answered within a week', S.replies.answered, S.replies.cohort);
+  rate(g, 'opened', S.opened, S.openable);
+  const R = S.replies;
+  div('hqp-cap', (R.medianH == null ? 'Nobody has answered a letter yet' : R.n === 1 ? 'The one answer so far took ' + dur(R.medianH)
+    : 'When somebody answers, the middle answer takes ' + dur(R.medianH))
+    + '. Only post older than a week counts for answers, and older than a day for opened.'
+    + (S.waiting ? ' ' + S.waiting + (S.waiting === 1 ? ' letter from a stranger is' : ' letters from strangers are') + ' still knocking.' : ''), s);
+
+  if (S.longest && S.longest.length) {
+    // ⚠️ sized to fit a 393-px phone without scrolling: short headers, narrow number columns
+    grid(s, [{ h: 'between', w: 'minmax(4rem, 1fr)' }, { h: 'posts', w: '2.8rem', num: true }, { h: 'turns', w: '2.8rem', num: true },
+      { h: 'each way', w: '3.8rem', num: true }, { h: 'days', w: '2.4rem', num: true }],
+    S.longest.map((c) => [c.a + ' ↔ ' + c.b, c.n, c.turns, c.ways[0] + ' · ' + c.ways[1], c.days]));
+    div('hqp-cap', 'the longest conversations — a letter stands for a home, the same home keeps its letter, and nobody is named', s);
+  } else div('hqp-cap', 'No conversation has gone both ways yet.', s);
+
+  const v = S.value || {};
+  g = div('hqp-rates', null, s);
+  rate(g, 'came back after their first post', v.cameBack || 0, v.gotPost || 0);
+  rate(g, 'about this week · got post', (v.withPost || {}).about || 0, (v.withPost || {}).n || 0);
+  rate(g, 'about this week · no post', (v.without || {}).about || 0, (v.without || {}).n || 0);
+  div('hqp-cap', 'Does post bring people back? Homes a week old or more. People who get post may simply be the ones who play most, so this shows the two go together — not that the post is the reason.', s);
+
+  if ((S.perDay || []).length > 1 && S.posts) {
+    // the labels read after any number ("1 by letter"), because the chart prints them after the last day's count
+    lineChart(s, S.perDay.map((d) => ({ d: d.d, v: d.letters, cards: d.cards })), {
+      label: 'post per day, by letter and by postcard', label1: 'by letter', second: { key: 'cards', label: 'by postcard', color: '#5ec8e0' },
+    });
+    div('hqp-cap', 'post per day: by letter (yellow) and by postcard (blue)', s);
+  }
+  div('hqp-foot', S.homes + ' mailboxes counted · ' + nfmt(S.notes) + ' notes from the residents not counted as post'
+    + (P.data.counting ? ' · counting again now' : ''), s);
 }
 
 // how long ago, in the desk's own plain words

@@ -34,7 +34,8 @@ if (!m) {
 const room = src.slice(src.indexOf('export class PostRoom'));
 const paths = [...room.matchAll(/url\.pathname === '([^']+)'/g)].map((x) => x[1]);
 const PUBLIC = ['/send', '/box', '/read', '/report', '/accept', '/away'];
-const ADMIN = ['/review', '/queue', '/queue-put', '/queue-drop', '/sent'];   // reached by the router alone, never by an origin (/sent: the sender's own room hears where its post went)
+const ADMIN = ['/review', '/queue', '/queue-put', '/queue-drop', '/sent',   // reached by the router alone, never by an origin (/sent: the sender's own room hears where its post went)
+  '/tally', '/office'];   // 📊 1 Oct 2026: a box's counts (asked by the office room) and the office's lap (asked by /post-stats)
 for (const p of paths) {
   if (!PUBLIC.includes(p) && !ADMIN.includes(p)) {
     fail.push(`PostRoom answers ${p} and tools/check-post-rail.mjs has never heard of it — say whether the rail may reach it`);
@@ -50,6 +51,17 @@ else {
   if (!/!env\.POST_ADMIN_KEY/.test(desk[1])) fail.push('/post-review does not FAIL CLOSED — an unset secret must read as 404, never as an open desk');
   if (!/status: 404/.test(desk[1])) fail.push('/post-review answers something other than 404 when refused — deny-as-nothing is the house pattern');
 }
+
+// ── 3b. 📊 the post office's count has the same door: key-gated, failing closed, and it carries no words ──
+const office = /if \(url\.pathname === '\/post-stats'\) \{([\s\S]{0,400})/.exec(src);
+if (office) {
+  if (!/!env\.POST_ADMIN_KEY/.test(office[1])) fail.push('/post-stats does not FAIL CLOSED on POST_ADMIN_KEY — an unset secret must read as 404');
+  if (!/status: 404/.test(office[1])) fail.push('/post-stats answers something other than 404 when refused');
+}
+// …and a box's count never carries what a letter SAYS or who signed it (the label is read inside the box)
+const tallyAt = room.indexOf("url.pathname === '/tally'");
+const tallyBody = tallyAt > -1 ? room.slice(tallyAt, room.indexOf('return j(', tallyAt) + 200) : '';
+if (/text:\s*x\.text|x\.name|x\.house|card:\s*x\.card/.test(tallyBody)) fail.push('PostRoom /tally hands out a letter’s words, its card or a name — the privacy page promises a number, never the words');
 
 // ── 4. 📮 a postcard survives a letters shutdown ───────────────────────────────────────────
 // ⭐ THE PLAN'S OWN PROMISE (§6): "the line is picked from the rig's deck, never typed, so the postcard

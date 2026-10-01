@@ -36,6 +36,8 @@ import TOWN_NOTES from '../../src/data/copy/town-notes.json' with { type: 'json'
 // ⚠️ the NAME beside the key. A mailbox that said “from nib” in lower case would be the one
 // place in this world a person is shown as an id. tools/copy-jobs.mjs NOTE_FOLK is the source.
 const NOTE_NAMES = { nib: 'Nib', stamp: 'Stamp', moss: 'Moss', bean: 'Bean' };
+// ✉️📊 the post office's count: a letter's tone is read inside its own mailbox, and only counts leave
+import { toneOf, tally, qaHome } from './post-tally.js';
 
 import { WEED_GRID, BORDER_SPOTS_N, ALGAE_SPOTS, BIRD_SPOTS_N } from './park-weed-grid.js';
 
@@ -707,6 +709,16 @@ export default {
         { method: request.method, body: body || undefined },
       ));
       return new Response(await res.text(), { status: res.status, headers: h });
+    }
+    // ✉️📊 THE POST OFFICE'S COUNT (Banana HQ → World), behind the same key and the same 404 as the desk above.
+    // Counts and shapes only, never a word or a name. ⚠️ The counting is done by ONE room, a few mailboxes at a
+    // time (PostRoom.officeTick); this asks it for the last lap and nudges a new one when that is old.
+    if (url.pathname === '/post-stats') {
+      const key = (url.searchParams.get('key') || '').trim();
+      if (!env.POST_ADMIN_KEY || key !== String(env.POST_ADMIN_KEY).trim()) return new Response('nope', { status: 404 });
+      const res = await env.POST.get(env.POST.idFromName('office:tally')).fetch(new Request('https://room/office'));
+      return new Response(await res.text(), { status: res.status,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' } });
     }
     if (url.pathname === '/beach-count') { // …and its beach headcount
       const res = await env.BEACH.get(env.BEACH.idFromName('banana-bay')).fetch(new Request('https://room/count'));
@@ -3665,6 +3677,21 @@ export class YardRoom {
       return json({ from, to, who });
     }
 
+    // ✉️📊 EVERY HOME, FOR THE POST OFFICE'S COUNT (1 Oct 2026): each claimed homestead (no aliases, no test farms)
+    // and when its owner was last about — the "I am here" stamp, the away-news stamp or a save, whichever is
+    // newest. No name, no pass id. Internal only, like /week.
+    if (path === '/post-yards' && request.method === 'GET') {
+      if (request.headers.get('x-internal') !== '1') return json({ err: 'no' }, 404);
+      const news = await this.state.storage.list({ prefix: 'seen:' });
+      const yards = {};
+      for (const [k, doc] of await this.state.storage.list({ prefix: 'y:' })) {
+        const slug = k.slice(2);
+        if (!doc || doc.alias || qaHome(slug)) continue;
+        yards[slug] = { created: doc.created || 0, seen: Math.max(doc.seen || 0, doc.updated || 0, +news.get('seen:' + slug) || 0) };
+      }
+      return json({ yards });
+    }
+
     // 🧪 QA ERASE (6 Sep 2026 — the two-device proof cleans up after itself):
     // the PROVEN owner of a `testy-proof-…` yard may delete it — the doc, every
     // pointer at it, its alias docs, its guestbook/visit rows, its index entry
@@ -4250,6 +4277,9 @@ const FACT_EVERY = 3600000;       // the yard and the town are asked about a box
 // a map of slug → when, kept to its newest n
 const capMap = (m, n) => Object.fromEntries(Object.entries(m || {}).sort((a, b) => b[1] - a[1]).slice(0, n));
 
+// 📊 the post office's lap: boxes per tick (under the free plan's 50 subrequests) and how old a count may get
+const OFFICE_BATCH = 40;
+const OFFICE_FRESH = 3600000;
 export class PostRoom {
   constructor(state, env) { this.state = state; this.env = env; }
 
@@ -4499,6 +4529,9 @@ export class PostRoom {
       // ✉️ …and before the box is read, the town may have written to you. Checked HERE because it is
       // the one moment somebody is definitely looking: no cron, no queue, nothing to keep running.
       await this.townNote(now, String(b.__box || url.searchParams.get('slug') || ''));
+      // 📊 when the owner last opened their box, at most once an hour: the post office's count asks whether post
+      // brings people back, and somebody who reads their post in the town never touches their homestead
+      if (now - ((await this.state.storage.get('open')) || 0) > 3600000) await this.state.storage.put('open', now);
       const cut = now - CAPS.keepDays * 86400000;
       const all = (await this.list('L:')).sort((x, y) => y.at - x.at);
       // a letter expires quietly: no notice, no tombstone, it is simply not there any more
@@ -4624,6 +4657,97 @@ export class PostRoom {
       return j({ reported: rows.slice(0, 50), flagged: (await this.list('L:')).filter((x) => x.flag).slice(0, 50) });
     }
 
+    // ---- 📊 what this box holds, as counts (the office room asks; never on the rail) ---------------
+    // ⭐ NO WORDS LEAVE THIS ROOM. A letter's tone is read here, beside the letter, and only its label goes out —
+    // the privacy page promises a number, never the words. ⚠️ Read-only: no resident's note, no expiry, no trim.
+    if (url.pathname === '/tally') {
+      const cut = now - CAPS.keepDays * 86400000;
+      const letters = (await this.list('L:')).filter((x) => x.at >= cut).map((x) => {
+        const kind = x.kind === 'note' ? 'note' : x.kind === 'card' ? 'card' : 'letter';
+        return { from: kind === 'note' ? '' : x.from, at: x.at, kind, tone: kind === 'letter' ? toneOf(x.text) : '',
+          read: !!x.read, knock: !!x.knock, flag: !!x.flag };
+      });
+      const refused = (await this.list('refused:')).filter((x) => x.at >= cut)
+        .map((x) => ({ at: x.at, from: x.from, why: String(x.why || '').startsWith('card:') ? 'card' : String(x.why || '') }));
+      const reported = (await this.list('R:')).filter((x) => (x.reportedAt || 0) >= cut).map((x) => ({ at: x.reportedAt }));
+      return j({ letters, refused, reported, open: (await this.state.storage.get('open')) || 0 });
+    }
+
+    // ---- 📊 the post office (the `office:tally` room only; the router's /post-stats asks) ---------------
+    // The last lap's numbers, and a nudge: a count older than an hour starts a new lap, and a lap whose alarm died
+    // part-way is picked up where it stopped.
+    if (url.pathname === '/office') {
+      const stats = (await this.state.storage.get('stats')) || null;
+      const st = (await this.state.storage.get('walk')) || {};
+      const fresh = !!stats && now - stats.at < OFFICE_FRESH;
+      if ((!fresh || st.slugs) && !(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(now + 500);
+      return j({ stats, counting: !fresh || !!st.slugs, lap: st.slugs ? { done: st.i, of: st.slugs.length } : null });
+    }
+
     return j({ error: 'nope' }, 404);
+  }
+
+  // ✉️📊 THE POST OFFICE'S LAP (1 Oct 2026). One room, `office:tally`, walks every homestead's mailbox and keeps only
+  // what each box's /tally hands out. ⚠️ FORTY BOXES A TICK: the free plan allows fifty subrequests per call, so a
+  // lap over two hundred homes in ONE call would quietly stop at the fiftieth and print a sample as the population
+  // (the 46-record lesson from the pass worker's ledger). Each tick saves where it got to and sets the next alarm;
+  // only the office ever sets one, so any alarm that fires is the office's.
+  async alarm() { await this.officeTick(Date.now()); }
+
+  async officeTick(now) {
+    const st = (await this.state.storage.get('walk')) || {};
+    if (!st.slugs) {
+      const r = await this.env.YARDS.get(this.env.YARDS.idFromName('the-neighbourhood'))
+        .fetch(new Request('https://room/post-yards', { headers: { 'x-internal': '1' } }));
+      if (!r.ok) throw new Error('the neighbourhood did not answer');   // the runtime retries an alarm that throws
+      const yards = ((await r.json()) || {}).yards || {};
+      await this.state.storage.put('yards', yards);
+      st.slugs = Object.keys(yards).sort();
+      st.i = 0;
+      st.started = now;
+    }
+    const batch = st.slugs.slice(st.i, st.i + OFFICE_BATCH);
+    const got = await Promise.all(batch.map(async (slug) => {
+      try {
+        const r = await this.env.POST.get(this.env.POST.idFromName('box:' + slug)).fetch(new Request('https://room/tally', { method: 'POST', body: '{}' }));
+        return r.ok ? await r.json() : null;
+      } catch (e) { return null; }
+    }));
+    const keys = batch.map((s) => 'T:' + s);
+    const had = keys.length ? await this.state.storage.get(keys) : new Map();
+    for (let i = 0; i < batch.length; i++) {
+      const t = got[i];
+      if (!t) continue;   // a box that did not answer keeps the row it had
+      const row = { open: +t.open || 0, letters: t.letters || [], refused: t.refused || [], reported: t.reported || [] };
+      if (!row.open && !row.letters.length && !row.refused.length && !row.reported.length) {
+        if (had.has(keys[i])) await this.state.storage.delete(keys[i]);
+      } else if (JSON.stringify(had.get(keys[i])) !== JSON.stringify(row)) await this.state.storage.put(keys[i], row);
+    }
+    st.i += batch.length;
+    if (st.i < st.slugs.length) {
+      await this.state.storage.put('walk', st);
+      await this.state.storage.setAlarm(now + 1500);
+      return;
+    }
+    // the lap is done: a home that is gone takes its row with it, then everything is counted once
+    const yards = (await this.state.storage.get('yards')) || {};
+    const boxes = [];
+    for (const [k, v] of await this.state.storage.list({ prefix: 'T:' })) {
+      const slug = k.slice(2);
+      if (!(slug in yards)) { await this.state.storage.delete(k); continue; }
+      boxes.push({ slug, ...v });
+    }
+    const stats = { ...tally(boxes, yards, now), homes: st.slugs.length, lapS: Math.round((now - st.started) / 1000) };
+    // 📜 THE LONG RECORD. A letter lives 30 days, so the boxes forget; this does not. A day's count only falls once
+    // the day is over (letters expire, boxes trim), so the highest ever seen for a day is its truth.
+    const hist = (await this.state.storage.get('hist')) || {};
+    for (const d of stats.perDay) {
+      const h = hist[d.d] || {};
+      hist[d.d] = { letters: Math.max(h.letters || 0, d.letters), cards: Math.max(h.cards || 0, d.cards),
+        warm: Math.max(h.warm || 0, d.warm), unkind: Math.max(h.unkind || 0, d.unkind) };
+    }
+    await this.state.storage.put('hist', hist);
+    await this.state.storage.put('stats', stats);
+    await this.state.storage.put('walk', { lapAt: now });
   }
 }

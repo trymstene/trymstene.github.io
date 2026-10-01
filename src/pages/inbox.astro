@@ -123,6 +123,7 @@ const description = 'Authorized banana personnel only.';
     .hqp-bval { text-align: right; font-size: var(--num-md); font-weight: 700; color: var(--hink);
       font-variant-numeric: tabular-nums; }
     .hqp-rates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+    .hqp-rates.is-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .hqp-rate { background: var(--hcard); border-radius: 18px; padding: 0.8rem 0.6rem; text-align: center;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
     .hqp-rval { font-family: "Archivo Black", sans-serif; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
@@ -772,6 +773,7 @@ const description = 'Authorized banana personnel only.';
       .hqp-shops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .hq-now2 { grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); }
       .hqp-rates { max-width: 720px; }
+      .hqp-rates.is-2 { max-width: 476px; }
       .ps-rcard { width: min(760px, 100%); }
     }
   </style>
@@ -1573,6 +1575,17 @@ const description = 'Authorized banana personnel only.';
               const j = await r.json();
               return { state: 'ok', rows: Array.isArray(j.rows) ? j.rows : [] };
             } catch (e) { return { state: 'error', rows: [] }; }
+          },
+          // ✉️📊 the post office's count: the same key, and the same two meanings of a 404, as the review queue
+          post: async () => {
+            const key = passKey();
+            if (!key) return { state: 'nokey' };
+            try {
+              const r = await fetch(WORLD_API + '/post-stats?key=' + encodeURIComponent(key));
+              if (r.status === 404 || r.status === 403) return { state: 'closed' };
+              if (!r.ok) return { state: 'error' };
+              return { state: 'ok', data: await r.json() };
+            } catch (e) { return { state: 'error' }; }
           },
           letterDrop: (keys) => fetch(WORLD_API + '/post-review?key=' + encodeURIComponent(passKey()), {
             method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ keys }),
