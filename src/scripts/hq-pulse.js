@@ -12,6 +12,7 @@
 //   renderHealth(el, { roll, world })          the ledger's own checks
 //   renderLetters(el, letters, drop)           the post review queue, in one of three honest states
 //   renderPostOffice(el, post)                 the post as a social layer: how much, how warm, answered, worth it
+//   renderBot(el, bot)                         BananaBOT in the Discord: connected, what it did, Claude's bill, the polls
 //
 // ⚠️ EVERY SECTION WEARS A CHIP (22 Sep 2026). A card says where its number
 // comes from and what time it measures, or the reader cannot tell a rollup
@@ -518,6 +519,38 @@ export function renderPostOffice(el, post) {
   }
   div('hqp-foot', S.homes + ' mailboxes counted · ' + nfmt(S.notes) + ' notes from the residents not counted as post'
     + (P.data.counting ? ' · counting again now' : ''), s);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🍌📌 BANANABOT — the helper in the Discord (1 Oct 2026)
+// ═══════════════════════════════════════════════════════════════════════════
+// Its own counts, kept by the bot itself (worker-bot): what people asked it, trivia, its posts, Claude's replies and
+// what they cost. Nothing about letters — the bot never reads or talks about the post.
+const BOT_POSTS = { curse: 'Curse Nights', crowned: 'plaques', record: 'Arcade records', forge: 'Forge pieces', morning: 'morning bananas', poll: 'polls' };
+export function renderBot(el, bot) {
+  const B = bot || { state: 'loading' };
+  const s = section(el, 'BananaBOT on Discord', 'The banana who keeps the notice board in the Discord: what people asked it today, the trivia, what it pinned on its own, and what Claude’s replies cost this month. Its chat replies are capped per day and per person; the always-on half (hearing mentions, welcoming newcomers) runs only on Workers Paid.', { src: 'disc', when: 'today · this month' });
+  if (B.state === 'loading') { div('hqp-empty', 'asking BananaBOT…', s); return; }
+  if (B.state !== 'ok') { div('hqp-empty', 'BananaBOT did not answer' + (B.why ? ': ' + B.why : '') + '.', s); return; }
+  const d = B.data;
+  const t = (d.days || []).find((x) => x.d === new Date().toISOString().slice(0, 10)) || {};
+  const sumOf = (row, pre) => Object.entries(row).filter(([k]) => k.startsWith(pre)).reduce((a, [, v]) => a + (+v || 0), 0);
+  const g = div('hqp-tiles', null, s);
+  const gw = d.gateway || {};
+  tile(g, 'listening', gw.on ? (gw.connected ? 'yes' : 'reconnecting') : 'off', gw.on ? 'mentions and welcomes' : 'commands and posts only', gw.on && gw.connected ? 'ok' : gw.on ? 'warn' : '');
+  tile(g, 'commands today', nfmt(sumOf(t, 'cmd_')), nfmt((d.days || []).reduce((a, r) => a + sumOf(r, 'cmd_'), 0)) + ' in 30 days');
+  tile(g, 'replies today', nfmt(t.chat || 0), 'of ' + nfmt(d.usage.cap) + ' a day');
+  tile(g, 'trivia answers today', nfmt((t.trivia_right || 0) + (t.trivia_wrong || 0)), nfmt(t.trivia_right || 0) + ' right');
+  tile(g, 'welcomes today', nfmt(t.welcome || 0));
+  tile(g, 'Claude this month', '$' + (d.usage.dollars || 0), nfmt(d.usage.month.n || 0) + ' replies · ' + (d.model || ''));
+  const pinned = Object.entries(BOT_POSTS).map(([k, label]) => ({ k: label, v: (d.days || []).reduce((a, r) => a + (+r['post_' + k] || 0), 0) })).filter((r) => r.v);
+  barsH(s, pinned, { mono: '#5865F2', empty: 'nothing pinned yet in the last 30 days' });
+  div('hqp-cap', 'what it pinned on its own, last 30 days · news ' + (d.channels.news ? 'goes to its channel' : 'channel NOT SET') + ' · welcomes ' + (d.channels.welcome ? 'on' : 'NOT SET') + (d.channels.guild ? ' · ' + d.channels.guild : ''), s);
+  const poll = (d.polls || [])[0];
+  if (poll) {
+    const top = poll.answers.slice().sort((a, b) => b.count - a.count)[0] || { text: '', count: 0 };
+    div('hqp-cap', 'Last poll: “' + poll.q + '” — ' + (poll.total ? top.text + ' won, ' + top.count + ' of ' + poll.total + ' votes' : 'nobody voted'), s);
+  }
 }
 
 // how long ago, in the desk's own plain words

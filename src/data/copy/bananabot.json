@@ -1,0 +1,640 @@
+{
+  "presence": "Minding the notice board",
+  "commands": {
+    "world": "What is going on in Banana World right now",
+    "today": "The banana of the day",
+    "top": "Who leads the Arcade boards",
+    "topGame": "Just one cabinet’s board",
+    "citizens": "The Citizens of the Week",
+    "dance": "A dancing banana from the remix gallery",
+    "trivia": "A question about Banana World",
+    "help": "What BananaBOT can do"
+  },
+  "world": {
+    "title": "Banana World, right now",
+    "rave": "The Rave",
+    "park": "The Park",
+    "bay": "Banana Bay",
+    "town": "Banana Town",
+    "empty": "Nobody about this minute. The board waits.",
+    "cursed": "Banana Town is cursed tonight. Mind the dark.",
+    "plain": "No curse on the square tonight.",
+    "today": "Today’s banana wears {outfit}.",
+    "enter": "Enter Banana World"
+  },
+  "today": {
+    "title": "The banana of the day",
+    "line": "Today’s banana wears {outfit}.",
+    "button": "See it on the site"
+  },
+  "top": {
+    "title": "The Arcade boards",
+    "leader": "{name} leads with {score}",
+    "empty": "nobody yet",
+    "nobody": "Nobody on this board yet. The top spot is free.",
+    "button": "Play in the Arcade"
+  },
+  "citizens": {
+    "title": "Citizens of the Week",
+    "plaques": {
+      "citizen": "Citizen",
+      "gardener": "Gardener",
+      "neighbour": "Neighbour",
+      "farmer": "Farmer",
+      "raver": "Raver"
+    },
+    "empty": "No plaques on the wall yet.",
+    "leaders": "This week so far: {names}.",
+    "button": "See the plaques"
+  },
+  "dance": {
+    "lines": [
+      "{title}, dancing just for you.",
+      "From the remix gallery: {title}.",
+      "{title}. I have watched it eleven times today."
+    ],
+    "button": "All the remixes"
+  },
+  "help": {
+    "title": "BananaBOT",
+    "lines": [
+      "I keep the notice board here, and bring the news from Banana World.",
+      "/world · who is where, and whether the square is cursed",
+      "/today · the banana of the day",
+      "/top · the Arcade boards",
+      "/citizens · the Citizens of the Week",
+      "/dance · a dancing banana remix",
+      "/trivia · a question about Banana World",
+      "Mention me and I will answer, as well as a notice board can."
+    ]
+  },
+  "chat": {
+    "cap": "The notice board is full for today. I’ll be back tomorrow.",
+    "slow": "{name}, give the board a minute. I’m out of pins.",
+    "error": "A pin fell out. Ask me again in a moment."
+  },
+  "welcome": {
+    "lines": [
+      "Welcome, {name}. Pull up a bench, the square is just through there.",
+      "A new banana! Welcome to Banana World, {name}.",
+      "Welcome, {name}. Your name is on the notice board now, in pencil."
+    ],
+    "button": "Enter Banana World"
+  },
+  "posts": {
+    "curse": [
+      "The lamps are going out in Banana Town. Tonight the square is cursed.",
+      "Something is walking the square tonight. Banana Town is cursed."
+    ],
+    "crownedTitle": "This week’s plaques",
+    "crowned": [
+      "New brass on the wall.",
+      "The plaques are up. Ask them how they did it."
+    ],
+    "record": [
+      "{game} has a new name at the top: {name}, with {score}.",
+      "New best on {game}. {name}, {score}. The machine is still warm."
+    ],
+    "forge": "New at the Banana Stand: {item}, drawn by {maker}.",
+    "forgeAnon": "New at the Banana Stand: {item}.",
+    "morning": [
+      "Today’s banana is up on the board.",
+      "Pinned it fresh: the banana of the day."
+    ],
+    "buttonTown": "Enter Banana World",
+    "buttonStand": "Visit the Banana Stand"
+  },
+  "trivia": {
+    "title": "Banana trivia",
+    "tally": "{n} answered · {right} right",
+    "right": "Right. {fact}",
+    "wrong": "Not quite: it’s {answer}. {fact}",
+    "score": "That’s {score} right for you.",
+    "again": "You’ve answered this one already.",
+    "gone": "This question has come down off the board.",
+    "questions": [
+      {
+        "q": "The statue in the middle of Banana Town has no plaque. Who is it?",
+        "a": [
+          "Nobody knows",
+          "The Mayor",
+          "Old Peel",
+          "Trym"
+        ],
+        "fact": "Nobody in town knows. Gran Fig has measured its base with a tape measure, though."
+      },
+      {
+        "q": "What is on the roof of the Coffee Cup?",
+        "a": [
+          "A propeller",
+          "A weathervane",
+          "A bell",
+          "A satellite dish"
+        ],
+        "fact": "A propeller. Bean, who keeps the kiosk, wears a propeller beanie to match."
+      },
+      {
+        "q": "What is the only sign of the Mayor in Banana Town?",
+        "a": [
+          "A light in the town hall’s upper window",
+          "Footprints by the fountain",
+          "A hat on the statue",
+          "A voice from the bell tower"
+        ],
+        "fact": "Nobody has met the Mayor. There is only the light in that window."
+      },
+      {
+        "q": "Who writes every name in the big book at the town hall?",
+        "a": [
+          "Nib",
+          "Moss",
+          "Pip",
+          "Dot"
+        ],
+        "fact": "Nib, the town hall clerk, in a top hat and round glasses."
+      },
+      {
+        "q": "What does Moss do in Banana Town?",
+        "a": [
+          "Sweeps the cobbles",
+          "Runs the Arcade",
+          "Sells lemonade",
+          "Keeps the Wheel of Peel"
+        ],
+        "fact": "Moss is the street sweeper who keeps the cobbles clear."
+      },
+      {
+        "q": "What does Pip carry around the General Store?",
+        "a": [
+          "A rubber chicken",
+          "A broom",
+          "A trumpet",
+          "A goldfish"
+        ],
+        "fact": "Pip runs the General Store, where each one is the last one."
+      },
+      {
+        "q": "What is the name of Bean’s coffee kiosk?",
+        "a": [
+          "The Coffee Cup",
+          "The Bean Machine",
+          "Peel and Grind",
+          "The Propeller"
+        ],
+        "fact": "Bean turns each finished cup and reads your future in it."
+      },
+      {
+        "q": "Who is Fig Jr.’s grandmother?",
+        "a": [
+          "Gran Fig",
+          "Old Peel",
+          "Dot",
+          "Moss"
+        ],
+        "fact": "Fig Jr. runs the lemonade stand with Gran Fig’s lemons."
+      },
+      {
+        "q": "What does Gran Fig wear on her head?",
+        "a": [
+          "A snail",
+          "A teapot",
+          "A bird’s nest",
+          "A lemon"
+        ],
+        "fact": "Gran Fig grows the orchard and the west garden, snail and all."
+      },
+      {
+        "q": "Who runs the Arcade in Banana Town?",
+        "a": [
+          "Spinner",
+          "Twirl",
+          "Tally",
+          "Nib"
+        ],
+        "fact": "Spinner, in a hat with three bells. Lose at Banana Pong and the screen says SPINNER WINS."
+      },
+      {
+        "q": "What is always first on Dot’s list of lost things?",
+        "a": [
+          "A real fish",
+          "A sock",
+          "A key",
+          "The Mayor’s hat"
+        ],
+        "fact": "Dot keeps the list at the map counter, and the fish has never been found."
+      },
+      {
+        "q": "What does Twirl hold while keeping the Wheel of Peel?",
+        "a": [
+          "A bunch of balloons",
+          "A megaphone",
+          "A teacup",
+          "A fishing rod"
+        ],
+        "fact": "Twirl taps the rim of the wheel twice before every spin."
+      },
+      {
+        "q": "How many toes has Tally counted on the statue?",
+        "a": [
+          "None",
+          "Ten",
+          "Three",
+          "Eleven"
+        ],
+        "fact": "Tally keeps the Exchange, where the residents’ orders are pinned up. And counts things."
+      },
+      {
+        "q": "Which of these is a wedge on the Wheel of Peel?",
+        "a": [
+          "The Pot",
+          "The Crown",
+          "Free Banana",
+          "Double Trouble"
+        ],
+        "fact": "The wedges include a firework, a peel, a lure, spin again, coins and THE POT."
+      },
+      {
+        "q": "What is Banana Town at its very best on the town health meter?",
+        "a": [
+          "Thriving",
+          "Golden",
+          "Perfect",
+          "Bananas"
+        ],
+        "fact": "It goes Abandoned, Struggling, Recovering, Lively and Thriving."
+      },
+      {
+        "q": "On a cursed night, how do you chase a ghost off the square?",
+        "a": [
+          "Walk into it",
+          "Ring the bell",
+          "Light the lamps",
+          "Sing to it"
+        ],
+        "fact": "Ghosts undo the day’s fixes, so walking into them is a public service."
+      },
+      {
+        "q": "What time does the Lost-Hour Clock show?",
+        "a": [
+          "Twenty-five o’clock",
+          "Midnight",
+          "Half past never",
+          "Thirteen o’clock"
+        ],
+        "fact": "It is one of the cursed things that turn up at night. The Night Trading stall will buy it."
+      },
+      {
+        "q": "Which of these is NOT an Arcade cabinet in Banana Town?",
+        "a": [
+          "Banana Racer",
+          "Peel Out",
+          "Banana Stack",
+          "Banana Pong"
+        ],
+        "fact": "The five cabinets are Peel Out, Banana Snake, Banana Invaders, Banana Pong and Banana Stack."
+      },
+      {
+        "q": "Who runs the bar at the Rave?",
+        "a": [
+          "Barty",
+          "Spinner",
+          "Bean",
+          "Pip"
+        ],
+        "fact": "Barty the bartender, who never sleeps."
+      },
+      {
+        "q": "Who is the DJ at the Rave?",
+        "a": [
+          "The banana of the day",
+          "Barty",
+          "Old Peel",
+          "A jukebox"
+        ],
+        "fact": "The banana of the day moonlights as the DJ."
+      },
+      {
+        "q": "What is the first title a banana gets at the Rave?",
+        "a": [
+          "Fresh Peel",
+          "VIP",
+          "The Regular",
+          "Practically Staff"
+        ],
+        "fact": "The titles climb all the way from Fresh Peel to Practically Staff."
+      },
+      {
+        "q": "What do you flip when the power cuts at the Rave?",
+        "a": [
+          "The breaker box",
+          "The DJ desk",
+          "The disco ball",
+          "The fridge"
+        ],
+        "fact": "When the power cuts the LED wall goes to static, and the breaker box brings the lights back."
+      },
+      {
+        "q": "Who is the park’s oldest banana?",
+        "a": [
+          "Old Peel",
+          "Gran Fig",
+          "Nib",
+          "Moss"
+        ],
+        "fact": "Old Peel kept the park for forty years. His flowerbed has a daisy, a sunflower and one midnight tulip."
+      },
+      {
+        "q": "Which bird is the rare visitor to the park?",
+        "a": [
+          "The hummingbird",
+          "The pigeon",
+          "The robin",
+          "The owl"
+        ],
+        "fact": "Twelve kinds of bird visit the park, and the hummingbird is the very rare one."
+      },
+      {
+        "q": "When do the butterflies come to the park?",
+        "a": [
+          "When it is perfect",
+          "When it rains",
+          "In the morning",
+          "Never"
+        ],
+        "fact": "Squirrels come back when the park is nearly healthy, and butterflies only when it is perfect."
+      },
+      {
+        "q": "Where do bananas spend coins on things to wear?",
+        "a": [
+          "The Banana Stand",
+          "The town hall",
+          "The fountain",
+          "The Prize Counter"
+        ],
+        "fact": "The Banana Stand, including pieces drawn by players in the Pixel Forge, each with its maker’s name."
+      },
+      {
+        "q": "Who runs the treasure dig at Banana Bay?",
+        "a": [
+          "Captain Sabreface",
+          "Gil",
+          "Shelly",
+          "Barty"
+        ],
+        "fact": "Captain Sabreface wears a tricorn and an eye patch, and once lost a good hat down a hole."
+      },
+      {
+        "q": "Which fish are the legendary ones in Gil’s fish book?",
+        "a": [
+          "The Great White Shark and the Anglerfish",
+          "The Goldfish and the Guppy",
+          "The Tuna and the Cod",
+          "The Pufferfish and the Eel"
+        ],
+        "fact": "Gil keeps a fish book of the bay, and two of the fish in it are legendary."
+      },
+      {
+        "q": "What does Shelly keep a peg free for?",
+        "a": [
+          "A junonia",
+          "A starfish",
+          "A pearl",
+          "A sea glass marble"
+        ],
+        "fact": "Shelly keeps the shell collection, and the junonia is one of the legendary shells."
+      },
+      {
+        "q": "What waits in the Grabber at the end of the pier?",
+        "a": [
+          "The giant plush banana",
+          "A golden coconut",
+          "A rubber duck",
+          "A treasure chest"
+        ],
+        "fact": "The giant plush banana. No luck involved, says the machine."
+      },
+      {
+        "q": "Which of these is a stall at Banana Bay?",
+        "a": [
+          "Whack-a-Crab",
+          "Bop-a-Banana",
+          "Catch-a-Coconut",
+          "Splash-a-Shark"
+        ],
+        "fact": "The midway has Hook-a-Duck, Whack-a-Crab, the Coconut Hut and the Prize Counter."
+      },
+      {
+        "q": "On a homestead, what comes after the tent?",
+        "a": [
+          "A real roof",
+          "A castle",
+          "A treehouse",
+          "A lighthouse"
+        ],
+        "fact": "Pitch a tent, get a real roof (a mobile home or a barn), then build the house."
+      },
+      {
+        "q": "Which animal gives wool on a homestead?",
+        "a": [
+          "The sheep",
+          "The goat",
+          "The cow",
+          "The hen"
+        ],
+        "fact": "Hens give eggs, goats and cows give milk, and sheep give wool."
+      },
+      {
+        "q": "What does the tailor knit wool into?",
+        "a": [
+          "A beanie or a scarf",
+          "Socks",
+          "A jumper",
+          "Mittens"
+        ],
+        "fact": "A wool beanie or a wool scarf: knitted, never bought."
+      },
+      {
+        "q": "What does the homestead cat leave on the doorstep?",
+        "a": [
+          "A flower",
+          "A mouse",
+          "A sock",
+          "A coin"
+        ],
+        "fact": "The cat comes and goes, and leaves a daisy or a sunflower."
+      },
+      {
+        "q": "Where can you see every animal that ever lived on your plot?",
+        "a": [
+          "The family tree on the Banana Phone",
+          "The big book at the town hall",
+          "The Prize Counter",
+          "The Arcade"
+        ],
+        "fact": "The Banana Phone keeps the whole family tree."
+      },
+      {
+        "q": "Which effect is NOT in Make A Banana?",
+        "a": [
+          "Fireworks",
+          "Disco",
+          "Sparkles",
+          "Confetti"
+        ],
+        "fact": "The effects are Disco, Sparkles and Confetti."
+      },
+      {
+        "q": "What does the speed slider in Make A Banana go up to?",
+        "a": [
+          "Banana overdrive",
+          "Turbo",
+          "Max peel",
+          "Lightspeed"
+        ],
+        "fact": "It runs from chill to banana overdrive."
+      },
+      {
+        "q": "Which of these is a hat in Make A Banana?",
+        "a": [
+          "A fried egg",
+          "A traffic cone",
+          "A lampshade",
+          "A teapot"
+        ],
+        "fact": "Also a pigeon, an arrow through the head and a fishbowl with a goldfish in it."
+      },
+      {
+        "q": "Which row is NOT in Make A Banana?",
+        "a": [
+          "Gloves",
+          "Shades",
+          "Shoes",
+          "Extras"
+        ],
+        "fact": "The rows you dress a banana with are Shades, Hat, Body, Shoes and Extras."
+      },
+      {
+        "q": "What can the Pixel Forge bring in with one click?",
+        "a": [
+          "The original 1999 banana",
+          "A photo of your cat",
+          "Any picture at all",
+          "A song"
+        ],
+        "fact": "You can start from the original 1999 banana and make it your own."
+      },
+      {
+        "q": "What name does a new Banana Pass start with?",
+        "a": [
+          "Fresh Dancing Banana",
+          "New Banana",
+          "Banana One",
+          "Mystery Peel"
+        ],
+        "fact": "Every pass starts as Fresh Dancing Banana, with an OFFICIAL stamp."
+      },
+      {
+        "q": "Since when has the dancing banana been dancing?",
+        "a": [
+          "1999",
+          "2005",
+          "2010",
+          "1985"
+        ],
+        "fact": "Since 1999. It drew a whole world around itself after that."
+      },
+      {
+        "q": "How many frames does the dancing banana GIF have?",
+        "a": [
+          "Eight",
+          "Four",
+          "Twelve",
+          "Twenty-four"
+        ],
+        "fact": "Eight frames, looping forever. Make A Banana lets you pick any one of them as a pose."
+      },
+      {
+        "q": "Which of these is one of the Citizens of the Week plaques?",
+        "a": [
+          "Gardener",
+          "Swimmer",
+          "Painter",
+          "Baker"
+        ],
+        "fact": "The plaques are Gardener, Neighbour, Farmer and Raver, and one banana is the Citizen of the week."
+      }
+    ]
+  },
+  "polls": {
+    "intro": "This week’s poll is on the board.",
+    "items": [
+      {
+        "q": "Where do you spend the most time in Banana World?",
+        "a": [
+          "Banana Town",
+          "The Rave",
+          "The Park",
+          "Banana Bay",
+          "My homestead"
+        ]
+      },
+      {
+        "q": "Which Arcade cabinet is the best?",
+        "a": [
+          "Peel Out",
+          "Banana Snake",
+          "Banana Invaders",
+          "Banana Pong",
+          "Banana Stack"
+        ]
+      },
+      {
+        "q": "What do you like dressing your banana in most?",
+        "a": [
+          "Hats",
+          "Shades",
+          "Body",
+          "Shoes",
+          "Extras"
+        ]
+      },
+      {
+        "q": "What would you like more of in Banana World? Trym reads this one.",
+        "a": [
+          "More things to wear",
+          "More Arcade games",
+          "More for the homestead",
+          "More of Banana Town",
+          "More places to visit"
+        ]
+      },
+      {
+        "q": "Day or Curse Night?",
+        "a": [
+          "The day",
+          "Curse Night",
+          "Both, please"
+        ]
+      },
+      {
+        "q": "What is the best part of a homestead?",
+        "a": [
+          "The animals",
+          "The house",
+          "Planting things",
+          "Visiting the neighbours"
+        ]
+      },
+      {
+        "q": "What should the Banana Stand have more of? Trym reads this one.",
+        "a": [
+          "Hats",
+          "Glasses",
+          "Things to hold",
+          "Shoes",
+          "Things for the neck"
+        ]
+      }
+    ]
+  }
+}

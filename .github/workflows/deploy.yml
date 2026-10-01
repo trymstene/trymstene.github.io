@@ -60,6 +60,10 @@ jobs:
         run: |
           pip install --quiet pillow
           python tools/build-citizen-cards.py || echo "::warning::citizens bake skipped"
+      # 🍌 the banana of the day as a picture, for BananaBOT's /today and its morning post (the same renderer as the
+      # frames, the same outfit as the site). After midnight UTC every night, so the file is always today's.
+      - name: Bake the banana of the day
+        run: python tools/build-daily-banana.py || echo "::warning::banana of the day not baked"
       # 🏡 the front page's homesteads: four active yards photographed by the game itself (the live visitor view, in the
       # runner's own Chrome, so no browser download), the rest of the active ones as pills, a new pick every UTC day
       # (tools/build-yard-cards.mjs). The day's first deploy takes the photos; the day's later pushes reuse them from the

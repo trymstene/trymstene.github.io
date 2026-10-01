@@ -30,3 +30,8 @@ ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803"
 [[services]]
 binding = "PULSE"
 service = "banana-pulse"
+
+# 🍌📌 BananaBOT's card in HQ: its counts, asked server to server with BOT_STATS_TOKEN (worker-bot/src/index.js /stats)
+[[services]]
+binding = "BOT"
+service = "banana-bot"

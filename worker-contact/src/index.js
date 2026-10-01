@@ -197,6 +197,16 @@ export default {
           { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
       const want = String(url.searchParams.get('r') || 'analyst');
+      // 🍌📌 BananaBOT's card (1 Oct 2026): the bot's own counts, from the bot, behind the same door — its token lives here
+      // as BOT_STATS_TOKEN, so the browser never holds it; a wrong one is a 404 at the bot
+      if (want === 'bot') {
+        if (!env.BOT_STATS_TOKEN || !env.BOT) return new Response(JSON.stringify({ ok: false, err: 'no bot token' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
+        try {
+          const up = await env.BOT.fetch(new Request('https://bot.internal/stats', { headers: { 'X-Bot-Token': String(env.BOT_STATS_TOKEN).trim() } }));
+          if (!up.ok) return new Response(JSON.stringify({ ok: false, err: up.status === 404 ? 'the bot refused the stats token' : 'the bot answered ' + up.status }), { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
+          return new Response(await up.text(), { headers: { ...cors, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+        } catch (e) { return new Response(JSON.stringify({ ok: false, err: 'the bot did not answer' }), { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } }); }
+      }
       if (!['live', 'analyst', 'report', 'range', 'etsy'].includes(want)) {   // 🛍 etsy: the Etsy shop's card, 30 Sep
         return new Response(JSON.stringify({ ok: false, err: 'bad room' }),
           { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });

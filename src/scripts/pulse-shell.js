@@ -16,6 +16,7 @@
 //     io.world()           -> /yards/stats       (the rave worker; no key)
 //     io.letters()         -> { state, rows }    (the post review queue)
 //     io.post()            -> { state, data }    (the post office's count: counts only, never a word)
+//     io.bot()             -> BananaBOT's counts  (through worker-contact; the Mail floor)
 //     io.letterDrop(keys) · io.arcadeWipe(game) · io.key() · io.onLetters(state)
 //
 // ⚠️ THE DISCIPLINE THAT KEEPS GA4 FROM 429ing: live is polled every 60s and
@@ -30,7 +31,7 @@ import { buildEarth, HOTTXT } from './pulse-map.js';
 import * as MAP from '../data/pulse-map.js';
 import { EV_LABEL, explain } from '../data/pulse-events.js';
 import { flag, inWorld } from '../data/pulse-dicts.js';
-import { div, nfmt, chip, renderPlayersRoll, renderEconomy, renderHomesteads, renderArcade, renderHealth, renderLetters, renderPostOffice } from './hq-pulse.js';
+import { div, nfmt, chip, renderPlayersRoll, renderEconomy, renderHomesteads, renderArcade, renderHealth, renderLetters, renderPostOffice, renderBot } from './hq-pulse.js';
 import { renderVisitors, renderBusiness, renderWorldCards, renderAsk, renderSync, renderNowLists, prevWindow, windowBar } from './pulse-rooms.js';
 
 const LENSES = ['gif_download', 'builder_boot', 'builder_start', 'rave_join', 'sticker_pdp_view',
@@ -266,7 +267,7 @@ export function mountHQ(hosts, io) {
       renderAsk(H.players, S);
       return;
     }
-    if (f === 'mail') { H.letters.textContent = ''; renderLetters(H.letters, S.letters, io.letterDrop); return; }
+    if (f === 'mail') { H.letters.textContent = ''; renderLetters(H.letters, S.letters, io.letterDrop); renderBot(H.letters, S.bot); return; }
     if (f === 'dev') {
       H.health.textContent = '';
       renderSync(H.health, S);
@@ -280,6 +281,7 @@ export function mountHQ(hosts, io) {
     paint();
     if (io.key() && !S.roll && !S.rollBusy && ['players', 'world', 'dev'].includes(f)) loadRoll();
     if (f === 'mail' && io.key() && (S.letters.state === 'nokey' || S.letters.state === 'loading')) loadLetters();
+    if (f === 'mail' && !S.botAsked) { S.botAsked = true; loadBot(); }
     if (!S.world && ['world', 'dev'].includes(f)) loadWorld();
     if (f === 'world' && !S.postAsked) { S.postAsked = true; loadPost(); }
   }
@@ -385,6 +387,12 @@ export function mountHQ(hosts, io) {
     S.post = io.key() && io.post ? await io.post().catch(() => ({ state: 'error' })) : { state: 'nokey' };
     if (S.floor === 'world') paint();
     if (S.post.state === 'ok' && S.post.data && S.post.data.counting && postTries++ < 6) setTimeout(loadPost, 15000);
+  }
+  // 🍌📌 BananaBOT: one answer per visit to the Mail floor
+  async function loadBot() {
+    const b = io.bot ? await io.bot().catch(() => null) : null;
+    S.bot = b && !b.__err && b.gateway ? { state: 'ok', data: b } : { state: 'error', why: (b && (b.__err || b.err)) || '' };
+    if (S.floor === 'mail') paint();
   }
   async function loadLetters() {
     if (!io.key()) S.letters = { state: 'nokey', rows: [] };

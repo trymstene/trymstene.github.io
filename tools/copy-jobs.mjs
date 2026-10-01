@@ -2987,6 +2987,107 @@ export const JOBS = {
     },
     shape: () => [],
   },
+  // 🍌📌 BANANABOT (1 Oct 2026). Trym: "a fun assistant in text chat … with a profile image and personality", "always on",
+  // "add the weekly poll and trivia" — and "lets stay out of letters and warmness". The banana who keeps the notice board
+  // in Banana Town, in the Discord. Its chat replies are Claude's, inside a fence (worker-bot/src/brain.js); every FIXED
+  // line it says is here. Discord draws emoji, but this banana speaks the house voice: none.
+  'bananabot': {
+    id: 'bananabot',
+    title: 'BananaBOT — the notice board’s banana in the Discord',
+    what: 'Everything BananaBOT says that is not a chat reply: its status, its slash commands and their answers, its welcomes, the posts it pins on its own (a Curse Night, the plaques, an Arcade record, a new Forge piece, the morning banana), the trivia questions and the weekly polls.',
+    approved: 'src/data/copy/bananabot.json',
+    reads: 'worker-bot/src/commands.js, trivia.js, events.js and bot-room.js (static imports in the bot worker)',
+    top: ['presence', 'commands', 'world', 'today', 'top', 'citizens', 'dance', 'help', 'chat', 'welcome', 'posts', 'trivia', 'polls'],
+    fields: {
+      presence: { kind: 'label', max: 60, note: 'Its status line under its name in the server’s member list.' },
+      'commands.world': { kind: 'label', max: 100, note: 'A slash command’s description in Discord’s menu (Discord allows 100).' },
+      'commands.today': { kind: 'label', max: 100, note: 'As above.' },
+      'commands.top': { kind: 'label', max: 100, note: 'As above.' },
+      'commands.topGame': { kind: 'label', max: 100, note: 'The optional choice on /top: one cabinet instead of all five.' },
+      'commands.citizens': { kind: 'label', max: 100, note: 'As above.' },
+      'commands.dance': { kind: 'label', max: 100, note: 'As above.' },
+      'commands.trivia': { kind: 'label', max: 100, note: 'As above.' },
+      'commands.help': { kind: 'label', max: 100, note: 'As above.' },
+      'world.title': { kind: 'label', max: 40, note: 'The heading of /world.' },
+      'world.rave': { kind: 'label', max: 20, note: 'A count’s label: the place. The number goes under it.' },
+      'world.park': { kind: 'label', max: 20, note: 'As above.' },
+      'world.bay': { kind: 'label', max: 20, note: 'As above.' },
+      'world.town': { kind: 'label', max: 20, note: 'As above.' },
+      'world.empty': { kind: 'prose', max: 60, note: 'When every place has nobody in it this minute.' },
+      'world.cursed': { kind: 'prose', max: 70, note: 'When the square is cursed right now. Never when it ends or comes back.' },
+      'world.plain': { kind: 'prose', max: 60, note: 'When it is not.' },
+      'world.today': { kind: 'prose', max: 60, ...holdsAll('outfit'), note: 'The banana of the day; {outfit} is the site’s own description ("a cowboy hat and heart shades").' },
+      'world.enter': { kind: 'label', max: 30, note: 'The button into Banana Town.' },
+      'today.title': { kind: 'label', max: 40, note: 'The heading over the picture of the banana of the day.' },
+      'today.line': { kind: 'prose', max: 60, ...holdsAll('outfit'), note: 'Under it: what it wears.' },
+      'today.button': { kind: 'label', max: 30, note: 'The button to its page on the site.' },
+      'top.title': { kind: 'label', max: 40, note: 'The heading of /top with all five boards.' },
+      'top.leader': { kind: 'prose', max: 50, ...holdsAll('name', 'score'), note: 'After a cabinet’s name: who leads it and with what.' },
+      'top.empty': { kind: 'label', max: 20, note: 'After a cabinet’s name when its board is empty.' },
+      'top.nobody': { kind: 'prose', max: 70, note: 'One cabinet’s board, empty.' },
+      'top.button': { kind: 'label', max: 30, note: 'The button to the Arcade in Banana Town.' },
+      'citizens.title': { kind: 'label', max: 40, note: 'The heading of /citizens.' },
+      'citizens.plaques.citizen': { kind: 'label', max: 20, note: 'The plaques’ own names, as the front page prints them.' },
+      'citizens.plaques.gardener': { kind: 'label', max: 20, note: 'As above.' },
+      'citizens.plaques.neighbour': { kind: 'label', max: 20, note: 'As above.' },
+      'citizens.plaques.farmer': { kind: 'label', max: 20, note: 'As above.' },
+      'citizens.plaques.raver': { kind: 'label', max: 20, note: 'As above.' },
+      'citizens.empty': { kind: 'prose', max: 60, note: 'Before anybody has been crowned.' },
+      'citizens.leaders': { kind: 'prose', max: 60, ...holdsAll('names'), note: 'Who leads this week so far (the names the front page shows).' },
+      'citizens.button': { kind: 'label', max: 30, note: 'The button to the plaques on the front page.' },
+      'dance.lines[]': { kind: 'prose', max: 70, ...holdsAll('title'), note: 'Over a remix from the gallery; {title} is its name. One is picked at random.' },
+      'dance.button': { kind: 'label', max: 30, note: 'The button to the remix gallery.' },
+      'help.title': { kind: 'label', max: 30, note: 'The heading of /help.' },
+      'help.lines[]': { kind: 'label', max: 80, note: 'One line each: who it is, each command and what it does, and that a mention gets an answer.' },
+      'chat.cap': { kind: 'prose', max: 80, note: 'The day’s replies are used up (the cap keeps Claude’s bill small). Said once a day.' },
+      'chat.slow': { kind: 'prose', max: 70, note: 'One person has asked a lot this hour: {name} is them. Said once an hour.' },
+      'chat.error': { kind: 'prose', max: 60, note: 'Claude did not answer this time.' },
+      'welcome.lines[]': { kind: 'prose', max: 90, ...holdsAll('name'), note: 'A newcomer joined the server; {name} becomes a mention of them. One is picked at random.' },
+      'welcome.button': { kind: 'label', max: 30, note: 'The button under a welcome, into Banana Town.' },
+      'posts.curse[]': { kind: 'prose', max: 90, note: 'Pinned when a Curse Night begins. Never when it ends or when the next one comes.' },
+      'posts.crownedTitle': { kind: 'label', max: 40, note: 'The heading when Monday’s plaques are handed out; the names follow under it.' },
+      'posts.crowned[]': { kind: 'prose', max: 70, note: 'The line under that heading, before the names.' },
+      'posts.record[]': { kind: 'prose', max: 90, ...holdsAll('game', 'name', 'score'), note: 'A new best at the top of an Arcade board.' },
+      'posts.forge': { kind: 'prose', max: 80, ...holdsAll('item', 'maker'), note: 'A new Forge piece on sale at the Banana Stand, with the name the stand shows for who drew it.' },
+      'posts.forgeAnon': { kind: 'prose', max: 60, ...holdsAll('item'), note: 'The same when the piece has no maker’s name.' },
+      'posts.morning[]': { kind: 'prose', max: 70, note: 'Over the picture of the banana of the day, pinned in the morning.' },
+      'posts.buttonTown': { kind: 'label', max: 30, note: 'A post’s button into Banana Town.' },
+      'posts.buttonStand': { kind: 'label', max: 30, note: 'A post’s button to the Banana Stand.' },
+      'trivia.title': { kind: 'label', max: 30, note: 'The heading on a trivia question.' },
+      'trivia.tally': { kind: 'prose', max: 40, ...holdsAll('n', 'right'), note: 'Under a question once anybody has answered it.' },
+      'trivia.right': { kind: 'prose', max: 30, ...holdsAll('fact'), note: 'Said privately to somebody who answered right; {fact} follows.' },
+      'trivia.wrong': { kind: 'prose', max: 50, ...holdsAll('answer', 'fact'), note: 'Said privately to somebody who did not.' },
+      'trivia.score': { kind: 'prose', max: 40, ...holdsAll('score'), note: 'After a right answer: how many they have got right in all.' },
+      'trivia.again': { kind: 'prose', max: 50, note: 'Pressing a second answer to the same question.' },
+      'trivia.gone': { kind: 'prose', max: 60, note: 'Answering a question too old to be kept.' },
+      'trivia.questions[].q': { kind: 'prose', max: 120, note: 'A question a player could answer by looking around Banana World or the site. Never a timer, odds or a price.' },
+      'trivia.questions[].a[]': { kind: 'label', max: 60, note: 'Four answers, the RIGHT ONE FIRST (the buttons are shuffled when it is asked).' },
+      'trivia.questions[].fact': { kind: 'prose', max: 160, note: 'One true thing, told after an answer, right or wrong.' },
+      'polls.intro': { kind: 'prose', max: 60, note: 'The line over the weekly poll.' },
+      'polls.items[].q': { kind: 'prose', max: 120, note: 'A weekly poll. Favourites, or what to make more of — and then “Trym reads this one”, never a promise.' },
+      'polls.items[].a[]': { kind: 'label', max: 55, note: 'A poll answer (Discord allows 55 characters and ten answers).' },
+    },
+    shape: (d) => {
+      const out = [];
+      const qs = (d.trivia && d.trivia.questions) || [];
+      if (qs.length < 20) out.push({ path: 'trivia.questions', msg: 'at least twenty questions, or a player meets the same ones too soon' });
+      qs.forEach((q, i) => {
+        if (!Array.isArray(q.a) || q.a.length !== 4) out.push({ path: `trivia.questions[${i}].a`, msg: 'four answers, the right one first' });
+        else if (new Set(q.a.map((s) => String(s).toLowerCase())).size !== 4) out.push({ path: `trivia.questions[${i}].a`, msg: 'two answers are the same' });
+      });
+      ((d.polls && d.polls.items) || []).forEach((p, i) => {
+        if (!Array.isArray(p.a) || p.a.length < 2 || p.a.length > 10) out.push({ path: `polls.items[${i}].a`, msg: 'two to ten answers (Discord’s limits)' });
+      });
+      // ⚠️ NEVER A WORD ABOUT THE POST. Trym, 1 Oct 2026: "if we talk about users letters we are basically also saying we
+      // read the letters which we dont, but it can be misunderstood."
+      const walk = (v, path) => {
+        if (typeof v === 'string') { if (/\b(letters?|post ?office|postcards?|mail|mailbox|pen ?pals?)\b/i.test(v)) out.push({ path, msg: 'BananaBOT never talks about letters or the post (Trym, 1 Oct 2026: it could read as reading them)' }); return; }
+        if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, path ? path + (Array.isArray(v) ? `[${k}]` : '.' + k) : k);
+      };
+      walk(d, '');
+      return out;
+    },
+  },
   'pass-toasts': {
     id: 'pass-toasts',
     title: 'My Pass — what the pass page says back',

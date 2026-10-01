@@ -124,6 +124,13 @@ const LETTERS = { rows: [
 ], n: 2 };
 // ✉️📊 the post office's count: counts and shapes only — the rave worker never sends a name or a word
 const day0 = Date.now() - 30 * 864e5;
+// 🍌📌 BananaBOT's own counts (worker-bot /stats, through worker-contact's r=bot)
+const BOT_DAY = new Date().toISOString().slice(0, 10);
+const BOT_STATS = { gateway: { on: true, connected: true, lastAck: Date.now(), ready: Date.now() - 3600000, reconnects: 0 },
+  days: [{ d: BOT_DAY, cmd_world: 4, cmd_top: 2, cmd_trivia: 3, chat: 7, trivia_right: 5, trivia_wrong: 2, welcome: 1, post_morning: 1, post_record: 1 }],
+  usage: { today: { n: 7, in: 6300, out: 280 }, month: { n: 41, in: 39000, out: 1700 }, dollars: 0.05, cap: 80 },
+  channels: { news: true, welcome: true, guild: 'Banana World' }, model: 'claude-haiku-4-5',
+  polls: [{ q: 'Which Arcade cabinet is the best?', total: 12, answers: [{ text: 'Peel Out', count: 7 }, { text: 'Banana Snake', count: 5 }], at: Date.now() }] };
 const POST_STATS = { counting: false, lap: null, stats: { days: 30, at: Date.now() - 12 * 60000, posts: 64, letters: 52, cards: 12, notes: 30,
   tone: { warm: 41, neutral: 9, unkind: 2 }, flagged: 1, stopped: { words: 3, contact: 2, other: 0 }, stoppedBy: 3, reported: 1,
   writers: 18, receivers: 22, people: 27, pairs: 31, penPals: 9, circle: 14,
@@ -159,6 +166,7 @@ async function openPage(width, height, opts = {}) {
       if (r === 'live') return json(route, LIVE);
       if (r === 'range') return json(route, RANGE);
       if (r === 'etsy') return json(route, ETSY);
+      if (r === 'bot') return json(route, BOT_STATS);
       if (r === 'analyst') return json(route, { verdict: 'quiet', headline: 'a quiet day', body: [], reads: [], recs: [], confidence: 'fine' });
       if (r === 'report') return json(route, { lines: [], notes: [] });
       return json(route, { err: 'stubbed out' }, 500);
@@ -229,7 +237,8 @@ async function walkFloor(page, f, name) {
       'answered within a week', '17 of 40', 'the middle answer takes 10 h', 'A ↔ B', 'A ↔ C', 'the longest conversations', 'came back after their first post',
       'about this week · got post', 'Does post bring people back?', 'post per day: by letter (yellow) and by postcard (blue)', 'between', '201 mailboxes counted']),
     rawCodes: ['qa', 'deny', 'src', 'unruled', 'faucet'].filter((w) => new RegExp('\\b' + w + '\\b', 'i').test(T.world)) };
-  out.floors.mail = { missing: missing(T.mail, ['Letters to HQ', 'hello from the form', 'Reported letters', 'did not open with this key']) };
+  out.floors.mail = { missing: missing(T.mail, ['Letters to HQ', 'hello from the form', 'Reported letters', 'did not open with this key',
+    'BananaBOT on Discord', 'DISCORD', 'commands today', 'replies today', 'trivia answers today', 'Claude this month', '$0.05', 'morning bananas', 'Last poll', 'Peel Out won, 7 of 12 votes']) };
   out.floors.reviews = { missing: missing(T.reviews, ['GIFs for the gallery', 'Items for the catalog', 'The live gallery', 'The catalog']) };
   out.floors.dev = { missing: missing(T.dev, ['The rig', 'File something', 'Open issues', 'Open pull requests', 'Phones that could not save', 'Ledger checks', 'coin grants with no source']) };
   // the desk layout, measured with the Now floor open: a rail beside the floor, and the map wider
