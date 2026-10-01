@@ -11,7 +11,7 @@ from google.oauth2 import service_account
 creds = service_account.Credentials.from_service_account_file(CFG['key_path'], scopes=['https://www.googleapis.com/auth/analytics.readonly'])
 client = BetaAnalyticsDataClient(credentials=creds)
 PROP = 'properties/%s' % CFG['property_id']
-WORLD = ['/rave/', '/park/', '/beach/', '/homestead/', '/pass/']
+WORLD = ['/town/', '/rave/', '/park/', '/beach/', '/homestead/', '/pass/']   # the town since 21 Sep (the front door)
 
 
 def world_filter():
@@ -36,7 +36,7 @@ def report(dims, mets, start, end, flt=None, cohort=None, limit=1000, order=None
     return out
 
 
-print('== WORLD PAGES (rave/park/beach/homestead/pass), by ISO week, newest first ==')
+print('== WORLD PAGES (town/rave/park/beach/homestead/pass), by ISO week, newest first ==')
 rows = report(['isoYearIsoWeek'], ['activeUsers', 'newUsers', 'sessions', 'engagedSessions', 'userEngagementDuration'], '90daysAgo', 'today', world_filter())
 rows.sort(key=lambda r: r[0][0], reverse=True)
 print('  week      users   new   returning  sessions  engaged  min/user')
