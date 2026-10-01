@@ -70,6 +70,10 @@ function init() {
     spd: BASE_CYCLE_S, frame: 0, // frame = the sticker still
     paused: reducedMotion,
   };
+  // 👕 only DRESSING saves an outfit (bb-last, what the world and the pass wear): a tap (onState) or a ?wear door. A
+  // repaint never does, and the overlay (the banana of the day's own window, a stream) is nobody's outfit.
+  const OVERLAY = new URLSearchParams(location.search).get('overlay') === '1';
+  let dressed = false;
 
   // ---- sprite + accessory image loading ----
 
@@ -446,7 +450,7 @@ function init() {
   }
   fetch(CATALOG_URL)
     .then((r) => (r.ok ? r.json() : []))
-    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); applyPendingWear(); normalizeSpots(); onState(); revealWornAll(); } })
+    .then((items) => { if (Array.isArray(items)) { CATALOG = items; renderCatalog(); fetchCatches(); applyPendingWear(); normalizeSpots(); settle(); revealWornAll(); } })
     .catch(() => { /* offline/blocked: the row just stays hidden */ });
   // 🚪 ?wear=<id> — the pass closet's door: the closet shows the trophy, the
   // BUILDER dresses it (one wear model, one place it can break). Built-ins
@@ -946,7 +950,7 @@ function init() {
     // community item `c` is now MANAGED here too (the Community row) — but it's
     // always LOADED from bb-last first (below), so writing it back can never
     // silently undress a rave catch; removing it in the row is a deliberate act.
-    try {
+    if (dressed && !OVERLAY) try {
       let prev = {};
       try { prev = JSON.parse(localStorage.getItem('bb-last') || '{}') || {}; } catch (e2) {}
       localStorage.setItem('bb-last', JSON.stringify({ ...prev, hat: state.hat, glasses: state.glasses, extras: state.extras, effect: state.effect, c: state.c || '' }));
@@ -992,6 +996,7 @@ function init() {
     const wear = (p.get('wear') || '').trim();
     if (wear) {
       pendingWear = wear;
+      dressed = true;   // the pass closet's Wear: the player chose it
       if (HAT_BY_ID[wear] && earnedUnlocked(HAT_BY_ID[wear])) state.hat = wear;
       else if (SHADE_BY_ID[wear] && earnedUnlocked(SHADE_BY_ID[wear])) state.glasses = wear;
       else if (!/^c_/.test(wear)) {
@@ -1118,7 +1123,12 @@ function init() {
   let bbT;
   let bbStarted = false;
   function onState() {
+    dressed = true;   // every caller is the player dressing: a chip, Surprise me, a card's Wear
     if (!bbStarted) { bbStarted = true; track('builder_start', withSecs()); }
+    settle();
+  }
+  // a repaint that is NOT the player dressing (the catalog landing): it saves no outfit and is no builder_start
+  function settle() {
     dirty = true;
     refreshUI(); sync();
     clearTimeout(bbT);
@@ -1374,6 +1384,7 @@ function init() {
     }
   }
 
+  if (dressed) sync();   // a ?wear door is kept even when the catalog never lands
   refreshUI();
   revealWornAll();   // every band opens showing what's worn (comm chips re-reveal when the catalog lands)
   passVisit();
