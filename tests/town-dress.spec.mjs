@@ -13,6 +13,7 @@
 //   · THE MIRROR MUST NOT SCROLL AWAY. Every other card in the town is one scrolling column; this one
 //     pins the preview, because watching the banana change is the whole point.
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 async function shop(page, w, h) {
   const errors = [];
@@ -103,6 +104,45 @@ test('the dressing room dresses the banana, and saves it where the whole world r
   await page.waitForTimeout(250);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('bb-last') || '{}').hat),
     '…but closing the card without Step Out changes nothing').toBe(hat);
+  expect(errors).toEqual([]);
+});
+
+// ✋ THE FORGE PIECES ARE IN THE MIRROR, AND A PICK TAKES ITS SPOT FROM THEM (1 Oct 2026, design library §52). The room
+// drew the game's own garments only, so a hat landed on a Forge head piece and a held thing went behind a Forge glove —
+// in the world, where the Forge piece won. Three real pieces from the catalog (tests/catalog-hands-fixture.json): both
+// boxing gloves and the pink bow.
+test('a pick takes its spot from a Forge piece, and only that piece comes off', async ({ page }) => {
+  const CAT = readFileSync(new URL('./catalog-hands-fixture.json', import.meta.url), 'utf8');
+  await page.route('https://banana-share.trymstene.workers.dev/catalog/items.json', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: CAT }));
+  // …and a fourth piece this catalog does not know: nothing here may take it off
+  await page.addInitScript(() => { try { localStorage.setItem('bb-last', JSON.stringify({ hat: 'none', glasses: 'none', extras: {}, c: 'c_18d4a0daa0,c_e43111617c,c_3e2d0938cb,c_0123456789', effect: 'none' })); } catch (e) {} });
+  const errors = await shop(page);
+  await page.waitForFunction(() => (window.__town.dress().worn().custom || []).length === 3, null, { timeout: 15000 });
+  await page.locator('.tw-dress__stage canvas').screenshot({ path: test.info().outputPath('mirror-gloves.png') });
+
+  // a trophy goes in the right hand, which a boxing glove holds: that glove lets go, the left one stays
+  expect(await page.evaluate(() => window.__town.dress().pick('extras', 'trophy')), 'the trophy is on the Extras rail').toBe(true);
+  await page.waitForTimeout(250);
+  let w = await page.evaluate(() => window.__town.dress().worn());
+  expect(w.extras.trophy, 'the trophy is held').toBe(true);
+  expect(w.c.split(','), 'the right boxing glove let go of the hand').not.toContain('c_e43111617c');
+  expect(w.c.split(','), 'the left one is still on').toContain('c_18d4a0daa0');
+  await page.locator('.tw-dress__stage canvas').screenshot({ path: test.info().outputPath('mirror-trophy.png') });
+
+  // a hat over the pink bow: the bow comes off the head
+  const hat = await page.evaluate(() => { const b = [...document.querySelectorAll('.tw-dress__chip[data-sl="hat"]')].filter((x) => !x.classList.contains('is-locked'))[0]; if (b) b.click(); return b ? b.dataset.id : null; });
+  expect(hat, 'a hat is pickable').toBeTruthy();
+  await page.waitForTimeout(250);
+  w = await page.evaluate(() => window.__town.dress().worn());
+  expect(w.c.split(','), 'a hat takes the head from the bow').not.toContain('c_3e2d0938cb');
+
+  // the save takes off exactly those two, by name — the piece the catalog did not know stays on
+  await page.evaluate(() => document.querySelector('#twDressOk').click());
+  await page.waitForTimeout(300);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('bb-last') || '{}'));
+  expect(saved.c, 'only the displaced pieces came off').toBe('c_18d4a0daa0,c_0123456789');
+  expect(saved.hat).toBe(hat);
+  expect(saved.extras.trophy).toBe(true);
   expect(errors).toEqual([]);
 });
 

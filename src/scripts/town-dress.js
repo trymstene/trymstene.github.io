@@ -24,6 +24,11 @@
 import { drawComposite, assetsReady, imgFor, SVG } from '../lib/banana-engine.js';
 import { slots, readWorn, writeWorn, drawable } from '../lib/wardrobe-slots.js';
 import { passPush } from '../lib/banana-pass.js';
+// 👕 THE MIRROR SHOWS THE FORGE PIECES TOO (1 Oct 2026). It drew the game's own garments only, so a hat picked here sat
+// on a head that, in the world, already wore a Forge piece — and a held thing went behind a Forge glove. The catalog
+// tells this room where each piece sits; letGo() takes off whatever a pick displaces (src/lib/wear-spot.js).
+import { loadCatalog, catCustom } from '../lib/drops.js';
+import { letGo } from '../lib/wear-spot.js';
 
 // ⭐ THE WORDS ARE GLOBBED HERE, inside the shop's own lazy chunk — not onto town-life.json, which is
 // eager-globbed into town-room.js. A player who never opens the wardrobe downloads none of them.
@@ -37,6 +42,7 @@ const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&':
 export function bootTownDress(ctx) {
   const { openCard, card, closeCard, track } = ctx;
   let raf = 0, worn = null, cv = null, g = null, t0 = 0, saved = false;
+  let dropped = new Set();   // the Forge pieces this visit's picks took off — the only ones a save may take off
 
   // ── the mirror ──────────────────────────────────────────────────────────────────────────────────
   // ⚠️ drawComposite wants a WHOLE outfit or it throws on the first extra it looks for, and every
@@ -143,6 +149,12 @@ export function bootTownDress(ctx) {
         if (had) delete ex[id]; else ex[id] = true;   // and tapping the worn one takes it off, in both
         worn = { ...worn, extras: ex };
       }
+      // ✋ a thing put ON takes its spot from whatever held it, a Forge piece included (wear-spot.js)
+      if (row.kind === 'one' ? worn[sl] === id : !!(worn.extras || {})[id]) {
+        const { dropped: gone, ...next } = letGo(worn, id);
+        gone.forEach((x) => dropped.add(x));
+        worn = { ...next, custom: catCustom(next.c) };
+      }
       // ⭐ THE MIRROR CHANGES; NOTHING IS SAVED UNTIL YOU SAY SO. Trym, 20 Sep: "theres no Confirm
       // button at the end of the popup for UX? Its not logical that the user can click outside the
       // window and then the attire is saved." A changing room where walking out commits whatever you
@@ -157,7 +169,10 @@ export function bootTownDress(ctx) {
 
   function open() {
     worn = readWorn();
+    dropped = new Set();
     saved = false;
+    // the Forge pieces join the mirror once the catalog says what they look like and where they sit
+    loadCatalog().then(() => { if (worn) { worn = { ...worn, custom: catCustom(worn.c) }; wake(); } }).catch(() => {});
     openCard(html());
     card.classList.add('tw-card--dress');
     card.scrollTop = 0;   // ⚠️ openCard never resets it, so a tall card before this one leaves it scrolled
@@ -168,8 +183,9 @@ export function bootTownDress(ctx) {
     if (host) { art(host); wire(host); }
     const ok = card.querySelector('#twDressOk');
     if (ok) ok.addEventListener('click', () => {
-      // writeWorn MERGES, so a community item caught at the rave cannot be taken off by dressing here
-      writeWorn(worn, passPush);
+      // writeWorn MERGES, so a community item caught at the rave cannot be taken off by dressing here — only the pieces
+      // this visit's picks displaced come off, by name
+      writeWorn({ ...worn, drop: [...dropped] }, passPush);
       saved = true;
       if (ctx.onWear) ctx.onWear();
       track('town_dress', { at: 'clothes', step: 'wear' });

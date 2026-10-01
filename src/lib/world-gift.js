@@ -8,6 +8,8 @@
 import { HAT_BY_ID, SHADE_BY_ID, EXTRA_DEFS } from './banana-engine.js';
 import { ensureAnon, passPost, walletKeep, passPush } from './banana-pass.js';
 import { fillWords } from './fill-words.js';
+import { loadCatalog } from './drops.js';
+import { letGo } from './wear-spot.js';   // 👕 the present takes its spot, a Forge piece included
 import GIFT from '../icons/pixelart/gift-solid.svg?raw';
 import W from '../data/copy/world-social.json';
 
@@ -86,12 +88,20 @@ export function bootGift(s) {
     portrait(c.querySelector('canvas'), DRAW(withItem(saved(), id)));
     const b = c.querySelector('.bws-go');
     if (b) b.addEventListener('click', () => {
-      try { localStorage.setItem('bb-last', JSON.stringify({ ...saved(), ...withItem(saved(), id) })); } catch (e) {}
-      passPush();   // bb-last rides the sync blob; its change-clock stamps itself
-      try { document.dispatchEvent(new CustomEvent('world:rewear')); } catch (e) {}
       b.disabled = true;
       b.textContent = G.worn;
-      track('gift_wear', { area, item: id });
+      // ✋ a present that sits on the head, the feet or in a hand takes that spot from a Forge piece too: the catalog
+      // says where each sits, so the save waits for it (it is usually already here; a failed load drops nothing)
+      loadCatalog().catch(() => {}).then(() => {
+        try {
+          const s0 = saved();
+          const next = letGo({ ...s0, ...withItem(s0, id) }, id);
+          localStorage.setItem('bb-last', JSON.stringify({ ...s0, hat: next.hat, glasses: next.glasses, extras: next.extras, ...(next.dropped.length ? { c: next.c } : {}) }));
+        } catch (e) {}
+        passPush();   // bb-last rides the sync blob; its change-clock stamps itself
+        try { document.dispatchEvent(new CustomEvent('world:rewear')); } catch (e) {}
+        track('gift_wear', { area, item: id });
+      });
     });
   }
 

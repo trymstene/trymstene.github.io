@@ -126,11 +126,15 @@ export function writeWorn(o, push) {
   try {
     let prev = {};
     try { prev = JSON.parse(localStorage.getItem(WORN_KEY) || '{}') || {}; } catch (e) {}
+    // ✋ a Forge piece comes off ONLY BY NAME: `o.drop` lists the ones a pick displaced (src/lib/wear-spot.js). Never a
+    // whole `c`, so a piece caught somewhere else while the dressing room was open stays on.
+    const drop = Array.isArray(o.drop) ? o.drop : [];
     localStorage.setItem(WORN_KEY, JSON.stringify({
       ...prev,
       hat: o.hat || 'none',
       glasses: o.glasses || 'none',
       extras: o.extras || {},
+      ...(drop.length ? { c: String(prev.c || '').split(',').map((t) => t.trim()).filter((x) => x && !drop.includes(x)).join(',') } : {}),
     }));
   } catch (e) {}
   try { if (typeof push === 'function') push(); } catch (e) {}

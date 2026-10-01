@@ -1658,7 +1658,14 @@ one hand at the same time."*
 - **The picture renderer agrees glove for glove.** `tools/banana_render.py` (the Citizens' frames, the stream pack, print
   files) takes the rule from `tools/hands_rule.py`, in catalog order — never the outfit's own key order, which once put
   the plush and the glowstick in opposite gloves to the game.
-- The banana of the day keeps, and names, only what its two hands hold.
+- The banana of the day keeps, and names, only what its two hands hold — and wears ONE garment on the body (one of the
+  rolled ones, picked by a last draw so every other draw of the day stands). It piled up to seven on 298 days a year.
+- **Every surface that puts a thing on lets its spot go, Forge pieces included** (`src/lib/wear-spot.js` `letGo`): the
+  town's dressing room (its mirror now draws the Forge pieces; a save takes off only the pieces a pick displaced, by
+  name), Nib's present, the beach's plush. The product page keeps one garment on the body and one pair of shoes (a
+  sticker could print a bow tie over a tie) and makes room in the hands.
+- **A room passes on six Forge pieces, the newest** (worker-rave `sanitizeCList`): it kept the first four, so everybody
+  else saw a banana without what it had put on last. A malformed id drops on its own, never the whole slot.
 - **Enforced by** `tools/check-hands.mjs` (check-all and CI): one table of cases through both copies of the rule, the
   newest-wins cases a wardrobe meets, and the engine, the print renderer, the builder, the stand and the approval path
   each using it.

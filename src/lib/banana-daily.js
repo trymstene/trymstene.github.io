@@ -65,8 +65,14 @@ export function dailyOutfit(date = new Date()) {
   // a filter AFTER the draws: the rnd() order, and every day's picture, stay exactly as they were.
   const def = Object.fromEntries(Object.values(WEARABLE_PACKS).flatMap((pk) => pk.extras || []).map((d) => [d.id, d]));
   const hands = resolveHands(rolled.map(([id]) => def[id]).filter((d) => d && d.anchor === 'hand'), []);
-  const worn = rolled.filter(([id]) => !def[id] || def[id].anchor !== 'hand' || hands.left === def[id] || hands.right === def[id]);
+  const held = rolled.filter(([id]) => !def[id] || def[id].anchor !== 'hand' || hands.left === def[id] || hands.right === def[id]);
   const effect = rnd() < 0.35 ? EFFECT_POOL[Math.floor(rnd() * EFFECT_POOL.length)] : null;
+  // 👔 ONE GARMENT ON THE BODY (1 Oct 2026) — the builder's own rule: "bow tie OR chain OR tie, never a pile of neckwear
+  // on ten pixels of banana". The roll piled up to seven, on 298 days of the year. One of the rolled ones is kept, picked
+  // by one more draw at the very END, so every draw before it (the hat, the shades, the hands, the effect) is untouched.
+  const bodies = held.filter(([id]) => def[id] && def[id].zone === 'body');
+  const body = bodies.length > 1 ? bodies[Math.floor(rnd() * bodies.length)] : bodies[0];
+  const worn = held.filter(([id]) => !(def[id] && def[id].zone === 'body') || (body && id === body[0]));
   return {
     hat: hat[0], glasses: glasses[0],
     extras: Object.fromEntries(worn.map(([id]) => [id, true])),

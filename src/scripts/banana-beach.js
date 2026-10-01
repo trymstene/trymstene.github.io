@@ -11,6 +11,7 @@ import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid, p
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale, wearSaved } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
+import { letGo } from '../lib/wear-spot.js';   // ✋ the prize takes its glove, a Forge piece included
 import { mountHud } from '../lib/world-hud.js';
 import { coinText, coinImg, COIN_SRC } from '../lib/coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
@@ -2492,12 +2493,16 @@ function init() {
       // 🍌 WON = WORN: equip the plush on the spot (like a stand buy), persist
       // it to bb-last so it rides to the builder/rave/park, and tell the beach
       // peers so it appears in your glove for everyone here right now.
-      ME_DRAW.extras = ME_DRAW.extras || {};
-      ME_DRAW.extras.plushbanana = true;
+      // ✋ …and the glove it lands in lets go of what it held, a Forge glove included (wear-spot.js) — or "won = worn"
+      // would put it behind something and nobody would see it
+      const won = (o) => {
+        const n = letGo({ ...o, extras: { ...(o.extras || {}), plushbanana: true } }, 'plushbanana');
+        return n.dropped.length ? { extras: n.extras, c: n.c } : { extras: n.extras };
+      };
+      Object.assign(ME_DRAW, won(ME_DRAW));
       try {
         const bl = JSON.parse(localStorage.getItem('bb-last') || '{}');
-        bl.extras = { ...(bl.extras || {}), plushbanana: true };
-        localStorage.setItem('bb-last', JSON.stringify(bl));
+        localStorage.setItem('bb-last', JSON.stringify({ ...bl, ...won(bl) }));
       } catch (e) {}
       lastKey = -1; drawMe();
       try { if (bayRoom.live) bayRoom.send({ t: 'outfit', outfit: myBayOutfit() }); } catch (e) {}

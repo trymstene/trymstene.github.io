@@ -731,13 +731,18 @@ export default {
 };
 
 // the `c` slot holds a COMMA LIST since 2 Aug (a banana wears several
-// community items) — validate per token, cap 4. ⚠️ Jade's bug (4 Aug): the
+// community items) — validate per token. ⚠️ Jade's bug (4 Aug): the
 // old single-id regex failed the list and stripped the WHOLE slot, so
 // multi-wearers danced bare — visibly only in the rave, because the rave
 // echoes your own banana off the roster while park/beach draw yours locally.
+// ✋ SIX, AND THE NEWEST (1 Oct 2026): one piece per spot — head, face, chest, feet and each hand on its own — and the
+// list is in wear order, so over the cap the OLDEST goes. It kept the first four, and everybody else in a room saw a
+// banana without the two things it had put on last (a boxing glove, then the other one). A malformed id is dropped on
+// its own, never the whole slot with it — Jade's bug's other half.
+const C_CAP = 6;
 function sanitizeCList(v) {
-  const toks = String(v || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 4);
-  return toks.length && toks.every((t) => /^c_[a-f0-9]{6,32}$/.test(t)) ? toks.join(',') : '';
+  const toks = String(v || '').split(',').map((s) => s.trim()).filter((t) => /^c_[a-f0-9]{6,32}$/.test(t)).slice(-C_CAP);
+  return toks.join(',');
 }
 // 🎩 MEMBER GEAR rides a SIGNED TOKEN, the beer pattern made portable:
 // worker-pass mints `tier.until.hmac` (MEMBER_HMAC, the shared secret on both

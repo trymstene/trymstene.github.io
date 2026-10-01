@@ -6,7 +6,7 @@
 import {
   assetsReady, artReady, NFRAMES, HATS, GLASSES, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, SVG as ART,
 } from '../lib/banana-engine.js';
-import { ownsWearable, ownsDropStat } from '../data/wearables.js';
+import { ownsWearable, ownsDropStat, makeRoom } from '../data/wearables.js';   // ✋ makeRoom: one thing per glove
 import { wearToCustom } from '../lib/wear-render.js';
 import { passPatch } from '../lib/banana-pass.js';
 import { wardChip, trayify, revealWorn, attachTips } from '../lib/wardrobe-ui.js';
@@ -36,6 +36,24 @@ const withSecs = (p) => {
   return p;
 };
 const state = parseDesign(new URLSearchParams(location.search));
+// 👔 ONE ON THE BODY, ONE PAIR ON THE FEET (1 Oct 2026). The Extras row toggled every garment on its own, so a sticker could
+// print a bow tie over a tie over a chain — the builder's rule, "never a pile of neckwear on ten pixels of banana", held
+// everywhere but here. A pick now clears its own spot's siblings, and a loaded design keeps the first of each.
+const oneOf = (d) => (d.zone === 'body' ? 'body' : d.anchor === 'feet' ? 'feet' : '');
+function soleOf(keep) {
+  EXTRA_DEFS.forEach((e) => { if (e !== keep && oneOf(e) && oneOf(e) === oneOf(keep) && state.extras[e.id]) state.extras[e.id] = false; });
+}
+EXTRA_DEFS.forEach((d) => { if (oneOf(d) && state.extras[d.id]) soleOf(d); });
+// ✋ ONE THING PER GLOVE (src/lib/hands.js): what goes in a hand takes it from what held it — this page's one Forge piece
+// included. `put`: a hand def or the Forge id just put on; nothing to only tidy a loaded design.
+function handsFit(put) {
+  const fp = state.c ? (catCustom(state.c) || [])[0] : null;
+  const worn = fp ? [{ id: state.c, anchor: fp.anchor, hand: fp.hand }] : [];
+  const on = EXTRA_DEFS.filter((d) => d.anchor === 'hand' && state.extras[d.id]);
+  const { off, drop } = makeRoom(on, worn, typeof put === 'string' ? worn.find((w) => w.id === put) || null : put || null);
+  off.forEach((k) => { state.extras[k] = false; });
+  if (state.c && drop.includes(state.c)) { state.c = ''; applyCustom(); }
+}
 // which product this page sells — from the route (shared/products.js drives it)
 const product = getProduct((el('pdpRoot') || {}).dataset && el('pdpRoot').dataset.product) || getProduct('sticker');
 const apparel = !!product.options;
@@ -332,6 +350,7 @@ function buildWardrobe() {
             const slot = anchorSlot(catAnchor(state.c));
             if (slot === 'hat') state.hat = 'none';
             if (slot === 'feet') EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') state.extras[d.id] = false; });
+            handsFit(state.c);   // ✋ a Forge piece for a hand takes its glove
           }
           queueMicrotask(buildWardrobe);
         },
@@ -370,6 +389,8 @@ function buildWardrobe() {
     pick: () => {
       state.extras[d.id] = !state.extras[d.id];
       if (state.extras[d.id] && d.anchor === 'feet' && state.c && anchorSlot(catAnchor(state.c)) === 'feet') { state.c = ''; applyCustom(); queueMicrotask(buildWardrobe); }
+      if (state.extras[d.id] && oneOf(d)) { soleOf(d); queueMicrotask(buildWardrobe); }      // 👔 one garment, one pair
+      if (state.extras[d.id] && d.anchor === 'hand') { handsFit(d); queueMicrotask(buildWardrobe); }   // ✋ one per glove
     },
   })).concat(commIn((a) => a !== 'head'));
   if (extraChips.length) wardrobeRow(host, 'Extras', extraChips);
@@ -531,6 +552,7 @@ async function boot() {
       const slots = String(state.c || '').split(',').map((t) => anchorSlot(catAnchor(t.trim()))).filter(Boolean);
       if (slots.includes('hat')) state.hat = 'none';
       if (slots.includes('feet')) EXTRA_DEFS.forEach((d) => { if (d.anchor === 'feet') state.extras[d.id] = false; });
+      handsFit(null);   // ✋ …and a loaded design holds one thing per glove
       applyCustom();
       buildWardrobe();
       buildPosePicker();

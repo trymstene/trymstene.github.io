@@ -94,13 +94,32 @@ if (!/glove\.own\[gloveOf\(cItem\)\] !== cItem\) continue/.test(engine)) fail.pu
 const pyr = src('tools/banana_render.py');
 if (!/from hands_rule import/.test(pyr)) fail.push('tools/banana_render.py does not take its hand rule from tools/hands_rule.py');
 if (!/glove\['own'\]\[glove_of\(c\)\] is not c/.test(pyr)) fail.push('tools/banana_render.py draws a community hand item without asking whether its glove is its own');
-for (const f of ['src/scripts/banana-builder.js', 'src/scripts/park-shops.js', 'src/lib/banana-pass.js']) {
+for (const f of ['src/scripts/banana-builder.js', 'src/scripts/park-shops.js', 'src/lib/banana-pass.js', 'src/scripts/sticker-pdp.js']) {
   if (!/makeRoom/.test(src(f))) fail.push(f + ' puts things on a banana without making room in its hands (src/lib/hands.js makeRoom)');
 }
+// …and the surfaces without the builder's catalog row take their spot through letGo (src/lib/wear-spot.js), Forge
+// pieces included: the town's dressing room, Nib's present, the beach's plush (1 Oct 2026)
+for (const f of ['src/scripts/town-dress.js', 'src/lib/world-gift.js', 'src/scripts/banana-beach.js']) {
+  if (!/import \{[^}]*letGo[^}]*\} from '[^']*wear-spot\.js'/.test(src(f))) fail.push(f + ' puts a thing on without letting go of what held its spot (src/lib/wear-spot.js letGo)');
+}
+
+// ── 4. 👔 the single spots, where a surface rolls or toggles them ──────────────────────────────────────────
+// the banana of the day, a year of it: never more than two things in hand, never more than one garment on the body
+const { dailyOutfit } = await import('../src/lib/banana-daily.js');
+let handDays = 0, bodyDays = 0;
+for (let i = 0; i < 366; i++) {
+  const ids = Object.keys(dailyOutfit(new Date(Date.UTC(2026, 9, 1) + i * 86400000)).extras);
+  if (ids.filter((id) => DEF[id] && DEF[id].anchor === 'hand').length > 2) handDays++;
+  if (ids.filter((id) => DEF[id] && DEF[id].zone === 'body').length > 1) bodyDays++;
+}
+if (handDays) fail.push('the banana of the day holds more than two things on ' + handDays + ' days of the year');
+if (bodyDays) fail.push('the banana of the day wears more than one garment on the body on ' + bodyDays + ' days of the year');
+// the product page's Extras row toggles every garment on its own, so it has to clear the spot's siblings itself
+if (!/soleOf\(d\)/.test(src('src/scripts/sticker-pdp.js'))) fail.push('the product page lets a sticker wear two garments on the body or two pairs of shoes');
 
 if (fail.length) {
-  console.error('❌ the hands:\n   · ' + fail.join('\n   · '));
+  console.error('❌ the hands and the single spots:\n   · ' + fail.join('\n   · '));
   process.exit(1);
 }
 console.log('✅ hands: one thing per glove — ' + CASES.length + ' cases agree in the engine and the print renderer, ' + ROOM.length
-  + ' wardrobe cases keep the newest, and the builder, the stand and an approval make room');
+  + ' wardrobe cases keep the newest, every surface that dresses a banana makes room; the banana of the day holds two and wears one');
