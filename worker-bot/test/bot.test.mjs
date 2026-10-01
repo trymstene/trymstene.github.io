@@ -39,12 +39,13 @@ const WORLD = {
 const binding = (world) => ({ fetch: async (req) => { const u = new URL(req.url); const body = world[u.pathname]; return new Response(JSON.stringify(body === undefined ? { err: 'no' } : body), { status: body === undefined ? 404 : 200 }); } });
 const calls = [];
 let anthropicReply = 'Three on the dance floor. I counted twice.';
+let history = [];   // what Discord answers for a channel's recent messages
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   const body = init.body ? JSON.parse(init.body) : null;
   calls.push({ url: u, method: init.method || 'GET', body, headers: init.headers || {} });
   if (u.startsWith('https://api.anthropic.com/')) return new Response(JSON.stringify({ content: [{ type: 'text', text: anthropicReply }], usage: { input_tokens: 900, output_tokens: 40 } }), { status: 200 });
-  if (u.includes('/messages?limit=')) return new Response(JSON.stringify([]), { status: 200 });
+  if (u.includes('/messages?limit=')) return new Response(JSON.stringify(history), { status: 200 });
   if (u.includes('/channels/') && (init.method || 'GET') === 'POST') return new Response(JSON.stringify({ id: 'm' + calls.length }), { status: 200 });
   if (u.includes('/channels/') && (init.method || 'GET') === 'GET') return new Response(JSON.stringify({ id: 'poll1', poll: { question: { text: 'Best place?' }, answers: [{ answer_id: 1, poll_media: { text: 'Banana Town' } }, { answer_id: 2, poll_media: { text: 'The Rave' } }], results: { is_finalized: true, answer_counts: [{ id: 1, count: 5 }, { id: 2, count: 3 }] } } }), { status: 200 });
   return new Response('{}', { status: 200 });
@@ -238,6 +239,37 @@ console.log('\n🍌📌  BananaBOT');
   ok('the live block is plain facts', snapshot({ counts: { rave: 1, park: 0, bay: 0, town: 2 }, square: { cursed: false } }).startsWith('Bananas here right now: the Rave 1'));
 }
 
+// ── chat: ⭐ only the conversation WITH the bot goes to Claude (the privacy page promises it) ───────────────────────
+{
+  const env = makeEnv({});
+  const room = env.BOT.get('bananabot').room;
+  room.me = { id: 'bot1' };
+  const t = (min) => new Date(Date.now() - min * 60000).toISOString();
+  const BOT = { id: 'bot1', username: 'BananaBOT', bot: true };
+  const KIWI = { id: 'k1', username: 'kiwi' }, BEA = { id: 'b1', username: 'bea' };
+  history = [   // newest first, as Discord sends them
+    { id: 'h6', author: BOT, content: 'Good morning, the banana of the day is up.', timestamp: t(2), mentions: [] },
+    { id: 'h5', author: BOT, content: 'Bea, the park is quiet.', timestamp: t(3), mentions: [BEA], referenced_message: { id: 'h4', author: BEA } },
+    { id: 'h4', author: BEA, content: '<@bot1> is the park busy?', timestamp: t(4), mentions: [BOT] },
+    { id: 'h3', author: KIWI, content: 'bea did you see my yard', timestamp: t(5), mentions: [] },
+    { id: 'h2', author: BOT, content: 'Three at the rave.', timestamp: t(6), mentions: [KIWI], referenced_message: { id: 'h1', author: KIWI } },
+    { id: 'h1', author: KIWI, content: '<@bot1> how many at the rave?', timestamp: t(7), mentions: [BOT] },
+    { id: 'h0', author: KIWI, content: '<@bot1> an old question', timestamp: t(45), mentions: [BOT] },
+  ];
+  calls.length = 0;
+  await room.chat({ id: 'now', guild_id: 'g', channel_id: 'ch', content: '<@bot1> and the beach?', author: KIWI, mentions: [BOT], timestamp: t(0) });
+  const ask = calls.find((c) => c.url.startsWith('https://api.anthropic.com/'));
+  const said = (ask && ask.body.messages[0].content) || '';
+  ok('Kiwi’s question to the bot and the bot’s answer to Kiwi go along', said.includes('how many at the rave?') && said.includes('Three at the rave.') && said.includes('and the beach?'));
+  ok('⭐ nothing Bea said, and not the bot’s answer to Bea', !said.includes('park'));
+  ok('⭐ not Kiwi’s line to somebody else, and not the bot’s own post', !said.includes('see my yard') && !said.includes('Good morning'));
+  ok('nothing older than half an hour', !said.includes('an old question'));
+  history = [];
+  calls.length = 0;
+  await room.chat({ id: 'quiet', guild_id: 'g', channel_id: 'ch', content: '', author: KIWI, mentions: [], referenced_message: { id: 'h2', author: BOT }, timestamp: t(0) });
+  ok('a reply whose words never reached the bot (the ping off) is left alone, and costs nothing', calls.length === 0);
+}
+
 // ── the gateway: switched off, nothing; switched on, the handshake ───────────────────────────────────────────────
 {
   const off = makeEnv({ GATEWAY_ON: '0' });
@@ -256,7 +288,7 @@ console.log('\n🍌📌  BananaBOT');
   ok('switched on, the tick connects and sets the watchdog', !!room.ws && room.state.alarm() > Date.now());
   await room.onGateway(JSON.stringify({ op: 10, d: { heartbeat_interval: 45000 } }));
   const id = sentGw.find((x) => x.op === 2);
-  ok('…identifies with the four intents it needs', id && id.d.intents === INTENTS && INTENTS === (1 | 2 | 512 | 32768));
+  ok('⭐ …identifies with the three intents it needs, never message content', id && id.d.intents === INTENTS && INTENTS === (1 | 2 | 512));
   ok('…and its status line', id.d.presence.activities[0].state === W.presence);
   await room.onGateway(JSON.stringify({ op: 0, t: 'READY', s: 1, d: { session_id: 's1', resume_gateway_url: 'wss://r.discord.gg', user: { id: 'bot1', username: 'BananaBOT' } } }));
   ok('READY keeps the session to resume', (await room.get('gw')).session === 's1' && room.me.id === 'bot1');

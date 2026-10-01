@@ -26,12 +26,16 @@ service = "banana-pass"
 binding = "SHARE"
 service = "banana-share"
 
+# Workers Paid only: a Free account refuses this deploy, so a deploy that lands proves the plan the gateway needs
+[limits]
+cpu_ms = 30000
+
 [vars]
 DISCORD_APP_ID = "1555181127012978709"
 # Discord's PUBLIC verification key for this app — public by design (it checks Discord's signature, it signs nothing)
 DISCORD_PUBLIC_KEY = "c108d5123e731d9266a473e0190a356d2cf31ef8c021a17c08d886afb171c8e0"
 # ⚠️ "1" only on Workers Paid: the always-on connection keeps one Durable Object awake around the clock (bot-room.js)
-GATEWAY_ON = "0"
+GATEWAY_ON = "1"
 DAILY_CAP = "80"
 USER_CAP = "8"
 

@@ -15,12 +15,16 @@ import { think, snapshot } from './brain.js';
 import { counts, square, cursed, citizens, boards, today, LINKS } from './world.js';
 
 const GATEWAY = 'https://gateway.discord.gg/?v=10&encoding=json';
-// guilds · guild members (to welcome) · guild messages · message content (to read what is said to it)
-export const INTENTS = (1 << 0) | (1 << 1) | (1 << 9) | (1 << 15);
+// guilds · guild members (to welcome) · guild messages. ⚠️ NEVER message content: without it Discord gives the bot the
+// words of a message only when the message is FOR it (a mention, or a reply to it with the ping on), so what people say
+// to each other never reaches it
+export const INTENTS = (1 << 0) | (1 << 1) | (1 << 9);
 const WATCH = 30000;                                    // the watchdog's beat while connected
 const day = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
 // what a reply costs, at Haiku 4.5's prices (dollars per million tokens) — an estimate for HQ, never a bill
 export const PRICE = { in: 1, out: 5 };
+
+const refTo = (m) => (m && m.referenced_message && m.referenced_message.author && m.referenced_message.author.id) || '';
 
 /** A message's words as a person reads them: mentions as names, custom emoji as :name:, nothing longer than a note. */
 export function plain(m) {
@@ -247,8 +251,9 @@ export class BotRoom {
     const meId = (this.me && this.me.id) || (await this.get('gw', {})).me;
     if (!meId || !d || !d.author || d.author.bot || !d.guild_id) return;
     const mentioned = (d.mentions || []).some((u) => u.id === meId);
-    const toMe = d.referenced_message && d.referenced_message.author && d.referenced_message.author.id === meId;
+    const toMe = refTo(d) === meId;
     if (!mentioned && !toMe) return;
+    if (!plain(d)) return;   // a reply without the ping: its words never reached the bot, so there is nothing to answer
     const call = this.call();
     const say = (content) => call('POST', '/channels/' + d.channel_id + '/messages', {
       content, message_reference: { message_id: d.id, fail_if_not_exists: false }, allowed_mentions: quiet([d.author.id]),
@@ -271,10 +276,13 @@ export class BotRoom {
     }
     call('POST', '/channels/' + d.channel_id + '/typing').catch(() => {});
     const hist = await call('GET', '/channels/' + d.channel_id + '/messages?limit=10');
-    // ⚠️ ONLY THIS CONVERSATION GOES TO CLAUDE: the asker's own recent lines and BananaBOT's replies — never what anybody
-    // else in the channel said (the privacy page says so)
+    // ⚠️ ONLY THIS CONVERSATION GOES TO CLAUDE (the privacy page promises it): the asker's lines that were FOR the bot and
+    // the bot's answers TO THE ASKER — never anybody else's words, the asker's lines to somebody else, or the bot's answers
+    // to other people (an answer carries the question it answers)
+    const forMe = (m) => (m.mentions || []).some((u) => u.id === meId) || refTo(m) === meId;
     const msgs = (hist.ok && Array.isArray(hist.json) ? hist.json : [])
-      .filter((m) => m.id !== d.id && now - Date.parse(m.timestamp) < 30 * 60000 && m.author && (m.author.id === d.author.id || m.author.id === meId)).reverse();
+      .filter((m) => m.id !== d.id && now - Date.parse(m.timestamp) < 30 * 60000 && m.author
+        && ((m.author.id === d.author.id && forMe(m)) || (m.author.id === meId && refTo(m) === d.author.id))).reverse();
     const chat = [...msgs, d].map((m) => ({ who: nameOf(m.member, m.author), bot: !!(m.author && m.author.id === meId), text: plain(m) })).filter((m) => m.text);
     const res = await think(this.env, chat, await this.liveText());
     if (!res) { await say(W.chat.error); await this.bump('chat_error'); return; }
