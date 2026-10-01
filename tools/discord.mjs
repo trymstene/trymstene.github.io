@@ -17,7 +17,7 @@
 //   tick                       run the scheduled look at the world now
 // The server
 //   channels · roles · members [query]
-//   say <channel> <text> --yes            edit <channel> <message id> <text> --yes
+//   say <channel> <text> --yes            edit <channel> <message id> <text> --yes   (both: --from <post.md>; say: --file <png>)
 //   pin|unpin <channel> <message id>      delete-message <channel> <message id> --yes
 //   create-channel <name> [--category <name>] [--topic <text>] [--voice]
 //   rename-channel <channel> <name>       topic <channel> <text>       slowmode <channel> <seconds>
@@ -30,7 +30,7 @@
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
-import { join, dirname } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -51,9 +51,10 @@ if (!token) { console.error('tools/discord.local.json has no botToken'); process
 async function dc(method, path, body, reason) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const headers = { Authorization: 'Bot ' + token, 'User-Agent': 'DiscordBot (https://trymstene.com, 1.0)' };
-    if (body != null) headers['Content-Type'] = 'application/json';
+    const form = body instanceof FormData;   // a message with a picture goes as multipart (withFiles)
+    if (body != null && !form) headers['Content-Type'] = 'application/json';
     if (reason) headers['X-Audit-Log-Reason'] = encodeURIComponent(String(reason).slice(0, 400));
-    const r = await fetch(API + path, { method, headers, body: body == null ? undefined : JSON.stringify(body) });
+    const r = await fetch(API + path, { method, headers, body: body == null ? undefined : form ? body : JSON.stringify(body) });
     if (r.status === 429 && attempt < 2) { const j = await r.json().catch(() => ({})); await new Promise((ok) => setTimeout(ok, Math.ceil((+j.retry_after || 1) * 1000))); continue; }
     const text = await r.text();
     let json = null;
@@ -96,6 +97,21 @@ async function guild() {
   return GUILD;
 }
 const norm = (s) => String(s || '').toLowerCase().replace(/^#/, '').replace(/[^a-z0-9À-￿]+/g, '');
+// a message and its pictures as Discord's multipart: the JSON part names each file it carries
+function withFiles(payload, files) {
+  const fd = new FormData();
+  fd.append('payload_json', JSON.stringify({ ...payload, attachments: files.map((f, i) => ({ id: i, filename: basename(f) })) }));
+  files.forEach((f, i) => fd.append('files[' + i + ']', new Blob([readFileSync(f)], { type: /\.png$/i.test(f) ? 'image/png' : /\.jpe?g$/i.test(f) ? 'image/jpeg' : 'application/octet-stream' }), basename(f)));
+  return fd;
+}
+// a post's words: from --from <file> (a long announcement keeps its line breaks), else the rest of the command line
+function words(rest) {
+  const from = flag('from');
+  const text = typeof from === 'string' ? readFileSync(from, 'utf8').replace(/\r\n/g, '\n').trim() : rest.join(' ');
+  if (text.length > 2000) throw new Error('Discord takes 2000 characters in a message; this is ' + text.length);
+  return text;
+}
+
 async function channel(ref) {
   const g = await guild();
   const all = await dc('GET', '/guilds/' + g.id + '/channels');
@@ -230,16 +246,20 @@ const C = {
   },
   async say() {
     const c = await channel(pos[1]);
-    const text = pos.slice(2).join(' ');
-    if (!text) throw new Error('say <channel> <text>');
-    if (!needYes('post as BananaBOT in #' + c.name + ': “' + text + '”')) return;
-    const m = await dc('POST', '/channels/' + c.id + '/messages', { content: text, allowed_mentions: { parse: [] } });
+    const text = words(pos.slice(2));
+    const file = flag('file');
+    if (!text && typeof file !== 'string') throw new Error('say <channel> <text> | --from <post.md> [--file <picture>]');
+    const shown = text.length > 140 ? text.slice(0, 140) + '…' : text;
+    if (!needYes('post as BananaBOT in #' + c.name + ': “' + shown + '”' + (typeof file === 'string' ? ' with ' + basename(file) : ''))) return;
+    const payload = { content: text, allowed_mentions: { parse: [] } };   // ⚠️ it never pings anybody
+    const m = await dc('POST', '/channels/' + c.id + '/messages', typeof file === 'string' ? withFiles(payload, [file]) : payload);
     console.log('posted ' + m.id + ' in #' + c.name);
   },
   async edit() {
     const c = await channel(pos[1]);
+    const text = words(pos.slice(3));
     if (!needYes('edit message ' + pos[2] + ' in #' + c.name)) return;
-    await dc('PATCH', '/channels/' + c.id + '/messages/' + pos[2], { content: pos.slice(3).join(' '), allowed_mentions: { parse: [] } });
+    await dc('PATCH', '/channels/' + c.id + '/messages/' + pos[2], { content: text, allowed_mentions: { parse: [] } });
     console.log('edited');
   },
   async pin() { const c = await channel(pos[1]); await dc('PUT', '/channels/' + c.id + '/pins/' + pos[2]); console.log('pinned in #' + c.name); },
