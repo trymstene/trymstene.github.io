@@ -1,0 +1,59 @@
+{
+  "hook": {
+    "line": "You know this banana.",
+    "sub": "Since 1999."
+  },
+  "town": {
+    "line": "He moved to a town."
+  },
+  "job": {
+    "line": "He got a job.",
+    "sub": "He’s thriving."
+  },
+  "arcade": {
+    "line": "He beat your high score."
+  },
+  "wheel": {
+    "line": "He’s feeling lucky."
+  },
+  "night": {
+    "line": "But at night…"
+  },
+  "curse": {
+    "line": "…the town is cursed."
+  },
+  "ghost": {
+    "line": "He’s not scared."
+  },
+  "giant": {
+    "line": "Side effects include:",
+    "sub": "being huge."
+  },
+  "home": {
+    "line": "He built a home."
+  },
+  "dog": {
+    "line": "He adopted a dog."
+  },
+  "cat": {
+    "line": "The cat adopted him."
+  },
+  "montage": [
+    "Dance.",
+    "Dig.",
+    "Grow.",
+    "Draw your own hat."
+  ],
+  "crowd": {
+    "line": "He made friends.",
+    "sub": "They’re all bananas."
+  },
+  "end": {
+    "title": "Banana World",
+    "free": "Free. No ads. No download.",
+    "playLabel": "Play in your browser",
+    "play": "trymstene.com/town",
+    "discord": "Join us on Discord",
+    "bio": "Link in bio"
+  }
+}
