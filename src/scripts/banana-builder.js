@@ -6,14 +6,14 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { dailyOutfit } from '../lib/banana-daily.js';
 import { wardChip, chipArt, trayify, revealWorn, attachTips } from '../lib/wardrobe-ui.js';
-import { ownsWearable, ownsDropStat, memberUnlocked } from '../data/wearables.js';
+import { ownsWearable, ownsDropStat, memberUnlocked, makeRoom } from '../data/wearables.js';   // ✋ makeRoom: one thing per glove
 import { shelfAdd } from '../lib/banana-shelf.js';
 import { passPatch, passStat, passVisit, passToast } from '../lib/banana-pass.js';
 import {
   SHEET_SRC, FW, FH, NFRAMES, BASE_CYCLE_S, FRAMES, SVG, EFFECTS,
   PACKS, HAT_DEFS, SHADE_DEFS, EXTRA_DEFS, HAT_BY_ID, SHADE_BY_ID, HATS, GLASSES,
   PX, HAT_OVERLAP, SH_DY, FRAME_H_FRAC, FRAME_TOP_FRAC,
-  sheet, assetsReady, drawComposite as engineDraw, resolveHands,
+  sheet, assetsReady, drawComposite as engineDraw,
 } from '../lib/banana-engine.js';
 // shared sticker brain — one source of truth with the PDP (which owns the
 // preview + checkout since 9 Jul; the builder only picks products + previews)
@@ -98,15 +98,29 @@ function init() {
   // ⚠️ `state.c` stays a STRING — a comma list — so the multiplayer wire, the
   // pass sync blob and every saved/shared banana keep their exact shape. No
   // schema change anywhere; an old single id is just a one-item list.
-  const C_MAX = 5;                       // one per body spot, and there are five
+  // one per body spot, and there are SIX: head, face, chest, feet and each hand on its own (a left glove and a right
+  // glove are two spots — 1 Oct 2026, when the old five cut the sixth piece off a banana wearing both boxing gloves)
+  const C_MAX = 6;
   const cList = () => String(state.c || '').split(',').map((t) => t.trim()).filter(Boolean);
-  const cSet = (ids) => { state.c = ids.slice(0, C_MAX).join(','); };
+  const cSet = (ids) => { state.c = ids.slice(-C_MAX).join(','); };   // over the cap, the OLDEST goes: the list is in wear order
   // ⚠️ ONE ITEM PER SPOT — two head items would draw on top of each other, so
   // equipping a second head item REPLACES the first. Exactly the rule the
   // built-in hat and glasses slots already follow, so it reads as consistent
   // rather than as a special case. The engine does NOT enforce this; the
   // loadout does, because placement is a wardrobe decision, not a render one.
   const spotOf = (id) => { const c = (catCustom(id) || [])[0]; return c ? String(c.anchor || '') + (c.hand || '') : ''; };
+  // ✋ ONE THING PER GLOVE, WHATEVER IT IS (1 Oct 2026, src/lib/hands.js). A community item on a hand used to be drawn
+  // on top of the glove's own item — Trym found boxing gloves over a glowstick on the Citizens' board. Whatever the
+  // hands no longer hold comes off, so the saved banana is the drawn one; `put` is what just went on (a hand def, or a
+  // community id) and wins its hand, or nothing to only tidy.
+  const cWorn = () => cList().map((id) => { const c = (catCustom(id) || [])[0]; return c ? { id, anchor: c.anchor, hand: c.hand } : null; }).filter(Boolean);
+  function fitHands(put) {
+    const worn = cWorn();
+    const on = EXTRA_DEFS.filter((x) => x.anchor === 'hand' && state.extras[x.id]);
+    const { off, drop } = makeRoom(on, worn, typeof put === 'string' ? worn.find((w) => w.id === put) || null : put || null);
+    off.forEach((id) => { state.extras[id] = false; });
+    if (drop.length) cSet(cList().filter((x) => !drop.includes(x)));
+  }
   function catCustom(ids) {
     // 🧢 `ids` is ONE id or a COMMA LIST — a banana can wear several community
     // items since 2 Aug (a visitor wrote in asking for three). Returns an ARRAY;
@@ -207,21 +221,17 @@ function init() {
   iconChips('bbGlassesChips', GLASSES, 'glasses', (id) => { const d = SHADE_BY_ID[id]; return d && SVG[d.front]; }, (id) => SHADE_BY_ID[id]);
   iconChips('bbHatChips', HATS, 'hat', (id) => { const d = HAT_BY_ID[id]; return d && SVG[d.art]; }, (id) => HAT_BY_ID[id]);
   chips('bbEffectChips', EFFECTS.filter(([v]) => v !== 'none'), 'effect'); // no wearable art — words; no 'None' box (re-tap = off)
-  // HANDS — two gloves, one item each. The engine's resolveHands() derives
+  // HANDS — two gloves, one thing each. The engine's resolveHands() derives
   // who-holds-what from the equipped SET (identical on every surface — no
-  // hand state in outfits). Here we only enforce CAPACITY: equipping a third
-  // held item frees the glove it prefers (the item resolved to that glove is
-  // dropped) — like grabbing something new with that hand. New hand items
-  // need nothing beyond their manifest entry; never special-case them here.
+  // hand state in outfits). Here we only enforce CAPACITY, through fitHands():
+  // a held thing takes a free glove, and with both full the glove it prefers
+  // lets go — like grabbing something new with that hand. A community item on
+  // a hand counts (1 Oct 2026). New hand items need nothing beyond their
+  // manifest entry; never special-case them here.
   const toggleHand = (d) => {
     if (state.extras[d.id]) { state.extras[d.id] = false; onState(); return; }
-    const held = EXTRA_DEFS.filter((x) => x.anchor === 'hand' && !x.raveOnly && state.extras[x.id]);
-    if (held.length >= 2) {
-      const glove = resolveHands(state.extras);
-      const evict = glove[d.hand === 'left' ? 'left' : 'right'] || held[0];
-      state.extras[evict.id] = false;
-    }
     state.extras[d.id] = true;
+    fitHands(d);
     onState();
   };
 
@@ -416,6 +426,7 @@ function init() {
           const slot = anchorSlot(catAnchorOf(it.id));
           if (slot === 'hat') state.hat = 'none';
           if (slot === 'feet') FEET_DEFS.forEach((d) => { state.extras[d.id] = false; });
+          fitHands(it.id);   // ✋ …and a hand piece takes its glove from whatever that glove held
         }
         onState(); cardPop.hidden = true;
       };
@@ -445,6 +456,7 @@ function init() {
   // anchors) could carry two hats or two pairs of shoes; the community item
   // wins — it draws on top anyway, and it's the caught/bought thing.
   function normalizeSpots() {
+    fitHands(null);   // ✋ a loaded banana holds one thing per glove too
     const list = cList();
     if (!list.length) return;
     const bySpot = {};
@@ -466,8 +478,11 @@ function init() {
       const slot = anchorSlot(catAnchorOf(id));
       if (slot === 'hat') state.hat = 'none';
       if (slot === 'feet') FEET_DEFS.forEach((d) => { state.extras[d.id] = false; });
+      fitHands(id);
       return;
     }
+    const held = EXTRA_DEFS.find((x) => x.id === id && x.anchor === 'hand');
+    if (held && state.extras[id]) fitHands(held);   // ✋ the closet's held thing wins its hand
     // a built-in went on in load(); a worn community piece on the same spot
     // comes off now that the catalog can tell us where each one sits
     if (state.hat === id) cSet(cList().filter((x) => anchorSlot(catAnchorOf(x)) !== 'hat'));
@@ -730,6 +745,7 @@ function init() {
       const holdable = handDefs.filter((d) => d.hand === glove && !d.raveOnly && !d.member && ownsWearable(d) && earnedUnlocked(d));
       if (holdable.length && Math.random() < 0.35) state.extras[pick(holdable).id] = true;
     }
+    fitHands(null);   // ✋ and a glove a community item holds keeps it
     state.effect = pick(['none','none','disco','sparkle','confetti']);
     // tempo stays at the DEFAULT (Trym: the surprise is the outfit + caption;
     // tempo is a deliberate final adjustment, and randomizing it also left the
@@ -967,7 +983,7 @@ function init() {
       // ⚠️ owned-gate each id separately now that this is a list — one
       // un-owned id must not silently undress the rest
       if (bl.c) state.c = String(bl.c).split(',').map((t) => t.trim())
-        .filter((id) => id && ownsCatalog(id)).slice(0, 5).join(',');
+        .filter((id) => id && ownsCatalog(id)).slice(-C_MAX).join(',');
     } catch (e) {}
     // 🚪 ?wear=<id> — the pass closet's door. AFTER the bb-last seed so the
     // seed can't undress it. Built-ins go on now; community ids (and any

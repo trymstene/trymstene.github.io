@@ -25,8 +25,12 @@ import math
 import os
 import re
 import subprocess
+import sys
 
 from PIL import Image, ImageDraw
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hands_rule import glove_of, resolve_hands   # ✋ one thing per glove: the engine's own rule (src/lib/hands.js)
 
 
 def _r(v):
@@ -172,17 +176,14 @@ def png_layer(key, h, flip=False):
     return im.transpose(Image.FLIP_LEFT_RIGHT) if flip else im
 
 
-def _resolve_hands(extras):
-    """Each glove carries at most one item, mirroring resolveHands: the item's
-    preferred hand wins, a second item takes the other glove."""
-    glove = {}
-    for d in (EXTRAS[i] for i in extras if i in EXTRAS and EXTRAS[i].get('anchor') == 'hand'):
-        pref = 'left' if d.get('hand') == 'left' else 'right'
-        other = 'right' if pref == 'left' else 'left'
-        if pref not in glove:
-            glove[pref] = d
-        elif other not in glove:
-            glove[other] = d
+def _resolve_hands(extras, customs=None):
+    """Each glove carries ONE thing, whatever it is: tools/hands_rule.py, the engine's resolveHands. The game's items
+    go in CATALOG order (EXTRAS is the manifest's order), never the outfit's own key order. Returns the game item per
+    glove, and the community item per glove ('own')."""
+    on = set(extras)
+    r = resolve_hands([d for i, d in EXTRAS.items() if i in on and d.get('anchor') == 'hand'], customs)
+    glove = {g: r[g] for g in ('left', 'right') if r[g]}
+    glove['own'] = r['own']
     return glove
 
 
@@ -254,7 +255,7 @@ def render(idx, outfit=None, scale=8, lenient=False):
         extras = [i for i in extras if i not in EXTRAS or _has(EXTRAS[i])]
     hat_def = HATS.get(o.get('hat'))
     hat_behind = bool(hat_def and hat_def.get('behindFront') and not side)
-    glove = _resolve_hands(extras)
+    glove = _resolve_hands(extras, o.get('custom'))
 
     # ---- BEHIND the body ----
     for gs in ('left', 'right'):
@@ -326,6 +327,8 @@ def render(idx, outfit=None, scale=8, lenient=False):
     # offset captured when it was drawn (ox/oy in sprite units), scaled by `scale`; a turned-away frame mirrors it around the
     # anchor, and `mirror` (the opposite glove) cancels that out
     for c in (o.get('custom') or []):
+        if (c or {}).get('anchor') == 'hand' and glove['own'][glove_of(c)] is not c:
+            continue   # ✋ that glove already holds something
         svg = (c or {}).get('art') or ''
         if not svg.startswith('<svg') or 'viewBox="0 0 ' not in svg:
             continue

@@ -744,6 +744,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 49 | The citizens' frames carry a real-text brass plate sized off the frame (nothing under 11.5 px, long names break between their parts), and every winner is drawn in their own things, catalog items included | `check-design.mjs` §49 (every engine art pack is read by the Python mirror; every wearable's art is reachable) + `tests/citizens-frames.spec.mjs` (both surfaces at 393 and 1280: order, names, sizes, nothing cut, the big frame wide, the squid hat on the park's Citizen) |
 | 50 | The front page's homesteads are the game's own drawing of lived-in yards, picked fresh each day: four photos, then sticker pills | `tests/home-yards.spec.mjs` (the pick's rules without a browser; the page at 1280, 393 and 360: the manifest's photos in order, 4:3, tags whole, two to a row or one, pills whole on one line and on screen, no OS emoji) |
 | 51 | Where a banana stands for Trym and the site, it is OUR banana (`<Nana />`, the favicon's art at 38 px), never the fruit icon or an OS 🍌 | `PixelIcon.astro` (it has no banana: `name="banana"` fails the build and names `<Nana />`) |
+| 52 | A hand holds ONE thing, whatever it is: the game's items and community pieces share two gloves, and the newest wins | `tools/check-hands.mjs` (the engine and the print renderer on one table of cases; the builder, the stand and an approval use `makeRoom`) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1639,3 +1640,25 @@ on the site say 'Trym Stene - the banana guy' followed by a random pixel drawn b
   `<Nana />`. An OS 🍌 in chrome (a logo, a letterhead, a button) is the same mistake; in content strings (toasts, a
   news line) emoji stay tolerated, as the icon set's house rule says.
 - **A smaller redraw of the character is Trym's call, never ours** (his character, his art).
+
+## §52 TWO GLOVES, ONE THING EACH — WHATEVER THE THING IS (1 Oct 2026, Trym on the Citizens' board)
+
+Trym: *"the banana user has two items / wearables equipped at once in both hands? on one hand boxing gloves and a
+lightstick, and the other hand boxing glove and miniature banana? It shouldnt be possible to have two wearable items in
+one hand at the same time."*
+
+- **A hand holds one thing, whatever it is.** The game's own hand items and a community piece drawn for a hand share the
+  same two gloves. `src/lib/hands.js` decides every glove (src/data/wearables.js re-exports it, so every surface that
+  dresses a banana already has it): the moment's item first (a beer at the rave, the broom at work), then a community
+  piece on the glove it was drawn for, then the game's items in catalog order. What does not fit is not drawn.
+- **The newest wins.** Putting a thing in a hand makes that hand let go (`makeRoom`), so the saved banana is the drawn one:
+  the builder (a hand chip, "Wear it", the closet's `?wear=`, a loaded outfit, Surprise me), the Banana Stand, an approved
+  Forge piece. A community piece's spot is its anchor AND its glove: a left glove leaves the right one on. Six spots, so
+  the builder keeps six community pieces, and over the cap the oldest goes, never the newest.
+- **The picture renderer agrees glove for glove.** `tools/banana_render.py` (the Citizens' frames, the stream pack, print
+  files) takes the rule from `tools/hands_rule.py`, in catalog order — never the outfit's own key order, which once put
+  the plush and the glowstick in opposite gloves to the game.
+- The banana of the day keeps, and names, only what its two hands hold.
+- **Enforced by** `tools/check-hands.mjs` (check-all and CI): one table of cases through both copies of the rule, the
+  newest-wins cases a wardrobe meets, and the engine, the print renderer, the builder, the stand and the approval path
+  each using it.

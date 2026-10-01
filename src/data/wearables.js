@@ -350,3 +350,8 @@ if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV
     .filter((d) => d.member && (d.preview || d.price || d.drop || d.earned))
     .forEach((d) => console.warn('⚠️ wearables: member item "' + d.id + '" carries a conflicting lifecycle flag'));
 }
+
+// ✋ HOW A HAND IS WORN — one thing per glove, whatever it is (src/lib/hands.js, 1 Oct 2026). Re-exported here
+// because every surface that dresses a banana already loads this catalog: the rule rides the catalog's own file
+// instead of a file of its own that every page would fetch (and every bundle would list) on top.
+export { resolveHands, makeRoom, gloveOf } from '../lib/hands.js';

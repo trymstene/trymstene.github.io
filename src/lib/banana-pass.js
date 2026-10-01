@@ -1185,11 +1185,23 @@ export async function checkCatalogVerdicts(opts = {}) {
             try {
               const cr = await fetch(SHARE_API + '/catalog/items.json');
               const items = cr.ok ? await cr.json() : [];
-              const anchorOf = (id) => (((items.find((x) => x.id === id) || {}).wear || {}).anchor) || '';
+              const wearOf = (id) => ((items.find((x) => x.id === id) || {}).wear || {});
+              const anchorOf = (id) => wearOf(id).anchor || '';
+              // a hand piece's spot is its own glove: a left glove leaves the right one on
+              const spotOf = (id) => anchorOf(id) + (anchorOf(id) === 'hand' ? (wearOf(id).hand === 'left' ? ':left' : ':right') : '');
               anchor = anchorOf(v.item);
               const kept = String(bl.c || '').split(',').map((t) => t.trim())
-                .filter((id) => id && id !== v.item && !(anchor && anchorOf(id) === anchor));
+                .filter((id) => id && id !== v.item && !(anchor && spotOf(id) === spotOf(v.item)));
               bl.c = kept.concat(v.item).join(',');
+              // ✋ one thing per glove, whatever it is (src/lib/hands.js): the new piece takes its hand from what it held
+              if (anchor === 'hand') {
+                const w = await import('../data/wearables.js'), makeRoom = w.makeRoom;
+                const worn = bl.c.split(',').map((id) => ({ id, anchor: anchorOf(id), hand: wearOf(id).hand }));
+                const on = Object.values(w.WEARABLE_PACKS).flatMap((pk) => pk.extras || []).filter((d) => d.anchor === 'hand' && bl.extras && bl.extras[d.id]);
+                const { off, drop } = makeRoom(on, worn, worn.find((x) => x.id === v.item) || null);
+                off.forEach((id) => { delete bl.extras[id]; });
+                if (drop.length) bl.c = worn.filter((x) => !drop.includes(x.id)).map((x) => x.id).join(',');
+              }
             } catch (e2) { bl.c = v.item; }
             if (anchor === 'head') bl.hat = 'none';
             if (anchor === 'feet' && bl.extras) {

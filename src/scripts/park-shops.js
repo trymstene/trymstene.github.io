@@ -3,7 +3,7 @@
 // through the shared ctx (ME_DRAW/invalidateMe/sendOutfit = the equip seam).
 import { drawComposite, assetsReady, outfitParams, SVG as ART } from '../lib/banana-engine.js';
 import PARK_COPY from '../data/copy/park-npcs.json';   // ✍️ their words: src/data/copy, written by GPT
-import { WEARABLE_PACKS, DROPS } from '../data/wearables.js';
+import { WEARABLE_PACKS, DROPS, makeRoom } from '../data/wearables.js';   // ✋ makeRoom: one thing per glove
 import { passStat, passGet, passPush, passSpend, passFlush, pullIfStale } from '../lib/banana-pass.js';
 import { catCustom, noteCatch } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -432,7 +432,7 @@ export function initShops(ctx) {
           .sort((a, b) => (b.added || 0) - (a.added || 0))
           .map((it) => ({
             id: it.id, label: it.title || 'community item', slot: 'c',
-            anchor: (it.wear && it.wear.anchor) || '',
+            anchor: (it.wear && it.wear.anchor) || '', hand: (it.wear && it.wear.hand) || '',
             price: ST_BACKCAT_PRICE, back: true, made: it.by || '',
             artHtml: (wearToCustom(it.wear) || {}).art || '',
             desc: (it.by ? 'made by ' + it.by + ', drawn in the forge. ' : 'drawn in the forge by a visitor. ')
@@ -453,16 +453,31 @@ export function initShops(ctx) {
     // the catalog anchor off a community id (this page's own list), so a hat
     // purchase takes a head-anchored community piece off and vice versa.
     const STANCHOR = (id) => { const it = ST_ALL.find((x) => x.id === id && x.slot === 'c'); return (it && it.anchor) || ''; };
+    const STHAND = (id) => { const it = ST_ALL.find((x) => x.id === id && x.slot === 'c'); return (it && it.hand) || ''; };
+    // the spot a community piece takes: its anchor, and on a hand its own glove — a left boxing glove bought here
+    // took the right one off too, which is not the builder's rule (one per glove there)
+    const spot = (anchor, hand) => anchor + (anchor === 'hand' ? (hand === 'left' ? ':left' : ':right') : '');
     const stripC = (list, anchor) => String(list || '').split(',').map((t) => t.trim())
       .filter((id) => id && STANCHOR(id) !== anchor).join(',');
+    // ✋ ONE THING PER GLOVE (src/lib/hands.js): what was just bought takes its hand, and whatever that hand held lets go
+    const HAND_DEFS = Object.values(WEARABLE_PACKS).flatMap((pk) => pk.extras || []).filter((d) => d.anchor === 'hand');
+    const hands = (o) => {
+      const worn = String(o.c || '').split(',').map((t) => t.trim()).filter(Boolean)
+        .map((id) => ({ id, anchor: STANCHOR(id), hand: STHAND(id) }));
+      const on = HAND_DEFS.filter((d) => o.extras && o.extras[d.id]);
+      const { off, drop } = makeRoom(on, worn, (item.slot === 'c' ? worn : on).find((x) => x.id === item.id) || null);
+      if (off.length) { const ex = { ...(o.extras || {}) }; off.forEach((id) => delete ex[id]); o.extras = ex; }
+      if (drop.length) o.c = worn.filter((w) => !drop.includes(w.id)).map((w) => w.id).join(',');
+      return o;
+    };
     const wear = (o) => {
       if (item.slot === 'c') {   // community: joins the worn set, one per spot
         const kept = String(o.c || '').split(',').map((t) => t.trim())
-          .filter((id) => id && !(item.anchor && STANCHOR(id) === item.anchor));
+          .filter((id) => id && !(item.anchor && spot(STANCHOR(id), STHAND(id)) === spot(item.anchor, item.hand)));
         o.c = kept.concat(item.id).join(',');
         if (item.anchor === 'head') o.hat = 'none';
         if (item.anchor === 'feet') { const ex = { ...(o.extras || {}) }; ST_FEET_IDS.forEach((id) => delete ex[id]); o.extras = ex; }
-        return o;
+        return hands(o);
       }
       if (item.slot === 'hat') { o.hat = item.id; o.c = stripC(o.c, 'head'); return o; }
       if (item.slot === 'face') { o.glasses = item.id; return o; }
@@ -471,7 +486,7 @@ export function initShops(ctx) {
       if (item.zone === 'body') ST_BODY_IDS.forEach((id) => delete ex[id]);
       ex[item.id] = true;
       o.extras = ex;
-      return o;
+      return hands(o);
     };
     try {
       const saved = wear(JSON.parse(localStorage.getItem('bb-last') || '{}'));

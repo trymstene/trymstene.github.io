@@ -49,6 +49,8 @@ jobs:
         run: node tools/check-budgets.mjs
       - name: Design gate — the mechanical half of docs/design-library.md
         run: node tools/check-design.mjs
+      - name: Hands gate — one thing per glove; the engine and the print renderer agree on every glove
+        run: node tools/check-hands.mjs
       - name: Storage gate — every key on a player's device is declared
         run: node tools/check-storage.mjs
       - name: Pulse gate — the world page titles the live counter matches on

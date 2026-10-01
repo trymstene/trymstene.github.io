@@ -4217,7 +4217,7 @@ function init() {
     toast.className = 'rv-glowtoast';
     // honest ceremony copy: with both gloves already full the resolver won't
     // SHOW the glowstick right now — don't claim "it's in your hand" then
-    const glove = me ? resolveHands(me.outfit.extras) : { left: null, right: null };
+    const glove = me ? resolveHands(me.outfit.extras, me.outfit.c ? catCustom(me.outfit.c) : undefined) : { left: null, right: null };   // ✋ a community item holds a glove too
     const showing = (glove.left && glove.left.id === 'glowstick') || (glove.right && glove.right.id === 'glowstick');
     toast.innerHTML = showing
       ? '🎉 <b>30 MINUTES ON THE FLOOR</b> — the glowstick is yours forever. It’s in your hand and in the builder.'
@@ -4249,7 +4249,7 @@ function init() {
       ...((fxActive(me, now) && me.fx.id === 'slice') ? { slice: true } : {}),
       ...((fxActive(me, now) && me.fx.id === 'box') ? { pizzabox: true } : {}),
     };
-    const glove = resolveHands(drawExtras);
+    const glove = resolveHands(drawExtras, me.outfit.c ? catCustom(me.outfit.c) : undefined);   // ✋ a community item holds a glove too
     const shown = new Set([glove.left, glove.right].filter(Boolean).map((d) => d.id));
     const nowHidden = new Set(EXTRA_DEFS
       .filter((d) => d.anchor === 'hand' && !d.raveOnly && drawExtras[d.id] && !shown.has(d.id))

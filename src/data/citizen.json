@@ -1,14 +1,10 @@
 {
  "week": "2026-W39",
- "at": 1790653233216,
+ "at": 1790827226144,
  "winners": {
   "citizen": {
-   "name": "KiwiRainbowRain",
-   "score": 3
-  },
-  "gardener": {
-   "name": "Bananaman",
-   "score": 20
+   "name": "Andoo",
+   "score": 2
   },
   "neighbour": {
    "name": "KiwiRainbowRain",
@@ -24,21 +20,17 @@
   }
  },
  "unkept": {
-  "gardener": {
-   "name": "𝐃𝐉𝐂𝐎𝐎𝐊𝐈𝐄",
-   "tag": "08d49305"
-  },
   "farmer": {
    "name": "Cyanide Banana",
    "tag": "a21c88f7"
   },
   "raver": {
-   "name": "𝐃𝐉𝐂𝐎𝐎𝐊𝐈𝐄",
-   "tag": "08d49305"
+   "name": "Cyanide Banana",
+   "tag": "a21c88f7"
   },
   "citizen": {
-   "name": "𝐃𝐉𝐂𝐎𝐎𝐊𝐈𝐄",
-   "tag": "08d49305"
+   "name": "Cyanide Banana",
+   "tag": "a21c88f7"
   }
  },
  "live": {
@@ -47,27 +39,27 @@
   "plaques": {
    "gardener": [
     "Be",
-    "KiwiRainbowRain",
-    "AshTheVampire"
+    "Trym Stene",
+    "KiwiRainbowRain"
    ],
    "neighbour": [
     "KiwiRainbowRain",
-    "Trym Stene",
-    "Bananaman"
+    "𝐃𝐉𝐂𝐎𝐎𝐊𝐈𝐄",
+    "Trym Stene"
    ],
    "farmer": [
     "Trym Stene",
-    "Banana",
-    "KiwiRainbowRain"
+    "THE DANCING BANANA",
+    "Trym Stene"
    ],
    "raver": [
     "Bananaman",
-    "AshTheVampire",
+    "𝐃𝐉𝐂𝐎𝐎𝐊𝐈𝐄",
     "Be"
    ]
   },
   "citizen": [
-   "KiwiRainbowRain",
+   "Trym Stene",
    "Bananaman",
    "Be"
   ]

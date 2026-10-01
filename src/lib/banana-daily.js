@@ -6,7 +6,7 @@
 // The option pools come STRAIGHT from the shared catalog (src/data/wearables.js)
 // — no more hand-syncing with the engine. Earned / rave-only extras are excluded
 // here: the daily banana only wears things anyone could actually get.
-import { WEARABLE_PACKS } from '../data/wearables.js';
+import { WEARABLE_PACKS, resolveHands } from '../data/wearables.js';
 
 const EFFECT_POOL = [['disco', 'disco mode'], ['sparkle', 'sparkles'], ['confetti', 'confetti']];
 
@@ -59,7 +59,13 @@ export function dailyOutfit(date = new Date()) {
   const { hats, shades, extras } = pools(date);
   const hat = hats[Math.floor(rnd() * hats.length)];
   const glasses = shades[Math.floor(rnd() * shades.length)];
-  const worn = extras.filter(() => rnd() < 0.4);
+  const rolled = extras.filter(() => rnd() < 0.4);
+  // ✋ TWO GLOVES, ONE THING EACH (1 Oct 2026, src/lib/hands.js): a roll could hold four things and the picture draws
+  // two, so the words named a boombox nobody could see. The day keeps — and names — only what its hands hold. It is
+  // a filter AFTER the draws: the rnd() order, and every day's picture, stay exactly as they were.
+  const def = Object.fromEntries(Object.values(WEARABLE_PACKS).flatMap((pk) => pk.extras || []).map((d) => [d.id, d]));
+  const hands = resolveHands(rolled.map(([id]) => def[id]).filter((d) => d && d.anchor === 'hand'), []);
+  const worn = rolled.filter(([id]) => !def[id] || def[id].anchor !== 'hand' || hands.left === def[id] || hands.right === def[id]);
   const effect = rnd() < 0.35 ? EFFECT_POOL[Math.floor(rnd() * EFFECT_POOL.length)] : null;
   return {
     hat: hat[0], glasses: glasses[0],

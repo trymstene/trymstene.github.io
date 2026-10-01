@@ -16,7 +16,8 @@ import { TOWN_SVG } from '../data/townwear.js';
 // worker. Only the pixel ART is client-only, and since 19 Sep 2026 it SHIPS PACKED: the readable
 // source is tools/wearart-source.js (outside src/, never bundled), the packed form is
 // src/data/wearart.js, and ./wear-unpack.js turns one into the other byte for byte.
-import { WEARABLE_PACKS as PACKS, ownsWearable } from '../data/wearables.js';
+// ✋ …and how a hand is worn: one thing per glove, whatever it is (src/lib/hands.js, carried by the catalog's file)
+import { WEARABLE_PACKS as PACKS, ownsWearable, resolveHands as handRule, gloveOf } from '../data/wearables.js';
 
 // ---- authentic dance frames ----
 // ?v= busts stale browser caches: bump it whenever the sheet's pixels change,
@@ -238,30 +239,20 @@ function outfitParams(o) {
   return p;
 }
 
-// ---- THE HAND RESOLVER: two gloves, one item each, forever ----
+// ---- THE HAND RESOLVER: two gloves, one thing each, forever ----
 // Outfits carry only item IDS (URLs, bb-last, rave broadcasts — no hand
 // state), so who-holds-what must be DERIVED from the equipped set alone.
 // That way every surface — builder, your rave banana, everyone ELSE'S view
 // of you, pass, prints, OG cards — resolves identically with zero schema
-// change. Rules, in order:
-//   1. rave-granted transients (beer, vinyl, broom…) claim first — a beer in
-//      your busy hand bumps your mug to the other glove (the ownership-plan's
-//      "temporary hand override", for free);
-//   2. then catalog order: each item takes its preferred glove, else the
-//      free one, else it is NOT drawn. Three-fisted bananas cannot exist.
+// change. ✋ The rule itself lives in src/lib/hands.js since 1 Oct 2026, when a
+// community item on a hand was found drawn on top of the glove's own item
+// (boxing gloves over a glowstick, on the Citizens' board): the moment's item
+// first, then a community item on its own glove, then catalog order — else it
+// is NOT drawn. Three-fisted bananas cannot exist, whatever the thing is.
+// `customs` is optional: without it this is the catalog-only answer it always was.
 // New hand items need nothing beyond their manifest `hand:` — never touch this.
-function resolveHands(extras) {
-  const out = { left: null, right: null };
-  if (!extras) return out;
-  const held = EXTRA_DEFS.filter((d) => d.anchor === 'hand' && extras[d.id]);
-  held.sort((a, b) => (b.raveOnly ? 1 : 0) - (a.raveOnly ? 1 : 0)); // stable: catalog order within groups
-  for (const d of held) {
-    const pref = d.hand === 'left' ? 'left' : 'right';
-    const other = pref === 'left' ? 'right' : 'left';
-    if (!out[pref]) out[pref] = d;
-    else if (!out[other]) out[other] = d;
-  }
-  return out;
+function resolveHands(extras, customs) {
+  return handRule(extras ? EXTRA_DEFS.filter((d) => d.anchor === 'hand' && extras[d.id]) : [], customs);
 }
 
 // ---- the one render path ----
@@ -333,9 +324,11 @@ function drawComposite(ctx, W, idx, o) {
 
   bctx.save();
   bctx.filter = o.hue && CTX_FILTER_OK ? `hue-rotate(${o.hue}deg)` : 'none';
-  // held items: resolved ONCE per draw — each glove carries at most one item,
-  // and the assignment is identical on every surface (see resolveHands)
-  const glove = resolveHands(o.extras);
+  // held items: resolved ONCE per draw — each glove carries at most one thing,
+  // a community item included, and the assignment is identical on every surface
+  // (see resolveHands)
+  const customs = !o.custom ? [] : (Array.isArray(o.custom) ? o.custom : [o.custom]);
+  const glove = resolveHands(o.extras, customs);
   const drawHeld = (gside, d) => {
     if (!F.hands) return;
     const [hx, hy] = gside === 'left' ? F.hands[0] : F.hands[1];
@@ -469,9 +462,11 @@ function drawComposite(ctx, W, idx, o) {
   // as well as a single object — old callers pass one and are untouched.
   // ⚠️ the CALLER enforces one-item-per-spot; the engine just draws what it
   // is handed, in order, so two head items would overlap. That is deliberate:
-  // placement rules belong with the loadout, not the renderer.
-  const customs = !o.custom ? [] : (Array.isArray(o.custom) ? o.custom : [o.custom]);
+  // placement rules belong with the loadout, not the renderer. ✋ THE HANDS ARE
+  // THE ONE EXCEPTION, as they always were for the catalog's own items: a glove
+  // holds one thing whatever it is, so a hand item is drawn only on its glove.
   for (const cItem of customs) {
+  if (cItem && cItem.anchor === 'hand' && glove.own[gloveOf(cItem)] !== cItem) continue;
   if (cItem && cItem.art) {
     // WYSIWYG placement: the item's TOP-LEFT sits at (anchor point + the offset
     // captured when it was drawn). The anchor moves per frame → the item rides
