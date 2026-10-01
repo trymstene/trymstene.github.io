@@ -271,7 +271,10 @@ export class BotRoom {
     }
     call('POST', '/channels/' + d.channel_id + '/typing').catch(() => {});
     const hist = await call('GET', '/channels/' + d.channel_id + '/messages?limit=10');
-    const msgs = (hist.ok && Array.isArray(hist.json) ? hist.json : []).filter((m) => m.id !== d.id && now - Date.parse(m.timestamp) < 30 * 60000).reverse();
+    // ⚠️ ONLY THIS CONVERSATION GOES TO CLAUDE: the asker's own recent lines and BananaBOT's replies — never what anybody
+    // else in the channel said (the privacy page says so)
+    const msgs = (hist.ok && Array.isArray(hist.json) ? hist.json : [])
+      .filter((m) => m.id !== d.id && now - Date.parse(m.timestamp) < 30 * 60000 && m.author && (m.author.id === d.author.id || m.author.id === meId)).reverse();
     const chat = [...msgs, d].map((m) => ({ who: nameOf(m.member, m.author), bot: !!(m.author && m.author.id === meId), text: plain(m) })).filter((m) => m.text);
     const res = await think(this.env, chat, await this.liveText());
     if (!res) { await say(W.chat.error); await this.bump('chat_error'); return; }

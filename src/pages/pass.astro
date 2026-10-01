@@ -517,6 +517,9 @@ const NUMBERS = [
       text-decoration: underline; text-underline-offset: 3px;
     }
     .ps-out__btn:hover { color: var(--ink); }
+    /* 🍌📌 the Discord this pass is tied to, quiet beside Log out, with its own way to untie */
+    .ps-disc { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+    .ps-disc__name { font-size: 0.875rem; color: var(--ps-muted); }
 
     /* share-card lightbox — our own reveal (the OS sheet is previewless on
        Windows, so it is an opt-in button, not the default) */
@@ -590,6 +593,13 @@ const NUMBERS = [
           <p class="ps-finish__line"><b>One tap to finish logging in.</b></p>
           <button class="btn btn--dark ps-finish__go" id="psFinishGo" type="button">Log me in</button>
           <p class="ps-finish__alt">Playing in another browser or app? <button class="ps-finish__copy" id="psFinishCopy" type="button">Copy the link</button> and open it there. It works once, for 30 minutes.</p>
+        </div>
+        <!-- 🍌📌 a Discord /link code lands here and WAITS for a tap that names the Discord account it belongs to
+             (banana-pass-page.js discordLanding): a code sent to somebody else must never tie THEIR pass quietly -->
+        <div class="ps-finish" id="psDiscord" hidden>
+          <p class="ps-finish__line"><b id="psDiscordAsk"></b></p>
+          <button class="btn btn--dark ps-finish__go" id="psDiscordGo" type="button"></button>
+          <p class="ps-finish__alt"><span id="psDiscordNote"></span> <button class="ps-finish__copy" id="psDiscordLater" type="button"></button></p>
         </div>
         <div class="ps-signing" id="psSigning" hidden>
           <span class="ps-signing__bar" aria-hidden="true"></span>
@@ -679,6 +689,10 @@ const NUMBERS = [
               <b id="psLinkCodeVal">…</b>
               <span id="psLinkCodeHint">type this on the other device</span>
             </div>
+          </div>
+          <div class="ps-out ps-disc" id="psDiscordRow" hidden>
+            <span class="ps-disc__name" id="psDiscordName"></span>
+            <button class="ps-out__btn" id="psDiscordUnlink" type="button"></button>
           </div>
           <div class="ps-out" id="psOut" hidden>
             <button class="ps-out__btn" id="psLogout" type="button">Log out</button>

@@ -107,6 +107,31 @@ console.log('\n🍌📌  BananaBOT');
   ok('/help answers only the one who asked', h.data.flags === 64);
 }
 
+// ── a pass and a Discord account: /link, /me, /unlink ─────────────────────────────────────────────────────────────
+{
+  const world = { ...structuredClone(WORLD),
+    '/discord/code': { code: 'K7Q2MZ' },
+    '/discord/me': { linked: true, card: { name: 'Kiwi', level: 6, title: 'On the List', days: 12, badges: 4, made: 2, tag: 'abcd1234' } },
+    '/discord/unlink': { ok: true, was: true },
+    '/yards/stats': { list: [{ slug: 'someone-else', name: 'Elsewhere', stage: 3, owner: 'ffff0000' }, { slug: 'kiwis-farm', name: 'Kiwi’s farm', stage: 2, owner: 'abcd1234' }] } };
+  const env = makeEnv({ RAVE: binding(world), PASS: binding(world) });
+  const cmd = (name, options) => call(env, { type: 2, data: { name, options }, token: 't', member: { nick: 'kiwi', user: { id: '111', username: 'kiwi' } } });
+  const l = await cmd('link');
+  ok('⭐ /link answers only the asker (a code is a secret)', l.data.flags === 64 && l.data.content.includes('**K7Q2MZ**'), l.data);
+  ok('…with the button that opens their own pass with it', l.data.components[0].components[0].url === 'https://trymstene.com/pass/?discord=K7Q2MZ');
+  const m = await cmd('me');
+  const f = Object.fromEntries((m.data.embeds[0].fields || []).map((x) => [x.name, x.value]));
+  ok('/me shows the linked pass’s card for everyone', !m.data.flags && m.data.embeds[0].title === 'Kiwi' && f.Level === '6 · On the List' && f['Days in Banana World'] === '12', m.data);
+  ok('…and finds its homestead by the owner tag', f.Homestead === 'Kiwi’s farm · a real roof' && m.data.components[0].components[0].url === 'https://trymstene.com/homestead/kiwis-farm/', f);
+  const mp = await cmd('me', [{ name: 'private', value: true }]);
+  ok('/me private shows it to the asker only', mp.data.flags === 64);
+  world['/discord/me'] = { linked: false };
+  const nl = await cmd('me');
+  ok('/me unlinked says how to link, privately', nl.data.flags === 64 && nl.data.content === W.me.notLinked);
+  const u = await cmd('unlink');
+  ok('/unlink lets go, privately', u.data.flags === 64 && u.data.content === W.unlink.done);
+}
+
 // ── trivia ───────────────────────────────────────────────────────────────────────────────────────────────────────
 {
   const env = makeEnv();

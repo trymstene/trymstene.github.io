@@ -8,7 +8,7 @@ import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S, outfitParams, EXTRA_
 import { offerCard, myOutfit } from '../lib/make-it-real.js';
 import { renderShelf, shelfList } from '../lib/banana-shelf.js';
 import { cleanName } from '../lib/player-name.js';
-import { passGet, passVisit, passToast, passPush, passNotices, passNoticeAdd, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies, PASS_API } from '../lib/banana-pass.js';
+import { passGet, passVisit, passToast, passPush, passNotices, passNoticeAdd, passNoticesMarkRead, coinsNow, checkGalleryVerdicts, checkCatalogVerdicts, checkTrymReplies, PASS_API, passPost, ensureAnon } from '../lib/banana-pass.js';
 import { PATCHES, GEAR, rankFor, levelFor } from '../lib/pass-defs.js';
 import { MANAGE } from '../data/pay-rail.js';
 import { passkeysSupported, linked, savePass, restorePass, pullLatest,
@@ -339,6 +339,7 @@ function loadOutfit() {
 async function init() {
   passVisit();
   if (window.gtag) window.gtag('event', 'pass_view');
+  const discord = takeDiscord();   // 🍌📌 a /link code leaves the URL NOW too; the tap that ties it waits
   const landing = takeLanding();   // ?in= leaves the URL NOW; SPENDING it waits
   paint();
   initTabs();
@@ -354,6 +355,8 @@ async function init() {
   initShare();
   initChips();
   startSignature();
+  if (discord) discordLanding(discord);
+  else discordRow();
   // ⚠️ the shared shelf re-renders itself after a delete, so the tile dressing
   // is hung off the host rather than off one render call
   new MutationObserver(dressTiles).observe(el('psMade'), { childList: true });
@@ -1479,8 +1482,10 @@ function initShare() {
   // the product, reached two ways.
   // ⚠️ not a <button> wrapper: the name pencil and the empty-slot door live
   // inside the card, and a button inside a button is invalid and unclickable.
+  // ⚠️ the strips that sit ON the card (.ps-finish: the login and Discord asks; .ps-signing) are not the card: a tap on
+  // "Log me in" or "Link" bubbled up here and opened the share card over the page (1 Oct 2026)
   el('psCard').addEventListener('click', (ev) => {
-    if (ev.target.closest('#psNameEdit,#psNameInput,#psSigSlot,#psShareCard')) return;
+    if (ev.target.closest('#psNameEdit,#psNameInput,#psSigSlot,#psShareCard,.ps-finish,.ps-signing')) return;
     btn.click();
   });
   const closeShare = () => { el('psShareModal').hidden = true; };
@@ -1690,6 +1695,67 @@ function wireNews() {
       go.disabled = false;
     }
   });
+}
+
+// 🍌📌 A DISCORD /link CODE (1 Oct 2026). BananaBOT hands its asker a one-time code and a button to this page with it.
+// The code leaves the address bar at once (the magic link's own rule, below); the card then NAMES the Discord account
+// the code belongs to, and nothing is tied until the tap. ⚠️ Without that tap a code sent to somebody else would tie
+// THEIR pass to a stranger's Discord, and the stranger could then show their pass with /me.
+function takeDiscord() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('discord')) return '';
+  const code = String(q.get('discord') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 12);
+  q.delete('discord');
+  history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q.toString() : '') + location.hash);
+  return code;
+}
+async function discordLanding(code) {
+  const D = PT.discord;
+  let peek = null;
+  try {
+    peek = await (await fetch(PASS_API + '/discord/peek', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })).json();
+  } catch (e) { peek = null; }
+  if (!peek || peek.error) { passToast('🔗 <b>' + esc(D.gone) + '</b>'); discordRow(); return; }
+  const box = el('psDiscord'), go = el('psDiscordGo'), later = el('psDiscordLater');
+  if (!box || !go) return;
+  el('psDiscordAsk').textContent = D.ask.replace('{name}', peek.name || 'Discord');
+  el('psDiscordNote').textContent = D.note;
+  go.textContent = D.go;
+  later.textContent = D.later;
+  box.hidden = false;
+  try { box.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+  later.addEventListener('click', () => { box.hidden = true; discordRow(); }, { once: true });
+  go.addEventListener('click', async () => {
+    go.disabled = true;
+    // a visitor with no pass yet gets the anonymous one first: a pass is what a Discord account is tied to
+    try { await ensureAnon(); } catch (e) {}
+    const r = await passPost('/discord/link', { code });
+    box.hidden = true;
+    go.disabled = false;
+    const ran = !!(r && r.error === 'gone');   // the code ran out between the peek and the tap
+    if (r && r.ok) passToast('🔗 <b>' + esc(D.doneTitle) + '</b><br>' + esc(D.doneBody));
+    else passToast('⚠️ <b>' + esc(ran ? D.gone : D.failed) + '</b>');
+    discordRow();
+  }, { once: true });
+}
+// the row beside Log out: which Discord this pass is tied to, and the way to untie it
+async function discordRow() {
+  const row = el('psDiscordRow');
+  if (!row || !linked()) return;
+  const r = await passPost('/discord/status', {});
+  if (!r || !r.linked) { row.hidden = true; return; }
+  const D = PT.discord;
+  el('psDiscordName').textContent = D.row.replace('{name}', r.name || 'Discord');
+  const b = el('psDiscordUnlink');
+  b.textContent = D.unlink;
+  b.onclick = async () => {
+    b.disabled = true;
+    const x = await passPost('/discord/forget', {});
+    b.disabled = false;
+    if (x && x.ok) { row.hidden = true; passToast('🔗 <b>' + esc(D.unlinkedTitle) + '</b><br>' + esc(D.unlinkedBody)); }
+    else passToast('⚠️ <b>' + esc(D.failed) + '</b>');
+  };
+  row.hidden = false;
 }
 
 // 🔗 the magic link lands here as /pass/?in=<ticket>

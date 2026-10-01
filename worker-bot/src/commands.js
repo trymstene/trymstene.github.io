@@ -2,7 +2,7 @@
 // in BananaBOT's own words (src/data/copy/bananabot.json); none of them knows anything about letters.
 import W from '../../src/data/copy/bananabot.json' with { type: 'json' };
 import { reply, links } from './discord.js';
-import { counts, square, cursed, citizens, boards, today, remix, GAMES, LINKS } from './world.js';
+import { counts, square, cursed, citizens, boards, today, remix, GAMES, LINKS, passCode, passCard, passUnlink, yardOf } from './world.js';
 
 export const YELLOW = 0xffe135;
 export const fill = (s, v) => String(s || '').replace(/\{(\w+)\}/g, (m, k) => (v && v[k] != null ? String(v[k]) : m));
@@ -20,6 +20,9 @@ export function definitions() {
     { name: 'citizens', description: C.citizens, type: 1 },
     { name: 'dance', description: C.dance, type: 1 },
     { name: 'trivia', description: C.trivia, type: 1 },
+    { name: 'me', description: C.me, type: 1, options: [{ type: 5, name: 'private', description: C.mePrivate, required: false }] },
+    { name: 'link', description: C.link, type: 1 },
+    { name: 'unlink', description: C.unlink, type: 1 },
     { name: 'help', description: C.help, type: 1 },
   ];
 }
@@ -90,6 +93,33 @@ export function dance(rand) {
     embeds: [{ color: YELLOW, title: r.title, url: r.page, description: fill(pick(W.dance.lines, rand), { title: r.title }), image: { url: r.gif } }],
     components: [links([{ label: W.dance.button, url: LINKS.remixes }])],
   });
+}
+
+// 🔗 /link: a one-time code, shown only to the one who asked, and the button that redeems it on their own pass page
+export async function link(env, user) {
+  const code = await passCode(env, user.id, user.name);
+  if (!code) return reply({ content: W.link.error }, true);
+  return reply({ content: fill(W.link.line, { code: '**' + code + '**' }), components: [links([{ label: W.link.button, url: LINKS.site + '/pass/?discord=' + code }])] }, true);
+}
+// 🍌 /me: the linked pass's public card, and its homestead when it has one (everyone sees it unless they ask otherwise)
+export async function me(env, user, quietly) {
+  const r = await passCard(env, user.id);
+  if (!r) return reply({ content: W.me.error }, true);
+  if (!r.linked || !r.card) return reply({ content: W.me.notLinked }, true);
+  const c = r.card;
+  const y = c.tag ? await yardOf(env, c.tag) : null;
+  const fields = [
+    { name: W.me.level, value: c.level + ' · ' + c.title, inline: true },
+    { name: W.me.days, value: String(c.days), inline: true },
+    { name: W.me.badges, value: String(c.badges), inline: true },
+    { name: W.me.made, value: String(c.made), inline: true },
+  ];
+  if (y) fields.push({ name: W.me.home, value: (y.name || y.slug) + ' · ' + (W.me.stages[y.stage] || W.me.stages[0]), inline: false });
+  return reply({ embeds: [{ color: YELLOW, title: c.name, fields }], components: y ? [links([{ label: W.me.visit, url: LINKS.site + '/homestead/' + y.slug + '/' }])] : [] }, quietly);
+}
+export async function unlink(env, user) {
+  const r = await passUnlink(env, user.id);
+  return reply({ content: !r ? W.me.error : r.was ? W.unlink.done : W.unlink.none }, true);
 }
 
 export function help() {

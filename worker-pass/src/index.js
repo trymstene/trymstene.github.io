@@ -28,7 +28,7 @@
 // level the PLAYER sees, and a second formula here drifts silently every time
 // the real one is retuned. Bundled by esbuild the way worker/ pulls in
 // shared/products.js; pass-defs is pure data + pure functions, no DOM.
-import { levelFor } from '../../src/lib/pass-defs.js';
+import { levelFor, rankFor } from '../../src/lib/pass-defs.js';
 // 🔤 ONE RULE FOR A NAME A PLAYER CHOSE — see src/lib/player-name.js. The pass is where a name is
 // BORN, so this is the first place it has to be foldable into something the fonts can draw.
 import { cleanName } from '../../src/lib/player-name.js';
@@ -55,6 +55,12 @@ export default {
     const url = new URL(request.url);
     try {
       if (request.method === 'OPTIONS') return new Response(null, { headers: cors(env, request) });
+      // 🍌📌 BananaBOT's half of the Discord link: only through its service binding (see discordInternal)
+      if (url.hostname === 'internal' && url.pathname.startsWith('/discord/')) return discordInternal(request, env, url);
+      if (url.pathname === '/discord/peek') return discordPeek(request, env);
+      if (url.pathname === '/discord/link') return discordLink(request, env);
+      if (url.pathname === '/discord/status') return discordStatus(request, env);
+      if (url.pathname === '/discord/forget') return discordForget(request, env);
       if (url.pathname === '/challenge') return challenge(request, env);
       if (url.pathname === '/register') return register(request, env);
       if (url.pathname === '/assert') return assert_(request, env);
@@ -1893,6 +1899,142 @@ function giftRoll(pool) {
   return pool[pool.length - 1];
 }
 const giftOut = (g, now) => ({ gift: g ? { at: g.at, ready: !g.opened && utcDay(now) > utcDay(g.at), opened: g.opened || 0, item: g.item || '' } : null });
+// ---------- 🍌📌 A PASS AND A DISCORD ACCOUNT (1 Oct 2026) ----------
+// Trym: "users can send commands to get stats, highscores, and information about the world, and their users if they
+// want". A Discord account is tied to a pass only BY THE PASS: BananaBOT's /link hands its asker a one-time code, and
+// the browser that holds the pass redeems it on /pass/ — after a tap that names the Discord account, so a code sent to
+// somebody else cannot quietly tie THEIR pass to a stranger. The bot may then ask for that one pass's public card (its
+// name, level, days, badges, things made, and the tag that finds its homestead): never coins, an email or an id.
+// ⚠️ THE BOT'S HALF IS INTERNAL: reachable only through its service binding, whose URL it chooses — `internal`, a host
+// no request off the internet can carry (the worker-rave /wt/verify doctrine). The pass page's half proves the pass with
+// credId + token like every other write.
+const DISCORD_CODE_MS = 15 * 60000;
+const CODE_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // nothing that reads as another letter (0/O, 1/I/L)
+const discordUid = (v) => String(v || '').replace(/\D/g, '').slice(0, 25);
+const discordCodeOf = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+async function r2json(env, key) {
+  const o = await env.PASSES.get(key);
+  if (!o) return null;
+  try { return await o.json(); } catch (e) { return null; }
+}
+async function discordCodeRec(env, code) {
+  const c = discordCodeOf(code);
+  const rec = c ? await r2json(env, 'discord/code/' + c + '.json') : null;
+  if (!rec) return null;
+  if (Date.now() - (+rec.at || 0) > DISCORD_CODE_MS) { await env.PASSES.delete('discord/code/' + c + '.json'); return null; }
+  return { ...rec, code: c };
+}
+// the card BananaBOT shows for /me, from the home record (one hop if the pass folded into another since)
+async function discordCard(env, homeKey) {
+  let key = homeKey, rec = await loadKey(env, key);
+  if (rec && rec.link) { key = rec.link; rec = await loadKey(env, key); }
+  if (!rec || rec.link) return null;
+  const row = await rowOf(env, 'pass/' + key + '.json', rec);
+  return { name: row.name || 'Fresh Dancing Banana', level: row.level, title: rankFor(row.level).title, days: row.days,
+    badges: row.badges, made: row.shelf, since: row.created, tag: row.tag };
+}
+async function discordInternal(request, env, url) {
+  if (url.pathname === '/discord/code' && request.method === 'POST') {
+    let b = {};
+    try { b = await request.json(); } catch (e) { b = {}; }
+    const uid = discordUid(b.uid);
+    if (!uid) return json({ error: 'uid' }, 400);
+    const bytes = crypto.getRandomValues(new Uint8Array(6));
+    const code = [...bytes].map((x) => CODE_ABC[x % CODE_ABC.length]).join('');
+    await env.PASSES.put('discord/code/' + code + '.json', JSON.stringify({ uid, name: String(b.name || '').slice(0, 40), at: Date.now() }));
+    return json({ code, ttl: DISCORD_CODE_MS });
+  }
+  if (url.pathname === '/discord/me') {
+    const uid = discordUid(url.searchParams.get('uid'));
+    const m = uid ? await r2json(env, 'discord/uid/' + uid + '.json') : null;
+    if (!m) return json({ linked: false });
+    const card = await discordCard(env, m.home);
+    if (!card) { await env.PASSES.delete('discord/uid/' + uid + '.json'); return json({ linked: false }); }   // the pass is gone
+    return json({ linked: true, card });
+  }
+  if (url.pathname === '/discord/unlink' && request.method === 'POST') {
+    let b = {};
+    try { b = await request.json(); } catch (e) { b = {}; }
+    const uid = discordUid(b.uid);
+    const m = uid ? await r2json(env, 'discord/uid/' + uid + '.json') : null;
+    if (!m) return json({ ok: true, was: false });
+    await env.PASSES.delete('discord/uid/' + uid + '.json');
+    await retrying(async () => {
+      const home = await loadKey(env, m.home);
+      if (home && home.discord && home.discord.uid === uid) { delete home.discord; await saveKey(env, m.home, home); }
+    }).catch(() => {});
+    return json({ ok: true, was: true });
+  }
+  return json({ error: 'nope' }, 404);
+}
+async function discordPeek(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b = {};
+  try { b = await request.json(); } catch (e) { b = {}; }
+  const c = await discordCodeRec(env, b.code);
+  return json(c ? { name: c.name || '' } : { error: 'gone' }, c ? 200 : 404, cors(env, request));
+}
+async function discordLink(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b = {};
+  try { b = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400, cors(env, request)); }
+  const R0 = await tokenRec(env, b.credId, b.token);
+  if (!R0) return json({ error: 'not linked' }, 403, cors(env, request));
+  const c = await discordCodeRec(env, b.code);
+  if (!c) return json({ error: 'gone' }, 404, cors(env, request));
+  const out = await retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R) return null;
+    const was = R.home.discord && R.home.discord.uid;
+    R.home.discord = { uid: c.uid, name: c.name, at: Date.now() };
+    await saveKey(env, R.homeKey, R.home);
+    return { homeKey: R.homeKey, was };
+  });
+  if (!out) return json({ error: 'not linked' }, 403, cors(env, request));
+  // one Discord account per pass, one pass per Discord account: the old ties go, on both sides
+  if (out.was && out.was !== c.uid) await env.PASSES.delete('discord/uid/' + out.was + '.json');
+  const prev = await r2json(env, 'discord/uid/' + c.uid + '.json');
+  if (prev && prev.home && prev.home !== out.homeKey) {
+    await retrying(async () => {
+      const home = await loadKey(env, prev.home);
+      if (home && home.discord && home.discord.uid === c.uid) { delete home.discord; await saveKey(env, prev.home, home); }
+    }).catch(() => {});
+  }
+  await env.PASSES.put('discord/uid/' + c.uid + '.json', JSON.stringify({ home: out.homeKey, name: c.name, at: Date.now() }));
+  await env.PASSES.delete('discord/code/' + c.code + '.json');
+  return json({ ok: true, name: c.name }, 200, cors(env, request));
+}
+async function discordStatus(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b = {};
+  try { b = await request.json(); } catch (e) { b = {}; }
+  const R = await tokenRec(env, b.credId, b.token);
+  if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+  const d = R.home.discord;
+  return json(d ? { linked: true, name: d.name || '' } : { linked: false }, 200, cors(env, request));
+}
+async function discordForget(request, env) {
+  const bad = guard(env, request);
+  if (bad) return bad;
+  let b = {};
+  try { b = await request.json(); } catch (e) { b = {}; }
+  const R0 = await tokenRec(env, b.credId, b.token);
+  if (!R0) return json({ error: 'not linked' }, 403, cors(env, request));
+  const uid = await retrying(async () => {
+    const R = await tokenRec(env, b.credId, b.token);
+    if (!R || !R.home.discord) return '';
+    const u = R.home.discord.uid;
+    delete R.home.discord;
+    await saveKey(env, R.homeKey, R.home);
+    return u;
+  });
+  if (uid) await env.PASSES.delete('discord/uid/' + uid + '.json');
+  return json({ ok: true }, 200, cors(env, request));
+}
+
 async function giftRoute(request, env) {
   const bad = guard(env, request);
   if (bad) return bad;

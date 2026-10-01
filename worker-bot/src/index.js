@@ -35,6 +35,11 @@ export default {
         ctx.waitUntil(ask(env, '/count', { k: 'cmd_' + name }).catch(() => {}));
         if (name === 'trivia') return json(await (await ask(env, '/trivia')).json());
         const opt = ((i.data && i.data.options) || []).find((o) => o.name === 'game');
+        const u = (i.member && i.member.user) || i.user || {};
+        const user = { id: String(u.id || ''), name: String((i.member && i.member.nick) || u.global_name || u.username || '').slice(0, 40) };
+        if (name === 'link') return json(await cmd.link(env, user));
+        if (name === 'unlink') return json(await cmd.unlink(env, user));
+        if (name === 'me') return json(await cmd.me(env, user, !!(((i.data && i.data.options) || []).find((o) => o.name === 'private') || {}).value));
         const out = name === 'world' ? await cmd.world(env)
           : name === 'today' ? cmd.todayCard()
             : name === 'top' ? await cmd.top(env, opt && opt.value)

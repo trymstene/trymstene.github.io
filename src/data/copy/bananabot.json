@@ -8,7 +8,11 @@
     "citizens": "The Citizens of the Week",
     "dance": "A dancing banana from the remix gallery",
     "trivia": "A question about Banana World",
-    "help": "What BananaBOT can do"
+    "help": "What BananaBOT can do",
+    "me": "Your banana: level, days, badges and homestead (once linked)",
+    "mePrivate": "Show it only to you",
+    "link": "Link your Banana World pass, so /me can show it",
+    "unlink": "Unlink your pass from this Discord account"
   },
   "world": {
     "title": "Banana World, right now",
@@ -65,6 +69,7 @@
       "/citizens · the Citizens of the Week",
       "/dance · a dancing banana remix",
       "/trivia · a question about Banana World",
+      "/link · tie your pass to this account, then /me shows your banana",
       "Mention me and I will answer, as well as a notice board can."
     ]
   },
@@ -636,5 +641,30 @@
         ]
       }
     ]
+  },
+  "link": {
+    "line": "Your code is {code}. Open your pass with the button and tap Link. It works once, for a little while.",
+    "button": "Link it on my pass",
+    "error": "The pass desk did not answer. Try again in a moment."
+  },
+  "me": {
+    "notLinked": "Your pass is not linked yet. Type /link and I’ll give you a code.",
+    "level": "Level",
+    "days": "Days in Banana World",
+    "badges": "Badges",
+    "made": "Things made",
+    "home": "Homestead",
+    "stages": [
+      "a plot",
+      "a tent",
+      "a real roof",
+      "a house"
+    ],
+    "visit": "Visit the homestead",
+    "error": "The pass desk did not answer. Try again in a moment."
+  },
+  "unlink": {
+    "done": "Unlinked. Your pass and this Discord account have gone their separate ways.",
+    "none": "Nothing to unlink: this account is not linked to a pass."
   }
 }

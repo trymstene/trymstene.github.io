@@ -58,5 +58,19 @@
     "second": "2nd for {plaque}",
     "third": "3rd for {plaque}",
     "login": "Log in to get nominated"
+  },
+  "discord": {
+    "ask": "Link this pass to {name} on Discord?",
+    "note": "Then BananaBOT shows your level, badges and homestead when you type /me in the Banana World Discord.",
+    "go": "Link",
+    "later": "Not now",
+    "doneTitle": "LINKED",
+    "doneBody": "Type /me in the Discord to show your banana.",
+    "gone": "That code has run out. Type /link in the Discord for a new one.",
+    "failed": "That did not work. Try again in a moment.",
+    "row": "Discord: {name}",
+    "unlink": "Unlink",
+    "unlinkedTitle": "UNLINKED",
+    "unlinkedBody": "Your pass and Discord have gone their separate ways."
   }
 }

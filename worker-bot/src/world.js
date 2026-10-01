@@ -75,4 +75,22 @@ export function remix(rand = Math.random) {
   return { title: String(r.title || 'A banana'), gif: SITE + '/assets/dancing-banana-community-remixes/' + r.id + '.gif', page: SITE + '/dancing-banana-remixes/' + r.slug + '/' };
 }
 
-export const LINKS = { town: SITE + '/town/', builder: SITE + '/make-a-banana/', stand: SITE + '/park/', arcade: SITE + '/town/', citizens: SITE + '/', remixes: SITE + '/dancing-banana-remixes/' };
+// 🔗 A PASS AND A DISCORD ACCOUNT (worker-pass, its internal half — only this binding can reach it). The player links
+// on their own pass page with a one-time code; the bot only ever sees the public card of a pass that chose to link.
+const passJson = async (env, path, body) => {
+  try {
+    const r = await env.PASS.fetch(new Request('https://internal' + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}));
+    return r.ok ? await r.json() : null;
+  } catch (e) { return null; }
+};
+export const passCode = (env, uid, name) => passJson(env, '/discord/code', { uid, name }).then((j) => (j && j.code) || null);
+export const passCard = (env, uid) => passJson(env, '/discord/me?uid=' + encodeURIComponent(uid));
+export const passUnlink = (env, uid) => passJson(env, '/discord/unlink', { uid });
+/** The homestead whose owner tag is `tag` (the yards publish the same tag the pass card carries). */
+export async function yardOf(env, tag) {
+  const j = await getJson(env.RAVE, 'https://banana-rave/yards/stats', ORIGIN);
+  const y = j && (j.list || []).find((x) => x && x.owner === tag);
+  return y ? { slug: String(y.slug), name: String(y.name || ''), stage: +y.stage || 0 } : null;
+}
+
+export const LINKS = { site: SITE, town: SITE + '/town/', builder: SITE + '/make-a-banana/', stand: SITE + '/park/', arcade: SITE + '/town/', citizens: SITE + '/', remixes: SITE + '/dancing-banana-remixes/' };
