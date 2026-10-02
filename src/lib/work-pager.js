@@ -83,7 +83,10 @@ export function bootWorkPager({ view, area }) {
     fold();
     place();
   }
-  tick();
+  // 📅 every push and pull answer brings today's work at the job you hold (banana-pass.js jobHint): a task done on another
+  // device stops the ring the moment it lands — and the first ring waits a beat for the answer the page's load asks for
+  document.addEventListener('pass:job', () => tick());
+  setTimeout(tick, 1500);
   // the calls change by the minute; the quest note above can pop in, fold or grow at any moment, so the place is kept
   // on its own quicker beat
   const timer = setInterval(tick, 3000), placer = setInterval(() => { if (!el.hidden) place(); }, 700);

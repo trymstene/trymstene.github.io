@@ -744,7 +744,7 @@ function loadDeliver() {
   if (!deliverP) {
     deliverP = import('./town-deliver.js')
       .then((m) => { deliver = m.bootTownDeliver({ world, W, H, pct, pos, say, track, burst: (x, y) => burstAt(x, y, '', true),
-        job: () => (work ? work.seam.job() : null), chore: (k, g) => (work && work.seam.chore ? work.seam.chore(k, g) : null),
+        job: () => (work ? work.seam.job() : null), chore: (k, g, to) => (work && work.seam.chore ? work.seam.chore(k, g, to) : null),
         open: () => !!(room && room.seam.calls && room.seam.calls('store').some((c) => c.kind === 'deliver')), room: () => inRoom, homeOf: (k) => life.homeOf(k),
         setSlow: (v) => { slowCarry = +v > 0 ? +v : 1; }, morning: () => life.beat() === 0 }); if (window.__town) window.__town.deliver = deliver.seam; return deliver; })
       .catch((e) => { deliverP = null; console.warn('[town] the parcel did not come', e); return null; });

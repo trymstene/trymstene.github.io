@@ -740,10 +740,18 @@ function jobHint(h) {
     const m = JSON.parse(localStorage.getItem('tw-job-v1') || 'null') || {};
     const at = String(h.at || ''), f = h.fired && h.fired.at ? h.fired : null;
     const justLeft = m.wasT && Date.now() - (+m.wasT || 0) < 120000;
+    // 📅 TODAY'S WORK RIDES EVERY ANSWER TOO (2 Oct 2026; worker-pass jobToday): what was done today at the job you hold, on any
+    // device — so the work note, the pager and the town's rooms stop offering a task the phone already did. The fuller count
+    // wins (an answer can overtake the chore after it), and the town hears it (pass:job)
+    const d = new Date().toISOString().slice(0, 10), t = h.today;
+    const today = t && typeof t === 'object' ? { k: t.k || {}, g: t.g || {}, to: t.to || {}, up: !!t.up, d } : null;
+    const sum = (x) => (x && x.k && x.d === d ? Object.values(x.k).reduce((a, v) => a + (v | 0), 0) : -1);
     let next = null;
-    if (!m.at && at && !justLeft) next = { ...m, at, up: '', duties: [], share: 0, sofar: 0, nudge: false, fired: null };
+    if (!m.at && at && !justLeft) next = { ...m, at, up: '', duties: [], share: 0, sofar: 0, nudge: false, fired: null, today, since: +h.since || 0 };
     else if (m.at && !at && f && f.at === m.at) next = { ...m, at: '', was: m.at, wasT: Date.now(), fired: f, up: '', duties: [], share: 0, sofar: 0, nudge: false };
+    else if (m.at && m.at === at && today && sum(today) >= sum(m.today)) next = { ...m, today, since: +h.since || m.since || 0 };
     if (next) localStorage.setItem('tw-job-v1', JSON.stringify(next));
+    if (today && at) document.dispatchEvent(new CustomEvent('pass:job', { detail: { at, today, since: +h.since || 0 } }));
   } catch (e) {}
 }
 export function walletKeep(d, force) {

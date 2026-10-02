@@ -220,6 +220,7 @@ console.log('\n9. ⭐ the job survives a push (it lived in the blob, and every s
   ok('⭐ …leaves the job where it was', v.job.at === 'store', v.job);
   ok('…with the week’s work still counted', v.job.days === 1 && (v.job.duties.find((d) => d.kind === 'restock') || {}).done === 1, v.job);
   ok('⭐ and the push’s answer carries the job, so another phone learns it', ack.job && ack.job.at === 'store', ack.job);
+  ok('📅 …and today’s work at it and when it began, so a laptop that is only walking about learns what the phone did (2 Oct 2026)', ack.job.today && ack.job.today.k.restock === 1 && ack.job.today.k.serve === 1 && ack.job.today.up === true && ack.job.since > 0, ack.job);
   CLOCK += DAY;
   await post('/push', { credId: w.credId, token: w.token, blob: blob() });
   await post('/job/chore', { credId: w.credId, token: w.token, kind: 'restock' });
@@ -682,6 +683,52 @@ console.log('\n29. 📅 today\'s chores travel: every device of the pass reads w
   await P('/job/take', { at: 'store' });
   v = await P('/job/view');
   ok('a new job\'s day starts empty too (the arcade\'s sweep is not the store\'s)', Object.keys(v.job.today.k).length === 0, v.job.today);
+}
+
+console.log('\n30. 📅 a once-a-day task is counted once, on any device: the day\'s litter swept twice is one sweep');
+{
+  CLOCK = monday(CLOCK + 7 * DAY) + 10 * 3600000;
+  const P = as(await kept('onceaday@example.com'));
+  await P('/job/take', { at: 'condo' });
+  let v = await P('/job/chore', { kind: 'sweep' });   // the phone sweeps the day's piece
+  ok('the day\'s sweep counts', v.counted === true && v.again === false && v.job.duties.find((d) => d.kind === 'sweep').done === 1, v);
+  const xp1 = v.job.lad.xp;
+  v = await P('/job/chore', { kind: 'sweep' });   // the laptop had not heard yet, and offered it again
+  ok('⭐ the same day\'s sweep from another device is answered "again": not on the sheet, no XP', v.ok === true && v.again === true && v.counted === false && v.xp === 0 && v.job.duties.find((d) => d.kind === 'sweep').done === 1 && v.job.lad.xp === xp1, v);
+  ok('today still says one sweep, and that you turned up', v.job.today.k.sweep === 1 && v.job.today.up === true, v.job.today);
+  v = await P('/job/chore', { kind: 'litter' });
+  v = await P('/job/chore', { kind: 'litter' });
+  ok('litter on the square (the fourth rank\'s) is its own verb and repeats', v.again === false && v.job.today.k.litter === 2, v.job.today);
+  v = await P('/job/chore', { kind: 'fix', g: 2 });
+  ok('the day\'s cabinet counts once…', v.again === false, v);
+  v = await P('/job/chore', { kind: 'fix', g: 2 });
+  ok('…and not twice', v.again === true && v.job.today.k.fix === 1, v.job.today);
+  CLOCK += DAY;
+  v = await P('/job/chore', { kind: 'sweep' });
+  ok('the next day\'s piece counts again', v.counted === true && v.again === false, v);
+}
+
+console.log('\n31. 📦 a delivery remembers its door: another device reads it, and the same door twice is one delivery');
+{
+  CLOCK = monday(CLOCK + 7 * DAY) + 10 * 3600000;
+  const P = as(await kept('doors@example.com'));
+  await P('/job/take', { at: 'store' });
+  let v = await P('/job/view');
+  ok('a fresh day: no doors, not turned up', v.job.today.up === false && Object.keys(v.job.today.to).length === 0, v.job.today);
+  v = await P('/job/chore', { kind: 'deliver', to: 'nib' });
+  ok('the parcel at Nib\'s door counts, and the door is on today\'s record', v.again === false && JSON.stringify(v.job.today.to.deliver) === '["nib"]', v.job.today);
+  v = await P('/job/chore', { kind: 'deliver', to: 'nib' });
+  ok('⭐ Nib\'s door again is not a second delivery', v.again === true && v.xp === 0 && v.job.today.k.deliver === 1, v);
+  v = await P('/job/chore', { kind: 'deliver', to: 'moss' });
+  ok('a second door is (the fourth rank\'s two parcels)', v.again === false && v.job.today.k.deliver === 2, v.job.today);
+  v = await P('/job/chore', { kind: 'deliver', to: 'bean' });
+  ok('a third is past the day\'s parcels', v.again === true && v.job.today.k.deliver === 2, v.job.today);
+  CLOCK += 3600000;
+  v = await P('/job/view');
+  ok('an hour later another device reads both doors', JSON.stringify(v.job.today.to.deliver) === '["nib","moss"]' && v.job.today.up === true, v.job.today);
+  CLOCK += DAY;
+  v = await P('/job/chore', { kind: 'deliver', to: '<b>' });
+  ok('a door that is not a resident\'s key is never written down (the parcel still counts)', v.again === false && !v.job.today.to.deliver && v.job.today.k.deliver === 1, v.job.today);
 }
 
 Date.now = REAL_NOW;

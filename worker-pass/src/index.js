@@ -34,7 +34,7 @@ import { levelFor, rankFor } from '../../src/lib/pass-defs.js';
 import { cleanName } from '../../src/lib/player-name.js';
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
-import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS, dayCap, refFrom, ranksOf } from '../../src/data/town/jobs.js';
+import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS, dayCap, refFrom, ranksOf, DAY_MAX } from '../../src/data/town/jobs.js';
 // 🎡📈 THE MARKET — one source with the town (src/data/town/market.js): the wedges, the spin's price, the pot's seed,
 // the pocket's cap, the Exchange's goods and its daily price. The wheel's ODDS are not there; they are below.
 import { GOODS, goodIndex, saleOf, SELL_CAP, WEDGES, SPIN_COST, SPIN_CAP, POT_SEED, POT_FEED, POCKET_KINDS, POCKET_MAX, dayOf } from '../../src/data/town/market.js';
@@ -231,7 +231,9 @@ async function identityOf(env, R) {
     ...(R.home.rules ? { rules: R.home.rules } : {}),   // 📏 the caps this person has used
     // 💼 the job rides every ack (22 Sep 2026): a second phone learns it holds one — and every phone learns of
     // a sack — without a request of its own. Only for somebody who has ever been hired; the rest is /job/view's.
-    ...(R.home.job ? { job: { at: R.home.job.at || '', fired: R.home.job.fired || null } } : {}),
+    // 📅 …and today's work at it, on any device, and when it began (2 Oct 2026): a laptop that is only walking about learns
+    // what the phone did today, and the hire day's calls are the hire day's everywhere
+    ...(R.home.job ? { job: { at: R.home.job.at || '', fired: R.home.job.fired || null, since: R.home.job.since || 0, today: jobToday(R.home.job, R.home.job.at || '', Date.now()) } } : {}),
     own: OWN_IDS_W.filter((id) => statTotal((R.home.blob || {}).pass, 'own_' + id) > 0) };   // 🎩 the stand gear this pass holds
 }
 
@@ -1429,10 +1431,14 @@ function jobView(j, now) {
     lad: ladderOf(j, at, now),   // 🪜 your XP and rank at the job you hold, and whether the boss has news
     today: jobToday(j, at, now) };   // 📅 what was done today at the job you hold, on any device
 }
-// 📅 today's chores at the job you hold, by kind, and each kind's best grade — empty on a new day or a new job
+// 📅 today's chores at the job you hold, by kind, each kind's best grade, the doors a delivery reached by kind, and whether
+// you turned up (any chore today is one) — empty on a new day or a new job
 function jobToday(j, at, now) {
   const t = j && j.td;
-  return t && at && t.at === at && t.d === utcDay(now) ? { k: { ...(t.k || {}) }, g: { ...(t.g || {}) } } : { k: {}, g: {} };
+  if (!(t && at && t.at === at && t.d === utcDay(now))) return { k: {}, g: {}, to: {}, up: false };
+  const to = {};
+  for (const k in (t.to || {})) if (Array.isArray(t.to[k])) to[k] = t.to[k].slice();
+  return { k: { ...(t.k || {}) }, g: { ...(t.g || {}) }, to, up: true };
 }
 // 🪜 the rank a week pays at: the highest you were told while you worked it (`r` on its sheet, set by every chore and by
 // a promotion), else the one you hold there now — so a promotion on a Thursday pays that whole week at the new rank, and
@@ -1593,7 +1599,18 @@ async function jobChore(request, env) {
     // 💼 A CHORE BY KIND (22 Sep 2026): the town says "swept", "fixed", "restocked" as it happens, and the
     // week counts it up to the duty's target and no further — so the ceiling a forged client can reach is
     // still one full week's rate. `days` is never reported; the worker counts attendance itself.
-    const kind = typeof b.kind === 'string' ? b.kind.slice(0, 12) : '';
+    // 📅 TODAY'S CHORES, ON THE PASS (2 Oct 2026). Trym: "i fixed the arcade machine on my phone, and when i jumped into the
+    // town now from my laptop, i had to do it again?" Each device kept what it had done today to itself, so another device
+    // drew the same day's tasks again. The worker hears every chore: it keeps today's by kind at the job you hold (how many,
+    // the best grade a verb was given, the doors a delivery reached), and every device reads them back from the job view
+    // (jobToday). ⚠️ AND A ONCE-A-DAY TASK IS COUNTED ONCE (jobs.js DAY_MAX): a device that had not heard yet and offered the
+    // day's litter again is answered "not counted" — the week's sheet and the XP stay what the day was worth.
+    const day = utcDay(now);
+    if (!j.td || j.td.d !== day || j.td.at !== j.at) j.td = { d: day, at: j.at, k: {}, g: {} };
+    const asked = typeof b.kind === 'string' ? b.kind.slice(0, 12) : '';
+    const to = asked && typeof b.to === 'string' && /^[a-z0-9]{1,12}$/.test(b.to) ? b.to : '';   // a resident's key: whose door
+    const again = !!asked && ((DAY_MAX[asked] && (j.td.k[asked] | 0) >= DAY_MAX[asked]) || (!!to && (((j.td.to || {})[asked]) || []).includes(to)));
+    const kind = again ? '' : asked;
     const dk = COUNTS_AS[kind] || kind;   // 🧺 a basket (the store's rank 2, 23 Sep 2026) is a customer served on the sheet
     const duty = dk && dk !== 'days' ? (DUTIES[j.at] || []).find(([k]) => k === dk) : null;
     if (!j.done) j.done = {};
@@ -1611,19 +1628,14 @@ async function jobChore(request, env) {
     if (kind) for (const g of gs) add += xpFor(j.at, kind, g == null ? null : +g);
     const xp = xpAdd(j, add, now);
     if (xp) dn.xp = (dn.xp | 0) + xp;   // 💼 the week's work XP at this workplace: what staff of the week is scored on
-    // 📅 TODAY'S CHORES, ON THE PASS (2 Oct 2026). Trym: "i fixed the arcade machine on my phone, and when i jumped into the
-    // town now from my laptop, i had to do it again?" Each device kept what it had done today to itself, so another device
-    // drew the same day's tasks again. The worker hears every chore: it keeps today's by kind at the job you hold (how many,
-    // and the best grade a verb was given), and every device reads them back from the job view (jobToday).
-    const day = utcDay(now);
-    if (!j.td || j.td.d !== day || j.td.at !== j.at) j.td = { d: day, at: j.at, k: {}, g: {} };
     if (kind) {
       j.td.k[kind] = Math.min(999, (j.td.k[kind] | 0) + (Array.isArray(b.g) ? gs.length : 1));   // a counter's shift: its cups
       for (const g of gs) if (g != null && Number.isFinite(+g)) j.td.g[kind] = Math.max(j.td.g[kind] | 0, Math.min(99, +g | 0));
+      if (to) { const tt = j.td.to || (j.td.to = {}), l = tt[kind] || (tt[kind] = []); if (l.length < 12) l.push(to); }
     }
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
-    return json({ ok: true, job: jobView(j, now), counted: !!duty, xp }, 200, cors(env, request));
+    return json({ ok: true, job: jobView(j, now), counted: !!duty, xp, again }, 200, cors(env, request));
   });
 }
 

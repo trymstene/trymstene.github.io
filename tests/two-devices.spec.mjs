@@ -223,6 +223,32 @@ test('phone A plays and adds an email; phone B logs in and sees it all; B rename
       expect(stranger.status, 'a stranger holding only the address is refused').toBe(401);
     });
 
+    // 📅 TODAY'S JOB WORK FOLLOWS THE PERSON, ON THE REAL PASS WORKER (2 Oct 2026). Trym: "i fixed the arcade machine on my
+    // phone, and when i jumped into the town now from my laptop, i had to do it again?" A takes the arcade and sweeps the
+    // day's piece; B, on its own phone, must read the sweep in the job's answer AND in a pull (the job hint every page gets
+    // on load), and B's sweep of the same piece is not counted a second time (worker-pass jobToday + jobs.js DAY_MAX).
+    await test.step('A sweeps at the arcade; B reads it in the job and in the pull, and cannot count it again', async () => {
+      const call = (page, path, body) => page.evaluate(async ({ api, path, body }) => {
+        const l = JSON.parse(localStorage.getItem('pass-link') || '{}');
+        const r = await fetch(api + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, credId: l.credId, token: l.token }) });
+        return r.json().catch(() => ({ status: r.status }));
+      }, { api: PASS_API, path, body });
+      const take = await call(A.page, '/job/take', { at: 'condo' });
+      expect(take.ok, 'A is hired at the arcade: ' + JSON.stringify(take)).toBe(true);
+      const sweep = await call(A.page, '/job/chore', { kind: 'sweep' });
+      expect(!!(sweep.ok && sweep.counted && !sweep.again), 'A’s sweep counts: ' + JSON.stringify(sweep)).toBe(true);
+      const view = await call(B.page, '/job/view', {});
+      expect(((view.job || {}).today || { k: {} }).k.sweep, '⭐ B reads A’s sweep in the job: ' + JSON.stringify(view.job && view.job.today)).toBe(1);
+      const pull = await B.page.evaluate(async (api) => {
+        const l = JSON.parse(localStorage.getItem('pass-link') || '{}');
+        const r = await fetch(api + '/pull?credId=' + encodeURIComponent(l.credId) + '&token=' + encodeURIComponent(l.token));
+        return r.json().catch(() => ({ status: r.status }));
+      }, PASS_API);
+      expect(((pull.job || {}).today || { k: {} }).k.sweep, '⭐ …and in the pull every page makes: ' + JSON.stringify(pull.job)).toBe(1);
+      const again = await call(B.page, '/job/chore', { kind: 'sweep' });
+      expect(again.again === true && again.xp === 0, 'B’s sweep of the same piece is not counted twice: ' + JSON.stringify({ again: again.again, xp: again.xp })).toBe(true);
+    });
+
     const badA = realErrors(A.errs), badB = realErrors(B.errs);
     expect(badA, `phone A console:\n${badA.join('\n')}`).toHaveLength(0);
     expect(badB, `phone B console:\n${badB.join('\n')}`).toHaveLength(0);

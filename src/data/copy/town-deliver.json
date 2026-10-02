@@ -18,6 +18,8 @@
   "deliveredOne": "Delivered to {to}. The other parcel is for {next}.",
   "round": {
     "given": "The satchel: letters for {to}, {to2} and {to3}. The markers are over their doors.",
+    "givenRest": "The rest of the satchel: letters for {to} and {to2}. The markers are over their doors.",
+    "givenLast": "The last letter in the satchel is for {to}. The marker is over the door.",
     "deliveredOne": "Delivered to {to}. {n} left in the satchel.",
     "delivered": "The satchel is empty. That is the round done."
   },

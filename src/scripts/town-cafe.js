@@ -513,7 +513,14 @@ export function bootTownCafe(ctx, cfg0) {
   let rush = null, rushXp = 0;   // { left, got, lost } while one runs
   const today = () => Math.floor(Date.now() / 864e5);
   let rushDay = -1;   // the day already known to have had its rush: asked every idle frame, so it is read from storage once
-  const rushed = () => { if (rushDay === today()) return true; try { const r = JSON.parse(localStorage.getItem('tw-rush-v1') || 'null'); if (r && r.d === today()) { rushDay = r.d; return true; } } catch (e) {} return false; };
+  const rushed = () => {
+    if (rushDay === today()) return true;
+    try { const r = JSON.parse(localStorage.getItem('tw-rush-v1') || 'null'); if (r && r.d === today()) { rushDay = r.d; return true; } } catch (e) {}
+    // 📅 …or another device had it today (the pass worker's day, with the job's answer, 2 Oct 2026): one rush a day, wherever
+    const j = ctx.job ? ctx.job() : null, t = j && j.today;
+    if (t && t.k && j.at === cfg.at && t.d === new Date().toISOString().slice(0, 10) && (t.k.rush | 0) > 0) { rushDay = today(); return true; }
+    return false;
+  };
   function rushStart() {
     rush = { left: RUSH_N, got: 0, lost: 0 };
     rushDay = today();
@@ -525,7 +532,7 @@ export function bootTownCafe(ctx, cfg0) {
     if (!rush || rush.left > 0 || rush.got + rush.lost < RUSH_N) return;
     const ok = !rush.lost;
     rush = null;
-    if (!ok) return;
+    if (!ok) { if (ctx.chore) ctx.chore('rush', 0); return; }   // 📅 a customer lost pays nothing, but it was the day's rush: the pass hears it, so no other device has one
     if ((WORDS.rush || {}).done) say(WORDS.rush.done);
     if (ctx.chore) { const p = ctx.chore('rush'); rushXp += (p && p.got) | 0; }
     track('town_chore', { at: cfg.at, kind: 'rush' });

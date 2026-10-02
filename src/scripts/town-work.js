@@ -48,6 +48,9 @@ export function bootTownWork(ctx) {
   const titleOf = (at, rank) => (((LW && LW.ranks) || {})[at] || [])[Math.max(1, rank | 0) - 1] || '';
   let toldDay = '';   // the day we last said the quiet line, so it is said once
   const todayKey = () => new Date().toISOString().slice(0, 10);
+  // 📅 what was done today at the job you hold, on ANY device of the pass (worker-pass jobToday, 2 Oct 2026): the day's tasks a
+  // phone finished are finished on the laptop too. Stamped with the day, so a mirror kept overnight says nothing tomorrow
+  const todayOf = (t) => (t && typeof t === 'object' ? { k: t.k || {}, g: t.g || {}, to: t.to || {}, up: !!t.up, d: todayKey() } : null);
   // 💼 the duties chip listens (town-duties.js): every landing, take or QA set says so
   const listeners = [];
   const notify = () => { for (const fn of listeners) { try { fn(); } catch (e) {} } };
@@ -73,12 +76,11 @@ export function bootTownWork(ctx) {
         // 🪜 the ladder at the job you hold: XP, the rank your boss has told you, today's XP (worker-pass ladderOf)
         lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey(),
           warn: !!l.warn, talk: l.talk || '', last: l.last || null, mem: l.mem | 0 } : null,   // ↕ the weekly review: warned, the boss's word waiting, last week
-        // 📅 what was done today at this job, on ANY device of the pass (worker-pass jobToday, 2 Oct 2026): the day's tasks a
-        // phone finished are finished on the laptop too. Stamped with the day, so a mirror kept overnight says nothing tomorrow
-        today: res.job.today && typeof res.job.today === 'object' ? { k: res.job.today.k || {}, g: res.job.today.g || {}, d: todayKey() } : null };
+        today: todayOf(res.job.today), since: +res.job.since || 0 };   // 📅 today's work on any device, and when the job began (the hire day's calls)
       // 💼 a new workplace unfolds the note (24 Sep 2026, the job QA): a fold is for the job you folded it on, and a hire is
       // the moment the note has the most to say
       if (was !== job.at) { job.up = ''; job.hm = 0; }
+      if (job.today && job.today.up) job.up = todayKey();   // 📅 turned up today on another device: the day's ten is not foretold twice
       // 💼 a job that is gone is REMEMBERED for a while: the homestead still asks for the payslip it owes
       if (was && !job.at) { job.was = was; job.wasT = Date.now(); }
       writeJob(job);
@@ -89,7 +91,8 @@ export function bootTownWork(ctx) {
   }
   // the job as it stands, marking nothing — on boot, so the chip can speak before you turn up
   // (and once a day for a job you no longer hold, so the sack still reaches the note)
-  function view() { if (!job.at && !job.fired && !(job.was && Date.now() - (+job.wasT || 0) < 21 * 864e5)) return; passPost('/job/view', {}).then(land).then(payHere); }   // …and for three weeks after leaving: a week you worked is still owed
+  let viewAt = 0;
+  function view() { if (!job.at && !job.fired && !(job.was && Date.now() - (+job.wasT || 0) < 21 * 864e5)) return; viewAt = Date.now(); passPost('/job/view', {}).then(land).then(payHere); }   // …and for three weeks after leaving: a week you worked is still owed
   // 💼 PAYDAY WITHOUT A HOMESTEAD (24 Sep 2026, the job QA): the cheque is collected by the homestead's mailbox, so a worker
   // with no claimed homestead was told "go home and open your payslip" — and was never paid; the week fell away after two.
   // Such a worker is paid here, the first time the town sees a finished week owing, and told so in one line.
@@ -109,6 +112,17 @@ export function bootTownWork(ctx) {
   }
   view();
   if (job.at) loadWords();
+  // 📅 THE DAY FROM EVERY ANSWER (2 Oct 2026): each push and pull answer carries today's work at the job you hold (banana-pass.js
+  // jobHint), so a sweep made on the phone reaches a laptop that is only walking about. Work this page had not heard of — done
+  // on another device — and the rooms redraw, and the whole job is asked again (the week's sheet, the ladder)
+  const sum = (t) => (t && t.k ? Object.values(t.k).reduce((a, v) => a + (v | 0), 0) : 0);
+  document.addEventListener('pass:job', (e) => {
+    const h = e && e.detail;
+    if (!h || !h.today || !job.at || h.at !== job.at) return;
+    if (sum(h.today) <= sum(job.today && job.today.d === todayKey() ? job.today : null)) return;
+    job = { ...job, today: todayOf(h.today), up: h.today.up ? todayKey() : job.up, since: +h.since || job.since || 0 }; writeJob(job); notify();
+    if (Date.now() - viewAt > 30000) view();
+  });
   // 💼 A CHORE, BY KIND (docs/town-jobs-plan.md §12): the town says "swept", "fixed", "restocked" as it
   // happens. The mirror moves at once (the chip must answer the broom in the same beat), the server's
   // count replaces it when the answer lands — the same optimism a take has, corrected the same way.
@@ -121,7 +135,7 @@ export function bootTownWork(ctx) {
     if (res && res.ok && (res.xp | 0) > 0) { try { passStat('rep', (res.xp | 0) * XP_PAY.town.workMul); } catch (e) {} }
     return res;
   }
-  function chore(kind, g) {
+  function chore(kind, g, to) {
     if (!job.at) return Promise.resolve(null);
     const rows = Array.isArray(job.duties) && job.duties.length ? job.duties : rowsOf(job.at, {});
     const done = {}; for (const r of rows) done[r.kind] = r.done | 0;
@@ -134,7 +148,9 @@ export function bootTownWork(ctx) {
     job = { ...job, duties: rowsOf(job.at, done), share: shareOf(job.at, done), sofar: payOf(job.at, done, lad.rank), up: todayKey(),
       lad: { ...(job.lad || {}), xp: lad.xp + got, rank: lad.rank, today: lad.today + got, d: todayKey() } };
     writeJob(job); notify();
-    const p = passPost('/job/chore', g == null ? { kind } : { kind, g }).then(land).then(payXp);
+    const body = g == null ? { kind } : { kind, g };
+    if (to) body.to = String(to);   // 📦 whose door: the pass keeps it with the day, so another device knows that parcel is there
+    const p = passPost('/job/chore', body).then(land).then(payXp);
     p.got = got;
     return p;
   }

@@ -2083,6 +2083,8 @@ export const JOBS = {
       pickedTwo: toastLine(90, '📦 Said at pickup on a two-parcel day (rank 4): who each is for ({to} and {to2}), and that the markers are over their doors.', { ...NO_MARKUP, ...holdsAll('to', 'to2') }),
       deliveredOne: toastLine(76, '📦 Said when the FIRST of two parcels reaches its door: delivered to {to}, and the other is for {next}.', { ...NO_MARKUP, ...holdsAll('to', 'next') }),
       'round.given': toastLine(96, '✉️ Said when the post office’s satchel is handed over after a round that counted (rank 5): letters for three residents ({to}, {to2}, {to3}), and the markers over their doors.', { ...NO_MARKUP, ...holdsAll('to', 'to2', 'to3') }),
+      'round.givenRest': toastLine(96, '✉️ The satchel handed over with only TWO of its letters left: the third reached its door earlier today on another device of the same pass. Letters for {to} and {to2}, and the markers over their doors.', { ...NO_MARKUP, ...holdsAll('to', 'to2') }),
+      'round.givenLast': toastLine(80, '✉️ The satchel handed over with only ONE letter left: the others reached their doors earlier today on another device of the same pass. Who it is for ({to}), and the marker over the door.', { ...NO_MARKUP, ...holdsAll('to') }),
       'round.deliveredOne': toastLine(60, '✉️ A letter of the round delivered, more to go: {to}, and {n} (a number) left.', { ...NO_MARKUP, ...holdsAll('to', 'n') }),
       'round.delivered': toastLine(60, '✉️ The last letter of the round delivered: the satchel is empty, the round is done.', NO_MARKUP),
       'bus.waiting': toastLine(64, '🚌 Said once, the first time in a day the mail bag is waiting at the bus stop (rank 6): the bus has left the post.', NO_MARKUP),

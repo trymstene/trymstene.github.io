@@ -71,6 +71,11 @@ export const refTo = (at) => { const i = RUNGS.indexOf(at); return i >= 0 && i <
 export const MEMENTO = { stand: 'crate', cafe: 'coffeemk', condo: 'arcade', store: 'displaycab', post: 'gclock' };   // src/data/decor.js ids
 // a chore that counts on the week's sheet as another duty's: a basket is a customer served
 export const COUNTS_AS = { basket: 'serve', lamp: 'fix', litter: 'sweep', ghost: 'fix' };   // 👻 …and a ghost caught at night (the arcade's rank 5)   // …and a lamp on the square is one of the arcade's repairs
+// 📅 ONCE A DAY IS ONCE A DAY ON EVERY DEVICE (2 Oct 2026). The arcade's piece of litter and its dark cabinet, the café's rush,
+// the morning's mail bag, the satchel's three letters and the store's parcels (two from the fourth rank) each come once a day —
+// so the pass worker counts a kind at most this often a day, however many devices did it, and a delivery to a door already
+// reached today is not a second one. Every other verb repeats as the day brings it.
+export const DAY_MAX = { sweep: 1, fix: 1, rush: 1, bag: 1, letter: 3, deliver: 2 };
 export const roundXp = (right, late) => Math.min(XP.post.sort, (right | 0) * 5 + (late | 0) * 2);
 
 export const JOB_PAY = { store: 150, condo: 120, post: 180, cafe: 0, stand: 0 };   // the cheque for a full week at rank 1 (LADDER.week); the café and the stand pay tips per glass instead

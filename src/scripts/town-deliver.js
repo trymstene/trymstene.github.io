@@ -42,7 +42,7 @@ export function bootTownDeliver(ctx) {
   // every run is asked every frame, so each is read from storage once and then kept here; every write goes through both
   const mem = {};
   const read = (run) => {
-    if (mem[run] && mem[run].d === today()) return mem[run];
+    if (mem[run] && mem[run].d === today()) return theirs(run, mem[run]);
     let r;
     try {
       r = JSON.parse(KEYS[run].get() || 'null');
@@ -50,8 +50,25 @@ export function bootTownDeliver(ctx) {
       if (!Array.isArray(r.to)) r.to = r.to ? [r.to] : [];   // a day begun before the fourth rank's two parcels
       if (!Array.isArray(r.got)) r.got = [];
     } catch (e) { r = fresh(); }
-    return (mem[run] = r);
+    return theirs(run, (mem[run] = r));
   };
+  // 📅 THE DOORS ANOTHER DEVICE REACHED TODAY (2 Oct 2026): every delivery tells the pass worker whose door it was, and the job's
+  // answer brings the day's doors back (worker-pass jobToday `to`) — so a parcel left at Nib's door on the phone is at Nib's
+  // door on the laptop, and the run there is done, or one shorter
+  function theirs(run, r) {
+    const j = job(), t = j && j.today, R = RUNS[run];
+    const n = t && t.k && j.at === R.at && t.d === new Date().toISOString().slice(0, 10) ? t.k[R.chore] | 0 : 0;
+    if (!n) return r;
+    // the doors it reached — or, from a page that did not say whose door (one loaded before this), all of the day's once the
+    // count covers them
+    const to = r.to.length ? r.to : recipients(run), doors = (t.to && t.to[R.chore]) || [];
+    const add = to.filter((k) => !r.got.includes(k) && (doors.includes(k) || n >= to.length));
+    if (!add.length) return r;
+    r.to = to; r.of = to.length; r.got.push(...add); r.n = r.got.length;
+    if (!left(r).length) r.carry = 0;
+    write(run, r);
+    return r;
+  }
   const write = (run, r) => { mem[run] = r; try { KEYS[run].set(JSON.stringify(r)); } catch (e) {} };
   const rank = () => { const j = job(); return Math.max(1, ((j && j.lad && j.lad.rank) | 0)); };
   const doorKey = (k) => String(homeOf(k) || '');
@@ -89,12 +106,15 @@ export function bootTownDeliver(ctx) {
   function lift(run, r) {
     r.carry = 1; r.to = r.to.length ? r.to : recipients(run); r.of = r.to.length; write(run, r);
     clear(run, 'box');
-    const w = words(run), names = r.to.map(where);
+    // 📅 who is still owed one: a run half done on another device today is picked up with only the rest in it
+    const w = words(run), names = left(r).map(where), full = names.length === r.to.length;
     const line = run === 'parcel' && names.length > 1 ? (w.pickedTwo || '').replace('{to}', names[0]).replace('{to2}', names[1])
-      : run === 'round' ? (w.given || '').replace('{to}', names[0] || '').replace('{to2}', names[1] || '').replace('{to3}', names[2] || '')
+      : run === 'round' && full ? (w.given || '').replace('{to}', names[0] || '').replace('{to2}', names[1] || '').replace('{to3}', names[2] || '')
+      : run === 'round' && names.length > 1 ? (w.givenRest || '').replace('{to}', names[0]).replace('{to2}', names[1])
+      : run === 'round' ? (w.givenLast || '').replace('{to}', names[0] || '')
       : (w.picked || '').replace('{to}', names[0] || '');
     if (line) say(line);
-    track('town_chore', { at: RUNS[run].at, kind: 'pickup', run, n: r.to.length });
+    track('town_chore', { at: RUNS[run].at, kind: 'pickup', run, n: names.length });
   }
   const carrying = () => Object.keys(RUNS).find((run) => mine(run) && read(run).carry) || '';
 
@@ -132,7 +152,7 @@ export function bootTownDeliver(ctx) {
         if (d.markers[k]) { d.markers[k].remove(); delete d.markers[k]; }   // the drawing moves in the SAME frame as the words
         while (d.held.length > rest.length) d.held.pop().remove();
         if (burst) burst(door[0], door[1] - 40);
-        if (chore) chore(R.chore);
+        if (chore) chore(R.chore, null, k);   // 📅 and whose door, so another device of the pass knows
         const w = words(run);
         const line = rest.length ? (w.deliveredOne || '').replace('{to}', where(k)).replace('{next}', where(rest[0])).replace('{n}', String(rest.length))
           : (w.delivered || '').replace('{to}', where(k));

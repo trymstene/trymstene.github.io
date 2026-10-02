@@ -10,7 +10,8 @@
 //
 // ⚠️ THE DAY'S CLOCK IS THIS DEVICE'S (tw-calls-v1): it starts the first time any area of Banana World asks, with the job
 // held. ⚠️ THE ANSWERS ARE THE ROOMS' OWN RECORDS (tw-arcade-v1, tw-restock-v1), read here exactly as town-room.js
-// writes them (arcRead, restocked); tests/town-calls.spec.mjs proves the two agree.
+// writes them (arcRead, restocked); tests/town-calls.spec.mjs proves the two agree — 📅 AND THE PASS'S OWN COUNT OF TODAY
+// (2 Oct 2026, doneToday below), so work done on another device answers the call here too.
 import { unlocked } from '../data/town/jobs.js';
 export const ONCALL_JOBS = { condo: ['sweep', 'fix'], store: ['restock', 'serve', 'deliver'] };   // 📦 deliver: a parcel to a resident's door (rank 3)   // 🛒 serve: customers at the till (23 Sep 2026)
 const WEEKLY = { sweep: 6, fix: 5, restock: 6, serve: 5, deliver: 3 };                    // days in a week that carry the call
@@ -26,7 +27,16 @@ const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h =
 const QA = () => { try { return /[?&]towntest/.test(location.search); } catch (e) { return false; } };
 
 export const jobAt = () => { const j = get(() => localStorage.getItem('tw-job-v1')); return (j && j.at) || ''; };
-const who = () => { const l = get(() => localStorage.getItem('pass-link')); return (l && l.credId) || ''; };
+// 🪪 THE PERSON, NOT THE LOGIN (2 Oct 2026): the world id the pass hands every device of it (banana-pass.js keepGid), so the
+// phone and the laptop draw the same days of calls. The login's own id is a credential per device, and drew each its own week
+const who = () => { try { const g = localStorage.getItem('world-gid'); if (g) return g; } catch (e) {} const l = get(() => localStorage.getItem('pass-link')); return (l && l.credId) || ''; };
+// 📅 WHAT THE PASS SAYS WAS DONE TODAY (2 Oct 2026). Trym: "i fixed the arcade machine on my phone, and when i jumped into the
+// town now from my laptop, i had to do it again?" The rooms' records are this device's; the job's mirror carries the pass
+// worker's count of today's work at the job you hold, on every device (worker-pass jobToday — with the job's answer, and on
+// every push and pull: banana-pass.js jobHint). `j` is the mirror, or the town's own copy of it.
+const isoDay = () => new Date().toISOString().slice(0, 10);
+const theirs = (j, at) => { const t = j && j.today; return t && t.k && j.at === at && t.d === isoDay() ? t : null; };
+export const doneToday = (j, at, kind) => { const t = theirs(j, at); return t ? (t.k[kind] | 0) : 0; };
 
 // the day's calls on this person at this workplace, as [{ kind, after }]: `after` is ms from the day's first visit.
 // Monday-based weeks (day 4 of the epoch was a Monday), the same weeks the payslip counts.
@@ -47,14 +57,14 @@ function dayStart(now) {
   try { localStorage.setItem('tw-calls-v1', JSON.stringify(fresh)); } catch (e) {}
   return fresh;
 }
-// how much of a call is answered today, from the room's own record of it
-function got(kind, day) {
-  if (kind === 'restock') { const r = get(() => localStorage.getItem('tw-restock-v1')); return r && r.d === day ? r.n | 0 : 0; }
-  if (kind === 'deliver') { const r = get(() => localStorage.getItem('tw-deliver-v1')); return r && r.d === day && (r.n | 0) >= Math.max(1, r.of | 0) ? 1 : 0; }   // answered once EVERY parcel of the day is at its door
-  if (kind === 'serve') { const r = get(() => localStorage.getItem('tw-serve-v1')); return r && r.d === day ? r.n | 0 : 0; }
+// how much of a call is answered today: the room's own record of it, or the pass's count of today (`t`), whichever says more
+function got(kind, day, t, rk) {
+  const s = (k) => (t ? (t.k[k] | 0) : 0);
+  if (kind === 'restock') { const r = get(() => localStorage.getItem('tw-restock-v1')); return Math.max(r && r.d === day ? r.n | 0 : 0, s('restock')); }
+  if (kind === 'deliver') { const r = get(() => localStorage.getItem('tw-deliver-v1')); return (r && r.d === day && (r.n | 0) >= Math.max(1, r.of | 0)) || s('deliver') >= (unlocked('store', 'second', rk) ? 2 : 1) ? 1 : 0; }   // answered once EVERY parcel of the day is at its door
+  if (kind === 'serve') { const r = get(() => localStorage.getItem('tw-serve-v1')); return Math.max(r && r.d === day ? r.n | 0 : 0, s('serve') + s('basket')); }
   const a = get(() => localStorage.getItem('tw-arcade-v1'));
-  if (!a || a.d !== day) return 0;
-  return ((kind === 'sweep' ? a.swept : a.fixed) || []).length;
+  return Math.max(a && a.d === day ? ((kind === 'sweep' ? a.swept : a.fixed) || []).length : 0, s(kind));
 }
 // 🧑‍🔧 THE FIRST DAY HAS ITS WORK WAITING (24 Sep 2026, the live job journey). A new hire is told "Inside Pip's store: fill
 // shelves from the crates, serve customers at the till" — and the calls came one to eight minutes after the day's first
@@ -66,14 +76,16 @@ export function hired(at, now = Date.now()) {
 // every call today at `at`, with where it stands: arrived, answered (done), open (arrived and not done), and how much is left
 export function calls(at, now = Date.now()) {
   if (!ONCALL_JOBS[at]) return [];
-  const day = dayOf(now), c = dayStart(now);
+  const day = dayOf(now), c = dayStart(now), j = get(() => localStorage.getItem('tw-job-v1')) || {};
+  // 🧑‍🔧 the hire day on any device: this one's take (tw-calls-v1 h), or the pass's own word for when the job began
+  const hireDay = c.h === at || (j.at === at && +j.since > 0 && dayOf(+j.since) === day);
   const plan = QA() && Array.isArray(c.qa) ? c.qa.map((k) => ({ kind: k, after: 0 }))
-    : c.h === at ? ONCALL_JOBS[at].map((k) => ({ kind: k, after: 0 }))   // the hire day: all of it, at once
+    : hireDay ? ONCALL_JOBS[at].map((k) => ({ kind: k, after: 0 }))   // the hire day: all of it, at once
       : schedule(at, day, who());
   // 🔓 a call a rank brings comes only once the rank is held (the store's parcel, rank 3) — a walk's own pin excepted
-  const rk = Math.max(1, (((get(() => localStorage.getItem('tw-job-v1')) || {}).lad || {}).rank) | 0);
+  const rk = Math.max(1, ((j.lad || {}).rank) | 0), t = theirs(j, at);
   return plan.filter((p) => NEEDS[p.kind] && (QA() && Array.isArray(c.qa) || !RANKED[p.kind] || unlocked(at, RANKED[p.kind], rk))).map((p) => {
-    const left = Math.max(0, NEEDS[p.kind] - got(p.kind, day)), arrived = now >= c.t0 + p.after;
+    const left = Math.max(0, NEEDS[p.kind] - got(p.kind, day, t, rk)), arrived = now >= c.t0 + p.after;
     return { kind: p.kind, at: c.t0 + p.after, arrived, done: left === 0, open: arrived && left > 0, left };
   });
 }

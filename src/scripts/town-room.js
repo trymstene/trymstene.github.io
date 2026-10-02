@@ -35,7 +35,7 @@ import { STATE, HOARD, INFO_WIN } from './town-geo-lazy.js';   // 📦 read only
 import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js';
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { once, seen } from '../lib/once.js';   // 🧾 the counter's invitation, until the till is first opened
-import { arrived as callIn, calls as callsAt } from '../lib/work-calls.js';   // 📟 the on-call staff's work comes in as calls (slice 0b)
+import { arrived as callIn, calls as callsAt, doneToday } from '../lib/work-calls.js';   // 📟 the on-call staff's work comes in as calls (slice 0b)
 import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, CURSE_SHELF } from '../data/town/stock.js';
@@ -838,7 +838,9 @@ export function bootTownLife(ctx) {
   const RESTOCK = 'tw-restock-v1';
   const STAFF_FACES = 2;   // 📦 the faces the day's delivery always leaves for the store's own staff
   function restocked() {
-    try { const r = JSON.parse(localStorage.getItem(RESTOCK) || 'null'); return r && r.d === dayNum() ? (r.n | 0) : 0; } catch (e) { return 0; }
+    let n = 0;
+    try { const r = JSON.parse(localStorage.getItem(RESTOCK) || 'null'); n = r && r.d === dayNum() ? (r.n | 0) : 0; } catch (e) {}
+    return Math.max(n, doneToday(ctx.job && ctx.job(), 'store', 'restock'));   // 📅 …or more, put out on another device today
   }
   function restockAdd() {
     const n = restocked() + 1;
@@ -1556,7 +1558,8 @@ export function bootTownLife(ctx) {
   }
   const arcStaff = () => { const j = ctx.job && ctx.job(); return !!(j && j.at === 'condo'); };
   function arcadeShow() { if (arcade) arcade.show(); else if (arcStaff()) loadArcade().then((c) => { if (c && roomAt === 'condo') c.show(); }); }
-  seam.jobChanged = () => { if (roomAt === 'condo') arcadeShow(); };   // 📅 today's work done on another device lands with the job's answer
+  // 📅 today's work done on another device lands with the job's answer: the arcade's floor, and the rows on the store's shelf
+  seam.jobChanged = () => { if (roomAt === 'condo') arcadeShow(); else if (roomAt === 'store' && (shelfFor() || []).length !== stocked.length) roomShow('store'); };
   function arcadeClear() { if (arcade) arcade.clear(); }
   function sweepAt(x, y) { return !!(arcade && arcade.sweepAt(x, y)); }
   function cabinetDead(key) { return !!(arcade && arcade.cabinetDead(key)); }
