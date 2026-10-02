@@ -281,8 +281,8 @@ const townFaq = faqLd(G.faq.items);
        row's whole width the resident's own line, or what the last answer said. ⚠️ SIZED FOR 360×640: the card has about 440
        px there and three rows must fit it with nothing to scroll (§40) — tests/town-orders.spec.mjs measures it. */
     .tw-ex__tabs { margin: 0.4rem 0 0; }
-    .tw-ex__tabs + .tw-rows { margin: 0.35rem 0 0; gap: 0.35rem; }
-    .tw-row.tw-ex__order { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: 'face ask act' 'face have have' 'say say say'; column-gap: 0.5rem; row-gap: 0; align-items: center; padding: 0.35rem 0.55rem; }
+    .tw-ex__tabs + .tw-rows { margin: 0.35rem 0 0; gap: 0.25rem; }   /* 2 Oct 2026: a day whose name wraps ("Surgeonfish ×3" beside "To Banana Bay") ran 5 px under the fold at 360×640 */
+    .tw-row.tw-ex__order { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: 'face ask act' 'face have have' 'say say say'; column-gap: 0.5rem; row-gap: 0; align-items: center; padding: 0.3rem 0.55rem; }
     .tw-ex__face { grid-area: face; width: 36px; height: 36px; image-rendering: pixelated; align-self: start; }
     .tw-ex__ask { grid-area: ask; align-self: end; line-height: 1.2; }
     .tw-row .tw-ex__have { grid-area: have; align-self: start; }
