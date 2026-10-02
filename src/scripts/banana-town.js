@@ -1268,7 +1268,8 @@ assetsReady().then(() => {
     try { qdone = [localStorage.getItem('bwq-c1'), localStorage.getItem('bwq-c2')].every((v) => (JSON.parse(v || 'null') || {}).done); } catch (e) {}
     if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { pos, tgt, SPOTS, ABOUT, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
+  window.__town = { wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
+    pos, tgt, SPOTS, ABOUT, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)

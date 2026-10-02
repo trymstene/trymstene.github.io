@@ -3751,7 +3751,8 @@ function init() {
   if (/[?&]beachtest(?:=|&|$)/.test(location.search)) {
     try { sessionStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 this QA TAB reads its own ledger (the server denies 'qa')
     if (coinBal() < 100) passStat('coins_earned', 100 - coinBal(), 'qa');
-    window.__bay = { ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
+    window.__bay = { wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
+      ball, pos, tgt, shells, SHELL_IDS, held, rallyOf: () => rally,
       // 🌦 force a tier — the clock only rains a few % of the time, so waiting for
       // real weather is not a test plan. Pass null to hand the sky back to the clock.
       wx: (k) => weather.setKind(k),

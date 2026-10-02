@@ -486,6 +486,7 @@ export function applyBlob(blob) {
         localStorage.setItem('bb-member', JSON.stringify({ t: bm.t, until: +bm.until }));
       }
     } catch (e) {}
+    const bbBefore = localStorage.getItem('bb-last');
     const localBbAt = +(localStorage.getItem('bb-at') || 0) || 0;
     if (blob.bbLast && +(blob.bbAt || 0) > localBbAt) {
       const bb = JSON.stringify(blob.bbLast);
@@ -496,6 +497,10 @@ export function applyBlob(blob) {
       localStorage.setItem('bb-last', JSON.stringify(blob.bbLast));
     }
     sweepMemberGear();
+    // 👕 THE OUTFIT THAT ARRIVED GOES ON, NOW (2 Oct 2026). Every area dresses its banana once, at load, and this pull lands
+    // after that (at load and whenever the tab comes back): Trym's phone showed the top hat and scarf it had dressed on
+    // boot while its clothes shop, reading the save, showed the pigeon hat his laptop had put on. design library §54
+    if (localStorage.getItem('bb-last') !== bbBefore) rewearSoon();
     if (blob.glow === '1') localStorage.setItem('rv-glowstick', '1');
     const localNameAt = +(localStorage.getItem('ps-name-at') || 0) || 0;
     if (blob.name !== undefined && +(blob.nameAt || 0) > localNameAt) {
@@ -534,6 +539,15 @@ export function pullIfStale(maxAge = 600000) {
 pullIfStale();
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullIfStale(120000); });
+}
+
+// 👕 the banana on screen wears what is saved: a sync that changed the outfit (applyBlob), or another tab that dressed
+// it, re-dresses it in every area and tells the room ('world:rewear', which each area already answers). design library §54
+function rewearSoon() {
+  try { document.dispatchEvent(new CustomEvent('world:rewear')); } catch (e) {}
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => { if (e.key === 'bb-last') rewearSoon(); });
 }
 
 // mint a patch (once). Returns true only the FIRST time — callers can skip

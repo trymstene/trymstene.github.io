@@ -746,6 +746,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 51 | Where a banana stands for Trym and the site, it is OUR banana (`<Nana />`, the favicon's art at 38 px), never the fruit icon or an OS 🍌 | `PixelIcon.astro` (it has no banana: `name="banana"` fails the build and names `<Nana />`) |
 | 52 | A hand holds ONE thing, whatever it is: the game's items and community pieces share two gloves, and the newest wins | `tools/check-hands.mjs` (the engine and the print renderer on one table of cases; the builder, the stand and an approval use `makeRoom`) |
 | 53 | XP lands like coins in every area: the chip holds, sparks fly from your banana into it, "+N XP" beside your head, the level lands after them, a new title is the world's big moment; an area grants and never shows its own XP | `tests/world-xp.spec.mjs` (all five areas on a phone: the hold, the flight, the label, the level, the title in the copy file's words with no riser, reduced motion, a trickle as one label) |
+| 54 | Your banana wears what is saved, on the screen you are looking at: a sync from another device or another tab re-dresses it in every area and tells the room | `tests/outfit-follows.spec.mjs` (the phone dresses its old save, the sync's answer is held until then and lands through the real pull; all five areas and their rooms, and a second tab — red in all six with the re-dress off) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1696,3 +1697,23 @@ spinning wheel for example, you have nice coins-animation that sends all the coi
 - **Enforced by** `tests/world-xp.spec.mjs`. A feel cannot be grepped, so the walk asserts the order of things in all
   five areas on a phone: the hold, the flight, the label, the level after the sparks, the title in the copy file's words
   with no riser, reduced motion, and a trickle as one label.
+
+## §54 YOUR BANANA WEARS WHAT IS SAVED, ON THE SCREEN YOU ARE LOOKING AT (2 Oct 2026, Trym on two devices)
+
+Trym: *"on my laptop my banana is styled clean with only a pigeon hat on my head, im now on my phone many hours later and
+here my banana has the red scarf and top hat on … the preview in the clothes shop shows my banana with a pigeon hat. Why
+are my banana wearing different clothes and wearables across devices?"* (the second time in two days his banana was not
+what he had put on; the first was the daily banana’s overlay, 05c3c9a6).
+
+- **The save is the outfit, and the banana on screen follows it.** Every area dresses its banana from `bb-last` at load,
+  and the sync from another device is a fetch that lands after that (at load and whenever the tab comes back). When a
+  pull changes the save (`applyBlob`), or another tab of the same browser does (`storage`), banana-pass.js says
+  `world:rewear`, and every area puts it on the next frame — the town, the park, the bay, the homestead and the rave — and
+  tells its room, so the other players see it too. The community piece (`c`) comes along (`wearSaved`).
+- **A floor-only thing stays in hand:** the rave's free beer is the floor's, never saved; a re-dress keeps it, and a
+  jelly-time peak keeps its disco legs until the peak ends.
+- **Never dress a banana from a copy read once and kept:** a surface that shows your banana either reads the save when it
+  draws (the clothes shop, the social card, the quest) or answers `world:rewear`.
+- **Enforced by** `tests/outfit-follows.spec.mjs`: the phone's old outfit saved and dressed, the sync's answer held until
+  then, the laptop's outfit landed through the real pull — the banana on screen and the room must wear it, in all five
+  areas, and a second tab's change reaches the first. It fails in all six with the re-dress switched off (checked).

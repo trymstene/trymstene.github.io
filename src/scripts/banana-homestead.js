@@ -5118,7 +5118,11 @@ function init(visitDoc, visitMiss) {
     return Math.floor(((Date.now() % cyc) / cyc) * NFRAMES) % NFRAMES;
   };
   let lastF = -1;
-  document.addEventListener('world:rewear', () => { wearSaved(ME_DRAW); lastF = -1; });   // 🎁 a present put on (world-gift.js)
+  // 👕 the outfit changed under us (a present, a sync from another device, another tab): wear it, and tell the yard
+  document.addEventListener('world:rewear', () => {
+    wearSaved(ME_DRAW); lastF = -1;
+    try { if (yardRoom && yardRoom.live) yardRoom.send({ t: 'outfit', outfit: fullOutfit(ME_DRAW) }); } catch (e) {}
+  });
   function standUp() {
     if (!sitting) return;
     sitting = null;
@@ -5381,6 +5385,7 @@ function init(visitDoc, visitMiss) {
   if (FARM && !visiting && state.claimedAt) { farmGrant(); morningTick(); }
   if (HS_TEST) {
     window.__hs = {
+      wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
       pos, tgt, peers, birds: birdsLive,
       signGeo: () => ({ W, H, signAt: state.signAt, claimed: !!state.claimedAt }),   // the walk taps the sign where it really stands
       post: () => openPost(),

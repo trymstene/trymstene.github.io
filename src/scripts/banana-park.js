@@ -1126,6 +1126,7 @@ function init() {
   if (PARK_TEST) {
     try { sessionStorage.setItem('pass-wallet-off', '1'); } catch (e) {}   // 🧪 this QA TAB reads its own ledger (the server denies 'qa')
     window.__park = {
+      wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
       pos, tgt, PLOTS,
       setSolids: ctx.setSolids,   // the real seam owns it — this is a reach-in
       liveRects: () => liveRects,

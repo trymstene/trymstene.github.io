@@ -1347,6 +1347,17 @@ function init() {
 
   // the classic four notes play as the world's level-up lands on the chip (world-xp.js), not before it
   document.addEventListener('world:levelup', () => playLevelUp());
+  // 👕 the outfit changed under us (a sync from another device, another tab, a present): the floor wears what is saved
+  // and the room sees it — a peak's disco legs stay on until the peak ends. design library §54
+  document.addEventListener('world:rewear', () => {
+    const me = myId && ravers.get(myId);
+    if (!me) return;
+    const beer = !!(me.outfit.extras && me.outfit.extras.beer);   // the bar's free beer is the floor's, never saved: it stays in hand
+    me.outfit = { ...myOutfit(), effect: me.outfit.effect };
+    if (beer) me.outfit.extras = { ...(me.outfit.extras || {}), beer: true };
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'outfit', mt: memberTok(), outfit: me.outfit }));
+    refreshHud();
+  });
 
   function addHype(n) {
     earnRep(n); // REP flows on EVERY action — even while the meter is charged or peaking

@@ -114,11 +114,12 @@ export function worldNewcomer() {
 
 // 👕 WEAR WHAT IS SAVED (26 Sep 2026): an area's banana takes the outfit in bb-last, in place (every area holds references
 // to its ME_DRAW, so it is mutated, never replaced). The areas call it on `world:rewear` — a present put on from the
-// social layer's card is on the banana the next frame, wherever you opened it.
+// social layer's card, a sync from another device or a change in another tab (banana-pass.js, design library §54) is on
+// the banana the next frame, wherever you are. The community piece (`c`) comes along, as the areas read it at boot.
 export function wearSaved(draw) {
   try {
     const o = JSON.parse(localStorage.getItem('bb-last') || 'null') || {};
-    draw.hat = o.hat || 'none'; draw.glasses = o.glasses || 'none'; draw.extras = o.extras || {};
+    draw.hat = o.hat || 'none'; draw.glasses = o.glasses || 'none'; draw.extras = o.extras || {}; draw.c = o.c;
   } catch (e) {}
 }
 
