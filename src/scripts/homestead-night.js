@@ -18,6 +18,10 @@ const HOME_LIGHTS = {
     [162, 270, 27, 14, 0.8], [230.5, 267.4, 30, 9, 0.8]],
 };
 const FIRE = [255, 142, 60], LANTERN = [255, 164, 78], WINDOW = [255, 176, 86], ME = [235, 196, 150];
+// 💡 a home with a light on inside glows at its windows; one without glows faintly (3 Oct 2026, the night touches). A tent has
+// no inside: its lantern is always lit.
+const INDOOR = new Set(['tlantern', 'readlamp', 'dresserlamp', 'fireplace', 'bluelamp', 'lavalamp', 'fairylights', 'jackolantern', 'lantern', 'lantern2', 'marshfire']);
+const litInside = (st, tier) => ((st.inItems && st.inItems[tier]) || []).some((i) => INDOOR.has(i.id));
 // 🔥 the catalog's lights on the plot, world px: [lift above the foot, radius, colour, light, bloom, flicker]. A campfire lights
 // only when it is lit (its own toggle); everything else is lit whenever it is dark.
 const DECOR = {
@@ -29,7 +33,7 @@ const DECOR = {
 /**
  * @param view     the yard's #hsView
  * @param weather  the yard's weather (the night is LINKED to it: the house's door hides both)
- * @param y        getters from banana-homestead.js: { state, styleKey, dims, scale, cam, pos, peers, inside } — all getters:
+ * @param y        getters from banana-homestead.js: { state, styleKey, dims, scale, cam, pos, peers, inside, tier } — all getters:
  *                 some of what they read is declared further down the yard's boot than the line that mounts this
  */
 export function mountYardNight(view, weather, y) {
@@ -41,7 +45,8 @@ export function mountYardNight(view, weather, y) {
     const panes = st.stage >= 1 ? HOME_LIGHTS[y.styleKey()] : null;
     if (panes && st.home) {
       const d = y.dims(), x0 = st.home.x - d.w / 2, y0 = st.home.y - d.h;
-      for (const [px, py, w, h, s] of panes) put(x0 + px, y0 + py, 23, WINDOW, 0.7 * s, 0.55 * s, { sq: 1, rect: [w * k, h * k] });
+      const on = panes === TENT || litInside(st, y.tier()) ? 1 : 0.4;
+      for (const [px, py, w, h, s] of panes) put(x0 + px, y0 + py, 23, WINDOW, 0.7 * s * on, 0.55 * s * on, { sq: 1, rect: [w * k, h * k] });
     }
     for (const it of st.items || []) {
       const L = DECOR[it.id];
@@ -55,5 +60,11 @@ export function mountYardNight(view, weather, y) {
   }
   const night = weather.link(mountNight(view, { lights }));
   night.lights = lights;   // 🧪 what the walk reads: every light the yard hands over right now
+  // 🧪 the hour a QA walk's sky starts at (?hstest only): ?skyh=21 for one that must begin in the dark (the cat's gift), and
+  // noon for any other AUTOMATED walk (navigator.webdriver) — the yard's animals keep night hours now, so a walk on the real
+  // clock would pass or fail by the time of day it ran. A person on ?hstest sees the real sky.
+  const q = new URLSearchParams(location.search);
+  const skyh = q.has('hstest') && (q.get('skyh') || (navigator.webdriver ? '11' : null));
+  if (skyh) night.hour(+skyh);
   return night;
 }

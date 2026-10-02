@@ -184,7 +184,7 @@ export function brain(h, now) {
       g.until = 0; g.dash = 0;
       const r = Math.random();
       if (bowl && !g.drank && bowlFull() && r < 0.6) { g.m = 'drink'; g.ph = 0; }
-      else if (r < (t.pat === 2 ? 0.5 : t.pat === 0 ? 0.15 : 0.3)) { g.m = 'nap'; g.ph = 0; }   // her doghouse, or the grass
+      else if (r < (C.night && C.night() ? 0.85 : t.pat === 2 ? 0.5 : t.pat === 0 ? 0.15 : 0.3)) { g.m = 'nap'; g.ph = 0; }   // her doghouse, or the grass (🌙 almost always, at night)
       else g.m = 'play';
     }
   } else if (g.m === 'play') {
@@ -240,6 +240,7 @@ export function brain(h, now) {
     hold(); strip = 'c-dog-sleep.png';
     if (h.fl) { h.fl = ''; h.img.style.transform = ''; }   // the sleeping row faces you, as the pack draws it
     if (!g.until) g.until = now + (22000 + Math.random() * 26000) * (t.pat === 2 ? 1.5 : t.pat === 0 ? 0.6 : 1);
+    if (C.night && C.night()) g.until = Math.max(g.until, now + 4000);   // 🌙 she sleeps the night out — unless you wander off
     if (now > g.until || pd > 420) { g.m = 'rest'; g.until = 0; g.heelAt = now; }
   } else if (g.m === 'nap' || g.m === 'shelter') {
     if (!home) { g.m = 'rest'; g.until = 0; }   // rain and no doghouse: she stays by you, as she always did
@@ -249,7 +250,7 @@ export function brain(h, now) {
       if (there(6)) napIn(h, home, now, (22000 + Math.random() * 26000) * (t.pat === 2 ? 1.5 : t.pat === 0 ? 0.6 : 1));
     } else {
       hold();
-      if (g.m === 'shelter' && C.huddle) NAP.until = Math.max(NAP.until, now + 8000);   // she sleeps the rain out
+      if ((g.m === 'shelter' && C.huddle) || (C.night && C.night())) NAP.until = Math.max(NAP.until, now + 8000);   // she sleeps the rain out — and the night (3 Oct 2026)
       if (now > NAP.until) { napOut(); g.m = 'rest'; g.until = 0; g.heelAt = now; }
     }
   } else {

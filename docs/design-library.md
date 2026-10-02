@@ -1818,3 +1818,9 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
    glass found by colour, the country house's by eye because its slate roof is glass-coloured, and a tent — which has no
    window — glowing at its door and flap). `tests/homestead-night.spec.mjs` holds the country house's seven panes and a
    mobile home's four ON the home's box, a campfire lighting only once it is lit, and the house's door hiding the night.
+5. **What lives in the area keeps night hours** (the homestead, 3 Oct 2026, Trym: *"Homesteads night touches"*): the herd
+   goes to its bed (the coop, else the trough, else by the house) and dozes in a rain's tight bunch; the dog sleeps the night
+   out in her doghouse; the cat is out all night — she does not follow you in on a dry night, and her doorstep gift waits for
+   the dawn (a gift is never lost: the day's look waits, it is not spent); a light on inside is what makes the windows glow.
+   ⚠️ **A QA walk declares its hour.** The animals now keep the sky's hours, so an automated walk (`navigator.webdriver`)
+   on `?hstest` starts at noon unless it passes `?skyh=` — a walk on the real clock would pass or fail by the time it ran.

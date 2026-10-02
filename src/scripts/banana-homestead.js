@@ -1046,11 +1046,14 @@ function init(visitDoc, visitMiss) {
   // 🌗 THE NIGHT (3 Oct 2026, design library §56): the world's light layer over the yard, in its own lazy chunk with the
   // yard's lights (homestead-night.js: your home's windows, the lighting decor on the plot, every banana) and LINKED to the
   // weather, so the house's door hides rain and night together. ⚠️ getters: pos and peers are declared further down.
-  let hsNight = null;
+  let hsNight = null, nightLost = false;
   import('./homestead-night.js').then((m) => {
     hsNight = m.mountYardNight(view, hsWx, { state: () => state, styleKey: curStyleKey, dims: structDims, scale: () => scale,
-      cam: () => ({ x: camX, y: camY }), pos: () => pos, peers: () => peers, inside: () => !!inside });
-  }).catch((e) => console.warn('[homestead] the night did not load', e));
+      cam: () => ({ x: camX, y: camY }), pos: () => pos, peers: () => peers, inside: () => !!inside, tier: () => homeTier() });
+  }).catch((e) => { nightLost = true; console.warn('[homestead] the night did not load', e); });
+  // 🌙 is it night over the yard? (the sky's own answer, its QA pin included) — null until the night's chunk has landed, so a
+  // check that must not jump the dark (the cat's gift) can wait for it; a chunk that never lands is a yard without nights
+  const nightNow = () => (hsNight ? hsNight.state().phase === 'night' : nightLost ? false : null);
   // 🐾 where the herd is standing, for the gather. Cheap: called only when an
   // animal picks its next spot, which is every few seconds each.
   function herdAt() {
@@ -1499,6 +1502,7 @@ function init(visitDoc, visitMiss) {
   }
   function henTick(now, dt) {
     const hasCoop = state.items.some((i) => i.id === 'coop');
+    const night = !!nightNow();   // 🌙 the herd goes to bed (below)
     if (FARM && (state.fence || []).length !== farmPenN) {
       farmPenN = (state.fence || []).length;
       farmPens = computePens();
@@ -1644,7 +1648,7 @@ function init(visitDoc, visitMiss) {
         continue;
       }
       if (d < 3 && !brainy(h.a)) {
-        if (!h.waitUntil) h.waitUntil = now + (h.tr && h.tr.pat === 0 ? 1000 + Math.random() * 2000   // 🎲 restless
+        if (!h.waitUntil) h.waitUntil = now + (night && h.a ? 4 : 1) * (h.tr && h.tr.pat === 0 ? 1000 + Math.random() * 2000   // 🎲 restless (🌙 and four times as still asleep)
           : h.tr && h.tr.pat === 2 ? 5000 + Math.random() * 9000                                 // a dreamer
           : 1500 + Math.random() * 5000);
         if (now > h.waitUntil) {
@@ -1679,13 +1683,20 @@ function init(visitDoc, visitMiss) {
               h.ty = c.y + (Math.random() * sp - sp / 2);
             }
           }
+          // 🌙 NIGHT SETTLES THEM (3 Oct 2026, Trym: "Homesteads night touches"): the herd goes to its bed — the coop, else the
+          // trough, else by the house — and dozes there in a tight bunch, a long wait between hops, until the sky lightens
+          if (night && h.a) {
+            const b = state.items.find((i) => i.id === 'coop') || state.items.find((i) => i.id === 'trough') || { x: state.home.x + 40, y: state.home.y + 44 };
+            h.tx = b.x + (Math.random() * 110 - 55); h.ty = b.y + 18 + (Math.random() * 40 - 20);
+          }
           // 🐾 PERSONAL SPACE (Trym: "one big overlapping clump of
           // sprites") — a target on top of another animal's spot is pushed
           // away from it before she commits. ⚠️ this is the thing that fights a
           // huddle, so it gives ground in the wet: 40px dry, 26 in rain, 20 in a
           // storm. Never 0 — the clump it was written to stop is still a clump.
-          const near = huddle === 2 ? 20 : huddle ? 26 : 40;
-          if (huddle) {
+          const hud = huddle || (night && h.a ? 1 : 0);   // a night's bunch is a rain's: the nearest only
+          const near = hud === 2 ? 20 : hud ? 26 : 40;
+          if (hud) {
             // ⚠️ the NEAREST only. Summed over eight neighbours these shoves fling a
             // huddle apart — measured, a storm made them 48% MORE spread out than a dry
             // day. One push keeps "nobody stands on anybody" without the runaway.
@@ -1835,7 +1846,7 @@ function init(visitDoc, visitMiss) {
   const petLoad = {};
   const petCtx = {
     get pos() { return pos; }, get hens() { return hens; }, get birdsLive() { return birdsLive; },
-    get state() { return state; }, get huddle() { return huddle; },
+    get state() { return state; }, get huddle() { return huddle; }, night: () => nightNow(),
     plotNow: () => plotNow(), float: (x, y, t) => float(x, y, t),
     lvOf: (a) => lvOf(a), traitsOf: (a) => traitsOf(a), spotOf: (a) => spotOf(a), isYoungA: (a) => isYoungA(a),
     get world() { return world; }, get eggEls() { return eggEls; }, get DEX() { return DEX; }, get visiting() { return visiting; },
@@ -5484,6 +5495,7 @@ function init(visitDoc, visitMiss) {
       dogRoomMood: (m, o) => !!dogMod && dogMod.roomMood(m, o),
       catRoomMood: (m, o) => !!catMod && catMod.roomMood(m, o),
       catGift: () => !!catMod && !!catH() && catMod.giftCheck(catH(), true),
+      catGiftDay: () => farmStats().hs_catgift || 0,   // 🎁 the day her gift was last looked for (her gift waits for dawn)
       birds: () => birdsLive.map((b) => ({ id: b.id, x: Math.round(b.x), y: Math.round(b.y), mode: b.mode, scare: !!b.scare })),
       pens: () => penCaps(),
       wool: (i, d) => { const a = farmAnimals()[i || 0]; if (a) { a.wd = d; save(); } return a; },

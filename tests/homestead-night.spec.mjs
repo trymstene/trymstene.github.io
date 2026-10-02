@@ -78,6 +78,71 @@ test('the yard at night: the house’s panes lit, the decor lit, a campfire only
   expect(errs).toEqual([]);
 });
 
+// 🌙 THE NIGHT TOUCHES (3 Oct 2026, Trym: "Homesteads night touches"): the herd goes to bed by the coop, the dog sleeps the
+// night out in her doghouse, the cat is out all night — her doorstep gift waits for the dawn — and a light on inside is what
+// makes the windows glow. A seeded yard (the cat walk's): three hens, the dog, the cat, a coop and a doghouse.
+const today = () => Math.floor(Date.now() / 86400000);
+const HEN = (i) => ({ sp: 'hen', b: 0, pd: 0, name: '', wd: 0, id: 100100 + i, ad: today() - 10, gs: 0, sd: 11 + i });
+const DOG = { sp: 'dog', b: 0, pd: 0, name: '', wd: 0, id: 200200, ad: today() - 5, gs: 0, sd: 5 };
+const CAT = { sp: 'cat', b: 0, pd: 0, name: '', wd: 0, id: 424242, ad: today(), gs: 0, sd: 94 };
+const COOP = { x: 620, y: 660 };
+async function farm(page, lamp, skyh) {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.route('**/yards/echoes*', (r) => r.fulfill({ contentType: 'application/json', body: '{"echoes":[]}' }));
+  await page.addInitScript(([an, coop, withLamp]) => {
+    if (sessionStorage.getItem('hsn-seeded')) return;
+    sessionStorage.setItem('hsn-seeded', '1');
+    localStorage.setItem('bw-social-v1', JSON.stringify({ g: { none: 1 } }));
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, shed: [], orders: [],
+      items: [{ id: 'coop', x: coop.x, y: coop.y }, { id: 'doghouse', x: 990, y: 640 }], inItems: withLamp ? { 3: [{ id: 'readlamp', x: 800, y: 600 }] } : {},
+      bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 760 }, animals: an, animalsV: 3, hens: 3 }));
+  }, [[HEN(0), HEN(1), HEN(2), DOG, CAT], COOP, !!lamp]);
+  await page.goto('/homestead/?hstest=rich' + (skyh != null ? '&skyh=' + skyh : ''), { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.sky && window.__hs.sky() && window.__hs.dog && window.__hs.dog() && window.__hs.cat && window.__hs.cat(), null, { timeout: 30000 });
+  await page.evaluate(() => { window.__hs.wx('clear'); window.__hs.warp(760, 560); });
+  return errs;
+}
+
+test('the night touches: the herd goes to bed, the dog sleeps it out, the cat’s gift waits for dawn, a lamp lights the windows', async ({ page }) => {
+  test.setTimeout(180000);
+  const errs = await farm(page, false, 21);   // the yard opens in the dark
+  await page.waitForTimeout(3000);
+  // 🎁 out all night: the day's gift is not even looked for until the dawn
+  expect(await page.evaluate(() => window.__hs.catGiftDay()), '⭐ no gift in the night').toBeLessThan(today());
+  // 💡 no light on inside: the house's panes glow only faintly
+  const faint = await page.evaluate(() => window.__hs.lights().filter((l) => l.rect).map((l) => l.i));
+  expect(faint.length).toBe(7);
+  expect(Math.max(...faint), 'a dark house, a faint glow').toBeLessThan(0.35);
+  // 🐕 she sleeps the night out in her doghouse: a rest turns into a nap (almost always at night), and it holds
+  for (let k = 0; k < 6 && (await page.evaluate(() => window.__hs.dog().m)) !== 'nap'; k++) {
+    await page.evaluate(() => window.__hs.dogMood('rest', { until: performance.now() + 50 }));
+    await page.waitForTimeout(1200);
+  }
+  await page.waitForFunction(() => window.__hs.dog().napping, null, { timeout: 30000 });
+  await page.waitForTimeout(9000);
+  expect(await page.evaluate(() => window.__hs.dog().napping), '⭐ still asleep in the doghouse: the night is long').toBe(true);
+  // 🐔 the herd goes to bed by the coop
+  await page.waitForTimeout(16000);
+  const near = await page.evaluate((c) => window.__hs.herd().filter((p) => Math.hypot(p.x - c.x, p.y - c.y - 18) < 140).length, COOP);
+  expect(near, '⭐ the three hens bunched at the coop for the night').toBeGreaterThanOrEqual(3);
+  await page.screenshot({ path: 'test-results/homestead-night-4-touches.png' });
+  // 🌅 the dawn: the cat's gift is looked for at last
+  await page.evaluate(() => window.__hs.skyHour(3));
+  await page.waitForFunction((d) => window.__hs.catGiftDay() === d, today(), { timeout: 10000 });
+  expect(errs).toEqual([]);
+});
+
+test('a light on inside makes the windows glow', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await farm(page, true, 21);
+  await page.waitForTimeout(1500);
+  const bright = await page.evaluate(() => window.__hs.lights().filter((l) => l.rect).map((l) => l.i));
+  expect(Math.max(...bright), '⭐ a reading lamp inside, and the house glows').toBeGreaterThan(0.6);
+  expect(errs).toEqual([]);
+});
+
 test('a mobile home’s four panes light at night, on the panes', async ({ page }) => {
   test.setTimeout(90000);
   const errs = await yard(page, () => { const st = JSON.parse(localStorage.getItem('hs-v1')); st.stage = 2; st.style = { ...(st.style || {}), 2: 'mobm7' }; st.look = 'mobm7'; localStorage.setItem('hs-v1', JSON.stringify(st)); });
