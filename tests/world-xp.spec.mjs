@@ -158,12 +158,18 @@ test('reduced motion: the glows stand still, the chip says it in the beat, and t
   expect(errs).toEqual([]);
 });
 
-test('a trickle merges: many small grants fly as one batch, and the chip lands on the true total', async ({ page }) => {
+test('a pickup plays at once, and a trickle behind it merges: two beats for twelve grants, on the true total', async ({ page }) => {
   const errs = await open(page, AREAS[1], 1040);   // LVL 4; 24 more crosses into LVL 5 at 1 050
-  for (let i = 0; i < 12; i++) { await page.evaluate(() => window.__xp.grant(2)); await page.waitForTimeout(25); }
-  await expect.poll(() => page.locator('.wx-plus').count(), { timeout: 2500 }).toBeGreaterThan(0);
-  expect(await page.locator('.wx-plus').count(), 'one label for the whole trickle').toBe(1);
-  expect((await page.locator('.wx-plus').first().textContent()).trim()).toBe(WL.plus.replace('{n}', '24'));
+  // every "+N XP" the page puts up, in order (a label lives 1.4 s; the second comes after the first beat)
+  await page.evaluate(() => { window.__labels = []; new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.classList && n.classList.contains('wx-plus')) window.__labels.push(n.textContent.trim()); }).observe(document.body, { childList: true, subtree: true }); });
+  const t0 = Date.now();
+  await page.evaluate(() => window.__xp.grant(2));
+  // ⚡ the first one at once (Trym: "it takes some time from picking up garbage to the glow") — no merge window to wait out
+  await expect.poll(() => page.locator('.wx-orb').count(), { timeout: 400, intervals: [20] }).toBeGreaterThan(0);
+  expect(Date.now() - t0, 'the orbs leave within a few frames of the grant').toBeLessThan(400);
+  for (let i = 0; i < 11; i++) { await page.evaluate(() => window.__xp.grant(2)); await page.waitForTimeout(25); }
+  await expect.poll(() => page.evaluate(() => window.__labels.length), { timeout: 4000 }).toBe(2);
+  expect(await page.evaluate(() => window.__labels), 'the pickup, then the rest of the trickle as one').toEqual([WL.plus.replace('{n}', '2'), WL.plus.replace('{n}', '22')]);
   await expect.poll(() => lvl(page), { timeout: 4000 }).toBe('LVL 5');
   expect(errs).toEqual([]);
 });

@@ -64,6 +64,7 @@ let planned = null;        // the total the queued beats will bring it to
 let target = 0;            // the newest true total
 let timer = 0;             // a merge window still open
 let opened = 0;            // when it opened
+let lastBeat = -1e9;       // when the last beat began
 const queue = [];          // beats waiting their turn
 let playing = false;
 
@@ -74,9 +75,13 @@ export function grant(d, hud) {
   if (!A || !api || !api.lvl) { finish(d.now); return; }
   if (shown == null) { shown = d.was; planned = d.was; }
   target = Math.max(target, d.now);
+  const t = Date.now();
+  // ⚡ the first grant in a while plays AT ONCE (Trym, 2 Oct 2026: "it takes some time from picking up garbage to the glow
+  // animation and the orbs shows up, can it be much faster"): the merge used to hold every grant for its window first. Only
+  // grants that follow inside the window merge — into the next beat — so a trickle is still never wallpaper
+  if (!playing && !timer && t - lastBeat >= A.merge) { launch(); return; }
   // grants close together merge into one beat, but a steady trickle never holds it past twice the window: the rave's
   // spotlight pays every beat of the music, and restarting the window on each one kept the XP from ever landing
-  const t = Date.now();
   if (!timer) opened = t;
   clearTimeout(timer);
   timer = setTimeout(launch, Math.max(0, Math.min(A.merge, opened + 2 * A.merge - t)));
@@ -84,6 +89,7 @@ export function grant(d, hud) {
 
 function launch() {
   timer = 0;
+  lastBeat = Date.now();
   if (target <= planned) return;
   queue.push({ from: planned, to: target });
   planned = target;
@@ -147,7 +153,7 @@ function land(b) {
       { transform: 'translate(0, 0) scale(0.3)', opacity: 0 },
       { transform: 'translate(' + sx + 'px, ' + sy + 'px) scale(1.15)', opacity: 1, offset: 0.3, easing: 'cubic-bezier(.45,0,.85,.3)' },
       { transform: 'translate(' + (to.x - from.x) + 'px, ' + (to.y - from.y) + 'px) scale(0.55)', opacity: 1 },
-    ], { duration: 640 + i * 24, delay: 120 + i * 70, easing: 'linear', fill: 'backwards' });
+    ], { duration: 520 + i * 20, delay: i * 55, easing: 'linear', fill: 'backwards' });
     const done = () => {
       o.remove();
       landed += 1;
@@ -213,7 +219,7 @@ function glowMe(me, amount) {
     return;
   }
   halo.style.opacity = '0';
-  haloAnim = halo.animate([{ opacity: 0 }, { opacity: peak, offset: 0.2 }, { opacity: peak * 0.4, offset: 0.45 }, { opacity: peak, offset: 0.68 }, { opacity: 0 }], { duration: 1700, easing: 'ease-in-out' });
+  haloAnim = halo.animate([{ opacity: 0 }, { opacity: peak, offset: 0.08 }, { opacity: peak * 0.4, offset: 0.4 }, { opacity: peak, offset: 0.62 }, { opacity: 0 }], { duration: 1600, easing: 'ease-out' });
 }
 
 // the chip in the same beat: it lights up from inside with a glow round it, the bar's fill flashes up to its new length as

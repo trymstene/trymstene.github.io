@@ -297,6 +297,8 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
     (xpMod || (xpMod = import('./world-xp.js'))).then((m) => m.grant(d, xpApi)).catch(() => { xpMod = null; held = null; refresh(); });
   };
   document.addEventListener('pass:rep', onRep);
+  // ⚡ fetched while the area is idle, so the first XP of a visit plays at once instead of waiting on the download
+  if (lvlChip) { try { (window.requestIdleCallback || ((f) => setTimeout(f, 1200)))(() => { if (!xpMod) xpMod = import('./world-xp.js').catch(() => { xpMod = null; }); }, { timeout: 3000 }); } catch (e) {} }
   // 🧪 ?xptest: a walk grants XP the way every area does (tests/world-xp.spec.mjs)
   if (/[?&]xptest/.test(location.search)) window.__xp = { grant: (n) => passStat('rep', n) };
 
