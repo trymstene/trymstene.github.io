@@ -698,10 +698,11 @@ export function bootTownLife(ctx) {
   }
 
   // ═══════════════════════════════════ the problems ═══════════════════════════════════
-  // YOURS: seeded by (you, the day, the band). Fixed ones are remembered on this device for
-  // the day (tw-fixed-v1); the coins are capped per person on the pass worker and the
-  // contribution per person on the room, so a second device costs nothing but a repeat.
+  // YOURS: seeded by (you, the day, the band). Fixed ones are remembered for the day (tw-fixed-v1), and since 2 Oct 2026
+  // that day rides the pass (banana-pass.js readTownDay): a problem put right on the phone is put right on the laptop, the
+  // town looks it, and nothing is paid twice. The coins are also capped per person on the pass worker.
   const FIXED_KEY = 'tw-fixed-v1';
+  document.addEventListener('pass:day', () => { if (band) { condition(); reseedProblems(); } });   // 📅 another device's fixes arrived
   function fixed() { try { const f = JSON.parse(localStorage.getItem(FIXED_KEY) || 'null'); return f && f.d === dayNum() && Array.isArray(f.ids) ? f.ids : []; } catch (e) { return []; } }
   const isFixed = (id) => fixed().includes(id);
   function remember(id) { try { localStorage.setItem(FIXED_KEY, JSON.stringify({ d: dayNum(), ids: [...fixed(), id] })); } catch (e) {} }

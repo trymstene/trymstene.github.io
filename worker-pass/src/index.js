@@ -362,6 +362,10 @@ function mergeBlob(oldB, newB) {
     .slice(0, 24);
   out.shelfDel = Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200));
   if (oldB.glow === '1' || newB.glow === '1') out.glow = '1';
+  // 📅 THE TOWN'S DAY (2 Oct 2026; mirror of banana-pass.js applyBlob — change both or neither). The square's problems put
+  // right, the ghosts caught, the once-a-day lines already said and the arcade runs that paid world XP, TODAY: a newer day
+  // replaces an older one, and the same day's lists JOIN, so nothing one device did is undone or done again by another.
+  if (oldB.town || newB.town) out.town = mergeTownDay(oldB.town, newB.town);
   // ⏱ newest edit wins for the outfit and the name (mirror of applyBlob). A
   // blank-guard alone made a rename un-propagatable and a cleared name
   // immortal; a clock lets a real edit travel in BOTH directions, while a
@@ -394,6 +398,21 @@ function mergeBlob(oldB, newB) {
   return out;
 }
 
+const TD_ID = /^[a-z0-9:_.-]{1,40}$/i;
+function cleanTownDay(t) {
+  if (!t || typeof t !== 'object') return null;
+  const d = Math.round(Number(t.d));
+  if (!(d > 19000 && d < 40000)) return null;
+  const ids = (a, n) => (Array.isArray(a) ? [...new Set(a.map(String).filter((x) => TD_ID.test(x)))].slice(0, n) : []);
+  return { d, fixed: ids(t.fixed, 64), ghosts: ids(t.ghosts, 64), told: ids(t.told, 16), arc: Math.max(0, Math.min(999, Math.round(Number(t.arc)) || 0)) };
+}
+function mergeTownDay(a, b) {
+  const x = cleanTownDay(a), y = cleanTownDay(b);
+  if (!x || !y) return x || y || undefined;
+  if (x.d !== y.d) return x.d > y.d ? x : y;
+  const u = (p, q, n) => [...new Set([...p, ...q])].slice(0, n);
+  return { d: x.d, fixed: u(x.fixed, y.fixed, 64), ghosts: u(x.ghosts, y.ghosts, 64), told: u(x.told, y.told, 16), arc: Math.max(x.arc, y.arc) };
+}
 const MEMBER_RANK = { 'sup-t1': 1, 'sup-t2': 2, 'sup-t3': 3 };
 function cleanMember(m) {
   if (!m || typeof m !== 'object') return null;

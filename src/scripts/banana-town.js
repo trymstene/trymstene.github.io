@@ -305,9 +305,10 @@ function shiftFrameY(now) {
 //   🕹 the arcade's rank 3: a lamp put right on the square is one of Spinner's repairs; rank 4: litter picked up is its sweeping
 //   ☕ the café's rank 4 (keyholder): a good shift ends with the nearest mess on the square put right — the town's health rises
 // Each says so ONCE a day (design library §30): after that the work note's bar moving is enough.
-// said once a DAY, kept on the device (tw-told-v1): in memory it was once a page load, and a reload said it again
+// said once a DAY (tw-told-v1, on the pass since 2 Oct 2026): in memory it was once a page load, and a reload said it again
 const tell = (k) => { const L = (work && work.seam.words()) || {}, d = Math.floor(Date.now() / 864e5); let t = {}; try { t = JSON.parse(localStorage.getItem('tw-told-v1') || '{}') || {}; } catch (e) {} if (t.d !== d) t = { d }; if ((L.told || {})[k] && !t[k]) { t[k] = 1; try { localStorage.setItem('tw-told-v1', JSON.stringify(t)); } catch (e) {} say(L.told[k]); } };
-// 👻 each ghost is one repair a day: a caught ghost forms again a few seconds later, and walking into it again is not work
+// 👻 each ghost is one repair a day: a caught ghost forms again a few seconds later, and walking into it again is not work —
+// and the day's catches ride the pass (tw-ghost-v1), so another device does not pay for them again
 const ghostFirst = (id) => { const d = Math.floor(Date.now() / 864e5); let g = null; try { g = JSON.parse(localStorage.getItem('tw-ghost-v1') || 'null'); } catch (e) {} if (!g || g.d !== d || !Array.isArray(g.ids)) g = { d, ids: [] }; if (g.ids.includes(String(id))) return false; g.ids.push(String(id)); try { localStorage.setItem('tw-ghost-v1', JSON.stringify(g)); } catch (e) {} return true; };
 let tidyNext = null;   // ☕ the keyholder's tidy waits for the receipt to close (§27: the moment comes after the card)
 let roundNext = false;   // ✉️ the post office's satchel (rank 5) waits for the round's receipt to close, the same way

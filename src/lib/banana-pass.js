@@ -110,6 +110,50 @@ function readQuest() {
   } catch (e) { return undefined; }
 }
 
+// 📅 THE TOWN'S DAY, ON THE PASS (2 Oct 2026; Trym: "yes move those to the pass too"): the square's problems you put right,
+// the ghosts you caught, the once-a-day lines already said and the arcade runs that paid world XP — today's, on every
+// device. Each still lives in its own key, read where it is used; this is only how they travel (worker-pass mergeBlob)
+// every key a literal where it is read and written (the storage gate)
+const TD = {
+  fixed: [() => localStorage.getItem('tw-fixed-v1'), (v) => localStorage.setItem('tw-fixed-v1', v)],
+  ghosts: [() => localStorage.getItem('tw-ghost-v1'), (v) => localStorage.setItem('tw-ghost-v1', v)],
+  told: [() => localStorage.getItem('tw-told-v1'), (v) => localStorage.setItem('tw-told-v1', v)],
+  arc: [() => localStorage.getItem('tw-arcxp-v1'), (v) => localStorage.setItem('tw-arcxp-v1', v)],
+};
+const tdRead = (k) => { try { return JSON.parse(TD[k][0]() || 'null'); } catch (e) { return null; } };
+const tdWrite = (k, v) => TD[k][1](JSON.stringify(v));
+function readTownDay() {
+  const d = Math.floor(Date.now() / 864e5);
+  const f = tdRead('fixed'), g = tdRead('ghosts'), t = tdRead('told'), a = tdRead('arc');
+  return {
+    d,
+    fixed: f && f.d === d && Array.isArray(f.ids) ? f.ids.slice(-64) : [],
+    ghosts: g && g.d === d && Array.isArray(g.ids) ? g.ids.slice(-64) : [],
+    told: t && t.d === d ? Object.keys(t).filter((k) => k !== 'd' && t[k]).slice(0, 16) : [],
+    arc: a && a.d === d ? a.n | 0 : 0,
+  };
+}
+// the pass's word on today joined into this device's: lists by union, the runs by max. Says 'pass:day' when it brought
+// anything new, so the square can show what another device put right
+function joinTownDay(T) {
+  const d = Math.floor(Date.now() / 864e5);
+  if (!T || typeof T !== 'object' || Math.round(+T.d) !== d) return;
+  const ok = (x) => typeof x === 'string' && /^[a-z0-9:_.-]{1,40}$/i.test(x);
+  let moved = false;
+  for (const field of ['fixed', 'ghosts']) {
+    const cur = tdRead(field), had = cur && cur.d === d && Array.isArray(cur.ids) ? cur.ids : [];
+    const ids = [...new Set([...had, ...(Array.isArray(T[field]) ? T[field].filter(ok) : [])])].slice(-64);
+    if (ids.length > had.length) { tdWrite(field, { d, ids }); moved = true; }
+  }
+  const told = tdRead('told'), t = told && told.d === d ? told : { d };
+  let said = false;
+  for (const k of Array.isArray(T.told) ? T.told.filter(ok) : []) if (!t[k]) { t[k] = 1; said = true; }
+  if (said) tdWrite('told', t);
+  const arc = tdRead('arc'), n = Math.max(0, Math.min(999, Math.round(+T.arc) || 0));
+  if (n > (arc && arc.d === d ? arc.n | 0 : 0)) tdWrite('arc', { d, n });
+  if (moved) { try { document.dispatchEvent(new CustomEvent('pass:day')); } catch (e) {} }
+}
+
 export function collectBlob() {
   const g = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   let shelf = [];
@@ -131,6 +175,7 @@ export function collectBlob() {
     name: nameNow, nameAt: stampClock('ps-name-seen', 'ps-name-at', nameNow),
     bbAt: stampClock('bb-seen', 'bb-at', bbNow),
     member: readMemberGrant(),            // 🎩 person-scoped, max(until)-merged
+    town: readTownDay(),                  // 📅 the town's day: lists joined, runs by max (mergeBlob)
     ev: evRead().slice(0, 300), evDrop: evDropped, evDev: DEV(),   // 📜 the tape (stripped server-side, never stored in the blob)
   };
 }
@@ -433,6 +478,7 @@ export function applyBlob(blob) {
       .slice(0, 24);
     localStorage.setItem('shelf-v1', JSON.stringify(shelf));
     localStorage.setItem('shelf-del-v1', JSON.stringify(Object.fromEntries(Object.entries(del).sort((a, b) => b[1] - a[1]).slice(0, 200))));
+    try { joinTownDay(blob.town); } catch (e) {}   // 📅 what another device did in the town today
     // 🏆 a best is the highest either side has seen
     try {
       const inB = blob.bests;

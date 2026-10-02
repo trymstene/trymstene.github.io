@@ -81,7 +81,7 @@ export function openGame(key, api) {
     } else if (!link()) me.textContent = 'your best is only on this phone until you save your pass';
     else me.textContent = b.players ? b.players + ' bananas on this board' : '';
   }
-  // ✨ a run pays a little world XP, the first dozen of a day on this device (a run is free and endless); a new best,
+  // ✨ a run pays a little world XP, the first dozen of a day on any device (tw-arcxp-v1 rides the pass); a new best,
   // which the server confirms, pays more (src/data/xp-pay.js)
   function payRun() {
     const d = Math.floor(Date.now() / 864e5);

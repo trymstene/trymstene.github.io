@@ -199,5 +199,31 @@ await qp({ bests: { rally: -5, 'NOT A KEY': 9, dig: 1e12 } });
 qr = await qpull();
 ok('junk keys are dropped and numbers are clamped', qr.blob.bests.rally === 30 && !('NOT A KEY' in qr.blob.bests) && qr.blob.bests.dig <= 1e9, qr.blob.bests);
 
+// 📅 THE TOWN'S DAY TRAVELS (2 Oct 2026; Trym: "yes move those to the pass too"). The square's problems put right, the
+// ghosts caught, the once-a-day lines and the arcade runs that paid world XP: the same day's lists join (the phone's and the
+// laptop's), a newer day replaces an older one, and nothing that is not an id lands.
+console.log('\nC. the town\'s day: the same day joins, a newer day replaces');
+const TD = Math.floor(Date.now() / 864e5);
+await qp({ town: { d: TD, fixed: ['lamp:l3'], ghosts: ['g1'], told: ['lamp'], arc: 4 } });
+await qp({ town: { d: TD, fixed: ['litter:s2', 'lamp:l3'], ghosts: [], told: ['ghost'], arc: 2 } });
+qr = await qpull();
+ok('the phone\'s and the laptop\'s: both fixes, the ghost, both lines, the higher run count',
+  JSON.stringify(qr.blob.town) === JSON.stringify({ d: TD, fixed: ['lamp:l3', 'litter:s2'], ghosts: ['g1'], told: ['lamp', 'ghost'], arc: 4 }), qr.blob.town);
+await qp({ town: { d: TD - 1, fixed: ['bin:b1'], ghosts: [], told: [], arc: 12 } });
+qr = await qpull();
+ok('a device still on yesterday never undoes today', qr.blob.town.d === TD && !qr.blob.town.fixed.includes('bin:b1') && qr.blob.town.arc === 4, qr.blob.town);
+await qp({ bests: { rally: 1 } });
+qr = await qpull();
+ok('a push that says nothing about the town keeps it', qr.blob.town && qr.blob.town.fixed.length === 2, qr.blob.town);
+await qp({ town: { d: TD + 1, fixed: ['bin:b1'], ghosts: [], told: [], arc: 1 } });
+qr = await qpull();
+ok('a new day starts the lists again', qr.blob.town.d === TD + 1 && JSON.stringify(qr.blob.town.fixed) === '["bin:b1"]' && qr.blob.town.arc === 1, qr.blob.town);
+await qp({ town: { d: TD + 1, fixed: ['<script>', 'x'.repeat(80)], ghosts: 'nope', told: [{}], arc: 1e9 } });
+qr = await qpull();
+ok('junk is never an id, and the runs are clamped', JSON.stringify(qr.blob.town.fixed) === '["bin:b1"]' && Array.isArray(qr.blob.town.ghosts) && qr.blob.town.told.length === 0 && qr.blob.town.arc === 999, qr.blob.town);
+await qp({ town: { d: 5, fixed: ['bin:b9'] } });
+qr = await qpull();
+ok('a day that is no day at all changes nothing', qr.blob.town.d === TD + 1 && !qr.blob.town.fixed.includes('bin:b9'), qr.blob.town);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

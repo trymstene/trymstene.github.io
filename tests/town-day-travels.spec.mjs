@@ -34,8 +34,8 @@ async function laptop(page, pull) {
   await page.routeWebSocket(/workers\.dev/, () => {});
   return { errs, chores };
 }
-async function town(page) {
-  const w = await laptop(page);
+async function town(page, pull) {
+  const w = await laptop(page, pull);
   await page.addInitScript(() => {
     window.__ev = []; window.gtag = (k, n, p) => window.__ev.push([n, p]);
     if (sessionStorage.getItem('day-seeded')) return;
@@ -297,4 +297,45 @@ test('🪪 two logins of one person draw the same days of calls; the hire day is
   store.set('tw-job-v1', JSON.stringify({ at: 'condo', since: now - 60000, lad: { rank: 1 }, today: { k: { sweep: 1, fix: 1 }, g: {}, to: {}, up: true, d: '2026-01-01' } }));
   expect(calls('condo', now).map((c) => c.done), 'yesterday’s word answers nothing').toEqual([false, false]);
   delete globalThis.localStorage; delete globalThis.location;
+});
+
+// 📅 THE TOWN'S DAY RIDES THE PASS (2 Oct 2026; Trym: "yes move those to the pass too"). Not job work, but the same complaint:
+// the square's problems you put right, the ghosts you caught, the once-a-day lines and the arcade runs that paid world XP
+// were this device's alone. The pull brings the phone's day (banana-pass.js joinTownDay); the square redraws without the
+// problem the phone fixed, and this device's own fix goes back up with the next push (readTownDay).
+test('🧹 the square: a problem put right on the phone comes off the board here, and the phone\'s ghosts, lines and runs count here too', async ({ page }) => {
+  test.setTimeout(90000);
+  let release;
+  const held = new Promise((ok) => { release = ok; });
+  let phoneDay = null;
+  const { errs } = await town(page, async (r) => {
+    await held;
+    await r.fulfill({ contentType: 'application/json', body: JSON.stringify({ blob: { ...PULL_BLOB, town: phoneDay } }) });
+  });
+  const pushes = [];
+  await page.route(/banana-pass\.trymstene\.workers\.dev\/push/, async (r) => {
+    try { pushes.push(JSON.parse(r.request().postData() || '{}')); } catch (e) {}
+    await r.fulfill({ contentType: 'application/json', body: '{"ok":true}' });
+  });
+  await page.evaluate(() => { localStorage.removeItem('tw-fixed-v1'); localStorage.removeItem('tw-ghost-v1'); localStorage.removeItem('tw-told-v1'); localStorage.removeItem('tw-arcxp-v1'); window.__town.room.set(30); });
+  await page.waitForFunction(() => window.__town.room.problems().length >= 2, null, { timeout: 10000 });
+  const ids = await page.evaluate(() => window.__town.room.problems().map((q) => q.id));
+  // ── the pull lands: the phone put the first one right, caught a ghost, heard a line, and played its dozen runs
+  phoneDay = { d: Math.floor(Date.now() / 864e5), fixed: [ids[0]], ghosts: ['qa-ghost'], told: ['lamp'], arc: 12 };
+  release();
+  await page.waitForFunction((id) => !window.__town.room.problems().some((q) => q.id === id), ids[0], { timeout: 8000 });
+  const kept = await page.evaluate(() => ({
+    fixed: JSON.parse(localStorage.getItem('tw-fixed-v1') || '{}').ids || [],
+    ghosts: JSON.parse(localStorage.getItem('tw-ghost-v1') || '{}').ids || [],
+    told: JSON.parse(localStorage.getItem('tw-told-v1') || '{}').lamp || 0,
+    arc: JSON.parse(localStorage.getItem('tw-arcxp-v1') || '{}').n || 0,
+  }));
+  expect(kept, '⭐ the phone\'s day is this device\'s day').toEqual({ fixed: [ids[0]], ghosts: ['qa-ghost'], told: 1, arc: 12 });
+  expect(await page.evaluate((id) => window.__town.room.problems().some((q) => q.id === id), ids[1]), 'the rest of the board is still there').toBe(true);
+  await page.screenshot({ path: SHOT + 'square.png' });
+  // ── and this device's own fix goes up with the next push, beside the phone's
+  await page.evaluate((id) => window.__town.room.fix(id), ids[1]);
+  await expect.poll(() => pushes.map((b) => (b.blob && b.blob.town && b.blob.town.fixed) || []).pop() || [], { timeout: 20000, message: 'the push carries the day' })
+    .toEqual([ids[0], ids[1]]);
+  expect(errs).toEqual([]);
 });
