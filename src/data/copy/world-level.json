@@ -1,0 +1,8 @@
+{
+  "plus": "+{n} XP",
+  "riser": "LVL {n}",
+  "title": "LEVEL {n}",
+  "next": "next title at level {at}",
+  "top": "the highest title there is",
+  "max": "the highest level there is"
+}

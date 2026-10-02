@@ -7,7 +7,7 @@
 import { test, expect } from '@playwright/test';
 import PARK from '../src/data/copy/park-toasts.json' with { type: 'json' };
 import BEACH from '../src/data/copy/beach-toasts.json' with { type: 'json' };
-import RAVE from '../src/data/copy/rave-toasts.json' with { type: 'json' };
+import WL from '../src/data/copy/world-level.json' with { type: 'json' };
 import BUILDER from '../src/data/copy/builder-toasts.json' with { type: 'json' };
 import PASS from '../src/data/copy/pass-toasts.json' with { type: 'json' };
 
@@ -58,41 +58,52 @@ test('the bay: the captain points at today’s treasure in the file’s words', 
   expect(errs).toEqual([]);
 });
 
-// the rave's level-up: a pass that sits two rep short of a level, then one paid heart on the floor
+// the rave's level-up, paid the floor's own way: a pass a heart short of a level, then one paid heart. A level is the
+// world's now (src/lib/world-xp.js, design library §53), in src/data/copy/world-level.json's words. The room is answered
+// here with a roster of one, you, so no real player sees this banana and none is seen.
 async function raveAt(page, rep) {
+  await page.route(/workers\.dev|googletagmanager|google-analytics|cloudflareinsights|facebook|clarity/, (r) => r.abort());
+  await page.routeWebSocket(/workers\.dev/, (ws) => {
+    ws.onMessage((m) => {
+      let d = null; try { d = JSON.parse(String(m)); } catch (e) { return; }
+      if (d && d.t === 'hi') ws.send(JSON.stringify({ t: 'roster', you: 'qa-me', all: [{ id: 'qa-me', outfit: d.outfit || {}, name: '', joined: Date.now(), lvl: d.lvl }] }));
+    });
+  });
   await page.addInitScript((r) => {
     try {
       if (!sessionStorage.getItem('qa-seeded')) {
         localStorage.clear();
         localStorage.setItem('pass-v1', JSON.stringify({ base: { rep: r } }));
+        localStorage.setItem('rv-tour-v1', '1');
+        localStorage.setItem('cookie-consent-v1', 'n');
         sessionStorage.setItem('qa-seeded', '1');
       }
     } catch (e) {}
   }, rep);
   await page.goto('/rave/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.rv-raver', { timeout: 30000 });
+  await page.waitForSelector('.rv-raver--me', { timeout: 30000 });
   await page.waitForTimeout(800);
   await page.locator('.rv-emote-btn[data-emote="heart"]').click({ force: true });
 }
 
-test('the rave: a new title is a big moment in the file’s words', async ({ page }) => {
+test('the rave: a new title is the world’s big moment, in the world’s words', async ({ page }) => {
   const errs = watch(page);
   await raveAt(page, 1049);   // level 4, one heart from level 5 — "On the List"
-  await page.waitForSelector('.rv-bigmoment b', { timeout: 8000 });
-  const big = await page.evaluate(() => { const d = document.querySelector('.rv-bigmoment'); return { b: d.querySelector('b').textContent, s: d.querySelector('small').textContent }; });
-  expect(big.b, 'the headline').toBe(RAVE.level.title.replace('{level}', '5') + ' 🎖 ON THE LIST');
-  expect(big.s, 'and what comes next').toBe(RAVE.level.next.replace('{at}', '10'));
+  await page.waitForSelector('.wm-moment b', { timeout: 8000 });
+  const big = await page.evaluate(() => { const d = document.querySelector('.wm-moment'); return { b: d.querySelector('b').textContent, s: d.querySelector('small').textContent }; });
+  expect(big.b, 'the headline').toBe(WL.title.replace('{n}', '5'));
+  expect(big.s, 'the title, then what comes next').toBe('On the List\n' + WL.next.replace('{at}', '10'));
   await page.waitForTimeout(700);   // it fades in
   await page.screenshot({ path: 'test-results/area-toasts/rave-title.png' });
   expect(errs).toEqual([]);
 });
 
-test('the rave: a plain level-up is the pass toast in the file’s words', async ({ page }) => {
+test('the rave: a plain level-up is "LVL N" off your banana, never a toast', async ({ page }) => {
   const errs = watch(page);
   await raveAt(page, 194);    // level 1, one heart from level 2 — same rank
-  await page.waitForFunction(() => /\S/.test((document.getElementById('passToast') || {}).textContent || ''), null, { timeout: 8000 });
-  const said = await textOf(page, '#passToast');
-  expect(said).toBe('🎖 ' + RAVE.level.title.replace('{level}', '2') + ' — ' + RAVE.level.remember);
+  await page.waitForSelector('.wx-riser b', { timeout: 8000 });
+  expect(await textOf(page, '.wx-riser b')).toBe(WL.riser.replace('{n}', '2'));
+  expect(await textOf(page, '#passToast'), 'the level is the chip’s and the riser’s, never a toast').not.toMatch(/level|lvl/i);
   expect(errs).toEqual([]);
 });
 

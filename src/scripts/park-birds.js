@@ -119,7 +119,7 @@ function rosterFor(win, band, ceil) {
 }
 
 export function initBirds(ctx) {
-  const { W, H, world, pct, depth, blocked, float, toast, pos, refreshHud, place, hideEl } = ctx;
+  const { W, H, world, pct, depth, blocked, toast, pos, refreshHud, place, hideEl } = ctx;
 
   const inPlaza = (x, y) => {
     const ex = (x - PLAZA.x) / PLAZA.rx, ey = (y - PLAZA.y) / PLAZA.ry;
@@ -434,7 +434,6 @@ export function initBirds(ctx) {
       passStat('rep', t.rep);
       if (!((passGet().stats || {})['bird_' + best.sp])) passStat('bird_' + best.sp, 1);
       refreshHud();
-      float(best.x, best.y - best.alt - 40, '+' + t.rep);
       toast('🔭 ' + fillWords(BW.spotted, { bird: name, tier: BW.tiers[t.id] }), 3600);
       if (!birdTracked) { birdTracked = true; track('park_bird', { species: best.sp, tier: t.id }); }
     } else {

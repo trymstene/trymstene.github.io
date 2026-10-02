@@ -25,6 +25,7 @@
 .wm-moment small {
   display: block; margin-top: 0.5rem; font-size: 0.82rem; font-weight: 800;
   letter-spacing: 0.12em; text-transform: uppercase; color: #fffdf5; text-shadow: 2px 2px 0 #000;
+  white-space: pre-line;   /* a caller's line break is a line (the world's level moment: the title, then what comes next) */
 }
 .wm-moment--out { animation: wmMomentOut 0.5s steps(4) forwards; }
 @keyframes wmMomentIn { 0% { transform: translateX(-50%) scale(0.6); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }

@@ -22,7 +22,7 @@ const PUDDLES = { clear: 0, drizzle: 3, heavy: 7, storm: 12 };
 const PUDDLE_REP = 1;              // splashing one pays the acorn's trickle
 
 export function initWeather(ctx) {
-  const { W, H, world, pct, pos, float, refreshHud } = ctx;
+  const { W, H, world, pct, pos, refreshHud } = ctx;
   const view = document.getElementById('pkView');
   if (!view) return { wxTick: () => {}, now: () => 'clear' };
 
@@ -102,7 +102,6 @@ export function initWeather(ctx) {
         puddleGo(i);
         passStat('rep', PUDDLE_REP);
         refreshHud();
-        float(p.x, p.y - 10, '+' + PUDDLE_REP);
         if (!splashed) { splashed = true; track('park_puddle'); }
       }
     }

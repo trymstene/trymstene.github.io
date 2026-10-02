@@ -4552,11 +4552,14 @@ function init(visitDoc, visitMiss) {
     }
     if (cropStage(b) >= 4) {
       // 🧺 harvests fill the PANTRY, not the wallet — the kitchen is the value
-      state.pantry[b.crop] = (state.pantry[b.crop] || 0) + 1;
+      // ⚠️ `b` IS `cell`: read the crop before the bed is cleared (the float showed a basket and the event said
+      // crop: undefined for every harvest until 2 Oct 2026)
+      const crop = b.crop;
+      state.pantry[crop] = (state.pantry[crop] || 0) + 1;
       delete cell.crop; delete cell.waters; delete cell.last; delete cell.planted;
       save(); refreshSoil();
-      float(s[0], s[1] - 46, '+1 ' + (CROP_EMO[b.crop] || '🧺'));
-      track('homestead_harvest', { crop: b.crop });
+      float(s[0], s[1] - 46, '+1 ' + (CROP_EMO[crop] || '🧺'));
+      track('homestead_harvest', { crop });
       if (state.stage < 2) toast('on the shelf — cook it at the fire 🍳', 2800);
       return;
     }

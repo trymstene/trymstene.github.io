@@ -178,7 +178,7 @@ test.describe('the cat', () => {
   });
 
   test('she lives like a cat: every strip frame by frame, and each mood doing what it says', async ({ page }) => {
-    test.setTimeout(240000);
+    test.setTimeout(360000);   // 3.3 min alone; beside another worker it ran past four (2 Oct 2026)
     const errs = await open(page, [HEN(0), HEN(1), DOG, CAT({ b: 1 })]);
     // ⚠️ the dog is here for the size picture at the end, and nothing else: her own play sends her after the cat now and then,
     // and a chase in the middle of the hunt made the cat bolt before the pounce — so she stays calm and at rest throughout

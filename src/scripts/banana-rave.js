@@ -13,8 +13,8 @@ import { drawComposite, assetsReady, NFRAMES, resolveHands, outfitParams, EXTRA_
 import { DROPS, ownsDropStat } from '../data/wearables.js';
 import { seedRand, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, POOF_FRAMES, worldSid, worldOwner, memberTok } from '../lib/world.js';
 import { dailyOutfit } from '../lib/banana-daily.js';
-import { passPatch, passStat, passVisit, passToast, passGet, coinsNow, coinsPaid } from '../lib/banana-pass.js';
-import { rankFor, nextRank, levelFor } from '../lib/pass-defs.js';
+import { passPatch, passStat, passVisit, passGet, coinsNow, coinsPaid } from '../lib/banana-pass.js';
+import { rankFor, levelFor } from '../lib/pass-defs.js';
 import { coinText } from '../lib/coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -1312,35 +1312,13 @@ function init() {
     const total = Number.isFinite(wrote) ? wrote : ((passGet().stats || {}).rep || 0);
     const was = levelFor(before);
     const lv = levelFor(total);
-    refreshLvlBar(lv);
     if (lv.level !== was.level) {
-      // every level POPS (the bar refilling is the engine of the whole thing);
-      // bracket titles get the big on-floor moment
-      const rk = rankFor(lv.level), rkWas = rankFor(was.level);
-      if (rk.id !== rkWas.id) {
-        const nx = nextRank(lv.level);
-        bigMoment(fillWords(RAVE_WORDS.level.title, { level: lv.level }) + ' 🎖 ' + rk.title.toUpperCase(),
-          nx ? fillWords(RAVE_WORDS.level.next, { at: nx.at }) : RAVE_WORDS.level.top);
-      } else {
-        passToast('🎖 <b>' + fillWords(RAVE_WORDS.level.title, { level: lv.level }) + '</b> — ' + RAVE_WORDS.level.remember);
-      }
-      const lvlRow = el('rvLvlRow');
-      if (lvlRow) { lvlRow.classList.remove('rv-mixer__lvl--pop'); void lvlRow.offsetWidth; lvlRow.classList.add('rv-mixer__lvl--pop'); }
+      // ✨ THE CEREMONY IS THE WORLD'S NOW (2 Oct 2026, design library §53): the sparks, the chip refilling, the arrow and
+      // "LVL N" off your banana and a new title's big moment are src/lib/world-xp.js, the same in every area, and they
+      // happen as the XP LANDS. The floor keeps what only the floor has: the roster, the room and the arpeggio
+      // (playLevelUp, on 'world:levelup' below).
       const meR = myId && ravers.get(myId);
       if (meR) { meR.lvl = lv.level; refreshHud(); } // the roster title climbs with you
-      // THE FEEL (Trym: "they don't feel good, just popups") — a pixel arrow
-      // + the new level rides up off YOUR banana, and the classic four-note
-      // arpeggio plays (original square-wave, when the club audio is on)
-      if (meR && !meR.stage) {
-        const d = document.createElement('div');
-        d.className = 'rv-lvlup';
-        d.innerHTML = '<svg viewBox="0 0 7 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="0" width="1" height="1" fill="#ffe135"/><rect x="2" y="1" width="3" height="1" fill="#ffe135"/><rect x="1" y="2" width="5" height="1" fill="#ffe135"/><rect x="0" y="3" width="7" height="1" fill="#ffe135"/><rect x="2" y="4" width="3" height="4" fill="#ffe135"/></svg><b>LVL ' + lv.level + '</b>';
-        d.style.left = meR.x + '%';
-        d.style.top = Math.max(topClamp, meR.y - 9) + '%';
-        world.appendChild(d);
-        setTimeout(() => d.remove(), 1900);
-      }
-      playLevelUp();
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'lvl', n: lv.level }));
       try { document.dispatchEvent(new CustomEvent('pass:change')); } catch (e) {}
       track('rave_levelup', { level: lv.level });
@@ -1367,13 +1345,8 @@ function init() {
     } catch (e) {}
   }
 
-  function refreshLvlBar(lv) {
-    const nEl = el('rvLvlN'), fEl = el('rvLvlFill');
-    if (!nEl) return;
-    nEl.textContent = 'LVL ' + lv.level;
-    if (fEl) fEl.style.width = Math.round((lv.into / lv.need) * 100) + '%';
-  }
-  refreshLvlBar(levelFor((passGet().stats || {}).rep || 0)); // boot: the bar picks up where you left off
+  // the classic four notes play as the world's level-up lands on the chip (world-xp.js), not before it
+  document.addEventListener('world:levelup', () => playLevelUp());
 
   function addHype(n) {
     earnRep(n); // REP flows on EVERY action — even while the meter is charged or peaking

@@ -687,8 +687,7 @@ export function initGarden(ctx) {
     const p2 = r.beds && r.beds.pending;
     if (hit) {
       pill(hit[0], hit[1] - 30,
-        r.opened ? '🪓 the bed is open' : '⛏ ' + (p2 ? p2.digs + '/' + p2.need : '') + ' turned',
-        '+' + BED_DIG_REP);
+        r.opened ? '🪓 the bed is open' : '⛏ ' + (p2 ? p2.digs + '/' + p2.need : '') + ' turned');
     }
     if (r.opened) toast('🪓 ' + GW.bedOpen, 5000);
     if (!bedTracked) { bedTracked = true; track('park_bedbreak'); }
@@ -700,11 +699,10 @@ export function initGarden(ctx) {
   // tiny and the algae is a smudge on water: a bare "+2" told you something
   // happened but not WHAT, so you could not learn the park from playing it
   // (Trym). One element, one timer, gone in a second.
-  function pill(x, y, label, plus) {
+  function pill(x, y, label) {
     const d = document.createElement('div');
     d.className = 'pk-pill';
-    d.innerHTML = '<span>' + label + '</span>'
-      + (plus ? '<b>' + plus + '</b>' : '');
+    d.innerHTML = '<span>' + label + '</span>';   // its XP is the world layer's "+N XP" (world-xp.js)
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     d.style.zIndex = String(100 + Math.round(y) + 40);
@@ -866,7 +864,6 @@ export function initGarden(ctx) {
     poofInto(world, 'pk-poof', sx / W * 100, (sy - 12) / H * 100);
     passStat('rep', 2);
     refreshHud();
-    float(sx, sy - 20, '+2');
     if (!potClearedOnce) { potClearedOnce = true; track('park_clearpot'); }
     toast(GW.potCleared, 3200);
   }
@@ -955,7 +952,7 @@ export function initGarden(ctx) {
     poofInto(world, 'pk-poof', a2.x / W * 100, (a2.y - 8) / H * 100);
     passStat('rep', 1);
     refreshHud();
-    pill(a2.x, a2.y - 16, '🫧 algae skimmed', '+1');
+    pill(a2.x, a2.y - 16, '🫧 algae skimmed');
     if (!algaeTracked) { algaeTracked = true; track('park_algae'); }
     applyGarden(await gFetch('/algae', { id }));
   }
@@ -1201,7 +1198,7 @@ export function initGarden(ctx) {
       setTimeout(() => t.el.remove(), 360);
       passStat('rep', 2);
       refreshHud();
-      pill(t.x, t.y - 16, '🗑 litter cleared', '+2');
+      pill(t.x, t.y - 16, '🗑 litter cleared');
       if (!trashTracked) { trashTracked = true; track('park_trash'); }
       gFetch('/trash', { id }).then(applyGarden);
     });
@@ -1214,7 +1211,6 @@ export function initGarden(ctx) {
       l2.el.remove();
       passStat('rep', 1);
       refreshHud();
-      float(l2.x, l2.y - 14, '🍂 +1');
       if (!rakeTracked) { rakeTracked = true; track('park_rake'); }
       gFetch('/rake', { id }).then(applyGarden);
     });
@@ -1274,7 +1270,6 @@ export function initGarden(ctx) {
       toast('🪙 ' + fillWords(GW.roots, { n: coinsPaid(n) }), 2600);
     }
     refreshHud();
-    float(w2.x, w2.y - 20, '+1');
     if (!weedTracked) { weedTracked = true; track('park_weed'); }
     applyGarden(await gFetch('/weed', { id }));
   }
@@ -1704,7 +1699,6 @@ export function initGarden(ctx) {
     if (!sd.wearable) {                  // no wearable → rep by stars, never coins
       passStat('rep', sd.stars * 8);
       refreshHud();
-      float(PLOTS[i][0], PLOTS[i][1] - 20, '+' + (sd.stars * 8));
       const again = sd.regrow && gSlots[i];   // the room kept the bush — more picks coming
       toast(sd.emoji + ' ' + fillWords(GW.harvested, { what: sd.name, rep: sd.stars * 8 })
         + ' ' + (again ? GW.fruitAgain + ' 🍓' : GW.seedHome + ' 🌱'), 4200);
@@ -1728,7 +1722,6 @@ export function initGarden(ctx) {
     poofInto(world, 'pk-poof', PLOTS[i][0] / W * 100, (PLOTS[i][1] - 12) / H * 100);
     passStat('rep', 2);
     refreshHud();
-    float(PLOTS[i][0], PLOTS[i][1] - 20, '+2');
     if (!clearedOnce) { clearedOnce = true; track('park_clear'); }
     toast(GW.bedCleared, 3200);
   }

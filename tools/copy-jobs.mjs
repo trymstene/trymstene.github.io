@@ -2795,12 +2795,8 @@ export const JOBS = {
     what: 'The big moment for a new level (and the pass line under it), stepping up onto the stage, and the jelly boss arriving.',
     approved: 'src/data/copy/rave-toasts.json',
     reads: 'src/scripts/banana-rave.js (a static import)',
-    top: ['level', 'stage', 'jellyBoss'],
+    top: ['stage', 'jellyBoss'],
     fields: {
-      'level.title': toastLine(20, 'The headline of a level-up, in capitals; {level} is the new level. The game adds 🎖 and the rank’s title after it.', holdsAll('level')),
-      'level.next': toastLine(60, 'Under the headline while there is a next title to earn; {at} is the level it comes at.', holdsAll('at')),
-      'level.top': toastLine(60, 'Under the headline at the top rank.'),
-      'level.remember': toastLine(50, 'The pass toast after the level in bold.'),
       'stage.title': toastLine(30, 'The headline for stepping up onto the stage, in capitals. The game adds 🔥.'),
       'stage.downStar': toastLine(60, 'Under it, when the ⭐ button brings you down again; the game fills {star} with the icon.', holdsAll('star')),
       'stage.downFloor': toastLine(60, 'Under it, when tapping the floor brings you down again.'),
@@ -3109,6 +3105,26 @@ export const JOBS = {
   // 🎬 THE TOWN TRAILER (1 Oct 2026, Trym: "an amazing ad video of banana world but the town as the highlight … strong
   // fun and humorous copy on it"). Burned into the Instagram Reel by tools/reel/trailer.py: one line per beat, read at a
   // glance on a phone held at arm's length, so short. The story is HIS — the classic banana getting a life.
+  // ✨ THE WORLD'S XP (2 Oct 2026, Trym: "i dont feel XP in banana world FEELS great, in the way getting banana coins does").
+  // src/lib/world-xp.js: the label that floats off your banana as XP flies into the LVL chip, the "LVL N" that rides up at
+  // a new level, and the world's big moment at a new title — the same words in every area.
+  'world-level': {
+    id: 'world-level',
+    title: 'The world level — XP landing and level-ups, every area',
+    what: 'What the world says as XP lands (the amount over your banana), at a new level (the riser) and at a new title (the big moment and its line), in the town, the rave, the park, the bay and the homestead alike.',
+    approved: 'src/data/copy/world-level.json',
+    reads: 'src/lib/world-xp.js (a lazy chunk the world HUD loads on the first XP)',
+    top: ['plus', 'riser', 'title', 'next', 'top', 'max'],
+    fields: {
+      plus: { kind: 'label', max: 12, ...holdsAll('n'), note: 'Floats up beside your banana as the sparks fly: the XP that just landed, the true amount (a buff included).' },
+      riser: { kind: 'label', max: 10, ...holdsAll('n'), note: 'Rides up off your banana with the pixel arrow at every new level.' },
+      title: { kind: 'label', max: 14, ...holdsAll('n'), note: 'The big moment at a new title (levels 5, 10, 20, 35, 60, 90) and at level 99: the level, in big yellow type.' },
+      next: { kind: 'label', max: 26, ...holdsAll('at'), note: 'Under it, below the title just earned (its own line): the level of the next title. One line on a 360-px phone, so short.' },
+      top: { kind: 'label', max: 26, note: 'Under it at the last title (level 90), below the title: no title further to reach. One line on a 360-px phone.' },
+      max: { kind: 'label', max: 26, note: 'Under it at level 99, the last level, below the title: the top of the ladder (its ceremony is still to come: the endgame plan).' },
+    },
+    shape: () => [],
+  },
   'reel-town': {
     id: 'reel-town',
     title: 'The town trailer — the words on the Instagram Reel',

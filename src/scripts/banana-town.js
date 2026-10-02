@@ -466,7 +466,7 @@ view.addEventListener('pointerdown', (e) => {
       talkTo(hit[1]);
       return;
     }
-    if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { if (life.pick(hit[1])) { float(f.x, f.y - 30, '+1'); hud.refresh(); } }; } return; }   // walk to it, then it is picked up: a point of rep, the park's litter rule
+    if (hit[0] === 'flyer') { const f = life.flyer(hit[1]); if (f) { tgt.x = f.x; tgt.y = f.y + 12; arriveThen = () => { if (life.pick(hit[1])) hud.refresh(); }; } return; }   // walk to it, then it is picked up: a point of rep, the park's litter rule
     if (inRoom === 'store' && serve && serve.tap(hit[1])) return;   // 🛒 a customer is waiting: the shelves and the till are theirs first
     // 🧾 THE COUNTER IS WALKED TO, THEN IT OPENS (26 Sep 2026): its card opened on the tap from anywhere in the room, the one
     // thing indoors that did not walk first — and a card that appears from across the room does not say where it came from

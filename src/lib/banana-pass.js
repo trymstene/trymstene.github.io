@@ -874,6 +874,11 @@ export function passStat(key, delta = 1, src, item) {
     const lv = lvlOf(now);
     if (lv > lvlOf(was)) window.gtag('event', 'world_levelup', { level: lv, where: areaOf() });
   }
+  // ✨ …and every grant is FELT here too: the world HUD hears it, holds its LVL chip and flies the XP in (world-xp.js,
+  // design library §53). `was`/`now` are the true totals, so the double-XP buff lands whole.
+  if (key === 'rep' && now > was && typeof document !== 'undefined') {
+    try { document.dispatchEvent(new CustomEvent('pass:rep', { detail: { was, now } })); } catch (e) {}
+  }
   return now;   // the TRUE new total — callers must not re-derive it from the delta (the buff can double it)
 }
 

@@ -14,7 +14,7 @@
 // wallet are world-wide stats; an area that computed its own would drift from
 // the others the first time a rule changed. Anything the pass cannot answer
 // (the bay's tickets) comes in through `values`.
-import { passGet, coinsNow } from './banana-pass.js';
+import { passGet, coinsNow, passStat } from './banana-pass.js';
 import { levelFor, gardenerLvlFor, GLVL_AT, GLVL_STARS } from './pass-defs.js';
 // ⭐ THE ONE STAR, INLINE (19 Sep 2026). This was the ONLY icon the shared HUD drew, and importing
 // iconSvg for it dragged pixel-icons.js — an eager glob of the whole icon directory, 25 278 B built —
@@ -48,6 +48,9 @@ const CSS = `
   border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
 }
 .wh__lvlbar i { display: block; height: 100%; width: 0; background: var(--wh-accent); transition: width 0.5s ease; }
+.wh__lvl .wh__lvlbar i { width: 100%; transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.5s ease; }
+/* ✨ the strip rises out of any card's shade while XP sparks (or coins) fly into it (world-xp.js, §30.2, §53) */
+.wh--overlay.is-lit { z-index: 2150; }
 /* 🧑‍🌾 the gardener chip is a <button>, so it needs the button defaults
    reset — but it wears the SAME pill as every other chip. It used to strip its
    own background, border and padding and was the only bare chip in the row
@@ -242,21 +245,65 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
     if (a && e.target !== a) { e.preventDefault(); a.click(); }
   });
 
-  const lvlN = made.lvl && made.lvl.querySelector('.wh__lvln');
-  const lvlFill = made.lvl && made.lvl.querySelector('.wh__lvlbar i');
+  // the LEVEL chip: built here, or the club's own (adopted, data-wh="lvl")
+  const lvlChip = made.lvl || adopt.find((n) => n && n.dataset && n.dataset.wh === 'lvl') || null;
+  const lvlN = lvlChip && lvlChip.querySelector('.wh__lvln, [data-wh="lvln"]');
+  const lvlFill = lvlChip && lvlChip.querySelector('.wh__lvlbar i, [data-wh="lvlfill"]');
   const coinN = made.coins && made.coins.querySelector('b');
   const tixN = made.tix && made.tix.querySelector('b');
   const crowdN = made.crowd && made.crowd.querySelector('.wh__crowdn');
   const gardN = made.gard && made.gard.querySelector('b');
   const gardFill = made.gard && made.gard.querySelector('.wh__lvlbar i');
 
+  // ✨ XP THAT LANDS LIKE COINS (world-xp.js, design library §53). From the frame XP is granted the chip HOLDS where it
+  // stood, and the sparks move it as they land: a level never shows before the XP that makes it has arrived (§30.2).
+  let held = null, heldAt = 0, crossing = 0, xpMod = null;
+  const stillMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  function paintLvl(rep, crossed) {
+    if (!lvlN) return;
+    const lv = levelFor(rep);
+    const f = Math.max(0, Math.min(1, lv.into / lv.need));   // the true fraction: a round-up drew a full bar a step short
+    if (crossed && lvlFill && !stillMotion()) {
+      // a level crossed: the bar fills to the top and starts again (it used to drain backwards from full to empty)
+      clearTimeout(crossing);
+      lvlFill.style.transition = 'transform .18s ease-out';
+      lvlFill.style.transform = 'scaleX(1)';
+      crossing = setTimeout(() => {
+        crossing = 0;
+        lvlN.textContent = 'LVL ' + lv.level;
+        lvlFill.style.transition = 'none';
+        lvlFill.style.transform = 'scaleX(0)';
+        void lvlFill.offsetWidth;
+        lvlFill.style.transition = '';
+        lvlFill.style.transform = 'scaleX(' + f + ')';
+      }, 230);
+      return;
+    }
+    if (crossing) return;   // mid-refill: the refill finishes the job
+    lvlN.textContent = 'LVL ' + lv.level;
+    if (lvlFill) lvlFill.style.transform = 'scaleX(' + f + ')';
+  }
+  const xpApi = {
+    lvl: lvlChip,
+    show: (rep, crossed) => { held = rep; heldAt = Date.now(); paintLvl(rep, crossed); },
+    release: () => { held = null; refresh(); },
+    lift: (on) => el.classList.toggle('is-lit', !!on),
+  };
+  const onRep = (e) => {
+    const d = e && e.detail;
+    if (!d || !lvlChip) return;
+    if (held == null) held = d.was;   // the chip stays put from THIS frame
+    heldAt = Date.now();
+    (xpMod || (xpMod = import('./world-xp.js'))).then((m) => m.grant(d, xpApi)).catch(() => { xpMod = null; held = null; refresh(); });
+  };
+  document.addEventListener('pass:rep', onRep);
+  // 🧪 ?xptest: a walk grants XP the way every area does (tests/world-xp.spec.mjs)
+  if (/[?&]xptest/.test(location.search)) window.__xp = { grant: (n) => passStat('rep', n) };
+
   function refresh() {
     const s = passGet().stats || {};
-    if (lvlN) {
-      const lv = levelFor(s.rep || 0);
-      lvlN.textContent = 'LVL ' + lv.level;
-      if (lvlFill) lvlFill.style.width = Math.round((lv.into / lv.need) * 100) + '%';
-    }
+    if (held != null && Date.now() - heldAt > 6000) held = null;   // never stuck: a lost flight lets go
+    if (lvlN) paintLvl(held != null ? held : (s.rep || 0), false);
     if (coinN) coinN.textContent = coinBalance();
     if (gardN) {
       const g = gardenerLvlFor(s.garden_harvests || 0);
@@ -282,7 +329,7 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
     refresh,
     setCrowd: (t) => { if (crowdN) crowdN.textContent = t; },
     setSlot: (t) => { if (made.slot) made.slot.textContent = t || ''; },
-    stop: () => clearInterval(timer),
+    stop: () => { clearInterval(timer); document.removeEventListener('pass:rep', onRep); },
   };
 }
 

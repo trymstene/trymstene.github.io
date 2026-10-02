@@ -821,7 +821,7 @@ export function bootTownLife(ctx) {
     const got = passStat('coins_earned', coins, 'fix') != null ? coins : 0;
     passStat('rep', p.rep);
     if (hud && hud.refresh) hud.refresh();
-    float(p.x, p.y - 40, '+' + got);
+    float(p.x, p.y - 40, '+' + got + ' 🪙');   // the coins it paid, with the coin (the XP is the world layer's)
     track('town_fix', { kind: p.type, coins: got });
     // the contribution, pooled on the room (past the person's cap it still clears and pays)
     const j = await lifeFetch('/fix', {});

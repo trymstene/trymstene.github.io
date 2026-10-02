@@ -106,9 +106,8 @@ export function initCritters(ctx) {
       if (Math.hypot(pos.x - a.x, (pos.y - 6) - a.y) < 34) {
         a.el.remove();
         acorns.splice(i, 1);
-        passStat('rep', 2);
-        refreshHud();               // the XP lands on the LEVEL bar right away
-        float(a.x, a.y - 12, '+2');
+        passStat('rep', 2);         // ✨ the world layer flies it into the LEVEL chip with "+2 XP" (world-xp.js)
+        refreshHud();
         if (!acornTracked) { acornTracked = true; track('park_acorn'); }
       }
     }

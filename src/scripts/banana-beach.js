@@ -713,14 +713,13 @@ function init() {
     world.appendChild(d);
     setTimeout(() => d.remove(), hold ? 2600 : 900);
   }
-  // 🐚 the shell pickup reward — a DARK chip so it reads on bright sand, holds
-  // ~2.1s, and makes the XP feel earned (green +N XP; rare/legendary get a glow).
-  function shellPickFloat(x, y, name, xp, isNew, tier) {
+  // 🐚 the shell pickup — a DARK chip so it reads on bright sand, holds ~2.1s: NEW, and the shell's name
+  // (rare/legendary get a glow). Its XP is the world layer's "+N XP", flown into the LEVEL chip (world-xp.js).
+  function shellPickFloat(x, y, name, isNew, tier) {
     const d = document.createElement('div');
     d.className = 'bh-shellpick' + (tier === 'rare' || tier === 'legendary' ? ' bh-shellpick--grail' : '');
     d.innerHTML = (isNew ? '<i class="bh-shellpick__new">NEW</i>' : '')
-      + '<span class="bh-shellpick__name">🐚 ' + name + '</span>'
-      + '<b class="bh-shellpick__xp">+' + xp + ' XP</b>';
+      + '<span class="bh-shellpick__name">🐚 ' + name + '</span>';
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
     world.appendChild(d);
@@ -1034,7 +1033,7 @@ function init() {
         s.el.remove();
         shells.splice(i, 1);
         refreshHud();                 // the XP lands on the LEVEL bar right away
-        shellPickFloat(s.x, s.y - 8, shellName(s.id), xp, isNew, tier);
+        shellPickFloat(s.x, s.y - 8, shellName(s.id), isNew, tier);
         track('beach_shell', { shell: s.id, fresh: isNew ? 1 : 0, xp });
         if (isNew && haveCount() === SHELL_IDS.length) {
           say(BEACH_WORDS.shells.all, 6000);
@@ -1222,7 +1221,7 @@ function init() {
       passStat('sh_' + id, 1);
       passStat('bh_shells', 1);
       refreshHud();
-      shellPickFloat(d.x, d.y - 10, shellName(id), xp, isNew, tier);
+      shellPickFloat(d.x, d.y - 10, shellName(id), isNew, tier);
       track('beach_drift', { find: 'shell', shell: id });
       if (isNew && haveCount() === SHELL_IDS.length) {
         say(BEACH_WORDS.shells.all, 6000);
