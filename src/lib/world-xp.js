@@ -56,6 +56,7 @@ let shown = null;          // what the chip says while sparks are out
 let planned = null;        // the total the sparks already in the air will bring it to
 let target = 0;            // the newest true total
 let timer = 0;             // a merge window still open
+let opened = 0;            // when it opened
 const queue = [];          // flights waiting their turn
 let flying = false;
 
@@ -66,8 +67,12 @@ export function grant(d, hud) {
   if (!A || !api || !api.lvl) { finish(d.now); return; }
   if (shown == null) { shown = d.was; planned = d.was; }
   target = Math.max(target, d.now);
+  // grants close together merge into one flight, but a steady trickle never holds it past twice the window: the rave's
+  // spotlight pays every beat, and restarting the window on each one kept the XP from ever flying while you stood in it
+  const t = Date.now();
+  if (!timer) opened = t;
   clearTimeout(timer);
-  timer = setTimeout(launch, A.merge);
+  timer = setTimeout(launch, Math.max(0, Math.min(A.merge, opened + 2 * A.merge - t)));
 }
 
 function launch() {

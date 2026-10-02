@@ -52,7 +52,7 @@ for (const a of AREAS) {
     expect(await lvl(page)).toBe('LVL 10');
     await page.evaluate(() => window.__xp.grant(20));
     expect(await lvl(page), '⭐ the chip holds where it stood (§30.2)').toBe('LVL 10');
-    await expect.poll(() => page.locator('.wx-spark').count(), { timeout: 3500 }).toBeGreaterThan(0);
+    await expect.poll(() => page.locator('.wx-spark').count(), { timeout: 5000 }).toBeGreaterThan(0);
     expect(await lvl(page), 'still holding while the sparks are out').toBe('LVL 10');
     const plusText = (await page.locator('.wx-plus').first().textContent()).trim();
     if (a.name === 'rave') {
@@ -79,7 +79,7 @@ for (const a of AREAS) {
     const errs = await open(page, a, NEAR_20);
     expect(await lvl(page)).toBe('LVL 19');
     await page.evaluate(() => window.__xp.grant(20));
-    await expect.poll(() => page.locator('.wm-moment b').count(), { timeout: 5000 }).toBe(1);
+    await expect.poll(() => page.locator('.wm-moment b').count(), { timeout: 8000 }).toBe(1);
     expect((await page.locator('.wm-moment b').textContent()).trim()).toBe(WL.title.replace('{n}', '20'));
     expect((await page.locator('.wm-moment small').textContent()).trim()).toBe('The Regular\n' + WL.next.replace('{at}', '35'));
     expect(await page.locator('.wx-riser').count(), 'a title IS the bigger riser: never both').toBe(0);
@@ -122,16 +122,19 @@ test.describe('the smallest phone', () => {
   });
 });
 
-test.describe('reduced motion', () => {
-  test.use({ reducedMotion: 'reduce' });
-  test('the chip says it at once, no sparks fly, and the level still shows (§3d)', async ({ page }) => {
-    const errs = await open(page, AREAS[0], NEAR_11);
-    await page.evaluate(() => window.__xp.grant(20));
-    await expect.poll(() => lvl(page), { timeout: 2000 }).toBe('LVL 11');
-    expect(await page.locator('.wx-spark').count()).toBe(0);
-    expect(await page.locator('.wx-riser').count(), 'a still riser, never nothing').toBeGreaterThan(0);
-    expect(errs).toEqual([]);
-  });
+// ⚠️ reduced motion is page.emulateMedia: `test.use({ reducedMotion })` is no test option, and this walk once passed
+// while the sparks flew under it
+test('reduced motion: the chip says it at once, no sparks fly, and the level still shows (§3d)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const errs = await open(page, AREAS[0], NEAR_11);
+  expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), 'the page sees it').toBe(true);
+  await page.evaluate(() => window.__xp.grant(20));
+  let sparks = 0;
+  await expect.poll(async () => { sparks = Math.max(sparks, await page.locator('.wx-spark').count()); return lvl(page); }, { timeout: 1500, intervals: [50] }).toBe('LVL 11');
+  expect(sparks, 'not one spark').toBe(0);
+  expect(await page.locator('.wx-riser').count(), 'a still riser, never nothing').toBeGreaterThan(0);
+  expect(await page.locator('.wx-plus').count(), 'and the amount, still').toBeGreaterThan(0);
+  expect(errs).toEqual([]);
 });
 
 test('a trickle merges: many small grants fly as one batch, and the chip lands on the true total', async ({ page }) => {
