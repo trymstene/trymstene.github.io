@@ -32,6 +32,7 @@ import { levelFor, rankFor } from '../../src/lib/pass-defs.js';
 // 🔤 ONE RULE FOR A NAME A PLAYER CHOSE — see src/lib/player-name.js. The pass is where a name is
 // BORN, so this is the first place it has to be foldable into something the fonts can draw.
 import { cleanName } from '../../src/lib/player-name.js';
+import { isProtectedName } from '../../src/lib/name-guard.js';   // 🪪 the names only their owner may carry
 // 💼 THE WEEK'S WORK — one source with the town (src/data/town/jobs.js): the rates, the duties and
 // their targets, the share arithmetic the cheque and the duties chip both print.
 import { JOB_PAY, PAY_BACK, DUTIES, NUDGE_DAY, FIRE_WEEKS, shareOf, payOf, rowsOf, LADDER, DAY_XP, TIPS_JOBS, rankOf, weekPay, tipsCap, xpFor, xpAt, reviewOf, reviewXp, COUNTS_AS, dayCap, refFrom, ranksOf, DAY_MAX } from '../../src/data/town/jobs.js';
@@ -216,10 +217,35 @@ async function mintWorldToken(env, gid, aliases) {
   } catch (e) { return undefined; }
 }
 // everything a logged-in answer carries about WHO this is, in one place
+// 🪪 PROTECTED NAMES (2 Oct 2026; src/lib/name-guard.js). Trym, after a stranger walked past his homestead as "Trym Stene":
+// "add protection on my name, its a bit silly if players thats using my name is sent letters and stuff". The homes that may
+// carry one are a secret, NAME_OWNERS — home keys, comma-separated (an email's home key is a hash, never the address) —
+// and every other pass that holds one is quietly left nameless: its name's clock moves on, so its devices take the change.
+const nameOwners = (env) => new Set(String((env && env.NAME_OWNERS) || '').split(',').map((s) => s.trim()).filter(Boolean));
+const nameShown = (env, name, homeKey) => (name && isProtectedName(name) && !nameOwners(env).has(homeKey) ? '' : name);
+function guardName(env, R) {
+  const b = R.home.blob;
+  if (!b || !b.name || nameShown(env, b.name, R.homeKey) === b.name) return false;
+  b.name = ''; b.nameAt = Date.now();
+  return true;
+}
+// …and the owner's NAME TOKEN: `gid.exp.hmac` under 'nt:', signed with the secret worker-rave shares (the member token's),
+// so its rooms, address book, signs and guestbooks can tell the one pass that may carry the name. 30 days, renewed on
+// every push and pull, like the world token.
+const NT_TTL = 30 * 86400000;
+async function mintNameToken(env, gid) {
+  try {
+    if (!env.MEMBER_HMAC || !gid) return undefined;
+    const base = gid + '.' + (Date.now() + NT_TTL);
+    const key = await crypto.subtle.importKey('raw', te.encode(env.MEMBER_HMAC), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return base + '.' + bufToHex(await crypto.subtle.sign('HMAC', key, te.encode('nt:' + base)));
+  } catch (e) { return undefined; }
+}
 async function identityOf(env, R) {
   const gid = await worldGid(env, R.homeKey);
   return { gid, worldToken: await mintWorldToken(env, gid, R.home.aliases),
     memberToken: await mintMemberToken(env, (R.home.blob || {}).member),
+    nameToken: nameOwners(env).has(R.homeKey) ? await mintNameToken(env, gid) : undefined,   // 🪪 only for the name's owner
     // 💰 the server wallet (once frozen) and the tape ids it has seen, so a
     // device can clear an outbox a beacon push delivered without an ack
     ...walletOut(R.home), seen: (R.home.log && R.home.log.seen) || [],
@@ -1233,7 +1259,7 @@ async function arcSave(env, g, rec) {
 }
 const arcClean = (name) => String(name || '').replace(/[^\p{L}\p{N} _'.\-]/gu, '').trim().slice(0, 18);
 // 🧪 the proof's people score but never rank: their entries carry q:1 and stay off every list
-const arcRows = (map) => Object.entries(map || {}).filter(([, v]) => !v.q).map(([k, v]) => ({ k, s: +v.s || 0, n: v.n || 'a banana', at: +v.at || 0 }))
+const arcRows = (map, own) => Object.entries(map || {}).filter(([, v]) => !v.q).map(([k, v]) => ({ k, s: +v.s || 0, n: (v.n && !(isProtectedName(v.n) && !(own && own.has(k))) ? v.n : 'a banana'), at: +v.at || 0 }))
   .sort((a, b) => b.s - a.s || a.at - b.at);
 const arcOut = (rows, n) => rows.slice(0, n).map(({ s, n: nm, at }) => ({ n: nm, s, at }));
 function arcRank(rows, key) { const i = rows.findIndex((r) => r.k === key); return i < 0 ? 0 : i + 1; }
@@ -1245,7 +1271,7 @@ async function arcadeBoard(request, env, url) {
   const rec = await arcLoad(env, g);
   const wk = isoWeek(Date.now());
   return json({ game: g, wk, players: Object.keys(rec.best || {}).length, runs: rec.n || 0,
-    top: arcOut(arcRows(rec.best), 20), week: arcOut(arcRows((rec.week || {})[wk]), 20) },
+    top: arcOut(arcRows(rec.best, nameOwners(env)), 20), week: arcOut(arcRows((rec.week || {})[wk], nameOwners(env)), 20) },
   200, { ...cors(env, request), 'Cache-Control': 'public, max-age=30' });
 }
 
@@ -1268,7 +1294,7 @@ async function arcadeScore(request, env) {
     const R = await tokenRec(env, b.credId, b.token);
     if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
     const key = R.homeKey;
-    const name = arcClean((R.home.blob || {}).name) || 'a banana';
+    const name = arcClean(nameShown(env, (R.home.blob || {}).name, R.homeKey)) || 'a banana';
     const now = Date.now();
     const wk = isoWeek(now);
     const rec = await arcLoad(env, g);
@@ -1284,7 +1310,7 @@ async function arcadeScore(request, env) {
     const W = rec.week[wk] = rec.week[wk] || {};
     if (!W[key] || score > +W[key].s) W[key] = { s: score, n: name, at: now, ...qa }; else W[key].n = name;
     await arcSave(env, g, rec);
-    const rows = arcRows(rec.best), wrows = arcRows(W);
+    const rows = arcRows(rec.best, nameOwners(env)), wrows = arcRows(W, nameOwners(env));
     const rank = arcRank(rows, key);
     // 🎁 prizes on the home record, the admin way: base + mirror, once
     const blob = R.home.blob || (R.home.blob = {});
@@ -1321,7 +1347,7 @@ async function adminArcade(request, env, url) {
   const out = {};
   for (const g of Object.keys(ARC_GAMES)) {
     const rec = await arcLoad(env, g);
-    out[g] = { players: Object.keys(rec.best || {}).length, runs: rec.n || 0, top: arcOut(arcRows(rec.best), 5), updated: rec.updated || 0 };
+    out[g] = { players: Object.keys(rec.best || {}).length, runs: rec.n || 0, top: arcOut(arcRows(rec.best, nameOwners(env)), 5), updated: rec.updated || 0 };
   }
   return json({ boards: out, wk: isoWeek(Date.now()) }, 200, cors(env, request));
 }
@@ -2522,7 +2548,7 @@ async function rowOf(env, k, rec) {
     // publishes the same tag on each yard, so HQ can put a homestead next
     // to a pass without the pass id or the world id ever leaving either store
     tag: (await sha256Hex(await worldGid(env, k.slice(5, -5)))).slice(0, 8),
-    name: (blob.name || '').slice(0, 24),
+    name: nameShown(env, blob.name || '', k.slice(5, -5)).slice(0, 24),
     look: lookOf(blob.bbLast),                 // 🏆 the banana the frames draw
     updated: rec.updated || 0,
     created: p.created || 0,
@@ -3834,6 +3860,7 @@ async function push(request, env) {
   const before = slotsOf(R.home.blob, dv);
   const ownFresh = !R.home.ownAt && !!R.home.blob;
   R.home.blob = takeBlob(R.home, b.blob);
+  guardName(env, R);   // 🪪 a protected name on a pass that may not carry it: left nameless, and its devices follow
   const rows = tapeIn(R.home, b.blob.ev, b.blob.evDrop, dv, before, slotsOf(R.home.blob, dv), R.home.blob, rulesStrict(env), ownFresh, ownStrict(env)) || [];
   await saveKey(env, R.homeKey, R.home);
   // every refused row goes back: a stand item's refusal undresses the banana;
@@ -3854,5 +3881,6 @@ async function pull(request, env, url) {
   if (bad) return bad;
   const R = await tokenRec(env, url.searchParams.get('credId'), url.searchParams.get('token'));
   if (!R) return json({ error: 'not linked' }, 403, cors(env, request));
+  if (guardName(env, R)) { try { await saveKey(env, R.homeKey, R.home); } catch (e) { /* the answer below still carries the clear */ } }
   return json({ blob: R.home.blob, updated: R.home.updated, ...(await identityOf(env, R)) }, 200, cors(env, request));
 }

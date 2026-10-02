@@ -2070,6 +2070,19 @@ export const JOBS = {
   },
   // 🛒 THE STORE'S CUSTOMERS (23 Sep 2026): a customer at the till wants a thing from the shelves; the ticket is its
   // picture, the bar their patience; find it, carry it to the till, hand it over. The world's voice around it.
+  'names': {
+    id: 'names',
+    title: 'Protected names — when a name belongs to someone else',
+    what: 'The one line said when a player types a name that is kept for one pass (the banana guy’s own, the house’s; src/lib/name-guard.js): on the pass, in the naming moment and on a homestead sign. It never says whose the name is.',
+    approved: 'src/data/copy/names.json',
+    reads: 'src/scripts/banana-pass-page.js, src/lib/banana-id.js, src/scripts/banana-homestead.js',
+    top: ['taken', 'signTaken'],
+    fields: {
+      taken: toastLine(60, 'A player name that is kept for one pass, typed by anybody else: plain, never a telling-off, never whose it is.', NO_MARKUP),
+      signTaken: toastLine(70, 'The same, for the name on a homestead sign.', NO_MARKUP),
+    },
+    shape: () => [],
+  },
   'town-deliver': {
     id: 'town-deliver',
     title: 'Banana Town — the store’s home delivery',

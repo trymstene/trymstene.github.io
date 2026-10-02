@@ -19,6 +19,8 @@
 // back door in banana-world-engineering.
 import { passPush } from './banana-pass.js';
 import { cleanName } from './player-name.js';
+import { isProtectedName } from './name-guard.js';   // 🪪 the names only their owner may carry
+import NAMES from '../data/copy/names.json';
 
 const KEY = 'ps-name-v1';
 const ASKED = 'ps-name-asked-v1';
@@ -157,6 +159,15 @@ export function askName(o = {}) {
       // ⚠️ AWAITED: the checker lives in a lazily-imported module, so `clean`
       // returns a PROMISE — and a promise is always truthy, which would have
       // waved every name straight through.
+      // 🪪 a name kept for one pass (src/lib/name-guard.js): said now, not discovered when it quietly goes missing
+      let mine = '';
+      try { mine = localStorage.getItem('bb-ntok') || ''; } catch (e) {}
+      if (isProtectedName(v) && !mine) {
+        err.textContent = NAMES.taken;
+        err.hidden = false;
+        inp.focus();
+        return;
+      }
       go.disabled = true;
       let ok = true;
       try { ok = o.clean ? await o.clean(v) : true; } catch (e) { ok = true; }

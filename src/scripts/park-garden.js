@@ -1,7 +1,7 @@
 // 🌱 THE GARDEN — the park's daily-return ritual (P3b) + the entropy loop
 // (weeds/trash/eggs/bloom, P3b-LOOP) + the tool slot + the health bar.
 // Split from banana-park.js (P5); wired through the shared ctx.
-import { poofInto, worldSid, worldOwner, worldToken } from '../lib/world.js';
+import { poofInto, worldSid, worldOwner, worldToken, nameTok } from '../lib/world.js';
 import { passStat, passGet, seedGain, passSpend, passRefund, passNoticeAdd, coinsPaid } from '../lib/banana-pass.js';
 import { GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
 import { gardenerCardHtml } from '../lib/world-hud.js';
@@ -410,7 +410,7 @@ export function initGarden(ctx) {
     // 🪪 …and the proof: the room refuses a wrong token, and an absent one
     // once it enforces (a person-id claim without proof is nobody's)
     const wt = worldToken();
-    if (body) { body.pass = own; body.alt = sid; if (wt) body.wt = wt; }
+    if (body) { body.pass = own; body.alt = sid; if (wt) body.wt = wt; if (nameTok()) body.nt = nameTok(); }   // 🪪 + a protected name's token
     if (PARK_TEST) return shimGarden(path, body);
     try {
       // 🌱 the READ carries BOTH ids — it is the only reply that settles the

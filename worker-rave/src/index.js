@@ -28,6 +28,7 @@ import { checkLetter, checkCard, CAPS } from '../../src/lib/letter-gate.js';
 // 🔤 ONE RULE FOR A NAME A PLAYER CHOSE — see src/lib/player-name.js. It folds the formatting
 // stunts back to letters the shipped fonts can actually draw, rather than refusing them.
 import { cleanName } from '../../src/lib/player-name.js';
+import { isProtectedName } from '../../src/lib/name-guard.js';   // 🪪 the names only their owner may carry
 // ✉️ THE LETTERS THE RESIDENTS WRITE TO YOU (docs/town-jobs-plan.md §6 — "the load-bearing beam,
 // not a flourish"). Written by the rig, approved by hand, and read HERE rather than in the page:
 // a letter from Nib has to be posted by the server, because a page that could claim to be Nib is
@@ -797,6 +798,36 @@ async function worldTokenOf(env, wt) {
   } catch (e) { return null; }
 }
 const wtEnforce = (env) => !!(env && String(env.WT_ENFORCE || '') === '1');
+// 🪪 PROTECTED NAMES (2 Oct 2026; src/lib/name-guard.js, worker-pass mintNameToken). Trym: "add protection on my name, its a
+// bit silly if players thats using my name is sent letters and stuff". A protected name gets in only beside the NAME TOKEN the
+// pass worker gives its owner — `gid.exp.hmac` under 'nt:', the member token's secret — for the world id it speaks for. What
+// was stored before the token existed: a yard claimed before NAME_CUTOFF (when the first stranger did not exist yet) keeps
+// its names; anything later shows a protected one only if a token stood behind it when it was written (`ok`, `nameOk`).
+const NAME_CUTOFF = Date.UTC(2026, 8, 29);
+const NT_SEEN = new Map();
+async function nameTokenGid(env, nt) {
+  const raw = typeof nt === 'string' ? nt.slice(0, 120) : '';
+  const m = /^([a-f0-9]{16})\.(\d+)\.([a-f0-9]{64})$/.exec(raw);
+  if (!m || !(+m[2] > Date.now()) || !env || !env.MEMBER_HMAC) return '';
+  if (NT_SEEN.has(raw)) return NT_SEEN.get(raw);
+  let gid = '';
+  try {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(env.MEMBER_HMAC), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const buf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode('nt:' + m[1] + '.' + m[2]));
+    gid = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('') === m[3] ? m[1] : '';
+  } catch (e) { gid = ''; }
+  if (NT_SEEN.size > 200) NT_SEEN.clear();
+  NT_SEEN.set(raw, gid);
+  return gid;
+}
+const mayName = async (env, nt, gid) => !!gid && (await nameTokenGid(env, nt)) === gid;
+// the name a banana walks into a room with
+async function roomName(env, msg, strikes) {
+  const n = sanitizeName(msg.name, strikes);
+  return n && isProtectedName(n) && !(await mayName(env, msg.nt, msg.own)) ? '' : n;
+}
+// a stored name, on its way out
+const shownName = (n, ok, created) => (n && isProtectedName(n) && !ok && !(created && created < NAME_CUTOFF) ? '' : n);
 // what the internal verify route has been asked, since this isolate started —
 // the same shape worker-rave already reports for its own token rollout, so a
 // new caller can be watched before anything is allowed to depend on it
@@ -1056,7 +1087,7 @@ export class RaveRoom {
         id: crypto.randomUUID().slice(0, 8),
         sid,
         own,
-        name: sanitizeName(msg.name, strikes), // '' = the outfit-name speaks
+        name: await roomName(this.env, msg, strikes), // '' = the outfit-name speaks   // 🪪 a protected one only beside its token
         outfit: sanitizeOutfit(msg.outfit, mrank),
         joined: Date.now(),
         // floor time carried across reconnects: iOS re-sockets on every
@@ -1293,7 +1324,8 @@ export class RaveRoom {
 
     if (msg.t === 'outfit' && me) { // changed clothes mid-rave (via builder link back)
       const strikes = (await this.state.storage.get('nameStrikes')) || [];
-      me.name = sanitizeName(msg.name !== undefined ? msg.name : me.name, strikes);
+      const said = msg.name !== undefined ? msg.name : me.name;   // 🪪 a name already let in at the door stays; a new one is asked again
+      me.name = said === me.name ? me.name : await roomName(this.env, { name: said, nt: msg.nt, own: me.own }, strikes);
       if (me.name) this.recordName(me.sid, me.name);
       me.outfit = sanitizeOutfit(msg.outfit, mrank);
       if (msg.sober) { me.beer = false; me.fx = undefined; } // the water: a clean slate is a CLEAN slate
@@ -1737,6 +1769,8 @@ export class ParkRoom {
     // not a storage op, so it has to sit up here with the body read
     const wtRaw = ((b && typeof b.wt === 'string' ? b.wt : '') || url.searchParams.get('wt') || '').slice(0, 200);
     const tok = await worldTokenOf(this.env, wtRaw);
+    const gardenNameOk = !!tok && await mayName(this.env, b && b.nt, tok.gid);   // 🪪 a protected name only beside its token
+    const gN = (n) => (n && isProtectedName(n) && !gardenNameOk ? '' : n);
     let slots = (await this.state.storage.get('garden')) || [];
     if (!Array.isArray(slots)) slots = [];
     // the garden grew 8 → 16 (W3, site B) → 24 (site C NE): stored arrays PAD
@@ -2363,7 +2397,7 @@ export class ParkRoom {
       const sp = Math.floor(Number(b.spot));
       if (!(sp >= 0 && sp < BIRD_SPOTS_N)) return json({ err: 'bad spot' }, 400);
       if (hs.list.some((h2) => h2.spot === sp)) return json(await payload({ err: 'taken' }), 409);
-      hs.list.push({ spot: sp, name: sanitizeName(b.name, []) || '', passShort: short,
+      hs.list.push({ spot: sp, name: gN(sanitizeName(b.name, [])) || '', passShort: short,
         builtAt: now, lastStock: now,
         sday: { [short]: Math.floor(now / 86_400_000) }, stockers: [short] });
       await persist();
@@ -2383,7 +2417,7 @@ export class ParkRoom {
       if (sk.length > 60) delete h2.sday[sk[0]];
       h2.lastStock = now;
       // 🌾 the same roll of honour as a plant's waterers (see /garden/water)
-      const sn = sanitizeName(b.name, []) || '';
+      const sn = gN(sanitizeName(b.name, [])) || '';
       if (sn) {
         h2.slast = (h2.slast || []).filter((n2) => n2 !== sn);
         h2.slast.push(sn);
@@ -2401,7 +2435,7 @@ export class ParkRoom {
       if (!(sp >= 0 && sp < BORDER_SPOTS_N)) return json({ err: 'bad spot' }, 400);
       if (!BORDER_KINDS.includes(b.kind)) return json({ err: 'bad kind' }, 400);
       if (bd.list.some((f) => f.spot === sp)) return json(await payload({ err: 'taken' }), 409);
-      bd.list.push({ spot: sp, kind: b.kind, name: sanitizeName(b.name, []) || '',
+      bd.list.push({ spot: sp, kind: b.kind, name: gN(sanitizeName(b.name, [])) || '',
         passShort: short, at: now });
       await persist();
       return json(await payload({ ok: 1 }));
@@ -2436,7 +2470,7 @@ export class ParkRoom {
       if (s) return json(await payload({ err: 'taken' }), 409);
       if (!GARDEN_SEEDS[b.seed]) return json({ err: 'bad seed' }, 400);
       slots[i] = {
-        passShort: short, name: sanitizeName(b.name, []) || '', seed: b.seed,
+        passShort: short, name: gN(sanitizeName(b.name, [])) || '', seed: b.seed,
         plantedAt: now, lastWater: now, waterers: [], wday: {},
         grew: 0, gday: dayOf(now),      // ⭐ stages are earned in WATERED days now
       };
@@ -2460,7 +2494,7 @@ export class ParkRoom {
       // 💧 the last few names, so the card can say WHO kept it alive instead of
       // only how many did. Bounded at 5 and no consecutive repeat — it is a
       // roll of honour, not a log.
-      const wn = sanitizeName(b.name, []) || '';
+      const wn = gN(sanitizeName(b.name, [])) || '';
       if (wn) {
         s.wlast = (s.wlast || []).filter((n2) => n2 !== wn);
         s.wlast.push(wn);
@@ -2528,7 +2562,7 @@ export class ParkRoom {
         id: crypto.randomUUID().slice(0, 8),
         sid,
         own,
-        name: sanitizeName(msg.name, []), // family filter; the strike list is applied via /ingest below
+        name: await roomName(this.env, msg, []), // family filter; the strike list is applied via /ingest below
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: parkClampX(msg.x), y: parkClampY(msg.y),
         nw: msg.nw === 1,   // 🌱 a new banana (world.js worldNewcomer): the others see it and can welcome them
@@ -2694,7 +2728,7 @@ export class BeachRoom {
         id: crypto.randomUUID().slice(0, 8),
         sid,
         own,
-        name: sanitizeName(msg.name, []),
+        name: await roomName(this.env, msg, []),
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: bayClampX(msg.x), y: bayClampY(msg.y),
         sit: msg.sit === true,
@@ -3196,7 +3230,7 @@ export class SquareRoom {
       }
       const p = {
         id: crypto.randomUUID().slice(0, 8), sid, own,
-        name: sanitizeName(msg.name, []),
+        name: await roomName(this.env, msg, []),
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: sqClamp(msg.x, 50), y: sqClamp(msg.y, 94), room: sqRoom(msg.room),
         nw: msg.nw === 1,   // 🌱 a new banana (world.js worldNewcomer)
@@ -3334,7 +3368,7 @@ export class YardRoom {
         id: crypto.randomUUID().slice(0, 8),
         sid,
         own,
-        name: sanitizeName(msg.name, []),
+        name: await roomName(this.env, msg, []),
         outfit: sanitizeOutfit(msg.outfit, mrank),
         x: hsClampX(msg.x), y: hsClampY(msg.y),
         sit: msg.sit === true,
@@ -3537,7 +3571,7 @@ export class YardRoom {
     // 📇 `who` and `pass` ride the row so the directory is a single storage read rather than 400
     // gets. ⚠️ the index is ONE stored value capped at 400 rows — keep what goes in it small.
     rest.unshift({ slug: doc.slug, name: doc.name, stage: (doc.state && doc.state.stage) || 0,
-      updated: doc.updated, owner: doc.otag || '', who: doc.who || undefined, pass: doc.pass ? 1 : 0,
+      updated: doc.updated, owner: doc.otag || '', who: doc.who || undefined, pass: doc.pass ? 1 : 0, nameOk: doc.nameOk || undefined,
       // 👋 the last time somebody was actually HERE, which is not the same as the last time the yard
       // changed — see /who. Only the book reads it.
       seen: doc.seen || undefined,
@@ -3617,7 +3651,7 @@ export class YardRoom {
     // yard, in the doors feed and in every guestbook row — so it goes through the family filter
     // HERE, never on the client's word alone (19 Sep 2026). A refused name is simply not taken:
     // the claim still succeeds and the sign keeps its default, exactly as an empty name does.
-    const name = sanitizeName(yStrip(body.name, 28), []);
+    let name = sanitizeName(yStrip(body.name, 28), []);
     // 🪪 the world token: verified BEFORE the first storage op (WebCrypto is
     // not a storage await — the input-gate doctrine). A person-id claim
     // (pass ≠ alt) with a wrong token is refused; with none, only under
@@ -3626,6 +3660,12 @@ export class YardRoom {
     const tok = request.method === 'POST' ? await worldTokenOf(this.env, wtRaw) : null;
     const proven = !!tok && tok.gid === pass;
     const aliases = proven ? tok.aliases : [];
+    // 🪪 a protected name only beside its owner's name token (src/lib/name-guard.js): a sign keeps its default, a book name
+    // is not taken, a guestbook line goes unsigned
+    const nameOk = proven && await mayName(this.env, body.nt, pass);
+    const gName = (n) => (n && isProtectedName(n) && !nameOk ? '' : n);
+    const gWho = (w) => (!w || !isProtectedName(w.n) ? w : nameOk ? { ...w, ok: 1 } : undefined);
+    name = gName(name);
     // ⚠️ A WRONG TOKEN IS REFUSED WHATEVER pass AND alt SAY (19 Sep 2026). The person-id claim
     // (pass ≠ alt) still decides whether a token is REQUIRED — a signed-out phone sends one id and
     // no proof, and must keep working — but a caller who supplies a bad proof used to slip through
@@ -3656,7 +3696,7 @@ export class YardRoom {
           if (ownsIt) {
             // a rename moves the stamp, so it must hand it back — otherwise
             // the next save carries a stale `since` and the yard reloads
-            if (name && name !== doc.name) { doc.name = name; doc.mark = undefined; doc.updated = Date.now(); await this.state.storage.put('y:' + cur, doc); await this.indexUpsert(doc); }
+            if (name && name !== doc.name) { doc.name = name; doc.nameOk = isProtectedName(name) ? 1 : undefined; doc.mark = undefined; doc.updated = Date.now(); await this.state.storage.put('y:' + cur, doc); await this.indexUpsert(doc); }
             return json({ slug: cur, updated: doc.updated || 0 });
           }
           if (!name) return json({ slug: cur });   // just finding the way home
@@ -3666,7 +3706,7 @@ export class YardRoom {
       let slug = base;
       for (let i = 2; i < 100 && await this.state.storage.get('y:' + slug); i++) slug = base + '-' + i;
       if (await this.state.storage.get('y:' + slug)) return json({ err: 'crowded' }, 409);
-      const doc = { slug, name: name || 'A Homestead', pass, created: Date.now(), updated: Date.now(), state: null, otag: await yTag(pass) };
+      const doc = { slug, name: name || 'A Homestead', ...(name && isProtectedName(name) ? { nameOk: 1 } : {}), pass, created: Date.now(), updated: Date.now(), state: null, otag: await yTag(pass) };
       await this.state.storage.put('y:' + slug, doc);
       await this.state.storage.put('own:' + pass, slug);
       await this.indexUpsert(doc);
@@ -3790,10 +3830,10 @@ export class YardRoom {
       const since = +body.since;
       if (Number.isFinite(since) && since > 0 && doc.updated && since < doc.updated) return json({ err: 'stale', updated: doc.updated, mark: doc.mark || null }, 409);
       doc.state = this.yardSan(body.state);
-      if (name) doc.name = name;
+      if (name) { doc.name = name; doc.nameOk = isProtectedName(name) ? 1 : undefined; }
       // 📇 who lives here. It rides /save because that is the call every player makes constantly,
       // so the directory fills itself in as people play rather than needing a migration.
-      const who = yWho(body.who);
+      const who = gWho(yWho(body.who));
       if (who) doc.who = who;
       doc.mark = mark || undefined;
       doc.updated = Date.now();
@@ -3817,7 +3857,7 @@ export class YardRoom {
       if (!doc) return json({ slug: null });
       const st = doc.state || {};
       return json({
-        slug, was: doc.was || null, name: doc.name, created: doc.created || 0, updated: doc.updated || 0, mark: doc.mark || null,
+        slug, was: doc.was || null, name: shownName(doc.name, doc.nameOk, doc.created) || 'A Homestead', created: doc.created || 0, updated: doc.updated || 0, mark: doc.mark || null,
         stage: st.stage || 0, style: st.style || {}, look: st.look || '', home: st.home,
         items: st.items || [], soil: st.soil || [], fence: st.fence || [],
         mailAt: st.mailAt, signAt: st.signAt, inItems: st.inItems || {},
@@ -3875,7 +3915,7 @@ export class YardRoom {
         // public fields only (all readable via /yard?slug already) — the
         // owner's pass id never leaves the store; the TAG is a hash of it
         if (!doc.otag && doc.pass) { doc.otag = await yTag(doc.pass); await this.state.storage.put('y:' + doc.slug, doc); }
-        list.push({ slug: doc.slug, name: doc.name,
+        list.push({ slug: doc.slug, name: shownName(doc.name, doc.nameOk, doc.created) || 'A Homestead',
           stage: (doc.state && doc.state.stage) || 0,
           created: doc.created || 0, updated: doc.updated || 0, owner: doc.otag || '' });
       }
@@ -3959,7 +3999,7 @@ export class YardRoom {
       const day = yDay();
       const vis = (await this.state.storage.get('vis:' + slug)) || [];
       if (!vis.some((v) => v.o === who && v.day === day)) {
-        vis.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, day, t: Date.now() });
+        vis.unshift({ n: gName(sanitizeName(yStrip(body.name, 24), [])), o: who, day, t: Date.now() });
         await this.state.storage.put('vis:' + slug, vis.slice(0, VIS_CAP));
       }
       return json({ ok: 1 });
@@ -3978,7 +4018,7 @@ export class YardRoom {
       const day = yDay();
       let g = (await this.state.storage.get('g:' + slug)) || [];
       g = g.filter((e) => !(e.o === who && e.day === day));
-      g.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, x: text, day, t: Date.now() });
+      g.unshift({ n: gName(sanitizeName(yStrip(body.name, 24), [])), o: who, x: text, day, t: Date.now() });
       g = g.slice(0, GUEST_CAP);
       await this.state.storage.put('g:' + slug, g);
       return json({ ok: 1, guest: g.slice(0, 12).map((e) => ({ n: e.n, x: e.x, t: e.t })) });
@@ -3993,7 +4033,7 @@ export class YardRoom {
       const day = yDay();
       const wat = (await this.state.storage.get('wat:' + slug)) || [];
       if (wat.some((w) => w.d === day)) return json({ ok: 1, already: 1 });
-      wat.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, d: day, t: Date.now() });
+      wat.unshift({ n: gName(sanitizeName(yStrip(body.name, 24), [])), o: who, d: day, t: Date.now() });
       await this.state.storage.put('wat:' + slug, wat.slice(0, WAT_CAP));
       return json({ ok: 1 });
     }
@@ -4012,7 +4052,7 @@ export class YardRoom {
       const day = yDay();
       const hugs = (await this.state.storage.get('hug:' + slug)) || [];
       if (hugs.some((h) => h.d === day && h.i === id)) return json({ ok: 1, already: 1 });
-      hugs.unshift({ i: id, n: sanitizeName(yStrip(body.name, 24), []), o: who, d: day, t: Date.now() });
+      hugs.unshift({ i: id, n: gName(sanitizeName(yStrip(body.name, 24), [])), o: who, d: day, t: Date.now() });
       await this.state.storage.put('hug:' + slug, hugs.slice(0, HUG_CAP));
       return json({ ok: 1 });
     }
@@ -4028,7 +4068,7 @@ export class YardRoom {
       const day = yDay();
       const fed = (await this.state.storage.get('fed:' + slug)) || [];
       if (fed.some((f) => f.d === day)) return json({ ok: 1, already: 1 });
-      fed.unshift({ n: sanitizeName(yStrip(body.name, 24), []), o: who, d: day, t: Date.now() });
+      fed.unshift({ n: gName(sanitizeName(yStrip(body.name, 24), [])), o: who, d: day, t: Date.now() });
       await this.state.storage.put('fed:' + slug, fed.slice(0, FEED_CAP));
       if (doc.state) {
         doc.state.feedAt = Date.now();
@@ -4124,8 +4164,8 @@ export class YardRoom {
       // ✉️ and whose it is, for the letter's own heading: the banana's name and the sign's, both already
       // through the family filter on the way in, folded on the way out like the address book does
       const doc = slug ? await this.state.storage.get('y:' + slug) : null;
-      const n = doc && doc.who && doc.who.n ? cleanName(doc.who.n) : '';
-      const house = doc && doc.name ? (cleanName(doc.name) || doc.name) : '';
+      const n = doc && doc.who && doc.who.n ? shownName(cleanName(doc.who.n), doc.who.ok, doc.created) : '';
+      const house = doc && doc.name ? (shownName(cleanName(doc.name) || doc.name, doc.nameOk, doc.created) || 'A Homestead') : '';
       return json({ slug: slug || '', n, house });
     }
     // 📬 FOR THE POST ROOM ONLY (22 Sep 2026): a house's stage and its owner's short id, so a resident can
@@ -4144,7 +4184,7 @@ export class YardRoom {
       if (!slug) return json({ err: 'unclaimed' }, 404);
       const doc = await this.state.storage.get('y:' + slug);
       if (!doc) return json({ err: 'gone' }, 404);
-      const w = yWho(body.who);
+      const w = gWho(yWho(body.who));
       if (!w) return json({ err: 'nobody' }, 400);
       doc.who = w;
       doc.seen = Date.now();
@@ -4167,9 +4207,9 @@ export class YardRoom {
         // 🔤 FOLDED ON THE WAY OUT AS WELL AS ON THE WAY IN. Names stored before the rule existed
         // are still in the index in whatever the player typed — folding here means every row reads
         // properly today rather than the next time that person happens to save. Same one rule.
-        const n = cleanName(e.who.n);
+        const n = shownName(cleanName(e.who.n), e.who.ok, e.created);
         if (!n) continue;
-        folk.push({ slug: e.slug, house: cleanName(e.name) || e.name || '', n, fit: e.who.fit || {} });
+        folk.push({ slug: e.slug, house: shownName(cleanName(e.name) || e.name || '', e.nameOk, e.created) || 'A Homestead', n, fit: e.who.fit || {} });
         if (folk.length >= FOLK_PAGE) break;
       }
       return json({ folk, more: folk.length >= FOLK_PAGE });
@@ -4190,9 +4230,9 @@ export class YardRoom {
         if (!e || !e.pass || !e.who || !e.who.n || e.ne || e.slug === mine || yQa(e.slug)) continue;
         const t = Math.max(e.updated || 0, e.seen || 0);
         if (!(t > cut)) continue;
-        const n = cleanName(e.who.n);
+        const n = shownName(cleanName(e.who.n), e.who.ok, e.created);
         if (!n) continue;
-        rows.push({ slug: e.slug, house: cleanName(e.name) || e.name || '', n, fit: e.who.fit || {}, t, nw: e.created && now - e.created < NEW_DAYS * 86400000 ? 1 : undefined });
+        rows.push({ slug: e.slug, house: shownName(cleanName(e.name) || e.name || '', e.nameOk, e.created) || 'A Homestead', n, fit: e.who.fit || {}, t, nw: e.created && now - e.created < NEW_DAYS * 86400000 ? 1 : undefined });
       }
       rows.sort((a, b) => b.t - a.t);
       return json({ echoes: rows.slice(0, ECHO_MAX).map(({ t, ...r }) => ({ ...r, d: Math.floor((now - t) / 86400000) })) });
@@ -4212,8 +4252,8 @@ export class YardRoom {
       let mySlug = '';
       for (const id of [pass, ...(aliases || [])]) { const sl = await this.state.storage.get('own:' + id); if (sl) { mySlug = sl; break; } }
       const myDoc = mySlug ? await this.state.storage.get('y:' + mySlug) : null;
-      const said = yWho({ n: body.n, fit: body.fit });
-      const n = myDoc && myDoc.who && myDoc.who.n ? cleanName(myDoc.who.n) : (said ? cleanName(said.n) : '');
+      const said = gWho(yWho({ n: body.n, fit: body.fit }));
+      const n = myDoc && myDoc.who && myDoc.who.n ? shownName(cleanName(myDoc.who.n), myDoc.who.ok, myDoc.created) : (said ? cleanName(said.n) : '');
       const fit = (myDoc && myDoc.who && myDoc.who.fit) || yFit(body.fit);
       // to whom: a house (an echo, the book), or a handle (a wave back to somebody with no house)
       let to = '';

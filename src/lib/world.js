@@ -62,6 +62,11 @@ let sidMem = '';
 export function memberTok() {
   try { return localStorage.getItem('bb-mtok') || undefined; } catch (e) { return undefined; }
 }
+// 🪪 the NAME TOKEN: only the owner of a protected name is ever given one (worker-pass mintNameToken, src/lib/name-guard.js).
+// It rides beside the name wherever a name goes — a room's hello, a yard's and the park garden's requests
+export function nameTok() {
+  try { return localStorage.getItem('bb-ntok') || ''; } catch (e) { return ''; }
+}
 
 export function worldSid() {
   if (sidMem) return sidMem;
@@ -218,7 +223,7 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
       tries = 0;
       // 🪪 the OWNER rides along so a person shows up ONCE, not once per
       // device — the room supersedes an older socket for the same account.
-      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), mt: memberTok(), ...(worldNewcomer() ? { nw: 1 } : {}), ...hi() }));
+      sock.send(JSON.stringify({ t: 'hi', sid: worldSid(), own: worldOwner(), mt: memberTok(), ...(nameTok() ? { nt: nameTok() } : {}), ...(worldNewcomer() ? { nw: 1 } : {}), ...hi() }));
     };
     sock.onmessage = (ev) => {
       let m;

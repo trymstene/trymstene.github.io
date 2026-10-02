@@ -64,6 +64,12 @@ function keepGid(d) {
     }
   } catch (e) {}
   walletKeep(d);   // 💰 the server wallet lands with a login too
+  // 🪪 the name token: given only to the owner of a protected name (worker-pass mintNameToken); an identity answer without
+  // one means this pass is not that owner, so a token left behind by somebody else on this browser goes
+  try {
+    if (d && typeof d.nameToken === 'string' && /^[a-f0-9]{16}\.\d+\.[a-f0-9]{64}$/.test(d.nameToken)) localStorage.setItem('bb-ntok', d.nameToken);
+    else if (d && d.gid) localStorage.removeItem('bb-ntok');
+  } catch (e) {}
   return gid;
 }
 
@@ -107,6 +113,7 @@ const WORLD_KEYS = [
   'bh-rally-best',                                       // …and the old device-only best it grew out of
   'tw-fixed-v1', 'tw-ghost-v1', 'tw-told-v1', 'tw-arcxp-v1', // 📅 the town's day: it rides the blob now (2 Oct 2026)
   'bb-member', 'bb-mtok',                                // the supporter grant + its signed room token
+  'bb-ntok',                                             // 🪪 the name token: a protected name's owner only
   'pass-ev-v1', 'pass-wallet-v1', 'pass-rules-v1',       // 📜 the unsent ledger tape + 💰 the server wallet + 📏 caps used — never the next person's
   GID_KEY, WT_KEY, PULL_KEY,
 ];

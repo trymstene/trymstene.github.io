@@ -213,6 +213,12 @@ function keepGid(d, force) {
     }
   } catch (e) {}
   walletKeep(d, force);   // 💰 the server wallet + the tape ids it has seen (a push ack is always the freshest)
+  // 🪪 the name token: given only to the owner of a protected name (worker-pass mintNameToken); an identity answer without
+  // one means this pass is not that owner, so a token left behind by somebody else on this browser goes
+  try {
+    if (d && typeof d.nameToken === 'string' && /^[a-f0-9]{16}\.\d+\.[a-f0-9]{64}$/.test(d.nameToken)) localStorage.setItem('bb-ntok', d.nameToken);
+    else if (d && d.gid) localStorage.removeItem('bb-ntok');
+  } catch (e) {}
   // 🎩 the signed member token (mirror of pass-sync.js keepGid — change both):
   // rooms present it so other players get to SEE the supporter hat
   try {

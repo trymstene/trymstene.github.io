@@ -28,7 +28,9 @@ import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 
 import { askName } from '../lib/banana-id.js';
-import { worldOwner, worldSid, worldToken, presenceRoom, poofInto, snapScale, wearSaved } from '../lib/world.js';
+import { worldOwner, worldSid, worldToken, presenceRoom, poofInto, snapScale, wearSaved, nameTok } from '../lib/world.js';
+import { isProtectedName } from '../lib/name-guard.js';   // 🪪 a sign named for someone else's name is refused as it is typed
+import NAMES from '../data/copy/names.json';
 import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
@@ -54,7 +56,7 @@ let yPlain = false;
 async function yFetch(path, body) {
   const r = await fetch(YARD_API + path, body ? {
     method: 'POST',
-    body: JSON.stringify({ ...body, pass: yPlain ? worldSid() : worldOwner(), alt: worldSid(), ...(yPlain ? {} : { wt: worldToken() }) }),   // 🪪 id + proof
+    body: JSON.stringify({ ...body, pass: yPlain ? worldSid() : worldOwner(), alt: worldSid(), ...(yPlain ? {} : { wt: worldToken() }), ...(yPlain || !nameTok() ? {} : { nt: nameTok() }) }),   // 🪪 id + proof (+ a protected name's token)
   } : undefined);
   if (!r.ok) {
     const e = new Error('yard ' + r.status);
@@ -3427,6 +3429,7 @@ function init(visitDoc, visitMiss) {
     const inp = document.getElementById('hsClaimName');
     const v = inp.value.trim().slice(0, 28);
     if (!v) { inp.focus(); return; }
+    if (isProtectedName(v) && !nameTok()) { toast(NAMES.signTaken); inp.focus(); return; }   // 🪪 the yard would keep its default anyway
     const btn = document.getElementById('hsClaimGo');
     btn.disabled = true;
     let ok = true;   // ⚠️ AWAITED — a promise is always truthy (the askName lesson)

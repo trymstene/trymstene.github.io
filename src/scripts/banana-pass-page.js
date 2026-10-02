@@ -19,7 +19,9 @@ import PASS_WORDS from '../data/copy/pass-toasts.json';   // ✍️ what the pas
 const PT = PASS_WORDS;
 import { iconSvg } from '../lib/pixel-icons.js';
 import { wearToCustom } from '../lib/wear-render.js';
-import { worldToken } from '../lib/world.js';
+import { worldToken, nameTok } from '../lib/world.js';
+import { isProtectedName } from '../lib/name-guard.js';   // 🪪 the names only their owner may carry
+import NAMES from '../data/copy/names.json';
 
 // 🎁 community catalog (the ownership stack) — owned items show in GEAR and
 // can be worn; the manifest is public + cached, fetched once per page
@@ -851,6 +853,12 @@ function wireName() {
         const v = cleanName(inp.value);
         if (v && !captionsClean({ top: v })) {
           passToast(PT.name.clean);
+          inp.focus();
+          return;
+        }
+        // 🪪 a name kept for one pass: said here, before the pass worker would quietly leave this one nameless
+        if (v && isProtectedName(v) && !nameTok()) {
+          passToast(NAMES.taken);
           inp.focus();
           return;
         }
