@@ -1043,6 +1043,14 @@ function init(visitDoc, visitMiss) {
     onKind: (k) => { huddle = k === 'storm' ? 2 : (k === 'drizzle' || k === 'heavy') ? 1 : 0; },
     track: (k) => track('homestead_weather', { kind: k }),
   });
+  // 🌗 THE NIGHT (3 Oct 2026, design library §56): the world's light layer over the yard, in its own lazy chunk with the
+  // yard's lights (homestead-night.js: your home's windows, the lighting decor on the plot, every banana) and LINKED to the
+  // weather, so the house's door hides rain and night together. ⚠️ getters: pos and peers are declared further down.
+  let hsNight = null;
+  import('./homestead-night.js').then((m) => {
+    hsNight = m.mountYardNight(view, hsWx, { state: () => state, styleKey: curStyleKey, dims: structDims, scale: () => scale,
+      cam: () => ({ x: camX, y: camY }), pos: () => pos, peers: () => peers, inside: () => !!inside });
+  }).catch((e) => console.warn('[homestead] the night did not load', e));
   // 🐾 where the herd is standing, for the gather. Cheap: called only when an
   // animal picks its next spot, which is every few seconds each.
   function herdAt() {
@@ -5223,6 +5231,7 @@ function init(visitDoc, visitMiss) {
     drawMe();
     doorTick();
     hsWx.tick(now);   // 🌦 the sky runs indoors too — only the sheet is hidden
+    if (hsNight) hsNight.tick(now);   // 🌗 and the night with it
     // ⚡ indoors the yard is under the shade — its critters neither move nor
     // paint until you step back out ("what nobody sees doesn't run")
     if (!inside) {
@@ -5400,6 +5409,8 @@ function init(visitDoc, visitMiss) {
   if (FARM && !visiting && state.claimedAt) { farmGrant(); morningTick(); }
   if (HS_TEST) {
     window.__hs = {
+      sky: () => (hsNight ? hsNight.state() : null), skyHour: (h) => { if (hsNight) hsNight.hour(h); },   // 🌗 the night layer, and its QA pin
+      lights: () => (hsNight ? hsNight.lights() : []),
       wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
       pos, tgt, peers, birds: birdsLive,
       signGeo: () => ({ W, H, signAt: state.signAt, claimed: !!state.claimedAt }),   // the walk taps the sign where it really stands

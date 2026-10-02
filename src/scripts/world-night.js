@@ -164,7 +164,7 @@ export function mountNight(host, opts = {}) {
   return {
     tick,
     /** 🏠 inside a room there is no sky: linked to the weather (weather.link(night)), so one door hides both */
-    indoors: (on) => { hidden = !!on; if (hidden) { show(false); last = ''; } },
+    indoors: (on) => { hidden = !!on; last = ''; drawAt = 0; if (hidden) show(false); },   // …and the door back out repaints on the next frame
     /** 0 (day) to 1 (night), the area's mood included — what the lamps, the clock and the walks read */
     level: () => dark,
     state: () => ({ dark: Math.round(dark * 1000) / 1000, phase, hour: Math.round(hourNow * 100) / 100, mood: moodName, hidden: hidden || dark <= 0.004, lights: count }),

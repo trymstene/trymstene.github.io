@@ -1810,5 +1810,11 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
 ### Adding the night to an area
 
 1. `const night = weather.link(mountNight(view, { lights: () => [...] }))` beside the weather, and `.tick(now)` from the loop.
+   Load it LAZILY with the area's light list (the town's in `banana-town.js`, the yard's in its own `homestead-night.js`):
+   no first frame needs it, and the area scripts sit at their lines.
 2. Hand it the area's lights in view px (world px × the area's scale, minus its camera), and your banana's.
 3. Interiors need nothing more: the weather's `indoors()` hides the night too.
+4. **A home's windows are the art's own panes**, per sprite (the homestead's `HOME_LIGHTS`, six styles: the mobile homes'
+   glass found by colour, the country house's by eye because its slate roof is glass-coloured, and a tent — which has no
+   window — glowing at its door and flap). `tests/homestead-night.spec.mjs` holds the country house's seven panes and a
+   mobile home's four ON the home's box, a campfire lighting only once it is lit, and the house's door hiding the night.

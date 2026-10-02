@@ -2,6 +2,7 @@
 // brain() for her every frame, stuck() when a wall stops her and pet() when she is tapped. Everything it needs from
 // the yard arrives once through init(ctx); `state` and `huddle` are LIVE getters because the yard reassigns them.
 import W from '../data/copy/homestead-cat.json';   // her words: the doorstep gift's news and thanks
+import { skyAt, townHourAt } from '../lib/world.js';   // 🌗 her night is the world's night
 let C = null, pos, hens, birdsLive, lvOf, traitsOf, spotOf, isYoungA;
 export function init(ctx) {
   C = ctx;
@@ -112,7 +113,8 @@ export function brain(h, now) {
     return { x: s.x + (Math.random() * 72 - 36), y: s.y + 8 + Math.random() * 16 };
   };
   const pick = () => {
-    const eve = (() => { const hr = new Date().getHours(); return hr >= 19 || hr < 5; })();
+    // 🌗 dusk to dawn on the WORLD's clock (3 Oct 2026): the night over her yard, not the phone's own hour — a third clock
+    const eve = skyAt(townHourAt(Date.now())).phase !== 'day';
     const prey = catPrey(h);
     if (prey && !g.calm && Math.random() < 0.3) { g.prey = prey; go('hunt'); return; }   // calm: a walk holding her still
     const pNap = t.pat === 2 ? 0.45 : t.pat === 0 ? 0.18 : 0.32;
