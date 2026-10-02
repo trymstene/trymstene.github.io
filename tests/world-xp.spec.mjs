@@ -55,25 +55,27 @@ const fillOf = (page) => page.evaluate(() => {
   return m ? Number(m[1]) : null;
 });
 for (const a of AREAS) {
-  test(`${a.name}: XP glows round your banana, the chip lights and its bar grows, and a level rides up off it`, async ({ page }) => {
+  test(`${a.name}: XP glows round your banana, orbs fly into the pill and its bar counts up, and a level rides up off it`, async ({ page }) => {
     const errs = await open(page, a, 3900);   // LVL 10, 75 short of LVL 11 (3 975)
     expect(await lvl(page)).toBe('LVL 10');
     const f0 = await fillOf(page);
     await page.evaluate(() => window.__xp.grant(20));
     expect(await lvl(page), '⭐ the chip holds until the beat (§30.2)').toBe('LVL 10');
-    // the beat: the glow hugging the banana, behind it, pulsing in
+    // "+20 XP" beside the head — on the rave's floor its own trickle (a spotlight's +2 a beat) may come first or fold in
+    const plusRe = new RegExp('^' + WL.plus.replace('+', '\\+').replace('{n}', '(\\d+)') + '$');
+    await expect.poll(() => page.$$eval('.wx-plus', (ns) => ns.map((n) => n.textContent.trim())).then((ts) => ts.some((t) => {
+      const m = t.match(plusRe); return !!m && (a.name === 'rave' ? Number(m[1]) >= 20 : Number(m[1]) === 20);
+    })), { timeout: 5000, message: 'the label' }).toBe(true);
+    // the beat: the glow hugging the banana, behind it, pulsing in, and orbs of the same light on their way to the pill
+    await expect.poll(() => page.locator('.wx-orb').count(), { timeout: 5000, message: 'the orbs fly' }).toBeGreaterThan(0);
+    expect(await lvl(page), 'the pill holds while they are out (§30.2)').toBe('LVL 10');
     await expect.poll(() => page.evaluate((sel) => { const g = document.querySelector(sel + ' > .wx-halo'); return g ? Number(getComputedStyle(g).opacity) : 0; }, a.me), { timeout: 4000, message: 'the banana glows' }).toBeGreaterThan(0.3);
     expect(await page.evaluate((sel) => getComputedStyle(document.querySelector(sel + ' > .wx-halo')).zIndex, a.me), 'behind the banana').toBe('-1');
-    expect(await page.locator('.wx-glow').count(), 'the chip glows in the same beat').toBe(1);
-    expect(await page.locator('.wx-gain').count(), 'the part just earned is lit on the bar').toBe(1);
-    const plusText = (await page.locator('.wx-plus').first().textContent()).trim();
-    if (a.name === 'rave') {
-      // the floor pays on its own too (a spotlight's +2 per rhythm tick), and the merge window folds that in: correct
-      const m = plusText.match(new RegExp('^' + WL.plus.replace('+', '\\+').replace('{n}', '(\\d+)') + '$'));
-      expect(m && Number(m[1]), plusText).toBeGreaterThanOrEqual(20);
-    } else {
-      expect(plusText).toBe(WL.plus.replace('{n}', '20'));
-    }
+    await page.waitForTimeout(120);
+    await page.screenshot({ path: `test-results/world-xp-${a.name}-orbs.png` });
+    // the last one in: the pill lit up, its bar flashing up to the new length
+    await expect.poll(() => page.locator('.wx-gain').count(), { timeout: 4000, message: 'the part just earned is lit on the bar' }).toBeGreaterThan(0);
+    expect(await page.locator('.wx-glow').count(), 'the pill glows').toBe(1);
     await expect.poll(() => fillOf(page), { timeout: 2000, message: 'the bar grows' }).toBeGreaterThan(f0 + 0.02);
     await page.waitForTimeout(150);
     await page.screenshot({ path: `test-results/world-xp-${a.name}-glow.png` });
@@ -145,7 +147,9 @@ test('reduced motion: the glows stand still, the chip says it in the beat, and t
   const errs = await open(page, AREAS[0], NEAR_11);
   expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), 'the page sees it').toBe(true);
   await page.evaluate(() => window.__xp.grant(20));
-  await expect.poll(() => lvl(page), { timeout: 1500, intervals: [50] }).toBe('LVL 11');
+  let orbs = 0;
+  await expect.poll(async () => { orbs = Math.max(orbs, await page.locator('.wx-orb').count()); return lvl(page); }, { timeout: 1500, intervals: [50] }).toBe('LVL 11');
+  expect(orbs, 'no orb flies').toBe(0);
   const moving = await page.evaluate(() => [...document.querySelectorAll('.wx-halo, .wx-glow, .wx-gain, .wh__lvl, [data-wh="lvl"]')].reduce((n, e) => n + e.getAnimations().length, 0));
   expect(moving, 'nothing pulses, swells or shakes').toBe(0);
   expect(await page.evaluate(() => Number(getComputedStyle(document.querySelector('.tw-me > .wx-halo')).opacity)), 'the glow is still there, still').toBeGreaterThan(0.3);

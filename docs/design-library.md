@@ -1678,18 +1678,20 @@ Trym: *"i dont feel XP in banana world FEELS great, in the way getting banana co
 spinning wheel"*; then, of the first cut's sparks flying to the HUD: *"its better with a soft pulsating golden glow around
 the banana when experience points are received, and that the XP-bar also glows up at the same time, maybe with a small
 shake animation … and an animation showing the xp bar growing"*, and of the glow: *"close glow tight to the shape of the
-banana and its wearables, not glow with alot of spread, and whiter golden, not yellow"*.
+banana and its wearables, not glow with alot of spread, and whiter golden, not yellow"*; and then: *"fatten it some more so
+it looks stronger … small strong-glowing balls of the same style fly into the xp stickerpill when counting up the new XP"*.
 
 - **One layer for every grant.** XP is `passStat('rep', n)` in every area, and passStat says so once (`pass:rep`, with
   the true before and after, the double-XP pie included). The world HUD (`src/lib/world-hud.js`) hears it and hands it
   to `src/lib/world-xp.js`, a lazy chunk that is the same in the town, the park, the bay, the homestead and the rave.
   **An area grants and never shows its own XP**: no bare "+2" float, no XP pill of its own, no level toast.
-- **One beat, together** (§30.2: nothing before the moment that tells it). The LVL chip holds until the beat; then the
-  glow pulses round your banana as "+N XP" rises beside its head, and the chip lights up, swells, gives a small shake and
-  its bar grows, the fill flashing up to its new length. Grants that trickle merge into one beat (450 ms in the areas,
-  1.5 s on the rave's floor, never held past twice that), so a run of small ones is one "+N XP", never wallpaper.
-- **The glow hugs the banana and what it wears**: a pale copy of its own canvas, just behind it, under a tight
-  whitish-gold shadow — never a halo with spread, never plain yellow. It is a static filter under an opacity pulse
+- **One beat** (§30.2: a win lands where it goes). The LVL pill holds; the glow pulses round your banana as "+N XP" rises
+  beside its head, and small orbs of the same whitish-gold light (one to eight, by the size of the grant) fly from it into
+  the pill, its bar counting up as each one lands; the last one in lights the pill up, swells it and shakes it, the fill
+  flashing up to its new length. Grants that trickle merge into one beat (450 ms in the areas, 1.5 s on the rave's floor,
+  never held past twice that), so a run of small ones is one "+N XP", never wallpaper.
+- **The glow hugs the banana and what it wears**: a pale copy of its own canvas, three canvas pixels fatter, just behind
+  it, under a tight whitish-gold shadow and at full strength at its height — never a halo with spread, never plain yellow. It is a static filter under an opacity pulse
   (§21.4), it dances with the banana while it glows, and it keeps its own filter over an area's canvas rules.
 - **A level is the chip's moment.** The bar fills to the top, the number turns, the bar starts again from empty (it never
   drains backwards, and it is never full a step short), the chip pops, and the arrow with "LVL N" rides up off your
@@ -1698,13 +1700,13 @@ banana and its wearables, not glow with alot of spread, and whiter golden, not y
 - **The big moment stands on its own card** — the HUD chips' dark see-through ground and gold edge — so its white lines
   read over cobbles, grass, sand and the floor; the title you hold and what comes next are two lines that each fit a
   360-px phone.
-- **Reduced motion** (§3d): nothing pulses, swells or shakes; the glows are lit and then gone, the chip says it in the
-  beat, the label and the riser stand still, and a title still gets its moment.
+- **Reduced motion** (§3d): no orb flies, nothing pulses, swells or shakes; the glows are lit and then gone, the pill says
+  it in the beat, the label and the riser stand still, and a title still gets its moment.
 - **The rave keeps what only the floor has:** the roster's level, the room's `lvl`, and the four-note arpeggio, which
   plays on `world:levelup`, as the level lands.
 - **Enforced by** `tests/world-xp.spec.mjs`. A feel cannot be grepped, so the walk asserts the order of things in all
-  five areas on a phone: the hold, the glow behind the banana, the chip's glow and its lit bar, the bar growing, the
-  label, a level and its riser, the title in the copy file's words with no riser, level 99, the longest title at 360 px,
+  five areas on a phone: the hold, the label, the orbs in flight while the pill holds, the glow behind the banana, the
+  pill's glow and its lit bar, the bar growing, a level and its riser, the title in the copy file's words with no riser, level 99, the longest title at 360 px,
   reduced motion standing still, and a trickle as one label.
 
 ## §54 YOUR BANANA WEARS WHAT IS SAVED, ON THE SCREEN YOU ARE LOOKING AT (2 Oct 2026, Trym on two devices)

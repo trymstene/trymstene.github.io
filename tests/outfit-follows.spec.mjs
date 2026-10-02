@@ -81,7 +81,8 @@ for (const a of AREAS) {
     // the laptop's outfit lands
     const n0 = sent.length;
     release();
-    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('bb-last') || '{}').hat), { timeout: 8000 }).toBe('pigeon');
+    // the laptop's outfit is the save (on the rave's floor a gift drop caught where the banana stands may sit on its head: the game)
+    await expect.poll(() => page.evaluate((rave) => { const o = JSON.parse(localStorage.getItem('bb-last') || '{}'); return !(o.extras || {}).scarf && (o.hat === 'pigeon' || (rave && o.hat === 'djheadphones')); }, a.name === 'rave'), { timeout: 8000 }).toBe(true);
     if (a.hook) {
       await expect.poll(async () => (await wears()).hat, { timeout: 3000 }).toBe('pigeon');
       expect((await wears()).extras.scarf, 'the scarf came off').toBeFalsy();

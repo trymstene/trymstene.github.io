@@ -31,7 +31,8 @@ const ARROW = '<svg width="21" height="24" viewBox="0 0 7 8" shape-rendering="cr
 // filter over an area’s “the banana’s canvas” rules (the rave tints a canvas for its effects), which it otherwise shares
 const CSS = `
 .wx-me{isolation:isolate}
-.wx-halo{position:absolute;z-index:-1;pointer-events:none;opacity:0;image-rendering:pixelated;filter:drop-shadow(0 0 1px #fffbea) drop-shadow(0 0 2px #fff1c4) drop-shadow(0 0 3px rgba(255,228,160,.9))!important}
+.wx-halo{position:absolute;z-index:-1;pointer-events:none;opacity:0;image-rendering:pixelated;filter:drop-shadow(0 0 1px #fffef6) drop-shadow(0 0 2px #fff4cc) drop-shadow(0 0 5px rgba(255,224,145,.9))!important}
+.wx-orb{position:absolute;left:0;top:0;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;z-index:2170;pointer-events:none;background:radial-gradient(circle,#fffffa 0 35%,#fff3c8 62%,#ffe08a 100%);box-shadow:0 0 4px 2px rgba(255,240,190,.95),0 0 10px 4px rgba(255,214,120,.6)}
 .wx-glow{position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;opacity:0;background:rgba(255,244,205,.13);box-shadow:inset 0 0 7px rgba(255,246,215,.55),0 0 0 2px rgba(255,250,228,.95),0 0 10px 3px rgba(255,234,170,.85)}
 .wx-gain{position:absolute;left:0;top:0;bottom:0;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(255,252,236,.55),#fffdf2);box-shadow:0 0 5px 1px rgba(255,240,190,.95)}
 .wx-plus,.wx-riser{position:absolute;left:0;top:0;pointer-events:none;white-space:nowrap;font-weight:800;letter-spacing:.04em;color:#ffe135;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000,0 2px 0 #000}
@@ -108,21 +109,63 @@ function finish(to) {
   if (api) api.release();
 }
 
-// 🌟 one beat: the banana glows, "+N XP" rises, the chip lights and its bar grows — together
+// 🌟 one beat: the banana glows and "+N XP" rises beside it, small glowing orbs of the same light fly from it into the XP
+// pill and its bar counts up as each one lands, and the last one in lights the pill up, swells it and shakes it (Trym:
+// "small strong-glowing balls of the same style fly into the xp stickerpill when counting up the new XP")
+const RING = []; for (let dx = -3; dx <= 3; dx++) for (let dy = -3; dy <= 3; dy++) if ((dx || dy) && dx * dx + dy * dy <= 10) RING.push([dx, dy]);   // the halo’s copy, dilated ~3 canvas px
 function land(b) {
   const host = $(A.host), me = $(A.me), chip = api && api.lvl;
-  const hr = host && host.getBoundingClientRect(), mr = me && me.getBoundingClientRect();
-  const meOn = !!(hr && mr && mr.width && mr.bottom > hr.top && mr.top < hr.bottom && mr.right > hr.left && mr.left < hr.right);
+  const hr = host && host.getBoundingClientRect(), mr = me && me.getBoundingClientRect(), cr = chip && chip.getBoundingClientRect();
+  const on = (r) => !!(hr && r && r.width && r.height && r.bottom > hr.top && r.top < hr.bottom && r.right > hr.left && r.left < hr.right);
+  const at = (x, y) => ({ x: x - hr.left - host.clientLeft, y: y - hr.top - host.clientTop });
   const amount = b.to - b.from;
-  if (meOn) {
+  if (on(mr)) {
     glowMe(me, amount);
-    plus(host, { x: mr.left - hr.left - host.clientLeft + mr.width / 2, y: mr.top - hr.top - host.clientTop + mr.height * 0.2 }, amount);
+    plus(host, at(mr.left + mr.width / 2, mr.top + mr.height * 0.2), amount);
   }
-  api.lift(true);   // the strip rises out of any card's shade so its glow is seen (§30.2)
-  lightChip(chip, b.from, b.to);
-  step(shown, b.to);
-  shown = b.to;
-  setTimeout(next, still() ? 250 : BEAT);
+  api.lift(true);   // the strip rises out of any card's shade so the orbs land where they are seen (§30.2)
+  if (!on(mr) || !on(cr) || still()) {   // nothing to fly between, or motion turned down: the pill says it in the beat
+    lightChip(chip, b.from, b.to);
+    step(shown, b.to);
+    shown = b.to;
+    setTimeout(next, still() ? 250 : BEAT);
+    return;
+  }
+  const from = at(mr.left + mr.width / 2, mr.top + mr.height * 0.5);
+  const fill = chip.querySelector('.wh__lvlbar i, [data-wh="lvlfill"]'), fr = fill && fill.getBoundingClientRect();
+  const to = fr && fr.height ? at(Math.max(fr.left + 3, fr.right), fr.top + fr.height / 2) : at(cr.left + 14, cr.top + cr.height / 2);
+  const dir = to.x < from.x ? -1 : 1;   // the side the pill is on: the orbs leave that way, "+N XP" the other
+  const n = Math.max(1, Math.min(8, 1 + Math.floor(Math.log2(Math.max(1, amount)))));   // one to eight, by the size of the grant
+  let landed = 0;
+  for (let i = 0; i < n; i++) {
+    const o = document.createElement('i');
+    o.className = 'wx-orb';
+    o.style.left = from.x + 'px'; o.style.top = from.y + 'px';
+    host.appendChild(o);
+    const sx = dir * (Math.random() * 52 - 12), sy = -26 - Math.random() * 48;   // up off the banana, then the swoop in
+    const a = o.animate([
+      { transform: 'translate(0, 0) scale(0.3)', opacity: 0 },
+      { transform: 'translate(' + sx + 'px, ' + sy + 'px) scale(1.15)', opacity: 1, offset: 0.3, easing: 'cubic-bezier(.45,0,.85,.3)' },
+      { transform: 'translate(' + (to.x - from.x) + 'px, ' + (to.y - from.y) + 'px) scale(0.55)', opacity: 1 },
+    ], { duration: 640 + i * 24, delay: 120 + i * 70, easing: 'linear', fill: 'backwards' });
+    const done = () => {
+      o.remove();
+      landed += 1;
+      if (landed < n) {   // the bar counts up as each one lands
+        const v = b.from + Math.round((amount * landed) / n);
+        step(shown, v);
+        shown = v;
+        flashRing(chip);
+        return;
+      }
+      lightChip(chip, b.from, b.to);   // the last one in: the pill lights up, swells and shakes
+      step(shown, b.to);
+      shown = b.to;
+      setTimeout(next, 420);
+    };
+    a.onfinish = done;
+    a.oncancel = done;
+  }
 }
 
 // the glow HUGS your banana and everything it wears (Trym: "close glow tight to the shape of the banana and its wearables,
@@ -148,7 +191,9 @@ function glowMe(me, amount) {
     if (!halo) return;
     if (halo.width !== cv.width || halo.height !== cv.height) { halo.width = cv.width; halo.height = cv.height; }
     const x = halo.getContext('2d');
-    x.globalCompositeOperation = 'copy'; x.drawImage(cv, 0, 0);   // its silhouette, this frame
+    x.globalCompositeOperation = 'copy'; x.drawImage(cv, 0, 0);   // its silhouette, this frame…
+    x.globalCompositeOperation = 'source-over';
+    for (const [dx, dy] of RING) x.drawImage(cv, dx, dy);   // …three canvas pixels fatter all round, so the rim reads strong (Trym: "fatten it some more")
     x.globalCompositeOperation = 'source-in'; x.fillStyle = '#fff6dc'; x.fillRect(0, 0, halo.width, halo.height);
     x.globalCompositeOperation = 'source-over';
   };
@@ -159,7 +204,7 @@ function glowMe(me, amount) {
     const tick = () => { if (!halo || performance.now() > haloUntil) { haloLoop = false; return; } try { draw(); } catch (e) {} requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   }
-  const peak = Math.min(1, 0.85 + Math.log2(Math.max(1, amount)) / 30);   // a bigger grant glows a little brighter
+  const peak = 1;   // strong at its height, every time (Trym: "fatten it some more so it looks stronger")
   if (haloAnim) haloAnim.cancel();
   clearTimeout(haloOff);
   if (still() || !halo.animate) {
@@ -173,9 +218,7 @@ function glowMe(me, amount) {
 
 // the chip in the same beat: it lights up from inside with a glow round it, the bar's fill flashes up to its new length as
 // the bar grows into it, and it swells with a small shake. A level crossed has its own bigger pop (levelUp) and its own fill-to-the-top, so it only gets the glow.
-function lightChip(chip, a, b) {
-  if (!chip) return;
-  const la = levelFor(a), lb = levelFor(b), crossed = lb.level > la.level;
+function ring(chip) {
   let g = chip.querySelector(':scope > .wx-glow');
   if (!g) {
     if (getComputedStyle(chip).position === 'static') chip.style.position = 'relative';
@@ -183,6 +226,18 @@ function lightChip(chip, a, b) {
     g.className = 'wx-glow';
     chip.appendChild(g);
   }
+  return g;
+}
+// an orb lands: the pill's ring flashes, once
+function flashRing(chip) {
+  if (!chip || still()) return;
+  const g = ring(chip);
+  if (g.animate) g.animate([{ opacity: 0.25 }, { opacity: 0.9, offset: 0.3 }, { opacity: 0 }], { duration: 300, easing: 'ease-out' });
+}
+function lightChip(chip, a, b) {
+  if (!chip) return;
+  const la = levelFor(a), lb = levelFor(b), crossed = lb.level > la.level;
+  const g = ring(chip);
   if (still() || !g.animate) { g.style.opacity = '1'; setTimeout(() => { g.style.opacity = '0'; }, 1100); }
   else g.animate([{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.45, offset: 0.45 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 1500, easing: 'ease-in-out' });
   const bar = chip.querySelector('.wh__lvlbar, .rv-mixer__lvlbar');
