@@ -716,7 +716,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 17 | The footer is on every visitor page | `check-design.mjs` (`showFooter={false}` outside the allowlist fails) |
 | 18 | One NPC dialogue card | `check-design.mjs` (own dialogue markup without `mountDialogue` fails; the legacy list may only shrink) |
 | 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
-| 56 | One night: one clock in world.js, one light layer on the view, one door with the rain | `check-design.mjs` §56 (a second copy of the town day, a `.tw-night` sheet, a night not linked to its weather or hung on the world fail) + `tests/world-night.spec.mjs` (the hours, the lamps one by one, a dead lamp dark, indoors, the curse moods) |
+| 56 | One night: one clock in world.js, one light layer on the view, one door with the rain; what is written stays readable | `check-design.mjs` §56 (a second copy of the town day, a `.tw-night` sheet, a night not linked to its weather or hung on the world fail) + `tests/world-night.spec.mjs` (the hours, the lamps one by one, a dead lamp dark, indoors, the curse moods) + `tests/park-night.spec.mjs` (the park's lamps one by one, its windows, its animals' hours, the fireflies, a name's chip, the shop's door) |
 | 20 | Every walkable area is the same frame | `check-design.mjs` (an area that sets its own frame width or view height, or skips `/css/world-frame.css`, fails) |
 | 21 | An area's state is drawn onto named props; light stays soft; frame stacks hide with `[hidden]` | the town walk (`tests/town-life.spec.mjs`: dark lamps counted by `display`, the band's look asserted per band) |
 | 21 | Motion is `transform` and `opacity`; a glow is a static filter under an opacity pulse | `check-design.mjs` (any `@keyframes` animating a non-composited property fails) |
@@ -1787,6 +1787,7 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
   the view at z 7 (under the rain at 8 and the HUD at 9): a **light map** multiplied over the scene — the night's colour
   where nothing shines, warm light added around every lamp, window and fire in six stepped rings with dithered edges,
   one art pixel to a cell — and a small **bloom** screened over each flame and pane. It refuses a transformed host.
+  An area whose own chrome sits at 7 sets `--wn-z` under it (the park: 6, under its walk hint).
   ⚠️ A dark sheet with holes cut in it was the first try (the mock): it read as grey fog around torch beams.
 - **A light is as strong as the sky is dark.** At full strength in the dusk every pool was a bright green ring on the
   grass; the layer scales light by the darkness, so lamps fade in as the sun goes.
@@ -1795,6 +1796,15 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
   big spill washes a wall white); a fire breathes, a faulty lamp catches (`flicker`). Lamps come on **one by one**
   through the dusk and go out one by one at dawn (`litAt(dark, k)`).
 - **Every banana carries a little light**, yours and everybody else's — you can see your plot and the players around you.
+- **What is written stays readable** (3 Oct 2026). A speech bubble, a player's name, a reward's float are words, not the
+  world: at full dark the multiply turned a cream bubble navy and a name into dark blue on dark grass. The layer clears a
+  patch in the light map over every visible one, a cell inside its box so its own dark border keeps the night — names
+  (`.bw-name`, an echo's `.bws-tag`) by default, an area's bubbles by `keep` (the park's `.pk-mood.is-on`, the yard's
+  `.hs-mood.is-on` and its sign's name). A name's letters stand on bare ground, so after dark (`wn-dark` on the view) it
+  takes a dark chip (`world-social.js`). A float has no box of its own to clear — a patch would show the day behind its
+  letters — so it **glows** instead, a soft light the size of the float that fades with it (`glow`: `.pk-float`,
+  `.tw-float`, `.hs-float`). ⚠️ **A lamp never stands in front of words**: the park's first lamp by Old Peel's bench stood
+  in front of it, and its post crossed his speech bubble — it leans over the bench from BEHIND now.
 - **One door.** `weather.link(night)`: stepping inside hides rain and night together. Two switches are how rain once fell
   in the store. Inside a room, a shop, a cabin, a tent, a house or the rave there is no night.
 - **An area's own sky is a MOOD, never a second sheet.** The town's Curse Nights, haunted nights and omens hand the layer
@@ -1824,3 +1834,14 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
    the dawn (a gift is never lost: the day's look waits, it is not spent); a light on inside is what makes the windows glow.
    ⚠️ **A QA walk declares its hour.** The animals now keep the sky's hours, so an automated walk (`navigator.webdriver`)
    on `?hstest` starts at noon unless it passes `?skyh=` — a walk on the real clock would pass or fail by the time it ran.
+6. **An area with no light of its own gets it from its generator** (the park, 3 Oct 2026, Trym: *"not sure the park have
+   many light-sources by default for the nights? Might need to make some?"*). Eight lamp posts, the town's own post (one
+   lamp for the world), placed by `LAMPS` in `tools/build-park-scene.py` the way a park department would: the plaza's
+   corners, then one wherever someone sits or grows things, each lantern hanging toward what it lights; the pack's lit
+   frames go over each post when the sky is dark enough for it (`park-night.js`). ⚠️ The park's weed lattice is cut from
+   the generator's colliders and the ParkRoom keeps weeds by their index in it — a new collider would move every weed in
+   the live park — so a lamp's foot is blocked only after the lattice is cut, and the bake refuses a lamp on a lattice
+   point. The stand's counter and the mushroom shop's glass glow (the shops stay open late); the fireflies come out over
+   the pond's banks, the meadow and under the trees, under a clear sky only. The park keeps the night the way it keeps
+   heavy rain: every land animal under its tree, the butterflies and squirrels in, the ducks out on the pond. Its walks
+   pin noon the same way (`?parktest`, `?skyh=`). `tests/park-night.spec.mjs` walks all of it.

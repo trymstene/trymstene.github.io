@@ -609,7 +609,8 @@ function townLights() {
 // ⚡ its own chunk, fetched as the square stands: nothing on the first frame needs it, and the town's script is at its line
 let night = null;
 import('./world-night.js').then((m) => {
-  night = weather.link(m.mountNight(view, { hour: () => life.seam.hour(), mood: () => (room && room.skyMood ? room.skyMood() : null), lights: townLights }));
+  night = weather.link(m.mountNight(view, { hour: () => life.seam.hour(), mood: () => (room && room.skyMood ? room.skyMood() : null), lights: townLights,
+    glow: '.tw-float' }));   // 🔤 a reward's float glows in the dark (world-night.js); the players' names keep by default
 }).catch((e) => console.warn('[town] the night did not load', e));
 const sky = { level: () => (night ? night.level() : 0) };   // what the room reads (its lamps), before and after the chunk lands
 

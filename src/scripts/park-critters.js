@@ -131,10 +131,11 @@ export function initCritters(ctx) {
   // its own half, so the truth is kept here and recomputed — otherwise a bloom
   // rise mid-storm put them back on the lawn in the downpour.
   let wxFair = true;
+  let nightOn = false;   // 🌙 …and a third: the sky's own hours (setNight, below)
   let bflyOn = false, wantBf = false;
   function setBflies(on) { wantBf = on; syncBflies(); }
   function syncBflies() {
-    const on = wantBf && wxFair;
+    const on = wantBf && wxFair && !nightOn;
     if (on === bflyOn) return;
     bflyOn = on;
     bflys.forEach((b) => {
@@ -231,7 +232,7 @@ export function initCritters(ctx) {
   let sqOn = false, wantSq = false;
   function setSquirrels(on) { wantSq = on; syncSquirrels(); }
   function syncSquirrels() {
-    const on = wantSq && wxFair;
+    const on = wantSq && wxFair && !nightOn;
     if (on === sqOn) return;
     sqOn = on;
     if (!on) {
@@ -369,7 +370,6 @@ export function initCritters(ctx) {
   let wxNow = 'clear', hidden = false;
   function setWeather(k) {
     if (k === wxNow) return;
-    const was = wxNow;
     wxNow = k;
     wxFair = k === 'clear' || k === 'drizzle';
     syncBflies(); syncSquirrels();
@@ -386,21 +386,31 @@ export function initCritters(ctx) {
       return;
     }
     if (hidden) { hidden = false; animals.forEach((a) => { hideEl(a.el, false); }); }
-    if (k === 'heavy') {
-      // one tree each, walked to in the normal way so it never teleports
-      const trees = TREE_OVS.map((i) => [OVERLAYS[i][1] + OVERLAYS[i][3] / 2, OVERLAYS[i][5]]);
-      animals.forEach((a, n) => {
-        if (a.pond) return;                    // ducks love it, they stay out
-        const t = trees[(n * 3 + 1) % trees.length];
-        if (!t) return;
-        a.tx = t[0] + (n % 2 ? 22 : -24);
-        a.ty = t[1] - 16;                      // ABOVE the ground line = under the canopy
-        a.wait = 0;
-        a.shelter = true;
-      });
-    } else if (was === 'heavy') {
-      animals.forEach((a) => { a.shelter = false; a.wait = 0.6 + Math.random() * 2; });
-    }
+    shelterAll(k === 'heavy' || nightOn);   // and out again when neither heavy rain nor the night keeps them
+  }
+  // one tree each, walked to in the normal way so it never teleports — for heavy rain, and for the night
+  function shelterAll(on) {
+    if (!on) { animals.forEach((a) => { if (a.shelter) { a.shelter = false; a.wait = 0.6 + Math.random() * 2; } }); return; }
+    const trees = TREE_OVS.map((i) => [OVERLAYS[i][1] + OVERLAYS[i][3] / 2, OVERLAYS[i][5]]);
+    animals.forEach((a, n) => {
+      if (a.pond || a.shelter) return;       // ducks love it, they stay out
+      const t = trees[(n * 3 + 1) % trees.length];
+      if (!t) return;
+      a.tx = t[0] + (n % 2 ? 22 : -24);
+      a.ty = t[1] - 16;                      // ABOVE the ground line = under the canopy
+      a.wait = 0;
+      a.shelter = true;
+    });
+  }
+  // 🌙 NIGHT (3 Oct 2026, design library §56): the park keeps the sky's hours. The butterflies and the squirrels turn in,
+  // and every land animal goes to its tree the way heavy rain sends it — the same walk, the same canopy — and stays there
+  // till the sky lightens. The ducks stay out on the pond. A storm still takes them off the map; this waits it out.
+  function setNight(on) {
+    on = !!on;
+    if (on === nightOn) return;
+    nightOn = on;
+    syncBflies(); syncSquirrels();
+    if (!hidden) shelterAll(on || wxNow === 'heavy');
   }
 
   function animalTick(dt) {
@@ -452,7 +462,7 @@ export function initCritters(ctx) {
   return {
     acornTick, bflyTick, tapBfly, setBflies,
     sqTick, setSquirrels,
-    animalTick, setAnimalMood, tapAnimal, setWeather,
+    animalTick, setAnimalMood, tapAnimal, setWeather, setNight,
     qa: { acorns, bflys, squirrels, animals,
       // 🐔 mood QA: pop every animal's bubble right now
       mood: () => animals.forEach((a) => showMood(a)) },

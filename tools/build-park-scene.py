@@ -463,6 +463,8 @@ ROAD_SIGN_W = None              # 🧭 …and the west road's (→ the Homestead
 SUP_BOARD = None                # 💛 the supporters board, by Old Peel's bench
 CIT_BOARD = None                # 🏆 the citizens' board, on the meadow east of the plaza
 MARKET = {}
+LAMPS_PLACED = []               # 🌗 (foot x, foot y, flipped, overlay index) — the park's lamps, see LAMPS below
+LAMP_HALO = None                # …and where their lit frames sit over each one
 
 TRUNK = ('rect', -13, -36, 13, 0)
 BASIN = ('circle', 60)
@@ -1607,6 +1609,51 @@ if HAVE_PACK:
     place(_CITB, CIT_BOARD[0], CIT_BOARD[1], scale=1.0, sh=0.55,
           layer=True, solid=('rect', -32, -12, 32, 4))
 
+    # 🌗 THE PARK'S LAMPS (3 Oct 2026, design library §56). The world's night came to the park, and the park had no light
+    # of its own (Trym: "not sure the park have many light-sources by default for the nights? Might need to make some?").
+    # The cut further up was the variant SHEET; this is the town's own single post, so the world has one lamp, and the
+    # pack's lit frames of it go out as n-lamp.png. Placed the way that note asked for: the plaza's corners, then one
+    # wherever someone sits or grows things — the pond's bench, the gap between the west beds, the east road's bench, the
+    # meadow beds' far corner. Each lantern hangs toward what it lights. Old Peel's leans over his bench from BEHIND it, so
+    # he and his speech bubble stand in front of the post: one in front of the bench hid his words.
+    # (foot x, foot y, flipped): the FOOT is the post's base, not the middle of the sprite's box — the lantern hangs well
+    # off to one side of it.
+    # ⚠️ NOT IN COLLIDERS. The weed lattice is cut from COLLIDERS and the ParkRoom keeps its weeds by their index in it, so
+    # one more collider would move every weed in the live park. emit_geo() blocks each foot after the lattice is cut, and
+    # refuses a lamp that stands on a lattice point.
+    LAMP_POST = 'ME_Singles_City_Props_48x48_Street_Lamp_1.png'
+    LAMPS = ((1190, 414, False), (1570, 414, True), (1190, 706, False), (1632, 672, True),
+             (705, 500, False), (524, 790, False), (1872, 540, True), (2544, 768, True))
+    try:
+        _st = blockify(dedisc(load_pack(LAMP_POST)), factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)   # what place() draws
+        _ls = _st.resize((max(1, int(_st.width * PROP)), max(1, int(_st.height * PROP))), Image.NEAREST)
+        _foot = [x for x in range(_ls.width) if _ls.getpixel((x, _ls.height - 2))[3] > 128]
+        _px = (_foot[0] + _foot[-1]) / 2.0                     # the post's middle, in the unflipped sprite
+        for fx, fy, fl in LAMPS:
+            px_ = (_ls.width - 1 - _px) if fl else _px
+            cx_ = int(round(fx - px_ + _ls.width // 2))
+            shadow(fx + 1, fy - 1, 12, 4, a=58)                # a post stands on its own small shadow
+            place(LAMP_POST, cx_, fy, flip=fl, shade=False, layer=True)
+            LAMPS_PLACED.append((fx, fy, fl, len(OVERLAYS) - 1))
+        # 🔦 the lit lamp over the placed one: four frames of the pack's own glow, soft (blockify would threshold the halo
+        # away). Where a frame's top-left lands on the overlay's is measured the way the town measures its own: the lamp's
+        # body in the frame against the body in the placed sprite (dx unflipped, dxf for a flipped post).
+        _sheet = load_pack('Street_Lamp_48x48.png').convert('RGBA')
+        _fr = [_sheet.crop((k * 240, 0, (k + 1) * 240, 240)) for k in range(4)]
+        _hw = int(240 * PROP)
+        _strip = Image.new('RGBA', (_hw * 4, _hw), (0, 0, 0, 0))
+        for k, f in enumerate(_fr):
+            _strip.alpha_composite(f.resize((_hw, _hw), Image.NEAREST), (k * _hw, 0))
+        _strip.save(os.path.join(OUT, 'n-lamp.png'), optimize=True)
+        _sb = _st.getchannel('A').getbbox()
+        _fb = Image.eval(_fr[0].getchannel('A'), lambda v: 255 if v >= 250 else 0).getbbox()   # the body, not the halo
+        _bw = _fb[2] - _fb[0]
+        LAMP_HALO = (_hw, _hw, 4, int(round((_sb[0] - _fb[0]) * PROP)), int(round((_sb[1] - _fb[1]) * PROP)),
+                     int(round(((_st.width - _sb[0] - _bw) - (240 - _fb[2])) * PROP)))
+        print('lamps: %d posts, halo %dx%d x4, offsets dx %d dy %d dxf %d' % ((len(LAMPS_PLACED),) + LAMP_HALO[:2] + LAMP_HALO[3:]))
+    except Exception as e:
+        print('  ! lamps', e)
+
 
 # ---- 🌦 THE RAIN TILE --------------------------------------------------
 # ONE seamless tile, scrolled by CSS transform, is the whole rain engine: no
@@ -1976,6 +2023,12 @@ def emit_geo():
             ob_circles.append((cx, base, shape[1]))
     weed_grid = build_weed_grid()
     grid_js = '[%s]' % ','.join('[%d,%d]' % p for p in weed_grid)
+    # 🌗 the lamps' feet, blocked only now the lattice is cut (see LAMPS) — and never on a lattice point, where a weed would
+    # come up through the post
+    for fx, fy, _fl, _i in LAMPS_PLACED:
+        near = min(math.hypot(fx - gx, fy - gy) for gx, gy in weed_grid)
+        assert near >= 26, 'the lamp at %s stands %d px from a weed spot' % ((fx, fy), near)
+        ob_circles.append((fx, fy, 8))
     L = []
     L.append('// GENERATED by tools/build-park-scene.py — DO NOT EDIT.')
     L.append('// Every collider here was declared on the place() call that drew its prop.')
@@ -2023,6 +2076,9 @@ def emit_geo():
     L.append('export const OB_CIRCLES = %s;' % [list(c) for c in ob_circles])
     L.append('export const OVERLAYS = %s;' % [[o[0], o[1], o[2], o[3], o[4], o[5]] for o in OVERLAYS])
     L.append('export const TREE_OVS = %s;' % list(TREE_OVS))
+    # 🌗 the lamps: [overlay index, flipped] — the post is that overlay — and where the lit frames sit over it
+    L.append('export const LAMPS = %s;' % [[i, 1 if fl else 0] for _x, _y, fl, i in LAMPS_PLACED])
+    L.append('export const LAMP_HALO = %s;' % ('{ w: %d, h: %d, n: %d, dx: %d, dy: %d, dxf: %d }' % LAMP_HALO if LAMP_HALO else 'null'))
     L.append('export const WEED_GRID = %s;' % grid_js)
     path = os.path.join(SITE, 'src', 'scripts', 'park-geo.js')
     with open(path, 'w', encoding='utf-8') as f:

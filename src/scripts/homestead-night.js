@@ -58,7 +58,8 @@ export function mountYardNight(view, weather, y) {
     for (const p of y.peers().values()) if (Number.isFinite(p.x) && Number.isFinite(p.y)) put(p.x, p.y - 40, 50, ME, 0.32, 0);   // …and so does every visitor
     return out;
   }
-  const night = weather.link(mountNight(view, { lights }));
+  // 🔤 a hen's heart and the plot's name stay readable, and a reward's float glows (world-night.js)
+  const night = weather.link(mountNight(view, { lights, keep: '.hs-mood.is-on, .hs-signname', glow: '.hs-float' }));
   night.lights = lights;   // 🧪 what the walk reads: every light the yard hands over right now
   // 🧪 the hour a QA walk's sky starts at (?hstest only): ?skyh=21 for one that must begin in the dark (the cat's gift), and
   // noon for any other AUTOMATED walk (navigator.webdriver) — the yard's animals keep night hours now, so a walk on the real

@@ -905,6 +905,14 @@ function init() {
   const npc = initOldPeel(ctx);
   ctx.npc = npc;           // the weather gives him something to say
   const shops = initShops(ctx);
+  // 🌗 THE NIGHT (3 Oct 2026, design library §56): the world's light layer on the view, linked to the weather, with the
+  // park's own lights — its lamps, the stand's counter, the shop's glass, the fireflies, every banana — from a lazy chunk.
+  // Nothing on the first frame needs it. Its sky is what the animals keep their hours by.
+  let pkNight = null;
+  import('./park-night.js').then((m) => {
+    pkNight = m.mountParkNight(view, weather, { world, W, H, pct, hideEl, scale: () => scale, cam: () => ({ x: camX, y: camY }),
+      pos: () => pos, peers: () => peers, kind: () => weather.now() });
+  }).catch((e) => console.warn('[park] the night did not load', e));
 
   view.addEventListener('click', (e) => {
     if (inside() || onChrome(e)) return;
@@ -968,6 +976,7 @@ function init() {
     if (now - gateAt < FRAME_MS) return;
     gateAt = now;
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    weather.indoors(inside());   // 🏠 in a shop there is no sky: the rain and the night both stay outside (before the stop below)
     if (inside() || !parkSeen) return;   // covered by a shop, or scrolled past
     const kx =(keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
     const ky = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
@@ -1026,6 +1035,7 @@ function init() {
     garden.gardenTick();
     garden.toolTick();
     weather.wxTick(now);
+    if (pkNight) { pkNight.tick(now); critters.setNight(pkNight.level() > 0.5); }   // 🌙 the animals keep the sky's hours
     doorTick();
     parkSendMove(now);
     cam();
@@ -1143,6 +1153,9 @@ function init() {
       // post-storm notice on demand. wxForce sticks until you pass null.
       wx: (k) => { ctx.wxForce = k; weather.qa.setKind(k || weatherNow()); },
       stormNote: (health) => weather.stormNote(Date.now() - 60000, health == null ? 5 : health),
+      // 🌗 the night layer and its QA pin, the lights it is handed, which lamps are lit (tests/park-night.spec.mjs)
+      sky: () => (pkNight ? pkNight.state() : null), skyHour: (h) => { if (pkNight) pkNight.hour(h); },
+      lights: () => (pkNight ? pkNight.lights() : []), lamps: () => (pkNight ? pkNight.lamps() : []),
     };
   }
 

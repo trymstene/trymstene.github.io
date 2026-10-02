@@ -142,5 +142,7 @@ export function initWeather(ctx) {
     puddleTick();
   }
 
-  return { wxTick, stormNote, now: () => kind, qa: { puddles, setKind: (k) => sky.setKind(k), note } };
+  // 🌗 the night links here (one door for the whole sky, §56), and a shop's door shuts out both
+  return { wxTick, stormNote, now: () => kind, indoors: (on) => sky.indoors(on), link: (h) => sky.link(h),
+    qa: { puddles, setKind: (k) => sky.setKind(k), note } };
 }

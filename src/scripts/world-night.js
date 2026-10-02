@@ -26,12 +26,23 @@ const hash = (a, b) => { const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.54
 
 // 💡 when each of an area's lights comes on is litAt(dark, k) in src/lib/world.js, beside the sky it reads
 
+// 🔤 WHAT IS WRITTEN STAYS READABLE (3 Oct 2026). A speech bubble and a player's name are words, not the world: at full dark
+// the multiply turned a cream bubble navy and a name into dark blue on dark grass. Every visible one gets a clear patch in
+// the light map, cut a cell inside its box so its own dark border keeps the night; a name also takes a dark chip once the
+// host carries wn-dark (world-social.js), since its letters stand on bare ground. An area adds its bubbles with opts.keep.
+// A float (a coin's +1, a heart) has no box of its own to clear — a patch would show the day behind its letters — so it
+// glows instead, a soft light the size of the float that fades with it (opts.glow).
+const KEEP = '.bw-name, .bws-tag';
+const GLOW = [255, 236, 196];
+
 /**
  * Hang the night on an area's viewport.
  *
  * @param host  the area's VIEW element — the fixed box, never the panning world (the weather's rule, §19)
  * @param opts  { lights(dark) → [{ x, y, r, c:[r,g,b], i, bloom, sq, rect:[w,h], flicker:'fire'|'stutter' }] in view px,
- *                hour() → the town hour (default: the real clock), mood() → null | { amb:[r,g,b], floor, name }, cell }
+ *                hour() → the town hour (default: the real clock), mood() → null | { amb:[r,g,b], floor, name }, cell,
+ *                keep → a selector for the area's own words in the world (a speech bubble), beside the names (KEEP),
+ *                glow → a selector for its floats, which glow instead }
  * @returns { tick, indoors, level, state, hour, stop } — call tick(now) from the area's loop; link it to the weather
  *          (weather.link(night)) so stepping inside hides rain and night together
  */
@@ -116,7 +127,33 @@ export function mountNight(host, opts = {}) {
     const n = hash(step, k + 1);
     return L.flicker === 'stutter' ? (n < 0.3 ? 0.2 : 1) : 0.9 + 0.1 * n;   // a faulty lamp catches; a fire breathes
   }
-  function draw(lights, sc, step) {
+  // every visible box a selector finds in the host, in view px (see KEEP)
+  const keepSel = KEEP + (opts.keep ? ', ' + opts.keep : '');
+  function boxes(sel) {
+    const out = [], hb = host.getBoundingClientRect();
+    for (const el of host.querySelectorAll(sel)) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.right < hb.left || r.left > hb.right || r.bottom < hb.top || r.top > hb.bottom) continue;
+      out.push({ el, l: r.left - hb.left, t: r.top - hb.top, r: r.right - hb.left, b: r.bottom - hb.top });
+    }
+    return out;
+  }
+  // …the words' clear patches in cells, [x0, y0, x1, y1], cut a cell inside each box
+  function holes() {
+    const out = [];
+    for (const q of boxes(keepSel)) {
+      const x0 = Math.ceil(q.l / S), y0 = Math.ceil(q.t / S), x1 = Math.floor(q.r / S), y1 = Math.floor(q.b / S);
+      if (x1 > x0 && y1 > y0) out.push([x0, y0, x1, y1]);
+    }
+    return out;
+  }
+  // …and the floats' glows, as lights
+  function glows() {
+    if (!opts.glow) return [];
+    return boxes(opts.glow).map((q) => ({ x: (q.l + q.r) / 2, y: (q.t + q.b) / 2, r: 14, c: GLOW, bloom: 0.25, rect: [q.r - q.l, q.b - q.t],
+      i: 0.95 * Math.min(1, +getComputedStyle(q.el).opacity || 0) }));
+  }
+  function draw(lights, sc, step, keep) {
     mc.globalCompositeOperation = 'source-over'; mc.globalAlpha = 1;
     mc.fillStyle = 'rgb(' + amb.join(',') + ')';
     mc.fillRect(0, 0, W, H);
@@ -135,6 +172,8 @@ export function mountNight(host, opts = {}) {
       mc.globalAlpha = Math.min(1, a); mc.drawImage(sp.light, x, y);
       if (L.bloom) { bc.globalAlpha = Math.min(1, L.bloom * Math.min(1, sc * 1.2) * f); bc.drawImage(sp.glow, x, y); }
     });
+    mc.globalCompositeOperation = 'source-over'; mc.globalAlpha = 1; mc.fillStyle = '#fff';
+    for (const [x0, y0, x1, y1] of keep) { mc.fillRect(x0, y0, x1 - x0, y1 - y0); bc.clearRect(x0, y0, x1 - x0, y1 - y0); }
   }
   function show(on) {
     const v = on ? '' : 'none';
@@ -147,18 +186,21 @@ export function mountNight(host, opts = {}) {
     if (now < drawAt) return;
     drawAt = now + 50;
     sky();
+    host.classList.toggle('wn-dark', !hidden && dark > 0.45);   // 🔤 a name takes its chip (world-social.js)
     if (hidden || dark <= 0.004) { show(false); last = ''; count = 0; return; }
     show(true);
     const cw = Math.ceil(host.clientWidth / S), ch = Math.ceil(host.clientHeight / S);
     if (cw !== W || ch !== H) { W = cw; H = ch; map.width = bloom.width = W; map.height = bloom.height = H; last = ''; }
-    const lights = opts.lights ? opts.lights(dark) || [] : [];
+    const lights = (opts.lights ? opts.lights(dark) || [] : []).concat(glows());
     const sc = Math.min(1.05, Math.pow(Math.max(0, 1 - luma(amb) / 255), 1.3) * 1.45);
     const step = still ? 0 : Math.floor(now / 110);
     let sig = amb.join(',') + '|' + sc.toFixed(3) + '|' + W + 'x' + H;
     for (const L of lights) sig += ';' + Math.round(L.x / S) + ',' + Math.round(L.y / S) + ',' + Math.round(L.r) + ',' + (L.i == null ? 1 : L.i).toFixed(2) + (L.flicker ? ',' + step : '');
+    const keep = holes();
+    sig += '|' + keep.join(';');
     if (sig === last) return;
     last = sig;
-    draw(lights, sc, step);
+    draw(lights, sc, step, keep);
   }
 
   return {
@@ -167,7 +209,7 @@ export function mountNight(host, opts = {}) {
     indoors: (on) => { hidden = !!on; last = ''; drawAt = 0; if (hidden) show(false); },   // …and the door back out repaints on the next frame
     /** 0 (day) to 1 (night), the area's mood included — what the lamps, the clock and the walks read */
     level: () => dark,
-    state: () => ({ dark: Math.round(dark * 1000) / 1000, phase, hour: Math.round(hourNow * 100) / 100, mood: moodName, hidden: hidden || dark <= 0.004, lights: count }),
+    state: () => ({ dark: Math.round(dark * 1000) / 1000, phase, hour: Math.round(hourNow * 100) / 100, mood: moodName, hidden: hidden || dark <= 0.004, lights: count, kept: holes().length }),
     /** QA: pin the hour this sky reads (null hands it back to the clock) — an area with its own pinned clock passes hour() */
     hour: (h) => { pinned = h == null ? null : +h; last = ''; drawAt = 0; },
     stop: () => { map.remove(); bloom.remove(); },

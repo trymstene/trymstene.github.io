@@ -77,6 +77,7 @@ const CSS = `
 .bws-echo:not(.tw-npc)::after { content:''; position:absolute; left:50%; bottom:-3px; width:76%; aspect-ratio:3/1; transform:translateX(-50%); background:rgba(20,40,18,.26); border-radius:50%; z-index:-1; }
 .bws-tag { position:absolute; left:50%; top:-14px; transform:translateX(-50%); font-size:.5rem; font-weight:800; letter-spacing:.05em; color:#fffdf5; text-shadow:1px 1px 0 #000; white-space:nowrap; }
 .bw-name, .bws-tag { display:flex; align-items:center; gap:3px; }
+.wn-dark .bw-name, .wn-dark .bws-tag { background:rgba(14,16,30,.88); box-shadow:0 0 0 1px #000; padding:1px 3px; }
 [data-pid] > .bw-name::before { content:''; display:inline-block; width:4px; height:4px; background:#5fe36a; box-shadow:0 0 0 1px #000; }
 [data-new] > .bw-name::after, [data-new] > .bws-tag::after, .bws-new { content:var(--bws-new, ''); display:inline-block; padding:0 3px; background:#8de08d; color:#10220c; box-shadow:0 0 0 1px #000; text-shadow:none; font-size:.4rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; line-height:1.35; white-space:nowrap; }
 .bws-new { position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:5px; padding:0 2px; font-size:.46rem; }
