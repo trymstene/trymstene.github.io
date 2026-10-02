@@ -825,6 +825,18 @@ function relayWave(room, ws, me, msg) {
   ws.serializeAttachment(me);
   room.broadcast({ t: 'wave', id: me.id, to, name: me.name || '' }, ws);
 }
+// 💥 A LEVEL-UP ACROSS A ROOM (2 Oct 2026) — Trym: "if other users can see other users leveling up thats also fun". The
+// level is the client's word (rep lives on the device), so a room only lets it CLIMB, and at most once every few seconds: a
+// celebration, never a strobe. Everybody else in the room sees that banana burst (world-burst.js); the square's players in
+// another building draw nothing for it.
+const LVL_GAP = 4000;
+function relayLevel(room, ws, me, msg) {
+  const n = sanLvl(msg.n), now = Date.now();
+  if (!n || n < 2 || n <= (me.lvlUp | 0) || now - (me.lastLvl || 0) < LVL_GAP) return;
+  me.lvlUp = n; me.lastLvl = now;
+  ws.serializeAttachment(me);
+  room.broadcast({ t: 'lvlup', id: me.id, n }, ws);
+}
 function sanitizeOutfit(o, mrank = 0) {
   o = o && typeof o === 'object' ? o : {};
   const extras = {};
@@ -2562,6 +2574,7 @@ export class ParkRoom {
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
     }
     if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
+    if (msg.t === 'lvl' && me) relayLevel(this, ws, me, msg);   // 💥 see relayLevel
   }
 
   async webSocketClose(ws) {
@@ -2750,6 +2763,7 @@ export class BeachRoom {
       }, ws);
     }
     if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
+    if (msg.t === 'lvl' && me) relayLevel(this, ws, me, msg);   // 💥 see relayLevel
   }
 
   async webSocketClose(ws) {
@@ -3234,6 +3248,7 @@ export class SquareRoom {
       this.broadcast({ t: 'burst', id: me.id, x: me.x, y: me.y, name: me.name || '' }, ws);
     }
     if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
+    if (msg.t === 'lvl' && me) relayLevel(this, ws, me, msg);   // 💥 see relayLevel
   }
   async webSocketClose(ws) {
     let me = null;
@@ -3365,6 +3380,7 @@ export class YardRoom {
       this.broadcast({ t: 'outfit', id: me.id, outfit: me.outfit }, ws);
     }
     if (msg.t === 'wave' && me) relayWave(this, ws, me, msg);   // 👋 see relayWave
+    if (msg.t === 'lvl' && me) relayLevel(this, ws, me, msg);   // 💥 see relayLevel
   }
 
   async webSocketClose(ws) {

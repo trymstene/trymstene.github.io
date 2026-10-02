@@ -1680,7 +1680,10 @@ spinning wheel"*; then, of the first cut's sparks flying to the HUD: *"its bette
 the banana when experience points are received, and that the XP-bar also glows up at the same time, maybe with a small
 shake animation … and an animation showing the xp bar growing"*, and of the glow: *"close glow tight to the shape of the
 banana and its wearables, not glow with alot of spread, and whiter golden, not yellow"*; and then: *"fatten it some more so
-it looks stronger … small strong-glowing balls of the same style fly into the xp stickerpill when counting up the new XP"*.
+it looks stronger … small strong-glowing balls of the same style fly into the xp stickerpill when counting up the new XP"*;
+and of the level: *"reuse the glow-animation from when getting XP, just maximize it visually … like a glowing explosion, it
+can also overlay the banana in the millisecond it explodes, and then fades out outwards … and just pulsates outwards before
+it dies out, everything in a very quick animation"*, and *"if other users can see other users leveling up thats also fun"*.
 
 - **One layer for every grant.** XP is `passStat('rep', n)` in every area, and passStat says so once (`pass:rep`, with
   the true before and after, the double-XP pie included). The world HUD (`src/lib/world-hud.js`) hears it and hands it
@@ -1698,17 +1701,27 @@ it looks stronger … small strong-glowing balls of the same style fly into the 
   drains backwards, and it is never full a step short), the chip pops, and the arrow with "LVL N" rides up off your
   banana and stays with it if you walk on. **A new title is the world's big moment instead** (§27: once no card is up),
   in the words of `src/data/copy/world-level.json`, and so is level 99, the last. Never both.
+- **💥 And the banana bursts** (`src/lib/world-burst.js`, a lazy chunk): the XP glow's own light, maximised, in under a
+  second — the banana goes white for an instant, its glow bursts out of the silhouette and pulses outward twice as
+  banana-shaped rings, a spray of the same orbs flies off, and nothing is left at ~0.8 s. Static filters under transform
+  and opacity only (§21.4). **The room sees it**: a level-up goes out on the area's room (`world:levelup` → `{t:'lvl'}`,
+  the rave's own `lvl`), and another player's comes in as the same burst on THEIR banana with "LVL N" riding up off it
+  (`[data-pid]`, the social layer's own tag). The level is the client's word, so a room lets it only climb, at most once
+  every four seconds (worker-rave `relayLevel`).
 - **The big moment stands on its own card** — the HUD chips' dark see-through ground and gold edge — so its white lines
   read over cobbles, grass, sand and the floor; the title you hold and what comes next are two lines that each fit a
   360-px phone.
 - **Reduced motion** (§3d): no orb flies, nothing pulses, swells or shakes; the glows are lit and then gone, the pill says
-  it in the beat, the label and the riser stand still, and a title still gets its moment.
+  it in the beat, the label and the riser stand still, and a title still gets its moment. A level's burst is its glow, lit
+  and still: no flash, no rings, nothing flies.
 - **The rave keeps what only the floor has:** the roster's level, the room's `lvl`, and the four-note arpeggio, which
   plays on `world:levelup`, as the level lands.
 - **Enforced by** `tests/world-xp.spec.mjs`. A feel cannot be grepped, so the walk asserts the order of things in all
   five areas on a phone: the hold, the label, the orbs in flight while the pill holds, the glow behind the banana, the
-  pill's glow and its lit bar, the bar growing, a level and its riser, the title in the copy file's words with no riser, level 99, the longest title at 360 px,
-  reduced motion standing still, and a trickle as one label.
+  pill's glow and its lit bar, the bar growing, a level and its riser and its burst (recorded as it happens: it is over in
+  under a second), the title in the copy file's words with no riser, level 99, the longest title at 360 px, reduced motion
+  standing still, a trickle as one label, and the room: your level-up sent, another player's bursting on their banana.
+  The rooms' relay is worker-rave social.test §11.
 
 ## §54 YOUR BANANA WEARS WHAT IS SAVED, ON THE SCREEN YOU ARE LOOKING AT (2 Oct 2026, Trym on two devices)
 

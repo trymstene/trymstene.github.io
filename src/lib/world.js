@@ -227,6 +227,8 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
       if (m.t === 'roster') you = m.you;
       // 👋 a wave in this room goes to the world's one social layer (world-social.js), whichever area this is
       if (m.t === 'wave') { try { document.dispatchEvent(new CustomEvent('world:wave', { detail: { id: m.id, to: m.to, name: m.name || '', me: you } })); } catch (e) {} return; }
+      // 💥 another player levelled up here: their banana bursts (world-burst.js, fetched only when one comes)
+      if (m.t === 'lvlup') { import('./world-burst.js').then((b) => b.peerBurst(m.id, m.n)).catch(() => {}); return; }
       onMessage(m);
     };
     sock.onclose = (ev) => {
@@ -261,6 +263,13 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
     d.sent = true;
   };
   document.addEventListener('world:wave-out', waveOut);
+  // 💥 …and your level-up goes out to the room as it lands on your chip (world-xp.js 'world:levelup'; Trym: "if other users
+  // can see other users leveling up thats also fun")
+  const lvlOut = (e) => {
+    const n = e && e.detail && e.detail.level;
+    if (n > 1 && !closedForGood && ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'lvl', n }));
+  };
+  document.addEventListener('world:levelup', lvlOut);
   return {
     // 🎩 outfit changes re-present the member token — the worker verifies per
     // message, so a wardrobe change mid-visit keeps the supporter hat visible
@@ -276,7 +285,7 @@ export function presenceRoom({ url, hi, onMessage, onDown, retries = 5, pingMs =
     // watch you stand frozen for that beat. Closing here makes the poof land
     // the instant you commit to leaving. (pagehide is still the backstop for
     // tab-close and hard exits.)
-    leave() { closedForGood = true; clearInterval(pinger); document.removeEventListener('world:wave-out', waveOut); try { if (ws) ws.close(1000, 'bye'); } catch (e) {} },
+    leave() { closedForGood = true; clearInterval(pinger); document.removeEventListener('world:wave-out', waveOut); document.removeEventListener('world:levelup', lvlOut); try { if (ws) ws.close(1000, 'bye'); } catch (e) {} },
   };
 }
 

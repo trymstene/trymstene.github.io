@@ -250,5 +250,26 @@ for (const K of ['RaveRoom', 'ParkRoom', 'BeachRoom', 'YardRoom']) {
   ok(K + ': a wave reaches the one waved at, under the room\'s name for the waver', waves(Q).length === 1 && waves(Q)[0].name === 'Pia' && waves(Q)[0].to === idOf(Q), Q.got.slice(-2));
 }
 
+console.log('11. 💥 a level-up across a room: everybody else sees it, it only climbs, and it is never a strobe');
+for (const K of ['ParkRoom', 'BeachRoom', 'YardRoom', 'SquareRoom']) {
+  const list = [];
+  const room = new mods[K]({ ...fakeState(), getWebSockets: () => list, getWebSocketAutoResponseTimestamp: () => null, acceptWebSocket(ws) { list.push(ws); } }, {});
+  const hi = async (name) => { const ws = fakeWs(); list.push(ws); await room.webSocketMessage(ws, JSON.stringify({ t: 'hi', sid: 's-' + name + K, name, x: 50, y: 50 })); return ws; };
+  const P = await hi('Pia'), Q = await hi('Quin');
+  const ups = (ws) => ws.got.filter((m) => m.t === 'lvlup');
+  let T = realNow(); Date.now = () => T;
+  await room.webSocketMessage(P, JSON.stringify({ t: 'lvl', n: 12 }));
+  ok(K + ': Quin sees Pia reach level 12, and Pia is not echoed', ups(Q).length === 1 && ups(Q)[0].id === idOf(P) && ups(Q)[0].n === 12 && ups(P).length === 0, ups(Q));
+  T += 1000; await room.webSocketMessage(P, JSON.stringify({ t: 'lvl', n: 13 }));
+  ok(K + ': a second one a second later is not a strobe', ups(Q).length === 1, ups(Q));
+  T += 5000; await room.webSocketMessage(P, JSON.stringify({ t: 'lvl', n: 11 }));
+  await room.webSocketMessage(P, JSON.stringify({ t: 'lvl', n: 'x' }));
+  await room.webSocketMessage(P, JSON.stringify({ t: 'lvl', n: 500 }));
+  ok(K + ': a level only climbs, and only to a real one', ups(Q).length === 1, ups(Q));
+  await room.webSocketMessage(P, JSON.stringify({ t: 'lvl', n: 14 }));
+  ok(K + ': the next real climb is seen', ups(Q).length === 2 && ups(Q)[1].n === 14, ups(Q));
+  Date.now = realNow;
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

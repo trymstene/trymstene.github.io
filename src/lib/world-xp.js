@@ -12,6 +12,7 @@ import W from '../data/copy/world-level.json';
 import { fillWords } from './fill-words.js';
 import { levelFor, rankFor, nextRank } from './pass-defs.js';
 import { bigMoment } from './world-moment.js';
+import { burst, ARROW } from './world-burst.js';   // 💥 the level-up's own explosion, the same one other players see
 
 // each area: the frame its words go in, your banana, how long trickling grants merge into one beat (the rave pays one or
 // two a second — a glow per grant would never rest), and where its big moment goes
@@ -26,7 +27,6 @@ const AREAS = {
 const BUSY = '.bwq-dlg, .bwq-intro, .tw-panel:not([hidden]), .tw-tray:not([hidden]), .tw-cup, .pk-panel:not([hidden]), .pk-shop:not([hidden]), .bh-panel:not([hidden]), .hs-veil:not([hidden])';
 const TOP = 99;      // the last level (pass-defs levelFor)
 const BEAT = 900;    // one grant's beat before the next may start
-const ARROW = '<svg width="21" height="24" viewBox="0 0 7 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" y="0" width="1" height="1" fill="#ffe135"/><rect x="2" y="1" width="3" height="1" fill="#ffe135"/><rect x="1" y="2" width="5" height="1" fill="#ffe135"/><rect x="0" y="3" width="7" height="1" fill="#ffe135"/><rect x="2" y="4" width="3" height="4" fill="#ffe135"/></svg>';
 // the glows are static shadows under an opacity pulse (§21.4: never animate a filter or a shadow); the halo keeps its own
 // filter over an area’s “the banana’s canvas” rules (the rave tints a canvas for its effects), which it otherwise shares
 const CSS = `
@@ -278,6 +278,9 @@ function step(a, b) {
 function levelUp(from, to) {
   const chip = api && api.lvl;
   if (chip && chip.animate && !still()) chip.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.38)' }, { transform: 'scale(0.94)' }, { transform: 'scale(1)' }], { duration: 760, easing: 'ease-out' });
+  // 💥 and your banana bursts with the same light (world-burst.js; Trym: "same style but more explosive celebration when
+  // leveling up") — the room hears 'world:levelup' below and shows the others the same
+  if (A) burst($(A.me));
   // a title IS the bigger riser: never both (the riser crossed its line); the last level is a big moment too
   const titled = to >= TOP || rankFor(to).id !== rankFor(from).id;
   if (titled) titleMoment(to); else riser(to);

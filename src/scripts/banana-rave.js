@@ -3102,7 +3102,11 @@ function init() {
       }
       else if (m.t === 'lvl') {
         const r = ravers.get(m.id);
-        if (r) { r.lvl = m.n; refreshHud(); }
+        if (r) {
+          const up = m.id !== myId && m.n > (r.lvl | 0);   // 💥 another raver levelled up: their banana bursts (world-burst.js)
+          r.lvl = m.n; refreshHud();
+          if (up) import('../lib/world-burst.js').then((b) => { b.burst(r.wrap); b.riser(r.wrap, m.n); }).catch(() => {});
+        }
       }
       else if (m.t === 'stageNo') {
         el('rvMore').textContent = m.reason === 'full' ? 'the stage is packed — try again soon' : 'not yet — keep dancing';

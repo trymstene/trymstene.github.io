@@ -46,6 +46,22 @@ async function open(page, a, rep) {
   await page.waitForTimeout(900);
   return errs;
 }
+// 💥 what a level-up's burst adds to a banana, recorded as it happens: it is over in under a second
+const watchBurst = (page, sel) => page.evaluate((s) => {
+  const el = document.querySelector(s);
+  window.__burst = { back: 0, front: 0, orbs: 0, riser: '' };
+  new MutationObserver((ms) => {
+    for (const m of ms) for (const n of m.addedNodes) {
+      if (!n.classList || n.parentNode !== el) continue;
+      if (n.classList.contains('wb-front')) window.__burst.front++;
+      else if (n.classList.contains('wb-back')) window.__burst.back++;
+      else if (n.classList.contains('wb-orb')) window.__burst.orbs++;
+      else if (n.classList.contains('wb-riser')) window.__burst.riser = n.textContent.trim();
+    }
+  }).observe(el, { childList: true });
+}, sel);
+const burstSeen = (page) => page.evaluate(() => window.__burst);
+const burstLeft = (page, sel) => page.evaluate((s) => document.querySelector(s).querySelectorAll(':scope > .wb-shape, :scope > .wb-orb').length, sel);
 const lvl = (page) => page.evaluate(() => { const n = document.querySelector('.wh__lvln, [data-wh="lvln"]'); return n ? n.textContent.trim() : null; });
 
 // the fill's scale on the bar (the HUD paints it as scaleX)
@@ -81,12 +97,17 @@ for (const a of AREAS) {
     await page.screenshot({ path: `test-results/world-xp-${a.name}-glow.png` });
     // and a level: the bar fills to the top and starts again, "LVL 11" rides up off the banana
     await page.waitForTimeout(1200);
+    await watchBurst(page, a.me);
     await page.evaluate(() => window.__xp.grant(60));
     await expect.poll(() => lvl(page), { timeout: 5000 }).toBe('LVL 11');
     await expect.poll(() => page.locator('.wx-riser').count(), { timeout: 2000 }).toBeGreaterThan(0);
     expect((await page.locator('.wx-riser b').first().textContent()).trim()).toBe(WL.riser.replace('{n}', '11'));
+    // 💥 and the banana bursts (Trym: "same style but more explosive celebration when leveling up"): white over it for an
+    // instant, its glow and two pulses behind it, a spray of the orbs — and nothing of it left a moment later
+    expect(await burstSeen(page), '💥 the burst: its glow and two pulses, the flash, ten orbs').toEqual({ back: 3, front: 1, orbs: 10, riser: '' });
     await page.waitForTimeout(250);
     await page.screenshot({ path: `test-results/world-xp-${a.name}-level.png` });
+    await expect.poll(() => burstLeft(page, a.me), { timeout: 2500, message: 'gone in a moment' }).toBe(0);
     expect(errs).toEqual([]);
   });
 }
@@ -146,11 +167,13 @@ test('reduced motion: the glows stand still, the chip says it in the beat, and t
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const errs = await open(page, AREAS[0], NEAR_11);
   expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), 'the page sees it').toBe(true);
+  await watchBurst(page, '.tw-me');
   await page.evaluate(() => window.__xp.grant(20));
   let orbs = 0;
   await expect.poll(async () => { orbs = Math.max(orbs, await page.locator('.wx-orb').count()); return lvl(page); }, { timeout: 1500, intervals: [50] }).toBe('LVL 11');
   expect(orbs, 'no orb flies').toBe(0);
-  const moving = await page.evaluate(() => [...document.querySelectorAll('.wx-halo, .wx-glow, .wx-gain, .wh__lvl, [data-wh="lvl"]')].reduce((n, e) => n + e.getAnimations().length, 0));
+  expect(await burstSeen(page), '💥 the level\'s burst is its glow, lit and still: no flash, nothing flies').toEqual({ back: 1, front: 0, orbs: 0, riser: '' });
+  const moving = await page.evaluate(() => [...document.querySelectorAll('.wx-halo, .wx-glow, .wx-gain, .wb-shape, .wh__lvl, [data-wh="lvl"]')].reduce((n, e) => n + e.getAnimations().length, 0));
   expect(moving, 'nothing pulses, swells or shakes').toBe(0);
   expect(await page.evaluate(() => Number(getComputedStyle(document.querySelector('.tw-me > .wx-halo')).opacity)), 'the glow is still there, still').toBeGreaterThan(0.3);
   expect(await page.locator('.wx-riser').count(), 'a still riser, never nothing').toBeGreaterThan(0);
@@ -171,5 +194,53 @@ test('a pickup plays at once, and a trickle behind it merges: two beats for twel
   await expect.poll(() => page.evaluate(() => window.__labels.length), { timeout: 4000 }).toBe(2);
   expect(await page.evaluate(() => window.__labels), 'the pickup, then the rest of the trickle as one').toEqual([WL.plus.replace('{n}', '2'), WL.plus.replace('{n}', '22')]);
   await expect.poll(() => lvl(page), { timeout: 4000 }).toBe('LVL 5');
+  expect(errs).toEqual([]);
+});
+
+// 💥 SEEN BY THE ROOM (2 Oct 2026). Trym: "if other users can see other users leveling up thats also fun". Your level-up goes
+// out to the area's room as it lands ({t:'lvl'}), and another player's comes in ({t:'lvlup'}) as the same burst on THEIR
+// banana, with "LVL N" riding up off it. The room is played here: a roster with one other banana in it, Pia.
+test('park: your level-up goes out to the room, and another player\'s bursts on their banana with its level', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.route(NOISE, (r) => r.abort());
+  let sock = null;
+  const said = [];
+  await page.routeWebSocket(/workers\.dev/, (ws) => {
+    ws.onMessage((m) => {
+      let d = null; try { d = JSON.parse(String(m)); } catch (e) { return; }
+      said.push(d);
+      if (d && d.t === 'hi') { sock = ws; ws.send(JSON.stringify({ t: 'roster', you: 'qa-me', all: [{ id: 'qa-pia', name: 'Pia', outfit: { hat: 'tophat', glasses: 'none', extras: {} }, x: 58, y: 58 }] })); }
+    });
+  });
+  await page.addInitScript((rep) => {
+    if (sessionStorage.getItem('xp-seeded')) return;
+    sessionStorage.setItem('xp-seeded', '1');
+    localStorage.setItem('tt-internal', '1');
+    localStorage.setItem('cookie-consent-v1', 'n');
+    localStorage.setItem('bwq-c1', JSON.stringify({ done: true }));
+    localStorage.setItem('pass-v1', JSON.stringify({ created: Date.now() - 10 * 864e5, patches: {}, stats: { rep }, days: [new Date().toISOString().slice(0, 10)] }));
+  }, 3900);
+  await page.goto('/park/?parktest&xptest');
+  await page.waitForFunction(() => !!window.__park && !!window.__xp, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!document.querySelector('[data-pid="qa-pia"] canvas'), null, { timeout: 15000 });
+  await page.waitForTimeout(600);
+  // ── yours, out to the room
+  await page.evaluate(() => window.__xp.grant(120));
+  await expect.poll(() => lvl(page), { timeout: 5000 }).toBe('LVL 11');
+  await expect.poll(() => said.filter((d) => d.t === 'lvl').map((d) => d.n), { timeout: 3000, message: 'the room hears it' }).toEqual([11]);
+  // ── Pia's, in from the room
+  await page.waitForTimeout(1500);
+  await watchBurst(page, '[data-pid="qa-pia"]');
+  sock.send(JSON.stringify({ t: 'lvlup', id: 'qa-pia', n: 12 }));
+  await expect.poll(() => burstSeen(page), { timeout: 3000, message: '💥 Pia\'s banana bursts: the flash, the orbs, and her level riding up off her' })
+    .toEqual({ back: 3, front: 1, orbs: 10, riser: WL.riser.replace('{n}', '12') });
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: 'test-results/world-xp-park-peer.png' });
+  await expect.poll(() => burstLeft(page, '[data-pid="qa-pia"]'), { timeout: 2500, message: 'and gone in a moment' }).toBe(0);
+  // ── a burst for nobody here draws nothing, and breaks nothing
+  sock.send(JSON.stringify({ t: 'lvlup', id: 'qa-nobody', n: 30 }));
+  await page.waitForTimeout(500);
+  expect(await page.locator('.wb-shape').count()).toBe(0);
   expect(errs).toEqual([]);
 });
