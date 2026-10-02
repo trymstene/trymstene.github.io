@@ -95,6 +95,27 @@ test('the town’s night: a long, lit dark between a sunset and a sunrise, the l
   expect(errs).toEqual([]);
 });
 
+// 👻 THE GHOSTS KEEP THE WHOLE NIGHT (3 Oct 2026). Trym: "Shouldnt the ghosts keep on all night in the town? … The town is
+// cursed after all". A plain night fills and empties (data/town/ghosts.js NIGHT_RAMP): one with the dark, the whole company
+// in the ghosts' own beat (the only hours the roamer breaks things), fewer towards morning, none once the sky lightens.
+test('the ghosts keep the whole night: one with the dark, the whole company at its deep, fewer towards morning', async ({ page }) => {
+  test.setTimeout(120000);
+  const errs = await open(page);
+  await page.evaluate(() => window.__town.room.set(85));   // a thriving town draws no daylight wisp of its own
+  const out = async (h) => { await at(page, h, 2600); return page.evaluate(() => window.__town.room.ghosts().map((g) => g.id).sort()); };
+  expect(await out(17.5), 'the sunset: none yet').toEqual([]);
+  expect(await out(18.3), '⭐ the dark brings the first').toEqual(['wisp']);
+  expect(await out(19.3), 'more as it deepens').toEqual(['drift', 'wisp']);
+  const deep = await out(21);
+  for (const id of ['roam', 'drift', 'sit', 'wisp']) expect(deep, 'the deep of the night: the whole company, the roamer with it').toContain(id);
+  const early = await out(0.4);
+  expect(early, 'fewer towards morning').toEqual(['sit', 'wisp']);
+  expect(early, 'and the roamer has gone: nothing gets broken at the night’s edges').not.toContain('roam');
+  expect(await out(1.4)).toEqual(['wisp']);
+  expect(await out(2.6), 'the first light takes the last of them').toEqual([]);
+  expect(errs).toEqual([]);
+});
+
 test('a dead lamp is dark at night; inside a room there is no sky; a Curse Night darkens it in its own colour', async ({ page }) => {
   test.setTimeout(120000);
   const errs = await open(page);

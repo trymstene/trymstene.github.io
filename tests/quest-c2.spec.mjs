@@ -236,7 +236,7 @@ test('chapter two in the town: every scene in order, the ink, the statue, and th
   const day = await page.evaluate(() => ({ open: !!window.bwqTalk.open, mark: !!document.querySelector('.bwq-mark'), ghost: !!document.querySelector('.bwq-ghost') }));
   expect(day, 'by day the last scene waits: no !, no ghost, a tap on Nib is his own card').toEqual({ open: false, mark: false, ghost: false });
   expect(await page.locator('.bwq-hint span').textContent()).toBe(step('night').find);
-  await page.evaluate(() => window.__town.life.set(20.2));   // nightfall
+  await page.evaluate(() => window.__town.life.set(18.2));   // nightfall: the dark (world.js TOWN_NIGHT_FROM, hour 18)
   await page.waitForSelector('.bwq-ghost', { timeout: 10000 });
   await page.waitForFunction((t) => { const h = document.querySelector('.bwq-hint span'); return h && h.textContent === t; }, step('night').nightfall, { timeout: 5000 });
   // the statue stays dry until the name is whole, and the night's lights are on the view, over the town's dark
@@ -372,7 +372,7 @@ test('the tallest scenes fit a small phone: the statue up close, and the nightâ€
   await page.evaluate(() => localStorage.setItem('bwq-c2', JSON.stringify({ s: 9, k: {}, in: 1 })));
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__town && window.__town.room && window.__town.room.band(), null, { timeout: 30000 });
-  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); window.__town.life.set(20.2); });
+  await page.evaluate(() => { window.__town.room.curse('none'); window.__town.room.set(85); window.__town.life.set(18.2); });
   await page.waitForFunction(() => window.bwqTalk && window.bwqTalk.who === 'nib' && window.bwqTalk.open, null, { timeout: 15000 });
   await standAt(page, 1180, 610);
   await page.evaluate(() => window.bwqTalk.open());

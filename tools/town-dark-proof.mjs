@@ -20,7 +20,7 @@
 // the walk cannot wait up to ten minutes for beat 5. The gate's own arithmetic is checked here in
 // node, from the same shared function the worker carries (src/lib/world.js CLOCK block).
 import { createHmac, randomBytes } from 'node:crypto';
-import { townNightAt, TOWN_DAY_MS } from '../src/lib/world.js';
+import { townNightAt, TOWN_DAY_MS, TOWN_NIGHT_FROM, TOWN_NIGHT_TO } from '../src/lib/world.js';
 
 const API = process.env.RAVE_API || 'http://127.0.0.1:8799';
 const HMAC = process.env.MEMBER_HMAC || 'proof-secret';
@@ -43,11 +43,11 @@ const setLife = async (v) => (await room('/set', { key: KEY, life: v })).j;
 
 // ── 1. the night gate, as arithmetic ─────────────────────────────────────────────────────────
 const d0 = 1_700_000_000_000 - (1_700_000_000_000 % TOWN_DAY_MS);   // a dawn
-ok(townNightAt(d0 + 600000) === true, 'beat 5 begins at 600000 and is night', townNightAt(d0 + 600000));
-ok(townNightAt(d0 + 599999) === false, 'the last moment of the evening is not', townNightAt(d0 + 599999));
-ok(townNightAt(d0 + 719999) === true, 'the last moment of the night is', townNightAt(d0 + 719999));
-ok(townNightAt(d0 + 29999) === true, 'the first half-minute of dawn still counts as the night just gone', townNightAt(d0 + 29999));
-ok(townNightAt(d0 + 30000) === false, '…and then it does not', townNightAt(d0 + 30000));
+ok(townNightAt(d0 + TOWN_NIGHT_FROM) === true, 'the night begins with the dark (hour 18)', townNightAt(d0 + TOWN_NIGHT_FROM));
+ok(townNightAt(d0 + TOWN_NIGHT_FROM - 1) === false, 'the last moment of the sunset is not night', townNightAt(d0 + TOWN_NIGHT_FROM - 1));
+ok(townNightAt(d0 + 719999) === true, 'midnight is', townNightAt(d0 + 719999));
+ok(townNightAt(d0 + TOWN_NIGHT_TO + 29999) === true, 'the half-minute after the night still counts as the night just gone', townNightAt(d0 + TOWN_NIGHT_TO + 29999));
+ok(townNightAt(d0 + TOWN_NIGHT_TO + 30000) === false, '…and then it does not', townNightAt(d0 + TOWN_NIGHT_TO + 30000));
 
 // ── 2. the payload carries the night's cap and the floor ────────────────────────────────────
 const CURSED = process.env.CURSED === '1';

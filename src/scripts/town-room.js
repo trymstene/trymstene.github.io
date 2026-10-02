@@ -25,7 +25,7 @@
 // banana or ghost — a ghost with a line says it in the town's toast. ⚠️ EVERY WORD is copy:
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
-import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt, townBigAt, SKY_HOURS, litAt } from '../lib/world.js';   // 🌗 the sky's hours, and when each lamp comes on (§56)
+import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt, townBigAt, SKY_HOURS, litAt, TOWN_NIGHT_FROM, TOWN_NIGHT_TO, TOWN_HOUR_MS } from '../lib/world.js';   // 🌗 the sky's hours, and when each lamp comes on (§56)
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { XP_PAY } from '../data/xp-pay.js';   // ✨ a fix pays five times its old XP (the endgame plan's step 1c)
 import { DECOR } from '../data/decor.js';
@@ -40,7 +40,7 @@ import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, VISITOR_SPOTS, NIGHT_A
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, CURSE_SHELF } from '../data/town/stock.js';
 import { TODAY, TODAY_N, ODD_SPOTS, CLOSABLE } from '../data/town/today.js';
-import { GHOSTS, NIGHT_GHOSTS, DAY_GHOSTS, ROAM } from '../data/town/ghosts.js';
+import { GHOSTS, NIGHT_GHOSTS, DAY_GHOSTS, ROAM, nightGhostsAt } from '../data/town/ghosts.js';
 import { OBJECTS, WHERE, RARITY_W, BOUNTY } from '../data/town/objects.js';
 
 // ✍️ the words. A glob, not an import: the file does not exist until Trym approves the
@@ -1199,14 +1199,17 @@ export function bootTownLife(ctx) {
     for (const e of curseDay(d)) { if (e.type === 'hush') continue; const at = d * CURSE_DAY_MS + e.at; if (t >= at - OMEN_MS && t < at) return { at, type: e.type }; }
     return null;
   }
+  // 🌃 the town's night by its own (QA-pinnable) hour: the ghosts' hours, world.js TOWN_NIGHT_FROM→TOWN_NIGHT_TO
+  const NIGHT_H = [TOWN_NIGHT_FROM / TOWN_HOUR_MS, TOWN_NIGHT_TO / TOWN_HOUR_MS];
+  const nightHours = () => { const hr = life.seam.hour(); return hr >= NIGHT_H[0] || hr < NIGHT_H[1]; };
   function curseNow() {
     if (forced && Date.now() < forcedUntil) return forced === 'omen' ? 'none' : forced;   // a chapter's own night — or 'none', a chapter's own calm
     if (forced) forced = null;
     const c = curseAt(Date.now()).type;
-    // 👻 one town night in ten is haunted (23 Sep 2026), and half of those very cursed (27 Sep). ⚠️ The LOOK keeps to the
-    // ghosts' own beat: townNightAt's half-minute of dawn is for a late report to land, and it held the haunted dark and the
-    // kept-in residents half a minute into the morning (found 2 Oct 2026).
-    const own = life.beat() === 5;
+    // 👻 one town night in ten is haunted (23 Sep 2026), and half of those very cursed (27 Sep) — from the dark to the first
+    // light, the whole night (3 Oct 2026). ⚠️ The LOOK keeps to the night's own hours: townNightAt's half-minute after it is
+    // for a late report to land, and it held the haunted dark half a minute into the morning (found 2 Oct 2026).
+    const own = nightHours();
     return c !== 'none' ? c : own && townBigAt(Date.now()) ? 'big' : own && townHauntAt(Date.now()) ? 'haunt' : 'none';
   }
 
@@ -1238,7 +1241,7 @@ export function bootTownLife(ctx) {
     if (dusk && dusk.candleSpots) for (const c of dusk.candleSpots()) out.push({ kind: 'candle', x: c[0], y: c[1] - 12, flicker: 'fire' });
     return out;
   }
-  let lastBeat = -1, secAt = 0, litWas = '';
+  let lastBeat = -1, secAt = 0, litWas = '', deepNight = false;
   // 🚶 WALK-OVER: everything but a lamp is picked up or fixed by walking onto it (or up to it, for a thing you
   // cannot stand on) — a lamp is a repair, and a repair is a tap (Trym, 15 Sep: "it became tedious to tap on all
   // objects. streetlights can be tapped"). The reach is measured from the thing's foot; the tap's own walk
@@ -1324,10 +1327,17 @@ export function bootTownLife(ctx) {
     else { const lw = ANCHORS.lamps.map(lampLit).join(); if (lw !== litWas) { litWas = lw; lampsByHour(); } }   // 🌗 the next lamp of the dusk
     if (dusk) dusk.setBananas([...life.seam.residents().filter((r) => !r.hidden).map((r) => ({ x: r.x, y: r.y })), ...(ctx.others ? ctx.others() : [])]);
     hbar.hidden = inside();
-    // 👻 every night has its ghosts; dawn takes them (a Curse Night owns its own until it ends)
+    // 👻 THE NIGHT FILLS AND EMPTIES (3 Oct 2026, data/town/ghosts.js NIGHT_RAMP): a ghost with the dark, the whole company
+    // in the ghosts' own beat — when the roamer makes its mischief and the cursed things come through — and fewer towards the
+    // morning. A Curse Night owns its own company until it ends.
     const cursedNight = !!(curse && curse !== 'hush');
-    if (beat === 5 && !cursedNight && !plainNight && dusk) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => dusk.ghostOf(id, null, true)); dusk.nightBegins(2); }   // 🔮 the night's cursed things come through it
-    else if (beat !== 5 && plainNight) { plainNight = false; if (!cursedNight && dusk) { dusk.clearGhosts(true); dusk.nightEnds(); } }
+    if (dusk && !cursedNight) {
+      const want = nightGhostsAt(life.seam.hour());
+      if (want.length) { if (!plainNight) { plainNight = true; deepNight = false; } dusk.nightSet(want); }
+      else if (plainNight) { plainNight = false; dusk.clearGhosts(true); }
+      if (plainNight && beat === 5 && !deepNight) { deepNight = true; dusk.nightBegins(2); }   // 🔮 the night's cursed things come through its deep
+      else if (deepNight && (beat !== 5 || !plainNight)) { deepNight = false; dusk.nightEnds(); }
+    }
     if (dusk) dusk.spawnThroughNight(now);
     // crows fly when you come close (and settle again on the next condition)
     for (const s of cond.crows) if (!s.gone && Math.hypot(ctx.pos.x - s.x, ctx.pos.y - s.y) < 70) flyOff(s);

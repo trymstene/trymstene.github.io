@@ -44,3 +44,16 @@ export const NIGHT_GHOSTS = {
   big: ['roam', 'roam2', 'drift', 'sit', 'lead', 'knock', 'repeat', 'wisp'],   // 🌑 a very cursed town night (27 Sep 2026): the deep night's whole company
 };
 export const DAY_GHOSTS = ['wisp'];
+// 👻 THE NIGHT FILLS AND EMPTIES (3 Oct 2026). Trym: "Shouldnt the ghosts keep on all night in the town? … The town is cursed
+// after all". A plain night's ghosts are out from the dark to the first light (world.js TOWN_NIGHT_FROM→TOWN_NIGHT_TO, town
+// hours 18→2): one with the dark, more as it deepens, the whole company in the ghosts' own beat (20→24 — the only hours the
+// roamer makes its mischief and the cursed things come, so a night costs the town what it always did), and fewer again
+// towards morning. [from town hour, the company], in the night's order; a Curse Night brings its own (NIGHT_GHOSTS).
+export const NIGHT_RAMP = [[18, ['wisp']], [19, ['wisp', 'drift']], [20, NIGHT_GHOSTS.night], [0, ['sit', 'wisp']], [1, ['wisp']], [2, []]];
+// the company out at town hour h ([] by day)
+export function nightGhostsAt(h) {
+  const evening = h >= NIGHT_RAMP[0][0];
+  let out = [];
+  for (const [from, ids] of NIGHT_RAMP) if ((from >= NIGHT_RAMP[0][0]) === evening && h >= from) out = ids;
+  return evening || h < NIGHT_RAMP[NIGHT_RAMP.length - 1][0] ? out : [];
+}

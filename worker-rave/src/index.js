@@ -272,21 +272,24 @@ function curseBetween(from, to) {
   return out.sort((a, b) => a.at - b.at);
 }
 
-// 🌃 THE TOWN'S OWN NIGHT — the last beat of its twelve-minute day, as a pure function of time. The
-// day is 24 town hours of 30 real seconds, six beats of four hours (town-life.js reads these, never its
-// own copy); beat 5 is the ghosts' night, and the TownRoom needs the same answer so it takes a ghost's
-// damage only while ghosts are out.
+// 🌃 THE TOWN'S OWN NIGHT, as a pure function of time. The day is 24 town hours of 30 real seconds, six
+// beats of four hours (town-life.js reads these, never its own copy). The NIGHT is the ghosts' hours —
+// from the dark to the first light (3 Oct 2026, Trym: "Shouldnt the ghosts keep on all night in the town?
+// … The town is cursed after all") — and the TownRoom needs the same answer, so it takes a ghost's damage
+// only while ghosts are out. ⭐ These two numbers ARE the night: the sky (SKY_HOURS below) and the ghosts
+// follow them. Changing them is a deploy of worker-rave too (its copy of this block).
 const TOWN_DAY_MS = 720000;
 const TOWN_HOUR_MS = 30000;
-const TOWN_NIGHT_FROM = 600000;   // beat 5 starts here: hour 20
+const TOWN_NIGHT_FROM = 540000;   // hour 18: the sun is down, the ghosts come out
+const TOWN_NIGHT_TO = 60000;      // hour 2 of the next day: the sky starts to lighten, the last one goes
+const TOWN_LATE = 30000;                 // a report lands a moment after the thing it reports
 function townNightAt(t) {
   const inDay = t % TOWN_DAY_MS;
-  // the night runs 600000–720000; a report lands a moment after the thing it reports, so the first
-  // half-minute of dawn still counts as the night just gone
-  return inDay >= TOWN_NIGHT_FROM || inDay < 30000;
+  // the night runs 540000 → 60000 over midnight; the half-minute after it still counts as the night just gone
+  return inDay >= TOWN_NIGHT_FROM || inDay < TOWN_NIGHT_TO + TOWN_LATE;
 }
-// the night a moment belongs to: the last beat of a twelve-minute day, plus the half-minute of dawn after it
-const townNightIdx = (t) => Math.floor((t - 30000) / TOWN_DAY_MS);
+// the night a moment belongs to: the one that fell in its day, through to the half-minute after its end
+const townNightIdx = (t) => Math.floor((t - TOWN_NIGHT_TO - TOWN_LATE) / TOWN_DAY_MS);
 // 👻 THE HAUNTED NIGHT (23 Sep 2026). Trym: "the nights still doesnt feel very scary … i know we have some cursed
 // nights or something but ive not seen any of those yet". The real-time Curse Nights keep to an evening window on
 // about one day in five, so a daytime player never meets one. So one in ten of the town's OWN nights is haunted —

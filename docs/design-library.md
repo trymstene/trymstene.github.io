@@ -1772,10 +1772,17 @@ that lamps and bonfires, streetlights, windows, decorations and all this actuall
 is core cozy"*, and *"i think night should be longer … a minute or two longer"*.
 
 - **One clock.** `skyAt()` in `src/lib/world.js` turns the town's twelve-minute day (24 town hours of 30 s) into how dark
-  the sky is: the sun sets 16→18, night runs 18→2, it rises 2→4, day is 4→16 — about as much night as day, the ghosts'
-  two minutes (beat 5, 20→24) in the middle of it. **`SKY_HOURS` is the one table**: tune the night there and every
-  area's sky, lamps and nightfall clock follow. The town's day length (`TOWN_DAY_MS`) is a mechanic — what a night costs
-  the town per hour — and is not tuned for looks.
+  the sky is: the sun sets 16→18, night runs 18→2, it rises 2→4, day is 4→16 — about as much night as day.
+  **The night is the ghosts' hours** (3 Oct 2026, Trym: *"Shouldnt the ghosts keep on all night in the town? … The town is
+  cursed after all"*): `TOWN_NIGHT_FROM` / `TOWN_NIGHT_TO` in world.js's CLOCK block — shared with worker-rave, so a
+  change is a deploy too — set its two ends, and the sky, the lamps, the nightfall clock, chapter two's night and the
+  TownRoom's gate all follow; the sunset's start and the sunrise's end (`SKY_HOURS`) are looks only. The town's day
+  length (`TOWN_DAY_MS`) is a mechanic — how many nights an hour cost the town — and is not tuned for looks.
+- **A plain night fills and empties** (`NIGHT_RAMP`, `src/data/town/ghosts.js`): a ghost with the dark, more as it
+  deepens, the whole company in the ghosts' own beat (20→24 — the only hours the roamer breaks things and the cursed
+  things come, so a night costs the town what it always did), fewer towards morning, none once the sky lightens. The
+  residents keep their hours (home only for the deep of it), so the square's jobs never stall. A haunted or very cursed
+  night is the whole night.
 - **One layer, on the VIEW.** `src/scripts/world-night.js` `mountNight(view, { lights, hour, mood })` hangs two canvases on
   the view at z 7 (under the rain at 8 and the HUD at 9): a **light map** multiplied over the scene — the night's colour
   where nothing shines, warm light added around every lamp, window and fire in six stepped rings with dithered edges,
@@ -1798,7 +1805,7 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
   `tests/world-night.spec.mjs`, which walks the town on a phone through day, sunset, night before and after the ghosts
   and sunrise: no layer by day, lamps lighting one by one (it fails with all lamps switching together), every working
   lamp lit at night and no light at a dead one, the clock counting to nightfall and to the morning, the arcade dark-free,
-  and a curse's sky darker than the clock's.
+  a curse's sky darker than the clock's, and the ghosts' night filling and emptying (the roamer only in its deep).
 
 ### Adding the night to an area
 

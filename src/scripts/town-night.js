@@ -316,6 +316,15 @@ export function bootTownNight(ctx) {
       }
     }
   }
+  // 👻 the night's company as it fills and empties (data/town/ghosts.js NIGHT_RAMP): who should be out now comes, the rest
+  // fade where they are
+  function nightSet(ids) {
+    for (const id of ids) ghostOf(id, null, true);
+    for (const g of ghosts.slice()) {
+      if (!g.night || g.done || ids.includes(g.def.id)) continue;
+      g.done = true; g.s.el.style.opacity = '0'; const s = g.s; setTimeout(() => kill(s), 1500); ghosts.splice(ghosts.indexOf(g), 1);
+    }
+  }
   function clearGhosts(keepDay) {
     for (const g of ghosts.slice()) { if (keepDay && g.s === cond.dayghost) continue; g.done = true; g.s.el.style.opacity = '0'; const s = g.s; setTimeout(() => kill(s), 1500); ghosts.splice(ghosts.indexOf(g), 1); }
   }
@@ -478,7 +487,7 @@ export function bootTownNight(ctx) {
   // and only read here, so it is set in rather than read out. The ghosts steer around whoever is
   // standing about, and that list is not this file's to keep.
   return {
-    ghostOf, stepGhosts, clearGhosts, mischief, litterAt, spawnObject, takeObject, unhaunt,
+    ghostOf, stepGhosts, clearGhosts, nightSet, mischief, litterAt, spawnObject, takeObject, unhaunt,
     nightBegins, nightEnds, spawnThroughNight, stepMeCurse, enterCurse, leaveCurse, omens,
     setBananas: (list) => { bananas = list; },
     // town-room's kill() used to splice this array itself; it cannot reach it any more

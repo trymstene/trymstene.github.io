@@ -9,7 +9,7 @@
 const mod = await import('../src/index.js');
 const { TownRoom } = mod;
 const W = await import('../../src/lib/world.js');
-const { weatherBetween, curseBetween, townHaunted, TOWN_DAY_MS } = W;
+const { weatherBetween, curseBetween, townHaunted, TOWN_DAY_MS, TOWN_NIGHT_FROM } = W;
 
 function fakeState() {
   const m = new Map();
@@ -24,7 +24,7 @@ const room = () => new TownRoom(fakeState(), { LAUNCH_KEY: 'k' });
 const call = (r, path, body) => r.fetch(new Request('https://room' + path, body ? { method: 'POST', body: JSON.stringify(body) } : {})).then((x) => x.json());
 const set = (r, v) => call(r, '/life/set', { key: 'k', life: v });
 const quiet = (a, b) => !weatherBetween(a, b).some((e) => e.type === 'heavy' || e.type === 'storm') && !curseBetween(a, b).length;
-const nightsIn = (a, b) => { const out = []; for (let n = Math.floor((a - 600000) / TOWN_DAY_MS) + 1; n <= Math.floor((b - 600000) / TOWN_DAY_MS); n++) out.push(n); return out; };
+const nightsIn = (a, b) => { const out = []; for (let n = Math.floor((a - TOWN_NIGHT_FROM) / TOWN_DAY_MS) + 1; n <= Math.floor((b - TOWN_NIGHT_FROM) / TOWN_DAY_MS); n++) out.push(n); return out; };
 // a window of `hours` from a whole town day with no weather hit and no Curse Night, optionally with/without haunted nights
 function windowOf(hours, want) {
   let t = Date.UTC(2026, 8, 25, 2, 0, 0); t -= t % TOWN_DAY_MS;

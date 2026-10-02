@@ -17,6 +17,7 @@ import { passStat, passRaw, coinsNow, statTotal } from './banana-pass.js';
 import { XP_PAY } from '../data/xp-pay.js';   // ✨ a step pays world XP, once per player (the endgame plan's step 1c)
 import { drawComposite, assetsReady, NFRAMES } from './banana-engine.js';
 import { coinText } from './coin.js';   // 🪙 every line's coin is the stand's (design library §45)
+import { TOWN_NIGHT_FROM, TOWN_NIGHT_TO, TOWN_HOUR_MS } from './world.js';   // 🌃 the town's night: the ghosts' hours
 
 // 🍌 NIB IS A REAL BANANA (Trym's polish verdict: "theres no banana NPC
 // greeting me" — a floating ! is not a character). Engine-rendered like Old
@@ -1285,7 +1286,9 @@ export async function bootQuest() {
   let nibEl = null;          // his body — so a finished talk can walk him off
   // 🏘 the town's own seams (banana-town.js window.__town): where you stand, where a resident is, the hour of its day
   const town = () => window.__town || null;
-  const beat = () => { try { return town().life.beat(); } catch (e) { return -1; } };
+  // 🌃 the town's night, from the dark to the first light (world.js TOWN_NIGHT_FROM→TOWN_NIGHT_TO): the moon clock's own zero.
+  // It was the ghosts' beat 5 (hour 20) until 3 Oct 2026 — a minute after the clock said night had fallen.
+  const night = () => { try { const h = town().life.hour(); return h >= TOWN_NIGHT_FROM / TOWN_HOUR_MS || h < TOWN_NIGHT_TO / TOWN_HOUR_MS; } catch (e) { return false; } };
   let justIn = false;        // this step was opened a moment ago by the one before it, right here (a step's `auto`)
   let nightCtl = null;       // 🌙 the last night's things for this player (quest-c2-fx.js night): the ghost, the lights, the water
   // a resident out in the square, by key: their feet in world px, or null while they are indoors or not yet drawn
@@ -1652,8 +1655,8 @@ export async function bootQuest() {
     // wrong area" compass. ⚠️ a TALK step shows its `find` line (who to find),
     // not its hint (what comes AFTER the talk) — step 0 was captioned "find
     // Old Peel" before Nib had said a word.
-    // 🌙 a scene that waits for the dark is LIT once the square's clock reaches night (the town's own beat 5)
-    const lit = !step.night || beat() === 5;
+    // 🌙 a scene that waits for the dark is LIT once the square's clock reaches night (the town's night)
+    const lit = !step.night || night();
     const compass = step.area !== area;
     // 🧭 …and the note says so: chapter two's `away` is its note from the chapter's other place (the letter waits at
     // HOME; you are in the town), and `nightfall` replaces the day's "when the moon clock runs out" once it has
@@ -1709,7 +1712,7 @@ export async function bootQuest() {
       const talk = () => {
         if (introBusy || dlg) return;
         // 🌙 a scene that waits for the dark opens only in it (the ! is not up by day either, this is the second lock)
-        if (step.night && beat() !== 5) return;
+        if (step.night && !night()) return;
         if (ch !== CH.c1 || step.who !== 'nib' || S.s !== 0 || S.in) { openDialog(step); return; }
         splash(() => openDialog(step));
       };
@@ -1729,7 +1732,7 @@ export async function bootQuest() {
       // watched, and nightfall puts the ! up — and the night's own things (quest-c2-fx.js night) with it.
       window.bwqTalk = { who: step.who, open: lit ? talk : null, mark: lit ? 1 : 0, station: step.station || '' };
       if (step.night) {
-        watchTimer = setInterval(() => { if ((beat() === 5) !== lit && !dlg) render(); }, 1000);
+        watchTimer = setInterval(() => { if (night() !== lit && !dlg) render(); }, 1000);
         if (!lit) return;
         if (step.fx && c2fx) {
           nightCtl = c2fx.night({ w, view: document.querySelector(AREAS[area].view) || w, layer, unhook, at: step.fx,
