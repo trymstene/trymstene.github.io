@@ -13,7 +13,8 @@ import { coinText } from '../lib/coin.js';   // 🪙 every line's coin is the st
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE, CAFE_WIN } from './town-geo.js';   // (NPCS stays in the generated file: stale since the residents got days, read by nothing)
-import { snapScale, worldNewcomer } from '../lib/world.js';   // 🔍 whole device pixels · 🌱 a new banana's first minute
+import { snapScale, worldNewcomer } from '../lib/world.js';
+import { customArt } from '../lib/custom-art.js';   // 🎁 Forge pieces on the square   // 🔍 whole device pixels · 🌱 a new banana's first minute
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
 import { bigMoment } from '../lib/world-moment.js';   // 🎖 the rave's big moment, shared: the town's first is being hired
@@ -210,7 +211,7 @@ life.setOverride((n) => { const [k, p] = questClaim().split(':'); return k === n
 let myOutfit = { hat: 'none', glasses: 'none', extras: {} };
 try {
   const o = JSON.parse(localStorage.getItem('bb-last') || 'null');
-  if (o) myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {} };
+  if (o) myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {}, c: o.c };
 } catch (e) {}
 const ME_DRAW = { ...myOutfit, top: '', bottom: '', bg: 'transparent', captions: false, effect: 'none' };
 const me = document.createElement('div');
@@ -229,9 +230,10 @@ let lastF = -1;
 function rewear() {
   try {
     const o = JSON.parse(localStorage.getItem('bb-last') || 'null') || {};
-    myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {} };
+    myOutfit = { hat: o.hat || 'none', glasses: o.glasses || 'none', extras: o.extras || {}, c: o.c };
   } catch (e) {}
-  ME_DRAW.hat = myOutfit.hat; ME_DRAW.glasses = myOutfit.glasses; ME_DRAW.extras = myOutfit.extras;
+  ME_DRAW.hat = myOutfit.hat; ME_DRAW.glasses = myOutfit.glasses; ME_DRAW.extras = myOutfit.extras; ME_DRAW.c = myOutfit.c;
+  customArt(ME_DRAW.c, () => { lastF = -1; drawMe(); });
   lastF = -1;
   if (crowd) crowd.outfit();   // 👥 the square sees the change too
   drawMe();
@@ -240,8 +242,9 @@ function drawMe() {
   const f = frameNow();
   if (f === lastF) return;
   lastF = f;
-  drawComposite(meCtx, CV, f, ME_DRAW);
+  drawComposite(meCtx, CV, f, ME_DRAW.c ? { ...ME_DRAW, custom: customArt(ME_DRAW.c) } : ME_DRAW);   // 🎁 your Forge pieces, as in every area
 }
+customArt(ME_DRAW.c, () => { lastF = -1; drawMe(); });
 document.addEventListener('world:rewear', rewear);   // 🎁 a present put on from the social layer's card (world-gift.js)
 
 // ---- camera: pans both axes, the banana leads (the park's numbers)
@@ -1268,7 +1271,7 @@ assetsReady().then(() => {
     try { qdone = [localStorage.getItem('bwq-c1'), localStorage.getItem('bwq-c2')].every((v) => (JSON.parse(v || 'null') || {}).done); } catch (e) {}
     if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
+  window.__town = { wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c, art: (customArt(ME_DRAW.c) || []).length }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
     pos, tgt, SPOTS, ABOUT, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them

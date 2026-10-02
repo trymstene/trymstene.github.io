@@ -12,6 +12,7 @@
 // the store and arcade"). A room is a plate in the same world, so its floor's x/y are world x/y already.
 // Fails silently by design: no socket, no crowd, the town works solo exactly as it did.
 import { presenceRoom, poofInto } from '../lib/world.js';
+import { customArt } from '../lib/custom-art.js';
 import { drawComposite, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 
 const WS = 'wss://banana-rave.trymstene.workers.dev/town';
@@ -35,7 +36,8 @@ export function bootTownCrowd(ctx) {
     const f = frameNow();
     if (!force && f === p.lastF) return;
     p.lastF = f;
-    try { drawComposite(p.ctx, CV, f, fit(p.outfit)); } catch (e) {}
+    const o = fit(p.outfit);
+    try { drawComposite(p.ctx, CV, f, o.c ? { ...o, custom: customArt(o.c) } : o); } catch (e) {}   // 🎁 their Forge pieces too
   }
   function placePeer(p) {
     p.el.style.left = pct(p.x, W);
@@ -63,6 +65,7 @@ export function bootTownCrowd(ctx) {
     peers.set(d.id, p);
     placePeer(p);
     drawPeer(p, true);
+    customArt(p.outfit.c, () => drawPeer(p, true));
     refreshCrowd();
   }
   function dropPeer(id) {
@@ -91,7 +94,7 @@ export function bootTownCrowd(ctx) {
         if (door) { void p.el.offsetWidth; p.el.style.transition = ''; }
       } else if (m.t === 'outfit') {
         const p = peers.get(m.id);
-        if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); }
+        if (p) { p.outfit = m.outfit || {}; drawPeer(p, true); customArt(p.outfit.c, () => drawPeer(p, true)); }
       } else if (m.t === 'leave') dropPeer(m.id);
       // 🎆 somebody's firework: where the room says they stood, with the room's copy of their name
       else if (m.t === 'burst' && onBurst && !here()) onBurst(fromPX(m.x), fromPY(m.y), m.name || '');

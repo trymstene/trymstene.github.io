@@ -11,12 +11,13 @@
 // laptop's outfit land through the real pull (only the pass worker's reply is played here), and then the banana on screen
 // and the room must both wear the laptop's. Nothing reaches a worker or a real player.
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 const PHONE = { hat: 'tophat', glasses: 'none', extras: { scarf: true } };   // what the phone had saved
 const LAPTOP = { hat: 'pigeon', glasses: 'none', extras: {} };              // what the laptop put on since
 const NOISE = /workers\.dev|googletagmanager|google-analytics|cloudflareinsights|facebook|clarity/;
 const AREAS = [
-  { name: 'town', url: '/town/?towntest', ready: () => !!(window.__town && window.__town.room && window.__town.room.band()), hook: '__town', me: '.tw-me' },
+  { name: 'town', url: '/town/?towntest&crowd=1', ready: () => !!(window.__town && window.__town.room && window.__town.room.band()), hook: '__town', me: '.tw-me' },
   { name: 'park', url: '/park/?parktest', ready: () => !!window.__park, hook: '__park', me: '#pkMe' },
   { name: 'beach', url: '/beach/?beachtest', ready: () => !!window.__bay, hook: '__bay', me: '#bhMe' },
   { name: 'homestead', url: '/homestead/?hstest=rich', ready: () => !!window.__hs, hook: '__hs', me: '#hsMe' },
@@ -47,7 +48,7 @@ for (const a of AREAS) {
         if (d && d.t === 'hi' && a.name === 'rave') ws.send(JSON.stringify({ t: 'roster', you: 'qa-me', all: [{ id: 'qa-me', outfit: d.outfit || {}, name: '', joined: Date.now(), lvl: d.lvl }] }));
       });
     });
-    await page.addInitScript(([phone]) => {
+    await page.addInitScript(([phone, area]) => {
       if (sessionStorage.getItem('fit-seeded')) return;
       sessionStorage.setItem('fit-seeded', '1');
       localStorage.setItem('tt-internal', '1');
@@ -60,7 +61,9 @@ for (const a of AREAS) {
       localStorage.setItem('bb-last', JSON.stringify(phone));
       localStorage.setItem('bb-seen', JSON.stringify(phone));
       localStorage.setItem('bb-at', '1000');
-    }, [PHONE]);
+      // a yard has its room only once it has an address: a claimed test yard with one (the room is played here, never real)
+      if (area === 'homestead') localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 1, items: [], shed: [], bed: [null, null, null, null], slug: 'qa-yard' }));
+    }, [PHONE, a.name]);
     await page.goto(a.url);
     await page.waitForFunction(a.ready, null, { timeout: 30000 });
     await page.waitForTimeout(1200);
@@ -69,7 +72,8 @@ for (const a of AREAS) {
     const wears = () => page.evaluate((h) => (h ? window[h].wears() : null), a.hook);
     if (a.hook) expect((await wears()).hat, 'the phone dressed its own save first').toBe('tophat');
     const hiBefore = sent.find((d) => d.t === 'hi' && d.outfit);
-    if (hiBefore) expect(hiBefore.outfit.hat, 'and told the room so').toBe('tophat');
+    expect(hiBefore, 'the area joined its room').toBeTruthy();
+    expect(hiBefore.outfit.hat, 'and told the room so').toBe('tophat');
     const box = await page.locator(a.me).first().boundingBox();
     const clip = box && { x: Math.max(0, box.x - 50), y: Math.max(0, box.y - 60), width: box.width + 100, height: box.height + 90 };
     if (clip) await page.screenshot({ path: `test-results/outfit-follows-${a.name}-before.png`, clip });
@@ -82,14 +86,43 @@ for (const a of AREAS) {
       await expect.poll(async () => (await wears()).hat, { timeout: 3000 }).toBe('pigeon');
       expect((await wears()).extras.scarf, 'the scarf came off').toBeFalsy();
     }
-    if (hiBefore) {
-      await expect.poll(() => sent.slice(n0).some((d) => d.t === 'outfit' && d.outfit && d.outfit.hat === 'pigeon'), { timeout: 3000, message: 'the room is told' }).toBe(true);
-    }
+    await expect.poll(() => sent.slice(n0).some((d) => d.t === 'outfit' && d.outfit && d.outfit.hat === 'pigeon'), { timeout: 3000, message: 'the room is told' }).toBe(true);
     await page.waitForTimeout(500);
     if (clip) await page.screenshot({ path: `test-results/outfit-follows-${a.name}-after.png`, clip });
     expect(errs).toEqual([]);
   });
 }
+
+// 🎁 …and in every area the same things: the square drew nobody's Forge pieces, yours included, while the town's clothes
+// shop and the other areas did. Real catalog pieces (tests/catalog-hands-fixture.json): the pink bow on you, both boxing
+// gloves on a player who walks up.
+test('town: your Forge piece is on your banana on the square, and another player\'s on theirs', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await page.route(NOISE, (r) => r.abort());
+  await page.route('https://banana-share.trymstene.workers.dev/catalog/items.json', (r) => r.fulfill({ contentType: 'application/json', body: readFileSync(new URL('./catalog-hands-fixture.json', import.meta.url), 'utf8') }));
+  let square = null;
+  await page.routeWebSocket(/workers\.dev/, (ws) => { if (/\/town(\?|$)/.test(ws.url())) square = ws; });
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('fit-seeded')) return;
+    sessionStorage.setItem('fit-seeded', '1');
+    localStorage.setItem('tt-internal', '1');
+    localStorage.setItem('cookie-consent-v1', 'n');
+    localStorage.setItem('bwq-c1', JSON.stringify({ done: true }));
+    localStorage.setItem('bb-last', JSON.stringify({ hat: 'none', glasses: 'none', extras: {}, c: 'c_3e2d0938cb' }));
+  });
+  await page.goto('/town/?towntest&crowd=1');
+  await page.waitForFunction(() => !!(window.__town && window.__town.room && window.__town.room.band()), null, { timeout: 30000 });
+  await expect.poll(() => page.evaluate(() => window.__town.wears().art), { timeout: 8000, message: 'the bow is in the drawing' }).toBe(1);
+  await expect.poll(() => !!square, { timeout: 8000, message: 'the square has its room' }).toBe(true);
+  const at = await page.evaluate(() => ({ x: (window.__town.pos.x + 70) / 2200 * 100, y: window.__town.pos.y / 1300 * 100 }));
+  square.send(JSON.stringify({ t: 'join', p: { id: 'qa-peer', name: 'Glove Fan', x: at.x, y: at.y, room: '', outfit: { hat: 'none', glasses: 'none', extras: {}, c: 'c_18d4a0daa0,c_e43111617c' } } }));
+  await expect(page.locator('.tw-peer')).toHaveCount(1);
+  await page.waitForTimeout(800);   // the catalog is in; the peer redraws in its gloves
+  const box = await page.locator('.tw-me').boundingBox();
+  await page.screenshot({ path: 'test-results/outfit-follows-town-forge.png', clip: { x: Math.max(0, box.x - 60), y: Math.max(0, box.y - 50), width: box.width + 200, height: box.height + 80 } });
+  expect(errs).toEqual([]);
+});
 
 test('another tab dresses the banana: this tab wears it too', async ({ context }) => {
   const page = await context.newPage();
