@@ -48,7 +48,7 @@ const CSS = `
   border: 1px solid rgba(0, 0, 0, 0.6); border-radius: 3px; overflow: hidden;
 }
 .wh__lvlbar i { display: block; height: 100%; width: 0; background: var(--wh-accent); transition: width 0.5s ease; }
-.wh__lvl .wh__lvlbar i { width: 100%; transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.5s ease; }
+.wh__lvl .wh__lvlbar i { width: 100%; transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.75s cubic-bezier(.25, .9, .3, 1); }
 /* ✨ the strip rises out of any card's shade while XP sparks (or coins) fly into it (world-xp.js, §30.2, §53) */
 .wh--overlay.is-lit { z-index: 2150; }
 /* 🧑‍🌾 the gardener chip is a <button>, so it needs the button defaults

@@ -1,18 +1,20 @@
-// ✨ XP THAT LANDS LIKE COINS (2 Oct 2026). Trym: "i dont feel XP in banana world FEELS great, in the way getting banana
-// coins does when getting coins on the spinning wheel … you have nice coins-animation that sends all the coins into your
-// wallet in the HUD". Every grant in every area passes passStat → 'pass:rep'; the HUD (world-hud.js) holds its LVL chip
-// where it stood and hands the grant here. Sparks fly from your banana into the chip on the wheel's own curve, the chip
-// ticks as they land, a level crossed fills the bar to the top and starts it again while "LVL N" rides up off your banana,
-// and a new title is the world's big moment once any card is shut (§27). One layer for the town, the rave, the park, the
-// bay and the homestead (design library §53); the rave keeps its sound by hearing 'world:levelup'.
+// ✨ XP YOU CAN FEEL, IN EVERY AREA (2 Oct 2026, design library §53). Trym, first: "i dont feel XP in banana world FEELS
+// great, in the way getting banana coins does"; then, of the sparks that flew from the banana into the HUD: "the sparkle
+// graphics looks a bit static flying over the screen … its better with a soft pulsating golden glow around the banana when
+// experience points are received, and that the XP-bar also glows up at the same time, maybe with a small shake animation
+// … and an animation showing the xp bar growing". Every grant in every area passes passStat → 'pass:rep'; the HUD
+// (world-hud.js) holds its LVL chip where it stood and hands the grant here. Then, in one beat: a golden glow pulses round
+// your banana as "+N XP" rises beside it, and the chip lights, swells, gives a little shake while its bar grows with the
+// part just earned lit. A level crossed fills the bar to the top and starts it again while "LVL N" rides up off your banana;
+// a new title is the world's big moment once any card is shut (§27). One layer for the town, the rave, the park, the bay
+// and the homestead; the rave keeps its sound by hearing 'world:levelup'.
 import W from '../data/copy/world-level.json';
 import { fillWords } from './fill-words.js';
 import { levelFor, rankFor, nextRank } from './pass-defs.js';
 import { bigMoment } from './world-moment.js';
-import SPARK from '../icons/pixelart/sparkles.svg?raw';
 
-// each area: the frame the sparks fly in (they never leave the game), your banana, how long trickling grants merge before
-// they fly (the rave pays one or two a second — a spark per grant would be wallpaper), and where its big moment goes
+// each area: the frame its words go in, your banana, how long trickling grants merge into one beat (the rave pays one or
+// two a second — a glow per grant would never rest), and where its big moment goes
 const AREAS = {
   town: { host: '#twView', me: '.tw-me', merge: 450 },
   park: { host: '#pkView', me: '#pkMe', merge: 450 },
@@ -22,12 +24,16 @@ const AREAS = {
 };
 // a card or a scene up: a title's big moment waits for it (the list the social layer's present waits on)
 const BUSY = '.bwq-dlg, .bwq-intro, .tw-panel:not([hidden]), .tw-tray:not([hidden]), .tw-cup, .pk-panel:not([hidden]), .pk-shop:not([hidden]), .bh-panel:not([hidden]), .hs-veil:not([hidden])';
-const TOP = 99;   // the last level (pass-defs levelFor)
+const TOP = 99;      // the last level (pass-defs levelFor)
+const BEAT = 900;    // one grant's beat before the next may start
 const ARROW = '<svg width="21" height="24" viewBox="0 0 7 8" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" y="0" width="1" height="1" fill="#ffe135"/><rect x="2" y="1" width="3" height="1" fill="#ffe135"/><rect x="1" y="2" width="5" height="1" fill="#ffe135"/><rect x="0" y="3" width="7" height="1" fill="#ffe135"/><rect x="2" y="4" width="3" height="4" fill="#ffe135"/></svg>';
-const SPARK_SVG = String(SPARK).replace('<svg ', '<svg width="24" height="24" shape-rendering="crispEdges" aria-hidden="true" ');
+// the glows are static shadows under an opacity pulse (§21.4: never animate a filter or a shadow); the halo keeps its own
+// filter over an area’s “the banana’s canvas” rules (the rave tints a canvas for its effects), which it otherwise shares
 const CSS = `
-.wx-spark{position:absolute;left:0;top:0;width:24px;height:24px;margin:-12px 0 0 -12px;z-index:2170;pointer-events:none;color:#ffe135;filter:drop-shadow(1px 1px 0 #000) drop-shadow(-1px -1px 0 #000)}
-.wx-spark svg{display:block}
+.wx-me{isolation:isolate}
+.wx-halo{position:absolute;z-index:-1;pointer-events:none;opacity:0;image-rendering:pixelated;filter:drop-shadow(0 0 1px #fffbea) drop-shadow(0 0 2px #fff1c4) drop-shadow(0 0 3px rgba(255,228,160,.9))!important}
+.wx-glow{position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;opacity:0;background:rgba(255,244,205,.13);box-shadow:inset 0 0 7px rgba(255,246,215,.55),0 0 0 2px rgba(255,250,228,.95),0 0 10px 3px rgba(255,234,170,.85)}
+.wx-gain{position:absolute;left:0;top:0;bottom:0;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(255,252,236,.55),#fffdf2);box-shadow:0 0 5px 1px rgba(255,240,190,.95)}
 .wx-plus,.wx-riser{position:absolute;left:0;top:0;pointer-events:none;white-space:nowrap;font-weight:800;letter-spacing:.04em;color:#ffe135;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000,0 2px 0 #000}
 .wx-plus{z-index:2172;font-size:.86rem}
 .wx-riser{z-index:2171;font-size:1.05rem}
@@ -52,23 +58,23 @@ if (typeof document !== 'undefined') {
 }
 
 let api = null;            // the HUD's hands: { lvl, show(rep, crossed), release(), lift(on) }
-let shown = null;          // what the chip says while sparks are out
-let planned = null;        // the total the sparks already in the air will bring it to
+let shown = null;          // what the chip says while beats are queued
+let planned = null;        // the total the queued beats will bring it to
 let target = 0;            // the newest true total
 let timer = 0;             // a merge window still open
 let opened = 0;            // when it opened
-const queue = [];          // flights waiting their turn
-let flying = false;
+const queue = [];          // beats waiting their turn
+let playing = false;
 
-// 📥 a grant (from the HUD): merge it with any still trickling in, then fly
+// 📥 a grant (from the HUD): merge it with any still trickling in, then play its beat
 export function grant(d, hud) {
   api = hud;
   if (!d || !(d.now > d.was)) return;
   if (!A || !api || !api.lvl) { finish(d.now); return; }
   if (shown == null) { shown = d.was; planned = d.was; }
   target = Math.max(target, d.now);
-  // grants close together merge into one flight, but a steady trickle never holds it past twice the window: the rave's
-  // spotlight pays every beat, and restarting the window on each one kept the XP from ever flying while you stood in it
+  // grants close together merge into one beat, but a steady trickle never holds it past twice the window: the rave's
+  // spotlight pays every beat of the music, and restarting the window on each one kept the XP from ever landing
   const t = Date.now();
   if (!timer) opened = t;
   clearTimeout(timer);
@@ -80,21 +86,21 @@ function launch() {
   if (target <= planned) return;
   queue.push({ from: planned, to: target });
   planned = target;
-  if (!flying) next();
+  if (!playing) next();
 }
 
 function next() {
   const b = queue.shift();
   if (!b) {
-    flying = false;
+    playing = false;
     if (!timer && planned >= target) { shown = null; planned = null; target = 0; if (api) { api.lift(false); api.release(); } }
     return;
   }
-  flying = true;
-  fly(b);
+  playing = true;
+  land(b);
 }
 
-// a whole batch landed at once: no frame to fly in, or motion is turned down
+// a whole batch with no area to play it in: the chip says it
 function finish(to) {
   const from = shown == null ? to : shown;
   step(from, to);
@@ -102,61 +108,110 @@ function finish(to) {
   if (api) api.release();
 }
 
-function fly(b) {
+// 🌟 one beat: the banana glows, "+N XP" rises, the chip lights and its bar grows — together
+function land(b) {
   const host = $(A.host), me = $(A.me), chip = api && api.lvl;
-  const hr = host && host.getBoundingClientRect(), mr = me && me.getBoundingClientRect(), cr = chip && chip.getBoundingClientRect();
-  const onScreen = (r) => r && r.width && r.height && r.bottom > hr.top && r.top < hr.bottom && r.right > hr.left && r.left < hr.right;
-  const at = (x, y) => ({ x: x - hr.left - host.clientLeft, y: y - hr.top - host.clientTop });
-  const from = hr && onScreen(mr) ? at(mr.left + mr.width / 2, mr.top + mr.height * 0.2) : null;
-  // into the bar, where it is filling (the coins drop into the purse; XP lands on the edge it pushes)
-  const fill = chip && chip.querySelector('.wh__lvlbar i, [data-wh="lvlfill"]');
-  const fr = fill && fill.getBoundingClientRect();
-  const to = hr && onScreen(cr) ? (fr && fr.height ? at(Math.max(fr.left + 3, fr.right), fr.top + fr.height / 2) : at(cr.left + 14, cr.top + cr.height / 2)) : null;
+  const hr = host && host.getBoundingClientRect(), mr = me && me.getBoundingClientRect();
+  const meOn = !!(hr && mr && mr.width && mr.bottom > hr.top && mr.top < hr.bottom && mr.right > hr.left && mr.left < hr.right);
   const amount = b.to - b.from;
-  const dir = from && to && to.x < from.x ? -1 : 1;   // the side the chip is on: the sparks leave that way, "+N XP" the other
-  if (from) plus(host, from, amount, -dir, still());
-  if (!from || !to || still()) {   // nothing to fly between, or motion turned down: the chip says it at once
-    step(shown, b.to); shown = b.to; next(); return;
+  if (meOn) {
+    glowMe(me, amount);
+    plus(host, { x: mr.left - hr.left - host.clientLeft + mr.width / 2, y: mr.top - hr.top - host.clientTop + mr.height * 0.2 }, amount);
   }
-  api.lift(true);   // the strip rises out of any card's shade to catch them (§30.2)
-  const n = Math.max(1, Math.min(8, 1 + Math.floor(Math.log2(Math.max(1, amount)))));
-  let landed = 0;
-  for (let i = 0; i < n; i++) {
+  api.lift(true);   // the strip rises out of any card's shade so its glow is seen (§30.2)
+  lightChip(chip, b.from, b.to);
+  step(shown, b.to);
+  shown = b.to;
+  setTimeout(next, still() ? 250 : BEAT);
+}
+
+// the glow HUGS your banana and everything it wears (Trym: "close glow tight to the shape of the banana and its wearables,
+// not glow with alot of spread, and whiter golden, not yellow"): a pale copy of its own canvas, just behind it, wearing a
+// tight whitish-gold shadow that is static (§21.4: never animate a filter) under an opacity pulse — two soft pulses, and a
+// steady trickle keeps it glowing rather than stacking glows. Under reduced motion it is lit and then gone (§3d).
+let halo = null, haloAnim = null, haloOff = 0, haloUntil = 0, haloLoop = false;
+function glowMe(me, amount) {
+  const cv = me.querySelector('canvas:not(.wx-halo)');
+  if (!cv) return;
+  if (!halo || halo.parentNode !== me) {
+    if (halo) halo.remove();
+    halo = document.createElement('canvas');
+    halo.className = 'wx-halo';
+    halo.setAttribute('aria-hidden', 'true');
+    me.classList.add('wx-me');   // a stacking context of its own: the glow sits behind the banana, not behind the world
+    me.insertBefore(halo, me.firstChild);
+  }
+  // exactly on the banana's own canvas (a curse that scales or mirrors it, the copy too)
+  const cs = getComputedStyle(cv);
+  Object.assign(halo.style, { left: cv.offsetLeft + 'px', top: cv.offsetTop + 'px', width: cv.offsetWidth + 'px', height: cv.offsetHeight + 'px', scale: cs.scale, transformOrigin: cs.transformOrigin });
+  const draw = () => {
+    if (!halo) return;
+    if (halo.width !== cv.width || halo.height !== cv.height) { halo.width = cv.width; halo.height = cv.height; }
+    const x = halo.getContext('2d');
+    x.globalCompositeOperation = 'copy'; x.drawImage(cv, 0, 0);   // its silhouette, this frame
+    x.globalCompositeOperation = 'source-in'; x.fillStyle = '#fff6dc'; x.fillRect(0, 0, halo.width, halo.height);
+    x.globalCompositeOperation = 'source-over';
+  };
+  draw();
+  haloUntil = performance.now() + (still() ? 1300 : 1800);   // it dances with the banana while it glows
+  if (!haloLoop) {
+    haloLoop = true;
+    const tick = () => { if (!halo || performance.now() > haloUntil) { haloLoop = false; return; } try { draw(); } catch (e) {} requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
+  const peak = Math.min(1, 0.85 + Math.log2(Math.max(1, amount)) / 30);   // a bigger grant glows a little brighter
+  if (haloAnim) haloAnim.cancel();
+  clearTimeout(haloOff);
+  if (still() || !halo.animate) {
+    halo.style.opacity = String(peak);
+    haloOff = setTimeout(() => { if (halo) halo.style.opacity = '0'; }, 1300);
+    return;
+  }
+  halo.style.opacity = '0';
+  haloAnim = halo.animate([{ opacity: 0 }, { opacity: peak, offset: 0.2 }, { opacity: peak * 0.4, offset: 0.45 }, { opacity: peak, offset: 0.68 }, { opacity: 0 }], { duration: 1700, easing: 'ease-in-out' });
+}
+
+// the chip in the same beat: it lights up from inside with a glow round it, the bar's fill flashes up to its new length as
+// the bar grows into it, and it swells with a small shake. A level crossed has its own bigger pop (levelUp) and its own fill-to-the-top, so it only gets the glow.
+function lightChip(chip, a, b) {
+  if (!chip) return;
+  const la = levelFor(a), lb = levelFor(b), crossed = lb.level > la.level;
+  let g = chip.querySelector(':scope > .wx-glow');
+  if (!g) {
+    if (getComputedStyle(chip).position === 'static') chip.style.position = 'relative';
+    g = document.createElement('i');
+    g.className = 'wx-glow';
+    chip.appendChild(g);
+  }
+  if (still() || !g.animate) { g.style.opacity = '1'; setTimeout(() => { g.style.opacity = '0'; }, 1100); }
+  else g.animate([{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.45, offset: 0.45 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 1500, easing: 'ease-in-out' });
+  const bar = chip.querySelector('.wh__lvlbar, .rv-mixer__lvlbar');
+  if (bar && !crossed) {
+    const f1 = Math.max(0, Math.min(1, lb.into / lb.need));
+    if (getComputedStyle(bar).position === 'static') bar.style.position = 'relative';
     const s = document.createElement('i');
-    s.className = 'wx-spark';
-    s.innerHTML = SPARK_SVG;
-    s.style.left = from.x + 'px'; s.style.top = from.y + 'px';
-    host.appendChild(s);
-    const sx = dir * (Math.random() * 60 - 12), sy = -30 - Math.random() * 55;   // up off the banana, then the swoop in
-    const a = s.animate([
-      { transform: 'translate(0, 0) scale(0.4)', opacity: 0 },
-      { transform: 'translate(' + sx + 'px, ' + sy + 'px) scale(1.15)', opacity: 1, offset: 0.3, easing: 'cubic-bezier(.45,0,.85,.3)' },
-      { transform: 'translate(' + (to.x - from.x) + 'px, ' + (to.y - from.y) + 'px) scale(0.55)', opacity: 1 },
-    ], { duration: 640 + i * 24, delay: i * 50, easing: 'linear', fill: 'backwards' });
-    const land = () => {
-      s.remove();
-      landed += 1;
-      const v = landed === n ? b.to : b.from + Math.round((amount * landed) / n);
-      step(shown, v);
-      shown = v;
-      if (landed === n) next();
-    };
-    a.onfinish = land;
-    a.oncancel = land;
+    s.className = 'wx-gain';
+    s.style.width = 'max(3px, ' + (f1 * 100).toFixed(2) + '%)';   // the whole fill lights up to its new length: a small gain is a pixel
+    bar.appendChild(s);
+    if (still() || !s.animate) { s.style.opacity = '0.9'; setTimeout(() => s.remove(), 1100); }
+    else { const an = s.animate([{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.55 }, { opacity: 0 }], { duration: 1300, easing: 'ease-out' }); an.onfinish = an.oncancel = () => s.remove(); }
+  }
+  if (!crossed && chip.animate && !still()) {
+    const S = (x) => 'scale(1.13) translateX(' + x + 'px)';
+    chip.animate([
+      { transform: 'scale(1)' }, { transform: S(0), offset: 0.18 },
+      { transform: S(-2), offset: 0.3 }, { transform: S(2), offset: 0.42 }, { transform: S(-1), offset: 0.54 }, { transform: S(0), offset: 0.66 },
+      { transform: 'scale(1)' },
+    ], { duration: 950, easing: 'ease-out' });
   }
 }
 
-// the chip moves from `a` to `b`: a tick, or a level crossed
+// the chip moves from `a` to `b`: the bar grows (world-hud.js paints it), or a level is crossed
 function step(a, b) {
   if (!api) return;
   const la = levelFor(a).level, lb = levelFor(b).level;
-  if (lb > la) {
-    api.show(b, true);
-    levelUp(la, lb);
-  } else {
-    api.show(b, false);
-    if (api.lvl && api.lvl.animate && !still()) api.lvl.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 300, easing: 'cubic-bezier(.3,1.6,.5,1)' });
-  }
+  api.show(b, lb > la);
+  if (lb > la) levelUp(la, lb);
 }
 
 function levelUp(from, to) {
@@ -168,17 +223,17 @@ function levelUp(from, to) {
   try { document.dispatchEvent(new CustomEvent('world:levelup', { detail: { level: to, title: rankFor(to).title } })); } catch (e) {}
 }
 
-// "+N XP" beside your head as the sparks leave it: on the side away from the chip and drawn over them, so the sparks
-// never cover what you got; it rises a little and holds long enough to read (still, under reduced motion)
-function plus(host, p, n, side, calm) {
+// "+N XP" beside your head (the side, so "LVL N" can rise straight up when a level comes with it): it rises a little and
+// holds long enough to read (still, under reduced motion)
+function plus(host, p, n) {
   const d = document.createElement('div');
   d.className = 'wx-plus';
   d.textContent = fillWords(W.plus, { n });
-  d.style.left = (p.x + side * 12) + 'px'; d.style.top = p.y + 'px';
+  d.style.left = (p.x + 12) + 'px'; d.style.top = p.y + 'px';
   host.appendChild(d);
-  const at = (y) => 'translate(' + (side < 0 ? '-100%' : '0') + ', calc(-100% - ' + y + 'px))';
+  const at = (y) => 'translate(0, calc(-100% - ' + y + 'px))';
   if (!d.animate) { d.style.transform = at(6); setTimeout(() => d.remove(), 1400); return; }
-  const a = d.animate(calm ? [
+  const a = d.animate(still() ? [
     { transform: at(6), opacity: 0 },
     { transform: at(6), opacity: 1, offset: 0.12 },
     { transform: at(6), opacity: 1, offset: 0.75 },

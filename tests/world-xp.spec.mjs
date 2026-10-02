@@ -1,8 +1,10 @@
-// ✨ XP THAT LANDS LIKE COINS, IN EVERY AREA (2 Oct 2026, design library §53). Trym: "i dont feel XP in banana world FEELS
-// great, in the way getting banana coins does when getting coins on the spinning wheel". Every grant goes passStat →
-// 'pass:rep' → the world HUD → src/lib/world-xp.js. In each area: the LVL chip HOLDS when XP is granted, sparks fly from
-// your banana into it, the level lands after them, a level crossed rides "LVL N" up off your banana, and a new title is
-// the world's big moment in the words of src/data/copy/world-level.json. Nothing reaches a worker or a real player.
+// ✨ XP YOU CAN FEEL, IN EVERY AREA (2 Oct 2026, design library §53). Trym: "i dont feel XP in banana world FEELS great";
+// then, of the first cut's sparks: "its better with a soft pulsating golden glow around the banana when experience points
+// are received, and that the XP-bar also glows up at the same time … and an animation showing the xp bar growing". Every
+// grant goes passStat → 'pass:rep' → the world HUD → src/lib/world-xp.js. In each area: the LVL chip HOLDS until the beat,
+// then a glow pulses round your banana as "+N XP" rises, the chip lights and its bar grows into the part just earned; a
+// level crossed rides "LVL N" up off your banana, and a new title is the world's big moment in the words of
+// src/data/copy/world-level.json. Nothing reaches a worker or a real player.
 import { test, expect } from '@playwright/test';
 import WL from '../src/data/copy/world-level.json' with { type: 'json' };
 
@@ -10,11 +12,11 @@ const NOISE = /workers\.dev|googletagmanager|google-analytics|cloudflareinsights
 // levelStep(n) = 150 + 45n (pass-defs.js): LVL 11 starts at 3 975, LVL 20 ("The Regular") at 11 400
 const NEAR_11 = 3960, NEAR_20 = 11390;
 const AREAS = [
-  { name: 'town', url: '/town/?towntest&xptest', ready: () => !!(window.__town && window.__town.room && window.__town.room.band()) },
-  { name: 'park', url: '/park/?parktest&xptest', ready: () => !!window.__park },
-  { name: 'beach', url: '/beach/?beachtest&xptest', ready: () => !!window.__bay },
-  { name: 'homestead', url: '/homestead/?hstest=rich&xptest', ready: () => !!window.__hs },
-  { name: 'rave', url: '/rave/?xptest', ready: () => !!document.querySelector('.rv-raver--me') },
+  { name: 'town', url: '/town/?towntest&xptest', ready: () => !!(window.__town && window.__town.room && window.__town.room.band()), me: '.tw-me' },
+  { name: 'park', url: '/park/?parktest&xptest', ready: () => !!window.__park, me: '#pkMe' },
+  { name: 'beach', url: '/beach/?beachtest&xptest', ready: () => !!window.__bay, me: '#bhMe' },
+  { name: 'homestead', url: '/homestead/?hstest=rich&xptest', ready: () => !!window.__hs, me: '#hsMe' },
+  { name: 'rave', url: '/rave/?xptest', ready: () => !!document.querySelector('.rv-raver--me'), me: '.rv-raver--me' },
 ];
 
 async function open(page, a, rep) {
@@ -46,14 +48,24 @@ async function open(page, a, rep) {
 }
 const lvl = (page) => page.evaluate(() => { const n = document.querySelector('.wh__lvln, [data-wh="lvln"]'); return n ? n.textContent.trim() : null; });
 
+// the fill's scale on the bar (the HUD paints it as scaleX)
+const fillOf = (page) => page.evaluate(() => {
+  const f = document.querySelector('.wh__lvl .wh__lvlbar i, [data-wh="lvlfill"]');
+  const m = f && getComputedStyle(f).transform.match(/matrix\(([-\d.e]+)/);
+  return m ? Number(m[1]) : null;
+});
 for (const a of AREAS) {
-  test(`${a.name}: XP flies from your banana into the LVL chip, and the level lands after it`, async ({ page }) => {
-    const errs = await open(page, a, NEAR_11);
+  test(`${a.name}: XP glows round your banana, the chip lights and its bar grows, and a level rides up off it`, async ({ page }) => {
+    const errs = await open(page, a, 3900);   // LVL 10, 75 short of LVL 11 (3 975)
     expect(await lvl(page)).toBe('LVL 10');
+    const f0 = await fillOf(page);
     await page.evaluate(() => window.__xp.grant(20));
-    expect(await lvl(page), '⭐ the chip holds where it stood (§30.2)').toBe('LVL 10');
-    await expect.poll(() => page.locator('.wx-spark').count(), { timeout: 5000 }).toBeGreaterThan(0);
-    expect(await lvl(page), 'still holding while the sparks are out').toBe('LVL 10');
+    expect(await lvl(page), '⭐ the chip holds until the beat (§30.2)').toBe('LVL 10');
+    // the beat: the glow hugging the banana, behind it, pulsing in
+    await expect.poll(() => page.evaluate((sel) => { const g = document.querySelector(sel + ' > .wx-halo'); return g ? Number(getComputedStyle(g).opacity) : 0; }, a.me), { timeout: 4000, message: 'the banana glows' }).toBeGreaterThan(0.3);
+    expect(await page.evaluate((sel) => getComputedStyle(document.querySelector(sel + ' > .wx-halo')).zIndex, a.me), 'behind the banana').toBe('-1');
+    expect(await page.locator('.wx-glow').count(), 'the chip glows in the same beat').toBe(1);
+    expect(await page.locator('.wx-gain').count(), 'the part just earned is lit on the bar').toBe(1);
     const plusText = (await page.locator('.wx-plus').first().textContent()).trim();
     if (a.name === 'rave') {
       // the floor pays on its own too (a spotlight's +2 per rhythm tick), and the merge window folds that in: correct
@@ -62,9 +74,13 @@ for (const a of AREAS) {
     } else {
       expect(plusText).toBe(WL.plus.replace('{n}', '20'));
     }
-    await page.waitForTimeout(200);   // the label has faded in; the sparks are mid-swoop
-    await page.screenshot({ path: `test-results/world-xp-${a.name}-flight.png` });
-    await expect.poll(() => lvl(page), { timeout: 4000 }).toBe('LVL 11');
+    await expect.poll(() => fillOf(page), { timeout: 2000, message: 'the bar grows' }).toBeGreaterThan(f0 + 0.02);
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: `test-results/world-xp-${a.name}-glow.png` });
+    // and a level: the bar fills to the top and starts again, "LVL 11" rides up off the banana
+    await page.waitForTimeout(1200);
+    await page.evaluate(() => window.__xp.grant(60));
+    await expect.poll(() => lvl(page), { timeout: 5000 }).toBe('LVL 11');
     await expect.poll(() => page.locator('.wx-riser').count(), { timeout: 2000 }).toBeGreaterThan(0);
     expect((await page.locator('.wx-riser b').first().textContent()).trim()).toBe(WL.riser.replace('{n}', '11'));
     await page.waitForTimeout(250);
@@ -124,14 +140,15 @@ test.describe('the smallest phone', () => {
 
 // ⚠️ reduced motion is page.emulateMedia: `test.use({ reducedMotion })` is no test option, and this walk once passed
 // while the sparks flew under it
-test('reduced motion: the chip says it at once, no sparks fly, and the level still shows (§3d)', async ({ page }) => {
+test('reduced motion: the glows stand still, the chip says it in the beat, and the level still shows (§3d)', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const errs = await open(page, AREAS[0], NEAR_11);
   expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), 'the page sees it').toBe(true);
   await page.evaluate(() => window.__xp.grant(20));
-  let sparks = 0;
-  await expect.poll(async () => { sparks = Math.max(sparks, await page.locator('.wx-spark').count()); return lvl(page); }, { timeout: 1500, intervals: [50] }).toBe('LVL 11');
-  expect(sparks, 'not one spark').toBe(0);
+  await expect.poll(() => lvl(page), { timeout: 1500, intervals: [50] }).toBe('LVL 11');
+  const moving = await page.evaluate(() => [...document.querySelectorAll('.wx-halo, .wx-glow, .wx-gain, .wh__lvl, [data-wh="lvl"]')].reduce((n, e) => n + e.getAnimations().length, 0));
+  expect(moving, 'nothing pulses, swells or shakes').toBe(0);
+  expect(await page.evaluate(() => Number(getComputedStyle(document.querySelector('.tw-me > .wx-halo')).opacity)), 'the glow is still there, still').toBeGreaterThan(0.3);
   expect(await page.locator('.wx-riser').count(), 'a still riser, never nothing').toBeGreaterThan(0);
   expect(await page.locator('.wx-plus').count(), 'and the amount, still').toBeGreaterThan(0);
   expect(errs).toEqual([]);

@@ -866,7 +866,7 @@ const GUIDE = [
     .rv-mixer__lvl { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: #ffe135; }
     .rv-mixer__lvlbar { flex: 1; min-width: 60px; height: 7px; background: #241a38; overflow: hidden; }
     /* the world HUD paints it and world-xp.js refills it across a level (design library §53) */
-    .rv-mixer__lvlbar i { display: block; height: 100%; width: 100%; background: #ffe135; transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.4s ease; }
+    .rv-mixer__lvlbar i { display: block; height: 100%; width: 100%; background: #ffe135; transform-origin: 0 50%; transform: scaleX(0); transition: transform 0.75s cubic-bezier(.25, .9, .3, 1); }
     /* a note that rides up off YOUR banana ("HANDS FULL"). The level-up's own riser moved to the world layer (world-xp.js) */
     .rv-lvlup {
       position: absolute; transform: translate(-50%, -50%); z-index: 650; pointer-events: none;

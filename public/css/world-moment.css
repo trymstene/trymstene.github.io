@@ -6,11 +6,18 @@
  * owed a move onto this. The words are always the caller's (the rig's); this owns the look and the timing.
  *
  * The LED-ad look (Anton, solid yellow): a stroke thins the glyphs from inside, so the outline is a ring
- * of hard shadows instead and the fill stays FAT. It never takes a tap: the world goes on under it. */
+ * of hard shadows instead and the fill stays FAT. It never takes a tap: the world goes on under it.
+ *
+ * ON ITS OWN CARD (2 Oct 2026, Trym: "the white sub-text underneath has very low readability on cobblestone
+ * background like in the town … put the whole ting in a square sticker-pill"): the world's own pill — the HUD
+ * chips' dark see-through ground and gold edge — so both lines read over cobbles, grass, sand and the floor. */
 .wm-moment {
   /* the height is the world's to set: the rave's floor wants 26%, the town's view has its work note up there */
   position: absolute; left: 50%; top: var(--wm-top, 26%); transform: translateX(-50%); z-index: 650;
-  width: max-content; max-width: 94%; text-align: center; pointer-events: none;
+  width: max-content; max-width: 94%; box-sizing: border-box; text-align: center; pointer-events: none;
+  padding: 0.6rem 1.1rem 0.7rem; border-radius: 12px;
+  background: rgba(16, 11, 4, 0.66); border: 2px solid rgba(255, 225, 53, 0.6);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4), 0 10px 26px rgba(0, 0, 0, 0.3);
   animation: wmMomentIn 0.3s steps(3);
 }
 .wm-moment b {

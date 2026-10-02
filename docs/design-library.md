@@ -745,7 +745,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 50 | The front page's homesteads are the game's own drawing of lived-in yards, picked fresh each day: four photos, then sticker pills | `tests/home-yards.spec.mjs` (the pick's rules without a browser; the page at 1280, 393 and 360: the manifest's photos in order, 4:3, tags whole, two to a row or one, pills whole on one line and on screen, no OS emoji) |
 | 51 | Where a banana stands for Trym and the site, it is OUR banana (`<Nana />`, the favicon's art at 38 px), never the fruit icon or an OS 🍌 | `PixelIcon.astro` (it has no banana: `name="banana"` fails the build and names `<Nana />`) |
 | 52 | A hand holds ONE thing, whatever it is: the game's items and community pieces share two gloves, and the newest wins | `tools/check-hands.mjs` (the engine and the print renderer on one table of cases; the builder, the stand and an approval use `makeRoom`) |
-| 53 | XP lands like coins in every area: the chip holds, sparks fly from your banana into it, "+N XP" beside your head, the level lands after them, a new title is the world's big moment; an area grants and never shows its own XP | `tests/world-xp.spec.mjs` (all five areas on a phone: the hold, the flight, the label, the level, the title in the copy file's words with no riser, reduced motion, a trickle as one label) |
+| 53 | XP you can feel in every area: the chip holds, then one beat — a whitish-gold glow hugging your banana and what it wears, "+N XP" beside its head, the chip lit with its bar growing — a level rides up off you, a new title is the world’s big moment on its own card; an area grants and never shows its own XP | `tests/world-xp.spec.mjs` (all five areas on a phone: the hold, the glow behind the banana, the chip’s glow and lit bar, the bar growing, the label, the level, the title in the copy file’s words with no riser, level 99, the longest title at 360 px, reduced motion still, a trickle as one label) |
 | 54 | Your banana wears what is saved, on the screen you are looking at: a sync from another device or another tab re-dresses it in every area and tells the room; every area draws Forge pieces | `tests/outfit-follows.spec.mjs` (the phone dresses its old save, the sync's answer is held until then and lands through the real pull; all five areas and their rooms, and a second tab — red in all six with the re-dress off) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
@@ -1672,31 +1672,40 @@ one hand at the same time."*
   newest-wins cases a wardrobe meets, and the engine, the print renderer, the builder, the stand and the approval path
   each using it.
 
-## §53 XP LANDS LIKE COINS, IN EVERY AREA (2 Oct 2026, Trym on level 99 and the wheel)
+## §53 XP YOU CAN FEEL, IN EVERY AREA (2 Oct 2026, Trym on level 99, the wheel and the glow)
 
 Trym: *"i dont feel XP in banana world FEELS great, in the way getting banana coins does when getting coins on the
-spinning wheel for example, you have nice coins-animation that sends all the coins into your wallet in the HUD"*.
+spinning wheel"*; then, of the first cut's sparks flying to the HUD: *"its better with a soft pulsating golden glow around
+the banana when experience points are received, and that the XP-bar also glows up at the same time, maybe with a small
+shake animation … and an animation showing the xp bar growing"*, and of the glow: *"close glow tight to the shape of the
+banana and its wearables, not glow with alot of spread, and whiter golden, not yellow"*.
 
 - **One layer for every grant.** XP is `passStat('rep', n)` in every area, and passStat says so once (`pass:rep`, with
   the true before and after, the double-XP pie included). The world HUD (`src/lib/world-hud.js`) hears it and hands it
   to `src/lib/world-xp.js`, a lazy chunk that is the same in the town, the park, the bay, the homestead and the rave.
   **An area grants and never shows its own XP**: no bare "+2" float, no XP pill of its own, no level toast.
-- **The chip holds, then the XP lands** (§30.2). The LVL chip keeps saying what it said; sparks fly from your banana into
-  it on the wheel's curve (one to eight, by the size of the grant), it ticks as each lands, and a level crossed lands
-  with them, never before. Grants that trickle merge into one flight (450 ms in the areas, 1.5 s on the rave's floor),
-  so a run of small ones is one "+N XP", never wallpaper.
-- **"+N XP" beside your head, on the side away from the chip**, drawn over the sparks and held long enough to read.
+- **One beat, together** (§30.2: nothing before the moment that tells it). The LVL chip holds until the beat; then the
+  glow pulses round your banana as "+N XP" rises beside its head, and the chip lights up, swells, gives a small shake and
+  its bar grows, the fill flashing up to its new length. Grants that trickle merge into one beat (450 ms in the areas,
+  1.5 s on the rave's floor, never held past twice that), so a run of small ones is one "+N XP", never wallpaper.
+- **The glow hugs the banana and what it wears**: a pale copy of its own canvas, just behind it, under a tight
+  whitish-gold shadow — never a halo with spread, never plain yellow. It is a static filter under an opacity pulse
+  (§21.4), it dances with the banana while it glows, and it keeps its own filter over an area's canvas rules.
 - **A level is the chip's moment.** The bar fills to the top, the number turns, the bar starts again from empty (it never
   drains backwards, and it is never full a step short), the chip pops, and the arrow with "LVL N" rides up off your
   banana and stays with it if you walk on. **A new title is the world's big moment instead** (§27: once no card is up),
   in the words of `src/data/copy/world-level.json`, and so is level 99, the last. Never both.
-- **Reduced motion** (§3d): no sparks; the chip says it at once, the label and the riser stand still, and a title still
-  gets its moment. With your banana or the chip out of view (the rave's stage), the chip says it at once.
+- **The big moment stands on its own card** — the HUD chips' dark see-through ground and gold edge — so its white lines
+  read over cobbles, grass, sand and the floor; the title you hold and what comes next are two lines that each fit a
+  360-px phone.
+- **Reduced motion** (§3d): nothing pulses, swells or shakes; the glows are lit and then gone, the chip says it in the
+  beat, the label and the riser stand still, and a title still gets its moment.
 - **The rave keeps what only the floor has:** the roster's level, the room's `lvl`, and the four-note arpeggio, which
   plays on `world:levelup`, as the level lands.
 - **Enforced by** `tests/world-xp.spec.mjs`. A feel cannot be grepped, so the walk asserts the order of things in all
-  five areas on a phone: the hold, the flight, the label, the level after the sparks, the title in the copy file's words
-  with no riser, reduced motion, and a trickle as one label.
+  five areas on a phone: the hold, the glow behind the banana, the chip's glow and its lit bar, the bar growing, the
+  label, a level and its riser, the title in the copy file's words with no riser, level 99, the longest title at 360 px,
+  reduced motion standing still, and a trickle as one label.
 
 ## §54 YOUR BANANA WEARS WHAT IS SAVED, ON THE SCREEN YOU ARE LOOKING AT (2 Oct 2026, Trym on two devices)
 
