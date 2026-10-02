@@ -36,6 +36,7 @@ const GATES = [
   ['lanes', 'tools/check-town-lanes.mjs', []],
   ['wardrobe', 'tools/check-wardrobe-rows.mjs', []],
   ['hands', 'tools/check-hands.mjs', []],   // ✋ one thing per glove, the engine and the print renderer agree (1 Oct 2026)
+  ['litter', 'tools/check-litter.mjs', []],   // 🗑️ litter looks like litter, never a grey lump (2 Oct 2026, §55)
   ['post rail', 'tools/check-post-rail.mjs', []],
   ['chapter ii', 'tools/check-quest-c2.mjs', []],
   ['worker fixtures', 'tools/check-worker-fixtures.mjs', []],   // 🧪 a test's ledger events carry ids the server takes (27 Sep 2026)

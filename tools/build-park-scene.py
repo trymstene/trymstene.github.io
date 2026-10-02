@@ -1184,7 +1184,10 @@ if os.path.isdir(FARM):
 # scale). Walk-over pickups on the weed grid: client sprites only, no
 # placement, no geometry.
 if HAVE_PACK:
-    for src, out, sc in (('ME_Singles_City_Props_48x48_Paper_Trash.png', 't-litter1.png', PROP),
+    # 🗑️ LITTER HAS TO LOOK LIKE LITTER (Trym, 2 Oct 2026, the third time: "it just looks like big rocks … it must look
+    # like garbage"). Paper_Trash is a white-grey ball that reads as a stone; the town dropped it on 20 Sep. The red can
+    # is a thing you name at a glance. tools/check-litter.mjs keeps every litter sprite out of the greys.
+    for src, out, sc in (('ME_Singles_City_Props_48x48_Red_Can_Trash.png', 't-litter1.png', PROP),
                          ('ME_Singles_City_Props_48x48_Milk_Trash_1.png', 't-litter2.png', PROP * 0.72),
                          ('ME_Singles_City_Props_48x48_Orange_Juice_Trash.png', 't-litter3.png', PROP * 0.72)):
         try:

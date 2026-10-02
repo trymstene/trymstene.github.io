@@ -747,6 +747,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 52 | A hand holds ONE thing, whatever it is: the game's items and community pieces share two gloves, and the newest wins | `tools/check-hands.mjs` (the engine and the print renderer on one table of cases; the builder, the stand and an approval use `makeRoom`) |
 | 53 | XP you can feel in every area: the chip holds, then one beat — a whitish-gold glow hugging your banana and what it wears, "+N XP" beside its head, the chip lit with its bar growing — a level rides up off you, a new title is the world’s big moment on its own card; an area grants and never shows its own XP | `tests/world-xp.spec.mjs` (all five areas on a phone: the hold, the glow behind the banana, the chip’s glow and lit bar, the bar growing, the label, the level, the title in the copy file’s words with no riser, level 99, the longest title at 360 px, reduced motion still, a trickle as one label) |
 | 54 | Your banana wears what is saved, on the screen you are looking at: a sync from another device or another tab re-dresses it in every area and tells the room; every area draws Forge pieces | `tests/outfit-follows.spec.mjs` (the phone dresses its old save, the sync's answer is held until then and lands through the real pull; all five areas and their rooms, and a second tab — red in all six with the re-dress off) |
+| 55 | Litter looks like litter: every piece of rubbish is a thing you can name (a can, a carton, a box), never a grey lump | `tools/check-litter.mjs` (the town’s problem litter, its flyers and the park’s pieces, read from the code that draws them: each must have colour in it; it proves it bites every run) |
 | — | A page's FAQ markup is what its page shows | `check-structured-data.mjs` (every FAQPage question and answer must be on the page as written, on every page — nothing exempt) |
 | 1, 3–11, 13, 14 | Judgement: grids, colour, motion, copy tone, naming | **nothing mechanical — a screenshot and Trym's eyes** |
 
@@ -1732,3 +1733,19 @@ what he had put on; the first was the daily banana’s overlay, 05c3c9a6).
   then, the laptop's outfit landed through the real pull — the banana on screen and the room must wear it, in all five
   areas, and a second tab's change reaches the first. It fails in all six with the re-dress switched off (checked). On the
   square, your Forge piece and a passer-by's are in the drawing (real catalog pieces, tests/catalog-hands-fixture.json).
+
+## §55 LITTER LOOKS LIKE LITTER (2 Oct 2026, Trym on the town's rocks — the third time)
+
+Trym, 15 Sep: the town's flyer "read as a grey pebble in the cobbles"; 20 Sep: *"they are supposed to be litter, but they
+dont look like litter, small grey things"*; 2 Oct: *"these grey large pebbles that probably is ment to be 'garbage'? it
+just looks like big rocks … it must look like garbage - either reuse other garbage sprites or find some new garbage
+sprites"*.
+
+- **A piece of rubbish is a thing you can name at a glance**: a can, a juice or milk carton, a pizza box, flattened
+  cardboard, a heap with a can showing in it — the pack's own City Props trash. Never a grey lump: on grey cobbles it is a
+  stone, and a white-grey ball on grass is a pebble. Making a grey piece bigger only made a bigger rock (15 Sep).
+- **One set per area.** The town's flyers drop the street's own nameable pieces (`FLYER_ART`, the problems' set without the
+  heap) at their own size; the park's three are a red can and two cartons (tools/build-park-scene.py).
+- **Enforced by** `tools/check-litter.mjs` (check-all, the Stop hook and CI): every sprite the town's problems, the town's
+  flyers and the park drop as rubbish is read from the code that draws it and must have colour in it (mean saturation of
+  its lit pixels at least 0.22; the grey flyers were 0.16–0.18, a cardboard box is 0.27). It proves it bites every run.

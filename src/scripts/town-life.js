@@ -176,6 +176,7 @@ const MAYOR = [1098, 468];
 // the beds a waterer sprinkles, per place
 const BEDS = { garden_w: [[440, 748], [530, 748]], orchard: [[690, 336], [900, 336], [790, 222]] };
 // the flyers: six spots on the streets, and the beat in which Moss's sweep reaches each
+const FLYER_ART = ['trash3', 'trash1', 'trash5', 'trash4', 'trash2', 'trash6', 'trash7'];   // what a flyer spot drops (the art column picks one)
 const LITTER = [[1180, 985, 1, 0], [1300, 850, 2, 0], [900, 650, 2, 1], [1350, 640, 1, 1], [1650, 1100, 1, 3], [1860, 1120, 2, 3]];
 // 🏘️ Town Life adds litter OFF Moss's route when the town is low (town-room.js sets the level:
 // four more at 1, eight at 2). Nobody sweeps these — sweepBeat 9 never comes — the player may.
@@ -493,9 +494,11 @@ export function initLife({ world, W, H, pct }) {
       if (!respawn && sweepBeat < beat) return;   // Moss has already been past it today
       const el = document.createElement('img');
       el.className = 'tw-litter'; el.alt = ''; el.draggable = false; el.decoding = 'async';
-      el.src = '/assets/town/litter-' + art + '.png';
-      // twice its pixels: at 1x a flyer read as a grey pebble in the cobbles (Trym, 15 Sep)
-      el.onload = () => { el.style.width = pct(el.naturalWidth * 2, W); };
+      // 🗑️ LITTER LOOKS LIKE LITTER (Trym, 2 Oct 2026, the third time: "it just looks like big rocks … it must look like
+      // garbage"): the street's own nameable pieces (the problems' set, town-room.js LITTER_ART, without the heap), at their own
+      // size. The grey flyer was a pebble at 1× (15 Sep) and a rock at 2×. tools/check-litter.mjs keeps every piece out of the greys.
+      el.src = '/assets/town/s-' + FLYER_ART[(i + art) % FLYER_ART.length] + '-0.png';
+      el.onload = () => { el.style.width = pct(el.naturalWidth, W); };
       el.style.left = pct(x, W); el.style.top = pct(y, H); el.style.zIndex = String(100 + y);
       world.appendChild(el);
       flyers.push({ i, x, y, el, gone: false });
