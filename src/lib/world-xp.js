@@ -108,7 +108,10 @@ function fly(b) {
   const onScreen = (r) => r && r.width && r.height && r.bottom > hr.top && r.top < hr.bottom && r.right > hr.left && r.left < hr.right;
   const at = (x, y) => ({ x: x - hr.left - host.clientLeft, y: y - hr.top - host.clientTop });
   const from = hr && onScreen(mr) ? at(mr.left + mr.width / 2, mr.top + mr.height * 0.2) : null;
-  const to = hr && onScreen(cr) ? at(cr.left + 14, cr.top + cr.height / 2) : null;
+  // into the bar, where it is filling (the coins drop into the purse; XP lands on the edge it pushes)
+  const fill = chip && chip.querySelector('.wh__lvlbar i, [data-wh="lvlfill"]');
+  const fr = fill && fill.getBoundingClientRect();
+  const to = hr && onScreen(cr) ? (fr && fr.height ? at(Math.max(fr.left + 3, fr.right), fr.top + fr.height / 2) : at(cr.left + 14, cr.top + cr.height / 2)) : null;
   const amount = b.to - b.from;
   const dir = from && to && to.x < from.x ? -1 : 1;   // the side the chip is on: the sparks leave that way, "+N XP" the other
   if (from) plus(host, from, amount, -dir, still());
