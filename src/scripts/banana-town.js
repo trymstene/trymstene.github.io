@@ -1252,6 +1252,8 @@ assetsReady().then(() => {
         crowned: (at, weeks) => crownedMoment(at, weeks),   // 🏆 …or STAFF OF THE WEEK
       });
       if (window.__town) { window.__town.work = work.seam; window.__town.moment = { hired: hiredMoment, promoted: promotedMoment, crowned: crownedMoment }; }   // 🧪 the walks' doors to the two moments
+      // 📅 a job answer carries what was done today on any device: a room showing today's work redraws (town-room seam.jobChanged)
+      work.seam.onChange(() => { try { if (room && room.seam.jobChanged) room.seam.jobChanged(); } catch (e) {} });
       // 📜 a top-rank memento the shed had no room for is given on a later visit, once the job's words are in to say so
       if (work.seam.mementoDue) work.seam.wordsReady().then(() => { if (work.seam.mementoDue()) setTimeout(() => { work.seam.memento(work.seam.job().at).then((m) => { if (m) say(m); }); }, 6000); });
       // 💼 the duties chip — the quest chip's sibling for the job you hold (docs/town-jobs-plan.md §11.2)

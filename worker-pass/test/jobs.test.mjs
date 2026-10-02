@@ -661,6 +661,29 @@ console.log('\n28. ⚖️ one empty week on the record: the stake is said from M
   ok('and a piece of work done takes it down', v.job.nudge === false, v.job);
 }
 
+console.log('\n29. 📅 today\'s chores travel: every device of the pass reads what was done today (2 Oct 2026)');
+{
+  // Trym: "i fixed the arcade machine on my phone, and when i jumped into the town now from my laptop, i had to do it again?"
+  CLOCK = monday(CLOCK + 7 * DAY) + 10 * 3600000;
+  const P = as(await kept('twodevices@example.com'));
+  await P('/job/take', { at: 'condo' });
+  let v = await P('/job/view');
+  ok('a fresh day at the arcade: nothing done today', v.job.today && Object.keys(v.job.today.k).length === 0, v.job.today);
+  const fix = await P('/job/chore', { kind: 'fix', g: 2 });   // the phone: a perfect repair of the day's dark cabinet
+  ok('the chore\'s own answer says so', fix.job.today.k.fix === 1 && fix.job.today.g.fix === 2, fix.job.today);
+  await P('/job/chore', { kind: 'sweep' });
+  CLOCK += 3600000;   // an hour later, the laptop asks
+  v = await P('/job/view');
+  ok('⭐ an hour later another device reads the fix and the sweep, and the perfect grade', v.job.today.k.fix === 1 && v.job.today.k.sweep === 1 && v.job.today.g.fix === 2, v.job.today);
+  CLOCK += DAY;
+  v = await P('/job/view');
+  ok('the next day starts empty', Object.keys(v.job.today.k).length === 0, v.job.today);
+  await P('/job/chore', { kind: 'sweep' });
+  await P('/job/take', { at: 'store' });
+  v = await P('/job/view');
+  ok('a new job\'s day starts empty too (the arcade\'s sweep is not the store\'s)', Object.keys(v.job.today.k).length === 0, v.job.today);
+}
+
 Date.now = REAL_NOW;
 globalThis.fetch = realFetch;
 console.log(`\n${pass} passed, ${fail} failed`);

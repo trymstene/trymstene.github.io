@@ -1556,6 +1556,7 @@ export function bootTownLife(ctx) {
   }
   const arcStaff = () => { const j = ctx.job && ctx.job(); return !!(j && j.at === 'condo'); };
   function arcadeShow() { if (arcade) arcade.show(); else if (arcStaff()) loadArcade().then((c) => { if (c && roomAt === 'condo') c.show(); }); }
+  seam.jobChanged = () => { if (roomAt === 'condo') arcadeShow(); };   // 📅 today's work done on another device lands with the job's answer
   function arcadeClear() { if (arcade) arcade.clear(); }
   function sweepAt(x, y) { return !!(arcade && arcade.sweepAt(x, y)); }
   function cabinetDead(key) { return !!(arcade && arcade.cabinetDead(key)); }

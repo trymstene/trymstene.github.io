@@ -160,3 +160,41 @@ test('a spoiled repair sparks and the cabinet stays dark; another go wakes it; L
   expect(await page.evaluate(() => document.querySelector('.tw-cup[data-deck="arcade"]').hidden), 'the tray is down').toBe(true);
   expect(errs, 'nothing threw').toEqual([]);
 });
+
+// 📅 TODAY'S WORK TRAVELS (2 Oct 2026). Trym: *"i fixed the arcade machine on my phone, and when i jumped into the town now
+// from my laptop, i had to do it again?"* This page is the laptop: its own record of the day is empty, and the job's answer
+// from the pass worker (worker-pass jobToday) says the phone swept and repaired here today — so there is nothing left to do,
+// and the cabinet a perfect repair lit is lit here too. And when that answer lands while you already stand in the arcade
+// (it is a fetch), the room redraws.
+test('another device swept and repaired the arcade today: nothing left to do here, and its cabinet is lit', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(String(e)));
+  await town(page);
+  const d = new Date().toISOString().slice(0, 10);
+  const lad = { xp: 300, rank: 2, today: 100, d };
+  const phone = { k: { sweep: 1, fix: 1 }, g: { fix: 2 }, d };
+  // ── the answer was in before you walked in
+  await page.evaluate(([l, t]) => window.__town.work.set({ at: 'condo', pay: 60, lad: l, today: t }), [lad, phone]);
+  await page.evaluate(() => window.__town.room.arcadeReset());   // this device's own record of the day: nothing done here
+  await page.evaluate(() => window.__town.arcade.enter());
+  await page.waitForTimeout(300);
+  let a = await arcade(page);
+  expect(a.staff, 'staff').toBe(true);
+  expect(a.litter.length, 'the piece the phone swept is gone here').toBe(0);
+  expect(a.dead, 'the cabinet the phone repaired is not dark here').toBeNull();
+  expect(await page.locator('.tw-lit.is-in').count(), 'and its perfect repair lit it, here too').toBe(1);
+  await page.screenshot({ path: 'test-results/town-arcade-today-travels.png' });
+  await page.evaluate(() => window.__town.arcade.exit());
+
+  // ── the answer lands while you stand in the arcade
+  await page.evaluate((l) => window.__town.work.set({ at: 'condo', pay: 60, lad: l, today: null }), lad);
+  await page.evaluate(() => window.__town.room.arcadeReset());
+  await page.evaluate(() => window.__town.arcade.enter());
+  await page.waitForTimeout(300);
+  a = await arcade(page);
+  expect(a.dead, 'before the answer: today’s cabinet is dark').toMatch(/^g[1-9]$/);
+  await page.evaluate(([l, t]) => window.__town.work.set({ at: 'condo', pay: 60, lad: l, today: t }), [lad, phone]);
+  await expect.poll(() => arcade(page).then((x) => x.dead), { timeout: 3000, message: 'the answer lands: it is repaired here' }).toBeNull();
+  expect((await arcade(page)).litter.length, 'and swept').toBe(0);
+  expect(errs).toEqual([]);
+});

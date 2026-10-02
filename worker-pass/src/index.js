@@ -1426,7 +1426,13 @@ function jobView(j, now) {
     nudge: !!(at && (dow >= NUDGE_DAY || (j.zero | 0) >= 1) && judged(j, at, weekOf(now)) && reviewOf(at, dn) === 'empty'),   // ↕ the tips jobs too; never about a week the review will not judge. ⚠️ one empty week already on the record: from Monday, not Thursday — the next one is the sack (the job QA, 24 Sep 2026)
     fired: j.fired || null,
     sotw: staffOf(j, at, now),   // 💼 staff of the week at this workplace: last week's crown, and how many weeks in all
-    lad: ladderOf(j, at, now) };   // 🪜 your XP and rank at the job you hold, and whether the boss has news
+    lad: ladderOf(j, at, now),   // 🪜 your XP and rank at the job you hold, and whether the boss has news
+    today: jobToday(j, at, now) };   // 📅 what was done today at the job you hold, on any device
+}
+// 📅 today's chores at the job you hold, by kind, and each kind's best grade — empty on a new day or a new job
+function jobToday(j, at, now) {
+  const t = j && j.td;
+  return t && at && t.at === at && t.d === utcDay(now) ? { k: { ...(t.k || {}) }, g: { ...(t.g || {}) } } : { k: {}, g: {} };
 }
 // 🪜 the rank a week pays at: the highest you were told while you worked it (`r` on its sheet, set by every chore and by
 // a promotion), else the one you hold there now — so a promotion on a Thursday pays that whole week at the new rank, and
@@ -1605,6 +1611,16 @@ async function jobChore(request, env) {
     if (kind) for (const g of gs) add += xpFor(j.at, kind, g == null ? null : +g);
     const xp = xpAdd(j, add, now);
     if (xp) dn.xp = (dn.xp | 0) + xp;   // 💼 the week's work XP at this workplace: what staff of the week is scored on
+    // 📅 TODAY'S CHORES, ON THE PASS (2 Oct 2026). Trym: "i fixed the arcade machine on my phone, and when i jumped into the
+    // town now from my laptop, i had to do it again?" Each device kept what it had done today to itself, so another device
+    // drew the same day's tasks again. The worker hears every chore: it keeps today's by kind at the job you hold (how many,
+    // and the best grade a verb was given), and every device reads them back from the job view (jobToday).
+    const day = utcDay(now);
+    if (!j.td || j.td.d !== day || j.td.at !== j.at) j.td = { d: day, at: j.at, k: {}, g: {} };
+    if (kind) {
+      j.td.k[kind] = Math.min(999, (j.td.k[kind] | 0) + (Array.isArray(b.g) ? gs.length : 1));   // a counter's shift: its cups
+      for (const g of gs) if (g != null && Number.isFinite(+g)) j.td.g[kind] = Math.max(j.td.g[kind] | 0, Math.min(99, +g | 0));
+    }
     jobPrune(j, now);
     await saveKey(env, R.homeKey, R.home);
     return json({ ok: true, job: jobView(j, now), counted: !!duty, xp }, 200, cors(env, request));

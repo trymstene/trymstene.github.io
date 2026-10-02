@@ -11,6 +11,7 @@
 // room's helpers (sprites, marks, the burst, the day's hash) come in through ctx, so the daily picks are exactly as they were.
 import { ARCADE } from './town-geo.js';
 import { arrived as callIn } from '../lib/work-calls.js';
+import { unlocked } from '../data/town/jobs.js';
 
 const ARC_KEY = 'tw-arcade-v1';
 const ARC_LITTER = [[430, 470], [590, 404], [700, 500]];   // floor spots inside the arcade, off every collider
@@ -41,6 +42,20 @@ export function bootTownArcade(ctx) {
     // 🗑 LITTER THROUGH THE WEEK (23 Sep 2026): a sweep call brings ONE piece, on the spot of the three the day picks — so the
     // week's three are swept over three call days instead of all on the first (the ladder plan's complaint about the arcade)
     const li = Math.floor(h(dayNum(), 55, 2) * ARC_LITTER.length) % ARC_LITTER.length;
+    // 📅 WHAT ANOTHER DEVICE DID HERE TODAY (2 Oct 2026). Trym: "i fixed the arcade machine on my phone, and when i jumped into
+    // the town now from my laptop, i had to do it again?" The day's piece and the day's cabinet are the same on every device;
+    // what was done to them now comes back from the pass worker with the job (worker-pass jobToday), so a sweep or a repair
+    // made anywhere is made here — and a perfect repair lights the cabinet here too
+    const j = ctx.job(), t = j && j.today;
+    if (t && t.d === new Date().toISOString().slice(0, 10)) {
+      const key0 = arcDeadKey();
+      if ((t.k.sweep | 0) > 0 && !a.swept.includes(li)) a.swept.push(li);
+      if ((t.k.fix | 0) > 0 && !a.fixed.includes(key0)) {
+        a.fixed.push(key0);
+        if ((t.g.fix | 0) >= 2 && !a.lit && unlocked('condo', 'streak', Math.max(1, ((j.lad && j.lad.rank) | 0)))) a.lit = key0;
+      }
+      arcWrite(a);
+    }
     ARC_LITTER.forEach(([x, y], i) => {
       if (i !== li || a.swept.includes(i) || !sweepIn) return;
       // the square's own grammar for a thing to pick up: the halo on it and the mark over it (24 Sep 2026: bare, it read as a speck)

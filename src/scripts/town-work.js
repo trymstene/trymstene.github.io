@@ -72,7 +72,10 @@ export function bootTownWork(ctx) {
         sotw: res.job.sotw || null,   // 💼 staff of the week at this workplace (the pass worker's crown): the shop's plaque reads it, later
         // 🪜 the ladder at the job you hold: XP, the rank your boss has told you, today's XP (worker-pass ladderOf)
         lad: l && typeof l === 'object' ? { xp: l.xp | 0, rank: Math.max(1, l.rank | 0), today: l.today | 0, d: todayKey(),
-          warn: !!l.warn, talk: l.talk || '', last: l.last || null, mem: l.mem | 0 } : null };   // ↕ the weekly review: warned, the boss's word waiting, last week
+          warn: !!l.warn, talk: l.talk || '', last: l.last || null, mem: l.mem | 0 } : null,   // ↕ the weekly review: warned, the boss's word waiting, last week
+        // 📅 what was done today at this job, on ANY device of the pass (worker-pass jobToday, 2 Oct 2026): the day's tasks a
+        // phone finished are finished on the laptop too. Stamped with the day, so a mirror kept overnight says nothing tomorrow
+        today: res.job.today && typeof res.job.today === 'object' ? { k: res.job.today.k || {}, g: res.job.today.g || {}, d: todayKey() } : null };
       // 💼 a new workplace unfolds the note (24 Sep 2026, the job QA): a fold is for the job you folded it on, and a hire is
       // the moment the note has the most to say
       if (was !== job.at) { job.up = ''; job.hm = 0; }
