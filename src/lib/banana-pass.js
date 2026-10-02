@@ -5,6 +5,7 @@
 // no server. Patches are minted once and celebrated with a toast; stats are
 // gentle counters. CLIENT-ONLY module.
 import { PATCHES, OG_CUTOFF } from './pass-defs.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a piece approved into the catalog pays world XP (the endgame plan's step 1c)
 import { worldSid } from './world.js';
 
 const KEY = 'pass-v1';
@@ -1193,7 +1194,9 @@ export async function checkCatalogVerdicts(opts = {}) {
             const own = JSON.parse(localStorage.getItem('cat-own-v1') || '{}') || {};
             own[v.item] = 1;
             localStorage.setItem('cat-own-v1', JSON.stringify(own));
+            const had = statTotal(readRaw(), 'own_' + v.item) > 0;   // another device heard the verdict first: it paid
             passStat('own_' + v.item, 1);   // rides the pass blob now — every device, not only the one that heard the verdict
+            if (!had) passStat('rep', XP_PAY.forge.approved);   // ✨ once per piece
             const bl = JSON.parse(localStorage.getItem('bb-last') || '{}') || {};
             // ⚖ one item per body spot: the new piece JOINS the worn set (it
             // used to evict everything), and whatever sat on its spot comes

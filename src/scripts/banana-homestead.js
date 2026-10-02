@@ -17,6 +17,7 @@ import { grantToShed, orderFor, dueOrders, SHIP_MIN, grantReward } from '../lib/
 // already the DO's document so nothing migrates.
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet, passSpend, buffGet, buffSet, seedCount, seedUse, ruleUsed, coinsPaid, passNakDone, pullIfStale, passPost } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ the farm's days pay world XP (the endgame plan's step 1c): it paid none
 import { loggedIn } from '../lib/pass-sync.js';
 import { catCustom, loadCatalog, fullOutfit, noteCatch } from '../lib/drops.js';
 import { wearToCustom } from '../lib/wear-render.js';
@@ -2261,14 +2262,17 @@ function init(visitDoc, visitMiss) {
         state.cheese = (state.cheese || 0) + 1;
         float(c.x, c.y - 22, '🧀 +1');
         track1('homestead_cheese');
+        try { passStat('rep', XP_PAY.homestead.cheese); } catch (e) {}
       } else if (c.kind === 'milk') {
         state.milk = (state.milk || 0) + 1;
         float(c.x, c.y - 22, '🥛 +1');
         track1('homestead_milk');
+        try { passStat('rep', XP_PAY.homestead.milk); } catch (e) {}
       } else {
         state.eggs = (state.eggs || 0) + 1;
         float(c.x, c.y - 22, '🥚 +1');
         track1('homestead_egg');
+        try { passStat('rep', XP_PAY.homestead.egg); } catch (e) {}
       }
       save();
     }
@@ -2304,6 +2308,7 @@ function init(visitDoc, visitMiss) {
       float(h.x, h.y - 48, '🧶 +1');
       toast('🧶 a bundle of wool — ' + nameOf(a) + ' looks lighter already', 3600);
       track1('homestead_shear');
+      if (!visiting) { try { passStat('rep', XP_PAY.homestead.wool); } catch (e) {} }
     }
     const today = dayNum();
     if ((a.pd || 0) < today) {
@@ -2315,6 +2320,7 @@ function init(visitDoc, visitMiss) {
       bondUp(a, inc, h);
       save();
       track1('homestead_pet', { b: a.b });
+      if (!visiting) { try { passStat('rep', XP_PAY.homestead.pet); } catch (e) {} }   // ✨ (a neighbour's hug pays through visitorHug)
     }
     // ✏️ NAMING at bond 3 — earned, never bought. One name per farm, ever
     // (Trym: no duplicates), through the same family filter as every sign.
@@ -4331,6 +4337,7 @@ function init(visitDoc, visitMiss) {
     float(it.x, it.y - (DEX[it.id].h || 30) - 6, '✓');
     plannerAfterPlace(it.x, it.y);
     track(moved ? 'homestead_move' : 'homestead_place', { id: it.id });
+    if (!moved && !((farmStats()['hsp_' + it.id] || 0) > 0)) { try { passStat('hsp_' + it.id, 1); passStat('rep', XP_PAY.homestead.place); } catch (e) {} }
   });
   document.getElementById('hsPlaceNo').addEventListener('click', cancelPlacing);
 
@@ -4406,6 +4413,7 @@ function init(visitDoc, visitMiss) {
           hens.forEach((h) => float(h.x, h.y - 40, '❤️'));
           toast('💧 ' + HW.fedWatered, 3600);
           track1('homestead_feed');
+          try { passStat('rep', XP_PAY.homestead.feed); } catch (e) {}
         });
       }
       itChip.appendChild(fd);
@@ -4462,6 +4470,7 @@ function init(visitDoc, visitMiss) {
       });
       toast('💧 ' + fillWords(HW.wateredNeighbour, { name: state.name }));
       track('homestead_neighbor_water');
+      try { passStat('rep', XP_PAY.homestead.neighbour); } catch (e) {}
     }).catch(() => toast('the watering can is empty — try again in a bit'));
   }
 
@@ -4482,6 +4491,7 @@ function init(visitDoc, visitMiss) {
       if (r && r.already) return;      // somebody got here first today; the hug still happened on screen
       float(h.x, h.y - 46, '❤️');
       track('homestead_neighbor_hug');
+      try { passStat('rep', XP_PAY.homestead.neighbour); } catch (e) {}
     }).catch(() => {});
   }
   // 🌾 FILLING SOMEBODY ELSE'S TROUGH — one yard, one day, and their morning
@@ -4495,6 +4505,7 @@ function init(visitDoc, visitMiss) {
       if (r && r.already) { toast('someone beat you to the trough today'); return; }
       toast('🌾 you filled ' + state.name + '’s trough — their morning pays double', 3600);
       track('homestead_neighbor_feed');
+      try { passStat('rep', XP_PAY.homestead.neighbour); } catch (e) {}
     }).catch(() => toast('the feed sack is empty — try again in a bit'));
   }
 
@@ -4560,6 +4571,7 @@ function init(visitDoc, visitMiss) {
       save(); refreshSoil();
       float(s[0], s[1] - 46, '+1 ' + (CROP_EMO[crop] || '🧺'));
       track('homestead_harvest', { crop });
+      try { passStat('rep', XP_PAY.homestead.harvest); } catch (e) {}
       if (state.stage < 2) toast('on the shelf — cook it at the fire 🍳', 2800);
       return;
     }

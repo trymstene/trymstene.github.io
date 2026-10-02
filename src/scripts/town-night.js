@@ -23,6 +23,7 @@ import { OB_RECTS, OB_CIRCLES } from './town-geo.js';
 import { burstInto, townNightIdx } from '../lib/world.js';
 import { bigMoment } from '../lib/world-moment.js';
 import { passStat } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a cursed thing's first find (the endgame plan's step 1c)
 import { grantToShed } from '../lib/homestead-inventory.js';
 
 export function bootTownNight(ctx) {
@@ -411,7 +412,7 @@ export function bootTownNight(ctx) {
     const wo = W_OBJ[o.def.id] || {};
     if (wo.name) say(wo.name + (wo.desc ? '. ' + wo.desc : ''));
     track('town_object', { id: o.def.id, first: first ? 1 : 0, kept: ok ? 1 : 0 });
-    if (first) passStat('rep', 5);
+    if (first) passStat('rep', XP_PAY.town.curse);
   }
   // 👻 A HAUNTED NIGHT (23 Sep 2026) is one of the town's own nights in ten, two minutes long and every two hours or so:
   // the Curse Night's look — the dark, a cold rain, the residents indoors, the candles, the creeping night's ghosts and

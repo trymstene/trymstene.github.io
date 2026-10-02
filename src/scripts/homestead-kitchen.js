@@ -5,6 +5,7 @@
 import { KNIT_SVG } from '../data/knitwear.js';
 import CATW from '../data/copy/homestead-cat.json';   // 🐈 the cat's words (her favourite dish's possessive)
 import { coinText } from '../lib/coin.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a dish pays world XP (the endgame plan's step 1c)
 let C = null;
 let bondUp, buffGet, buffSet, coinsPaid, cookEl, CROP_EMO, DISHES, farmAnimals, farmStats, he0, hens, passStat, phone, refreshHud, save, syncLock, tailorEl, toast, track, track1;
 export function init(ctx) {
@@ -121,6 +122,7 @@ function startCookShow(d, T) {
 }
 function finishDish(d) {
   cookBusy = null; delete C.state.cooking;
+  try { C.passStat('rep', XP_PAY.homestead.cook); } catch (e) {}   // ✨ off the fire, once a dish
   const stage = document.getElementById('hsKStage');
   stage.classList.remove('is-on'); stage.classList.add('is-done');
   const note = document.getElementById('hsCookNote');

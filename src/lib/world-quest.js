@@ -13,7 +13,8 @@
 //
 // QA: ?questtest (sticky per device) · ?questtest=off · ?questreset ·
 //     ?queststep=N jumps (test only).
-import { passStat, passRaw, coinsNow } from './banana-pass.js';
+import { passStat, passRaw, coinsNow, statTotal } from './banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a step pays world XP, once per player (the endgame plan's step 1c)
 import { drawComposite, assetsReady, NFRAMES } from './banana-engine.js';
 import { coinText } from './coin.js';   // 🪙 every line's coin is the stand's (design library §45)
 
@@ -1585,6 +1586,8 @@ export async function bootQuest() {
     if (cur && cur.id) track('quest_step_' + cur.id, {});
     S.s++; S.k = {};
     passStat(ch.stat, 1);               // steps cleared, summed — never an index
+    // ✨ world XP, once per player: a receipt on the pass, so a second device or ?questreset plays the step again for free
+    if (cur && cur.id && !(statTotal(passRaw(), 'qxp_' + cur.id) > 0)) { passStat('qxp_' + cur.id, 1); passStat('rep', XP_PAY.town.step); }
     justIn = true;                      // the next step opens where this one ended (a step's `auto`)
     // 📬 a step that waits on a letter says so in the save, which is what the homestead's mailbox reads to deliver it
     // (banana-homestead.js POST_WHEN): the black letter arrives once the last night is over, wherever that was played

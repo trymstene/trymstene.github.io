@@ -21,6 +21,7 @@ import { bigMoment } from '../lib/world-moment.js';   // 🎖 the rave's big mom
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
 import { fillWords } from '../lib/fill-words.js';   // a copy line with its {holes} filled
 import { passGet, passStat } from '../lib/banana-pass.js';   // already in this bundle through the HUD
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a ghost caught pays world XP (the endgame plan's step 1c)
 import { POCKET_KINDS, pocketHave, WEDGES } from '../data/town/market.js';   // 📈🎡 the market's one source, shared with worker-pass
 import FRONTS from '../data/copy/town-fronts.json';   // 🏘️ what the hall, the bank, the print shop, the wheel, the exchange and an old cabinet say (the rig's, 22 Sep 2026)
 
@@ -312,6 +313,10 @@ let tidyNext = null;   // ☕ the keyholder's tidy waits for the receipt to clos
 let roundNext = false;   // ✉️ the post office's satchel (rank 5) waits for the round's receipt to close, the same way
 function roomTrack(e, p) {
   track(e, p);
+  // 👻 a ghost caught pays world XP to anybody, once a ghost a day; at the arcade's rank 5 it is a repair too (below) —
+  // one call to the day's record for both, or the second would find it already taken
+  const ghost1 = e === 'town_ghost' && p && p.caught ? ghostFirst(p.id) : false;
+  if (ghost1) { try { passStat('rep', XP_PAY.town.ghost); } catch (x) {} }
   if (!work || !p) return;
   const j = work.seam.job(), rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0));
   if (!j || !j.at) return;
@@ -322,7 +327,7 @@ function roomTrack(e, p) {
   }
   // 👻 THE NIGHT SHIFT (the arcade's rank 5, 24 Sep 2026): the night manager's reach is the square after dark — a ghost caught
   // there is one of Spinner's repairs, the town's best content turned into the arcade's work. Said once a day, like the lamps.
-  if (e === 'town_ghost' && p.caught && j.at === 'condo' && unlocked('condo', 'ghosts', rk) && ghostFirst(p.id)) { work.seam.chore('ghost'); tell('ghost'); }
+  if (e === 'town_ghost' && p.caught && j.at === 'condo' && unlocked('condo', 'ghosts', rk) && ghost1) { work.seam.chore('ghost'); tell('ghost'); }
   if (e === 'town_shift' && p.at === 'cafe' && p.step === 'out' && (p.cups | 0) >= KEYS_CUPS && j.at === 'cafe' && unlocked('cafe', 'keys', rk) && room && room.seam.problems) {
     const c = PROPS.cafe, cx = c.x + c.w / 2, cy = c.base;
     const near = room.seam.problems().filter((q) => q.type !== 'crows' && Math.hypot(q.x - cx, q.y - cy) < KEYS_REACH).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];

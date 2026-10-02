@@ -9,7 +9,8 @@
 //
 // The rules of a classic are free to reuse; its name, art, sounds and layouts are
 // not. Every pixel here is ours: banana names, banana reasons, one twist each.
-import { PASS_API, pullIfStale } from '../lib/banana-pass.js';
+import { PASS_API, pullIfStale, passStat } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a run and a new best pay world XP (the endgame plan's step 1c)
 import { WEARABLE_PACKS } from '../data/wearables.js';
 import W from '../data/copy/town-games.json';   // 🕹 the games' own words: names, what to press, how a run ended
 
@@ -80,9 +81,21 @@ export function openGame(key, api) {
     } else if (!link()) me.textContent = 'your best is only on this phone until you save your pass';
     else me.textContent = b.players ? b.players + ' bananas on this board' : '';
   }
+  // ✨ a run pays a little world XP, the first dozen of a day on this device (a run is free and endless); a new best,
+  // which the server confirms, pays more (src/data/xp-pay.js)
+  function payRun() {
+    const d = Math.floor(Date.now() / 864e5);
+    let t = null; try { t = JSON.parse(localStorage.getItem('tw-arcxp-v1') || 'null'); } catch (e) {}
+    if (!t || t.d !== d) t = { d, n: 0 };
+    if (t.n >= XP_PAY.town.runsPerDay) return;
+    t.n += 1;
+    try { localStorage.setItem('tw-arcxp-v1', JSON.stringify(t)); } catch (e) {}
+    try { passStat('rep', XP_PAY.town.run); } catch (e) {}
+  }
   async function submit(k, score, dur) {
     const L = link();
     track('arcade_score', { game: k, score });
+    if (score > 0) payRun();
     if (!L || !L.credId || !L.token || score <= 0) return;
     try {
       const r = await fetch(PASS_API + '/arcade/score', { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -90,6 +103,7 @@ export function openGame(key, api) {
       const d = await r.json();
       if (!d || !d.ok) return;
       last = d;
+      if (d.newBest) { try { passStat('rep', XP_PAY.town.best); } catch (e) {} }
       if (d.best > (bests[k] || 0)) { bests[k] = d.best; bestEl.textContent = 'best ' + d.best; }
       boardCache[k] = { top: d.top, week: d.week, players: d.players };
       renderBoard(k, d);

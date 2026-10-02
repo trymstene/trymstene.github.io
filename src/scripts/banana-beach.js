@@ -8,6 +8,7 @@
 // Solo-first by law: multiplayer (B2) only amplifies what already works alone.
 import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid, passBest, passBestGet } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a fish and the day's treasure pay world XP (the endgame plan's step 1c)
 import { levelFor } from '../lib/pass-defs.js';
 import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale, wearSaved } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
@@ -1247,6 +1248,7 @@ function init() {
       const prev = fishBest(f.id);
       passStat('fish_' + f.id, 1);
       if (cm > prev) passStat('fb_' + f.id, cm - prev);
+      try { passStat('rep', XP_PAY.bay.fish.common + (isNew ? XP_PAY.bay.newFish : 0)); } catch (e) {}
       const won = isNew ? claimFishMiles() : 0;
       float(d.x, d.y - 10, '🐟 ' + f.name + ' · ' + cm + ' cm' + (isNew ? ' — NEW' : '')
         + (won ? ' · +' + won + ' tickets' : ''), true);
@@ -1640,6 +1642,7 @@ function init() {
       const prev = fishBest(f.id);
       const record = cm > prev;
       passStat('fish_' + f.id, 1);
+      try { passStat('rep', (XP_PAY.bay.fish[f.tier] || XP_PAY.bay.fish.common) + (isNew ? XP_PAY.bay.newFish : 0)); } catch (e) {}
       // ⚠️ passStat takes a DELTA, so a "best" is stored by adding the difference
       if (record) passStat('fb_' + f.id, cm - prev);
       fishPity = (f.tier === 'rare' || f.tier === 'legendary') ? 0 : fishPity + 1;
@@ -2185,6 +2188,7 @@ function init() {
       // between striking the X and pocketing never eats the day's reward
       passStat('tickets', chestHaul);
       passStat('bh_treasure', 1);
+      try { passStat('rep', XP_PAY.bay.treasure); } catch (e) {}
       try { localStorage.setItem(TR_KEY, '1'); } catch (e) {}
       float(pos.x, pos.y - 34, '+' + chestHaul + ' tickets');
       track('beach_treasure', { tickets: chestHaul });

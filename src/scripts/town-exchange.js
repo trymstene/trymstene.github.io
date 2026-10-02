@@ -11,6 +11,7 @@
 // farm all or nothing, gives a bay or park order out of a pass count, and pays each order once. This side draws the board,
 // asks, and says what the answer says. The words are src/data/copy/town-exchange.json.
 import { passPost, walletKeep, passServerSlots, ensureAnon, passStat, passRaw, statTotal } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ an order pays world XP (the endgame plan's step 1c)
 import { goodsInHand, soldFromHome } from '../lib/homestead-inventory.js';
 import { fillWords } from '../lib/fill-words.js';
 import { GOODS, priceOf, saleOf, rumourOf, dayOf } from '../data/town/market.js';
@@ -127,6 +128,7 @@ export function bootExchange(ctx) {
       passServerSlots(r.slots);
       if (o.area === 'farm' && r.n) soldFromHome(o.want, r.n, r.yard);
       try { passStat('tw_met_' + o.who, LADDER_STEP); } catch (e) {}   // a delivery is a visit they remember (the meeting ladder)
+      try { passStat('rep', XP_PAY.town.order); } catch (e) {}   // ✨ and world XP
       track('town_order', { area: o.area, who: o.who, n: r.n | 0, coins: r.coins | 0 });
       const r0 = look(o.who);
       said[id] = fillWords(O.paid, { who: r0 ? r0.name : '', coins: r.coins | 0 });

@@ -14,6 +14,7 @@
 // residents on top and nudges the rarity ceiling: the payoff for stocking.
 import { seedRand } from '../lib/world.js';
 import { passStat, passGet } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';
 import { track, PARK_TEST } from './park-util.js';
 import { BIRD_SPOTS, BIRD_SPECIES, PLAZA, BOUND, OVERLAYS, TREE_OVS } from './park-geo.js';
 import PARK_WORDS from '../data/copy/park-toasts.json';   // ✍️ what a spotted bird says back, and the tiers' names (src/data/copy)
@@ -431,7 +432,7 @@ export function initBirds(ctx) {
     const name = BIRD_NAMES[best.sp] || best.sp;
     const t = TIERS[best.tier];
     if (addToday(best.sp)) {
-      passStat('rep', t.rep);
+      passStat('rep', t.rep * XP_PAY.park.choreMul);   // ✨ × 3 (step 1c)
       if (!((passGet().stats || {})['bird_' + best.sp])) passStat('bird_' + best.sp, 1);
       refreshHud();
       toast('🔭 ' + fillWords(BW.spotted, { bird: name, tier: BW.tiers[t.id] }), 3600);

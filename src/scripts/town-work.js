@@ -14,7 +14,8 @@
 // MIRROR of the job state on the device: it picks the sentence, the request goes out behind it, and
 // the server's answer corrects the mirror. The mirror never decides money — it only decides which
 // of four already-approved lines the boss says.
-import { passPost } from '../lib/banana-pass.js';
+import { passPost, passStat } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a shift pays world XP too (the endgame plan's step 1c)
 import { ONCALL_JOBS, hired as callsHired } from '../lib/work-calls.js';   // 🧑‍🔧 the hire day's calls
 import { rowsOf, payOf, shareOf, LADDER, DAY_XP, rankOf, xpFor, COUNTS_AS, dayCap, MEMENTO, ranksOf } from '../data/town/jobs.js';
 import { grantToShed, takeFromShed, canHold } from '../lib/homestead-inventory.js';   // 📜 a boss's memento goes to your homestead's shed   // 💼 the one arithmetic the cheque uses (22 Sep 2026), 🪜 and the ladder's (23 Sep)
@@ -111,6 +112,12 @@ export function bootTownWork(ctx) {
   // 🪜 AND IT EARNS WORK XP (23 Sep 2026): `g` is the cup's grade, a round's points, or a counter's whole shift as a list of
   // grades. The mirror adds what the server will (the verb's worth, the day's ten, up to the day's cap), so the note and
   // the receipt move with the broom; the server's answer is the truth. Returns the XP the mirror predicted.
+  // ✨ …AND WORLD XP WITH IT (2 Oct 2026, the endgame plan's step 1c): the Work XP the server counted — inside the day's
+  // cap, so a reload earns nothing more — pays world XP too, and the level chip shows it land (src/data/xp-pay.js)
+  function payXp(res) {
+    if (res && res.ok && (res.xp | 0) > 0) { try { passStat('rep', (res.xp | 0) * XP_PAY.town.workMul); } catch (e) {} }
+    return res;
+  }
   function chore(kind, g) {
     if (!job.at) return Promise.resolve(null);
     const rows = Array.isArray(job.duties) && job.duties.length ? job.duties : rowsOf(job.at, {});
@@ -124,7 +131,7 @@ export function bootTownWork(ctx) {
     job = { ...job, duties: rowsOf(job.at, done), share: shareOf(job.at, done), sofar: payOf(job.at, done, lad.rank), up: todayKey(),
       lad: { ...(job.lad || {}), xp: lad.xp + got, rank: lad.rank, today: lad.today + got, d: todayKey() } };
     writeJob(job); notify();
-    const p = passPost('/job/chore', g == null ? { kind } : { kind, g }).then(land);
+    const p = passPost('/job/chore', g == null ? { kind } : { kind, g }).then(land).then(payXp);
     p.got = got;
     return p;
   }
@@ -303,6 +310,7 @@ export function bootTownWork(ctx) {
     passPost('/job/chore', {}).then((res) => {
       if (res && !res.error) { job.up = day; writeJob(job); }   // 💼 turned up today: the chip turns from the duty to the wage
       land(res);
+      payXp(res);   // the day's ten, turned up
       if (res && res.error) return;
       toldDay = day;
       // 🤫 COUNTED, NOT ANNOUNCED (24 Sep 2026, the live job journey): "You turned up for work today" fired the moment you

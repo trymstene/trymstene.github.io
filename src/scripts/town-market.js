@@ -7,7 +7,8 @@
 // and pays a sale only after the neighbourhood has taken the goods out of the SAVED farm. This side draws the
 // card, asks, turns the wheel to the wedge the answer names and says what the answer says — nothing here decides
 // a coin. The numbers both sides print are src/data/town/market.js; the words are src/data/copy/town-market.json.
-import { passPost, walletKeep, passServerSlots, ensureAnon, PASS_API } from '../lib/banana-pass.js';
+import { passPost, walletKeep, passServerSlots, ensureAnon, PASS_API, passStat } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';   // ✨ a turn pays world XP (the endgame plan's step 1c)
 import { fillWords } from '../lib/fill-words.js';
 import { drawComposite } from '../lib/banana-engine.js';
 import { bigMoment } from '../lib/world-moment.js';
@@ -200,6 +201,7 @@ export function bootMarket(ctx) {
     const pay = () => { if (paid) return; paid = true; walletKeep(r); };
     if (flying) setTimeout(pay, 2600); else pay();   // …and never later than this, whatever the flight did
     passServerSlots(r.slots);
+    try { passStat('rep', XP_PAY.town.spin); } catch (e) {}   // ✨ as the wheel stops, never before (§30.2)
     st = { ...(st || {}), pot: r.pot, next: r.next, left: r.left };
     pocketPaint();
     const line = saidOf(r), out = el('twSpinRes');
