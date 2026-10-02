@@ -1,3 +1,6 @@
+> ⚠️ **RETIRED 2 Oct 2026.** Trym: *"remove the ai song we have on the rave area"* — the rave plays no recorded music;
+> the files, the sound button and the player are gone. Kept as the record of how the set was synced.
+
 # Rave audio spec — what Sentry produces, and why the math is strict
 
 *The club's trick: everything is wall-clock synced. The music will be too —

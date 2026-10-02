@@ -724,7 +724,7 @@ REEL_RAVE = [(3.0, rave_hook), (4.4, rave_dress), (2.8, rave_floor),
 REELS = {
     'world': (REEL_WORLD, None),
     'beach': (REEL_BEACH, None),
-    'rave': (REEL_RAVE, os.path.join(SITE, 'public', 'assets', 'audio', 'rave-loop.mp3')),
+    'rave': (REEL_RAVE, None),   # 🔇 the rave's song was removed (2 Oct 2026): pass --music for a track
 }
 
 

@@ -9,7 +9,7 @@ INPUTS: engine renders as <set>-<frame>.png (512 transparent), sets:
   bare / dress1..4 / raver1..4  (rendered via tools/ad-render-receiver.py).
 RUN:
   python tools/build-ad-rave.py --renders ad-pack/renders-rave \
-    [--music public/assets/audio/rave-loop.mp3] [--out ad-pack/ad-D-rave-1080x1920.mp4]
+    [--music some-track.mp3] [--out ad-pack/ad-D-rave-1080x1920.mp4]   (silent unless --music; the rave's song was removed 2 Oct 2026)
 """
 import argparse
 import math
@@ -343,7 +343,7 @@ def build(renders_dir, out_path, music=None):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--renders', default=os.path.join(SITE, 'ad-pack', 'renders-rave'))
-    ap.add_argument('--music', default=os.path.join(SITE, 'public', 'assets', 'audio', 'rave-loop.mp3'))
+    ap.add_argument('--music', default='none')   # 🔇 the rave's own song was removed (2 Oct 2026)
     ap.add_argument('--out', default=os.path.join(SITE, 'ad-pack', 'ad-D-rave-1080x1920.mp4'))
     a = ap.parse_args()
     build(a.renders, a.out, a.music if a.music.lower() != 'none' else None)

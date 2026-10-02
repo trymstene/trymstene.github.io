@@ -109,7 +109,6 @@ export const KEYS = {
   'ps-tab-v1': { travels: 'no', why: 'which My Pass tab was last open' },
   'bb-homebar-x': { travels: 'no', why: 'where the builder\'s home bar was dragged' },
   'hs-tree-folds': { travels: 'no', why: 'which branches of the family tree are folded shut' },
-  'rv-sound': { travels: 'no', why: 'whether the rave plays sound; a setting for these speakers' },
   'ps-name-asked-v1': { travels: 'no', why: 'the name has been asked for once on this device' },
   'rv-tour-v1': { travels: 'no', why: 'the rave tour has played here' },
   'rv-hello': { travels: 'no', why: 'the rave greeting has played here' },

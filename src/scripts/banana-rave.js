@@ -42,7 +42,7 @@ const SCREEN_MSGS = [
   'THE DJ TAKES NO REQUESTS. THE DJ TAKES NO PRISONERS.',
   'YOU’RE NOT LATE — THE PARTY STARTED WHEN YOU ARRIVED.',
   'FEEL THAT BASS? THAT’S JUST YOUR PHONE BUZZING.',
-  'ONE SONG. ALL NIGHT. NO NOTES.',
+  'ONE BEAT. ALL NIGHT. NO NOTES.',
   'HYDRATE. BARTY IS BEGGING YOU.',
   'SOMEWHERE A BANANA PEAKED TOO SOON. STAY STRONG.',
   'HANDS UP! …YOU HAVE NO HANDS. VIBE ANYWAY.',
@@ -738,7 +738,6 @@ function init() {
     pickupPop(coinLive.x, coinLive.y);
     coinFly();
     passStat('coins_earned', n, COIN_TEST ? 'qa' : 'window');
-    if (audioOn) playCoinAudio();
     addHype(3);
     bumpChain();
     const toast = document.createElement('div');
@@ -1315,8 +1314,7 @@ function init() {
     if (lv.level !== was.level) {
       // ✨ THE CEREMONY IS THE WORLD'S NOW (2 Oct 2026, design library §53): the sparks, the chip refilling, the arrow and
       // "LVL N" off your banana and a new title's big moment are src/lib/world-xp.js, the same in every area, and they
-      // happen as the XP LANDS. The floor keeps what only the floor has: the roster, the room and the arpeggio
-      // (playLevelUp, on 'world:levelup' below).
+      // happen as the XP LANDS. The floor keeps what only the floor has: the roster and the room.
       const meR = myId && ravers.get(myId);
       if (meR) { meR.lvl = lv.level; refreshHud(); } // the roster title climbs with you
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'lvl', n: lv.level }));
@@ -1324,29 +1322,6 @@ function init() {
       track('rave_levelup', { level: lv.level });
     }
   }
-  // the classic level-up: an ascending C-major square-wave arpeggio, written
-  // here note by note — original, nobody's copyright, everybody's childhood
-  function playLevelUp() {
-    if (!audio || !audioOn) return;
-    try {
-      const { ctx } = audio;
-      const t0 = ctx.currentTime + 0.02;
-      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'square';
-        o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t0 + i * 0.09);
-        g.gain.exponentialRampToValueAtTime(0.1, t0 + i * 0.09 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.09 + (i === 3 ? 0.38 : 0.11));
-        o.connect(g).connect(ctx.destination);
-        o.start(t0 + i * 0.09);
-        o.stop(t0 + i * 0.09 + 0.45);
-      });
-    } catch (e) {}
-  }
-
-  // the classic four notes play as the world's level-up lands on the chip (world-xp.js), not before it
-  document.addEventListener('world:levelup', () => playLevelUp());
   // 👕 the outfit changed under us (a sync from another device, another tab, a present): the floor wears what is saved
   // and the room sees it — a peak's disco legs stay on until the peak ends. design library §54
   document.addEventListener('world:rewear', () => {
@@ -2519,7 +2494,6 @@ function init() {
     bumpChain();
     addHype(10);
     confettiBurst();
-    if (audioOn) playDropAudio(); // the catch lands with the beat
     // tell the floor — the maker's name rides the shout (recognition)
     if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'grab', item: DROP.id }));
     const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -3350,11 +3324,8 @@ function init() {
     camLastTx = null; // the follow-cam recomputes from scratch
     if (tourDemoEl) { tourDemoEl.remove(); tourDemoEl = null; }
     hideBubble();
-    // class dismissed: pull back to the whole floor and start the set — the
-    // tap that ends the tour is a live gesture, so audio may start right here.
-    // Respect an explicit mute (rv-sound '0'): the ❓ replay never forces sound.
+    // class dismissed: pull back to the whole floor
     cam.on = false;
-    try { if (localStorage.getItem('rv-sound') !== '0' && !audioOn && !audioLoading) audioStart(); } catch (e) {}
     track(skipped ? 'rave_tour_skip' : 'rave_tour_done', { step: tourStep });
     // the patch waits its turn — the welcome + tour own the first minutes,
     // so the PATCH EARNED toast lands 10s after the lesson (idempotent: ❓
@@ -4914,7 +4885,6 @@ function init() {
       // no confetti here — every-3rd-minute confetti was wallpaper (Trym: "too
       // frequent to appreciate"); the drop already has strobe + pyro + the flash
       if (lastDrop === true && !dropActive) { passStat('drops'); addHype(8); }
-      if (dropActive && audioOn) playDropAudio(); // the music drops WITH the lights
       lastDrop = dropActive;
       document.body.classList.toggle('rv-drop', dropActive && !reduced);
       dropFlashEl.hidden = !dropActive;
@@ -4982,241 +4952,8 @@ function init() {
     }
   }
 
-  // ---- THE SOUND: Sentry's set (tools/RAVE-AUDIO-SPEC.md) ----
-  // loop.mp3 = the default bed (40.000s = 25 bars @ 150 BPM, seamless);
-  // drop.mp3 = 12.8s (8 bars), fired on EVERY dropActive rising edge — clock
-  // drops, jelly time and bonus drops all ride the same flag, so the music
-  // is synced to the lights by construction. On enable: the drop greets you
-  // first, then the loop rolls (Trym's call). Mute by default, gesture-gated.
-  const AUDIO_LOOP_URL = '/assets/audio/rave-loop.mp3';
-  const AUDIO_DROP_URL = '/assets/audio/rave-drop.mp3';
-  const AUDIO_LOOP_S = 40.0, AUDIO_DROP_S = 12.8; // true master lengths
-  const LOOP_LEVEL = 0.9;
-  let audio = null, audioOn = false, audioLoading = false, audioUnlockEl = null;
-
-  // 1s of silence as a WAV — the iOS session-unlock element plays this
-  function silentWav() {
-    const rate = 8000, n = rate; // 1s mono 8kHz
-    const buf = new ArrayBuffer(44 + n * 2);
-    const v = new DataView(buf);
-    const wr = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
-    wr(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); wr(8, 'WAVEfmt ');
-    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-    v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
-    v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-    wr(36, 'data'); v.setUint32(40, n * 2, true);
-    return buf;
-  }
-
-  // mp3 decode can prepend encoder delay; if the decoded buffer is longer
-  // than the master, trim with the standard-LAME-preroll heuristic so the
-  // loop seam stays sample-tight
-  function audioTrim(buf, wantS) {
-    const extra = buf.duration - wantS;
-    if (extra < 0.005) return { start: 0, end: buf.duration };
-    const start = Math.min(extra, 1105 / 44100);
-    return { start, end: start + wantS };
-  }
-
-  // the loop, from ITS bar 1, scheduled at time t — used on enable and after
-  // every drop, because drop-end resolves into loop-start (the authored seam)
-  function startLoopAt(t) {
-    const { ctx, loopBuf, loopGain } = audio;
-    const tr = audioTrim(loopBuf, AUDIO_LOOP_S);
-    const src = ctx.createBufferSource();
-    src.buffer = loopBuf;
-    src.loop = true;
-    src.loopStart = tr.start;
-    src.loopEnd = tr.end;
-    src.connect(loopGain);
-    src.start(t, tr.start);
-    // a looped source only "ends" when something kills it (drop cut, iOS
-    // interruption) — nulling here is what lets relightLoop() detect silence
-    src.onended = () => { if (audio && audio.loopSrc === src) audio.loopSrc = null; };
-    audio.loopSrc = src;
-  }
-
-  // running context, dead loop source = the silent-zombie state (iOS kills
-  // sources on interruptions; resume() alone brings back nothing). Waits out
-  // dropBusyUntil so it never doubles a loop the drop already scheduled.
-  function relightLoop() {
-    if (audio && audioOn && audio.ctx.state === 'running' && !audio.loopSrc && audio.ctx.currentTime > audio.dropBusyUntil) {
-      startLoopAt(audio.ctx.currentTime + 0.05);
-    }
-  }
-
-  // no ducking, no overlap (Trym: "why a duck release?") — a drop CUTS the
-  // loop like a DJ would (its impact masks the cut), plays clean and alone,
-  // and the loop RESTARTS from bar 1 at the exact end: the same butt joint
-  // Sentry authored, on every single drop
-  function playDropAudio() {
-    if (!audio) return;
-    const { ctx, dropBuf, dropGain, loopGain } = audio;
-    const t = ctx.currentTime;
-    if (t < audio.dropBusyUntil) return; // one drop at a time
-    audio.dropBusyUntil = t + AUDIO_DROP_S - 0.5;
-    const src = ctx.createBufferSource();
-    src.buffer = dropBuf;
-    src.connect(dropGain);
-    const tr = audioTrim(dropBuf, AUDIO_DROP_S);
-    src.start(t, tr.start, AUDIO_DROP_S);
-    if (audio.loopSrc) {
-      // 25ms fade-out kills the cut click, then the old source dies
-      loopGain.gain.cancelScheduledValues(t);
-      loopGain.gain.setTargetAtTime(0.0001, t, 0.012);
-      try { audio.loopSrc.stop(t + 0.06); } catch (e) {}
-      audio.loopSrc = null;
-    }
-    loopGain.gain.setValueAtTime(LOOP_LEVEL, t + AUDIO_DROP_S); // full level at the joint
-    startLoopAt(t + AUDIO_DROP_S);
-  }
-
-  // 🪙 the coin chime: two quick square-wave notes a fourth apart (B5 → E6),
-  // whisper-quiet under the set — synthesized, nothing to download
-  function playCoinAudio() {
-    if (!audio || audio.ctx.state !== 'running') return;
-    const ctx = audio.ctx, t0 = ctx.currentTime;
-    [[988, 0], [1319, 0.085]].forEach(([f, dt]) => {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = 'square';
-      o.frequency.value = f;
-      g.gain.setValueAtTime(0.04, t0 + dt);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.22);
-      o.connect(g);
-      g.connect(audio.master);
-      o.start(t0 + dt);
-      o.stop(t0 + dt + 0.24);
-    });
-  }
-
-  async function audioStart() {
-    if (audioLoading || audio) return;
-    audioLoading = true;
-    refreshSoundBtn();
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // iOS: the context starts SUSPENDED even inside a tap — resume() must be
-      // called while the gesture is still live (before any await), and the
-      // page must declare itself a media player or the silent switch mutes
-      // Web Audio entirely (phones live on silent)
-      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
-      if (ctx.state !== 'running') ctx.resume();
-      // audioSession only exists on newer Safari — the evergreen unlock is a
-      // silent looped <audio> ELEMENT started in the same tap: media-element
-      // playback flips the audio session so the ringer switch stops muting
-      // Web Audio on every iOS version
-      try {
-        if (!audioUnlockEl) {
-          audioUnlockEl = document.createElement('audio');
-          audioUnlockEl.loop = true;
-          audioUnlockEl.volume = 0.01;
-          // 1-second silent WAV, generated inline — nothing to download
-          audioUnlockEl.src = URL.createObjectURL(new Blob([silentWav()], { type: 'audio/wav' }));
-        }
-        audioUnlockEl.play().catch(() => {});
-      } catch (e) {}
-      // some WebKit builds still want the callback form of decodeAudioData
-      const decode = (buf) => new Promise((ok, err) => {
-        const p = ctx.decodeAudioData(buf, ok, err);
-        if (p && p.then) p.then(ok, err);
-      });
-      const [loopBuf, dropBuf] = await Promise.all([AUDIO_LOOP_URL, AUDIO_DROP_URL].map(async (u) => {
-        const r = await fetch(u);
-        return decode(await r.arrayBuffer());
-      }));
-      if (ctx.state !== 'running') await ctx.resume().catch(() => {});
-      const master = ctx.createGain();
-      master.connect(ctx.destination);
-      const loopGain = ctx.createGain();
-      loopGain.gain.value = LOOP_LEVEL;
-      loopGain.connect(master);
-      const dropGain = ctx.createGain();
-      dropGain.connect(master);
-      audio = { ctx, loopBuf, dropBuf, loopGain, dropGain, master, dropBusyUntil: 0 };
-      // the greeting IS just a drop with no loop to cut — playDropAudio
-      // schedules the loop's entry at the authored joint itself
-      playDropAudio();
-      audioOn = true;
-      try { localStorage.setItem('rv-sound', '1'); } catch (e) {}
-      track('rave_sound', { on: true });
-    } catch (e) {
-      audio = null;
-    }
-    audioLoading = false;
-    refreshSoundBtn();
-  }
-
-  function audioStop() {
-    if (audio) { try { audio.ctx.close(); } catch (e) {} }
-    if (audioUnlockEl) { try { audioUnlockEl.pause(); } catch (e) {} }
-    audio = null;
-    audioOn = false;
-    try { localStorage.setItem('rv-sound', '0'); } catch (e) {}
-    track('rave_sound', { on: false });
-    refreshSoundBtn();
-  }
-
-  function refreshSoundBtn() {
-    const b = el('rvSoundBtn');
-    if (!b) return;
-    b.classList.toggle('rv-soundbtn--on', audioOn);
-    b.setAttribute('aria-pressed', String(audioOn));
-    b.title = audioLoading ? 'warming up the speakers…' : audioOn ? 'sound off' : 'sound on — the set is live';
-  }
-  const soundBtn = el('rvSoundBtn');
-  if (soundBtn) soundBtn.addEventListener('click', () => (audioOn ? audioStop() : audioStart()));
-  // returning listeners: pref remembered, but browsers demand a gesture —
-  // the FIRST tap/keypress anywhere re-opens the doors
-  try {
-    if (localStorage.getItem('rv-sound') === '1') {
-      const arm = () => { if (!audioOn && !audioLoading) audioStart(); };
-      addEventListener('pointerdown', arm, { once: true });
-      addEventListener('keydown', arm, { once: true });
-    }
-  } catch (e) {}
-  // iOS backgrounds the context — resume when the tab returns. Match any
-  // non-running state: iOS also uses a non-standard 'interrupted' after
-  // calls, Siri, silent-mode juggling…
-  document.addEventListener('visibilitychange', () => {
-    if (audio && document.visibilityState === 'visible' && audio.ctx.state !== 'running') audio.ctx.resume().catch(() => {});
-    if (document.visibilityState === 'visible') relightLoop();
-  });
-  // coming BACK from the builder (bfcache restore) resurrects a ZOMBIE engine:
-  // `audio` exists but its context/sources are dead, and audioStart refuses to
-  // rebuild while `audio` is set — the button toggled, the speakers didn't
-  // (Trym). A restore gets a full teardown; the remembered pref re-arms the
-  // proven cold-start path on the first tap.
-  addEventListener('pageshow', (e) => {
-    if (!e.persisted) return;
-    if (audio) { try { audio.ctx.close(); } catch (err) {} }
-    audio = null;
-    audioLoading = false;
-    if (audioOn) {
-      audioOn = false;
-      refreshSoundBtn();
-      const arm = () => { if (!audioOn && !audioLoading) audioStart(); };
-      addEventListener('pointerdown', arm, { once: true });
-      addEventListener('keydown', arm, { once: true });
-    }
-  });
-  // belt for iOS: if the context is ever stuck (decode outlived the gesture,
-  // low-power mode, interruption), the NEXT tap anywhere unsticks it — and
-  // re-kicks the session-unlock element too
-  addEventListener('pointerdown', () => {
-    if (audio && audioOn && audio.ctx.state !== 'running') {
-      audio.ctx.resume().catch(() => {});
-      if (audioUnlockEl) audioUnlockEl.play().catch(() => {});
-    }
-    relightLoop(); // running-but-silent heals on the next tap too
-  });
-  // QA handle (harmless): lets tests confirm the graph without ears
-  window.__rvAudio = () => ({
-    on: audioOn, loading: audioLoading, ctx: audio && audio.ctx.state,
-    loopDur: audio && audio.loopBuf.duration, dropDur: audio && audio.dropBuf.duration,
-    busyUntil: audio && audio.dropBusyUntil,
-    unlock: audioUnlockEl ? (audioUnlockEl.paused ? 'paused' : 'playing') : 'none',
-    session: (navigator.audioSession && navigator.audioSession.type) || 'unsupported',
-  });
+  // 🔇 NO RECORDED MUSIC (2 Oct 2026). Trym: "remove the ai song we have on the rave area" — it was the only song, behind
+  // the sound button. The drop is the lights now: the strobe, the pyro and the double-time dance, on the same wall clock.
 
   // ---- the pass: rave moments leave marks ----
   passVisit();
