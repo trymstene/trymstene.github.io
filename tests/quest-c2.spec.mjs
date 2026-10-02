@@ -242,7 +242,7 @@ test('chapter two in the town: every scene in order, the ink, the statue, and th
   // the statue stays dry until the name is whole, and the night's lights are on the view, over the town's dark
   expect(await page.locator('.bwq-water.is-dry').count(), 'the statue is dry before the scene').toBe(1);
   const lights = await page.evaluate(() => {
-    const l = document.querySelector('.bwq-lights'), n = document.querySelector('.tw-night');
+    const l = document.querySelector('.bwq-lights'), n = document.querySelector('.wn--bloom');   // 🌗 the world's night layer (§56), its top canvas
     return { onView: !!l && l.parentElement === n.parentElement, over: !!l && !!(n.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING), z: l && getComputedStyle(l).zIndex };
   });
   expect(lights, 'the lantern, the ghost’s light and the window are drawn over the dark').toEqual({ onView: true, over: true, z: '7' });

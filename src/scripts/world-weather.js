@@ -22,12 +22,12 @@ export const TIERS = ['clear', 'drizzle', 'heavy', 'storm'];
  *
  * @param host   the area's VIEW element — the fixed box, never the panning world
  * @param opts   { leaves = 5, onKind(kind), track(kind) }
- * @returns { tick, now, setKind, stop } — call tick(now) from the area's rAF loop
+ * @returns { tick, now, setKind, indoors, link, stop } — call tick(now) from the area's rAF loop
  */
 export function mountWeather(host, opts = {}) {
   // ⚠️ the same SHAPE when it refuses, or an area that mounts on the wrong element
   // dies at its first weather.indoors() instead of just having no rain
-  const dead = { tick: () => {}, now: () => 'clear', setKind: () => {}, indoors: () => {}, stop: () => {} };
+  const dead = { tick: () => {}, now: () => 'clear', setKind: () => {}, indoors: () => {}, link: (h) => h, stop: () => {} };
   if (!host) return dead;
   // ⚠️ THE ONE MISTAKE THIS MODULE EXISTS TO PREVENT. Every area translates its
   // world element by the camera every frame. Rain parented there pans with the
@@ -68,6 +68,7 @@ export function mountWeather(host, opts = {}) {
   let kind = 'clear';
   let force = null;
   let hidden = false;
+  const linked = [];   // 🌗 what else hides at the door: the night (world-night.js), so one switch covers the whole sky
   function setKind(k) {
     if (!TIERS.includes(k)) return;
     if (k === kind) return;
@@ -109,7 +110,13 @@ export function mountWeather(host, opts = {}) {
       if (want === hidden) return;
       hidden = want;
       wrap.classList.toggle('is-indoors', want);
+      linked.forEach((h) => h.indoors(want));
     },
+    /**
+     * 🌗 ONE DOOR FOR THE WHOLE SKY (2 Oct 2026). The town had two inside switches — the rain's and its own night's — and
+     * two switches are how rain once fell in the store. An area links its night here, and indoors() hides both.
+     */
+    link: (h) => { if (h && h.indoors) { linked.push(h); h.indoors(hidden); } return h; },
     stop: () => { wrap.remove(); kind = 'clear'; },
   };
 }

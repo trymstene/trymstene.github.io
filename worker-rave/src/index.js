@@ -273,15 +273,17 @@ function curseBetween(from, to) {
 }
 
 // 🌃 THE TOWN'S OWN NIGHT — the last beat of its twelve-minute day, as a pure function of time. The
-// square keeps this clock itself (town-life.js: DAY_MS 720000, six beats of two minutes, beat 5 is
-// night); the TownRoom needs the same answer so it takes a ghost's damage only while ghosts are out.
-// ⚠️ the numbers are town-life.js's — change them there and here, or the room refuses every night.
+// day is 24 town hours of 30 real seconds, six beats of four hours (town-life.js reads these, never its
+// own copy); beat 5 is the ghosts' night, and the TownRoom needs the same answer so it takes a ghost's
+// damage only while ghosts are out.
 const TOWN_DAY_MS = 720000;
+const TOWN_HOUR_MS = 30000;
+const TOWN_NIGHT_FROM = 600000;   // beat 5 starts here: hour 20
 function townNightAt(t) {
   const inDay = t % TOWN_DAY_MS;
   // the night runs 600000–720000; a report lands a moment after the thing it reports, so the first
   // half-minute of dawn still counts as the night just gone
-  return inDay >= 600000 || inDay < 30000;
+  return inDay >= TOWN_NIGHT_FROM || inDay < 30000;
 }
 // the night a moment belongs to: the last beat of a twelve-minute day, plus the half-minute of dawn after it
 const townNightIdx = (t) => Math.floor((t - 30000) / TOWN_DAY_MS);
@@ -1472,13 +1474,13 @@ const TOWN_BANDS = [[85, 'thriving'], [65, 'lively'], [40, 'recovering'], [15, '
 const townBand = (v) => (TOWN_BANDS.find(([lo]) => v >= lo) || TOWN_BANDS[TOWN_BANDS.length - 1])[1];
 
 // 🌃 every town night that BEGAN in (from, to], each with its toll and the floor that toll stops at. A night begins at
-// 600 000 ms into its twelve-minute day (townNightAt); a 48-hour walk holds at most 240 of them.
+// TOWN_NIGHT_FROM into its twelve-minute day (the generated CLOCK block); a 48-hour walk holds at most 240 of them.
 function tollsBetween(from, to) {
   const out = [];
-  const first = Math.floor((from - 600000) / TOWN_DAY_MS) + 1, last = Math.floor((to - 600000) / TOWN_DAY_MS);
+  const first = Math.floor((from - TOWN_NIGHT_FROM) / TOWN_DAY_MS) + 1, last = Math.floor((to - TOWN_NIGHT_FROM) / TOWN_DAY_MS);
   for (let n = first; n <= last; n++) {
     const haunt = townHaunted(n);
-    out.push({ at: n * TOWN_DAY_MS + 600000, kind: 'toll', hit: haunt ? TOWN_TOLL.haunt : TOWN_TOLL.plain, floor: haunt ? TOWN_HAUNT_FLOOR : TOWN_DARK_FLOOR, haunt });
+    out.push({ at: n * TOWN_DAY_MS + TOWN_NIGHT_FROM, kind: 'toll', hit: haunt ? TOWN_TOLL.haunt : TOWN_TOLL.plain, floor: haunt ? TOWN_HAUNT_FLOOR : TOWN_DARK_FLOOR, haunt });
   }
   return out;
 }

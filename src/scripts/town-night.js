@@ -18,7 +18,7 @@ import { GHOSTS, NIGHT_GHOSTS, ROAM } from '../data/town/ghosts.js';
 import { OBJECTS, WHERE, RARITY_W } from '../data/town/objects.js';
 import { CURSE_SHELF } from '../data/town/stock.js';
 import { PROBLEMS } from '../data/town/problems.js';
-import { LOOK, NIGHT } from '../data/town/condition.js';
+import { LOOK } from '../data/town/condition.js';
 import { OB_RECTS, OB_CIRCLES } from './town-geo.js';
 import { burstInto, townNightIdx } from '../lib/world.js';
 import { bigMoment } from '../lib/world-moment.js';
@@ -41,6 +41,7 @@ export function bootTownNight(ctx) {
   // 🕯️ the candles that stand either side of a Curse Night's shelf. They were declared beside the
   // sky element in town-room, which stays behind — only the candles are the night's.
   let candles = [];
+  const CANDLES = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]];   // a Curse Night's candles, one at each of four doors
   // (`bananas` is declared by the slab itself, a little further down)
 
   const ghosts = [];   // { def, s, ... }
@@ -318,8 +319,11 @@ export function bootTownNight(ctx) {
   function clearGhosts(keepDay) {
     for (const g of ghosts.slice()) { if (keepDay && g.s === cond.dayghost) continue; g.done = true; g.s.el.style.opacity = '0'; const s = g.s; setTimeout(() => kill(s), 1500); ghosts.splice(ghosts.indexOf(g), 1); }
   }
-  function spawnObject(seed, day, at, forced, born) {
+  function spawnObject(seed, day, at, forced, born, spotSalt) {
     const def = forced || weighted(OBJECTS, (o) => RARITY_W[o.rarity], seed);   // a chapter names its object; a night draws one
+    // 🔮 WHERE it lands takes the night as well (2 Oct 2026): seeded by the UTC day alone, all ~120 nights of a day laid the
+    // same things on the same spots. The kind stays the day's draw, so how rare a find is did not move.
+    const ps = seed + (spotSalt || 0);
     // its place by seed, then a spot in it nothing else stands on (two on one spot hid each other, 15 Sep). A
     // spot handed in (a ghost's, a chapter's) is checked the same way; a full area hands over to the object's
     // other areas, then any; a town with no free spot gets no object at all — never a stack (22 Sep).
@@ -327,9 +331,9 @@ export function bootTownNight(ctx) {
     let spot = at && !taken(at) ? at : null;
     if (!spot) {
       const keys = [...new Set([...def.where, ...Object.keys(WHERE)])];
-      const first = Math.floor(h(seed, 3) * def.where.length);
+      const first = Math.floor(h(ps, 3) * def.where.length);
       for (const k of [keys[first], ...keys.filter((_, q) => q !== first)]) {
-        const list = WHERE[k] || [], j = Math.floor(h(seed, 5) * list.length);
+        const list = WHERE[k] || [], j = Math.floor(h(ps, 5) * list.length);
         for (let q = 0; q < list.length && !spot; q++) { const c = list[(j + q) % list.length]; if (!taken(c)) spot = c; }
         if (spot) break;
       }
@@ -367,7 +371,7 @@ export function bootTownNight(ctx) {
   function nightEnds() { nightCap = 0; nightSpawned = 0; nextSpawnAt = 0; clearNightObjects(); }
   function spawnThroughNight(now) {
     if (!nightCap || now < nextSpawnAt || nightSpawned >= nightCap + 2 || objects.filter((o) => !o.day).length >= nightCap) return;
-    spawnObject(dayNum() * 5 + nightSpawned * 3 + 11, false, null, null, true);
+    spawnObject(dayNum() * 5 + nightSpawned * 3 + 11, false, null, null, true, (townNightIdx(Date.now()) % 997) * 7);
     nightSpawned++; nextSpawnAt = now + 12000 + Math.random() * 23000;
   }
   // 😱 THE CURSE ON YOU: a cursed thing picked up rides along for a while — see-through, a violet edge, afloat, purple
@@ -425,12 +429,11 @@ export function bootTownNight(ctx) {
   function enterCurse(type) {
     const full = type === 'deep' || type === 'big';
     setCurse(type);
-    if (night()) night().style.opacity = String(type === 'hush' ? NIGHT.hush : NIGHT.curse);
     weather.setKind(full ? 'storm' : type === 'creep' || type === 'haunt' ? 'heavy' : null);
     if (type !== 'hush') {
       life.setKeep(keepFn); life.setGlow(() => false);
       if (type !== 'haunt' && type !== 'big') { cond.shut.add('cafe'); cond.shut.add('info'); shutters(); }
-      candles = [[1100, 596], [1700, 596], [480, 1076], [1620, 1076]].map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
+      candles = CANDLES.map(([x, y]) => sprite('candle', x, y, { fps: 5 })).filter(Boolean);
     }
     // a hush is dusk, not a night: it brings no ghosts and no cursed things of its own — the town's own night does
     // (15 Sep: a real-time hush spawned the night set by the town's day). A creeping or deep night is the night.
@@ -468,9 +471,8 @@ export function bootTownNight(ctx) {
     if (on) {
       const taken = new Set([...cond.crows.filter((s) => !s.gone).map((s) => s.perch.join(',')), ...problems().filter((p) => p.type === 'crows').map((p) => p.x + ',' + p.y)]);
       for (const [x, y, k] of ANCHORS.perches) if (!taken.has(x + ',' + y)) { const s = sprite('crow', x, y, { fps: 2, z: perchZ(k) }); if (s) omenCrows.push(s); }
-      if (!omenWisp) omenWisp = ghostOf('wisp');
-      night().style.background = '#2a1040';
-    } else { kill(omenWisp); omenWisp = null; night().style.background = ''; }
+      if (!omenWisp) omenWisp = ghostOf('wisp');   // …and the sky goes wrong at the edges: town-room.js skyMood() reads omenOn
+    } else { kill(omenWisp); omenWisp = null; }
   }
   // ⚠️ `bananas` is WRITTEN by town-room's tick (it is built from the residents each half second)
   // and only read here, so it is set in rather than read out. The ghosts steer around whoever is
@@ -482,6 +484,7 @@ export function bootTownNight(ctx) {
     // town-room's kill() used to splice this array itself; it cannot reach it any more
     unghost: (s) => { for (let i = ghosts.length - 1; i >= 0; i--) if (ghosts[i].s === s) ghosts.splice(i, 1); },
     ghosts: () => ghosts,
+    candleSpots: () => (candles.length ? CANDLES : []),   // 🌗 the night layer lights them
     objects: () => objects,
     omenOn: () => omenOn,
     resetSpawn: () => { nextSpawnAt = 0; return nightCap; },

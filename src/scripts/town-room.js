@@ -25,7 +25,7 @@
 // banana or ghost — a ghost with a line says it in the town's toast. ⚠️ EVERY WORD is copy:
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
-import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt, townBigAt } from '../lib/world.js';
+import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt, townBigAt, SKY_HOURS, litAt } from '../lib/world.js';   // 🌗 the sky's hours, and when each lamp comes on (§56)
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { XP_PAY } from '../data/xp-pay.js';   // ✨ a fix pays five times its old XP (the endgame plan's step 1c)
 import { DECOR } from '../data/decor.js';
@@ -36,7 +36,7 @@ import { HOARD_ON, HOARDABLE, SIGNATURES, SIGN_AT } from '../data/town/locks.js'
 import { iconSvg } from '../lib/pixel-icons.js';   // the board's three notes wear pixel icons, never OS emoji
 import { once, seen } from '../lib/once.js';   // 🧾 the counter's invitation, until the till is first opened
 import { arrived as callIn, calls as callsAt, doneToday } from '../lib/work-calls.js';   // 📟 the on-call staff's work comes in as calls (slice 0b)
-import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, NIGHT, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
+import { BANDS, BAND_LO, HYST, LOOK, PROBLEM_OPEN, WAVES, VISITOR_SPOTS, NIGHT_AFTER, NIGHT_AFTER_MS } from '../data/town/condition.js';
 import { PROBLEMS, ANCHORS } from '../data/town/problems.js';
 import { POOLS, SHELF, CURSE_SHELF } from '../data/town/stock.js';
 import { TODAY, TODAY_N, ODD_SPOTS, CLOSABLE } from '../data/town/today.js';
@@ -105,7 +105,7 @@ export function bootTownLife(ctx) {
       return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 15, floor: 45, night: true, per: 2 }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
         // ⚠️ a forced MORNING says a night happened and that none is happening now — setting `curse`
         // to the tier put ghosts in the square in daylight, which is a different thing entirely.
-        curse: curseAt(Date.now()).type, stormAt: 0,
+        curse: shim.night ? 'none' : curseAt(Date.now()).type, stormAt: 0,   // …so a forced morning is NOT the real clock's evening curse (a real hush failed the walk, 2 Oct)
         curseAt: shim.night ? shim.night.at : 0, curseKind: shim.night ? shim.night.tier : '', ok: 1 };
     }
     if (body) { body.pass = own; body.alt = sid; if (wt) body.wt = wt; }
@@ -274,11 +274,16 @@ export function bootTownLife(ctx) {
   function paintClock(now) {
     if (!slot || now < clockAt) return;
     clockAt = now + 1000;
-    const h = life.seam.hour();   // 0–24 town hours, 30 real seconds each; night is 20–24 (the hour lives on the QA seam)
-    let isNight = h >= 20, left = Math.max(0, ((isNight ? 24 : 20) - h) * 30);
-    // a Curse Night is a NIGHT however long it runs: the moon, and the time the curse has left (Trym, 15 Sep: the sun
-    // on the clock with ghosts about read as "ghosts spawning when daytime arrives")
-    if (curse && curse !== 'hush') { isNight = true; left = Math.max(0, (forced ? forcedUntil - Date.now() : curseAt(Date.now()).left) / 1000); }
+    const h = life.seam.hour();   // 0–24 town hours, 30 real seconds each (the hour lives on the QA seam)
+    // 🌗 dark from the end of the sunset until the sun is up (world.js SKY_HOURS): by day it counts to nightfall, by night
+    // to the morning
+    const fall = SKY_HOURS.set[1], up = SKY_HOURS.rise[1];
+    let isNight = h >= fall || h < up, left = Math.max(0, (((isNight ? up : fall) - h + 24) % 24) * 30);
+    // a REAL Curse Night is a NIGHT however long it runs: the moon, and the time the curse has left (Trym, 15 Sep: the sun
+    // on the clock with ghosts about read as "ghosts spawning when daytime arrives"). ⚠️ Only a real one: a haunted or very
+    // cursed night is one of the town's own and ends at its dawn — the real-time curse clock has nothing for it, and the
+    // chip sat at 0:00 for its whole two minutes (found 2 Oct 2026).
+    if ((curse === 'creep' || curse === 'deep') || (forced && curse && curse !== 'hush')) { isNight = true; left = Math.max(0, (forced ? forcedUntil - Date.now() : curseAt(Date.now()).left) / 1000); }
     const m = Math.floor(left / 60), sec = Math.floor(left % 60);
     slot.innerHTML = '<span class="tw-clock">' + iconSvg(isNight ? 'sun-solid' : 'moon-solid', { size: 14 }) + '<b>' + m + ':' + (sec < 10 ? '0' : '') + sec + '</b></span>';
   }
@@ -563,22 +568,27 @@ export function bootTownLife(ctx) {
     lampsByHour();
   }
   let lampsLit = null;
+  // 🌗 a lamp is lit when the sky is dark enough for IT: the row comes on one by one through the dusk and goes out one by
+  // one at dawn (world.js litAt; Trym, 2 Oct: "lamps come on one by one"). A Curse Night lights them all.
+  const lampLit = (k) => !!(curse && curse !== 'hush') || litAt(ctx.sky ? ctx.sky.level() : 0, ANCHORS.lamps.indexOf(k) / ANCHORS.lamps.length);
   function lampsByHour() {
     const beat = life.beat();
-    const dark = beat === 4 || beat === 5 || (curse && curse !== 'hush');
+    let any = false;
     for (const k of ANCHORS.lamps) {
       const s = lampHalo[k]; if (!s) continue;
       const st = cond.lamps[k];
       // by day a dead lamp is grey and a faulty one stutters faintly — Trym, 14 Sep: "it's daytime
       // and they are all off so I don't understand if any of them is broken"
       const p = propOf(k); if (p) p.el.classList.toggle('is-dark', st === 'out');
+      const dark = lampLit(k);
+      if (dark) any = true;
       const on = (dark && st !== 'out') || (!dark && st === 'flicker');
       s.el.hidden = !on;
       s.el.style.opacity = !dark && st === 'flicker' ? '0.45' : '';
       s.mode = !on ? 'off' : st === 'flicker' ? 'flicker' : 'pulse';
       if (s.mode === 'pulse') s.fps = 3; else if (s.mode === 'flicker') s.fps = 9;
     }
-    lampsLit = dark;
+    lampsLit = any;
     // 🌙 nobody stands about at night: the visitors and the travelling stall are gone until morning, like the residents
     // indoors (Trym, 15 Sep: "aren't the townsbananas supposed to go inside in the night?" — they were; these were not)
     const nightOut = beat === 5 || (curse && curse !== 'hush');
@@ -1142,7 +1152,6 @@ export function bootTownLife(ctx) {
 
   // ════════════════════════════════ the curse, the ghosts, the objects ═══════════════
   let curse = null, forced = null, forcedUntil = 0, curseTold = '', plainNight = false;
-  let night = null;   // the sky; the candles went with the night's own chunk
   function moveSprite(s, x, y, dz = 0) { s.x = x; s.y = y; s.el.style.left = pct(x - s.w / 2, W); s.el.style.top = pct(y - s.h, H); s.el.style.zIndex = String(100 + Math.round(y + dz)); }
   const found = (id) => { try { return statTotal(passRaw(), 'cur_' + id) > 0; } catch (e) { return false; } };
   // 🌚 THE NIGHT LIVES IN ITS OWN CHUNK (src/scripts/town-night.js): ghosts, cursed objects and
@@ -1162,7 +1171,7 @@ export function bootTownLife(ctx) {
       glowProblem, setFull, lampsByHour, shutters, dayNum, found, weighted, h, one, fill, keepFn,
       // ⚠️ GETTERS, because this file reassigns every one of them
       band: () => band, problems: () => problems, curse: () => curse, vendor: () => vendor,
-      night: () => night, plainNight: () => plainNight, curseTold: () => curseTold,
+      plainNight: () => plainNight, curseTold: () => curseTold,
       // 👻 what a ghost's mischief costs the town, and the float that shows it where it happens
       dark, float,
       hauntLine: () => ((COPY.toasts || {}).haunt || ''),   // 👻 what the square says as a haunted night falls
@@ -1194,12 +1203,42 @@ export function bootTownLife(ctx) {
     if (forced && Date.now() < forcedUntil) return forced === 'omen' ? 'none' : forced;   // a chapter's own night — or 'none', a chapter's own calm
     if (forced) forced = null;
     const c = curseAt(Date.now()).type;
-    return c !== 'none' ? c : townBigAt(Date.now()) ? 'big' : townHauntAt(Date.now()) ? 'haunt' : 'none';   // 👻 one town night in ten is haunted (23 Sep 2026), and half of those very cursed (27 Sep)
+    // 👻 one town night in ten is haunted (23 Sep 2026), and half of those very cursed (27 Sep). ⚠️ The LOOK keeps to the
+    // ghosts' own beat: townNightAt's half-minute of dawn is for a late report to land, and it held the haunted dark and the
+    // kept-in residents half a minute into the morning (found 2 Oct 2026).
+    const own = life.beat() === 5;
+    return c !== 'none' ? c : own && townBigAt(Date.now()) ? 'big' : own && townHauntAt(Date.now()) ? 'haunt' : 'none';
   }
 
   // ═══════════════════════════════════ the sky, the tick ═════════════════════════════
-  night = document.createElement('i'); night.className = 'tw-night'; view.appendChild(night);
-  let lastBeat = -1, secAt = 0;
+  // 🌗 THE SKY IS THE WORLD'S (2 Oct 2026): the night layer on the view (world-night.js, banana-town.js mounts it) reads
+  // the town's clock and this room's MOOD — a Curse Night's colour, a haunted night's, an omen's — and lays light on the
+  // lamps, the windows, the ghosts and the cursed things from lightSources(). It replaced the .tw-night sheet.
+  function skyMood() {
+    if (curse === 'deep' || curse === 'big') return { name: curse, floor: 1, amb: [30, 22, 64] };
+    if (curse === 'creep') return { name: curse, floor: 0.85, amb: [40, 36, 92] };
+    if (curse === 'haunt') return { name: curse, floor: 0.9, amb: [36, 46, 100] };
+    if (curse === 'hush') return { name: curse, floor: 0.45, amb: [72, 66, 112] };
+    if (dusk && dusk.omenOn()) return { name: 'omen', floor: 0.14, amb: [96, 40, 128] };   // the sky goes wrong at the edges
+    return null;
+  }
+  // every light of the town's own, in WORLD px (banana-town.js puts them on the view): a lamp's pool on the ground under
+  // its head and the glass itself, a ghost's cold glow, a cursed thing's, the candles at the doors
+  function lightSources() {
+    const out = [];
+    for (const k of ANCHORS.lamps) {
+      const p = propOf(k); const st = cond.lamps[k];
+      if (!p || st === 'out' || !lampLit(k)) continue;
+      const flip = p.x + p.w / 2 > 1100, fl = st === 'flicker' ? 'stutter' : '';
+      out.push({ kind: 'lamp', key: k, x: p.x + p.w / 2 + (flip ? -4 : 4), y: p.y + p.h * 0.92, flicker: fl });
+      out.push({ kind: 'glass', key: k, x: p.x + p.w * (flip ? 0.28 : 0.72), y: p.y + p.h * 0.2, flicker: fl });
+    }
+    for (const g of ghostsNow()) if (g && g.s && !g.done && !g.shy) out.push({ kind: 'ghost', x: g.x, y: g.y - 34 });
+    for (const o of objectsNow()) out.push({ kind: 'cursed', x: o.x, y: o.y - 10 });
+    if (dusk && dusk.candleSpots) for (const c of dusk.candleSpots()) out.push({ kind: 'candle', x: c[0], y: c[1] - 12, flicker: 'fire' });
+    return out;
+  }
+  let lastBeat = -1, secAt = 0, litWas = '';
   // 🚶 WALK-OVER: everything but a lamp is picked up or fixed by walking onto it (or up to it, for a thing you
   // cannot stand on) — a lamp is a repair, and a repair is a tap (Trym, 15 Sep: "it became tedious to tap on all
   // objects. streetlights can be tapped"). The reach is measured from the thing's foot; the tap's own walk
@@ -1282,10 +1321,9 @@ export function bootTownLife(ctx) {
       if (om0 !== dusk.omenOn()) dusk.omens(om0);
     }
     if (beat !== lastBeat) { lastBeat = beat; lampsByHour(); kioskShow(); }   // ℹ️ the kiosk's own banana goes home with everybody else
+    else { const lw = ANCHORS.lamps.map(lampLit).join(); if (lw !== litWas) { litWas = lw; lampsByHour(); } }   // 🌗 the next lamp of the dusk
     if (dusk) dusk.setBananas([...life.seam.residents().filter((r) => !r.hidden).map((r) => ({ x: r.x, y: r.y })), ...(ctx.others ? ctx.others() : [])]);
-    night.hidden = inside();
     hbar.hidden = inside();
-    if (!curse) night.style.opacity = String(beat === 5 ? NIGHT.night : beat === 4 ? NIGHT.evening : (dusk && dusk.omenOn()) ? 0.12 : 0);
     // 👻 every night has its ghosts; dawn takes them (a Curse Night owns its own until it ends)
     const cursedNight = !!(curse && curse !== 'hush');
     if (beat === 5 && !cursedNight && !plainNight && dusk) { plainNight = true; (NIGHT_GHOSTS.night || []).forEach((id) => dusk.ghostOf(id, null, true)); dusk.nightBegins(2); }   // 🔮 the night's cursed things come through it
@@ -1423,7 +1461,7 @@ export function bootTownLife(ctx) {
       problems.push(p); glowProblem(p); return p.id;
     },
     fix, fixed,
-    lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit,
+    lamps: () => ({ ...cond.lamps }), lit: () => !!lampsLit, lights: () => lightSources(),   // 🌗 what the night layer is handed (§56)
     shut: () => [...cond.shut].filter((k) => !cond.fixedShut.has(k)),
     ghosts: () => ghostsNow().filter((g) => !g.done).map((g) => ({ id: g.def.id, x: Math.round(g.x), y: Math.round(g.y), hidden: g.s.el.style.opacity === '0', face: g.face || null, mess: g.mess || 0 })),
     nightSpawn: () => { if (!TEST || !dusk) return null; return dusk.resetSpawn(); },   // QA: the night's next thing, now
@@ -1435,7 +1473,7 @@ export function bootTownLife(ctx) {
     litterAt: (x, y, kind, clear) => (TEST && dusk ? dusk.litterAt(x, y, kind, clear) : null),   // QA: one piece of rubbish exactly here (clear = sweep the rest first)
     objects: () => objectsNow().map((o) => ({ id: o.def.id, x: o.x, y: o.y, day: o.day })),
     take: (id) => { const o = objectsNow().find((q) => q.def.id === id); if (o) dusk.takeObject(o); return !!o; },
-    night: () => +night.style.opacity || 0,
+    night: () => (ctx.sky ? ctx.sky.level() : 0),   // 🌗 how dark the sky is, 0–1, the room's mood included
     shelf: () => shelfFor(), today: (list, front) => { if (TEST && Array.isArray(list)) { todayPin = list.slice(); todayFront = front || null; todayStage(); condition(); reseedProblems(); } return today.slice(); }, odd: () => oddKey,
     vendor: () => !!vendor, visitors: () => cond.visitors.length, visitorsOut: () => cond.visitors.filter((b) => !b.el.hidden).length, crows: () => cond.crows.filter((s) => !s.gone).length,
     full: () => [...cond.full], fountain: () => (cond.fountainDry ? 'dry' : 'on'),
@@ -1588,5 +1626,5 @@ export function bootTownLife(ctx) {
   seam.hoardNow = hoardNow;
   seam.shutNow = shutNow;   // 🤝 a shut front says why, before its keeper answers for it (banana-town.js KEEP)
 
-  return { tick, at, tap, openFor, seam, story, roomShow, sweepAt, cabinetDead, cabinetRepair };
+  return { tick, at, tap, openFor, seam, story, roomShow, sweepAt, cabinetDead, cabinetRepair, skyMood, lightSources };
 }

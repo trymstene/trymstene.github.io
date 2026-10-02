@@ -716,6 +716,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 17 | The footer is on every visitor page | `check-design.mjs` (`showFooter={false}` outside the allowlist fails) |
 | 18 | One NPC dialogue card | `check-design.mjs` (own dialogue markup without `mountDialogue` fails; the legacy list may only shrink) |
 | 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
+| 56 | One night: one clock in world.js, one light layer on the view, one door with the rain | `check-design.mjs` §56 (a second copy of the town day, a `.tw-night` sheet, a night not linked to its weather or hung on the world fail) + `tests/world-night.spec.mjs` (the hours, the lamps one by one, a dead lamp dark, indoors, the curse moods) |
 | 20 | Every walkable area is the same frame | `check-design.mjs` (an area that sets its own frame width or view height, or skips `/css/world-frame.css`, fails) |
 | 21 | An area's state is drawn onto named props; light stays soft; frame stacks hide with `[hidden]` | the town walk (`tests/town-life.spec.mjs`: dark lamps counted by `display`, the band's look asserted per band) |
 | 21 | Motion is `transform` and `opacity`; a glow is a static filter under an opacity pulse | `check-design.mjs` (any `@keyframes` animating a non-composited property fails) |
@@ -1465,7 +1466,7 @@ Ghost Writer plan: every quest letter is blue, black always means M.
 - **Your reply sits UNDER what you answer**, and wraps: a reply is a sentence, a content card, not a button label.
 - **What the night brings is only for the player in the chapter** (the Ghost Writer, the Mayor's lit window, the statue's
   water): drawn in the quest's own layer and gone at its next render. ⚠️ **A LIGHT GOES ON THE VIEW, OVER THE DARK**: the
-  town's night is a scrim on the view (`.tw-night`), so anything lit inside the world comes out grey under it. The lights
+  town's night is the world's light layer on the view (`.wn`, §56), so anything lit inside the world comes out grey under it. The lights
   (`.bwq-light`, `mix-blend-mode: screen`) are pinned to world points every frame; a light laid over a face washes it
   white, so a light on a character is a HALO with a clear middle.
 - **What the camera cannot show, the card shows**: at the hall on a phone the statue is off screen, so its water running is
@@ -1762,3 +1763,45 @@ sprites"*.
 - **Enforced by** `tools/check-litter.mjs` (check-all, the Stop hook and CI): every sprite the town's problems, the town's
   flyers and the park drop as rubbish is read from the code that draws it and must have colour in it (mean saturation of
   its lit pixels at least 0.22; the grey flyers were 0.16–0.18, a cardboard box is 0.27). It proves it bites every run.
+
+## §56 THE NIGHT IS ONE LAYER, AND THE LIGHTS ARE THE AREA'S (2 Oct 2026, Trym on cozy lighting)
+
+Trym, 2 Oct 2026: *"maybe nights and weather is something that should be on the world layer - except for 'inside' areas
+like inside stores, cabins, tents, houses, and the rave"*, then *"isnt this an opportunity to really make cozy lighting?
+that lamps and bonfires, streetlights, windows, decorations and all this actually makes the night light a bit up - this
+is core cozy"*, and *"i think night should be longer … a minute or two longer"*.
+
+- **One clock.** `skyAt()` in `src/lib/world.js` turns the town's twelve-minute day (24 town hours of 30 s) into how dark
+  the sky is: the sun sets 16→18, night runs 18→2, it rises 2→4, day is 4→16 — about as much night as day, the ghosts'
+  two minutes (beat 5, 20→24) in the middle of it. **`SKY_HOURS` is the one table**: tune the night there and every
+  area's sky, lamps and nightfall clock follow. The town's day length (`TOWN_DAY_MS`) is a mechanic — what a night costs
+  the town per hour — and is not tuned for looks.
+- **One layer, on the VIEW.** `src/scripts/world-night.js` `mountNight(view, { lights, hour, mood })` hangs two canvases on
+  the view at z 7 (under the rain at 8 and the HUD at 9): a **light map** multiplied over the scene — the night's colour
+  where nothing shines, warm light added around every lamp, window and fire in six stepped rings with dithered edges,
+  one art pixel to a cell — and a small **bloom** screened over each flame and pane. It refuses a transformed host.
+  ⚠️ A dark sheet with holes cut in it was the first try (the mock): it read as grey fog around torch beams.
+- **A light is as strong as the sky is dark.** At full strength in the dusk every pool was a bright green ring on the
+  grass; the layer scales light by the darkness, so lamps fade in as the sun goes.
+- **The area says where its lights are**, in view px, every time it is asked: a street lamp lights the GROUND under it
+  (a flat pool at the post's foot) and its glass gets only a small bloom; a lit window is a pane and a short spill (a
+  big spill washes a wall white); a fire breathes, a faulty lamp catches (`flicker`). Lamps come on **one by one**
+  through the dusk and go out one by one at dawn (`litAt(dark, k)`).
+- **Every banana carries a little light**, yours and everybody else's — you can see your plot and the players around you.
+- **One door.** `weather.link(night)`: stepping inside hides rain and night together. Two switches are how rain once fell
+  in the store. Inside a room, a shop, a cabin, a tent, a house or the rave there is no night.
+- **An area's own sky is a MOOD, never a second sheet.** The town's Curse Nights, haunted nights and omens hand the layer
+  a colour and a floor (`town-room.js skyMood`); a mood is never lighter than the clock — a quiet curse at midnight is
+  still midnight.
+- **Enforced by** `tools/check-design.mjs` §56 — a second copy of the town day (`720000`) outside world.js, a `.tw-night`
+  sheet, a night not linked to its weather, or one hung on the world, fail (each proven on a bite file) — and
+  `tests/world-night.spec.mjs`, which walks the town on a phone through day, sunset, night before and after the ghosts
+  and sunrise: no layer by day, lamps lighting one by one (it fails with all lamps switching together), every working
+  lamp lit at night and no light at a dead one, the clock counting to nightfall and to the morning, the arcade dark-free,
+  and a curse's sky darker than the clock's.
+
+### Adding the night to an area
+
+1. `const night = weather.link(mountNight(view, { lights: () => [...] }))` beside the weather, and `.tick(now)` from the loop.
+2. Hand it the area's lights in view px (world px × the area's scale, minus its camera), and your banana's.
+3. Interiors need nothing more: the weather's `indoors()` hides the night too.

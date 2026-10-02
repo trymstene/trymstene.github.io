@@ -151,6 +151,21 @@ for (const f of files) {
     }
   }
 
+  // 🌗 §56 — THE NIGHT IS ONE LAYER (2 Oct 2026). Trym: "maybe nights and weather is something that should be on the world
+  // layer". src/scripts/world-night.js draws it from world.js skyAt(); an area hands it lights and links it to the weather.
+  if ((rel.startsWith('src/scripts/') || rel.startsWith('src/pages/') || rel.startsWith('src/lib/')) && rel !== 'src/lib/world.js') {
+    // one clock: the town's day length lives in world.js (TOWN_DAY_MS), never in a second copy that can drift from it
+    if (/\b720000\b/.test(code)) problems.push([rel, 'carries its own copy of the town day (720000) — read TOWN_DAY_MS / TOWN_HOUR_MS / skyAt from src/lib/world.js, see design library §56']);
+    // no sheet of its own: the town's old .tw-night scrim is the bug class this layer replaced
+    if (/tw-night/.test(code)) problems.push([rel, 'draws its own night sheet (.tw-night) — the night is the shared light layer (mountNight), see design library §56']);
+  }
+  if (rel.startsWith('src/scripts/') && rel !== 'src/scripts/world-night.js' && /\bmountNight\(/.test(code)) {
+    // one door: linked to the weather, so stepping inside hides rain and night together (two switches let rain into the store)
+    if (!/\.link\(\s*(?:\w+\.)?mountNight\(/.test(code)) problems.push([rel, 'mounts the night without linking it to its weather (weather.link(mountNight(...))) — one door must hide both, see design library §56']);
+    // on the VIEW, never the panning world (the weather's rule)
+    if (/mountNight\(\s*world\b/.test(code)) problems.push([rel, 'hangs the night on the panning world — mount it on the VIEW, see design library §19 and §56']);
+  }
+
   // 📐 a walkable area wears the world's frame, never its own — design library §20
   if (WORLD_PAGES.includes(rel)) {
     // ⚠️ the LINK, not the path: the wrap rule's own comment names the file, so a

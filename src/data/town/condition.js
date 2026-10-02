@@ -69,11 +69,8 @@ export const WAVES = 4;
 // shelf it already has (stock.js: nothing at Abandoned, the basics from Struggling up), so the front
 // finally SHOWS what the data has always said. A player's own locks are a different look entirely
 // (docs/town-jobs-plan.md §1: the shutter is the town's, the key is yours).
-// the sky: the town's own twelve-minute day dims at evening and night so the lamps and
-// the windows mean something; a Curse Night is darker than any night
-// ⚠️ a deep night also brings the storm, whose own scrim (weather.css, 0.40) stacks on this one:
-// 0.62 here read as a black screen (14 Sep). Dark enough to change the town, light enough to see it.
-export const NIGHT = { evening: 0.2, night: 0.5, hush: 0.3, curse: 0.5 };   // a hush is cosmetic: dusk, not midnight; each a step darker 15 Sep (Trym)
+// the sky is the WORLD'S now (2 Oct 2026): src/scripts/world-night.js draws it from world.js skyAt(), and a Curse Night's
+// colour is town-room.js skyMood() — the old NIGHT opacities lived here
 
 // where visitors stand about (feet, world px), facing into the square
 export const VISITOR_SPOTS = [[1010, 905], [1190, 905], [900, 1000], [1310, 1000], [1600, 1200]];

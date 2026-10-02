@@ -32,11 +32,11 @@
 // element hides and a warm window glows. The Mayor is never seen; a light in the hall's upper window
 // in the evening is all of him.
 import { drawComposite } from '../lib/banana-engine.js';
-import { poofInto, burstInto } from '../lib/world.js';
+import { poofInto, burstInto, TOWN_DAY_MS, TOWN_HOUR_MS } from '../lib/world.js';
 import { passStat, passRaw, statTotal } from '../lib/banana-pass.js';
 
 // ---- the clock
-const DAY_MS = 720000, HOUR_MS = 30000;   // a town day is twelve real minutes: six beats of two
+const DAY_MS = TOWN_DAY_MS, HOUR_MS = TOWN_HOUR_MS;   // a town day is twelve real minutes: six beats of two (world.js keeps the one clock)
 const BEATS = ['dawn', 'morning', 'noon', 'afternoon', 'evening', 'night'];
 let setHour = null, setAt = 0;   // QA: a pinned hour that keeps running from the moment it was set
 const townMs = () => setHour == null ? Date.now() % DAY_MS : (setHour * HOUR_MS + (performance.now() - setAt)) % DAY_MS;
@@ -721,6 +721,8 @@ export function initLife({ world, W, H, pct }) {
   COPY_P.then((COPY) => applyCopy(res, COPY)).catch((e) => console.error('town-life: the words did not load', e));
   const errands = (m) => { E = m; EX = { res, route, poof, hourNow, beat: () => curBeat }; };
   return { tick, at, talk, standBy, pick, pickAt, flyer, sweep, start, seam, errands, setKeep, setGlow, setOverride, nudge, setLitter, setRoom, route, beat: () => curBeat, homeOf: (key) => { const n = byKey(key); return n ? HOME[n.home] : null; },
+    // 🌗 every window lit right now, in world px — the night layer lays its light on them (world-night.js, §56)
+    glowSpots: () => { const out = res.filter((n) => n.glow && !n.glow.hidden).map((n) => n.glowAt); if (mayorEl && !mayorEl.hidden) out.push(MAYOR); return out; },
     keeperIn: (home) => res.some((n) => n.inside && n.home === home),   // 🧾 is the one who keeps this room in it right now (the greeting)
     look: (key) => { const n = byKey(key); return n && n.name ? { name: n.name, outfit: n.outfit } : null; },   // 📋 a face and a name for a card (the order board)
     // 🤝 the place a resident is standing at, settled — not walking, not on an errand, not indoors — or '' (banana-town.js KEEP)

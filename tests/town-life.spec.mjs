@@ -300,11 +300,12 @@ test('a Curse Night: dark sky, everyone in, ghosts and the vendor — and it end
   // over, calls leaveCurse(), which clears the sky, the ghosts, the vendor AND the storm — and a fixed
   // 1500 ms was enough alone and not enough with a second worker on the machine. Same bug as the
   // lock walk, same fix: wait for the thing itself.
-  await page.waitForFunction((sb) => window.__town.room.night() === 0
+  // 🌗 the sky back is the CLOCK's sky (world-night.js, §56): no curse mood on it — at dawn the clock's own sky is not 0
+  await page.waitForFunction((sb) => (window.__town.sky() || {}).mood === null
     && window.__town.room.ghosts().length === 0
     && !window.__town.room.vendor()
     && !!document.querySelector('.wx.is-storm') === sb, stormBefore, { timeout: 15000 });
-  expect(await room(page, 'night')).toBe(0);
+  expect(await page.evaluate(() => (window.__town.sky() || {}).mood), 'the curse’s colour is off the sky').toBeNull();
   expect((await room(page, 'ghosts')).length).toBe(0);
   expect(await room(page, 'vendor')).toBe(false);
   expect((await seam(page, () => window.__town.life.kept())).length).toBe(kept0);

@@ -122,7 +122,7 @@
 }
 .bwq-water.is-dry { opacity:0; }
 @keyframes bwqWater { to { background-position-x:100%; } }
-/* 🏮 THE LIGHTS OF THE LAST NIGHT — on the VIEW, over the town's own dark (.tw-night, z 7, earlier in the view), because
+/* 🏮 THE LIGHTS OF THE LAST NIGHT — on the VIEW, over the world's night layer (.wn, z 7, earlier in the view, §56), because
    anything lit inside the world is under that dark and came out grey. quest-c2-fx.js night() pins each one to a world
    point every frame; --s is the world's scale. `screen` only ever adds light: it never paints a colour on top. */
 .bwq-lights { position:absolute; inset:0; z-index:7; pointer-events:none; overflow:hidden; animation:bwqLightsIn 2.4s ease both; }

@@ -314,7 +314,7 @@ const townFaq = faqLd(G.faq.items);
        town-room.js owns every element here; nothing below is markup in this page. */
     /* the sky: the town's own evening and night, and a Curse Night darker than either. On the
        VIEW like the rain (design library §19), under the rain sheet (z 8) and over the map. */
-    .tw-night { position: absolute; inset: 0; z-index: 7; background: #0a1024; opacity: 0; pointer-events: none; transition: opacity 3s ease; }
+    /* 🌗 the night is the world's light layer now (src/scripts/world-night.js, two canvases on #twView at z 7) — §56 */
     /* a state sprite: frames stacked in one box like the fountain, but stepped by the room's own
        clock (a lamp pulses at 3 a second, a ghost floats at 6, a stutter is irregular — one
        keyframe per frame count would be a keyframe per sprite). is-flip mirrors the east lamps. */

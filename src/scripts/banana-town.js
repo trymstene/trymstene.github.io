@@ -581,6 +581,38 @@ function float(x, y, node) {
 // #twView, never #twWorld, which the camera translates every frame.
 const weather = mountWeather(view);
 
+// ---- 🌗 THE NIGHT (2 Oct 2026, design library §56). The world's light layer, on the view beside the weather and LINKED to
+// it, so one door hides rain and night together. It reads the town's own clock (life's hour, which the QA seam can pin) and
+// the room's mood (a Curse Night's colour, a haunted night's, an omen's), and this file hands it every light the square
+// has, in view px: the room's lamps, ghosts, cursed things and candles, the residents' lit windows, your banana and
+// everybody else's. Sizes are world px, scaled on the way out; the warm colours are the ones the 2 Oct mock settled on.
+const LIGHT = {
+  lamp: { r: 170, c: [255, 168, 84], i: 0.95, sq: 1.6 },          // the pool on the cobbles under a street lamp
+  glass: { r: 38, c: [255, 168, 84], i: 0.35, bloom: 0.75 },      // …and the lamp's glass itself
+  window: { r: 50, c: [255, 176, 86], i: 0.7, bloom: 0.45, sq: 1.1 },
+  ghost: { r: 64, c: [150, 110, 230], i: 0.45, bloom: 0.3 },
+  cursed: { r: 58, c: [168, 96, 230], i: 0.4, bloom: 0.25 },
+  candle: { r: 66, c: [255, 150, 70], i: 0.7, bloom: 0.5 },
+  me: { r: 58, c: [235, 196, 150], i: 0.4 },                       // a banana carries a little light of its own
+  peer: { r: 50, c: [235, 196, 150], i: 0.32 },
+};
+function townLights() {
+  if (inRoom) return [];
+  const out = [];
+  const put = (kind, x, y, fl) => { const L = LIGHT[kind]; if (L) out.push({ ...L, x: x * scale - camX, y: y * scale - camY, r: L.r * scale, flicker: fl || '' }); };
+  if (room && room.lightSources) for (const q of room.lightSources()) put(q.kind, q.x, q.y, q.flicker);
+  for (const g of life.glowSpots()) put('window', g[0], g[1]);
+  put('me', pos.x, pos.y - 30);
+  if (crowd) for (const o of crowd.others()) if (o && Number.isFinite(o.x) && Number.isFinite(o.y)) put('peer', o.x, o.y - 30);
+  return out;
+}
+// ⚡ its own chunk, fetched as the square stands: nothing on the first frame needs it, and the town's script is at its line
+let night = null;
+import('./world-night.js').then((m) => {
+  night = weather.link(m.mountNight(view, { hour: () => life.seam.hour(), mood: () => (room && room.skyMood ? room.skyMood() : null), lights: townLights }));
+}).catch((e) => console.warn('[town] the night did not load', e));
+const sky = { level: () => (night ? night.level() : 0) };   // what the room reads (its lamps), before and after the chunk lands
+
 // ---- the loop
 let last = performance.now(), leaving = false;
 function tick(now) {
@@ -630,6 +662,7 @@ function tick(now) {
   life.tick(now, dt);
   if (crowd) crowd.tick(now);   // 👥 the other players' frames, and my own position out to them
   weather.tick(now);
+  if (night) night.tick(now);
   if (room) room.tick(now, dt);
   if (room && inRoom === 'condo' && room.sweepAt) room.sweepAt(pos.x, pos.y);   // 🕹 walking onto arcade litter sweeps it (staff only)
   if (work) work.tick(now);
@@ -1202,7 +1235,7 @@ assetsReady().then(() => {
   track('town_open', { test: /[?&]towntest/.test(location.search) ? 1 : 0 });
   // 🏘️ Town Life, once the square stands: the room's word on the town, then everything it changes
   import('./town-room.js').then((m) => {
-    room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
+    room = m.bootTownLife({ world, view, W, H, pct, PROPS, life, weather, sky, say, float, openCard, closeCard, cardBody, card, panel, pos, tgt,   // 🍋 tgt: a step round the back of the stand's table takes the walk with it
       hud, esc, track: roomTrack, hush, sayNext, inside: () => !!inRoom, inRoom: () => inRoom, enterRoom,
       setSlow: (v) => { slowRoom = +v > 0 ? +v : 1; },
       questClaim,   // 🕯 who the chapter holds where right now ('nib:fountain' while chapter one's first scene is open)
@@ -1279,7 +1312,8 @@ assetsReady().then(() => {
     try { qdone = [localStorage.getItem('bwq-c1'), localStorage.getItem('bwq-c2')].every((v) => (JSON.parse(v || 'null') || {}).done); } catch (e) {}
     if (!qdone) import('../lib/world-quest.js').then((m) => m.bootQuest()).catch((e) => { console.warn('[town] the chapter did not load', e); });
   }).catch((e) => { console.warn('[town] life did not load', e); });
-  window.__town = { wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c, art: (customArt(ME_DRAW.c) || []).length }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
+  window.__town = { sky: () => (night ? night.state() : null),   // 🌗 the night layer: how dark, which stretch, the mood, how many lights it drew
+    wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c, art: (customArt(ME_DRAW.c) || []).length }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
     pos, tgt, SPOTS, ABOUT, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them

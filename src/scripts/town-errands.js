@@ -13,11 +13,13 @@
 //
 // ⚠️ EVERY SPOT WAS DRAWN ON THE BAKED PLATE before it went in: a resident stands ~46 × 86 on the point, and it must be open
 // ground. The Hall Street lamps stand hard against the Exchange and Wheel stalls, so no errand goes to them.
+import { TOWN_DAY_MS, TOWN_HOUR_MS } from '../lib/world.js';
+
 const CAP = 3;
 const AFTER = [9000, 50000];   // from reaching their post to setting off: min + spread
 const PAUSE = [2600, 3400];    // how long they stay at the far end: min + spread
 const ACTS = new Set(['counter', 'stand', 'water']);
-const DAY_MS = 720000, HOUR_MS = 30000, WALK = 110;   // town-life.js's own clock and pace
+const DAY_MS = TOWN_DAY_MS, HOUR_MS = TOWN_HOUR_MS, WALK = 110;   // the town's clock (world.js) and town-life.js's pace
 // the far ends: the life module's doors (HOME) and stations (ST), named beside each
 export const SPOTS = {
   stamp: [[1100, 590], [154, 590], [480, 592], [1620, 1068], [1770, 1068], [480, 1068]],   // doors: hall, clothes, arcade, print, café, store

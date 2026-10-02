@@ -1,3 +1,6 @@
+// ⚠️ STALE NUMBERS (noted 2 Oct 2026): this proof predates the 23 Sep retune — it still expects 10 a night and a floor of 60,
+// where the TownRoom now takes 15 a night at 2 a wreck down to 45 (a haunted night 25, down to 20). The live, in-process
+// proof of those numbers is worker-rave/test/town-nights.test.mjs; bring this one up to it before running it again.
 // 👻🔬 THE GHOSTS' DAMAGE, PROVEN ON A REAL WORKER (21 Sep 2026).
 //
 // Trym sat by the fountain through a night and the meter did not move: the town's own night is

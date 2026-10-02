@@ -488,15 +488,17 @@ export function curseBetween(from, to) {
 }
 
 // 🌃 THE TOWN'S OWN NIGHT — the last beat of its twelve-minute day, as a pure function of time. The
-// square keeps this clock itself (town-life.js: DAY_MS 720000, six beats of two minutes, beat 5 is
-// night); the TownRoom needs the same answer so it takes a ghost's damage only while ghosts are out.
-// ⚠️ the numbers are town-life.js's — change them there and here, or the room refuses every night.
+// day is 24 town hours of 30 real seconds, six beats of four hours (town-life.js reads these, never its
+// own copy); beat 5 is the ghosts' night, and the TownRoom needs the same answer so it takes a ghost's
+// damage only while ghosts are out.
 export const TOWN_DAY_MS = 720000;
+export const TOWN_HOUR_MS = 30000;
+export const TOWN_NIGHT_FROM = 600000;   // beat 5 starts here: hour 20
 export function townNightAt(t) {
   const inDay = t % TOWN_DAY_MS;
   // the night runs 600000–720000; a report lands a moment after the thing it reports, so the first
   // half-minute of dawn still counts as the night just gone
-  return inDay >= 600000 || inDay < 30000;
+  return inDay >= TOWN_NIGHT_FROM || inDay < 30000;
 }
 // the night a moment belongs to: the last beat of a twelve-minute day, plus the half-minute of dawn after it
 export const townNightIdx = (t) => Math.floor((t - 30000) / TOWN_DAY_MS);
@@ -517,3 +519,23 @@ export const townHauntAt = (t) => townNightAt(t) && townHaunted(townNightIdx(t))
 export const TOWN_BIG_SALT = 0x3c55;
 export const townBig = (idx) => townHaunted(idx) && seedRand(TOWN_BIG_SALT + idx * 7919) < 0.5;
 export const townBigAt = (t) => townNightAt(t) && townBig(townNightIdx(t));
+
+// 🌗 THE WORLD'S SKY (2 Oct 2026) — the town's twelve-minute day, promoted to every outdoor area (design library §56).
+// Trym: "maybe nights and weather is something that should be on the world layer" … "i think night should be longer …
+// a minute or two longer". In town hours: the sun sets 16→18, night runs 18→2 (four real minutes, the ghosts' beat
+// 20→24 in the middle of it), the sun rises 2→4, and day is 4→16 (six). Outside the CLOCK block: the rooms charge
+// nothing by it. ONE TABLE — change an hour here and every area's sky, lamps and nightfall clock follow.
+export const SKY_HOURS = { set: [16, 18], rise: [2, 4] };
+export const townHourAt = (t) => (t % TOWN_DAY_MS) / TOWN_HOUR_MS;
+const smooth = (x) => x * x * (3 - 2 * x);
+// how dark the sky is at a town hour, 0 (day) to 1 (night), and which stretch of the day it is
+export function skyAt(h) {
+  const [s0, s1] = SKY_HOURS.set, [r0, r1] = SKY_HOURS.rise;
+  if (h >= s0 && h < s1) return { dark: smooth((h - s0) / (s1 - s0)), phase: 'dusk' };
+  if (h >= r0 && h < r1) return { dark: 1 - smooth((h - r0) / (r1 - r0)), phase: 'dawn' };
+  if (h >= s1 || h < r0) return { dark: 1, phase: 'night' };
+  return { dark: 0, phase: 'day' };
+}
+// 💡 the moment a light comes on (and goes out again at dawn): k in [0, 1) spreads a row of lamps across the dusk, so they
+// light one by one instead of all on one frame
+export const litAt = (dark, k) => dark > 0.18 + 0.3 * k;
