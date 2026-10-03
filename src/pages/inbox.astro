@@ -1881,12 +1881,14 @@ const description = 'Authorized banana personnel only.';
       try {
         put('bmWorldShop', '…');
         const h = await fetch('https://banana-sticker.trymstene.workers.dev/health?buyable=1').then((x) => x.json());
-        const entries = h.buyable && typeof h.buyable === 'object' ? Object.values(h.buyable) : null;
-        const bad = entries ? entries.some((p2) => ['verdict', 'published', 'channels']
-          .some((k) => String((p2 || {})[k] || '').includes('❌'))) : null;
-        el('bmWorldShop').textContent = bad === null ? '?' : bad ? '✗ CHECK IT' : '✓ yes';
-        el('bmWorldShop').style.color = bad ? 'var(--hot2)' : '';
-        if (hq) hq.probe(bad === null ? '?' : bad ? 'bad' : 'ok');
+        const entries = h.buyable && typeof h.buyable === 'object' ? Object.entries(h.buyable) : null;
+        // ✗ only what stops a sale: a ❌ verdict (blocked variants, or a builder product's own cart test), or a live product off
+        // the Headless channel the site sells through. A draft or an archived product was retired on purpose, and `published`
+        // is the Online Store's channel, not the site's: those three kept the card on CHECK IT for weeks (3 Oct 2026)
+        const bad = entries ? entries.map(([k, p2]) => { const v = String((p2 || {}).verdict || ''); return v.includes('❌') ? k + ': ' + v.replace('❌', '').trim() : /^ok/.test(v) && !/Headless/.test((p2 || {}).channels || '') ? k + ': not on the Headless channel' : ''; }).filter(Boolean) : null;
+        el('bmWorldShop').textContent = bad === null ? '?' : bad.length ? '✗ CHECK IT' : '✓ yes';
+        el('bmWorldShop').style.color = bad && bad.length ? 'var(--hot2)' : '';
+        if (hq) hq.probe(bad === null ? '?' : bad.length ? 'bad' : 'ok', bad && bad.join(' · '));
       } catch (e) { put('bmWorldShop', '?'); if (hq) hq.probe('?'); }
       mailBadge();
       revBadge();

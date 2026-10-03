@@ -198,7 +198,14 @@ async function openPage(width, height, opts = {}) {
     if (u.pathname === '/gallery/overrides') return json(route, {});
     return json(route, []);
   });
-  await page.route('https://banana-sticker.trymstene.workers.dev/**', (route) => json(route, { buyable: {} }));
+  // 🛒 the shop's health, shaped like the live report of 3 Oct 2026: a retired draft, an archived product and a live one off the
+  // Online Store (but on Headless, the site's channel) all read "✓ yes" — the card said CHECK IT for weeks over exactly these
+  const NOT_SOLD = { published: '❌ NOT PUBLISHED', channels: '❌ NO CHANNELS' };
+  await page.route('https://banana-sticker.trymstene.workers.dev/**', (route) => json(route, { buyable: {
+    'custom-banana-tee': { verdict: 'ok (1)', published: 'yes', channels: 'Online Store | Dancing Banana Official Headless' },
+    'custom-banana-mug': { verdict: 'ok (1)', published: '❌ NOT PUBLISHED', channels: 'Dancing Banana Official Headless' },
+    'tee-retired': { verdict: 'status DRAFT', ...NOT_SOLD }, 'custom-banana-magnet': { verdict: 'status ARCHIVED', ...NOT_SOLD },
+  }, shipping: { tee: 'ok charged 5.09 USD', mug: 'ok charged 5.09 USD' } }));
   await page.route('https://api.github.com/**', (route) => json(route, { workflow_runs: [] }));
   await page.route(/googletagmanager|google-analytics|connect\.facebook|fonts\.g/, (route) => route.abort());
   await page.goto('http://localhost:4398/inbox/', { waitUntil: 'domcontentloaded' });
@@ -228,9 +235,9 @@ async function walkFloor(page, f, name) {
   for (const f of FLOORS) T[f] = await walkFloor(page, f, 'desk');
   out.floors.now = { missing: missing(T.now, ['on the site now', 'in Banana World now', 'Pages open now', 'Cities', 'In Banana World now', 'Status board', 'Doors', 'tap a dot', 'took a door into Banana World']) };
   out.floors.visitors = { missing: missing(T.visitors, ['Visits in this window', 'visits', 'visitors', 'first-time visitors', 'Which pages they read', 'The GIF page', 'Where they came from', 'Where visitors were', 'What they did', 'visitors by country', 'took a door into Banana World']) };
-  out.floors.business = { missing: missing(T.business, ['Checkout works?', 'Money, as Google counts it', 'Free files', 'pack cards shown', 'tap rate', 'Files per day', 'Downloads by page', 'Downloads by country', 'The pack card', 'Which headline works', 'From a custom banana to an order', 'From the shop to a purchase', 'Where product clicks come from', 'Out to the Etsy shop',
+  out.floors.business = { missing: missing(T.business, ['Checkout works?', '✓ yes', 'the cart accepts every product', 'Money, as Google counts it', 'Free files', 'pack cards shown', 'tap rate', 'Files per day', 'Downloads by page', 'Downloads by country', 'The pack card', 'Which headline works', 'From a custom banana to an order', 'From the shop to a purchase', 'Where product clicks come from', 'Out to the Etsy shop',
       'The Etsy shop', 'Etsy orders', 'Twitch Stream Pack', 'Views and hearts count from']),
-    oldWords: found(T.business, ['The download business', 'old asks', 'take rate', 'Every surface that hands', 'Custom banana funnel', 'Official merch funnel']) };
+    oldWords: found(T.business, ['The download business', 'CHECK IT', 'old asks', 'take rate', 'Every surface that hands', 'Custom banana funnel', 'Official merch funnel']) };
   out.floors.players = { missing: missing(T.players, ['Passes and who is active', 'Growing?', 'Coming back?', 'From a pass to a kept pass', 'Login links', 'not saved', 'Every pass', 'Kiwi', 'Names on the floor', 'Find a pass by email']) };
   out.floors.world = { missing: missing(T.world, ['Each place, one question', 'The rave', 'Banana Town', 'Waves', 'WAVE BACK', 'Nib’s present', 'COME BACK to open it', 'bananas here now', 'The shops inside', 'The homesteads', 'Neighbours', 'The Arcade boards', 'Kiwi leads with 31', 'The economy', 'coins by place', 'coins by source', 'the wishing fountain', 'the park', 'Refusals', 'the daily cap', 'a test grant', 'test coins', 'Every homestead',
       'The post office', 'pen pals', 'of 31 pairs wrote both ways', 'the biggest circle', 'how the letters sound', '79% warm', 'At the door: 3 stopped for their words',

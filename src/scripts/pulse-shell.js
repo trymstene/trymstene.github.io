@@ -413,7 +413,7 @@ export function mountHQ(hosts, io) {
   return {
     show, paint, openAnalyst,
     counts(c) { S.counts = { ...S.counts, ...(c || {}) }; if (S.floor === 'world') paint(); },
-    probe(v) { S.probe = v; if (S.floor === 'business') paint(); },
+    probe(v, what) { S.probe = v; S.probeWhat = what || ''; if (S.floor === 'business') paint(); },
     keyChanged() {
       S.roll = null; S.rollErr = false; S.rollBusy = false; loadRoll(); loadLetters();
       S.postAsked = S.floor === 'world'; postTries = 0;

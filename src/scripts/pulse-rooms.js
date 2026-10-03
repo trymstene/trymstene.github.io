@@ -320,6 +320,7 @@ export function renderBusiness(into, S, probe) {
   const gp = div('hqp-tiles', null, s);
   tile(gp, 'checkout', probe === null || probe === undefined ? '…' : probe === 'ok' ? '✓ yes' : probe === 'bad' ? '✗ CHECK IT' : '?',
     probe === 'bad' ? 'a product refuses to sell' : 'the cart accepts every product', probe === 'ok' ? 'ok' : probe === 'bad' ? 'warn' : '');
+  if (probe === 'bad' && S.probeWhat) div('hqp-cap', S.probeWhat, s);   // which one, and why: the tile's small line is cut short
   if (!R) { div('hqp-empty', 'reading Google’s report…', into); return; }
   const k = R.kpis || {};
 
