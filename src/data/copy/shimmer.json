@@ -9,12 +9,32 @@
   "dust": "+{n} stardust",
   "map": {
     "title": "STAR MAP",
+    "level": "Shimmer {n}",
+    "nextStar": "{xp} XP to the next star",
     "toPlace": "{n} stars to place",
     "none": "no stars to place",
     "place": "Place a star",
     "next": "Next at star {at}: {perk}",
     "full": "Every star in it is placed",
-    "north": "The North Star lights when all six are full"
+    "north": "The North Star lights when all six are full",
+    "nextAt": "Next at star {at}",
+    "star": "Star {n}",
+    "all": "All perks",
+    "back": "The sky",
+    "see": "See it",
+    "pick": "Pick one of two",
+    "picked": "Your pick",
+    "litNote": "Yours"
+  },
+  "kinds": {
+    "daily": "every day",
+    "lucky": "a lucky chance",
+    "streak": "in a row",
+    "shared": "with others",
+    "comfort": "easier",
+    "always": "always on",
+    "shine": "just for looks",
+    "capstone": "the top star"
   },
   "constellations": [
     { "key": "can", "name": "The Watering Can", "area": "the park garden" },

@@ -1898,6 +1898,16 @@ the flag). The bench earns and saves nothing.
   star, a sweep) rises into a pane over the night once it shows, the marks layer's rule for words (§56); the pane copies the
   world's own size and transform every frame, so a world point, a size and a flight all hold. Things (a flower, a crop, a
   drop) stay in the world, night and all; the bloom trail's flowers rise into the light at night (starlit, a soft rim).
+- **⭐ The loop is XP, said everywhere** (Trym, on the first bench: *"wheres the Shimmer XP progression? you want ongoing
+  XP points for Shimmer, not a handful of stars you collect here and there?"*). After 99 XP keeps flowing, into the pill's
+  own blue Shimmer bar (the old yellow bar is gone, or the pill reads as a count of stars); each fill is the next Shimmer
+  level, and **every level is one star to place**, so your stars are always your Shimmer level. The map says it under its
+  heading: "Shimmer 39", the bar, "1,465 XP to the next star". A falling star gives STARDUST, never a map star.
+- **💬 A perk is said by what it does** (Trym: *"no user understands what a skill / perc is by just reading a perk-name they
+  havent heard of before"*). Wherever the map names a perk it shows its kind (a pixel icon and a word a player knows:
+  every day, a lucky chance, in a row, with others, easier, always on, just for looks, the top star) and its line: the
+  next perk under the chosen constellation, every perk in its "All perks" list (yours lit, the next marked, the rest dim),
+  and both sides of a choice. A perk is never named alone. On the bench, "See it" plays it on your banana.
 - **Sizes in screen px.** Every size and reach in the world is given in screen px and turned into the area's own world px
   (`sp()`): the town shrinks its world to fit a phone and the park magnifies it, and a star must look the same in both.
 - **The Star Map:** forty stars per constellation TRACE its figure (a watering can, a disco ball, a barn, a fish, a clock

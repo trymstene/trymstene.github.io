@@ -4,7 +4,26 @@
 // perk star, and the one that lights it lights the perk. Nothing here saves: it is the look, played on the bench.
 import { WORDS as W, perkWords, starSrc, play, still, tag, els } from './shimmer-fx.js';
 import { fillWords } from './fill-words.js';
-import { LADDER, ORDER, STARS_EACH } from '../data/shimmer.js';
+import { LADDER, ORDER, STARS_EACH, KIND } from '../data/shimmer.js';
+// ⚠️ the icons come through pixel-icons.js, the chunk every script already shares: an icon imported here on its own was SPLIT
+// into a chunk of its own beside the player code that also uses it, and the bench cost players 1.4 KB (3 Oct 2026)
+import { iconSvg } from './pixel-icons.js';
+
+// 💬 A PERK IS SAID BY WHAT IT DOES (Trym, 3 Oct 2026: "no user understands what a skill / perc is by just reading a perk-name
+// they havent heard of before"). Wherever the map names a perk it shows its kind (an icon and a word a player knows) and its
+// line: the next one under the chosen constellation, every one in its list, and both sides of a choice.
+const KIND_ICON = { daily: 'sun-solid', lucky: 'star', streak: 'zap', shared: 'users', comfort: 'tools', always: 'reload', shine: 'sparkles', capstone: 'crown-solid' };
+function perkLine(k, see) {
+  const w = perkWords(k), d = document.createElement('div'); d.className = 'sm-pl';
+  const i = document.createElement('i'); i.className = 'sm-ki'; i.innerHTML = iconSvg(KIND_ICON[KIND[k]] || 'star', { size: 14 });
+  const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = w.name;
+  const kd = document.createElement('em'); kd.textContent = (W.kinds && W.kinds[KIND[k]]) || ''; nm.appendChild(kd);
+  const ln = document.createElement('div'); ln.className = 'ln'; ln.textContent = w.line;
+  d.appendChild(i); d.appendChild(nm);
+  if (see) { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-btn sm-see'; b.textContent = W.map.see; b.onclick = see; d.appendChild(b); }
+  d.appendChild(ln);
+  return d;
+}
 
 // each figure as strokes in a 100 × 80 cell; the forty stars are spread evenly along them, stroke by stroke
 const circle = (cx, cy, r, n = 28, from = -Math.PI / 2) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos(from + (i / n) * Math.PI * 2) * r, cy + Math.sin(from + (i / n) * Math.PI * 2) * r]);
@@ -76,12 +95,40 @@ const CSS = `
 .sm-top{display:flex;align-items:baseline;gap:8px;padding-right:26px}
 .sm-top b{font-size:1.02rem;font-weight:900;color:#fff;letter-spacing:.05em}
 .sm-top span{font-size:.7rem;font-weight:800;color:#8fc4ff;white-space:nowrap}
+.sm-prog{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:.66rem;font-weight:800;color:#8fc4ff}
+.sm-prog b{color:#dff0ff;font-weight:900;white-space:nowrap}
+.sm-prog>span:last-child{white-space:nowrap}
+.sm-pbar{flex:1;min-width:40px;height:6px;background:rgba(14,30,66,.95);border:1px solid #000;overflow:hidden}
+.sm-pbar i{display:block;height:100%;width:100%;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,#4f9dff,#dff0ff);transition:transform .3s cubic-bezier(.25,.9,.3,1)}
 .sm-sky{display:block;margin:7px 0 8px;width:100%;border:2px solid #000;image-rendering:pixelated;touch-action:manipulation;cursor:pointer}
-.sm-foot{display:flex;flex-direction:column;gap:7px;padding:8px 9px;background:#fffdf5;color:#241c00;border:2px solid #000;border-radius:3px}
+.sm-foot{display:flex;flex-direction:column;gap:7px;padding:8px 9px;background:#0e1d3d;color:#cfe6ff;border:2px solid #000;border-radius:3px}
+.sm-next{display:flex;flex-direction:column;gap:5px;padding:7px 8px;background:#0b1730;border:2px solid #000;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(127,191,255,.45)}
+.sm-cap{font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#6f93c2}
+.sm-pl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;column-gap:6px;row-gap:1px;align-items:center;min-width:0}
+.sm-pl .sm-ki{display:block;width:14px;height:14px;color:#8fc4ff}
+.sm-pl .sm-ki svg{display:block;width:14px;height:14px}
+.sm-pl .nm{font-size:.78rem;font-weight:900;color:#fff}
+.sm-pl .nm em{font-style:normal;font-weight:800;font-size:.62rem;color:#8fc4ff;margin-left:6px;white-space:nowrap}
+.sm-pl .ln{grid-column:2 / 4;font-size:.7rem;font-weight:700;color:#cfe6ff;line-height:1.3;white-space:normal}
+.sm-pl .sm-see{grid-column:3;grid-row:1;height:22px;padding:0 7px;font-size:.62rem}
+.sm-caprow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sm-caprow .sm-btn{height:22px;padding:0 7px;font-size:.62rem}
+.sm-lbody{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
+.sm-acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.sm-btn{height:28px;padding:0 9px;background:#13254d;color:#dff0ff;border:2px solid #000;box-shadow:2px 2px 0 #000;font:900 .68rem/1 inherit;white-space:nowrap;cursor:pointer}
+.sm-list{display:flex;flex-direction:column;gap:6px;margin:7px 0 0;min-height:0}
+.sm-lhead{display:flex;align-items:center;gap:8px;font-size:.78rem;font-weight:900;color:#fff}
+.sm-li{display:flex;flex-direction:column;gap:5px;padding:7px 8px;background:#0e1d3d;border:2px solid #000;border-radius:3px}
+.sm-li.is-lit{box-shadow:inset 0 0 0 1px rgba(191,227,255,.7)}
+.sm-li.is-next{box-shadow:inset 0 0 0 2px #4f9dff,0 0 10px 1px rgba(80,150,255,.35)}
+.sm-li.is-dim{opacity:.62}
+.sm-li .st{display:flex;align-items:center;gap:6px;font-size:.6rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#6f93c2}
+.sm-li .st b{color:#dff0ff}
+.sm-li .st img{width:12px;height:12px;image-rendering:pixelated}
 .sm-row{display:flex;gap:9px;align-items:center}
 .sm-row .t{flex:1;min-width:0}
-.sm-row .t b{display:block;font-size:.76rem;font-weight:900}
-.sm-row .t span{display:block;font-size:.68rem;font-weight:700;opacity:.78}
+.sm-row .t b{display:block;font-size:.8rem;font-weight:900;color:#fff}
+.sm-row .t span{display:block;font-size:.68rem;font-weight:700;color:#8fb6e6}
 .sm-go{flex:none;height:36px;display:flex;align-items:center;gap:6px;padding:0 11px;background:#111;color:#8fd0ff;border:2px solid #000;box-shadow:2px 2px 0 #000;font:900 .76rem/1 inherit;white-space:nowrap;cursor:pointer}
 .sm-go img{width:14px;height:14px;image-rendering:pixelated}
 .sm-go[disabled]{opacity:.45;cursor:default}
@@ -91,8 +138,8 @@ const CSS = `
 .sm-perk .n{display:flex;align-items:center;gap:6px;font-size:.92rem;font-weight:900;letter-spacing:.03em}
 .sm-perk .n img{width:16px;height:16px;image-rendering:pixelated;filter:drop-shadow(0 0 3px rgba(127,191,255,.9))}
 .sm-perk .l{font-size:.72rem;font-weight:700;color:#cfe6ff;line-height:1.35}
-.sm-pick{display:flex;gap:6px}
-.sm-pick button{flex:1;min-width:0;padding:7px 6px;background:#13254d;color:#dff0ff;border:2px solid #000;box-shadow:2px 2px 0 #000;font:900 .7rem/1.2 inherit;cursor:pointer}
+.sm-choice{display:block;width:100%;text-align:left;white-space:normal;padding:6px 7px;background:#13254d;border:2px solid #000;box-shadow:2px 2px 0 #000;cursor:pointer;font:inherit;min-width:0}
+.sm-perk .sm-pl .ln{font-size:.68rem}
 .sm-fly{position:fixed;left:0;top:0;z-index:99999;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;image-rendering:pixelated;filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px rgba(79,157,255,.9))}
 `;
 let styled = false;
@@ -106,7 +153,7 @@ export function openMap(state, opts = {}) {
   for (const o of view.querySelectorAll(':scope > .sm-veil, :scope > .sm-card')) o.remove();
   const veil = document.createElement('div'); veil.className = 'sm-veil';
   const card = document.createElement('div'); card.className = 'sm-card'; card.setAttribute('role', 'dialog');
-  card.innerHTML = '<button class="sm-x" type="button" aria-label="close">×</button><div class="sm-top"><b></b><span></span></div><div class="sm-skywrap"><canvas class="sm-sky"></canvas></div><div class="sm-foot"></div>';
+  card.innerHTML = '<button class="sm-x" type="button" aria-label="close">×</button><div class="sm-top"><b></b><span></span></div><div class="sm-prog"><b></b><span class="sm-pbar"><i></i></span><span></span></div><div class="sm-skywrap"><canvas class="sm-sky"></canvas></div><div class="sm-foot"></div>';
   view.appendChild(veil); view.appendChild(card);
   // ⚠️ a tap on the map is the map's: it bubbled to the area under it, and the park opened a flower spot behind the card
   for (const el of [veil, card]) for (const t of ['pointerdown', 'pointerup', 'click', 'touchstart']) el.addEventListener(t, (e) => e.stopPropagation());
@@ -115,7 +162,17 @@ export function openMap(state, opts = {}) {
   const cv = card.querySelector('.sm-sky'), foot = card.querySelector('.sm-foot');
   card.querySelector('.sm-top b').textContent = W.map.title;
   const count = () => { card.querySelector('.sm-top span').textContent = state.toPlace > 0 ? fillWords(W.map.toPlace, { n: state.toPlace }) : W.map.none; };
-  count();
+  // ⭐ WHERE THE STARS COME FROM, said on the map itself: your Shimmer level (every level is a star), its XP bar, and how much XP
+  // is left to the next one — Trym read a handful of stars collected here and there before this line was here (3 Oct 2026)
+  const prog = () => {
+    const pr = card.querySelector('.sm-prog'), need = opts.step ? opts.step(state.level) : 0;
+    if (!need || state.level == null) { pr.hidden = true; return; }
+    pr.hidden = false;
+    pr.querySelector('b').textContent = fillWords(W.map.level, { n: state.level });
+    pr.querySelector('.sm-pbar i').style.transform = 'scaleX(' + Math.max(0, Math.min(1, (state.xp || 0) / need)) + ')';
+    pr.lastChild.textContent = fillWords(W.map.nextStar, { xp: Math.max(0, Math.ceil(need - (state.xp || 0))).toLocaleString('en-US') });
+  };
+  count(); prog();
   // the sky's geometry: the North Star on top, then three rows of two
   const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
   const cw = Math.max(240, Math.floor(cv.getBoundingClientRect().width || 300)), top = 32, cellH = 84, ch = top + cellH * 2 + 4;
@@ -188,9 +245,8 @@ export function openMap(state, opts = {}) {
     const row = document.createElement('div'); row.className = 'sm-row';
     const t = document.createElement('div'); t.className = 't';
     const b = document.createElement('b'); b.textContent = (nm ? nm.name : c) + ' · ' + lit + '/' + STARS_EACH;
-    const s = document.createElement('span');
-    s.textContent = nx ? fillWords(W.map.next, { at: nx[0], perk: nx.slice(1).map((k) => perkWords(k).name).join(' / ') }) : W.map.full;
-    t.appendChild(b); t.appendChild(s);
+    const s2 = document.createElement('span'); s2.textContent = nm ? nm.area : '';
+    t.appendChild(b); t.appendChild(s2);
     const go = document.createElement('button'); go.className = 'sm-go'; go.type = 'button';
     const gi = new Image(); gi.src = starSrc('m'); gi.alt = '';
     go.appendChild(gi); go.appendChild(document.createTextNode(W.map.place));
@@ -198,14 +254,61 @@ export function openMap(state, opts = {}) {
     go.onclick = () => place(go);
     row.appendChild(t); row.appendChild(go);
     foot.appendChild(row);
+    // what the next perk star gives, in words a player knows: its kind and its line, not only its name
+    const box = document.createElement('div'); box.className = 'sm-next';
+    const caprow = document.createElement('div'); caprow.className = 'sm-caprow';
+    const cap = document.createElement('div'); cap.className = 'sm-cap';
+    cap.textContent = nx ? fillWords(W.map.nextAt, { at: nx[0] }) + (nx.length > 2 ? ' · ' + W.map.pick : '') : W.map.full;
+    caprow.appendChild(cap); caprow.appendChild(button(W.map.all, () => showList()));
+    box.appendChild(caprow);
+    if (nx) for (const k of nx.slice(1)) box.appendChild(perkLine(k, seeFor(k)));
+    foot.appendChild(box);
   };
+  const button = (label, fn) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-btn'; bt.textContent = label; bt.onclick = fn; return bt; };
+  const seeFor = (k) => (opts.canSee && opts.canSee(k) ? () => { close(); opts.see(k); } : null);
+  // 📜 EVERY PERK OF THE CHOSEN CONSTELLATION, what each does: yours (lit), the next, and the ones still dark
+  let list = null;
+  const showList = () => {
+    const c = ORDER[sel], lit = state.lit[c] || 0, nm = W.constellations.find((q) => q.key === c);
+    const wrap = card.querySelector('.sm-skywrap');
+    const h = wrap.offsetHeight + foot.offsetHeight;
+    wrap.hidden = true; foot.hidden = true;
+    if (list) list.remove();
+    list = document.createElement('div'); list.className = 'sm-list'; list.style.maxHeight = h + 'px';
+    const body = document.createElement('div'); body.className = 'sm-lbody';
+    const head = document.createElement('div'); head.className = 'sm-lhead';
+    head.appendChild(button(W.map.back, hideList));
+    const hn = document.createElement('span'); hn.textContent = (nm ? nm.name : c) + ' · ' + lit + '/' + STARS_EACH; head.appendChild(hn);
+    list.appendChild(head); list.appendChild(body);
+    const nx = nextPerk(c, lit);
+    for (const st of LADDER[c].steps) {
+      const li = document.createElement('div');
+      li.className = 'sm-li ' + (st[0] <= lit ? 'is-lit' : nx && nx[0] === st[0] ? 'is-next' : 'is-dim');
+      const top2 = document.createElement('div'); top2.className = 'st';
+      const si = new Image(); si.src = starSrc(st[0] <= lit ? 'm' : 's'); si.alt = '';
+      const sb = document.createElement('b'); sb.textContent = fillWords(W.map.star, { n: st[0] });
+      top2.appendChild(si); top2.appendChild(sb);
+      if (st[0] <= lit) top2.appendChild(document.createTextNode(' · ' + W.map.litNote));
+      if (st.length > 2) top2.appendChild(document.createTextNode(' · ' + W.map.pick));
+      li.appendChild(top2);
+      for (const k of st.slice(1)) {
+        const pl = perkLine(k, seeFor(k));
+        if (st.length > 2 && state.chosen[c + st[0]] === k) pl.querySelector('.nm em').textContent += ' · ' + W.map.picked;
+        li.appendChild(pl);
+      }
+      body.appendChild(li);
+    }
+    card.appendChild(list);
+    const nextLi = body.querySelector('.is-next'); if (nextLi) body.scrollTop = Math.max(0, nextLi.offsetTop - body.offsetTop - 8);
+  };
+  const hideList = () => { if (list) { list.remove(); list = null; } card.querySelector('.sm-skywrap').hidden = false; foot.hidden = false; paintFoot(); };
   // the perk a star just lit: its name in Shimmer's own type, and what it does; at the 20th, the choice of two
   const perkCard = (keys, onPick) => {
     const d = document.createElement('div'); d.className = 'sm-perk';
-    if (keys.length > 1) {
-      const pick = document.createElement('div'); pick.className = 'sm-pick';
-      for (const k of keys) { const bt = document.createElement('button'); bt.type = 'button'; bt.textContent = perkWords(k).name; bt.onclick = () => onPick(k); pick.appendChild(bt); }
-      d.appendChild(pick);
+    if (keys.length > 1) {   // the choice: both sides, each by what it does, each a button
+      const cap = document.createElement('div'); cap.className = 'sm-cap'; cap.textContent = W.map.pick;
+      d.appendChild(cap);
+      for (const k of keys) { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-choice'; bt.appendChild(perkLine(k)); bt.onclick = () => onPick(k); d.appendChild(bt); }
       return d;
     }
     const w = perkWords(keys[0]);
@@ -249,5 +352,6 @@ export function openMap(state, opts = {}) {
     ], { duration: 700, easing: 'cubic-bezier(.45,0,.4,1)' }).then(landed);
   };
   paintFoot();
-  return { close };
+  // the bench earns XP while the map is open: a level is a new star to place, said at once
+  return { close, refresh() { count(); prog(); const go = foot.querySelector('.sm-go'); if (go) go.disabled = !(state.toPlace > 0) || (state.lit[ORDER[sel]] || 0) >= STARS_EACH; } };
 }

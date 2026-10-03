@@ -13,6 +13,7 @@
 //   always on       the blue part beside "+N XP"
 //   shine           its own effect, every time
 import W from '../data/copy/shimmer.json';
+import WL from '../data/copy/world-level.json';
 import { fillWords } from './fill-words.js';
 import { burst } from './world-burst.js';
 import { bigMoment } from './world-moment.js';
@@ -85,7 +86,11 @@ const CSS = `
 .sh-lvln{display:none}
 .sh-pill .sh-lvln{display:flex;align-items:center;gap:4px;font-weight:900}
 .sh-lvln img{width:13px;height:13px;image-rendering:pixelated;filter:drop-shadow(0 0 3px rgba(127,191,255,.9))}
-.sh-pill .wh__lvlbar i,.sh-pill [data-wh="lvlfill"]{background:linear-gradient(90deg,#4f9dff,#dff0ff)!important}
+.sh-pill .wh__lvlbar,.sh-pill .rv-mixer__lvlbar{display:none!important}
+.sh-bar{display:none}
+.sh-pill .sh-bar{display:block;flex:1 1 34px;min-width:26px;height:6px;align-self:center;background:rgba(14,30,66,.95);border:1px solid #000;overflow:hidden}
+.sh-bar i{display:block;height:100%;width:100%;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,#4f9dff,#dff0ff);transition:transform .3s cubic-bezier(.25,.9,.3,1)}
+.sh-orb{position:absolute;left:0;top:0;z-index:2170;pointer-events:none}
 .wm-moment.sh-moment{background:rgba(6,14,36,.8);border-color:rgba(127,191,255,.75);box-shadow:0 4px 0 rgba(0,0,0,.4),0 0 26px 4px rgba(80,150,255,.45)}
 .wm-moment.sh-moment b{color:#dff0ff}
 .wm-moment.sh-moment small{color:#cfe6ff}
@@ -439,20 +444,54 @@ export function sweep(el, opts = {}) {
   return { stop() { live = false; box.remove(); } };
 }
 
-// ── the HUD's level chip in Shimmer: blue, a star and your Shimmer level instead of "LVL"
-let pillEl = null;
-export function pill(chip, on, level) {
+// ── the HUD's level chip in Shimmer: blue, a star and your Shimmer level instead of "LVL", and its OWN bar — the XP to the next
+// Shimmer level, which is the next star (Trym, 3 Oct 2026, on the first bench: "wheres the Shimmer XP progression?" — the
+// old yellow bar stayed under the blue number, so the pill read as a count of stars)
+let pillEl = null, barEl = null;
+export function pill(chip, on, level, frac) {
   style();
   if (!chip) return;
   if (!pillEl || !chip.contains(pillEl)) {
     pillEl = document.createElement('span'); pillEl.className = 'sh-lvln';
     const s = new Image(); s.src = starSrc('m'); s.alt = '';
     pillEl.appendChild(s); pillEl.appendChild(document.createElement('b'));
+    barEl = document.createElement('span'); barEl.className = 'sh-bar'; barEl.appendChild(document.createElement('i'));
     const n = chip.querySelector('.wh__lvln, [data-wh="lvln"]');
     chip.insertBefore(pillEl, n ? n.nextSibling : chip.firstChild);
+    pillEl.after(barEl);
   }
   pillEl.querySelector('b').textContent = String(level);
+  if (frac != null) barEl.firstChild.style.transform = 'scaleX(' + Math.max(0, Math.min(1, frac)) + ')';
   chip.classList.toggle('sh-pill', !!on);
+}
+// ⭐ XP AFTER 99 KEEPS FLOWING, INTO SHIMMER: the "+N XP" over your banana (the world's own words) and blue orbs into the pill's
+// bar, which counts up as each lands — the same beat as world-xp.js, in Shimmer's light. onStep(k, n) as the k-th of n lands.
+export function flowXP(chip, amount, onStep) {
+  style();
+  const { view } = els(), s = meScreen();
+  if (!view || !s || !chip) { onStep(1, 1); return Promise.resolve(); }
+  const lab = document.createElement('div'); lab.className = 'sh-plus';
+  const y = document.createElement('span'); y.className = 'y'; y.textContent = fillWords(WL.plus, { n: amount.toLocaleString('en-US') });
+  lab.appendChild(y);
+  const stop = follow(lab, () => { const p = overMe(12)(); return p ? { x: p.x + 14, y: p.y } : null; });
+  if (still()) setTimeout(() => { stop(); lab.remove(); }, 1500);
+  else play(lab, [{ translate: '0 0', opacity: 0 }, { translate: '0 -8px', opacity: 1, offset: 0.12 }, { translate: '0 -24px', opacity: 1, offset: 0.72 }, { translate: '0 -36px', opacity: 0 }], { duration: 1500, easing: 'ease-out' }).then(() => { stop(); lab.remove(); });
+  const n = Math.max(3, Math.min(8, 1 + Math.floor(Math.log2(Math.max(1, amount / 20)))));
+  if (still()) { onStep(n, n); return Promise.resolve(); }
+  const vr = view.getBoundingClientRect(), br = (chip.querySelector('.sh-bar') || chip).getBoundingClientRect();
+  const fx = s.x - vr.left, fy = (s.head + s.feet) / 2 - vr.top, tx = br.left + br.width / 2 - vr.left, ty = br.top + br.height / 2 - vr.top;
+  let landed = 0;
+  return Promise.all(Array.from({ length: n }, (_, i) => {
+    const o = starEl(i % 2 ? 's' : 'm', i % 2 ? 10 : 14); o.classList.add('sh-orb');
+    o.style.left = fx + 'px'; o.style.top = fy + 'px';
+    view.appendChild(o);
+    const sx = (Math.random() * 52 - 26), sy = -30 - Math.random() * 40;
+    return play(o, [
+      { translate: '0 0', scale: '0.3', opacity: 0 },
+      { translate: sx + 'px ' + sy + 'px', scale: '1.2', opacity: 1, offset: 0.3, easing: 'cubic-bezier(.45,0,.85,.3)' },
+      { translate: (tx - fx) + 'px ' + (ty - fy) + 'px', scale: '0.6', opacity: 1 },
+    ], { duration: 560 + i * 20, delay: i * 60, easing: 'linear' }).then(() => { o.remove(); landed += 1; onStep(landed, n); });
+  }));
 }
 export function pillPop(chip) { if (chip && chip.animate && !still()) chip.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.38)' }, { transform: 'scale(0.94)' }, { transform: 'scale(1)' }], { duration: 760, easing: 'ease-out' }); }
 
@@ -499,7 +538,7 @@ export function arrive(chip) {
 export function plusWithStars(base, extra) {
   style();
   const d = document.createElement('div'); d.className = 'sh-plus';
-  const y = document.createElement('span'); y.className = 'y'; y.textContent = '+' + base + ' XP';
+  const y = document.createElement('span'); y.className = 'y'; y.textContent = fillWords(WL.plus, { n: base });
   const b = document.createElement('span'); b.className = 'b';
   const s = new Image(); s.src = starSrc('m'); s.alt = '';
   const t = document.createElement('span'); t.textContent = fillWords(W.plus, { n: extra });

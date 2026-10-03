@@ -8,7 +8,7 @@
 // (the rave). The other four show their perks' names until their round. The look itself is src/lib/shimmer-fx.js.
 import * as F from './shimmer-fx.js';
 import { openMap } from './shimmer-map.js';
-import { LADDER, KIND } from '../data/shimmer.js';
+import { LADDER, KIND, shimmerStep } from '../data/shimmer.js';
 
 const W = F.WORDS;
 const front = (dx = 44, dy = -2) => { const p = F.meWorld(); return p ? { x: p.x + F.sp(dx), y: p.y + F.sp(dy) } : null; };
@@ -253,16 +253,44 @@ export function mount(api) {
   };
   const pv = PREVIEWS[F.areaKey];
   const myC = pv ? pv.c : Object.keys(LADDER).find((c) => LADDER[c].area === F.areaKey);
-  // ── Shimmer itself, in every area
-  let level = 37, on = false;
+  // ── Shimmer itself, in every area. ONE LOOP, and the bench shows it whole (Trym, on the first bench: "wheres the Shimmer XP
+  // progression? you want ongoing XP points for Shimmer, not a handful of stars you collect here and there?"): after 99 your
+  // XP keeps flowing, into the blue bar; each time it fills you reach the next Shimmer level, and every level is ONE star to
+  // place. So the stars you have are always your Shimmer level — placed plus waiting — and the map says how far the next is.
+  const S = { level: 38, xp: 1400, lit: { can: 15, ball: 7, barn: 4, clock: 0, fish: 0, hammer: 0 }, toPlace: 12, chosen: {} };
+  let on = false, map = null;
+  const paint = () => F.pill(chip, on, S.level, S.xp / shimmerStep(S.level));
+  const earn = (amount) => {
+    on = true; paint();
+    let given = 0;
+    F.flowXP(chip, amount, (k, n) => {
+      const part = Math.round((amount * k) / n) - given; given += part;
+      S.xp += part;
+      while (S.xp >= shimmerStep(S.level)) { S.xp -= shimmerStep(S.level); S.level += 1; S.toPlace += 1; F.levelUp(chip, S.level); }
+      paint();
+      if (map) map.refresh();
+    });
+  };
   const sh = row('Shimmer');
-  const state = { lit: { can: 15, ball: 7, barn: 4, clock: 0, fish: 0, hammer: 0 }, toPlace: 12, chosen: {} };
-  btn(sh, 'Blue pill', '', () => { on = !on; F.pill(chip, on, level); say(on ? 'The level pill after 99: a star and your Shimmer level, in blue.' : 'The pill as it is today.'); });
-  btn(sh, 'Shimmer level', '', () => { level += 1; on = true; F.levelUp(chip, level); say('A Shimmer level: the burst in blue, and a star to place.'); });
-  btn(sh, 'Reach 99', '', () => { on = true; level = 1; F.arrive(chip); say('Level 99 becomes Shimmer 1: the biggest burst there is, the pill turns blue, the first Shimmer title.'); });
-  btn(sh, 'Star Map', '', () => { openMap(state, { from: chip, select: myC, lit: (k) => say(F.perkWords(k).name + ' · lit on the map', F.perkWords(k).line) }); say('Place a star: the figure draws itself, and every fourth star lights a perk.'); });
-  btn(sh, 'Falling star', '', () => { F.fall({ caught: () => F.note(W.dust.replace('{n}', '2')) }); say('A star falls near you. Walk over it: stardust.'); });
-  btn(sh, 'XP with stars', '', () => { F.plusWithStars(24, 6); say('Always on: every star in this area’s constellation adds a little to its XP. The blue part is your stars’.'); });
+  btn(sh, 'Blue pill', '', () => { on = !on; paint(); say(on ? 'After 99 the level pill turns blue: a star and your Shimmer level, and the bar is the XP to the next one.' : 'The pill as it is today.'); });
+  btn(sh, 'Earn XP', '', () => { earn(900); say('After 99 your XP keeps flowing, into the blue bar. Each time it fills you reach the next Shimmer level, and every level is one star to place.', 'Shimmer ' + S.level + ' · ' + S.toPlace + ' to place · the next level costs ' + shimmerStep(S.level).toLocaleString('en-US') + ' XP'); });
+  btn(sh, 'Reach 99', '', () => {
+    on = true; Object.assign(S, { level: 1, xp: 0, toPlace: 1, chosen: {}, lit: { can: 0, ball: 0, barn: 0, clock: 0, fish: 0, hammer: 0 } });
+    F.arrive(chip); setTimeout(paint, 320); if (map) map.refresh();
+    say('Level 99 becomes Shimmer 1: the biggest burst there is, the pill turns blue, and your first star waits on the map.');
+  });
+  // a perk "seen" from the map plays its preview right here (a lasting one runs a few seconds and stops)
+  const playPerk = (k) => {
+    const fx = pv && pv.fx[k]; if (!fx) return;
+    say(F.perkWords(k).name, F.perkWords(k).line);
+    if (typeof fx === 'object' && fx.toggle) { const t = fx.toggle(); setTimeout(() => { if (t && t.stop) t.stop(); }, 7000); } else fx();
+  };
+  btn(sh, 'Star Map', '', () => {
+    map = openMap(S, { from: chip, select: myC, step: shimmerStep, canSee: (k) => !!(pv && pv.fx[k]), see: playPerk, lit: (k) => say(F.perkWords(k).name + ' · lit on the map', F.perkWords(k).line), closed: () => { map = null; } });
+    say('Your stars are your Shimmer levels. Place one: the figure draws itself, and every fourth star lights a perk.');
+  });
+  btn(sh, 'Falling star', '', () => { F.fall({ caught: () => F.note(W.dust.replace('{n}', '2')) }); say('Not a map star: a falling star gives STARDUST, the thing wishes are bought with. Walk over it.'); });
+  btn(sh, 'Area boost', '', () => { F.plusWithStars(24, 6); say('Always on: every star you place in this area’s constellation adds a little to the XP you earn here. The blue part is your stars’.'); });
   // ── this area's constellation
   if (myC) {
     const nm = W.constellations.find((q) => q.key === myC);

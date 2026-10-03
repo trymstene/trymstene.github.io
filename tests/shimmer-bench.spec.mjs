@@ -64,6 +64,19 @@ test('park: the Star Map places a star, the sixteenth lights its perk, and a tap
   await page.locator('.shb button', { hasText: 'Star Map' }).evaluate((el) => el.click());
   await page.waitForSelector('.sm-card', { timeout: 5000 });
   await expect(page.locator('.sm-top span')).toHaveText(W.map.toPlace.replace('{n}', '12'));
+  // 💬 a perk is said by what it does (Trym: "no user understands what a skill / perc is by just reading a perk-name"): the
+  // next one under the constellation carries its kind in a player's words and its line, and the list has every one
+  const tidy = W.perks.find((p) => p.key === 'tidyplots');
+  await expect(page.locator('.sm-next .sm-cap')).toHaveText(W.map.nextAt.replace('{at}', '16'));
+  await expect(page.locator('.sm-next .sm-pl .ln')).toHaveText(tidy.line);
+  await expect(page.locator('.sm-next .sm-pl .nm em')).toHaveText(W.kinds.comfort);
+  await page.locator('.sm-next .sm-btn', { hasText: W.map.all }).evaluate((el) => el.click());
+  await expect(page.locator('.sm-li'), 'ten perk stars in the Watering Can').toHaveCount(10);
+  expect(await page.locator('.sm-li .sm-pl .ln').evaluateAll((ns) => ns.filter((n) => n.textContent.trim().length > 10).length), 'every perk with its line, the choice\u2019s two included').toBe(11);
+  await expect(page.locator('.sm-li.is-next .nm').first()).toContainText(tidy.name);
+  await page.screenshot({ path: 'test-results/shimmer-map-list.png' });
+  await page.locator('.sm-lhead .sm-btn').evaluate((el) => el.click());
+  await expect(page.locator('.sm-skywrap')).toBeVisible();
   await page.locator('.sm-go').evaluate((el) => el.click());
   const perk = W.perks.find((p) => p.key === 'tidyplots');
   await expect(page.locator('.sm-perk .n'), 'the Watering Can’s 16th star: Tidy plots').toHaveText(perk.name, { timeout: 4000 });
@@ -89,5 +102,26 @@ test('without ?shimmer there is no bench, and its chunk is never fetched', async
   await page.waitForTimeout(2500);
   expect(await page.locator('.shb').count()).toBe(0);
   expect(asked, 'no player downloads the bench').toEqual([]);
+  expect(errs).toEqual([]);
+});
+
+// ⭐ THE LOOP, WHOLE (Trym, on the first bench: "wheres the Shimmer XP progression? you want ongoing XP points for Shimmer, not
+// a handful of stars you collect here and there?"). After 99 XP keeps flowing into the blue bar; a full bar is the next Shimmer
+// level, and every level is one more star to place. The bench starts at Shimmer 38 with 1 400 of its 1 860.
+test('park: XP after 99 flows into the blue bar, and every Shimmer level is one more star to place', async ({ page }) => {
+  const errs = await open(page, '/park/?shimmer');
+  await page.waitForSelector('.shb', { timeout: 30000 });
+  await page.waitForTimeout(1500);
+  await page.locator('.shb button', { hasText: 'Earn XP' }).evaluate((el) => el.click());
+  await expect(page.locator('.sh-lvln b'), '1 400 + 900 crosses 1 860: Shimmer 39').toHaveText('39', { timeout: 4000 });
+  expect(await page.evaluate(() => document.querySelector('.wh__lvl').classList.contains('sh-pill')), 'the pill is blue').toBe(true);
+  expect(await page.evaluate(() => { const i = document.querySelector('.sh-bar i'); return i && getComputedStyle(i.parentNode).display !== 'none'; }), 'with its own Shimmer bar').toBe(true);
+  await page.locator('.shb button', { hasText: 'Star Map' }).evaluate((el) => el.click());
+  await page.waitForSelector('.sm-card', { timeout: 5000 });
+  await expect(page.locator('.sm-top span'), 'the level just earned is a star waiting').toHaveText(W.map.toPlace.replace('{n}', '13'));
+  await expect(page.locator('.sm-prog b')).toHaveText(W.map.level.replace('{n}', '39'));
+  // Shimmer 40 costs 150 + 45 × 39 = 1 905, and 440 of it is already in the bar
+  await expect(page.locator('.sm-prog > span:last-child')).toHaveText(W.map.nextStar.replace('{xp}', '1,465'));
+  await page.screenshot({ path: 'test-results/shimmer-loop-map.png' });
   expect(errs).toEqual([]);
 });

@@ -81,3 +81,7 @@ tools/trymstene-com-*.json
 tools/lens/out/
 # the stream pack is built from the renderer (tools/stream-pack/build_stream_pack.py)
 tools/stream-pack/out/
+
+# scratch scripts that need the repo's node_modules (a Playwright probe, a shot list): never committed, and never in
+# test-results/, which every Playwright run wipes
+.scratch/
