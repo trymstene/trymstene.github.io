@@ -279,7 +279,9 @@ export function bootTownNight(ctx) {
       const near = Math.hypot(ctx.pos.x - g.x, ctx.pos.y - g.y);
       if (d.from && d.to) g.hurry = near < 56 ? 3 : Math.max(0, (g.hurry || 0) - dt);
       else if (!d.path) {
-        if (!g.fled && near < 42) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; catchGhost(g); }
+        // ⚠️ only a ghost you can SEE: the wisp hides 2–5 s between showings, and a walk past its empty spot caught it — the day's
+        // first ghost pays 4 000 XP now (3 Oct 2026)
+        if (!g.fled && near < 42 && !s.el.hidden) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; catchGhost(g); }
         else if (g.fled) { g.fleeT -= dt; if (g.fleeT <= 0 && near > 70) { g.fled = 0; returnGhost(g); } }
       }
       if ((d.id === 'wisp' || d.loop) && s.mode === 'done') { g.hideT -= dt; if (g.hideT <= 0) { s.el.hidden = false; show(s, 0); s.mode = 'once'; } continue; }

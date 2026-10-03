@@ -132,7 +132,7 @@ function land(b) {
   api.lift(true);   // the strip rises out of any card's shade so the orbs land where they are seen (§30.2)
   if (!on(mr) || !on(cr) || still()) {   // nothing to fly between, or motion turned down: the pill says it in the beat
     lightChip(chip, b.from, b.to);
-    step(shown, b.to);
+    step(shown, b.to, false, b.from);
     shown = b.to;
     setTimeout(next, still() ? 250 : BEAT);
     return;
@@ -157,15 +157,15 @@ function land(b) {
     const done = () => {
       o.remove();
       landed += 1;
-      if (landed < n) {   // the bar counts up as each one lands
+      if (landed < n) {   // the bar counts up as each one lands (and the number with it, through every level crossed)
         const v = b.from + Math.round((amount * landed) / n);
-        step(shown, v);
+        step(shown, v, true);
         shown = v;
         flashRing(chip);
         return;
       }
       lightChip(chip, b.from, b.to);   // the last one in: the pill lights up, swells and shakes
-      step(shown, b.to);
+      step(shown, b.to, false, b.from);
       shown = b.to;
       setTimeout(next, 420);
     };
@@ -267,12 +267,15 @@ function lightChip(chip, a, b) {
   }
 }
 
-// the chip moves from `a` to `b`: the bar grows (world-hud.js paints it), or a level is crossed
-function step(a, b) {
+// the chip moves from `a` to `b`: the bar grows (world-hud.js paints it), or a level is crossed. Only a beat's LAST step
+// celebrates (the orbs before it are `quiet`), from the level the beat began on (`from`): a grant that crosses ten levels is
+// ONE burst, one "LVL N" or title and one word to the room, never one per orb in the same second (Trym, 3 Oct 2026: "handle it
+// gracefully if a LVL 1 banana joins and takes out a ghost and gets 10 levelups at once - so nothing breaks")
+function step(a, b, quiet, from) {
   if (!api) return;
-  const la = levelFor(a).level, lb = levelFor(b).level;
+  const la = levelFor(a).level, lb = levelFor(b).level, l0 = from == null ? la : levelFor(from).level;
   api.show(b, lb > la);
-  if (lb > la) levelUp(la, lb);
+  if (!quiet && lb > l0) levelUp(l0, lb);
 }
 
 function levelUp(from, to) {
@@ -292,7 +295,7 @@ function levelUp(from, to) {
 function plus(host, p, n) {
   const d = document.createElement('div');
   d.className = 'wx-plus';
-  d.textContent = fillWords(W.plus, { n });
+  d.textContent = fillWords(W.plus, { n: n.toLocaleString('en-US') });   // "+4,000 XP": the day's first ghost reads at a glance
   d.style.left = (p.x + 12) + 'px'; d.style.top = p.y + 'px';
   host.appendChild(d);
   const at = (y) => 'translate(0, calc(-100% - ' + y + 'px))';

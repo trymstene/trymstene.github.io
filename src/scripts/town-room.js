@@ -834,7 +834,7 @@ export function bootTownLife(ctx) {
     // the pay: on the pass, area 'town', faucet 'fix' (worker-pass RULES.town.fix)
     const coins = p.pays[0] + Math.floor(h(dayNum(), i, 99) * (p.pays[1] - p.pays[0] + 1));
     const got = passStat('coins_earned', coins, 'fix') != null ? coins : 0;
-    passStat('rep', p.rep * XP_PAY.town.fixMul);
+    passStat('rep', p.type === 'litter' || p.type === 'leaves' ? XP_PAY.town.litter : p.rep * XP_PAY.town.fixMul);
     if (hud && hud.refresh) hud.refresh();
     float(p.x, p.y - 40, '+' + got + ' 🪙');   // the coins it paid, with the coin (the XP is the world layer's)
     track('town_fix', { kind: p.type, coins: got });

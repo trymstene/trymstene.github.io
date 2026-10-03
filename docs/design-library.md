@@ -1713,6 +1713,13 @@ it dies out, everything in a very quick animation"*, and *"if other users can se
   the rave's own `lvl`), and another player's comes in as the same burst on THEIR banana with "LVL N" riding up off it
   (`[data-pid]`, the social layer's own tag). The level is the client's word, so a room lets it only climb, at most once
   every four seconds (worker-rave `relayLevel`).
+- **🎆 Many levels in one grant are ONE celebration** (3 Oct 2026, Trym: *"handle it gracefully if a LVL 1 banana joins and
+  takes out a ghost and gets 10 levelups at once - so nothing breaks"*; the day's first ghost pays 4 000 XP, level 1 → 11).
+  The orbs still count the chip up through every level crossed, but only the beat's last step celebrates, from the level
+  the beat began on: one burst, one riser or one title (the newest crossed), one `world:levelup` and one word to the room,
+  and the bar lands on the true fraction. A level-up per orb was eight bursts, a stack of risers and eight words to a room
+  that takes one every four seconds, so the others saw the first level crossed, not the last. A big amount reads in groups
+  ("+4,000 XP").
 - **The big moment stands on its own card** — the HUD chips' dark see-through ground and gold edge — so its white lines
   read over cobbles, grass, sand and the floor; the title you hold and what comes next are two lines that each fit a
   360-px phone.
@@ -1725,7 +1732,8 @@ it dies out, everything in a very quick animation"*, and *"if other users can se
   five areas on a phone: the hold, the label, the orbs in flight while the pill holds, the glow behind the banana, the
   pill's glow and its lit bar, the bar growing, a level and its riser and its burst (recorded as it happens: it is over in
   under a second), the title in the copy file's words with no riser, level 99, the longest title at 360 px, reduced motion
-  standing still, a trickle as one label, and the room: your level-up sent, another player's bursting on their banana.
+  standing still, a trickle as one label, and the room: your level-up sent, another player's bursting on their banana,
+  and ten levels in one grant as one burst, one moment and one level-up (red in the walk with the old per-orb level-up).
   The rooms' relay is worker-rave social.test §11.
 
 ## §54 YOUR BANANA WEARS WHAT IS SAVED, ON THE SCREEN YOU ARE LOOKING AT (2 Oct 2026, Trym on two devices)

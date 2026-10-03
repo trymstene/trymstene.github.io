@@ -1199,7 +1199,7 @@ export function initGarden(ctx) {
       trash.delete(id);                    // optimistic — the reply reconciles
       t.el.classList.add('is-popped');     // ✨ popped, not poofed (see the CSS)
       setTimeout(() => t.el.remove(), 360);
-      passStat('rep', 2 * CHORE_XP);
+      passStat('rep', XP_PAY.park.trash);
       refreshHud();
       pill(t.x, t.y - 16, '🗑 litter cleared');
       if (!trashTracked) { trashTracked = true; track('park_trash'); }

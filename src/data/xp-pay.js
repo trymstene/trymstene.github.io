@@ -16,8 +16,18 @@ export const XP_PAY = {
     run: 5,          // an arcade run with a score — the first `runsPerDay` of a day on this device
     runsPerDay: 12,
     step: 25,        // a chapter step, once per player (a pass receipt, qxp_<step>)
-    ghost: 15,       // a ghost caught, once per ghost a day
+    // 👻 THE BIG ONE (3 Oct 2026). Trym: "taking out / walking on ghosts should reward much XP, we dont have some big XP reward
+    // stuff at the moment". His call: the day's FIRST ghost pays big (a level-1 banana climbs ten levels on it), every other
+    // ghost a solid 250 — each ghost once a day (tw-ghost-v1, on the pass), so the nights stay a treat, never the whole climb
+    ghostDay: 4000,
+    ghost: 250,
     curse: 25,       // a cursed thing found for the first time
+    // 🗑 the street's mess pays a little more (Trym, same day): a litter or leaves problem put right (it was its rep × 5 = 5),
+    // and the litter you walk over — the first `flyersPerDay` of a day on this device, then 1 as before (a reload lays the
+    // street's litter again: tw-litxp-v1)
+    litter: 15,
+    flyer: 4,
+    flyersPerDay: 40,
   },
   homestead: {
     pet: 5,          // an animal hugged, once a day each
@@ -28,7 +38,7 @@ export const XP_PAY = {
     place: 10,       // a piece set out for the first time (a pass receipt, hsp_<id>)
     neighbour: 5,    // watering, a hug or a feed in somebody else's yard (the server allows one of each a day)
   },
-  park: { choreMul: 3, starXp: 12 },   // the garden's chores × 3; a harvest pays its stars × 12 (was × 8)
+  park: { choreMul: 3, starXp: 12, trash: 15 },   // the garden's chores × 3; a harvest pays its stars × 12 (was × 8); a piece of litter cleared 15 (was 6, 3 Oct 2026)
   bay: { fish: { common: 4, uncommon: 6, rare: 12, legendary: 25 }, newFish: 10, treasure: 30 },
   forge: { approved: 100 },            // a piece of yours approved into the catalog, once per piece
 };

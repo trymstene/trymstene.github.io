@@ -257,7 +257,7 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
 
   // ✨ XP THAT LANDS LIKE COINS (world-xp.js, design library §53). From the frame XP is granted the chip HOLDS where it
   // stood, and the sparks move it as they land: a level never shows before the XP that makes it has arrived (§30.2).
-  let held = null, heldAt = 0, crossing = 0, xpMod = null;
+  let held = null, heldAt = 0, crossing = 0, crossTo = 0, xpMod = null;
   const stillMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
   function paintLvl(rep, crossed) {
     if (!lvlN) return;
@@ -266,20 +266,22 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
     if (crossed && lvlFill && !stillMotion()) {
       // a level crossed: the bar fills to the top and starts again (it used to drain backwards from full to empty)
       clearTimeout(crossing);
+      crossTo = rep;
       lvlFill.style.transition = 'transform .18s ease-out';
       lvlFill.style.transform = 'scaleX(1)';
       crossing = setTimeout(() => {
         crossing = 0;
-        lvlN.textContent = 'LVL ' + lv.level;
+        const to = levelFor(crossTo);   // the newest total, if more landed while the bar was at the top
+        lvlN.textContent = 'LVL ' + to.level;
         lvlFill.style.transition = 'none';
         lvlFill.style.transform = 'scaleX(0)';
         void lvlFill.offsetWidth;
         lvlFill.style.transition = '';
-        lvlFill.style.transform = 'scaleX(' + f + ')';
+        lvlFill.style.transform = 'scaleX(' + Math.max(0, Math.min(1, to.into / to.need)) + ')';
       }, 230);
       return;
     }
-    if (crossing) return;   // mid-refill: the refill finishes the job
+    if (crossing) { crossTo = rep; return; }   // mid-refill: the refill finishes the job, on this total
     lvlN.textContent = 'LVL ' + lv.level;
     if (lvlFill) lvlFill.style.transform = 'scaleX(' + f + ')';
   }

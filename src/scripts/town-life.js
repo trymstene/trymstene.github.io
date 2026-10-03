@@ -34,6 +34,7 @@
 import { drawComposite } from '../lib/banana-engine.js';
 import { poofInto, burstInto, TOWN_DAY_MS, TOWN_HOUR_MS } from '../lib/world.js';
 import { passStat, passRaw, statTotal } from '../lib/banana-pass.js';
+import { XP_PAY } from '../data/xp-pay.js';
 
 // ---- the clock
 const DAY_MS = TOWN_DAY_MS, HOUR_MS = TOWN_HOUR_MS;   // a town day is twelve real minutes: six beats of two (world.js keeps the one clock)
@@ -510,13 +511,22 @@ export function initLife({ world, W, H, pct }) {
     if (f.gone) return;
     f.gone = true; f.el.remove(); if (mine) burst(f.x, f.y); else poof(f.x, f.y);
   }
+  // 🗑 a little more for the first of a day on this device, 1 after (3 Oct 2026): a reload lays the street's litter again
+  function litterXp() {
+    const d = Math.floor(Date.now() / 864e5), P = XP_PAY.town;
+    let t = null; try { t = JSON.parse(localStorage.getItem('tw-litxp-v1') || 'null'); } catch (e) {}
+    if (!t || t.d !== d) t = { d, n: 0 };
+    if (t.n >= P.flyersPerDay) return 1;
+    t.n += 1; try { localStorage.setItem('tw-litxp-v1', JSON.stringify(t)); } catch (e) {}
+    return P.flyer;
+  }
   function pick(i) {   // the player picked one up; Moss, if near, has a line for it
     const f = flyers.find((q) => q.i === i && !q.gone);
     if (!f) return false;
     takeFlyer(f, true);
     // 🗞 litter is litter: picking it up is the park's walk-over rule, rep only (Trym, 15 Sep: "i can
     // pick them up but nothing more happens, doesnt seem like a part of the fixing-system")
-    try { passStat('rep', 1); } catch (e) {}
+    try { passStat('rep', litterXp()); } catch (e) {}
     // 🤫 and nothing is said about it: she notices, and noticing is silent (Trym, 12 Sep). Her line
     // about the flyer lives in her dialogue card, where every line belongs.
     return true;

@@ -310,16 +310,17 @@ function shiftFrameY(now) {
 // said once a DAY (tw-told-v1, on the pass since 2 Oct 2026): in memory it was once a page load, and a reload said it again
 const tell = (k) => { const L = (work && work.seam.words()) || {}, d = Math.floor(Date.now() / 864e5); let t = {}; try { t = JSON.parse(localStorage.getItem('tw-told-v1') || '{}') || {}; } catch (e) {} if (t.d !== d) t = { d }; if ((L.told || {})[k] && !t[k]) { t[k] = 1; try { localStorage.setItem('tw-told-v1', JSON.stringify(t)); } catch (e) {} say(L.told[k]); } };
 // 👻 each ghost is one repair a day: a caught ghost forms again a few seconds later, and walking into it again is not work —
-// and the day's catches ride the pass (tw-ghost-v1), so another device does not pay for them again
-const ghostFirst = (id) => { const d = Math.floor(Date.now() / 864e5); let g = null; try { g = JSON.parse(localStorage.getItem('tw-ghost-v1') || 'null'); } catch (e) {} if (!g || g.d !== d || !Array.isArray(g.ids)) g = { d, ids: [] }; if (g.ids.includes(String(id))) return false; g.ids.push(String(id)); try { localStorage.setItem('tw-ghost-v1', JSON.stringify(g)); } catch (e) {} return true; };
+// and the day's catches ride the pass (tw-ghost-v1), so another device does not pay for them again. Answers which catch of the
+// day this is (1 = the day's first, the big one), or 0 for a ghost already caught today
+const ghostFirst = (id) => { const d = Math.floor(Date.now() / 864e5); let g = null; try { g = JSON.parse(localStorage.getItem('tw-ghost-v1') || 'null'); } catch (e) {} if (!g || g.d !== d || !Array.isArray(g.ids)) g = { d, ids: [] }; if (g.ids.includes(String(id))) return 0; g.ids.push(String(id)); try { localStorage.setItem('tw-ghost-v1', JSON.stringify(g)); } catch (e) {} return g.ids.length; };
 let tidyNext = null;   // ☕ the keyholder's tidy waits for the receipt to close (§27: the moment comes after the card)
 let roundNext = false;   // ✉️ the post office's satchel (rank 5) waits for the round's receipt to close, the same way
 function roomTrack(e, p) {
   track(e, p);
   // 👻 a ghost caught pays world XP to anybody, once a ghost a day; at the arcade's rank 5 it is a repair too (below) —
   // one call to the day's record for both, or the second would find it already taken
-  const ghost1 = e === 'town_ghost' && p && p.caught ? ghostFirst(p.id) : false;
-  if (ghost1) { try { passStat('rep', XP_PAY.town.ghost); } catch (x) {} }
+  const ghost1 = e === 'town_ghost' && p && p.caught ? ghostFirst(p.id) : 0;
+  if (ghost1) { try { passStat('rep', ghost1 === 1 ? XP_PAY.town.ghostDay : XP_PAY.town.ghost); } catch (x) {} }
   if (!work || !p) return;
   const j = work.seam.job(), rk = Math.max(1, ((j && j.lad && j.lad.rank) | 0));
   if (!j || !j.at) return;

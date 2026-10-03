@@ -112,6 +112,43 @@ for (const a of AREAS) {
   });
 }
 
+// 🎆 TEN LEVELS AT ONCE (3 Oct 2026). Trym: "handle it gracefully if a LVL 1 banana joins and takes out a ghost and gets 10
+// levelups at once - so nothing breaks". The day's first ghost pays 4 000 XP: from level 1 that is level 11 in one grant. The
+// orbs still count the chip up through the levels, but the beat celebrates ONCE, at its end, from where it began: one burst, one
+// big moment (two titles were crossed: it names the newest), one word to the room, and the bar on the true fraction. It used to
+// be a level-up per orb: eight bursts, a stack of risers and eight words to the room inside a second.
+for (const a of AREAS) {
+  test(`${a.name}: ten levels in one grant are one celebration, and the chip lands on the true level`, async ({ page }) => {
+    const errs = await open(page, a, 0);
+    expect(await lvl(page)).toBe('LVL 1');
+    await page.evaluate(() => {
+      window.__lv = []; window.__risers = 0; window.__labels = [];
+      document.addEventListener('world:levelup', (e) => window.__lv.push(e.detail.level));
+      new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) {
+        if (!n.classList) continue;
+        if (n.classList.contains('wx-riser')) window.__risers++;
+        if (n.classList.contains('wx-plus')) window.__labels.push(n.textContent.trim());
+      } }).observe(document.body, { childList: true, subtree: true });
+    });
+    await watchBurst(page, a.me);
+    await page.evaluate(() => window.__xp.grant(4000));
+    await expect.poll(() => lvl(page), { timeout: 6000 }).toBe('LVL 11');
+    await expect.poll(() => page.locator('.wm-moment b').count(), { timeout: 8000, message: 'the big moment' }).toBe(1);
+    await page.waitForTimeout(1500);   // whatever is still to come, comes
+    expect(await page.evaluate(() => window.__lv), 'ONE level-up, on the last level').toEqual([11]);
+    expect(await burstSeen(page), '💥 ONE burst').toEqual({ back: 3, front: 1, orbs: 10, riser: '' });
+    expect(await page.evaluate(() => window.__risers), 'a title crossed IS the riser: none of those').toBe(0);
+    expect(await page.locator('.wm-moment').count(), 'one big moment').toBe(1);
+    expect((await page.locator('.wm-moment b').textContent()).trim()).toBe(WL.title.replace('{n}', '11'));
+    expect((await page.locator('.wm-moment small').textContent()).trim(), 'the newer of the two titles crossed').toBe('Face at the Door\n' + WL.next.replace('{at}', '20'));
+    const labels = await page.evaluate(() => window.__labels);
+    expect(labels.some((t) => t === WL.plus.replace('{n}', '4,000') || (a.name === 'rave' && /^\+4,0\d\d XP$/.test(t))), 'the amount, in groups of three: ' + labels.join(' | ')).toBe(true);
+    expect(await fillOf(page), 'the bar on the true fraction of level 11').toBeCloseTo((4000 - 3975) / 600, 2);
+    await page.screenshot({ path: `test-results/world-xp-${a.name}-ten-levels.png` });
+    expect(errs).toEqual([]);
+  });
+}
+
 for (const a of AREAS) {
   const name = a.name;
   test(`${name}: a new title is the world's big moment, in the world's words`, async ({ page }) => {
