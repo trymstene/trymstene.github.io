@@ -1877,3 +1877,33 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
    and lit one by one at sunset with the ring's own flame. The deck gets the world's lamp at its four corners, lighting
    its planks. The hut's window, the four stalls, the ship bar and the claw machine glow. The keepers' speech bubbles live
    in the world's % and are `pin()`ned to the marks layer. `beach-night.js`; `tests/beach-night.spec.mjs`.
+
+## §57 SHIMMER'S STARLIGHT: EVERY PERK SHOWS ITSELF ONE WAY (3 Oct 2026, the perk bench)
+
+Trym, starting Shimmer and the Star Map: *"for the perks we should make a preview of the perks and how they would look
+visually so we can make sure they actually feel like something special"*. The look is `src/lib/shimmer-fx.js` (the Star
+Map `src/lib/shimmer-map.js`, the words `src/data/copy/shimmer.json`, the mechanics `src/data/shimmer.js`); today only the
+**perk bench** plays it: add `?shimmer` to any area (`src/lib/shimmer-bench.js`, a dev-only chunk the world HUD loads behind
+the flag). The bench earns and saves nothing.
+
+- **One light.** Everything a star does is drawn in starlight: blue-white pixel stars (a white heart, pale-blue arms, blue
+  tips) under a static glow; gold only for a golden thing. The XP's light stays whitish gold; Shimmer is the blue one, so a
+  player learns "a blue sparkle is my stars". The level-up burst has a blue tone for it (`burst(el, 'shimmer')`).
+- **Each kind shows itself one way:** a daily or a streak puts a buff chip under the HUD with the game's own clock (a streak
+  first fills star pips over your head); a lucky perk glints where the luck landed; a shared perk lays a ring of starlight on
+  the ground that the players inside it get a star from; a comfort perk puts a small star on the thing it improves; always-on
+  is the blue part beside "+N XP"; a shine perk is its own effect. **Every perk that does something raises its starlit tag**
+  (its name, in Shimmer's type) where it happened, so a player learns which star did it.
+- **Light goes above the night.** A star drawn in the world was darkened with it. So light (a glint, a spray, a ring, a falling
+  star, a sweep) rises into a pane over the night once it shows, the marks layer's rule for words (§56); the pane copies the
+  world's own size and transform every frame, so a world point, a size and a flight all hold. Things (a flower, a crop, a
+  drop) stay in the world, night and all; the bloom trail's flowers rise into the light at night (starlit, a soft rim).
+- **Sizes in screen px.** Every size and reach in the world is given in screen px and turned into the area's own world px
+  (`sp()`): the town shrinks its world to fit a phone and the park magnifies it, and a star must look the same in both.
+- **The Star Map:** forty stars per constellation TRACE its figure (a watering can, a disco ball, a barn, a fish, a clock
+  tower, a hammer), so placing them draws it; every fourth is a bigger perk star, and the one that lights it raises the perk
+  over the bottom of the sky (the card never grows past a phone's view). A tap on the map is the map's (it reached the park
+  under the card and opened a flower spot).
+- **Enforced by** `tests/shimmer-bench.spec.mjs`: every bench button plays in all five areas with no page error, the bench's
+  own code writes nothing to the device (a spy on every write), the Star Map's sixteenth Watering Can star lights Tidy plots
+  and fits the view, a tap on it never reaches the park, and without the flag no player downloads the bench.

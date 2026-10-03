@@ -3140,6 +3140,44 @@ export const JOBS = {
     },
     shape: () => [],
   },
+  shimmer: {
+    id: 'shimmer',
+    title: 'Shimmer and the Star Map — the endgame after level 99',
+    what: 'The words of Shimmer (the levels after 99): the moment it arrives, the blue riser, the Star Map card, stardust, the six constellations and every perk by name and line. 3 Oct 2026: shown on the perk bench (?shimmer in any area) before any of it is built; the design is the Claude Doc "Shimmer & the Star Map".',
+    approved: 'src/data/copy/shimmer.json',
+    reads: 'src/lib/shimmer-fx.js and src/lib/shimmer-bench.js (lazy, behind ?shimmer for now)',
+    top: ['arrive', 'titles', 'riser', 'plus', 'dust', 'map', 'constellations', 'perks'],
+    fields: {
+      'arrive.title': { kind: 'label', max: 10, note: 'The big moment at level 99, in big blue type: Shimmer has arrived.' },
+      'arrive.sub': { kind: 'label', max: 32, note: 'Under it, on its own line below the first Shimmer title (the game joins them): what every level brings now. Fits a 360-px phone.' },
+      'titles[]': { kind: 'label', max: 14, note: 'The Shimmer title ladder, in order (the levels are the game’s: 1, 10, 25, 50, 75, 100, 125, 150, 200, 250). One title at a time: it replaces the club title everywhere after 99.' },
+      riser: { kind: 'label', max: 14, ...holdsAll('n'), note: 'Rides up off your banana with the pixel arrow at every Shimmer level, in blue.' },
+      plus: { kind: 'label', max: 8, ...holdsAll('n'), note: 'Beside the "+N XP" as it lands, in blue with a star: the part your stars added.' },
+      dust: { kind: 'label', max: 18, ...holdsAll('n'), note: 'Rises off your banana when you walk over a falling star.' },
+      'map.title': { kind: 'label', max: 12, note: 'The Star Map card’s heading.' },
+      'map.toPlace': { kind: 'label', max: 22, ...holdsAll('n'), note: 'Beside the heading: how many stars wait to be placed.' },
+      'map.none': { kind: 'label', max: 22, note: 'Beside the heading when every star is placed.' },
+      'map.place': { kind: 'label', max: 14, note: 'The button that places a star in the chosen constellation. A button never breaks a line.' },
+      'map.next': { kind: 'label', max: 52, ...holdsAll('at', 'perk'), note: 'Under the chosen constellation: the star its next perk comes at, and the perk’s name.' },
+      'map.full': { kind: 'label', max: 30, note: 'Under a constellation with all forty stars placed.' },
+      'map.north': { kind: 'label', max: 48, note: 'Under the North Star at the top of the map, until all six are full.' },
+      'constellations[].key': { kind: 'key', max: 8 },
+      'constellations[].name': { kind: 'label', max: 18, note: 'A constellation, shaped like its area’s own thing.' },
+      'constellations[].area': { kind: 'label', max: 18, note: 'The area its perks work in.' },
+      'perks[].key': { kind: 'key', max: 14 },
+      'perks[].name': { kind: 'label', max: 18, note: 'A perk’s name: on the Star Map, and on the starlit tag that rises when it does something.' },
+      'perks[].line': { kind: 'prose', max: 140, note: 'What it does, plainly, on the Star Map. Never odds or a timetable ("sometimes", "now and then"); a buff’s size and length is the perk’s own rule and is said.' },
+      'perks[].chip': { kind: 'label', max: 22, note: 'On the buff chip under the HUD while a daily or streak perk runs (the clock beside it is the game’s).' },
+    },
+    shape: (j) => {
+      const out = [];
+      if (!Array.isArray(j.constellations) || j.constellations.length !== 6) out.push('six constellations, one per area');
+      const keys = new Set();
+      for (const p of j.perks || []) { if (keys.has(p.key)) out.push('perk key twice: ' + p.key); keys.add(p.key); }
+      if (keys.size !== 67) out.push('67 perks: ten star slots × six constellations, the six choices’ second options, and the North Star (got ' + keys.size + ')');
+      return out;
+    },
+  },
   'reel-town': {
     id: 'reel-town',
     title: 'The town trailer — the words on the Instagram Reel',

@@ -19,6 +19,7 @@ const CSS = `
 .wb-shape{position:absolute;pointer-events:none;image-rendering:pixelated;opacity:0}
 .wb-back{z-index:-1;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px #fff6d8) drop-shadow(0 0 14px rgba(255,212,110,.95))!important}
 .wb-front{z-index:1;filter:drop-shadow(0 0 3px #fffef6)!important}
+.wb-back.wb--sh{filter:drop-shadow(0 0 2px #e6f4ff) drop-shadow(0 0 6px #7fbfff) drop-shadow(0 0 14px rgba(40,120,255,.95))!important}
 .wb-orb{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;z-index:2;pointer-events:none;background:radial-gradient(circle,#fffffa 0 35%,#fff3c8 62%,#ffe08a 100%);box-shadow:0 0 4px 2px rgba(255,240,190,.9)}
 .wb-riser{position:absolute;left:50%;top:0;z-index:3;pointer-events:none;white-space:nowrap;font-weight:800;letter-spacing:.04em;font-size:.9rem;color:#ffe135;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000,0 2px 0 #000}
 .wb-riser>span{display:flex;align-items:center;gap:5px}
@@ -57,8 +58,9 @@ function middle(cv) {
   return [0.5, 0.58];
 }
 
-// 💥 the burst on a banana element (one that holds the banana's canvas): your own or another player's
-export function burst(el) {
+// 💥 the burst on a banana element (one that holds the banana's canvas): your own or another player's. A tone of 'shimmer'
+// is the same burst in Shimmer's blue starlight (the levels after 99, src/lib/shimmer-fx.js)
+export function burst(el, tone) {
   const cv = el && el.querySelector('canvas:not(.wx-halo):not(.wb-shape)');
   if (!cv || !cv.width || !cv.offsetWidth || !el.getClientRects().length) return;
   style();
@@ -76,7 +78,8 @@ export function burst(el) {
     return c;
   };
   const gone = () => { for (const n of made) n.remove(); made.length = 0; };
-  const core = put(shape(cv, 5, false, '#fff8e2'), 'wb-back');
+  const sh = tone === 'shimmer', T = sh ? ' wb--sh' : '';
+  const core = put(shape(cv, 5, false, sh ? '#b9dcff' : '#fff8e2'), 'wb-back' + T);
   if (still() || !core.animate) {   // §3d: lit, and then gone — no flash, nothing flies
     core.style.opacity = '1';
     setTimeout(gone, 900);
@@ -85,7 +88,7 @@ export function burst(el) {
   const play = (n, frames, opt) => { const a = n.animate(frames, { fill: 'both', ...opt }); return new Promise((ok) => { a.onfinish = a.oncancel = ok; }); };
   const OUT = 'cubic-bezier(.12,.8,.3,1)';   // off like a shot, then easing into nothing
   const flash = put(shape(cv, 1, false, '#ffffff'), 'wb-front');
-  const ring1 = put(shape(cv, 7, true, '#fffcf0'), 'wb-back'), ring2 = put(shape(cv, 6, true, '#fffdf4'), 'wb-back');
+  const ring1 = put(shape(cv, 7, true, sh ? '#9ccfff' : '#fffcf0'), 'wb-back' + T), ring2 = put(shape(cv, 6, true, sh ? '#c4e3ff' : '#fffdf4'), 'wb-back' + T);
   const runs = [
     // the instant it explodes: white over the whole banana, and gone
     play(flash, [{ opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 1, offset: 0.34 }, { opacity: 0 }], { duration: 280, easing: 'ease-out' }),
@@ -100,6 +103,7 @@ export function burst(el) {
   for (let i = 0; i < 10; i++) {
     const o = document.createElement('i');
     o.className = 'wb-orb';
+    if (sh) { o.style.background = 'radial-gradient(circle,#fff 0 30%,#b9dcff 60%,#4f9dff 100%)'; o.style.boxShadow = '0 0 4px 2px rgba(120,190,255,.95)'; }
     o.style.left = ox + 'px'; o.style.top = oy + 'px';
     el.appendChild(o);
     made.push(o);

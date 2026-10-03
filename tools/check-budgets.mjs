@@ -4,7 +4,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const { budgets, totalBudget, adminBudget, adminPrefixes } = JSON.parse(readFileSync('tools/budgets.json', 'utf8'));
+const { budgets, totalBudget, adminBudget, adminPrefixes, devBudget, devPrefixes } = JSON.parse(readFileSync('tools/budgets.json', 'utf8'));
 // ⚠️ TWO TOTALS, BECAUSE THERE ARE TWO AUDIENCES. Banana HQ is behind a token
 // and no visitor ever downloads a byte of it, so counting it against the
 // payload a player pays for was measuring the wrong thing — and it made the
@@ -12,6 +12,8 @@ const { budgets, totalBudget, adminBudget, adminPrefixes } = JSON.parse(readFile
 // nothing to do with. Both are still capped; admin weight is bounded and
 // visible, not excused.
 const isAdmin = (f) => (adminPrefixes || []).some((pre) => f.startsWith(pre));
+// …and a THIRD (3 Oct 2026): a bench chunk only a dev flag loads (?shimmer) reaches no player either, so it has its own cap
+const isDev = (f) => (devPrefixes || []).some((pre) => f.startsWith(pre));
 const dir = 'dist/_astro';
 const files = readdirSync(dir).filter((f) => f.endsWith('.js'));
 if (!files.length) { console.error('budget check: no built JS found — did the build run?'); process.exit(1); }
@@ -19,10 +21,11 @@ if (!files.length) { console.error('budget check: no built JS found — did the 
 let fail = false;
 let total = 0;
 let admin = 0;
+let dev = 0;
 const seen = new Set();
 for (const f of files) {
   const size = statSync(join(dir, f)).size;
-  if (isAdmin(f)) admin += size; else total += size;
+  if (isAdmin(f)) admin += size; else if (isDev(f)) dev += size; else total += size;
   for (const [prefix, cap] of Object.entries(budgets)) {
     if (!f.startsWith(prefix)) continue;
     seen.add(prefix);
@@ -53,4 +56,5 @@ const line = (label, got, cap) => {
 };
 line('player JS (_astro + /js)', total, totalBudget);
 line('admin-only (HQ) ', admin, adminBudget);
+if (devBudget) line('dev-only (benches)', dev, devBudget);
 process.exit(fail ? 1 : 0);

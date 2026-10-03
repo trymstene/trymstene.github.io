@@ -303,6 +303,8 @@ export function mountHud({ mount, layout = 'overlay', theme = {}, chips = ['lvl'
   if (lvlChip) { try { (window.requestIdleCallback || ((f) => setTimeout(f, 1200)))(() => { if (!xpMod) xpMod = import('./world-xp.js').catch(() => { xpMod = null; }); }, { timeout: 3000 }); } catch (e) {} }
   // 🧪 ?xptest: a walk grants XP the way every area does (tests/world-xp.spec.mjs)
   if (/[?&]xptest/.test(location.search)) window.__xp = { grant: (n) => passStat('rep', n) };
+  // 🧪 ?shimmer: the perk bench (src/lib/shimmer-bench.js): Shimmer's look played on your banana, nothing earned or saved
+  if (/[?&]shimmer(&|=|$)/.test(location.search)) import('./shimmer-bench.js').then((m) => m.mount(xpApi)).catch(() => {});
 
   function refresh() {
     const s = passGet().stats || {};
