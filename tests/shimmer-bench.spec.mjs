@@ -5,14 +5,18 @@
 // park under the card, and opened a flower spot).
 import { test, expect } from '@playwright/test';
 import W from '../src/data/copy/shimmer.json' with { type: 'json' };
+import { LADDER, ORDER, KIND } from '../src/data/shimmer.js';
+const PERKS = [...W.constellations.flatMap((c) => c.perks), W.north];
+const perkOf = (k) => PERKS.find((p) => p.key === k);
 
 const NOISE = /googletagmanager|google-analytics|cloudflareinsights|facebook|clarity/;
+// the perks with a look to play: the area's own sign's (the Sunflower 5, the Vinyl 4) and the Banana's 6, in every area
 const AREAS = [
-  { name: 'town', url: '/town/?towntest&shimmer', perks: 0 },
+  { name: 'town', url: '/town/?towntest&shimmer', perks: 6 },
   { name: 'park', url: '/park/?shimmer', perks: 11 },
-  { name: 'beach', url: '/beach/?shimmer', perks: 0 },
-  { name: 'homestead', url: '/homestead/?hstest=rich&shimmer', perks: 0 },
-  { name: 'rave', url: '/rave/?shimmer', perks: 11 },
+  { name: 'beach', url: '/beach/?shimmer', perks: 6 },
+  { name: 'homestead', url: '/homestead/?hstest=rich&shimmer', perks: 6 },
+  { name: 'rave', url: '/rave/?shimmer', perks: 10 },
 ];
 async function open(page, url) {
   const errs = [];
@@ -43,7 +47,7 @@ for (const a of AREAS) {
     await page.waitForTimeout(1500);
     const buttons = page.locator('.shb-body button:not([disabled])');
     const n = await buttons.count();
-    expect(n, 'Shimmer’s six, and the area’s perks built so far').toBe(6 + a.perks);
+    expect(n, 'Shimmer’s six, and the perks with a look: the area’s sign’s and the Banana’s').toBe(6 + a.perks);
     for (let i = 0; i < n; i++) {
       const b = buttons.nth(i), label = (await b.textContent()).trim();
       if (label === 'Star Map') continue;   // its own walk below
@@ -57,6 +61,17 @@ for (const a of AREAS) {
   });
 }
 
+// 🔧 THE PERKS ARE THE GAME'S OWN LEVERS, AND SAY WHERE (Trym, 4 Oct 2026: "more colors where? on what? a hammer? you need to be
+// extremely clear in your copy"). Every perk on the ladder has its words in its own sign, every word has a star, and every
+// line opens by saying where it works (the copy gate holds the words; this holds the ladder to them).
+test('every perk on the ladder has its words in its own sign, with a kind, and none is left over', () => {
+  expect(W.constellations.map((c) => c.key), 'the copy’s signs, in the map’s order').toEqual(ORDER);
+  for (const c of W.constellations) expect(c.perks.map((p) => p.key), c.name + ': its words follow its ladder').toEqual(LADDER[c.key].steps.flatMap((st) => st.slice(1)));
+  for (const p of PERKS) expect(KIND[p.key], p.key + ' has a kind').toBeTruthy();
+  expect(Object.keys(KIND).sort(), 'no kind for a perk that is gone').toEqual(PERKS.map((p) => p.key).sort());
+  for (const k of new Set(Object.values(KIND))) expect(W.kinds[k], 'the kind ' + k + ' has its words').toBeTruthy();
+});
+
 test('park: the Star Map places a star, the sixteenth lights its perk, and a tap on the map never reaches the park', async ({ page }) => {
   const errs = await open(page, '/park/?shimmer');
   await page.waitForSelector('.shb', { timeout: 30000 });
@@ -66,20 +81,22 @@ test('park: the Star Map places a star, the sixteenth lights its perk, and a tap
   await expect(page.locator('.sm-top span')).toHaveText(W.map.toPlace.replace('{n}', '12'));
   // 💬 a perk is said by what it does (Trym: "no user understands what a skill / perc is by just reading a perk-name"): the
   // next one under the constellation carries its kind in a player's words and its line, and the list has every one
-  const tidy = W.perks.find((p) => p.key === 'tidyplots');
+  const birds = perkOf('rarebirds');
   await expect(page.locator('.sm-next .sm-cap')).toHaveText(W.map.nextAt.replace('{at}', '16'));
-  await expect(page.locator('.sm-next .sm-pl .ln')).toHaveText(tidy.line);
-  await expect(page.locator('.sm-next .sm-pl .nm em')).toHaveText(W.kinds.comfort);
+  await expect(page.locator('.sm-next .sm-pl .ln')).toHaveText(birds.line);
+  await expect(page.locator('.sm-next .sm-pl .nm em')).toHaveText(W.kinds.lucky);
+  // and under the sign's name, what every star in it gives (the stars between two perks too)
+  await expect(page.locator('.sm-row .t span')).toHaveText(W.constellations[0].each);
   await page.locator('.sm-next .sm-btn', { hasText: W.map.all }).evaluate((el) => el.click());
-  await expect(page.locator('.sm-li'), 'ten perk stars in the Watering Can').toHaveCount(10);
+  await expect(page.locator('.sm-li'), 'ten perk stars in the Sunflower').toHaveCount(10);
   expect(await page.locator('.sm-li .sm-pl .ln').evaluateAll((ns) => ns.filter((n) => n.textContent.trim().length > 10).length), 'every perk with its line, the choice\u2019s two included').toBe(11);
-  await expect(page.locator('.sm-li.is-next .nm').first()).toContainText(tidy.name);
+  await expect(page.locator('.sm-li.is-next .nm').first()).toContainText(birds.name);
   await page.screenshot({ path: 'test-results/shimmer-map-list.png' });
   await page.locator('.sm-lhead .sm-btn').evaluate((el) => el.click());
   await expect(page.locator('.sm-skywrap')).toBeVisible();
   await page.locator('.sm-go').evaluate((el) => el.click());
-  const perk = W.perks.find((p) => p.key === 'tidyplots');
-  await expect(page.locator('.sm-perk .n'), 'the Watering Can’s 16th star: Tidy plots').toHaveText(perk.name, { timeout: 4000 });
+  const perk = perkOf('rarebirds');
+  await expect(page.locator('.sm-perk .n'), 'the Sunflower’s 16th star: Rare birds').toHaveText(perk.name, { timeout: 4000 });
   await expect(page.locator('.sm-perk .l')).toHaveText(perk.line);
   await expect(page.locator('.sm-top span')).toHaveText(W.map.toPlace.replace('{n}', '11'));
   // the whole card on a phone's view: the sky and its button, no scroll inside it

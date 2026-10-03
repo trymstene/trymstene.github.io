@@ -16,6 +16,17 @@ const ranksOf = (k) => LADDER_RANKS[k] | 0;
 
 export const BEATS = ['dawn', 'morning', 'noon', 'afternoon', 'evening', 'night'];
 
+// ✨ WHERE EACH SIGN'S PERKS WORK: the words a Star Map perk line must open with (the shimmer job's shape holds them). The
+// travel menu's names (src/scripts/world-travel.js), so the place a perk names is the place a player can go.
+export const SHIMMER_PLACE = {
+  sunflower: ['In the park,'],
+  hen: ['At your homestead,', 'At a neighbour’s homestead,'],
+  ghost: ['In Banana Town,'],
+  fish: ['At Banana Bay,'],
+  vinyl: ['At the rave,'],
+  banana: ['Everywhere,', 'At night,', 'By day too,'],
+};
+
 // The residents, by the key the game uses. The NAMES ARE FIXED — a rewrite
 // gives the same cast new words, never a new cast, and this is what pins that.
 export const TOWN_CAST = [
@@ -3143,10 +3154,10 @@ export const JOBS = {
   shimmer: {
     id: 'shimmer',
     title: 'Shimmer and the Star Map — the endgame after level 99',
-    what: 'The words of Shimmer (the levels after 99): the moment it arrives, the blue riser, the Star Map card, stardust, the six constellations and every perk by name and line. 3 Oct 2026: shown on the perk bench (?shimmer in any area) before any of it is built; the design is the Claude Doc "Shimmer & the Star Map".',
+    what: 'The words of Shimmer (the levels after 99): the moment it arrives, the blue riser, the Star Map card, stardust, the six constellations and every perk by name and line. Shown on the perk bench (?shimmer in any area) before any of it is built; the design is the Claude Doc "Shimmer & the Star Map". 4 Oct 2026: every perk rewritten on a lever the game already has, and every line says where it works.',
     approved: 'src/data/copy/shimmer.json',
-    reads: 'src/lib/shimmer-fx.js and src/lib/shimmer-bench.js (lazy, behind ?shimmer for now)',
-    top: ['arrive', 'titles', 'riser', 'plus', 'dust', 'map', 'kinds', 'constellations', 'perks'],
+    reads: 'src/lib/shimmer-fx.js, src/lib/shimmer-map.js and src/lib/shimmer-bench.js (lazy, behind ?shimmer for now)',
+    top: ['arrive', 'titles', 'riser', 'plus', 'dust', 'map', 'kinds', 'constellations', 'north'],
     fields: {
       'arrive.title': { kind: 'label', max: 10, note: 'The big moment at level 99, in big blue type: Shimmer has arrived.' },
       'arrive.sub': { kind: 'label', max: 32, note: 'Under it, on its own line below the first Shimmer title (the game joins them): what every level brings now. Fits a 360-px phone.' },
@@ -3171,28 +3182,45 @@ export const JOBS = {
       'map.pick': { kind: 'label', max: 22, note: 'Over the two perks at a constellation’s 20th star: you get one of them.' },
       'map.picked': { kind: 'label', max: 14, note: 'Beside the one of the two you picked.' },
       'map.litNote': { kind: 'label', max: 10, note: 'Beside a perk you already have (its star is placed).' },
-      'kinds.daily': { kind: 'label', max: 16, note: 'What kind of perk it is, in a player’s words: a boost the first time you do something each day.' },
-      'kinds.lucky': { kind: 'label', max: 16, note: 'A better chance at something rare or extra.' },
-      'kinds.streak': { kind: 'label', max: 16, note: 'Do something a few times in a row for a short boost.' },
-      'kinds.shared': { kind: 'label', max: 16, note: 'It helps the players around you too.' },
-      'kinds.comfort': { kind: 'label', max: 16, note: 'Less hassle: something takes less time or work.' },
-      'kinds.always': { kind: 'label', max: 16, note: 'A little more, all the time.' },
-      'kinds.shine': { kind: 'label', max: 16, note: 'Something everyone can see: a look, not a number.' },
+      'kinds.wait': { kind: 'label', max: 16, note: 'What kind of perk it is, in a player’s words, beside its icon: something you wait for comes sooner (a delivery, a crop, a bite).' },
+      'kinds.more': { kind: 'label', max: 16, note: 'More of something you already earn: seeds, wool, fruit, hearts, XP.' },
+      'kinds.lucky': { kind: 'label', max: 16, note: 'A better chance at something rare.' },
+      'kinds.easy': { kind: 'label', max: 16, note: 'Less hassle, or less lost while you are away.' },
+      'kinds.banana': { kind: 'label', max: 16, note: 'Your banana can do something new: walk faster, reach further, sit down.' },
+      'kinds.seen': { kind: 'label', max: 16, note: 'A look other players see.' },
+      'kinds.others': { kind: 'label', max: 16, note: 'It helps another player.' },
       'kinds.capstone': { kind: 'label', max: 16, note: 'The fortieth star: the big one, for you and seen by the whole world.' },
-      'constellations[].key': { kind: 'key', max: 8 },
-      'constellations[].name': { kind: 'label', max: 18, note: 'A constellation, shaped like its area’s own thing.' },
-      'constellations[].area': { kind: 'label', max: 18, note: 'The area its perks work in.' },
-      'perks[].key': { kind: 'key', max: 14 },
-      'perks[].name': { kind: 'label', max: 18, note: 'A perk’s name: on the Star Map, and on the starlit tag that rises when it does something.' },
-      'perks[].line': { kind: 'prose', max: 140, note: 'What it does, plainly, on the Star Map. Never odds or a timetable ("sometimes", "now and then"); a buff’s size and length is the perk’s own rule and is said.' },
-      'perks[].chip': { kind: 'label', max: 22, note: 'On the buff chip under the HUD while a daily or streak perk runs (the clock beside it is the game’s).' },
+      'constellations[].key': { kind: 'key', max: 10 },
+      'constellations[].name': { kind: 'label', max: 18, note: 'A constellation, drawn after a thing players already know from its area (a thing that is IN the game: no can, barn, clock tower or disco ball exists). On the sky, in a third of a phone’s width.' },
+      'constellations[].area': { kind: 'label', max: 18, note: 'Where its perks work, in the travel menu’s words, in the head of its perk list.' },
+      'constellations[].each': { kind: 'label', max: 48, note: 'Under its name on the map: what every star placed in it gives, the stars between its perks included.' },
+      'constellations[].perks[].key': { kind: 'key', max: 14 },
+      'constellations[].perks[].name': { kind: 'label', max: 18, note: 'A perk’s name: on the Star Map, and on the starlit tag that rises when it does something. Plain over clever: it hints at the thing it changes.' },
+      'constellations[].perks[].line': { kind: 'prose', max: 140, aim: 120, note: 'What it does, on the Star Map, alone on a card as often as in its list, so it must stand on its own: WHERE it works first (the gate holds the opening words to its constellation’s place), then WHAT changes, by how much, in words a player knows (half the time, twice as far, a day sooner). Never a number of seconds or days.', forbids: [[/\b(sometimes|now and then|occasionally|a little|a bit|slightly|boosts?|buffs?|perks?)\b/i, 'a vague size: say how much, in words a player knows (half the time, twice as far, a day sooner)']] },
+      'north.key': { kind: 'key', max: 8 },
+      'north.name': { kind: 'label', max: 18, note: 'The North Star, the last ten stars, open once all six are full.' },
+      'north.line': { kind: 'prose', max: 140, note: 'What the North Star gives, on the map.' },
     },
     shape: (j) => {
       const out = [];
-      if (!Array.isArray(j.constellations) || j.constellations.length !== 6) out.push('six constellations, one per area');
-      const keys = new Set();
-      for (const p of j.perks || []) { if (keys.has(p.key)) out.push('perk key twice: ' + p.key); keys.add(p.key); }
-      if (keys.size !== 67) out.push('67 perks: ten star slots × six constellations, the six choices’ second options, and the North Star (got ' + keys.size + ')');
+      const C = Array.isArray(j.constellations) ? j.constellations : [];
+      if (C.length !== 6) out.push({ path: 'constellations', msg: 'six constellations, five areas and the banana' });
+      const keys = new Set([j.north && j.north.key]);
+      C.forEach((c, i) => {
+        const at = `constellations[${i}]`, perks = Array.isArray(c.perks) ? c.perks : [];
+        if (perks.length !== 11) out.push({ path: at + '.perks', msg: `eleven perks: ten star slots and the 20th star’s second option (got ${perks.length})` });
+        // 💬 WHERE FIRST (Trym, 4 Oct 2026, of "More colours: more colours in the palette": "more colors where? on what? a hammer?
+        // you need to be extremely clear in your copy - users wont understand what youre trying to say - and then the perk wont
+        // feel tempting to choose"). A perk line is read alone on a card, so it opens by saying where it works.
+        const opens = SHIMMER_PLACE[c.key];
+        if (!opens) out.push({ path: at + '.key', msg: `"${c.key}" has no place in SHIMMER_PLACE (tools/copy-jobs.mjs): say where its perks work` });
+        perks.forEach((p, k) => {
+          if (keys.has(p.key)) out.push({ path: `${at}.perks[${k}].key`, msg: 'perk key twice: ' + p.key });
+          keys.add(p.key);
+          if (opens && typeof p.line === 'string' && !opens.some((o) => p.line.startsWith(o))) out.push({ path: `${at}.perks[${k}].line`, rule: 'where', msg: `say where it works first: open with ${opens.map((o) => '“' + o + '”').join(' or ')}` });
+        });
+      });
+      if (keys.size !== 67) out.push({ path: 'constellations', msg: '67 perks: eleven in each of the six, and the North Star (got ' + keys.size + ')' });
       return out;
     },
   },

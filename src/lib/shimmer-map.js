@@ -1,7 +1,7 @@
 // 🗺 THE STAR MAP (3 Oct 2026, the perk bench's; the design is the Claude Doc "Shimmer & the Star Map"). Every Shimmer level
-// is a star you place in one of six constellations, one per area, each the shape of that area's own thing. Its forty stars
-// TRACE the figure, so placing them draws it: you watch a watering can appear in the sky. Every fourth star is a bigger
-// perk star, and the one that lights it lights the perk. Nothing here saves: it is the look, played on the bench.
+// is a star you place in one of six constellations: five drawn after a thing players know from an area (a sunflower, a hen,
+// a ghost, a fish, a record) and the banana itself. Its forty stars draw the figure as you place them. Every fourth star is
+// a bigger perk star, and the one that lights it lights the perk. Nothing here saves: it is the look, played on the bench.
 import { WORDS as W, perkWords, starSrc, play, still, tag, els } from './shimmer-fx.js';
 import { fillWords } from './fill-words.js';
 import { LADDER, ORDER, STARS_EACH, KIND } from '../data/shimmer.js';
@@ -12,7 +12,7 @@ import { iconSvg } from './pixel-icons.js';
 // 💬 A PERK IS SAID BY WHAT IT DOES (Trym, 3 Oct 2026: "no user understands what a skill / perc is by just reading a perk-name
 // they havent heard of before"). Wherever the map names a perk it shows its kind (an icon and a word a player knows) and its
 // line: the next one under the chosen constellation, every one in its list, and both sides of a choice.
-const KIND_ICON = { daily: 'sun-solid', lucky: 'star', streak: 'zap', shared: 'users', comfort: 'tools', always: 'reload', shine: 'sparkles', capstone: 'crown-solid' };
+const KIND_ICON = { wait: 'zap', more: 'party-popper-solid', lucky: 'star', easy: 'tools', banana: 'move', seen: 'sparkles', others: 'users', capstone: 'crown-solid' };
 function perkLine(k, see) {
   const w = perkWords(k), d = document.createElement('div'); d.className = 'sm-pl';
   const i = document.createElement('i'); i.className = 'sm-ki'; i.innerHTML = iconSvg(KIND_ICON[KIND[k]] || 'star', { size: 14 });
@@ -29,15 +29,16 @@ function perkLine(k, see) {
 // a bit random … parts of the shape has much dot-clutter here and there"). Forty dots spread along outlines bunched wherever two
 // strokes met. Now a sign is a root and ten PERK stars, in order, that draw its object like a real star chart, and the forty
 // Shimmer stars are the LINE between them: each star you place lights a quarter of the way to the next perk star, the fourth
-// lights the perk star itself. `deco` are the lines that finish the picture (a can's top, a ball's facets), lit once both their
-// stars are. A 100 × 80 cell; segments kept within 14–34 so the quarters read evenly.
+// lights the perk star itself. `deco` are the lines that finish the picture (a stem, a ring closed), lit once both their
+// stars are, and `dots` are the small marks no star stands on (a ghost's eyes). A 100 × 80 cell; segments kept within 14–34
+// so the quarters read evenly. 4 Oct 2026: the signs are things that are IN the game (no can, barn, clock tower or disco ball is).
 const FIG = {
-  can: { pts: [[95, 15], [80, 28], [64, 44], [64, 70], [43, 72], [22, 70], [22, 40], [27, 22], [43, 15], [58, 22], [64, 36]], deco: [[6, 10], [10, 2]] },
-  ball: { pts: [[50, 1], [50, 18], [65.3, 23], [74.7, 36], [74.7, 52], [65.3, 65], [50, 70], [34.7, 65], [25.3, 52], [25.3, 36], [34.7, 23]], deco: [[10, 1], [9, 3], [8, 4], [1, 6]] },
-  barn: { pts: [[16, 74], [16, 44], [26, 27], [50, 13], [74, 27], [84, 44], [84, 74], [62, 74], [62, 52], [38, 52], [38, 74]], deco: [[10, 0], [1, 5], [8, 10], [9, 7]] },
-  fish: { pts: [[93, 25], [75, 40], [62, 28], [44, 24], [27, 29], [15, 40], [27, 51], [44, 56], [62, 52], [93, 57], [83, 41]], deco: [[10, 0], [8, 1]] },
-  clock: { pts: [[50, 6], [33, 30], [33, 53], [33, 76], [67, 76], [67, 53], [67, 30], [50, 31], [60, 41], [50, 51], [40, 41]], deco: [[6, 0], [10, 7], [1, 6]] },
-  hammer: { pts: [[47, 78], [47, 58], [47, 38], [26, 38], [20, 28], [26, 18], [50, 16], [74, 18], [86, 26], [76, 38], [55, 38]], deco: [[10, 2]] },
+  sunflower: { pts: [[50, 79], [64, 64], [50, 44], [63.5, 39.1], [70.7, 26.6], [68.2, 12.5], [57.2, 3.3], [42.8, 3.3], [31.8, 12.5], [29.3, 26.6], [36.5, 39.1]], deco: [[10, 2], [0, 2]], dots: [[50, 18], [55, 23], [50, 28], [45, 23]] },
+  hen: { pts: [[44, 79], [44, 63], [26, 55], [20, 38], [8, 30], [22, 18], [36, 28], [58, 30], [78, 12], [86, 34], [70, 58]], deco: [[10, 1]], dots: [[21, 27]] },
+  ghost: { pts: [[40, 66], [28, 77], [26, 52], [30, 30], [42, 13], [58, 11], [70, 26], [74, 50], [72, 77], [60, 66], [50, 77]], deco: [[10, 0]], dots: [[42, 34], [58, 34]] },
+  fish: { pts: [[14, 40], [30, 26], [47, 23], [63, 27], [76, 36], [94, 22], [86, 40], [94, 58], [76, 44], [60, 54], [36, 56]], deco: [[10, 0]], dots: [[24, 36]] },
+  vinyl: { pts: [[90, 4], [84, 26], [70.4, 31.1], [70.4, 48.9], [59, 62.5], [41.5, 65.6], [26.1, 56.7], [20, 40], [26.1, 23.3], [41.5, 14.4], [59, 17.5]], deco: [[10, 2]], dots: [[46, 40]] },
+  banana: { pts: [[22, 10], [24, 28], [30, 46], [42, 60], [60, 68], [80, 64], [94, 52], [78, 50], [60, 52], [46, 42], [38, 26]], deco: [[10, 1]] },
 };
 const PER = STARS_EACH / 10;   // four Shimmer stars to each perk star
 const at = (key, i) => { const q = FIG[key].pts[i]; return { x: q[0], y: q[1] }; };
@@ -99,6 +100,7 @@ export function drawFigure(x, key, lit, ox, oy, f, opts = {}) {
       x.fillStyle = '#0b1730'; x.fillRect(px, py, 1, 1);
     }
   }
+  for (const [dx, dy] of F.dots || []) { x.fillStyle = lit > 0 ? 'rgba(214,236,255,' + 0.9 * dim + ')' : '#34527c'; x.fillRect(Math.round(ox + dx * f) - 1, Math.round(oy + dy * f) - 1, 2, 2); }
   // the tip of the line, mid-way between two perk stars: the last star you placed, a small bright point
   if (lit > 0 && lit < STARS_EACH && lit % PER) { const q = tipAt(key, lit), tx = Math.round(ox + q.x * f), ty = Math.round(oy + q.y * f); x.fillStyle = 'rgba(255,255,255,' + dim + ')'; x.fillRect(tx - 1, ty - 1, 2, 2); }
   x.restore();
@@ -162,7 +164,7 @@ const CSS = `
 let styled = false;
 const style = () => { if (styled) return; styled = true; const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); };
 
-// 🗺 open the map. `state` is the bench's: { lit: {can: 15, …}, toPlace: 12, chosen: {} }, mutated as stars are placed;
+// 🗺 open the map. `state` is the bench's: { lit: {sunflower: 15, …}, toPlace: 12, chosen: {} }, mutated as stars are placed;
 // `from` is where a placed star flies from (the HUD's Shimmer pill)
 export function openMap(state, opts = {}) {
   style();
@@ -200,7 +202,7 @@ export function openMap(state, opts = {}) {
   const cell = (i) => { const c = ORDER[i]; const ox = (i % 3) * cellW + (cellW - 100 * f) / 2, oy = top + Math.floor(i / 3) * cellH + 2; return { c, ox, oy }; };
   const BG = [];
   for (let i = 0; i < 90; i++) BG.push([(i * 97 + 13) % cw, (i * 53 + 7) % ch, i % 7 === 0 ? 2 : 1]);
-  let sel = Math.max(0, ORDER.indexOf(opts.select || 'can')), live = true, flash = null, run = null;
+  let sel = Math.max(0, ORDER.indexOf(opts.select || ORDER[0])), live = true, flash = null, run = null;
   const font = getComputedStyle(card).fontFamily || 'sans-serif';
   const ns = new Image(); ns.src = starSrc('l');   // the North Star, drawn every frame from one image
   const draw = (now) => {
@@ -262,7 +264,7 @@ export function openMap(state, opts = {}) {
     const row = document.createElement('div'); row.className = 'sm-row';
     const t = document.createElement('div'); t.className = 't';
     const b = document.createElement('b'); b.textContent = (nm ? nm.name : c) + ' · ' + lit + '/' + STARS_EACH;
-    const s2 = document.createElement('span'); s2.textContent = nm ? nm.area : '';
+    const s2 = document.createElement('span'); s2.textContent = nm ? nm.each || nm.area : '';
     t.appendChild(b); t.appendChild(s2);
     const go = document.createElement('button'); go.className = 'sm-go'; go.type = 'button';
     const gi = new Image(); gi.src = starSrc('m'); gi.alt = '';

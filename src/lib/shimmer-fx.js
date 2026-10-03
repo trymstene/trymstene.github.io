@@ -19,7 +19,7 @@ import { burst } from './world-burst.js';
 import { bigMoment } from './world-moment.js';
 
 export const WORDS = W;
-const PERK = Object.fromEntries(W.perks.map((p) => [p.key, p]));
+const PERK = Object.fromEntries([...W.constellations.flatMap((c) => c.perks), W.north].map((p) => [p.key, p]));
 export const perkWords = (k) => PERK[k] || { key: k, name: k, line: '' };
 
 // each area: its view (the frame), its world (what pans) and your banana in it — world-xp.js's own table, plus the world

@@ -1905,15 +1905,27 @@ the flag). The bench earns and saves nothing.
   heading: "Shimmer 39", the bar, "1,465 XP to the next star". A falling star gives STARDUST, never a map star.
 - **💬 A perk is said by what it does** (Trym: *"no user understands what a skill / perc is by just reading a perk-name they
   havent heard of before"*). Wherever the map names a perk it shows its kind (a pixel icon and a word a player knows:
-  every day, a lucky chance, in a row, with others, easier, always on, just for looks, the top star) and its line: the
-  next perk under the chosen constellation, every perk in its "All perks" list (yours lit, the next marked, the rest dim),
-  and both sides of a choice. A perk is never named alone. On the bench, "See it" plays it on your banana.
+  less waiting, more rewards, better luck, easier, for your banana, everyone sees it, helps others, the top star) and its
+  line: the next perk under the chosen constellation, every perk in its "All perks" list (yours lit, the next marked, the
+  rest dim), and both sides of a choice. A perk is never named alone. On the bench, "See it" plays it on your banana.
+- **🔧 A perk changes something the game already has, and its line says WHERE first** (Trym, 4 Oct 2026, of "More colours:
+  more colours in the palette": *"more colors where? on what? a hammer? you need to be extremely clear in your copy - users
+  wont understand what youre trying to say - and then the perk wont feel tempting to choose"*; and of the first list: *"You
+  need to know how this game works before you invent perks for it"*). Every perk moves a real number or rule (the Claude
+  Doc's "Today → with the perk" column), and its line opens with where it works in the travel menu's words ("In the park,",
+  "At your homestead,", "In Banana Town,", "At Banana Bay,", "At the rave,"; the Banana's "Everywhere,", "At night,"), then
+  what changes and by how much in words a player knows (half the time, twice as far, a day sooner), never vaguely
+  ("sometimes", "a little", "a boost"). **Enforced by the copy gate:** the shimmer job's shape holds each sign's lines to its
+  opener (`SHIMMER_PLACE` in `tools/copy-jobs.mjs`) and a `forbids` rule turns the vague words red. Under a sign's name the
+  map says what every star in it gives ("Every star here: 1% more XP in the park"; the Banana's grow your own light).
 - **Sizes in screen px.** Every size and reach in the world is given in screen px and turned into the area's own world px
   (`sp()`): the town shrinks its world to fit a phone and the park magnifies it, and a star must look the same in both.
-- **The Star Map:** forty stars per constellation TRACE its figure (a watering can, a disco ball, a barn, a fish, a clock
-  tower, a hammer), so placing them draws it; every fourth is a bigger perk star, and the one that lights it raises the perk
+- **The Star Map:** forty stars per constellation draw its figure, each a thing that is IN the game (a sunflower, a hen, a
+  ghost, a fish, a record, the banana; there is no watering can, barn, clock tower or disco ball to point at, §named things
+  must be findable), so placing them draws it; every fourth is a bigger perk star, and the one that lights it raises the perk
   over the bottom of the sky (the card never grows past a phone's view). A tap on the map is the map's (it reached the park
   under the card and opened a flower spot).
 - **Enforced by** `tests/shimmer-bench.spec.mjs`: every bench button plays in all five areas with no page error, the bench's
-  own code writes nothing to the device (a spy on every write), the Star Map's sixteenth Watering Can star lights Tidy plots
-  and fits the view, a tap on it never reaches the park, and without the flag no player downloads the bench.
+  own code writes nothing to the device (a spy on every write), every perk on the ladder has its words in its own sign with
+  a kind, the Sunflower's sixteenth star lights Rare birds and the card fits the view, a tap on it never reaches the park,
+  and without the flag no player downloads the bench.
