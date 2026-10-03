@@ -1928,4 +1928,9 @@ the flag). The bench earns and saves nothing.
 - **Enforced by** `tests/shimmer-bench.spec.mjs`: every bench button plays in all five areas with no page error, the bench's
   own code writes nothing to the device (a spy on every write), every perk on the ladder has its words in its own sign with
   a kind, the Sunflower's sixteenth star lights Rare birds and the card fits the view, a tap on it never reaches the park,
-  and without the flag no player downloads the bench.
+  the Hen's eleven play on a seeded yard (two hearts off the nearest animal, four more goods by the trough in starlight, the
+  dog or cat keeping up at your heels), and without the flag no player downloads the bench.
+- **A preview plays on the player's own things** (the Hen, 4 Oct 2026): your animals, your trough, your crops, your sheep;
+  where the yard has none yet, a stand-in from the game's own sprites, at the game's own size, stands in front of you, and
+  the bench says what to get. A number perk shows the moment the number changes (the second heart, the extra goods, the
+  van's clock running at twice the speed).

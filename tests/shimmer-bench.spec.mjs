@@ -10,12 +10,12 @@ const PERKS = [...W.constellations.flatMap((c) => c.perks), W.north];
 const perkOf = (k) => PERKS.find((p) => p.key === k);
 
 const NOISE = /googletagmanager|google-analytics|cloudflareinsights|facebook|clarity/;
-// the perks with a look to play: the area's own sign's (the Sunflower 5, the Vinyl 4) and the Banana's 6, in every area
+// the perks with a look to play: the area's own sign's (the Sunflower 5, the Hen 11, the Vinyl 4) and the Banana's 6, everywhere
 const AREAS = [
   { name: 'town', url: '/town/?towntest&shimmer', perks: 6 },
   { name: 'park', url: '/park/?shimmer', perks: 11 },
   { name: 'beach', url: '/beach/?shimmer', perks: 6 },
-  { name: 'homestead', url: '/homestead/?hstest=rich&shimmer', perks: 6 },
+  { name: 'homestead', url: '/homestead/?hstest=rich&shimmer', perks: 17 },
   { name: 'rave', url: '/rave/?shimmer', perks: 10 },
 ];
 async function open(page, url) {
@@ -108,6 +108,78 @@ test('park: the Star Map places a star, the sixteenth lights its perk, and a tap
   await page.waitForTimeout(600);
   expect(await page.locator('.sm-card').count(), 'closed').toBe(0);
   expect(await page.evaluate(() => [...document.querySelectorAll('.pk-panel:not([hidden]), .pk-sheet:not([hidden])')].filter((e) => e.getClientRects().length).length), 'and nothing of the park opened under it').toBe(0);
+  expect(errs).toEqual([]);
+});
+
+// 🐔 THE HEN'S PREVIEWS ON A REAL YARD (4 Oct 2026, Trym: "build the previews for the Hen next"): three hens, a kid goat, a
+// woolly sheep, the dog and the cat, a trough, and a carrot in the soil. Every Hen perk plays where it would live: two hearts
+// off the nearest animal, four more goods by the trough in starlight, and the pet at your heels that keeps up when you walk.
+// No page error, and the bench writes nothing (the yard on this device is the walk's own).
+const today = () => Math.floor(Date.now() / 86400000);
+const HEN = (i) => ({ sp: 'hen', b: 0, pd: 0, name: '', wd: 0, id: 100100 + i, ad: today() - 10, gs: 0, sd: 11 + i });
+const YARD_ANIMALS = [HEN(0), HEN(1), HEN(2),
+  { sp: 'goat', b: 0, pd: 0, name: '', wd: 0, id: 300300, ad: today() - 1, gs: 0, gd: 1, sd: 7 },
+  { sp: 'sheep', b: 0, pd: 0, name: '', wd: 3, id: 400400, ad: today() - 20, gs: 0, sd: 9 },
+  { sp: 'dog', b: 0, pd: 0, name: '', wd: 0, id: 200200, ad: today() - 5, gs: 0, sd: 5 },
+  { sp: 'cat', b: 0, pd: 0, name: '', wd: 0, id: 424242, ad: today(), gs: 0, sd: 94 }];
+async function openYard(page) {
+  const errs = await open(page, 'about:blank');
+  await page.addInitScript((an) => {
+    if (sessionStorage.getItem('hen-seeded')) return;
+    sessionStorage.setItem('hen-seeded', '1');
+    localStorage.setItem('bw-social-v1', JSON.stringify({ g: { none: 1 } }));
+    const fence = [];
+    for (let i = 9; i <= 25; i++) { fence.push({ i, j: 7 }); if (i !== 23 && i !== 24) fence.push({ i, j: 15 }); }
+    for (let j = 8; j <= 14; j++) { fence.push({ i: 9, j }); fence.push({ i: 25, j }); }
+    const day = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('hs-v1', JSON.stringify({ v: 1, name: 'Testy’s Homestead', claimedAt: Date.now(), stage: 3, items: [{ id: 'trough', x: 700, y: 540 }], shed: [], orders: [],
+      inItems: {}, bed: [null, null, null, null], home: { x: 760, y: 430 }, bedAt: { x: 610, y: 700 }, fence,
+      soil: [{ i: 16, j: 12, crop: 'carrot', waters: 1, last: '', planted: day }, { i: 17, j: 12 }],
+      animals: an, animalsV: 3, hens: 3 }));
+  }, YARD_ANIMALS);
+  await page.route('**/yards/echoes*', (r) => r.fulfill({ contentType: 'application/json', body: '{"echoes":[]}' }));
+  await page.goto('/homestead/?hstest=rich&shimmer', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__hs && window.__hs.wx && document.querySelector('.shb'), null, { timeout: 30000 });
+  await page.evaluate(() => window.__hs.wx('clear'));
+  // stand by the trough, where the flock and the crop are in view
+  await page.evaluate(() => { window.__hs.tgt.x = 700; window.__hs.tgt.y = 600; });
+  await page.waitForTimeout(2500);
+  return errs;
+}
+const henBtn = (page, name) => page.locator('.shb-row button', { hasText: name }).first();
+
+test('homestead: every Hen perk plays on a real yard — two hearts, the extra goods, the pet at your heels', async ({ page }) => {
+  test.setTimeout(120000);
+  const errs = await openYard(page);
+  expect(await page.evaluate(() => document.querySelectorAll('.hs-world .hs-hen').length), 'the flock is out: three hens, the kid, the sheep, the dog, the cat').toBe(7);
+  const hen = W.constellations.find((c) => c.key === 'hen');
+  await expect(page.locator('.shb-h', { hasText: hen.name })).toBeVisible();
+  for (const p of hen.perks) await expect(henBtn(page, p.name), p.name + ' plays').toBeEnabled();
+  // Double hearts: the hug's heart and a second one, in starlight
+  await henBtn(page, perkOf('dblhearts').name).evaluate((el) => el.click());
+  await expect.poll(() => page.locator('.shb-heart').count(), { timeout: 2000 }).toBe(2);
+  // Goods wait for you: four by the trough, then four more in starlight (two more days of them)
+  await henBtn(page, perkOf('goodswait').name).evaluate((el) => el.click());
+  await expect.poll(() => page.locator('.shb-good.is-star').count(), { timeout: 3000 }).toBe(4);
+  expect(await page.locator('.shb-good').count()).toBe(8);
+  // the top star: the pet comes along, and keeps up when you walk away
+  await henBtn(page, perkOf('hencap').name).evaluate((el) => el.click());
+  await expect(page.locator('.shb-pet')).toHaveCount(1);
+  const gap = () => page.evaluate(() => { const p = document.querySelector('.shb-pet').getBoundingClientRect(), m = document.querySelector('#hsMe canvas').getBoundingClientRect(); return Math.hypot(p.left + p.width / 2 - (m.left + m.width / 2), p.bottom - m.bottom); });
+  await page.evaluate(() => { window.__hs.tgt.x = 980; window.__hs.tgt.y = 640; });
+  await page.waitForTimeout(3500);
+  expect(await gap(), 'at your heels after the walk, a step behind').toBeLessThan(120);
+  await page.screenshot({ path: 'test-results/shimmer-hen-pet.png' });
+  await henBtn(page, perkOf('hencap').name).evaluate((el) => el.click());
+  await expect(page.locator('.shb-pet')).toHaveCount(0);
+  // and every other Hen perk plays without a fault
+  for (const p of hen.perks) {
+    if (['dblhearts', 'goodswait', 'hencap'].includes(p.key)) continue;
+    await henBtn(page, p.name).evaluate((el) => el.click());
+    await page.waitForTimeout(500);
+  }
+  await page.waitForTimeout(6500);
+  expect(await benchWrites(page), 'a preview: the bench wrote nothing').toEqual([]);
   expect(errs).toEqual([]);
 });
 
