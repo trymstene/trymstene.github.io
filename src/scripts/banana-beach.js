@@ -35,6 +35,7 @@ import BEACH_WORDS from '../data/copy/beach-toasts.json';   // ✍️ the last s
 import { pocketHave } from '../data/town/market.js';   // 👝 the pocket's balance: a lure comes out of it at the pier
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
+import { marksFor } from '../lib/world-marks.js';
 const BIG_COIN = '<img src="' + COIN_SRC + '" width="44" height="44" alt="bananacoins">';   // the catch card's big one, at its own 44 px
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file, never here: everything it
@@ -88,11 +89,12 @@ function init() {
   const VIEW_ART_W = 900, VIEW_ART_V = 760;
   const COURT_FIT = 500;   // art px that must always fit across (court = 480)
   const world = document.getElementById('bhWorld');
+  const marks = marksFor(view, world);   // 🔤 names, keepers' words and floats stand above the night (world-marks.js)
   const meEl = document.getElementById('bhMe');
   const meCtx = document.getElementById('bhMeCv').getContext('2d');
   const capEl = document.getElementById('bhCap');
   const capCtx = document.getElementById('bhCapCv').getContext('2d');
-  const capBubble = document.getElementById('bhCapBubble');
+  const capBubble = marks.pin(document.getElementById('bhCapBubble'));
   const cutEl = document.getElementById('bhCut');
   const hintEl = document.getElementById('bhHint');
   // 🌍 the World HUD — one shared strip, tinted for the bay. The rally line
@@ -711,7 +713,7 @@ function init() {
     else coinText(d, text);
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
-    world.appendChild(d);
+    marks.float(d);
     setTimeout(() => d.remove(), hold ? 2600 : 900);
   }
   // 🐚 the shell pickup — a DARK chip so it reads on bright sand, holds ~2.1s: NEW, and the shell's name
@@ -1299,7 +1301,7 @@ function init() {
   // in, the same 30px strip the daily shells spawn into.
   const SHELLY = { x: 1320, y: 806, r: 118 };
   const shellyEl = document.getElementById('bhShelly');
-  const shellyBubble = document.getElementById('bhShellyBubble');
+  const shellyBubble = marks.pin(document.getElementById('bhShellyBubble'));
   const shellyCtx = document.getElementById('bhShellyCv').getContext('2d');
 
   let shellyTimer = null, shellyGreeted = false, shellyIdx = 0;
@@ -1717,7 +1719,7 @@ function init() {
   // trip out passes him.
   const GIL = { x: 1812, y: 384, r: 118 };
   const gilEl = document.getElementById('bhGil');
-  const gilBubble = document.getElementById('bhGilBubble');
+  const gilBubble = marks.pin(document.getElementById('bhGilBubble'));
   const gilCtx = document.getElementById('bhGilCv').getContext('2d');
   const ledgerPanel = document.getElementById('bhLedger');
   const fishGrid = document.getElementById('bhFishGrid');
@@ -2247,7 +2249,7 @@ function init() {
   const SANDY_SPEED = 152;                    // a shade under yours (168)
   const sandyEl = document.getElementById('bhSandy');
   const sandyCtx = document.getElementById('bhSandyCv').getContext('2d');
-  const sandyBubble = document.getElementById('bhSandyBubble');
+  const sandyBubble = marks.pin(document.getElementById('bhSandyBubble'));
   const sandy = {
     x: SANDY_HOME.x, y: SANDY_HOME.y, tx: SANDY_HOME.x, ty: SANDY_HOME.y,
     last: 0, away: false, greeted: false, idx: 0, timer: 0,
@@ -3376,6 +3378,14 @@ function init() {
   // — Trym, 13 Sep 2026: "thats not needed for the other places". Rain falls on
   // #bhView, never #bhWorld, which the camera translates every frame.
   const weather = mountWeather(view, { track: (k) => track('beach_weather', { kind: k }) });
+  // 🌗 THE NIGHT (3 Oct 2026, design library §56): the world's light layer on the view, linked to the weather, with the
+  // bay's own lights — the bonfire, the fire pits it lights at sunset, the deck's lamps, the hut's window, the stalls, the
+  // bar and the claw machine, every banana — from a lazy chunk. Nothing on the first frame needs it.
+  let bhNight = null;
+  import('./beach-night.js').then((m) => {
+    bhNight = m.mountBayNight(view, weather, { world, W, H, pct, scale: () => scale, cam: () => ({ x: camX, y: camY }), pos: () => pos,
+      peers: () => peers, hideEl: (el, h) => { el.noCull = true; el.style.display = h ? 'none' : ''; } });
+  }).catch((e) => console.warn('[bay] the night did not load', e));
 
   // ---- the loop -----------------------------------------------------------
   // ⚠️ GATED TO ~60Hz — see the park's copy for the full reasoning. rAF fires
@@ -3478,6 +3488,7 @@ function init() {
     sandyTick(dt, now);
     baySendMove(now);              // 🌐 where you are, at most every 150ms
     cam();
+    if (bhNight) bhNight.tick(now);   // 🌗 after the camera (§56)
     prevX = pos.x; prevY = pos.y;
     // cam() sweeps whenever the camera moves; this catches the other case —
     // a crab walking out of view while you stand still
@@ -3775,7 +3786,10 @@ function init() {
       // lot of choreography to test one drag. coco() opens it, coco(true) skips
       // straight to a live round with balls in hand.
       coco: (live) => { openCoco(); if (live) setTimeout(() => cocoBuild(true), 200); },
-      get cocoState() { return coco; } };
+      get cocoState() { return coco; },
+      // 🌗 the night layer and its QA pin, the lights it is handed, which pits and lamps are lit (tests/beach-night.spec.mjs)
+      sky: () => (bhNight ? bhNight.state() : null), skyHour: (h) => { if (bhNight) bhNight.hour(h); },
+      lights: () => (bhNight ? bhNight.lights() : []), lit: () => (bhNight ? bhNight.lit() : null) };
   }
 
   // 🗨 ?bubbletest — PIN SANDY'S SPEECH BUBBLE OPEN, forever.
@@ -3924,7 +3938,7 @@ function init() {
     cv.width = CV; cv.height = CV;
     el.appendChild(cv);
     // a player's name over their head — and a new banana's tag before they have one, for the marker to sit on
-    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); }
+    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); marks.lift(tag, el); }
     world.appendChild(el);
     const p = {
       el, ctx: cv.getContext('2d'), outfit: d.outfit || {}, name: d.name || '',

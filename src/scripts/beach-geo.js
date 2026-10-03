@@ -72,6 +72,13 @@ export const OB_CIRCLES = [
   [2236, 596, 11],   // trashbin 9
   [2640, 890, 11],   // trashbin 8
   [150, 975, 8],   //   waypost pole
+  [620, 800, 20],   // campfire 1
+  [1240, 405, 20],   // campfire 1
+  [1840, 470, 20],   // campfire 1
+  [1998, 352, 8],   // deck lamp
+  [2702, 352, 8],   // deck lamp
+  [1998, 996, 8],   // deck lamp
+  [2702, 996, 8],   // deck lamp
   [215, 655, 48],   // the bonfire ring
 ];
 
@@ -181,6 +188,13 @@ export const OVERLAYS = [
   { src: 'ov-90.png', x: 1745, y: 1074, w: 38, h: 22, base: 1096 },
   { src: 'ov-91.png', x: 1811, y: 1058, w: 38, h: 38, base: 1096 },
   { src: 'ov-92.png', x: 146, y: 911, w: 8, h: 64, base: 975 },
+  { src: 'ov-93.png', x: 601, y: 776, w: 38, h: 24, base: 800 },
+  { src: 'ov-94.png', x: 1221, y: 381, w: 38, h: 24, base: 405 },
+  { src: 'ov-95.png', x: 1821, y: 446, w: 38, h: 24, base: 470 },
+  { src: 'ov-96.png', x: 1984, y: 216, w: 65, h: 136, base: 352 },
+  { src: 'ov-97.png', x: 2652, y: 216, w: 65, h: 136, base: 352 },
+  { src: 'ov-98.png', x: 1984, y: 860, w: 65, h: 136, base: 996 },
+  { src: 'ov-99.png', x: 2652, y: 860, w: 65, h: 136, base: 996 },
 ];
 
 // ⛱ CLICKABLE PARASOLS. NOT baked into the plate (a baked open one would show
@@ -220,3 +234,8 @@ export const PARK_SIGN = { x: 150, y: 975 };
 // in OVERLAYS (it y-sorts like a palm) and in OB_RECTS (you can't walk in).
 export const HUT = { x: 1390, y: 492, w: 162, h: 150,
   win: { x: 1344, y: 401, w: 92, h: 42 } };
+
+// 🌗 the fire pits the page lights at sunset (x, base), and the deck's lamps: [overlay index, flipped]
+export const FIRE_PITS = [[620, 800], [1240, 405], [1840, 470]];
+export const LAMPS = [[96, 0], [97, 1], [98, 0], [99, 1]];
+export const LAMP_HALO = { w: 182, h: 182, n: 4, dx: -41, dy: -48, dxf: -76 };

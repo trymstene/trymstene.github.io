@@ -520,6 +520,9 @@ def build_hut():
 _cache = {}
 PLACED = []                  # every prop's footprint, for audit_court()
 COLLIDERS = []               # (name, shape, cx, base) — emitted by emit_geo()
+FIRE_PITS_AT = []            # 🌗 the fire pits the page lights at sunset (x, base)
+LAMPS_PLACED = []            # 🌗 the deck's lamps: (foot x, foot y, flipped, overlay index)
+LAMP_HALO = None             # …and where their lit frames sit over each one
 NET_SPRITE = []              # [x, y, w, h] of net.png in world coords
 OVERLAYS = []                # (file, x, y, w, h, base) — y-sorted prop layer
 UMBRELLAS = []               # clickable parasols — open/closed, NOT baked
@@ -1132,6 +1135,12 @@ export const HUT = { x: %d, y: %d, w: %d, h: %d,
        HUT_AT[0] - HUT_SPRITE[0] // 2 + HUT_WIN[0] + 1,
        HUT_AT[1] - HUT_SPRITE[1] + HUT_WIN[1] + 1,
        HUT_WIN[2] - HUT_WIN[0], HUT_WIN[3] - HUT_WIN[1])
+    # 🌗 the bay's night: the fire pits the page lights at sunset, the deck's lamps ([overlay index, flipped]) and where
+    # their lit frames sit over each one
+    out += '\n// 🌗 the fire pits the page lights at sunset (x, base), and the deck\'s lamps: [overlay index, flipped]\n'
+    out += 'export const FIRE_PITS = %s;\n' % [list(p) for p in FIRE_PITS_AT]
+    out += 'export const LAMPS = %s;\n' % [[i, 1 if fl else 0] for _x, _y, fl, i in LAMPS_PLACED]
+    out += 'export const LAMP_HALO = %s;\n' % ('{ w: %d, h: %d, n: %d, dx: %d, dy: %d, dxf: %d }' % LAMP_HALO if LAMP_HALO else 'null')
     p = os.path.join(SITE, 'src', 'scripts', 'beach-geo.js')
     with open(p, 'w', encoding='utf-8') as f:
         f.write(out)
@@ -1786,6 +1795,51 @@ if HAVE_PACK:
     # a dock is a FLOOR, not a wall — it must never occlude a banana standing
     # on it. Cropped off the finished plate, so the water it carries at its
     # edges is identical to what sits underneath.
+    # 🌗 THE BAY AT NIGHT (3 Oct 2026, design library §56). Trym: "not sure streetlights are the best solution, if there
+    # exist torches, or just use more bonfires for the beach maybe that fits the beach better … the wooden bay area with the
+    # stalls all to the right could probably have some lightposts / fitting streetlight a couple of places". No pack Trym
+    # owns has a torch, so the sand gets the pack's own campfire: three more fire pits along
+    # the trail — beside the court, on the shore by the hut (clear of Shelly: the first try burned behind her head), by
+    # the pier — laid with logs by day (Camping Campfire_1) and lit at sunset by the
+    # page with the bonfire's own flame (a-fire.png). The deck gets the world's lamp at its four corners, the town's and the
+    # park's post, and its lit frames as n-lamp.png: only what is opaque, the lit glass without the pack's halo (Trym, of
+    # the town's: "keep the one lighting up the ground and remove the one on the lamp itself").
+    # ⚠️ nothing on the trail's echo walk, a dig patch, a seat or a path the bananas use (check-design §42 walks the echoes)
+    for fx, fy in ((620, 800), (1240, 405), (1840, 470)):
+        place('ME_Singles_Camping_48x48_Campfire_1.png', fx, fy, sh=0.5, layer=True, solid=('circle', 20))
+        FIRE_PITS_AT.append((fx, fy))
+    LAMP_POST = 'ME_Singles_City_Props_48x48_Street_Lamp_1.png'
+    LG = dict(factor=1, colors=28, warm=0.0, sat=1.0, con=1.0)   # the town's and the park's lamp, pixel for pixel
+    try:
+        _st = blockify(load_pack(LAMP_POST), **LG)
+        _ls = _st.resize((max(1, int(_st.width * PROP)), max(1, int(_st.height * PROP))), Image.NEAREST)
+        _foot = [x for x in range(_ls.width) if _ls.getpixel((x, _ls.height - 2))[3] > 128]
+        _px = (_foot[0] + _foot[-1]) / 2.0                     # the post's middle, in the unflipped sprite
+        # (foot x, foot y, flipped) — the deck's four corners, each lantern hanging in over the planks
+        for fx, fy, fl in ((1998, 352, False), (2702, 352, True), (1998, 996, False), (2702, 996, True)):
+            cx_ = int(round(fx - ((_ls.width - 1 - _px) if fl else _px) + _ls.width // 2))
+            shadow(fx + 1, fy - 1, 12, 4, a=58)
+            place(LAMP_POST, cx_, fy, flip=fl, shade=False, layer=True, **LG)
+            COLLIDERS.append(('deck lamp', ('circle', 8), int(fx), int(fy)))   # the POST's foot, not the box's middle
+            LAMPS_PLACED.append((fx, fy, fl, len(OVERLAYS) - 1))
+        _sheet = load_pack('Street_Lamp_48x48.png').convert('RGBA')
+        _fr = [_sheet.crop((k * 240, 0, (k + 1) * 240, 240)) for k in range(4)]
+        _hw = int(240 * PROP)
+        _strip = Image.new('RGBA', (_hw * 4, _hw), (0, 0, 0, 0))
+        for k, f in enumerate(_fr):
+            _strip.alpha_composite(f.resize((_hw, _hw), Image.NEAREST), (k * _hw, 0))
+        _strip.putalpha(_strip.getchannel('A').point(lambda v: 255 if v >= 250 else 0))   # the lit lamp, no halo
+        _strip.save(os.path.join(OUT, 'n-lamp.png'), optimize=True)
+        _sb = _st.getchannel('A').getbbox()
+        _fb = Image.eval(_fr[0].getchannel('A'), lambda v: 255 if v >= 250 else 0).getbbox()
+        _bw = _fb[2] - _fb[0]
+        LAMP_HALO = (_hw, _hw, 4, int(round((_sb[0] - _fb[0]) * PROP)), int(round((_sb[1] - _fb[1]) * PROP)),
+                     int(round(((_st.width - _sb[0] - _bw) - (240 - _fb[2])) * PROP)))
+        print('  the bay at night: %d fire pits, %d deck lamps, lit frames dx %d dy %d dxf %d'
+              % ((len(FIRE_PITS_AT), len(LAMPS_PLACED)) + LAMP_HALO[3:]))
+    except Exception as e:
+        print('  ! deck lamps', e)
+
     PIER_SPRITE.extend([px0 - 8, py0, (px1 + 8) - (px0 - 8), (py1 + 12) - py0])
     im.crop((px0 - 8, py0, px1 + 8, py1 + 12)).save(
         os.path.join(OUT, 'pier.png'), optimize=True)
