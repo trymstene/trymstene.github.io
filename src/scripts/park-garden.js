@@ -1582,7 +1582,7 @@ export function initGarden(ctx) {
     // invisible in GA4 and the next tuning round is guesswork
     if (!plantTracked) {
       plantTracked = true;
-      track('park_plant', { seed: seedId, held: myPlants(), paid: free ? 0 : cost });
+      track('park_plant', { seed: seedId, held: myPlants(), paid: cost });   // ⚠️ it read `free` (the fountain's free seed, gone 25 Sep): every first plant threw here
     }
     // 🪪 THE NAMING MOMENT. Fires AFTER the seed is in — nothing is gated,
     // so "not now" costs nothing. askName() is silent if they already have a
