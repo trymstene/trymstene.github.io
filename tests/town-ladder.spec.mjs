@@ -11,6 +11,7 @@ import STAFF from '../src/data/copy/town-staff.json' with { type: 'json' };
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
 import DUTY from '../src/data/copy/town-duties.json' with { type: 'json' };
 import { tipsCap, xpAt, LADDER } from '../src/data/town/jobs.js';
+import { tapResident } from './tap-resident.mjs';
 
 const stand = (page, x, y) => page.evaluate(([px, py]) => { const t = window.__town; t.pos.x = t.tgt.x = px; t.pos.y = t.tgt.y = py; }, [x, y]);
 const view = (lad) => ({ ok: true, job: { at: 'cafe', week: '2026-W39', days: 1, pay: 0, duties: [], share: 0, sofar: 0, owed: 0, nudge: false, fired: null, lad } });
@@ -78,10 +79,7 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     // ── walk up to Bean and tap Bean, the way a player does: the news is the FIRST question on the card
     const at = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
     await stand(page, at.x + 40, at.y + 20);
-    await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k="bean"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
-    await page.waitForTimeout(400);
-    const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-    await page.mouse.click(hit.x, hit.y);
+    await tapResident(page, 'bean');
     await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), STAFF.promoQ, { timeout: 10000 });
     const qs = await page.evaluate(() => [...document.querySelectorAll('#twCardBody .wd-q button')].map((b) => b.textContent));
     expect(qs[0], '⭐ the boss’s news is the first thing you can ask').toBe(STAFF.promoQ);
@@ -135,9 +133,7 @@ for (const [w, h] of [[360, 640], [393, 852]]) {
     // ── Bean has nothing more to tell: no news question on the card (Bean has walked on by now: find Bean again)
     const at2 = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
     await stand(page, at2.x + 40, at2.y + 20);
-    await page.waitForTimeout(500);
-    const hit2 = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-    await page.mouse.click(hit2.x, hit2.y);
+    await tapResident(page, 'bean');
     await page.waitForFunction(() => document.querySelectorAll('#twCardBody .wd-q button').length > 0, null, { timeout: 10000 });
     const qs2 = await page.evaluate(() => [...document.querySelectorAll('#twCardBody .wd-q button')].map((b) => b.textContent));
     expect(qs2, 'the news was told').not.toContain(STAFF.promoQ);
@@ -193,9 +189,7 @@ test('a warning, then a demotion, heard at Bean — and the card and the note sa
   // ── at Bean: "You wanted a word?" first; the warning names the rank you would drop to
   const at = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
   await stand(page, at.x + 40, at.y + 20);
-  await page.waitForTimeout(500);
-  const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-  await page.mouse.click(hit.x, hit.y);
+  await tapResident(page, 'bean');
   await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), STAFF.wordQ, { timeout: 10000 });
   expect((await page.evaluate(() => [...document.querySelectorAll('#twCardBody .wd-q button')].map((b) => b.textContent)))[0], '⭐ the boss’s word is the first thing to ask').toBe(STAFF.wordQ);
   await page.evaluate((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].find((b) => b.textContent === q).click(), STAFF.wordQ);
@@ -215,9 +209,7 @@ test('a warning, then a demotion, heard at Bean — and the card and the note sa
   // Bean has walked on by now: find Bean again
   const at2 = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
   await stand(page, at2.x + 40, at2.y + 20);
-  await page.waitForTimeout(500);
-  const hit2 = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-  await page.mouse.click(hit2.x, hit2.y);
+  await tapResident(page, 'bean');
   await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), STAFF.wordQ, { timeout: 10000 });
   await page.evaluate((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].find((b) => b.textContent === q).click(), STAFF.wordQ);
   const demoted = STAFF.demoted.bean.replace('{title}', STAFF.ranks.cafe[0]);

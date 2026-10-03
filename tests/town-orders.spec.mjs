@@ -9,13 +9,15 @@
 // farm order's goods off the farm on this device, keeps the server's slots and counts as two visits on the resident's
 // ladder. Every line is the copy file's (src/data/copy/town-exchange.json).
 import { test, expect } from '@playwright/test';
+import { fillWords } from '../src/lib/fill-words.js';
 import EXCHANGE from '../src/data/copy/town-exchange.json' with { type: 'json' };
 import NPCS from '../src/data/copy/town-npcs.json' with { type: 'json' };
 import { ordersOf, statOf, givenOf, LADDER_STEP } from '../src/data/town/orders.js';
 import { dayOf } from '../src/data/town/market.js';
 
 const O = EXCHANGE.orders, X = EXCHANGE.exchange;
-const fill = (t, v) => String(t).replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
+// the app's own filler, so a name that ends a sentence itself ("Fig Jr.") keeps one full stop, as on screen
+const fill = fillWords;
 const json = (o) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
 const nameOf = (key) => (NPCS.residents.find((r) => r.key === key) || {}).name;
 const TODAY = ordersOf(dayOf(Date.now()));

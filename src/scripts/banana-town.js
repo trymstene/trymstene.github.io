@@ -447,13 +447,14 @@ let legs = [];           // 💼 the rest of a walk along the streets (walkThen)
 let work = null;         // 💼 src/scripts/town-work.js, once the square stands
 let crowd = null;        // 👥 src/scripts/town-crowd.js — the other players, once the square stands (22 Sep 2026)
 let duties = null;       // 💼 src/scripts/town-duties.js — the work note, once the jobs are up (22 Sep 2026)
+const NOT_A_WALK = '.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup, .bwq-hint, .twd-chip';   // 📎 the two notes fold on a tap; they never walk   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
+const toWorld = (cx, cy) => { const r = view.getBoundingClientRect(); return [(cx - r.left + camX) / scale, (cy - r.top + camY) / scale]; };
 view.addEventListener('pointerdown', (e) => {
   if (!panel.hidden || sceneOn()) return;   // 🃏 a card is open: it owns every tap until it closes
-  if (e.target.closest('.wh, .tw-plank, .tw-toast, .tw-panel, .tw-tray, .tw-cup, .bwq-hint, .twd-chip')) return;   // 📎 the two notes fold on a tap; they never walk   // ☕ .tw-cup is the COUNTER's tray (the pocket owns .tw-tray) — a thumb on the gauge is not a walk
+  if (e.target.closest(NOT_A_WALK)) return;
   if (working()) return;   // 🔒 held at the counter: the tray's Leave button is the way out
   arriveThen = null; legs = [];   // a new tap cancels a pending cabinet, and a walk to work
-  const r = view.getBoundingClientRect();
-  const wx = (e.clientX - r.left + camX) / scale, wy = (e.clientY - r.top + camY) / scale;
+  const [wx, wy] = toWorld(e.clientX, e.clientY);
   if (inRoom === 'store' && serve && serve.at && serve.at(wx, wy) && serve.tap('cust')) return;   // 🙋 the customer themselves: give it to them
   const hit = thingAt(wx, wy);
   if (hit) {
@@ -1317,6 +1318,9 @@ assetsReady().then(() => {
   window.__town = { sky: () => (night ? night.state() : null),   // 🌗 the night layer: how dark, which stretch, the mood, how many lights it drew
     wears: () => ({ hat: ME_DRAW.hat, glasses: ME_DRAW.glasses, extras: { ...(ME_DRAW.extras || {}) }, c: ME_DRAW.c, art: (customArt(ME_DRAW.c) || []).length }),   // 🧪 what the banana on screen wears (tests/outfit-follows.spec.mjs)
     pos, tgt, SPOTS, ABOUT, PROPS, say, life: life.seam, room: room && room.seam, thing: (x, y) => thingAt(x, y),   // 🧪 what a tap on the square finds (a spot, a resident, a flyer, a room thing)
+    // 🧪 …and what a tap at a point ON THE SCREEN reaches, the tap handler's own early outs first: a walk taps a resident where the
+    // town finds them, not where it guessed they stand (tests/tap-resident.mjs: Moss sweeping past Bean's feet took his taps)
+    tapFinds: (cx, cy) => { const el = document.elementFromPoint(cx, cy); if (!panel.hidden || sceneOn() || working() || !el || !view.contains(el) || el.closest(NOT_A_WALK)) return null; const [x, y] = toWorld(cx, cy); return thingAt(x, y); },
   // 🧪 the town's OWN tap answer — `room.open` is town-room's, and the wheel, the exchange, the travel
   // door and the clothes shop are answered here instead, so a walk had no way to reach any of them
   // ⚠️ the same answer a TAP gives: a place with no card of its own says its line (the fallback the tap handler has)

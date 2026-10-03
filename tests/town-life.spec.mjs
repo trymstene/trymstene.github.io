@@ -11,6 +11,7 @@ import { GHOSTS, ROAM } from '../src/data/town/ghosts.js';
 import * as decorMod from '../src/data/decor.js';
 import { OVERLAYS } from '../src/scripts/town-geo.js';
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
+import { tapResident } from './tap-resident.mjs';
 
 const SHOT = 'test-results/town-';
 
@@ -1031,15 +1032,8 @@ test('a boss can be asked for a job, and answers the right one of four lines', a
   // square also carries nameless VISITORS wearing the same class. It failed both its attempts in one
   // full-suite run and passed alone in six seconds: a guard that is a coin flip at two workers is
   // close to no guard. town-life.js stamps `data-k` on every resident for exactly this.
-  await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k=\"pip\"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
-  // his chest, in world px (the counter hides his feet): the camera decides where that is on the screen
-  const hit = await page.evaluate(() => {
-    const n = window.__town.life.residents().find((q) => q.key === 'pip');
-    const w = document.getElementById('twWorld'), sc = parseFloat(w.style.getPropertyValue('--ws')), r = w.getBoundingClientRect();
-    return { x: r.left + n.x * sc, y: r.top + (n.y - 50) * sc };
-  });
-  expect(hit, 'Pip is on screen to be tapped').toBeTruthy();
-  await page.mouse.click(hit.x, hit.y);
+  // The counter hides his feet (a tap there is the till's): tapResident finds the part of him the town answers to
+  await tapResident(page, 'pip');
   await page.waitForFunction(() => (document.getElementById('twCardBody').textContent || '').trim().length > 0, null, { timeout: 10000 });
 
   const said = await page.evaluate(() => document.getElementById('twCardBody').textContent || '');

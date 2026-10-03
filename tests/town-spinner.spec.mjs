@@ -7,6 +7,7 @@
 // new resident runs the wheel, Moss lives elsewhere — and nobody waits on a doorstep any more (they wait indoors).
 import { test, expect } from '@playwright/test';
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
+import { tapResident } from './tap-resident.mjs';
 
 const who = (page, k) => page.evaluate((key) => window.__town.life.residents().find((r) => r.key === key), k);
 async function town(page) {
@@ -54,8 +55,7 @@ test('on his indoor beats Spinner is on the arcade’s floor: gone from the squa
   expect(drawn.z, 'on the player’s own layer indoors').toBeGreaterThan(2100);
   await page.waitForTimeout(600);
   await page.screenshot({ path: 'test-results/town-spinner-inside.png' });
-  const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="spinner"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * 0.6 }; });
-  await page.mouse.click(hit.x, hit.y);
+  await tapResident(page, 'spinner');
   await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), LIFE.work.ask, { timeout: 10000 });
   expect(await page.locator('#twCardBody h2').textContent(), 'his card').toBe('Spinner');
   await page.screenshot({ path: 'test-results/town-spinner-card.png' });

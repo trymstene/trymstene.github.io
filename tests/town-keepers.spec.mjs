@@ -13,6 +13,7 @@ import FRONTS from '../src/data/copy/town-fronts.json' with { type: 'json' };
 import MARKET from '../src/data/copy/town-market.json' with { type: 'json' };
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
 import { CAFE_WIN } from '../src/scripts/town-geo.js';
+import { tapResident as tapWhereFound } from './tap-resident.mjs';
 
 const nameOf = (key) => (NPCS.residents.find((r) => r.key === key) || {}).name;
 const json = (o) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
@@ -31,14 +32,11 @@ async function town(page, hour) {
   await page.waitForTimeout(300);
   return errs;
 }
-// a real tap on a resident, the way a player does it: stand beside them, then tap their feet
+// a real tap on a resident, the way a player does it: stand beside them, then tap where the town finds them
 async function tapResident(page, key) {
   const at = await page.evaluate((k) => { const n = window.__town.life.residents().find((r) => r.key === k); return { x: n.x, y: n.y }; }, key);
   await stand(page, at.x + 60, at.y + 30);
-  await page.waitForFunction((k) => { const e = document.querySelector('.tw-npc[data-k="' + k + '"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, key, { timeout: 15000 });
-  await page.waitForTimeout(500);
-  const hit = await page.evaluate((k) => { const r = document.querySelector('.tw-npc[data-k="' + k + '"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; }, key);
-  await page.mouse.click(hit.x, hit.y);
+  await tapWhereFound(page, key);
 }
 // a real tap on a place's picture, at a fraction of its box (kept clear of whoever stands in front of it)
 async function tapPlace(page, key, fx, fy) {

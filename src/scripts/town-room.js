@@ -95,19 +95,22 @@ export function bootTownLife(ctx) {
     if (band && BANDS.indexOf(b) < BANDS.indexOf(band) && v >= BAND_LO[band] - HYST) return band;
     return b;
   }
+  // 🧪 the test room's answer, worked out on the spot: lifeFetch hands it back as a promise like the real room's, and the QA
+  // seam's set() applies it at once (below)
+  function shimAnswer(path, body) {
+    if (path === '/fix') { if (shim.used < 24) { shim.v = Math.min(100, shim.v + 2); shim.used++; shim.fixes++; shim.people = 1; } }   // mirrors worker-rave TOWN_FIX / TOWN_FIX_CAP
+    let counted = 0;
+    // 👻 mirrors worker-rave TOWN_DARK (2 a wreck) / TOWN_DARK_NIGHT (15 points) / TOWN_DARK_FLOOR (45): the shim is one long plain night
+    if (path === '/dark') { const n = Math.max(1, Math.min(10, Math.round(+(body && body.n)) || 1)); counted = Math.max(0, Math.min(n, Math.floor(Math.min(15 - shim.dark, Math.floor(shim.v - 45 + 1e-9)) / 2))); shim.v = Math.max(5, shim.v - 2 * counted); shim.dark += 2 * counted; }
+    return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 15, floor: 45, night: true, per: 2 }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
+      // ⚠️ a forced MORNING says a night happened and that none is happening now — setting `curse`
+      // to the tier put ghosts in the square in daylight, which is a different thing entirely.
+      curse: shim.night ? 'none' : curseAt(Date.now()).type, stormAt: 0,   // …so a forced morning is NOT the real clock's evening curse (a real hush failed the walk, 2 Oct)
+      curseAt: shim.night ? shim.night.at : 0, curseKind: shim.night ? shim.night.tier : '', ok: 1 };
+  }
   async function lifeFetch(path, body) {
     const own = worldOwner(), sid = worldSid(), wt = worldToken();
-    if (TEST) {
-      if (path === '/fix') { if (shim.used < 24) { shim.v = Math.min(100, shim.v + 2); shim.used++; shim.fixes++; shim.people = 1; } }   // mirrors worker-rave TOWN_FIX / TOWN_FIX_CAP
-      let counted = 0;
-      // 👻 mirrors worker-rave TOWN_DARK (2 a wreck) / TOWN_DARK_NIGHT (15 points) / TOWN_DARK_FLOOR (45): the shim is one long plain night
-      if (path === '/dark') { const n = Math.max(1, Math.min(10, Math.round(+(body && body.n)) || 1)); counted = Math.max(0, Math.min(n, Math.floor(Math.min(15 - shim.dark, Math.floor(shim.v - 45 + 1e-9)) / 2))); shim.v = Math.max(5, shim.v - 2 * counted); shim.dark += 2 * counted; }
-      return { life: Math.round(shim.v * 10) / 10, band: bandOf(shim.v), set: 42, cap: { used: shim.used, max: 24 }, dark: { used: shim.dark, max: 15, floor: 45, night: true, per: 2 }, counted, today: { fixes: shim.fixes, people: shim.people, dark: shim.dark },
-        // ⚠️ a forced MORNING says a night happened and that none is happening now — setting `curse`
-        // to the tier put ghosts in the square in daylight, which is a different thing entirely.
-        curse: shim.night ? 'none' : curseAt(Date.now()).type, stormAt: 0,   // …so a forced morning is NOT the real clock's evening curse (a real hush failed the walk, 2 Oct)
-        curseAt: shim.night ? shim.night.at : 0, curseKind: shim.night ? shim.night.tier : '', ok: 1 };
-    }
+    if (TEST) return shimAnswer(path, body);
     if (body) { body.pass = own; body.alt = sid; if (wt) body.wt = wt; }
     try {
       const r = await fetch(LIFE_API + path + (body ? '' : '?pass=' + encodeURIComponent(own.slice(0, 8)) + '&alt=' + encodeURIComponent(sid.slice(0, 8))
@@ -1448,8 +1451,16 @@ export function bootTownLife(ctx) {
     open: (k) => openFor(k),
     shutNow,   // 🗺️ the kiosk's card asks whether its own shutter is down
     nextWave: () => { if (!TEST) return -1; waveOfs++; waveAt = waveNum(); reseedProblems(); return waveNum(); },   // the walk cannot wait six hours for the next set
-    set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); shim.dark = 0; return read(); },   // through the real read, hysteresis and all; a set is a fresh night for the ghosts' take
-    curse: (t) => { if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse(); },   // 'none' = a forced calm, 'omen' = the signs without the night
+    // through the real apply, hysteresis and all; a set is a fresh night for the ghosts' take. ⚠️ AT ONCE (3 Oct 2026): a walk sets
+    // the town and then the hour in one breath, and through read()'s await the hour placed the residents by the OLD town
+    set: (v) => { if (!TEST) return false; shim.v = Math.max(0, Math.min(100, +v)); shim.dark = 0; readAt = Date.now(); apply(shimAnswer('')); return Promise.resolve(); },
+    curse: (t) => {   // 'none' = a forced calm, 'omen' = the signs without the night
+      if (t) story.forceCurse({ tier: t, mins: 30 }); else story.endCurse();
+      // ⚠️ and AT ONCE, as the next tick would (3 Oct 2026): placed under the old curse, Tally stayed home (town-keepers). A curse
+      // the night's chunk is not in for yet still waits for it.
+      const c = curseNow(), cType = c === 'none' ? null : c;
+      if (dusk && cType !== curse) { if (curse) dusk.leaveCurse(); if (cType) dusk.enterCurse(cType); }
+    },
     // 🌑 THE MORNING AFTER: say a night of this tier ended `agoMins` ago and let the square wear it.
     // The only way to see it otherwise is to wait for a deep night, which is 3% of days.
     // ⚠️ `morning`, not `night` — this seam already has a night() further down (the darkness level)

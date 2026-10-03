@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test';
 import STAFF from '../src/data/copy/town-staff.json' with { type: 'json' };
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
+import { tapResident } from './tap-resident.mjs';
 
 const stand = (page, x, y) => page.evaluate(([px, py]) => { const t = window.__town; t.pos.x = t.tgt.x = px; t.pos.y = t.tgt.y = py; }, [x, y]);
 const job = (sotw) => ({ at: 'cafe', week: '2026-W41', days: 2, pay: 0, duties: [], share: 0, sofar: 0, owed: 0, nudge: false, fired: null, sotw, lad: { xp: 120, rank: 1, today: 0 } });
@@ -28,10 +29,7 @@ async function town(page, sotw) {
 async function tapBean(page) {
   const at = await page.evaluate(() => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
   await stand(page, at.x + 40, at.y + 20);
-  await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k="bean"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
-  await page.waitForTimeout(400);
-  const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-  await page.mouse.click(hit.x, hit.y);
+  await tapResident(page, 'bean');
   await page.waitForSelector('#twCardBody .wd-q button', { timeout: 10000 });
 }
 const questions = (page) => page.evaluate(() => [...document.querySelectorAll('#twCardBody .wd-q button')].map((b) => b.textContent));

@@ -10,6 +10,7 @@
 // that has gone up, one plain line says where the work is. Every word is the rig's (town-life `work`).
 import { test, expect } from '@playwright/test';
 import LIFE from '../src/data/copy/town-life.json' with { type: 'json' };
+import { tapResident } from './tap-resident.mjs';
 
 const seam = (page, fn, arg) => page.evaluate(fn, arg);
 const stand = (page, x, y) => page.evaluate(([px, py]) => { const t = window.__town; t.pos.x = t.tgt.x = px; t.pos.y = t.tgt.y = py; }, [x, y]);
@@ -30,10 +31,7 @@ async function toBean(page, w, h) {
   // walk up to Bean and tap Bean, the way a player does
   const at = await seam(page, () => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
   await stand(page, at.x + 40, at.y + 20);
-  await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k="bean"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
-  await page.waitForTimeout(400);
-  const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-  await page.mouse.click(hit.x, hit.y);
+  await tapResident(page, 'bean');
   await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), LIFE.work.ask, { timeout: 10000 });
   return errors;
 }
@@ -108,8 +106,7 @@ test('a boss who says no, or already has you, never sets off the moment', async 
   const errors = await toBean(page, 393, 852);
   await seam(page, () => window.__town.work.set({ at: 'store' }));   // you work for Pip: Bean says you are his
   await seam(page, () => document.getElementById('twCardX').click());
-  const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-  await page.mouse.click(hit.x, hit.y);
+  await tapResident(page, 'bean');
   await page.waitForFunction((q) => [...document.querySelectorAll('#twCardBody .wd-q button')].some((b) => b.textContent === q), LIFE.work.ask, { timeout: 10000 });
   const q = await page.evaluateHandle((ask) => [...document.querySelectorAll('#twCardBody .wd-q button')].find((b) => b.textContent === ask), LIFE.work.ask);
   await q.asElement().click();
@@ -137,10 +134,7 @@ test('asking to stop working: the boss says goodbye, the card closes by itself, 
   const tapBean = async () => {
     const at = await seam(page, () => { const n = window.__town.life.residents().find((r) => r.key === 'bean'); return { x: n.x, y: n.y }; });
     await stand(page, at.x + 40, at.y + 20);
-    await page.waitForFunction(() => { const e = document.querySelector('.tw-npc[data-k="bean"]'); return !!(e && !e.hidden && e.getBoundingClientRect().width); }, null, { timeout: 15000 });
-    await page.waitForTimeout(400);
-    const hit = await page.evaluate(() => { const r = document.querySelector('.tw-npc[data-k="bean"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height - 12 }; });
-    await page.mouse.click(hit.x, hit.y);
+    await tapResident(page, 'bean');
     await page.waitForSelector('#twCardBody .wd-q button', { timeout: 10000 });
   };
   await tapBean(page);
