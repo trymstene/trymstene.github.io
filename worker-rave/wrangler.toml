@@ -68,11 +68,13 @@ ALLOWED_ORIGIN = "https://trymstene.com,http://localhost:8803,http://127.0.0.1:4
 # Flip to "1" once /yards/stats shows wt.none at ~0 for a day: then a
 # person-id claim (pass ≠ alt) without proof is refused too.
 WT_ENFORCE = "1"   # flipped 2 Sep 2026 evening (Trym: "flip it")
-# ✉️ THE LETTER RAIL'S KILL SWITCH, AND IT SHIPS SHUT. "1" = every /post route answers 503 before it
-# reads the origin or the body. This is the plan's gate one: POST_OFF deployed and PROVEN to refuse
-# before a single letter is sent. Flip to "0" only when the filter, the caps, the report and the review
-# list have all been walked on the real worker.
-POST_OFF = "1"
+# ✉️ THE LETTER RAIL'S KILL SWITCH. "1" = every /post route answers 503 before it reads the origin or
+# the body. It shipped shut (20 Sep 2026, the plan's gate one: deployed and PROVEN to refuse before a
+# single letter was sent) and has been OPEN in production since the filter, the caps, the report and the
+# review list were walked on the real worker. ⚠️ So this file says "0" too (3 Oct 2026): while it said
+# "1", every plain `wrangler deploy` put the "1" back and silently shut the post — the night's deploys on
+# 2 Oct did exactly that, and only the two-device proof noticed. To shut the post, set "1" and deploy.
+POST_OFF = "0"
 # 📮 AND THE SECOND SWITCH, which is not the same switch. "1" = free-text LETTERS are refused and
 # POSTCARDS still go, because a card carries nothing anybody typed: a template id, an index into an
 # approved deck, and an outfit. docs/town-jobs-plan.md §6 asks for exactly this — "the postcard
