@@ -53,8 +53,7 @@ export function mountParkNight(view, weather, p) {
     const put = (x, y, r, col, i, bloom, more) => out.push({ x: x * k - c.x, y: y * k - c.y, r: r * k, c: col, i, bloom, ...more });
     for (const L of lamps) {
       if (!L.on) continue;
-      put(L.x + L.w / 2 + (L.fl ? -4 : 4), L.y + L.h * 0.92, 170, LAMP, 0.95, 0, { sq: 1.6 });   // the pool on the ground
-      put(L.x + L.w * (L.fl ? 0.28 : 0.72), L.y + L.h * 0.2, 38, LAMP, 0.35, 0.75);              // …and the glass
+      put(L.x + L.w / 2 + (L.fl ? -4 : 4), L.y + L.h * 0.92, 170, LAMP, 0.95, 0, { sq: 1.6 });   // the pool on the ground — only the ground (§56)
     }
     for (const s of panes) {
       const [cx, cy, w, h, b] = s.pane;
@@ -78,8 +77,7 @@ export function mountParkNight(view, weather, p) {
     for (const q of p.peers().values()) if (Number.isFinite(q.x) && Number.isFinite(q.y)) put(q.x, q.y - 40, 50, ME, 0.32, 0);   // …and so does every visitor
     return out;
   }
-  // 🔤 Old Peel's words and the animals' moods stay readable, and a reward's float glows (world-night.js)
-  const night = weather.link(mountNight(view, { lights, keep: '.pk-mood.is-on', glow: '.pk-float' }));
+  const night = weather.link(mountNight(view, { lights, cam: p.cam }));
   night.lights = () => lights(night.level());   // 🧪 what the walk reads: every light the park hands over right now
   // 🌗 each lamp comes on when the sky is dark enough for IT (world.js litAt), the plaza's four first
   const tick = night.tick;

@@ -37,6 +37,7 @@ import { initWeather } from './park-weather.js';
 import { weatherAt } from '../lib/world.js';
 import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
+import { marksFor } from '../lib/world-marks.js';
 
 // ⚠️ init() is CALLED AT THE BOTTOM of this file — module consts first,
 // entry point last (the TDZ trap that once killed the rave floor).
@@ -71,6 +72,7 @@ function init() {
   const VIEW_ART_W = 900, VIEW_ART_V = 760;
   const PLAZA_FIT = 520;   // the plaza (500 wide) must always fit across
   const world = document.getElementById('pkWorld');
+  const marks = marksFor(view, world);   // 🔤 names, emotes and floats stand above the night (world-marks.js)
   const base = document.getElementById('pkBase');   // the ground's own layer
   const meEl = document.getElementById('pkMe');
   const meCtx = document.getElementById('pkMeCv').getContext('2d');
@@ -784,7 +786,7 @@ function init() {
     else coinText(d, text);
     d.style.left = pct(x, W);
     d.style.top = pct(y, H);
-    world.appendChild(d);
+    marks.float(d);
     setTimeout(() => d.remove(), 900);
   }
 
@@ -873,7 +875,7 @@ function init() {
     // the path or its shoulder without needing a second generated lattice
     puddleSpots: WEED_GRID.map((g) => [g[0] + 24, g[1] + 24]),
     wxForce: null,
-    pos, tgt, float, toast, blink,
+    pos, tgt, float, toast, blink, marks,
     phase: () => phase, setPhase, phaseFor,
     pSpeed: () => pSpeed,
     coinBal: coinBalance, refreshHud,
@@ -1035,10 +1037,10 @@ function init() {
     garden.gardenTick();
     garden.toolTick();
     weather.wxTick(now);
-    if (pkNight) { pkNight.tick(now); critters.setNight(pkNight.level() > 0.5); }   // 🌙 the animals keep the sky's hours
     doorTick();
     parkSendMove(now);
     cam();
+    if (pkNight) { pkNight.tick(now); critters.setNight(pkNight.level() > 0.5); }   // 🌗 after the camera (§56); 🌙 the animals keep its hours
     // cam() sweeps whenever the camera moves; this catches the other case —
     // a critter walking out of view while you stand still
     if ((++sweepN & 7) === 0) cullSweep();
@@ -1084,7 +1086,7 @@ function init() {
     cv.width = CV; cv.height = CV;
     el.appendChild(cv);
     // a player's name over their head — and a new banana's tag before they have one, for the marker to sit on
-    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); }
+    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); marks.lift(tag, el); }
     world.appendChild(el);
     const p = {
       el, ctx: cv.getContext('2d'), outfit: d.outfit || {}, name: d.name || '',

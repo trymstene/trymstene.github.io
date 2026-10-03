@@ -59,7 +59,10 @@ export function bootTownCrowd(ctx) {
     // a player's name over their head is the park's grammar — the QUIET RULE is about speech, and
     // about the residents; a person is a person
     // …and a new banana's tag before they have a name, for the marker to sit on (world-social.js, 26 Sep 2026)
-    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'tw-peer__name bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); }
+    if (d.name || d.nw) {
+      const tag = document.createElement('span'); tag.className = 'tw-peer__name bw-name'; tag.textContent = d.name || ''; el.appendChild(tag);
+      if (world.parentElement && world.parentElement.__wm) world.parentElement.__wm.lift(tag, el);   // 🔤 above the night (world-marks.js)
+    }
     world.appendChild(el);
     const p = { el, ctx: cv.getContext('2d'), outfit: d.outfit || {}, name: d.name || '', x: fromPX(d.x), y: fromPY(d.y), room: d.room || '', lastF: -1 };
     peers.set(d.id, p);

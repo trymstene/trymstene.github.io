@@ -441,6 +441,7 @@ export function initCritters(ctx) {
     const bub = document.createElement('span');
     bub.className = 'pk-mood';
     el.appendChild(bub);
+    if (ctx.marks) ctx.marks.lift(bub, el);   // 🔤 above the night (world-marks.js)
     world.appendChild(el);
     const a = {
       el, bub, pond: !!sp.pond,

@@ -708,11 +708,15 @@ for f in os.listdir(OUT):
         os.remove(os.path.join(OUT, f))
 
 
-def export_frames(key, sheet_name, cols, fw, fh, row=0, scale=PROP, soft=False):
+def export_frames(key, sheet_name, cols, fw, fh, row=0, scale=PROP, soft=False, body=False):
     sh_ = Image.open(os.path.join(ANIM, sheet_name)).convert('RGBA')
     sub = Image.new('RGBA', (fw * len(cols), fh), (0, 0, 0, 0))
     for k, i in enumerate(cols):
         sub.alpha_composite(sh_.crop((i * fw, row * fh, (i + 1) * fw, (row + 1) * fh)), (k * fw, 0))
+    # 🌗 body=True keeps only what is OPAQUE: the lit lamp and its lit glass, without the pack's soft halo round its head —
+    # the night layer lights the ground under it, and a second light on the head was one too many (Trym, 3 Oct 2026)
+    if body:
+        sub.putalpha(sub.getchannel('A').point(lambda v: 255 if v >= 250 else 0))
     # ⚠️ LIGHT AND GHOSTS ARE SOFT. blockify thresholds alpha into a hard silhouette (by
     # design, for props) — which deletes a lamp's halo, a lantern's glow and a ghost's fade
     # outright (14 Sep: the lamps lit at night and nothing showed). Those keep their alpha.
@@ -750,7 +754,7 @@ def export_still(key, name, scale=PROP):
 
 
 for key, args in (
-    ('lamp', ('Street_Lamp_48x48.png', [0, 1, 2, 3], 240, 240, 0, PROP, True)),            # the SAME lamp, lit: four frames of a pulsing halo (240 wide — the halo is the frame)
+    ('lamp', ('Street_Lamp_48x48.png', [0, 1, 2, 3], 240, 240, 0, PROP, True, True)),      # the SAME lamp, lit: its glass shimmers through four frames; the halo round it is cut (body=True) — the frame stays 240 wide so the offsets hold
     ('ghost', ('Ghost_Friendly_48x48.png', list(range(0, 8)), 96, 96, 1)),   # the friendly ghost, floating, facing right (row 1: eight frames a facing)
     ('ghostf', ('Ghost_Friendly_48x48.png', list(range(24, 32)), 96, 96, 1)),  # …facing front
     ('ghost4', ('Ghost_Friendly_48x48.png', list(range(0, 32)), 96, 96, 1)),

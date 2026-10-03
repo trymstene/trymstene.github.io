@@ -1644,6 +1644,9 @@ if HAVE_PACK:
         _strip = Image.new('RGBA', (_hw * 4, _hw), (0, 0, 0, 0))
         for k, f in enumerate(_fr):
             _strip.alpha_composite(f.resize((_hw, _hw), Image.NEAREST), (k * _hw, 0))
+        # …only what is OPAQUE: the lit lamp and its glass. The pack's soft halo round the head goes — the night layer lights
+        # the ground under it, and a second light on the head was one too many (Trym, 3 Oct 2026, the town's and the park's)
+        _strip.putalpha(_strip.getchannel('A').point(lambda v: 255 if v >= 250 else 0))
         _strip.save(os.path.join(OUT, 'n-lamp.png'), optimize=True)
         _sb = _st.getchannel('A').getbbox()
         _fb = Image.eval(_fr[0].getchannel('A'), lambda v: 255 if v >= 250 else 0).getbbox()   # the body, not the halo

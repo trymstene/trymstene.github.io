@@ -77,9 +77,8 @@ const CSS = `
 .bws-echo:not(.tw-npc)::after { content:''; position:absolute; left:50%; bottom:-3px; width:76%; aspect-ratio:3/1; transform:translateX(-50%); background:rgba(20,40,18,.26); border-radius:50%; z-index:-1; }
 .bws-tag { position:absolute; left:50%; top:-14px; transform:translateX(-50%); font-size:.5rem; font-weight:800; letter-spacing:.05em; color:#fffdf5; text-shadow:1px 1px 0 #000; white-space:nowrap; }
 .bw-name, .bws-tag { display:flex; align-items:center; gap:3px; }
-.wn-dark .bw-name, .wn-dark .bws-tag { background:rgba(14,16,30,.88); box-shadow:0 0 0 1px #000; padding:1px 3px; }
-[data-pid] > .bw-name::before { content:''; display:inline-block; width:4px; height:4px; background:#5fe36a; box-shadow:0 0 0 1px #000; }
-[data-new] > .bw-name::after, [data-new] > .bws-tag::after, .bws-new { content:var(--bws-new, ''); display:inline-block; padding:0 3px; background:#8de08d; color:#10220c; box-shadow:0 0 0 1px #000; text-shadow:none; font-size:.4rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; line-height:1.35; white-space:nowrap; }
+[data-pid] > .bw-name::before, .wm-twin[data-pid-of] > .bw-name::before { content:''; display:inline-block; width:4px; height:4px; background:#5fe36a; box-shadow:0 0 0 1px #000; }
+[data-new] > .bw-name::after, [data-new] > .bws-tag::after, .wm-twin[data-new-of] > .bw-name::after, .wm-twin[data-new-of] > .bws-tag::after, .bws-new { content:var(--bws-new, ''); display:inline-block; padding:0 3px; background:#8de08d; color:#10220c; box-shadow:0 0 0 1px #000; text-shadow:none; font-size:.4rem; font-weight:900; letter-spacing:.06em; text-transform:uppercase; line-height:1.35; white-space:nowrap; }
 .bws-new { position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:5px; padding:0 2px; font-size:.46rem; }
 .bws-hand { position:absolute; left:76%; top:24%; width:30%; transform:translate(-50%,-50%); transform-origin:50% 90%; pointer-events:none; image-rendering:pixelated; z-index:2; animation:bwsWave 1.6s ease-out forwards; }
 @keyframes bwsWave { 0% { transform:translate(-50%,-50%) scale(.2); opacity:0; } 12% { transform:translate(-50%,-50%) scale(1); opacity:1; } 26% { transform:translate(-50%,-50%) rotate(-22deg); } 40% { transform:translate(-50%,-50%) rotate(18deg); } 54% { transform:translate(-50%,-50%) rotate(-16deg); } 68% { transform:translate(-50%,-50%) rotate(10deg); } 84% { transform:translate(-50%,-50%) rotate(0); opacity:1; } 100% { transform:translate(-50%,-80%); opacity:0; } }
@@ -173,6 +172,27 @@ async function post(path, body, mint) {
 
 // ---- the echoes -----------------------------------------------------------------------------------------------------
 const okRow = (e) => e && /^[a-z0-9-]{1,40}$/.test(e.slug || '') && typeof e.n === 'string' && !!e.n;
+// 👥 AN ECHO IS SOMEONE WHO WAS HERE — never someone who IS (3 Oct 2026, Trym: "i see Bananaman echo, AND the actual user
+// online - live bananaman in the park at the same time … double player where one is an echo looks quite bad"). A player in
+// the room wears their name over their head ([data-pid] .bw-name, wherever the marks layer carries it): an echo by that
+// name is never taken, and one already out fades the moment its player walks in.
+const hereNow = () => {
+  const s = new Set();
+  for (const t of document.querySelectorAll('[data-pid] .bw-name')) { const n = (t.textContent || '').trim().toLowerCase(); if (n) s.add(n); }
+  return s;
+};
+const isHere = (e, h) => h.has(String(e.n || '').trim().toLowerCase());
+function dropHere() {
+  if (!out.size) return;
+  const h = hereNow();
+  for (const s of [...out.values()]) {
+    if (!isHere(s.e, h)) continue;
+    if (s.el) { dropSprite(s, true); continue; }
+    // the town's visitors wear their echoes themselves (town-folk.js): it sends that one home
+    out.delete(s.e.slug);
+    try { document.dispatchEvent(new CustomEvent('world:echo-here', { detail: s.e.slug })); } catch (e) {}
+  }
+}
 async function loadEchoes() {
   const s = read();
   let got = s.ec && Date.now() - (s.ec.t || 0) < 600000 && Array.isArray(s.ec.rows) ? s.ec.rows : null;
@@ -189,10 +209,11 @@ async function loadEchoes() {
 }
 function takeEcho() {
   if (out.size >= MAX_OUT) return null;
+  const h = hereNow();
   for (let i = 0; i < queue.length; i++) {
     const e = queue.shift();
     queue.push(e);
-    if (!out.has(e.slug)) return e;
+    if (!out.has(e.slug) && !isHere(e, h)) return e;
   }
   return null;
 }
@@ -229,6 +250,7 @@ function spawnEcho(now) {
   tag.className = 'bws-tag';
   tag.textContent = e.n;
   el.appendChild(tag);
+  if (world.parentElement && world.parentElement.__wm) world.parentElement.__wm.lift(tag, el);   // 🔤 above the night (world-marks.js)
   s.g = cv.getContext('2d');
   world.appendChild(el);
   out.set(e.slug, s);
@@ -309,6 +331,7 @@ const STROLL = 96;   // world px a second: a stroll, the town's visitors' own pa
 let raf = 0, lastAt = 0;
 function tickEchoes() {
   if (document.hidden || !rows.length) return;
+  dropHere();
   const now = performance.now();
   if (now > nextAt) { nextAt = now + 14000 + Math.random() * 16000; spawnEcho(now); }
   if (out.size && !raf) { lastAt = 0; raf = requestAnimationFrame(frameEchoes); }
@@ -679,6 +702,7 @@ export function bootSocial(name) {
   setTimeout(pollNotices, 2500);
   setInterval(() => { if (!document.hidden) pollNotices(); }, 120000);
   if (!A.own) assetsReady().then(() => setInterval(tickEchoes, 120)).catch(() => {});
+  else setInterval(() => { if (!document.hidden) dropHere(); }, 1000);   // 👥 the town's worn echoes: one whose player is here goes
   api = {
     seam: {
       echoes: () => rows.map((e) => e.slug),

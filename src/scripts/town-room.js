@@ -1226,7 +1226,8 @@ export function bootTownLife(ctx) {
     return null;
   }
   // every light of the town's own, in WORLD px (banana-town.js puts them on the view): a lamp's pool on the ground under
-  // its head and the glass itself, a ghost's cold glow, a cursed thing's, the candles at the doors
+  // its head — the ground only, its head shows lit in its own art (Trym, 3 Oct 2026: "keep the one lighting up the ground and
+  // remove the one on the lamp itself") — a ghost's cold glow, a cursed thing's, the candles at the doors
   function lightSources() {
     const out = [];
     for (const k of ANCHORS.lamps) {
@@ -1234,7 +1235,6 @@ export function bootTownLife(ctx) {
       if (!p || st === 'out' || !lampLit(k)) continue;
       const flip = p.x + p.w / 2 > 1100, fl = st === 'flicker' ? 'stutter' : '';
       out.push({ kind: 'lamp', key: k, x: p.x + p.w / 2 + (flip ? -4 : 4), y: p.y + p.h * 0.92, flicker: fl });
-      out.push({ kind: 'glass', key: k, x: p.x + p.w * (flip ? 0.28 : 0.72), y: p.y + p.h * 0.2, flicker: fl });
     }
     for (const g of ghostsNow()) if (g && g.s && !g.done && !g.shy) out.push({ kind: 'ghost', x: g.x, y: g.y - 34 });
     for (const o of objectsNow()) out.push({ kind: 'cursed', x: o.x, y: o.y - 10 });

@@ -284,12 +284,22 @@ export function bootTownFolk(ctx) {
       tag.className = 'bws-tag';
       tag.textContent = v.echo.n;
       el.appendChild(tag);
+      if (world.parentElement && world.parentElement.__wm) world.parentElement.__wm.lift(tag, el);   // 🔤 above the night (world-marks.js)
     }
     world.appendChild(el);
     v.el = el; v.cv = cv; v.g = cv.getContext('2d'); v.drawn = -1;
   }
   // the social layer hands out an echo to wear, when it has one spare (at most two in town at once)
   const askEcho = () => { const d = { echo: null }; try { document.dispatchEvent(new CustomEvent('world:echo', { detail: d })); } catch (e) {} return d.echo; };
+  // 👥 the player an echo is of has just walked into the square (world-social.js): the echo fades out, there and then — one
+  // banana with that name, never two (Trym, 3 Oct 2026)
+  document.addEventListener('world:echo-here', (ev) => {
+    const v = folk.find((q) => q.echo && q.echo.slug === ev.detail && !q.gone);
+    if (!v || !v.el) return;
+    v.el.style.transition = 'opacity 1.2s ease';
+    v.el.style.opacity = '0';
+    setTimeout(() => kill(v), 1250);
+  });
 
   function spawn(now) {
     if (folk.length >= capNow()) return;

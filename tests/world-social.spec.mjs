@@ -63,7 +63,8 @@ test('the park: an echo stands about under its own name, and its card waves', as
   const SEL = '.bws-echo[data-slug="' + slug + '"]';
   await page.waitForFunction((s) => !!document.querySelector(s + '.is-on'), SEL, { timeout: 5000 });
   await page.waitForTimeout(1400);
-  const echo = await page.evaluate((s) => { const el = document.querySelector(s); const r = el.getBoundingClientRect(); return { name: el.querySelector('.bws-tag').textContent, slug: el.dataset.slug, w: r.width, op: +getComputedStyle(el).opacity, shown: getComputedStyle(el).display !== 'none' }; }, SEL);
+  // ⚠️ after dark the name rides above the night (world-marks.js): found by its owner, wherever it is
+  const echo = await page.evaluate((s) => { const el = document.querySelector(s); const r = el.getBoundingClientRect(); return { name: (el.querySelector('.bws-tag') || [...document.querySelectorAll('.bws-tag')].find((t) => t.wmOwner === el)).textContent, slug: el.dataset.slug, w: r.width, op: +getComputedStyle(el).opacity, shown: getComputedStyle(el).display !== 'none' }; }, SEL);
   expect(echo.shown, 'the echo is drawn (the park’s cull sweep leaves it alone)').toBe(true);
   expect(echo.w, 'a banana-sized banana').toBeGreaterThan(20);
   expect(echo.op, '⭐ an echo is see-through: not here, and it looks it').toBeLessThan(0.9);
@@ -176,7 +177,8 @@ test('the town: two of the visitors are echoes, named, silent otherwise, and nev
   await page.evaluate(() => window.__town.room.folk().fill(5, performance.now()));
   await page.waitForTimeout(1200);
   const town = await page.evaluate(() => ({
-    echoes: [...document.querySelectorAll('.tw-visitor.bws-echo')].map((el) => ({ tag: el.querySelector('.bws-tag') && el.querySelector('.bws-tag').textContent, kids: el.children.length })),
+    // ⚠️ after dark an echo's name rides above the night (world-marks.js): it is still the echo's, found by its owner
+    echoes: [...document.querySelectorAll('.tw-visitor.bws-echo')].map((el) => { const t = el.querySelector('.bws-tag') || [...document.querySelectorAll('.bws-tag')].find((q) => q.wmOwner === el); return { tag: t && t.textContent, kids: el.children.length + (t && t.parentElement !== el ? 1 : 0) }; }),
     plain: document.querySelectorAll('.tw-visitor:not(.bws-echo)').length,
     idle: window.__town.room.folk().idle(),
     walking: window.__town.room.folk().folk().filter((v) => !v.echo && !v.sitting && v.job !== 'leave' && !v.hidden).length,
@@ -326,8 +328,10 @@ test('the park: a new banana’s echo says NEW on its tag and its card', async (
   const { errs } = await area(page, '/park/', { echoes: NEW });
   await page.waitForFunction(() => window.__bws.echoes().length === 1, null, { timeout: 15000 });
   await page.evaluate(() => { window.__bws.hold(); window.__bws.spawn(); });
-  await page.waitForFunction(() => !!document.querySelector('.bws-echo[data-new] .bws-tag'), null, { timeout: 5000 });
-  const chip = await page.evaluate(() => getComputedStyle(document.querySelector('.bws-echo[data-new] .bws-tag'), '::after').content);
+  // ⚠️ after dark the tag rides above the night (world-marks.js), its holder carrying data-new-of: found by its owner
+  const tagOfNew = () => { const el = document.querySelector('.bws-echo[data-new]'); return el && (el.querySelector('.bws-tag') || [...document.querySelectorAll('.bws-tag')].find((t) => t.wmOwner === el)); };
+  await page.waitForFunction(tagOfNew, null, { timeout: 5000 });
+  const chip = await page.evaluate((f) => getComputedStyle((0, eval)(f)(), '::after').content, '(' + tagOfNew.toString() + ')');
   expect(chip, 'the tag wears the word from the copy file').toBe(JSON.stringify(W.card.new));
   await page.evaluate(() => window.__bws.open('fresh-fields'));
   await expect(page.locator('.bws-card h2 .bws-new')).toHaveText(W.card.new);

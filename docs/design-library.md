@@ -716,7 +716,7 @@ drifted. A rule with only a paragraph has drifted at least once.
 | 17 | The footer is on every visitor page | `check-design.mjs` (`showFooter={false}` outside the allowlist fails) |
 | 18 | One NPC dialogue card | `check-design.mjs` (own dialogue markup without `mountDialogue` fails; the legacy list may only shrink) |
 | 19 | One weather layer, hung on the view | `check-design.mjs` (own rain keyframes fail; an area that mounts it without linking `/css/weather.css` fails) |
-| 56 | One night: one clock in world.js, one light layer on the view, one door with the rain; what is written stays readable | `check-design.mjs` §56 (a second copy of the town day, a `.tw-night` sheet, a night not linked to its weather or hung on the world fail) + `tests/world-night.spec.mjs` (the hours, the lamps one by one, a dead lamp dark, indoors, the curse moods) + `tests/park-night.spec.mjs` (the park's lamps one by one, its windows, its animals' hours, the fireflies, a name's chip, the shop's door) |
+| 56 | One night: one clock in world.js, one light layer on the view, one door with the rain; a lamp lights the ground only, the light lies still, words stand above the night | `check-design.mjs` §56 (a second copy of the town day, a `.tw-night` sheet, a night not linked to its weather or hung on the world fail) + `tests/world-night.spec.mjs` (the hours, the lamps one by one, a dead lamp dark, indoors, the curse moods) + `tests/park-night.spec.mjs` (the park's lamps one by one, its windows, its animals' hours, the fireflies, a name's chip, the shop's door) |
 | 20 | Every walkable area is the same frame | `check-design.mjs` (an area that sets its own frame width or view height, or skips `/css/world-frame.css`, fails) |
 | 21 | An area's state is drawn onto named props; light stays soft; frame stacks hide with `[hidden]` | the town walk (`tests/town-life.spec.mjs`: dark lamps counted by `display`, the band's look asserted per band) |
 | 21 | Motion is `transform` and `opacity`; a glow is a static filter under an opacity pulse | `check-design.mjs` (any `@keyframes` animating a non-composited property fails) |
@@ -1365,6 +1365,10 @@ YardRoom (`/echoes`, `/wave`, `/notices`, `/echo`) and `relayWave` in every pres
   homestead lets them stroll the PUBLIC road past your gate and stop on open road, never in your yard. An echo whose card
   you opened stands where it is until you close it. A tap opens THEIR card — the NPC card's grammar — and its line says
   plainly they are not here: an echo that could be mistaken for a live player breaks trust, doubly with children.
+- ⭐ **Never the echo of a player who IS here** (3 Oct 2026, Trym: *"i see Bananaman echo, AND the actual user online - live
+  bananaman in the park at the same time … double player where one is an echo looks quite bad"*). A player in the room
+  wears their name ([data-pid] .bw-name): an echo by that name is never taken, and one already out fades the moment its
+  player walks in — the town's visitor wearing it too (`world:echo-here`, town-folk.js). `tests/park-night.spec.mjs` holds it.
 - **Never on the rave floor.** Its copy promises that every banana on it is a real one, here now.
 - **An echo walks on the animation frame, like every banana** (Trym, 28 Sep 2026: *"the echoes of other banana users
   walking by in the homestead are choppy in their movements"*). The stroll stepped 8.4 px on a 120 ms beat, eight hops a
@@ -1789,22 +1793,34 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
   one art pixel to a cell — and a small **bloom** screened over each flame and pane. It refuses a transformed host.
   An area whose own chrome sits at 7 sets `--wn-z` under it (the park: 6, under its walk hint).
   ⚠️ A dark sheet with holes cut in it was the first try (the mock): it read as grey fog around torch beams.
+- ⭐ **The light lies STILL on the ground** (3 Oct 2026, Trym: *"the streetlight on the ground slightly moves when i move
+  around with my banana … the light on the ground should be completely still"*). The area ticks the night EVERY frame,
+  AFTER its camera, and hands it the camera (`cam`); the layer paints only when something changed, and its cells are cut
+  from the GROUND — the canvases sit one cell bigger than the view, pulled back by the camera's fraction of a cell — so a
+  pool only steps into a new cell when the ground does. ⚠️ Twenty paints a second, a tick before the camera, and cells cut
+  from the screen each made a pool swim behind the camera. `tests/park-night.spec.mjs` reads one point of a lamp's pool
+  every frame of a walk: one value.
 - **A light is as strong as the sky is dark.** At full strength in the dusk every pool was a bright green ring on the
   grass; the layer scales light by the darkness, so lamps fade in as the sun goes.
 - **The area says where its lights are**, in view px, every time it is asked: a street lamp lights the GROUND under it
-  (a flat pool at the post's foot) and its glass gets only a small bloom; a lit window is a pane and a short spill (a
+  (a flat pool at the post's foot) and NOTHING on its head (Trym, 3 Oct 2026: *"keep the one lighting up the ground and
+  remove the one on the lamp itself"*) — its head shows lit in its own art, the pack's lit frame cut to what is opaque
+  (`body=True` in the town's bake, the park's `n-lamp.png`): the lit glass without the pack's soft halo; a lit window is a pane and a short spill (a
   big spill washes a wall white); a fire breathes, a faulty lamp catches (`flicker`). Lamps come on **one by one**
   through the dusk and go out one by one at dawn (`litAt(dark, k)`).
 - **Every banana carries a little light**, yours and everybody else's — you can see your plot and the players around you.
-- **What is written stays readable** (3 Oct 2026). A speech bubble, a player's name, a reward's float are words, not the
-  world: at full dark the multiply turned a cream bubble navy and a name into dark blue on dark grass. The layer clears a
-  patch in the light map over every visible one, a cell inside its box so its own dark border keeps the night — names
-  (`.bw-name`, an echo's `.bws-tag`) by default, an area's bubbles by `keep` (the park's `.pk-mood.is-on`, the yard's
-  `.hs-mood.is-on` and its sign's name). A name's letters stand on bare ground, so after dark (`wn-dark` on the view) it
-  takes a dark chip (`world-social.js`). A float has no box of its own to clear — a patch would show the day behind its
-  letters — so it **glows** instead, a soft light the size of the float that fades with it (`glow`: `.pk-float`,
-  `.tw-float`, `.hs-float`). ⚠️ **A lamp never stands in front of words**: the park's first lamp by Old Peel's bench stood
-  in front of it, and its post crossed his speech bubble — it leans over the bench from BEHIND now.
+- ⭐ **Words stand ABOVE the night, unlit** (3 Oct 2026). A player's name, an animal's emote, Old Peel's words, a reward's
+  +1 are said to YOU, not part of the scene — Trym: *"the nicknames can overflow the dark, dont add light effect on it - it
+  flickers and look weird when they move around, goes for all areas"*, and *"speechbubbles with emotes … can overflow the
+  darkness and have no light around the bubble elements"*. `src/lib/world-marks.js`: at night each mark leaves the world for
+  one layer on the view, one z over the night: a name or a bubble in a TWIN of its owner's box (classes, data, flip, box
+  read every frame after the camera — its own CSS still places it), a float in a pane over the world. By day and indoors
+  every mark is back in its owner. An area registers its marks — `marksFor(view, world)` at boot, `lift(mark, owner)` as
+  a name or bubble is made (hold the element: at night it is not inside its owner), `float(el)` for a float — and the night
+  drives the rest. ⚠️ **Never a light on a word**: clear patches cut into the light map were tried first — they lit
+  whatever stood in front of a bubble (a hen behind the angel statue left a bright square on the statue), trailed every
+  moving name and flickered; a float's glow read as a halo round the heart beside it. ⚠️ **A lamp never stands in front
+  of words**: the park's first lamp by Old Peel's bench crossed his speech bubble — it leans over the bench from BEHIND.
 - **One door.** `weather.link(night)`: stepping inside hides rain and night together. Two switches are how rain once fell
   in the store. Inside a room, a shop, a cabin, a tent, a house or the rave there is no night.
 - **An area's own sky is a MOOD, never a second sheet.** The town's Curse Nights, haunted nights and omens hand the layer
@@ -1845,3 +1861,11 @@ is core cozy"*, and *"i think night should be longer … a minute or two longer"
    the pond's banks, the meadow and under the trees, under a clear sky only. The park keeps the night the way it keeps
    heavy rain: every land animal under its tree, the butterflies and squirrels in, the ducks out on the pond. Its walks
    pin noon the same way (`?parktest`, `?skyh=`). `tests/park-night.spec.mjs` walks all of it.
+7. **Where there is no torch, a fire** (the bay, 3 Oct 2026, Trym: *"not sure streetlights are the best solution, if there
+   exist torches, or just use more bonfires for the beach maybe that fits the beach better … the wooden bay area with the
+   stalls all to the right could probably have some lightposts / fitting streetlight a couple of places"*). No pack he
+   owns has a torch. The sand burns the pack's own campfire: the bonfire ring, day and night, and three fire pits along
+   the trail (`FIRE_PITS` in `tools/build-beach-scene.py` — beside the court, on the shore by the hut, by the pier — never behind a keeper: the first mid-bay pit burned behind Shelly's head) laid with logs by day
+   and lit one by one at sunset with the ring's own flame. The deck gets the world's lamp at its four corners, lighting
+   its planks. The hut's window, the four stalls, the ship bar and the claw machine glow. The keepers' speech bubbles live
+   in the world's % and are `pin()`ned to the marks layer. `beach-night.js`; `tests/beach-night.spec.mjs`.

@@ -117,7 +117,9 @@ test('a tap on another player waves, and the one waved at can wave back from the
   }
   await b.waitForFunction(() => window.__town.crowd.peers().some((p) => p.name === 'QA Wave A' && !p.hidden), null, { timeout: 20000 });
   await a.waitForFunction(() => window.__town.crowd.peers().some((p) => p.name === 'QA Wave B'), null, { timeout: 20000 });
-  const marks = async (p, who) => p.evaluate((w) => { const el = [...document.querySelectorAll('.tw-peer[data-pid]')].find((x) => (x.textContent || '').includes(w)); const t = el && el.querySelector('.bw-name'); return { isNew: !!(el && el.dataset.new), chip: t ? getComputedStyle(t, '::after').content : '' }; }, who);
+  // ⚠️ a name tag rides above the night after dark (world-marks.js), outside its banana: find the TAG, then its holder — the
+  // player's element by day, its twin in the marks layer (data-new-of) by night
+  const marks = async (p, who) => p.evaluate((w) => { const t = [...document.querySelectorAll('.bw-name')].find((x) => (x.textContent || '').includes(w)); const h = t && t.parentElement; return { isNew: !!(h && (h.dataset.new || h.dataset.newOf)), chip: t ? getComputedStyle(t, '::after').content : '' }; }, who);
   const bOnA = await marks(a, 'QA Wave B'), aOnB = await marks(b, 'QA Wave A');
   expect(bOnA.isNew, '🌱 the regular sees the newcomer marked new').toBe(true);
   expect(bOnA.chip, '…with the word on their name tag').toContain('new');
@@ -126,7 +128,12 @@ test('a tap on another player waves, and the one waved at can wave back from the
   const at = (await b.evaluate(() => window.__town.crowd.peers())).find((p) => p.name === 'QA Wave A');
   await b.evaluate(([x, y]) => { const t = window.__town; t.pos.x = t.tgt.x = x + 110; t.pos.y = t.tgt.y = y; }, [at.x, at.y]);
   await b.waitForTimeout(1500);
-  const r = await b.evaluate(() => { const el = [...document.querySelectorAll('.tw-peer[data-pid]')].find((x) => (x.textContent || '').includes('QA Wave A')); const q = el.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height * 0.6 }; });
+  const r = await b.evaluate(() => {
+    // the banana under its name: its own element by day, the one its twin's data-pid-of names by night (world-marks.js)
+    const t = [...document.querySelectorAll('.bw-name')].find((x) => (x.textContent || '').includes('QA Wave A')), h = t.parentElement;
+    const el = h.dataset.pidOf ? document.querySelector('.tw-peer[data-pid="' + h.dataset.pidOf + '"]') : h;
+    const q = el.getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height * 0.6 };
+  });
   await b.mouse.click(r.x, r.y);
   expect(await b.locator('.tw-me .bws-hand').count(), 'B’s own hand goes up').toBe(1);
   // A sees B's hand, and a wave from B in the corner

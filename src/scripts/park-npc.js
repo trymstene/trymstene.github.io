@@ -74,6 +74,7 @@ export function initOldPeel(ctx) {
   const oldBub = document.createElement('span');
   oldBub.className = 'pk-mood pk-oldsay';
   oldEl.appendChild(oldBub);
+  if (ctx.marks) ctx.marks.lift(oldBub, oldEl);   // 🔤 his words stand above the night (world-marks.js)
   oldEl.style.left = pct(OLD_X, W);
   oldEl.style.top = pct(OLD_BOT, H);
   oldEl.style.width = pct(OLD_CW, W);

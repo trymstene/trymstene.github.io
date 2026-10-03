@@ -35,6 +35,7 @@ import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
   MAILBOX, SIGN, SIGNS, OB_RECTS, OVERLAYS, BIRDS, INTERIORS } from './homestead-geo.js';
 import { DECOR } from '../data/decor.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the same sky as the park, on the same clock
+import { marksFor } from '../lib/world-marks.js';
 
 const view = document.getElementById('hsView');
 
@@ -360,6 +361,7 @@ function init(visitDoc, visitMiss) {
   const visiting = !!visitDoc;
   const W = WORLD.w, H = WORLD.h;
   const world = document.getElementById('hsWorld');
+  const marks = marksFor(view, world);   // 🔤 names, emotes and floats stand above the night (world-marks.js)
   const meEl = document.getElementById('hsMe');
   const meCtx = document.getElementById('hsMeCv').getContext('2d');
   const hintEl = document.getElementById('hsHint');
@@ -2302,8 +2304,8 @@ function init(visitDoc, visitMiss) {
   // ❤️ fed today, 💔 hungry (an appointment, never a wound — the floor
   // never drops). Tap a hen to ask her.
   function henMood(h) {
-    let b = h.el.querySelector('.hs-mood');
-    if (!b) { b = document.createElement('span'); b.className = 'hs-mood'; h.el.appendChild(b); }
+    let b = h.bub;   // ⚠️ held, not queried: at night it rides in the marks layer, outside her element
+    if (!b) { b = h.bub = document.createElement('span'); b.className = 'hs-mood'; h.el.appendChild(b); marks.lift(b, h.el); }
     b.innerHTML = '<b>' + (fedToday() ? '❤️' : '💔') + '</b>';   // <b> = the raised text layer (see CSS)
     b.classList.add('is-on');
     clearTimeout(h.moodT);
@@ -2376,8 +2378,8 @@ function init(visitDoc, visitMiss) {
   // her name, said over her head when you tap her (the bubble stays
   // hearts-only — the name is a label, not a mood)
   function henNameShow(h) {
-    let t = h.el.querySelector('.hs-henname');
-    if (!t) { t = document.createElement('i'); t.className = 'hs-henname'; h.el.appendChild(t); }
+    let t = h.nameEl;
+    if (!t) { t = h.nameEl = document.createElement('i'); t.className = 'hs-henname'; h.el.appendChild(t); marks.lift(t, h.el); }
     t.textContent = h.a.name;
     t.classList.add('is-on');
     clearTimeout(h.nameT);
@@ -2504,7 +2506,7 @@ function init(visitDoc, visitMiss) {
     if (text && text.nodeType) d.appendChild(text);
     else d.innerHTML = coinHtml(text);   // internal strings only — prices ride the real coin
     d.style.left = pct(x, W); d.style.top = pct(y, H);
-    world.appendChild(d);
+    marks.float(d);
     setTimeout(() => d.remove(), 950);
   }
   let toastTimer = null;
@@ -5103,7 +5105,7 @@ function init(visitDoc, visitMiss) {
     cv.width = 150; cv.height = 150;
     el.appendChild(cv);
     // a player's name over their head — and a new banana's tag before they have one, for the marker to sit on
-    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); }
+    if (d.name || d.nw) { const tag = document.createElement('span'); tag.className = 'bw-name'; tag.textContent = d.name || ''; el.appendChild(tag); marks.lift(tag, el); }
     world.appendChild(el);
     const p = { el, ctx: cv.getContext('2d'), outfit: d.outfit || {}, sit: d.sit === true,
       x: Number(d.x) || 900, y: Number(d.y) || 700, lastF: -1 };
@@ -5242,7 +5244,6 @@ function init(visitDoc, visitMiss) {
     drawMe();
     doorTick();
     hsWx.tick(now);   // 🌦 the sky runs indoors too — only the sheet is hidden
-    if (hsNight) hsNight.tick(now);   // 🌗 and the night with it
     // ⚡ indoors the yard is under the shade — its critters neither move nor
     // paint until you step back out ("what nobody sees doesn't run")
     if (!inside) {
@@ -5254,6 +5255,7 @@ function init(visitDoc, visitMiss) {
     } else { if (catMod) catMod.roomTick(now, dt); if (dogMod) dogMod.roomTick(now, dt); }   // 🐈🐕 indoors, their own small days
     hsSendMove(now);
     cam();
+    if (hsNight) hsNight.tick(now);   // 🌗 and the night with it, after the camera (§56)
   }
   // the QA reach-in (the park's ?parktest pattern) — nothing here exists in a
   // normal session

@@ -23,11 +23,13 @@ import { fillWords } from '../lib/fill-words.js';   // a copy line with its {hol
 import { passGet, passStat } from '../lib/banana-pass.js';   // already in this bundle through the HUD
 import { XP_PAY } from '../data/xp-pay.js';   // ✨ a ghost caught pays world XP (the endgame plan's step 1c)
 import { POCKET_KINDS, pocketHave, WEDGES } from '../data/town/market.js';   // 📈🎡 the market's one source, shared with worker-pass
+import { marksFor } from '../lib/world-marks.js';
 import FRONTS from '../data/copy/town-fronts.json';   // 🏘️ what the hall, the bank, the print shop, the wheel, the exchange and an old cabinet say (the rig's, 22 Sep 2026)
 
 const track = (n, p) => { try { if (window.gtag) window.gtag('event', n, p || {}); } catch (e) {} };
 const view = document.getElementById('twView');
 const world = document.getElementById('twWorld');
+const marks = marksFor(view, world);   // 🔤 names and floats stand above the night (world-marks.js)
 const toastEl = document.getElementById('twToast');
 const W = WORLD.w, H = WORLD.h;
 const pct = (v, span) => (v / span * 100) + '%';
@@ -572,7 +574,7 @@ function float(x, y, node) {
   d.className = 'tw-float';
   if (node && node.nodeType) d.appendChild(node); else coinText(d, node || '');
   d.style.left = pct(x, W); d.style.top = pct(y, H);
-  world.appendChild(d);
+  marks.float(d);
   setTimeout(() => d.remove(), 900);
 }
 
@@ -588,7 +590,6 @@ const weather = mountWeather(view);
 // everybody else's. Sizes are world px, scaled on the way out; the warm colours are the ones the 2 Oct mock settled on.
 const LIGHT = {
   lamp: { r: 170, c: [255, 168, 84], i: 0.95, sq: 1.6 },          // the pool on the cobbles under a street lamp
-  glass: { r: 38, c: [255, 168, 84], i: 0.35, bloom: 0.75 },      // …and the lamp's glass itself
   window: { r: 50, c: [255, 176, 86], i: 0.7, bloom: 0.45, sq: 1.1 },
   ghost: { r: 64, c: [150, 110, 230], i: 0.45, bloom: 0.3 },
   cursed: { r: 58, c: [168, 96, 230], i: 0.4, bloom: 0.25 },
@@ -610,7 +611,7 @@ function townLights() {
 let night = null;
 import('./world-night.js').then((m) => {
   night = weather.link(m.mountNight(view, { hour: () => life.seam.hour(), mood: () => (room && room.skyMood ? room.skyMood() : null), lights: townLights,
-    glow: '.tw-float' }));   // 🔤 a reward's float glows in the dark (world-night.js); the players' names keep by default
+    cam: () => ({ x: camX, y: camY }) }));
 }).catch((e) => console.warn('[town] the night did not load', e));
 const sky = { level: () => (night ? night.level() : 0) };   // what the room reads (its lamps), before and after the chunk lands
 
