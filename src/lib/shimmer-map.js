@@ -25,68 +25,85 @@ function perkLine(k, see) {
   return d;
 }
 
-// each figure as strokes in a 100 × 80 cell; the forty stars are spread evenly along them, stroke by stroke
-const circle = (cx, cy, r, n = 28, from = -Math.PI / 2) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos(from + (i / n) * Math.PI * 2) * r, cy + Math.sin(from + (i / n) * Math.PI * 2) * r]);
-const oval = (cx, cy, rx, ry, n = 28) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos(Math.PI + (i / n) * Math.PI * 2) * rx, cy + Math.sin(Math.PI + (i / n) * Math.PI * 2) * ry]);
+// ✏️ EACH SIGN IS TEN STARS PLACED BY HAND (Trym, 3 Oct 2026, of the first map: "the star signs looks a bit cluttery, dots looks
+// a bit random … parts of the shape has much dot-clutter here and there"). Forty dots spread along outlines bunched wherever two
+// strokes met. Now a sign is a root and ten PERK stars, in order, that draw its object like a real star chart, and the forty
+// Shimmer stars are the LINE between them: each star you place lights a quarter of the way to the next perk star, the fourth
+// lights the perk star itself. `deco` are the lines that finish the picture (a can's top, a ball's facets), lit once both their
+// stars are. A 100 × 80 cell; segments kept within 14–34 so the quarters read evenly.
 const FIG = {
-  can: [[[30, 36], [32, 22], [52, 22], [54, 36]], [[24, 36], [60, 36], [60, 70], [24, 70], [24, 36]], [[60, 46], [80, 30], [86, 24]], [[81, 17], [92, 28]]],
-  ball: [[[50, 2], [50, 14]], circle(50, 42, 27), [[23, 42], [77, 42]], [[50, 15], [50, 69]]],
-  barn: [[[18, 72], [18, 40], [30, 24], [50, 14], [70, 24], [82, 40], [82, 72], [18, 72]], [[40, 72], [40, 52], [60, 52], [60, 72]], [[40, 52], [60, 72]]],
-  fish: [oval(46, 40, 28, 16), [[73, 40], [92, 24], [92, 56], [73, 40]], [[30, 35], [31, 36]]],
-  clock: [[[32, 32], [50, 8], [68, 32]], [[36, 32], [64, 32], [64, 74], [36, 74], [36, 32]], circle(50, 47, 8, 16)],
-  hammer: [[[20, 14], [80, 14], [80, 32], [20, 32], [20, 14]], [[45, 32], [45, 76], [55, 76], [55, 32]]],
+  can: { pts: [[95, 15], [80, 28], [64, 44], [64, 70], [43, 72], [22, 70], [22, 40], [27, 22], [43, 15], [58, 22], [64, 36]], deco: [[6, 10], [10, 2]] },
+  ball: { pts: [[50, 1], [50, 18], [65.3, 23], [74.7, 36], [74.7, 52], [65.3, 65], [50, 70], [34.7, 65], [25.3, 52], [25.3, 36], [34.7, 23]], deco: [[10, 1], [9, 3], [8, 4], [1, 6]] },
+  barn: { pts: [[16, 74], [16, 44], [26, 27], [50, 13], [74, 27], [84, 44], [84, 74], [62, 74], [62, 52], [38, 52], [38, 74]], deco: [[10, 0], [1, 5], [8, 10], [9, 7]] },
+  fish: { pts: [[93, 25], [75, 40], [62, 28], [44, 24], [27, 29], [15, 40], [27, 51], [44, 56], [62, 52], [93, 57], [83, 41]], deco: [[10, 0], [8, 1]] },
+  clock: { pts: [[50, 6], [33, 30], [33, 53], [33, 76], [67, 76], [67, 53], [67, 30], [50, 31], [60, 41], [50, 51], [40, 41]], deco: [[6, 0], [10, 7], [1, 6]] },
+  hammer: { pts: [[47, 78], [47, 58], [47, 38], [26, 38], [20, 28], [26, 18], [50, 16], [74, 18], [86, 26], [76, 38], [55, 38]], deco: [[10, 2]] },
 };
-const POINTS = {};
-function points(key) {
-  if (POINTS[key]) return POINTS[key];
-  const segs = [];
-  FIG[key].forEach((st, s) => { for (let i = 1; i < st.length; i++) { const [x0, y0] = st[i - 1], [x1, y1] = st[i]; segs.push({ s, x0, y0, x1, y1, len: Math.hypot(x1 - x0, y1 - y0) }); } });
-  const total = segs.reduce((a, g) => a + g.len, 0), step = total / STARS_EACH, out = [];
-  let k = 0, acc = 0;
-  for (let i = 0; i < STARS_EACH; i++) {
-    const want = (i + 0.5) * step;
-    while (k < segs.length - 1 && acc + segs[k].len < want) { acc += segs[k].len; k++; }
-    const g = segs[k], t = g.len ? Math.min(1, (want - acc) / g.len) : 0;
-    out.push({ x: g.x0 + (g.x1 - g.x0) * t, y: g.y0 + (g.y1 - g.y0) * t, s: g.s });
-  }
-  return (POINTS[key] = out);
+const PER = STARS_EACH / 10;   // four Shimmer stars to each perk star
+const at = (key, i) => { const q = FIG[key].pts[i]; return { x: q[0], y: q[1] }; };
+// where the n-th star placed lands (1-based): along the line from one perk star to the next
+export function tipAt(key, n) {
+  const k = Math.max(0, Math.min(9, Math.floor((n - 1) / PER))), t = (((n - 1) % PER) + 1) / PER;
+  const a = at(key, k), b = at(key, k + 1);
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
-const isPerk = (i) => (i + 1) % 4 === 0;
+const isPerk = (i) => (i + 1) % PER === 0;
 const perkAt = (key, star) => { const st = LADDER[key].steps.find((x) => x[0] === star); return st ? st.slice(1) : null; };
 const nextPerk = (key, lit) => LADDER[key].steps.find((x) => x[0] > lit) || null;
+const nodeLit = (i, lit) => (i === 0 ? lit > 0 : lit >= i * PER);
 
-// the figure, drawn into a canvas context at (ox, oy) with a scale: placed stars lit, the rest waiting. Shared with the
-// night sky over the square (a finished constellation lights it), so it is the same drawing everywhere.
+// the sign, drawn into a canvas context at (ox, oy) with a scale: its picture always there, faint; the line your stars have
+// drawn lit, and the perk stars you reached shining. Shared with the night sky over the square (a finished constellation lights
+// it), so it is the same drawing everywhere.
 export function drawFigure(x, key, lit, ox, oy, f, opts = {}) {
-  const pts = points(key);
-  const P = (p) => [Math.round(ox + p.x * f), Math.round(oy + p.y * f)];
+  const F = FIG[key], P = (i) => [ox + F.pts[i][0] * f, oy + F.pts[i][1] * f], dim = opts.dim ? 0.5 : 1;
   x.save();
-  x.lineWidth = 1;
-  for (let i = 1; i < pts.length; i++) {
-    if (pts[i].s !== pts[i - 1].s) continue;
-    const [ax, ay] = P(pts[i - 1]), [bx, by] = P(pts[i]), on = i < lit;
-    x.setLineDash(on ? [] : [2, 3]);
-    x.strokeStyle = on ? 'rgba(127,191,255,' + (opts.dim ? 0.45 : 0.85) + ')' : 'rgba(43,68,102,.9)';
-    x.beginPath(); x.moveTo(ax + 0.5, ay + 0.5); x.lineTo(bx + 0.5, by + 0.5); x.stroke();
-  }
+  x.lineCap = 'round';
+  // the picture, waiting: thin dashes, the finishing lines fainter still
+  x.setLineDash([2, 3]); x.lineWidth = 1;
+  x.strokeStyle = 'rgba(52,82,124,.85)';
+  for (let k = 0; k < 10; k++) { const [ax, ay] = P(k), [bx, by] = P(k + 1); x.beginPath(); x.moveTo(ax, ay); x.lineTo(bx, by); x.stroke(); }
+  x.strokeStyle = 'rgba(52,82,124,.5)';
+  for (const [i, j] of F.deco) { const [ax, ay] = P(i), [bx, by] = P(j); x.beginPath(); x.moveTo(ax, ay); x.lineTo(bx, by); x.stroke(); }
   x.setLineDash([]);
-  pts.forEach((p, i) => {
-    const [px, py] = P(p), on = i < lit, big = isPerk(i);
+  // the line your stars drew: a soft glow under a bright thread, a quarter of a segment a star
+  for (let k = 0; k < 10; k++) {
+    const fr = Math.max(0, Math.min(1, (lit - k * PER) / PER));
+    if (!fr) continue;
+    const [ax, ay] = P(k), [bx, by] = P(k + 1), ex = ax + (bx - ax) * fr, ey = ay + (by - ay) * fr;
+    x.strokeStyle = 'rgba(110,175,255,' + 0.28 * dim + ')'; x.lineWidth = 3.2;
+    x.beginPath(); x.moveTo(ax, ay); x.lineTo(ex, ey); x.stroke();
+    x.strokeStyle = 'rgba(214,236,255,' + 0.95 * dim + ')'; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(ax, ay); x.lineTo(ex, ey); x.stroke();
+  }
+  for (const [i, j] of F.deco) {
+    if (!nodeLit(i, lit) || !nodeLit(j, lit)) continue;
+    const [ax, ay] = P(i), [bx, by] = P(j);
+    x.strokeStyle = 'rgba(150,200,255,' + 0.6 * dim + ')'; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(ax, ay); x.lineTo(bx, by); x.stroke();
+  }
+  // the stars: the root a small point, the ten perk stars crosses of light once reached, small hollow crosses until then
+  for (let i = 0; i <= 10; i++) {
+    const [fx, fy] = P(i), px = Math.round(fx), py = Math.round(fy), on = nodeLit(i, lit);
+    if (i === 0) { x.fillStyle = on ? 'rgba(214,236,255,' + dim + ')' : '#34527c'; x.fillRect(px - 1, py - 1, 2, 2); continue; }
     if (on) {
-      const g = x.createRadialGradient(px, py, 0, px, py, big ? 9 : 6);
-      g.addColorStop(0, 'rgba(191,227,255,' + (opts.dim ? 0.35 : 0.6) + ')'); g.addColorStop(1, 'rgba(79,157,255,0)');
-      x.fillStyle = g; x.fillRect(px - 10, py - 10, 20, 20);
-      x.fillStyle = '#ffffff';
-      if (big) { x.fillRect(px - 1, py - 3, 3, 7); x.fillRect(px - 3, py - 1, 7, 3); x.fillStyle = '#bfe3ff'; x.fillRect(px - 1, py - 1, 3, 3); x.fillStyle = '#ffffff'; x.fillRect(px, py, 1, 1); }
-      else x.fillRect(px - 1, py - 1, 2, 2);
+      const g = x.createRadialGradient(px + 0.5, py + 0.5, 0, px + 0.5, py + 0.5, 9);
+      g.addColorStop(0, 'rgba(200,230,255,' + 0.55 * dim + ')'); g.addColorStop(1, 'rgba(79,157,255,0)');
+      x.fillStyle = g; x.fillRect(px - 9, py - 9, 19, 19);
+      x.globalAlpha = dim;
+      x.fillStyle = '#bfe3ff'; x.fillRect(px, py - 3, 1, 7); x.fillRect(px - 3, py, 7, 1);
+      x.fillStyle = '#ffffff'; x.fillRect(px - 1, py - 1, 3, 3);
+      x.globalAlpha = 1;
     } else {
-      x.fillStyle = big ? '#45618c' : '#2b4466';
-      if (big) { x.fillRect(px - 1, py - 2, 3, 5); x.fillRect(px - 2, py - 1, 5, 3); } else x.fillRect(px - 1, py - 1, 2, 2);
+      x.fillStyle = '#4a6a98'; x.fillRect(px, py - 2, 1, 5); x.fillRect(px - 2, py, 5, 1);
+      x.fillStyle = '#0b1730'; x.fillRect(px, py, 1, 1);
     }
-  });
+  }
+  // the tip of the line, mid-way between two perk stars: the last star you placed, a small bright point
+  if (lit > 0 && lit < STARS_EACH && lit % PER) { const q = tipAt(key, lit), tx = Math.round(ox + q.x * f), ty = Math.round(oy + q.y * f); x.fillStyle = 'rgba(255,255,255,' + dim + ')'; x.fillRect(tx - 1, ty - 1, 2, 2); }
   x.restore();
 }
-export const figurePoint = (key, i) => points(key)[i];
+export const figurePoint = (key, n) => tipAt(key, n);
 
 const CSS = `
 .sm-veil{position:absolute;inset:0;z-index:2190;background:rgba(0,0,0,.38)}
@@ -204,18 +221,18 @@ export function openMap(state, opts = {}) {
       drawFigure(x, c, lit, ox, oy, f, { dim: !on && lit > 0 });
       // the next star of the chosen one breathes, so you know where yours goes
       if (on && lit < STARS_EACH) {
-        const p = points(c)[lit], px = Math.round(ox + p.x * f), py = Math.round(oy + p.y * f);
+        const p = tipAt(c, lit + 1), px = Math.round(ox + p.x * f), py = Math.round(oy + p.y * f);
         const k = still() ? 0.6 : 0.5 + 0.5 * Math.sin(now / 260);
         x.strokeStyle = 'rgba(191,227,255,' + (0.35 + 0.5 * k) + ')'; x.lineWidth = 1;
         x.beginPath(); x.arc(px + 0.5, py + 0.5, 4 + 2.5 * k, 0, Math.PI * 2); x.stroke();
       }
       if (flash && flash.c === c) {   // a star just placed: a ring of light goes out from it
         const t = (now - flash.t0) / 520;
-        if (t < 1) { const p = points(c)[flash.i], px = ox + p.x * f, py = oy + p.y * f; x.strokeStyle = 'rgba(223,240,255,' + (1 - t) + ')'; x.lineWidth = 2; x.beginPath(); x.arc(px, py, 3 + t * 16, 0, Math.PI * 2); x.stroke(); }
+        if (t < 1) { const p = tipAt(c, flash.i + 1), px = ox + p.x * f, py = oy + p.y * f; x.strokeStyle = 'rgba(223,240,255,' + (1 - t) + ')'; x.lineWidth = 2; x.beginPath(); x.arc(px, py, 3 + t * 16, 0, Math.PI * 2); x.stroke(); }
       }
       if (run && run.c === c) {   // a perk or the capstone: the light runs the figure
         const t = (now - run.t0) / 900, k = Math.floor(t * lit);
-        if (t < 1.2) { const pts = points(c); for (let j = Math.max(0, k - 3); j <= Math.min(lit - 1, k); j++) { const p = pts[j], px = ox + p.x * f, py = oy + p.y * f, gg = x.createRadialGradient(px, py, 0, px, py, 11); gg.addColorStop(0, 'rgba(255,255,255,.95)'); gg.addColorStop(1, 'rgba(127,191,255,0)'); x.fillStyle = gg; x.fillRect(px - 12, py - 12, 24, 24); } }
+        if (t < 1.2) { const k = Math.floor(t * 10); for (let j = Math.max(1, k - 1); j <= Math.min(10, k + 1); j++) { if (!nodeLit(j, lit)) continue; const q = FIG[c].pts[j], px = ox + q[0] * f, py = oy + q[1] * f, gg = x.createRadialGradient(px, py, 0, px, py, 12); gg.addColorStop(0, 'rgba(255,255,255,.95)'); gg.addColorStop(1, 'rgba(127,191,255,0)'); x.fillStyle = gg; x.fillRect(px - 13, py - 13, 26, 26); } }
       }
       const name = W.constellations.find((q) => q.key === c);
       // its name, and under it how far it is: two short lines, as a third of a phone's width holds
@@ -325,7 +342,7 @@ export function openMap(state, opts = {}) {
     const c = ORDER[sel], lit = state.lit[c] || 0;
     if (!(state.toPlace > 0) || lit >= STARS_EACH) return;
     btn.disabled = true;
-    const p = points(c)[lit], { ox, oy } = cell(sel), r = cv.getBoundingClientRect();
+    const p = tipAt(c, lit + 1), { ox, oy } = cell(sel), r = cv.getBoundingClientRect();
     const tx = r.left + (ox + p.x * f) * (r.width / cw), ty = r.top + (oy + p.y * f) * (r.height / ch);
     const src = opts.from && opts.from.getBoundingClientRect ? opts.from.getBoundingClientRect() : card.querySelector('.sm-top span').getBoundingClientRect();
     const fx = src.left + src.width / 2, fy = src.top + src.height / 2;
