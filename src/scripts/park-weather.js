@@ -12,7 +12,7 @@
 // weather and nobody else does: puddles you can splash, the morning-after notice,
 // the butterflies and squirrels standing down, and Old Peel finding new words.
 // See docs/design-library.md §19.
-import { seedRand } from '../lib/world.js';
+import { seedRand, perkReach } from '../lib/world.js';
 import { mountWeather } from './world-weather.js';   // 🌦 the layers and the tier switch, shared with every area
 import { passStat } from '../lib/banana-pass.js';
 import { track } from './park-util.js';
@@ -98,7 +98,7 @@ export function initWeather(ctx) {
   function puddleTick() {
     for (let i = puddles.length - 1; i >= 0; i--) {
       const p = puddles[i];
-      if (Math.hypot(pos.x - p.x, (pos.y - 6) - p.y) < 34) {
+      if (Math.hypot(pos.x - p.x, (pos.y - 6) - p.y) < 34 * perkReach()) {
         puddleGo(i);
         passStat('rep', PUDDLE_REP);
         refreshHud();

@@ -10,7 +10,7 @@ import { drawComposite, assetsReady, outfitParams, NFRAMES, BASE_CYCLE_S } from 
 import { passStat, passGet, passSpend, coinsNow, ruleUsed, buffGet, coinsPaid, passBest, passBestGet } from '../lib/banana-pass.js';
 import { XP_PAY } from '../data/xp-pay.js';   // ✨ a fish and the day's treasure pay world XP (the endgame plan's step 1c)
 import { levelFor } from '../lib/pass-defs.js';
-import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale, wearSaved } from '../lib/world.js';
+import { seedRand, presenceRoom, poofInto, COIN_TEST, COIN_PERIOD, COIN_WAIT, COIN_OFFSET, coinAmountFor, coinWinClaimed, coinWinClaim, snapScale, wearSaved, perkReach, perkSpeed } from '../lib/world.js';
 import { catCustom, loadCatalog, fullOutfit } from '../lib/drops.js'; // community-item (outfit.c) render support
 import { letGo } from '../lib/wear-spot.js';   // ✋ the prize takes its glove, a Forge piece included
 import { mountHud } from '../lib/world-hud.js';
@@ -1026,7 +1026,7 @@ function init() {
         shells.splice(i, 1);
         continue;
       }
-      if (Math.hypot(pos.x - s.x, (pos.y - 6) - s.y) < 34) {
+      if (Math.hypot(pos.x - s.x, (pos.y - 6) - s.y) < 34 * perkReach()) {
         const isNew = held(s.id) === 0;
         const tier = (SHELL_BY[s.id] || {}).tier || 'common';
         const xp = SHELL_XP[tier] || 3;
@@ -1119,7 +1119,7 @@ function init() {
     }
     // the catch: walk into it — same monotonic wallet as every room
     if (coinLive && coinEl.style.display !== 'none'
-        && Math.hypot(pos.x - coinLive.x, (pos.y - 6) - coinLive.y) < 34) {
+        && Math.hypot(pos.x - coinLive.x, (pos.y - 6) - coinLive.y) < 34 * perkReach()) {
       if (!coinWinClaim(coinLive.win)) { coinEl.style.display = 'none'; coinLive = null; return; } // another tab got there first
       const n = coinAmountFor(coinLive.win);
       passStat('coins_earned', n, COIN_TEST ? 'qa' : 'window');
@@ -1189,7 +1189,7 @@ function init() {
       d.el.style.transform = 'translate(-50%,-50%) rotate(' + (-4 - 56 * sub).toFixed(1) + 'deg)';
       d.el.style.setProperty('--sub', sub.toFixed(2));
       // grab it from the shore once it's arrived (radius crosses the waterline)
-      if (Math.hypot(pos.x - d.x, pos.y - d.y) < 74) {
+      if (Math.hypot(pos.x - d.x, pos.y - d.y) < 74 * perkReach()) {
         d.el.remove();
         drifts.splice(i, 1);
         openBottle(d);
@@ -3433,7 +3433,7 @@ function init() {
         // what makes the far water feel far without putting a wall there, and
         // it's why swimming out after the ball is a decision.
         const wet = subAt(pos.x, pos.y) / WET_MAX;
-        const m = Math.min(d, SPEED * (1 - 0.42 * wet) * dt);
+        const m = Math.min(d, SPEED * perkSpeed() * (1 - 0.42 * wet) * dt);
         const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
         // ⚠️ ALL FIVE blocked() calls pass swimmer=true. Miss the perpendicular
         // pair and a swimmer who meets the rope at an angle stops dead (the

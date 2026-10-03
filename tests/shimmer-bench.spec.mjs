@@ -10,13 +10,13 @@ const PERKS = [...W.constellations.flatMap((c) => c.perks), W.north];
 const perkOf = (k) => PERKS.find((p) => p.key === k);
 
 const NOISE = /googletagmanager|google-analytics|cloudflareinsights|facebook|clarity/;
-// the perks with a look to play: the area's own sign's (the Sunflower 5, the Hen 11, the Vinyl 4) and the Banana's 6, everywhere
+// the perks the bench plays: the area's own sign's (the Sunflower 5, the Hen 11, the Vinyl 4) and the Banana's 7, everywhere
 const AREAS = [
-  { name: 'town', url: '/town/?towntest&shimmer', perks: 6 },
-  { name: 'park', url: '/park/?shimmer', perks: 11 },
-  { name: 'beach', url: '/beach/?shimmer', perks: 6 },
-  { name: 'homestead', url: '/homestead/?hstest=rich&shimmer', perks: 17 },
-  { name: 'rave', url: '/rave/?shimmer', perks: 10 },
+  { name: 'town', url: '/town/?towntest&shimmer', perks: 7 },
+  { name: 'park', url: '/park/?shimmer', perks: 12 },
+  { name: 'beach', url: '/beach/?shimmer', perks: 7 },
+  { name: 'homestead', url: '/homestead/?hstest=rich&shimmer', perks: 18 },
+  { name: 'rave', url: '/rave/?shimmer', perks: 11 },
 ];
 async function open(page, url) {
   const errs = [];
@@ -47,7 +47,7 @@ for (const a of AREAS) {
     await page.waitForTimeout(1500);
     const buttons = page.locator('.shb-body button:not([disabled])');
     const n = await buttons.count();
-    expect(n, 'Shimmer’s six, and the perks with a look: the area’s sign’s and the Banana’s').toBe(6 + a.perks);
+    expect(n, 'Shimmer’s seven (Everything on among them), the area’s sign’s and the Banana’s').toBe(7 + a.perks);
     for (let i = 0; i < n; i++) {
       const b = buttons.nth(i), label = (await b.textContent()).trim();
       if (label === 'Star Map') continue;   // its own walk below
@@ -82,9 +82,14 @@ test('park: the Star Map places a star, the sixteenth lights its perk, and a tap
   // 💬 a perk is said by what it does (Trym: "no user understands what a skill / perc is by just reading a perk-name"): the
   // next one under the constellation carries its kind in a player's words and its line, and the list has every one
   const birds = perkOf('rarebirds');
-  await expect(page.locator('.sm-next .sm-cap')).toHaveText(W.map.nextAt.replace('{at}', '16'));
-  await expect(page.locator('.sm-next .sm-pl .ln')).toHaveText(birds.line);
+  // 💬 ONE PERK SPELLED OUT AT A TIME (Trym, 4 Oct 2026: "its a lot of text … easy to miss other text, like 'Next at star 12'"):
+  // the next perk is a count and one row, its name and kind; a tap opens what it does
+  await expect(page.locator('.sm-next .sm-cap')).toHaveText(W.map.nextOne);
   await expect(page.locator('.sm-next .sm-pl .nm em')).toHaveText(W.kinds.lucky);
+  await expect(page.locator('.sm-next .sm-pl .ln'), 'what it does waits for a tap').toBeHidden();
+  await page.locator('.sm-next .sm-pl').evaluate((el) => el.click());
+  await expect(page.locator('.sm-next .sm-pl .ln')).toHaveText(birds.line);
+  await expect(page.locator('.sm-next .sm-pl .ln')).toBeVisible();
   // and under the sign's name, what every star in it gives (the stars between two perks too)
   await expect(page.locator('.sm-row .t span')).toHaveText(W.constellations[0].each);
   await page.locator('.sm-next .sm-btn', { hasText: W.map.all }).evaluate((el) => el.click());
@@ -96,7 +101,9 @@ test('park: the Star Map places a star, the sixteenth lights its perk, and a tap
   await expect(page.locator('.sm-skywrap')).toBeVisible();
   await page.locator('.sm-go').evaluate((el) => el.click());
   const perk = perkOf('rarebirds');
+  await expect(page.locator('.sm-perk .sm-cap'), 'the one perk spelled out: the new one').toHaveText(W.map.newPerk, { timeout: 4000 });
   await expect(page.locator('.sm-perk .n'), 'the Sunflower’s 16th star: Rare birds').toHaveText(perk.name, { timeout: 4000 });
+  await expect(page.locator('.sm-next .sm-pl.is-open'), 'and the next one stays a row').toHaveCount(0);
   await expect(page.locator('.sm-perk .l')).toHaveText(perk.line);
   await expect(page.locator('.sm-top span')).toHaveText(W.map.toPlace.replace('{n}', '11'));
   // the whole card on a phone's view: the sky and its button, no scroll inside it
@@ -174,12 +181,34 @@ test('homestead: every Hen perk plays on a real yard — two hearts, the extra g
   await expect(page.locator('.shb-pet')).toHaveCount(0);
   // and every other Hen perk plays without a fault
   for (const p of hen.perks) {
-    if (['dblhearts', 'goodswait', 'hencap'].includes(p.key)) continue;
+    if (['dblhearts', 'goodswait', 'hencap'].includes(p.key)) continue;   // played above
     await henBtn(page, p.name).evaluate((el) => el.click());
     await page.waitForTimeout(500);
   }
   await page.waitForTimeout(6500);
   expect(await benchWrites(page), 'a preview: the bench wrote nothing').toEqual([]);
+  expect(errs).toEqual([]);
+});
+
+// 🤲 LONG REACH IS REAL (Trym, 4 Oct 2026: "Long reach doesnt work on trash pickup or taking out ghosts, or other regular range
+// based things"). With it switched on the bench, every walk-over pickup reaches half again as far: the morning's eggs a step
+// out of reach stay put without it, and come in with it.
+test('homestead: Long reach on the bench really reaches: an egg a step away stays put, then comes in', async ({ page }) => {
+  test.setTimeout(90000);
+  const errs = await openYard(page);
+  await page.evaluate(() => window.__hs.morning(1));
+  await page.waitForTimeout(800);
+  const eggs = () => page.evaluate(() => window.__hs.farm().eggsOnGround);
+  const laid = await eggs();
+  expect(laid, 'the morning laid the hens’ eggs by the trough').toBeGreaterThan(0);
+  // stand 50 px below the first row of eggs (they lie 12 under the trough at 700,540, 30 apart from 656): past 34, inside 51
+  await page.evaluate(() => { const h = window.__hs; h.pos.x = h.tgt.x = 701; h.pos.y = h.tgt.y = 600; });
+  await page.waitForTimeout(1500);
+  expect(await eggs(), 'out of the usual reach: nothing comes in').toBe(laid);
+  await page.locator('.shb-row button', { hasText: perkOf('reach').name }).first().evaluate((el) => el.click());
+  await expect.poll(eggs, { timeout: 4000 }).toBeLessThan(laid);
+  await page.locator('.shb-row button', { hasText: perkOf('reach').name }).first().evaluate((el) => el.click());   // off again
+  expect(await page.evaluate(() => !!(window.__perks && window.__perks.reach)), 'switched off, it is gone').toBe(false);
   expect(errs).toEqual([]);
 });
 

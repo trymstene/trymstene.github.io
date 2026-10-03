@@ -7,24 +7,24 @@
 // the six constellations: five areas and the banana itself. Forty stars each, a perk at every fourth, a choice at the 20th,
 // the capstone at the 40th (no title, ever). `area` is the page a perk works on ('' = every area).
 export const LADDER = {
-  sunflower: { area: 'park', steps: [[4, 'cheapseeds'], [8, 'greenthumb'], [12, 'twoseeds'], [16, 'rarebirds'], [20, 'ripelonger', 'deeproots'], [24, 'waterall'], [28, 'stormproof'], [32, 'extrafruit'], [36, 'bloomsteps'], [40, 'sunflowercap']] },
-  hen: { area: 'homestead', steps: [[4, 'express'], [8, 'sprout'], [12, 'dblhearts'], [16, 'goodswait'], [20, 'babies', 'trough'], [24, 'pie'], [28, 'neighbour'], [32, 'wool'], [36, 'moreanimals'], [40, 'hencap']] },
-  ghost: { area: 'town', steps: [[4, 'calmghosts'], [8, 'quickfix'], [12, 'strongarms'], [16, 'tomorrow'], [20, 'morefix', 'steadyhands'], [24, 'ghostreach'], [28, 'secondspin'], [32, 'ghostbounty'], [36, 'firework'], [40, 'ghostcap']] },
+  sunflower: { area: 'park', steps: [[4, 'cheapseeds'], [8, 'greenthumb'], [12, 'twoseeds'], [16, 'rarebirds'], [20, 'ripelonger', 'deeproots'], [24, 'waterall'], [28, 'stormproof'], [32, 'extrafruit'], [36, 'waterpays'], [40, 'sunflowercap']] },
+  hen: { area: 'homestead', steps: [[4, 'express'], [8, 'sprout'], [12, 'walkhugs'], [16, 'goodswait'], [20, 'babies', 'trough'], [24, 'pie'], [28, 'neighbour'], [32, 'dblhearts'], [36, 'moreanimals'], [40, 'hencap']] },
+  ghost: { area: 'town', steps: [[4, 'calmghosts'], [8, 'quickfix'], [12, 'strongarms'], [16, 'tomorrow'], [20, 'morefix', 'steadyhands'], [24, 'ghosttamer'], [28, 'secondspin'], [32, 'ghostbounty'], [36, 'ghostfire'], [40, 'ghostcap']] },
   fish: { area: 'beach', steps: [[4, 'quickbite'], [8, 'comber'], [12, 'catchday'], [16, 'sealegs'], [20, 'luckyline', 'nightfish'], [24, 'treasure'], [28, 'lures'], [32, 'bighitter'], [36, 'float'], [40, 'fishcap']] },
   vinyl: { area: 'rave', steps: [[4, 'jellykeep'], [8, 'longjelly'], [12, 'magnet'], [16, 'reactions'], [20, 'luckyjelly', 'megajelly'], [24, 'latejoin'], [28, 'lasersense'], [32, 'longtoys'], [36, 'goldsteps'], [40, 'vinylcap']] },
-  banana: { area: '', steps: [[4, 'nightstride'], [8, 'reach'], [12, 'seat'], [16, 'starsteps'], [20, 'starburst', 'heartsall'], [24, 'daystride'], [28, 'reach2'], [32, 'lantern'], [36, 'nightsprint'], [40, 'bananacap']] },
+  banana: { area: '', steps: [[4, 'nightstride'], [8, 'reach'], [12, 'leftoff'], [16, 'sugarrush'], [20, 'luckyhands', 'nightowl'], [24, 'daystride'], [28, 'reach2'], [32, 'warmwave'], [36, 'nightsprint'], [40, 'bananacap']] },
 };
 export const ORDER = ['sunflower', 'hen', 'ghost', 'fish', 'vinyl', 'banana'];   // the copy file's constellations, in its order
 
-// seven kinds, said beside every perk with an icon (the capstone is its own): less waiting, more rewards, better luck,
-// easier, for your banana, everyone sees it, helps others
+// six kinds, said beside every perk with an icon (the capstone is its own): less waiting, more rewards, better luck, easier,
+// for your banana, helps others. A look is never a perk of its own: it is a moment that comes with something useful.
 export const KIND = {
-  cheapseeds: 'easy', greenthumb: 'wait', twoseeds: 'more', rarebirds: 'lucky', ripelonger: 'easy', deeproots: 'easy', waterall: 'banana', stormproof: 'easy', extrafruit: 'more', bloomsteps: 'seen', sunflowercap: 'capstone',
-  express: 'wait', sprout: 'wait', dblhearts: 'more', goodswait: 'easy', babies: 'wait', trough: 'easy', pie: 'more', neighbour: 'others', wool: 'more', moreanimals: 'more', hencap: 'capstone',
-  calmghosts: 'easy', quickfix: 'wait', strongarms: 'banana', tomorrow: 'easy', morefix: 'more', steadyhands: 'easy', ghostreach: 'banana', secondspin: 'lucky', ghostbounty: 'more', firework: 'seen', ghostcap: 'capstone',
-  quickbite: 'wait', comber: 'more', catchday: 'lucky', sealegs: 'banana', luckyline: 'lucky', nightfish: 'lucky', treasure: 'easy', lures: 'more', bighitter: 'banana', float: 'seen', fishcap: 'capstone',
-  jellykeep: 'easy', longjelly: 'more', magnet: 'banana', reactions: 'banana', luckyjelly: 'lucky', megajelly: 'more', latejoin: 'easy', lasersense: 'easy', longtoys: 'more', goldsteps: 'seen', vinylcap: 'capstone',
-  nightstride: 'banana', reach: 'banana', seat: 'banana', starsteps: 'seen', starburst: 'seen', heartsall: 'others', daystride: 'banana', reach2: 'banana', lantern: 'seen', nightsprint: 'banana', bananacap: 'capstone',
+  cheapseeds: 'easy', greenthumb: 'wait', twoseeds: 'more', rarebirds: 'lucky', ripelonger: 'easy', deeproots: 'easy', waterall: 'banana', stormproof: 'easy', extrafruit: 'more', waterpays: 'more', sunflowercap: 'capstone',
+  express: 'wait', sprout: 'wait', walkhugs: 'easy', goodswait: 'easy', babies: 'wait', trough: 'easy', pie: 'more', neighbour: 'others', dblhearts: 'more', moreanimals: 'more', hencap: 'capstone',
+  calmghosts: 'easy', quickfix: 'wait', strongarms: 'banana', tomorrow: 'easy', morefix: 'more', steadyhands: 'easy', ghosttamer: 'more', secondspin: 'lucky', ghostbounty: 'more', ghostfire: 'more', ghostcap: 'capstone',
+  quickbite: 'wait', comber: 'more', catchday: 'lucky', sealegs: 'banana', luckyline: 'lucky', nightfish: 'lucky', treasure: 'easy', lures: 'more', bighitter: 'banana', float: 'more', fishcap: 'capstone',
+  jellykeep: 'easy', longjelly: 'more', magnet: 'banana', reactions: 'banana', luckyjelly: 'lucky', megajelly: 'more', latejoin: 'easy', lasersense: 'easy', longtoys: 'more', goldsteps: 'more', vinylcap: 'capstone',
+  nightstride: 'banana', reach: 'banana', leftoff: 'wait', sugarrush: 'banana', luckyhands: 'lucky', nightowl: 'more', daystride: 'banana', reach2: 'banana', warmwave: 'others', nightsprint: 'banana', bananacap: 'capstone',
   north: 'capstone',
 };
 export const STARS_EACH = 40;

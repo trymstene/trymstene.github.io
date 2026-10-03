@@ -1,6 +1,6 @@
 // 🐿🦋🐔 THE PARK'S CRITTERS — acorns, butterflies, squirrels, the farm
 // animals. Split from banana-park.js (P5); wired through the shared ctx.
-import { poofInto } from '../lib/world.js';
+import { poofInto, perkReach } from '../lib/world.js';
 import { passStat } from '../lib/banana-pass.js';
 import { track, PARK_TEST, R, SVG } from './park-util.js';
 import { BOUND, PLAZA, POND, MEADOW, TREE_OVS, OVERLAYS } from './park-geo.js';
@@ -103,7 +103,7 @@ export function initCritters(ctx) {
     }
     for (let i = acorns.length - 1; i >= 0; i--) {
       const a = acorns[i];
-      if (Math.hypot(pos.x - a.x, (pos.y - 6) - a.y) < 34) {
+      if (Math.hypot(pos.x - a.x, (pos.y - 6) - a.y) < 34 * perkReach()) {
         a.el.remove();
         acorns.splice(i, 1);
         passStat('rep', 2);         // ✨ the world layer flies it into the LEVEL chip with "+2 XP" (world-xp.js)

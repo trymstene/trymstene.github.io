@@ -24,7 +24,10 @@
     "see": "See it",
     "pick": "Pick one of two",
     "picked": "Your pick",
-    "litNote": "Yours"
+    "litNote": "Yours",
+    "nextIn": "Next perk in {n} stars",
+    "nextOne": "Next perk with your next star",
+    "newPerk": "New perk"
   },
   "kinds": {
     "wait": "less waiting",
@@ -32,13 +35,12 @@
     "lucky": "better luck",
     "easy": "easier",
     "banana": "for your banana",
-    "seen": "everyone sees it",
     "others": "helps others",
     "capstone": "the top star"
   },
   "constellations": [
     {
-      "key": "sunflower", "name": "The Sunflower", "area": "the park", "each": "Every star here: 1% more XP in the park",
+      "key": "sunflower", "name": "The Sunflower", "area": "the park", "each": "Each star here: +1% XP in the park",
       "perks": [
         { "key": "cheapseeds", "name": "Seeds stay cheap", "line": "In the park, seeds stay cheaper as your garden grows: the price goes up half as fast for every plant you have." },
         { "key": "greenthumb", "name": "Green thumb", "line": "In the park, your crops need one day less of watering before they are ready to pick." },
@@ -49,28 +51,28 @@
         { "key": "waterall", "name": "Water them all", "line": "In the park, one tap waters every thirsty plant within your reach, not just one." },
         { "key": "stormproof", "name": "Storm-proof", "line": "In the park, storms never rot your plants. Today a storm rots about half of them." },
         { "key": "extrafruit", "name": "Extra fruit", "line": "In the park, your strawberries and grapes give fruit four times instead of three." },
-        { "key": "bloomsteps", "name": "Blooming steps", "line": "In the park, little flowers spring up where you walk, and other players see them too." },
-        { "key": "sunflowercap", "name": "The Sunflower", "line": "In the park, your watered crops grow twice as fast, and your plants shimmer for everyone who walks by." }
+        { "key": "waterpays", "name": "Watering pays", "line": "In the park, watering your own plants pays the same XP as watering someone else’s, and each one blooms as you water it." },
+        { "key": "sunflowercap", "name": "The Sunflower", "line": "In the park, your watered crops grow twice as fast, and every harvest of yours bursts into starlight for all to see." }
       ]
     },
     {
-      "key": "hen", "name": "The Hen", "area": "your homestead", "each": "Every star here: 1% more XP at your homestead",
+      "key": "hen", "name": "The Hen", "area": "your homestead", "each": "Each star here: +1% XP at your homestead",
       "perks": [
         { "key": "express", "name": "Express van", "line": "At your homestead, everything you order on the Banana Phone or from Pip’s shelf arrives by van in half the time." },
         { "key": "sprout", "name": "Early sprout", "line": "At your homestead, crops are ready a day sooner, because planting counts as their first watering." },
-        { "key": "dblhearts", "name": "Double hearts", "line": "At your homestead, every hug gives an animal two hearts instead of one, so it levels up twice as fast." },
+        { "key": "walkhugs", "name": "Walk-by hugs", "line": "At your homestead, your animals get their hug when you walk past them, so you never have to tap each one." },
         { "key": "goodswait", "name": "Goods wait for you", "line": "At your homestead, eggs and milk keep piling up for two more days while you are away." },
         { "key": "babies", "name": "Babies grow fast", "line": "At your homestead, baby animals grow up after three fed mornings instead of five." },
         { "key": "trough", "name": "Full trough", "line": "At your homestead, one fill keeps the trough full for two mornings, so a day away still gets you double goods." },
         { "key": "pie", "name": "Pie lasts longer", "line": "At your homestead, pumpkin pie gives double XP for twice as long, and it works in every area." },
         { "key": "neighbour", "name": "Good neighbour", "line": "At a neighbour’s homestead, your watering counts as two, so their crops are ready sooner." },
-        { "key": "wool", "name": "Double wool", "line": "At your homestead, shearing a sheep gives two wool instead of one." },
+        { "key": "dblhearts", "name": "Double hearts", "line": "At your homestead, every hug gives an animal two hearts instead of one, so it levels up twice as fast." },
         { "key": "moreanimals", "name": "One more animal", "line": "At your homestead, your pens hold one more hen, goat, sheep and cow." },
         { "key": "hencap", "name": "The Hen", "line": "At your homestead, your dog or cat learns to come along: it follows you into every area, where everyone can see it." }
       ]
     },
     {
-      "key": "ghost", "name": "The Ghost", "area": "Banana Town", "each": "Every star here: 1% more XP in Banana Town",
+      "key": "ghost", "name": "The Ghost", "area": "Banana Town", "each": "Each star here: +1% XP in Banana Town",
       "perks": [
         { "key": "calmghosts", "name": "Calm ghosts", "line": "In Banana Town, ghosts stop running away when you come close, so they are much easier to catch." },
         { "key": "quickfix", "name": "Quick fix", "line": "In Banana Town, a broken street lamp or arcade cabinet takes you less than half as long to mend." },
@@ -78,15 +80,15 @@
         { "key": "tomorrow", "name": "Tomorrow’s orders", "line": "In Banana Town, Tally’s Exchange shows tomorrow’s three orders as well as today’s, so you can gather ahead." },
         { "key": "morefix", "name": "More to fix", "line": "In Banana Town, a third more problems turn up for you to fix." },
         { "key": "steadyhands", "name": "Steady hands", "line": "In Banana Town, the café and lemonade stand stay just as easy to time all shift, and post office cards wait longer." },
-        { "key": "ghostreach", "name": "Ghost catcher", "line": "In Banana Town, you catch ghosts from almost twice as far away." },
+        { "key": "ghosttamer", "name": "Ghost tamer", "line": "In Banana Town, the shy drifting ghost no longer hides from you, so you can catch it too." },
         { "key": "secondspin", "name": "Second spin", "line": "In Banana Town, the Wheel of Peel gives you two free spins a day instead of one." },
         { "key": "ghostbounty", "name": "Ghost bounty", "line": "In Banana Town, every ghost after the day’s first pays double XP." },
-        { "key": "firework", "name": "Daily firework", "line": "In Banana Town, you get a free firework every day to set off over the square, with your name in it for everyone to see." },
-        { "key": "ghostcap", "name": "The Ghost", "line": "In Banana Town, wear any curse look you have caught, any time: giant, tiny, blue fire, a dark twin. Everyone sees it." }
+        { "key": "ghostfire", "name": "Ghost fireworks", "line": "In Banana Town, the day’s first ghost you catch pays double XP and sets off a firework with your name over the square." },
+        { "key": "ghostcap", "name": "The Ghost", "line": "In Banana Town, at night a friendly ghost floats beside you and catches the ghosts that come near you." }
       ]
     },
     {
-      "key": "fish", "name": "The Fish", "area": "Banana Bay", "each": "Every star here: 1% more XP at Banana Bay",
+      "key": "fish", "name": "The Fish", "area": "Banana Bay", "each": "Each star here: +1% XP at Banana Bay",
       "perks": [
         { "key": "quickbite", "name": "Quick bite", "line": "At Banana Bay, fish bite in half the time, so you catch more every time you sit down to fish." },
         { "key": "comber", "name": "Beachcomber", "line": "At Banana Bay, shells wash up a third faster, and ten can lie on the sand at once instead of eight." },
@@ -97,12 +99,12 @@
         { "key": "treasure", "name": "Treasure sense", "line": "At Banana Bay, map pieces turn up sooner, and the sand says you are close to the treasure from twice as far." },
         { "key": "lures", "name": "Lure keeper", "line": "At Banana Bay, a lure from the Wheel of Peel lasts eight bites instead of five." },
         { "key": "bighitter", "name": "Big hitter", "line": "At Banana Bay, your volleyball hits fly much higher, nearly as high as Sandy’s, so long rallies are easier." },
-        { "key": "float", "name": "Starlit float", "line": "At Banana Bay, your fishing float glows with starlight and leaves a trail of light that everyone can see." },
+        { "key": "float", "name": "Starlit float", "line": "At Banana Bay, when a rare or legendary fish bites, your float flashes with starlight and that catch pays double XP." },
         { "key": "fishcap", "name": "The Fish", "line": "At Banana Bay, you fish with two rods at once, so you get twice the bites, and everyone sees both lines." }
       ]
     },
     {
-      "key": "vinyl", "name": "The Vinyl", "area": "the rave", "each": "Every star here: 1% more XP at the rave",
+      "key": "vinyl", "name": "The Vinyl", "area": "the rave", "each": "Each star here: +1% XP at the rave",
       "perks": [
         { "key": "jellykeep", "name": "Jelly keeper", "line": "At the rave, your jelly meter waits twice as long before it starts to drain, then drains half as fast." },
         { "key": "longjelly", "name": "Longer JELLY TIME", "line": "At the rave, JELLY TIME lasts half as long again, and so does the drop that comes with it." },
@@ -113,24 +115,24 @@
         { "key": "latejoin", "name": "Late to the party", "line": "At the rave, you can still join a floor quest for twice as long after it starts." },
         { "key": "lasersense", "name": "Laser sense", "line": "At the rave, lasers warn you twice as early before they sweep the floor." },
         { "key": "longtoys", "name": "Longer toys", "line": "At the rave, the toys you grab from the conveyor last twice as long." },
-        { "key": "goldsteps", "name": "Gold footprints", "line": "At the rave, your footprints glow gold all the time, and everyone on the floor sees them." },
+        { "key": "goldsteps", "name": "Gold footprints", "line": "At the rave, during JELLY TIME every jelly you pick up pays double XP, and your footprints glow gold for everyone." },
         { "key": "vinylcap", "name": "The Vinyl", "line": "At the rave, once a day you can play the whole floor a bonus drop, with your name on the big screen." }
       ]
     },
     {
-      "key": "banana", "name": "The Banana", "area": "everywhere", "each": "Every star here: your banana’s light grows",
+      "key": "banana", "name": "The Banana", "area": "everywhere", "each": "Each star here: your banana’s light grows",
       "perks": [
         { "key": "nightstride", "name": "Night stride", "line": "At night, your banana walks a fifth faster, in every area where night falls." },
-        { "key": "reach", "name": "Long reach", "line": "Everywhere, you pick things up from half again as far away: litter, leaves, eggs, shells, flyers and more." },
-        { "key": "seat", "name": "Take a seat", "line": "Everywhere, tap your own banana to sit down right where you are." },
-        { "key": "starsteps", "name": "Starlit steps", "line": "Everywhere, little stars light up where you walk, and other players see them too." },
-        { "key": "starburst", "name": "Star-burst", "line": "Everywhere, once a day, you can set off a burst of stars over your banana that everyone around you sees." },
-        { "key": "heartsall", "name": "Hearts for all", "line": "Everywhere, the hearts you send are seen by everyone around you, not just by you." },
+        { "key": "reach", "name": "Long reach", "line": "Everywhere but the rave, you pick things up from half again as far: litter, eggs, shells, flyers, ghosts and more." },
+        { "key": "leftoff", "name": "Where you left off", "line": "Everywhere, going back to an area puts you where you last stood there, not at its gate." },
+        { "key": "sugarrush", "name": "Sugar rush", "line": "Everywhere but the rave, each pickup makes you a quarter faster for a few seconds, like the rave’s sugar rush." },
+        { "key": "luckyhands", "name": "Lucky hands", "line": "Everywhere, one thing in ten that you pick up counts twice for XP." },
+        { "key": "nightowl", "name": "Night owl", "line": "At night, you earn a quarter more XP, in every area where night falls." },
         { "key": "daystride", "name": "Day stride", "line": "By day too, your banana walks a tenth faster, everywhere except the rave." },
-        { "key": "reach2", "name": "Longer reach", "line": "Everywhere, you pick things up from twice as far away, instead of half again." },
-        { "key": "lantern", "name": "Bright lantern", "line": "At night, your banana’s own light shines brighter, with a soft glow other players see at its full size." },
+        { "key": "reach2", "name": "Longer reach", "line": "Everywhere but the rave, you pick things up from twice as far away, instead of half again." },
+        { "key": "warmwave", "name": "Warm wave", "line": "Everywhere, each wave you send pays you and the player you wave to 25 XP, once a day for each player." },
         { "key": "nightsprint", "name": "Night sprint", "line": "At night, your banana walks a third faster, instead of a fifth." },
-        { "key": "bananacap", "name": "The Banana", "line": "Everywhere, a soft starlight shines on your banana, day and night, and every player who sees you sees it." }
+        { "key": "bananacap", "name": "The Banana", "line": "Everywhere, each new Shimmer level makes you shine with starlight for a few minutes, with double XP while you shine." }
       ]
     }
   ],

@@ -25,7 +25,7 @@
 // banana or ghost — a ghost with a line says it in the town's toast. ⚠️ EVERY WORD is copy:
 // src/data/copy/town-life.json, written by the rig, approved at /dev/copy/. Until it lands
 // the town runs wordless and picks the words up the day they are approved.
-import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt, townBigAt, SKY_HOURS, litAt, TOWN_NIGHT_FROM, TOWN_NIGHT_TO, TOWN_HOUR_MS } from '../lib/world.js';   // 🌗 the sky's hours, and when each lamp comes on (§56)
+import { seedRand, worldOwner, worldSid, worldToken, curseAt, curseDay, CURSE_DAY_MS, poofInto, burstInto, townHauntAt, townBigAt, SKY_HOURS, litAt, TOWN_NIGHT_FROM, TOWN_NIGHT_TO, TOWN_HOUR_MS, perkReach } from '../lib/world.js';   // 🌗 the sky's hours, and when each lamp comes on (§56)
 import { passStat, passSpend, passRaw, statTotal, coinsNow, ruleUsed, coinsPaid } from '../lib/banana-pass.js';
 import { XP_PAY } from '../data/xp-pay.js';   // ✨ a fix pays five times its old XP (the endgame plan's step 1c)
 import { DECOR } from '../data/decor.js';
@@ -1287,11 +1287,11 @@ export function bootTownLife(ctx) {
   function autoPick(now) {
     if (now - autoAt < 120 || (ctx.inside && ctx.inside())) return;
     autoAt = now;
-    const px = ctx.pos.x, py = ctx.pos.y;
+    const px = ctx.pos.x, py = ctx.pos.y, R = perkReach();
     if (still) { if (Math.hypot(px - still[0], py - still[1]) < 1) return; still = null; }
-    for (const p of problems) { const r = REACH[p.type]; if (r && Math.hypot(p.x - px, (p.foot != null ? p.foot : p.y) - py) < r) { fix(p.id); return; } }
-    for (const o of objectsNow()) if (Math.hypot(o.x - px, o.y - py) < 34) { dusk.takeObject(o); return; }
-    const f = life.pickAt ? life.pickAt(px, py, 30) : null;
+    for (const p of problems) { const r = REACH[p.type] * R; if (r && Math.hypot(p.x - px, (p.foot != null ? p.foot : p.y) - py) < r) { fix(p.id); return; } }
+    for (const o of objectsNow()) if (Math.hypot(o.x - px, o.y - py) < 34 * R) { dusk.takeObject(o); return; }
+    const f = life.pickAt ? life.pickAt(px, py, 30 * R) : null;
     if (f) { float(f.x, f.y - 30, '+1'); if (hud && hud.refresh) hud.refresh(); }
   }
   function tick(now, dt) {

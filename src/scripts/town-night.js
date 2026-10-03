@@ -20,7 +20,7 @@ import { CURSE_SHELF } from '../data/town/stock.js';
 import { PROBLEMS } from '../data/town/problems.js';
 import { LOOK } from '../data/town/condition.js';
 import { OB_RECTS, OB_CIRCLES } from './town-geo.js';
-import { burstInto, townNightIdx } from '../lib/world.js';
+import { burstInto, townNightIdx, perkReach } from '../lib/world.js';
 import { bigMoment } from '../lib/world-moment.js';
 import { passStat } from '../lib/banana-pass.js';
 import { XP_PAY } from '../data/xp-pay.js';   // ✨ a cursed thing's first find (the endgame plan's step 1c)
@@ -281,7 +281,7 @@ export function bootTownNight(ctx) {
       else if (!d.path) {
         // ⚠️ only a ghost you can SEE: the wisp hides 2–5 s between showings, and a walk past its empty spot caught it — the day's
         // first ghost pays 4 000 XP now (3 Oct 2026)
-        if (!g.fled && near < 42 && !s.el.hidden) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; catchGhost(g); }
+        if (!g.fled && near < 42 * perkReach() && !s.el.hidden) { g.fled = 1; g.fleeT = 4 + Math.random() * 3; catchGhost(g); }
         else if (g.fled) { g.fleeT -= dt; if (g.fleeT <= 0 && near > 70) { g.fled = 0; returnGhost(g); } }
       }
       if ((d.id === 'wisp' || d.loop) && s.mode === 'done') { g.hideT -= dt; if (g.hideT <= 0) { s.el.hidden = false; show(s, 0); s.mode = 'once'; } continue; }

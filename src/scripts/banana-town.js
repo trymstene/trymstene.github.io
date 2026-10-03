@@ -13,7 +13,7 @@ import { coinText } from '../lib/coin.js';   // 🪙 every line's coin is the st
 import { initTravel } from './world-travel.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { WORLD, BOUND, SPAWN, DOORS, OVERLAYS, SPOTS, OB_RECTS, OB_CIRCLES, FOUNTAIN, ANIMS, ARCADE, STORE, CAFE_WIN } from './town-geo.js';   // (NPCS stays in the generated file: stale since the residents got days, read by nothing)
-import { snapScale, worldNewcomer } from '../lib/world.js';
+import { snapScale, worldNewcomer, perkSpeed } from '../lib/world.js';
 import { customArt } from '../lib/custom-art.js';   // 🎁 Forge pieces on the square   // 🔍 whole device pixels · 🌱 a new banana's first minute
 import { initLife } from './town-life.js';
 import { mountDialogue } from '../lib/world-dialogue.js';
@@ -645,7 +645,7 @@ function tick(now) {
   if (dx || dy) { tgt.x = pos.x; tgt.y = pos.y; legs = []; const n = Math.hypot(dx, dy); dx /= n; dy /= n; }
   else { const ex = tgt.x - pos.x, ey = tgt.y - pos.y, d = Math.hypot(ex, ey); if (d > 2) { dx = ex / d; dy = ey / d; } }
   if (dx || dy) {
-    const step = SPEED * dt * slowNow();
+    const step = SPEED * dt * slowNow() * perkSpeed();
     const nx = pos.x + dx * step, ny = pos.y + dy * step;
     // ⚠️ A SLIDE THAT GOES NOWHERE IS A STOP. Blocked head-on, the banana slides along the wall by its
     // sideways component — and straight below a planter that component was 0.005, so it crept 0.01 px a

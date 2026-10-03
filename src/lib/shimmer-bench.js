@@ -9,9 +9,11 @@
 import * as F from './shimmer-fx.js';
 import { openMap } from './shimmer-map.js';
 import { LADDER, KIND, shimmerStep } from '../data/shimmer.js';
+import { townNightAt } from './world.js';   // already a shared chunk: the bench splits nothing
 import { iconSvg } from './pixel-icons.js';   // the chunk every script shares (an icon alone splits a chunk of its own)
 
 const W = F.WORDS;
+const perkNight = () => townNightAt(Date.now());
 const front = (dx = 44, dy = -2) => { const p = F.meWorld(); return p ? { x: p.x + F.sp(dx), y: p.y + F.sp(dy) } : null; };
 const img = (src, w, h) => { const i = new Image(); i.src = src; i.alt = ''; i.draggable = false; Object.assign(i.style, { position: 'absolute', left: '0', top: '0', width: w + 'px', height: h + 'px', marginLeft: (-w / 2) + 'px', marginTop: (-h) + 'px', imageRendering: 'pixelated', pointerEvents: 'none', transformOrigin: '50% 100%' }); return i; };
 const later = (ms, f) => setTimeout(f, ms);
@@ -56,33 +58,32 @@ const PARK = {
     plants.forEach((pl, i) => later(i * 140, () => { const r = pl.getBoundingClientRect(); pour(F.screenToWorld(r.left + r.width / 2, r.bottom - 6), true); }));
     later(plants.length * 140 + 300, () => F.tag('waterall'));
   },
-  bloomsteps: { toggle: () => F.trail((p, n) => {
-    // two at a step, either side of your feet: one alone read as a dropped petal on a phone. One holder carries both, so the
-    // pair fades as one. At night they would be as dark as the park, so they rise into the light instead: starlit flowers, a
-    // soft rim on each (a glow laid over them read as milk on a phone)
-    const night = F.nightOn();
-    const b = document.createElement('i');
-    Object.assign(b.style, { width: '0', height: '0', pointerEvents: 'none' });
-    (night ? F.inLight : F.inWorld)(b, p, F.meZ() - 1);
-    [-1, 1].forEach((side, j) => {
-      const [src, w, h] = BLOOMS[(n * 2 + j) % BLOOMS.length];
-      const f = img('/assets/park/' + src, w, h);
-      f.style.left = (side * F.sp(9 + (n % 3) * 2)) + 'px'; f.style.top = F.sp(side > 0 ? 3 : 0) + 'px';
-      if (night) f.style.filter = 'drop-shadow(0 0 1px rgba(223,240,255,.95)) drop-shadow(0 0 4px rgba(127,191,255,.7))';
-      b.appendChild(f);
-      if (!F.still()) F.play(f, [{ scale: '0.2 0' }, { scale: '1.1 1.25', offset: 0.55 }, { scale: '1 1' }], { duration: 380, easing: 'ease-out', delay: j * 90 });
+  waterpays() {   // your own plant, watered: it blooms for a moment, and it pays like anyone else's
+    const pl = nearest(parkPlants(), 1)[0];
+    const p = pl ? (() => { const r = pl.getBoundingClientRect(); return F.screenToWorld(r.left + r.width / 2, r.bottom - 4); })() : front();
+    if (!pl) hint('No plants in view: walk to the garden beds and water one of yours.');
+    pour(p, false);
+    later(420, () => {
+      [[-14, -6], [12, -10], [-4, 4], [16, 2], [-18, 6]].forEach(([dx, dy], i) => later(i * 70, () => {
+        const [src, w, h] = BLOOMS[i % BLOOMS.length], f = img('/assets/park/' + src, w, h);
+        F.inWorld(f, { x: p.x + F.sp(dx), y: p.y + F.sp(dy) }, F.meZ() + 1);
+        if (!F.still()) F.play(f, [{ scale: '0.2 0' }, { scale: '1.1 1.25', offset: 0.55 }, { scale: '1 1' }], { duration: 360, easing: 'ease-out' });
+        fadeOut(f, 1700);
+      }));
+      plusOne({ x: p.x, y: p.y - F.sp(34) }, '+6 XP');
+      F.tag('waterpays');
     });
-    if (n % 3 === 0) F.glint({ x: p.x, y: p.y - F.sp(14) }, { size: 18, scale: 1, z: F.meZ() - 1 });
-    return b;
-  }, { step: F.sp(20), life: 6500 }) },
-  sunflowercap: { toggle: () => {
-    const plants = parkPlants().slice(0, 24);
-    if (!plants.length) hint('No plants in view: walk to the garden beds, your plants shimmer there.');
-    const sw = plants.map((p, i) => F.sweep(p, { mask: p.style.backgroundImage, gap: 700 + (i % 5) * 260, ms: 1300 }));
-    const tw = setInterval(() => { const p = plants[Math.floor(Math.random() * plants.length)]; if (!p) return; const at = F.screenToWorld(p.getBoundingClientRect().left + p.getBoundingClientRect().width * Math.random(), p.getBoundingClientRect().top + 4); F.glint(at, { size: 20, scale: 1, z: (parseInt(getComputedStyle(p).zIndex, 10) || 0) + 2 }); }, 420);
-    F.tag('sunflowercap');
-    return { stop() { sw.forEach((x) => x.stop()); clearInterval(tw); } };
-  } },
+  },
+  sunflowercap() {   // a harvest of yours bursts into starlight: the moment, not a plant that shimmers all day
+    const pl = nearest(parkPlants(), 1)[0];
+    if (!pl) { hint('No plants in view: walk to the garden beds, a harvest bursts there.'); }
+    const p = pl ? (() => { const r = pl.getBoundingClientRect(); return F.screenToWorld(r.left + r.width / 2, r.top + r.height * 0.4); })() : { x: front().x, y: front().y - F.sp(16) };
+    const sw = pl ? F.sweep(pl, { mask: pl.style.backgroundImage, gap: 200, ms: 900 }) : null;
+    F.glint(p, { size: 60 }); F.spray(p, 18, { reach: 54, up: 34 });
+    later(240, () => F.spray(p, 12, { reach: 36, up: 48 }));
+    later(300, () => F.tag('sunflowercap'));
+    if (sw) later(2200, () => sw.stop());
+  },
 };
 
 // ── 💿 THE VINYL, at the rave
@@ -107,12 +108,18 @@ const RAVE = {
     } else F.tag('jellykeep');
   },
   longjelly() { const b = F.buff('longjelly', 20, { fast: 2 }); later(900, () => { if (b) b.add(10); F.tag('longjelly'); }); },
-  goldsteps: { toggle: () => F.trail((p, n) => {   // a gold print at each step, left and right in turn
-    const f = document.createElement('i'), w = F.sp(7), side = n % 2 ? 1 : -1;
-    Object.assign(f.style, { width: w + 'px', height: (w * 0.5) + 'px', marginLeft: (side * F.sp(5) - w / 2) + 'px', marginTop: (-w * 0.25) + 'px', borderRadius: '50%', background: '#ffcf4a', boxShadow: '0 0 4px 1px rgba(255,214,90,.8)', pointerEvents: 'none' });
-    F.inLight(f, p, F.meZ() - 2);
-    return f;
-  }, { step: F.sp(16), life: 2600 }) },
+  goldsteps() {   // JELLY TIME: gold prints while it lasts (the bench's clock runs fast), and the jelly pays double
+    F.buff('goldsteps', 20, { fast: 2 });
+    F.tag('goldsteps');
+    const t = F.trail((p, n) => {   // a gold print at each step, left and right in turn
+      const f = document.createElement('i'), w = F.sp(7), side = n % 2 ? 1 : -1;
+      Object.assign(f.style, { width: w + 'px', height: (w * 0.5) + 'px', marginLeft: (side * F.sp(5) - w / 2) + 'px', marginTop: (-w * 0.25) + 'px', borderRadius: '50%', background: '#ffcf4a', boxShadow: '0 0 4px 1px rgba(255,214,90,.8)', pointerEvents: 'none' });
+      F.inLight(f, p, F.meZ() - 2);
+      return f;
+    }, { step: F.sp(16), life: 2600 });
+    hint('Walk around: the prints last as long as JELLY TIME does.');
+    later(10000, () => t.stop());
+  },
   vinylcap() {   // your name on the club's big screen, and a drop for the whole floor
     const scr = document.querySelector('.rv-screen');
     let name = ''; try { name = (localStorage.getItem('ps-name-v1') || '').trim(); } catch (e) {}
@@ -303,13 +310,24 @@ const HEN = {
     const p = c ? (() => { const r = c.getBoundingClientRect(); return F.screenToWorld(r.left + r.width / 2, r.bottom - r.height * 0.3); })() : front();
     pour(p, false); later(260, () => pour(p, true)); later(700, () => F.tag('neighbour'));
   },
-  wool() {   // a shear: the tuft it always gives, and a second one in starlight, into your banana
-    const sheep = hsEls('.hs-hen--sheep').concat(hsEls('.hs-hen--ysheep'));
-    const e = nearest(sheep, 1)[0];
-    const from = e ? headOf(e) : standIn('sheep', 'No sheep here yet: buy one on the Banana Phone and shear her when her coat is full.').head;
-    [0, 1].forEach((i) => later(i * 240, () => intoMe(img(HS + 'm-wool.png', F.sp(18), F.sp(18)), { x: from.x + i * F.sp(8), y: from.y + F.sp(6) }, i === 1)));
-    later(500, () => F.tag('wool'));
-  },
+  walkhugs: { toggle: () => {   // walk past your animals: each gets its hug, a heart over it, no tap (nothing is saved here)
+    const done = new WeakSet();
+    let live = true, tagged = false;
+    const tick = () => {
+      if (!live) return;
+      const me = F.meWorld();
+      if (me) for (const e of hsEls('.hs-hen')) {
+        if (done.has(e)) continue;
+        const f = feetOf(e);
+        if (Math.hypot(f.x - me.x, f.y - me.y) < F.sp(bananaW() * 1.1)) { done.add(e); heartUp(headOf(e), false); if (!tagged) { tagged = true; F.tag('walkhugs'); } }
+      }
+      setTimeout(tick, 120);
+    };
+    if (!hsEls('.hs-hen').length) hint('No animals here yet: buy a hen on the Banana Phone, then walk past her.');
+    else hint('Walk past your animals: each gets its hug as you go by.');
+    tick();
+    return { stop() { live = false; } };
+  } },
   moreanimals() {   // one more of each kind you keep, standing beside the one you have, in starlight
     const seen = new Map();
     for (const e of farmEls()) { const k = YOUNG[kindOf(e)] || kindOf(e); if (SPECIES[k] && !seen.has(k)) seen.set(k, e); }
@@ -330,51 +348,50 @@ const HEN = {
 };
 
 // ── 🍌 THE BANANA, everywhere: what your own banana can do and show
-const reachRing = (worldPx) => { const r = F.ring(worldPx / F.sp(1)); later(2600, () => r.stop()); };
+// a perk switched on for real while its button is lit: every area reads window.__perks (perkReach, perkSpeed in world.js)
+const perks = () => (window.__perks = window.__perks || {});
+function real(key, ring) {
+  return () => {
+    perks()[key] = true;
+    const r = ring ? F.ring(ring / F.sp(1)) : null;
+    F.tag(key);
+    return { stop() { delete perks()[key]; if (r) r.stop(); } };
+  };
+}
+// starlight over your banana's body, for as long as it runs: small stars come and go
+const shine = (ms) => { const t = F.trail(() => {
+  const s2 = F.meScreen(); if (!s2) return null;
+  const feet = F.screenToWorld(s2.x, s2.feet), head = F.screenToWorld(s2.x, s2.head);
+  const h = feet.y - head.y, big = Math.random() < 0.3;
+  const st = F.starEl(big ? 'm' : 's', F.sp(big ? 13 : 9));
+  F.inLight(st, { x: feet.x + (Math.random() - 0.5) * h * 0.7, y: feet.y - Math.random() * h }, F.meZ() + 1);
+  if (!F.still()) F.play(st, [{ scale: '0', opacity: 0 }, { scale: '1.2', opacity: 1, offset: 0.35 }, { scale: '0', opacity: 0 }], { duration: 820 }).then(() => st.remove());
+  else later(700, () => st.remove());
+  return null;
+}, { step: Infinity, every: 90 }); if (ms) later(ms, () => t.stop()); return t; };
+const sugarStars = (ms) => { const t = F.trail((p, n) => {
+  const st = F.starEl(n % 3 ? 's' : 'm', F.sp(n % 3 ? 9 : 13));
+  F.inLight(st, { x: p.x + (n % 2 ? 1 : -1) * F.sp(5), y: p.y }, F.meZ() - 1);
+  return st;
+}, { step: F.sp(18), life: 1600 }); later(ms, () => t.stop()); return t; };
 const BANANA = {
-  reach() { reachRing(50); F.tag('reach'); },
-  reach2() { reachRing(68); F.tag('reach2'); },
-  starsteps: { toggle: () => F.trail((p, n) => {
-    const s = F.starEl(n % 3 ? 's' : 'm', F.sp(n % 3 ? 9 : 13));
-    F.inLight(s, { x: p.x + (n % 2 ? 1 : -1) * F.sp(5), y: p.y }, F.meZ() - 1);
-    return s;
-  }, { step: F.sp(18), life: 2600 }) },
-  starburst() {
-    const p = F.meWorld(); if (!p) return;
-    const top = { x: p.x, y: p.y - F.sp(70) };
-    F.glint(top, { size: 52 }); F.spray(top, 16, { reach: 64, up: 30 });
-    later(220, () => F.spray(top, 12, { reach: 44, up: 50 }));
-    later(420, () => F.glint({ x: top.x + F.sp(18), y: top.y + F.sp(8) }, { size: 30, scale: 1 }));
-    F.tag('starburst');
+  nightstride: { toggle: real('nightstride') },
+  reach: { toggle: real('reach', 50) },
+  sugarrush() {   // a pickup: a quarter faster for a few seconds, stars at your feet while it lasts
+    perks().sugarUntil = Date.now() + 3500;
+    sugarStars(3500);
+    F.buff('sugarrush', 4, { fast: 1 });
+    F.tag('sugarrush');
+    hint('In play every pickup starts it; here, walk now.');
   },
-  lantern: { toggle: () => {   // a bigger, brighter pool of your own light at your feet (best seen at night)
-    if (!F.nightOn()) hint('This shows best at night: the sky turns dark every few minutes here.');
-    const g = document.createElement('i');
-    Object.assign(g.style, { position: 'absolute', pointerEvents: 'none', borderRadius: '50%', background: 'radial-gradient(closest-side, rgba(255,236,200,.42), rgba(255,222,170,.18) 55%, rgba(255,214,160,0))' });
-    let live = true;
-    const tick = () => {
-      if (!live) return;
-      const p = F.meWorld();
-      if (p) { const rx = F.sp(118), ry = rx * 0.6; if (!g.isConnected) F.inLight(g, p, F.meZ() - 3); Object.assign(g.style, { left: (p.x - rx) + 'px', top: (p.y - ry - F.sp(30)) + 'px', width: rx * 2 + 'px', height: ry * 2 + 'px' }); }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    F.tag('lantern');
-    return { stop() { live = false; g.remove(); } };
-  } },
-  bananacap: { toggle: () => {   // starlight on your banana: small stars come and go over its body, day and night
+  daystride: { toggle: real('daystride') },
+  reach2: { toggle: real('reach2', 68) },
+  nightsprint: { toggle: real('nightsprint') },
+  bananacap() {   // a new Shimmer level: you shine for a few minutes (a few seconds here), with double XP while you shine
+    shine(12000);
+    F.buff('bananacap', 12, { fast: 1 });
     F.tag('bananacap');
-    return F.trail(() => {
-      const s = F.meScreen(); if (!s) return null;
-      const feet = F.screenToWorld(s.x, s.feet), head = F.screenToWorld(s.x, s.head);
-      const h = feet.y - head.y, big = Math.random() < 0.3;
-      const st = F.starEl(big ? 'm' : 's', F.sp(big ? 13 : 9));
-      F.inLight(st, { x: feet.x + (Math.random() - 0.5) * h * 0.7, y: feet.y - Math.random() * h }, F.meZ() + 1);
-      if (!F.still()) F.play(st, [{ scale: '0', opacity: 0 }, { scale: '1.2', opacity: 1, offset: 0.35 }, { scale: '0', opacity: 0 }], { duration: 820 }).then(() => st.remove());
-      else later(700, () => st.remove());
-      return null;
-    }, { step: Infinity, every: 90 });
-  } },
+  },
 };
 const PREVIEWS = { park: { c: 'sunflower', fx: PARK }, rave: { c: 'vinyl', fx: RAVE }, homestead: { c: 'hen', fx: HEN } };
 // the Hen's top star is a pet that comes along into every area, so its preview plays anywhere the map is opened
@@ -463,7 +480,22 @@ export function mount(api) {
     map = openMap(S, { from: chip, select: myC, step: shimmerStep, canSee: (k) => !!fxOf(pv, k), see: playPerk, lit: (k) => say(F.perkWords(k).name + ' · lit on the map', F.perkWords(k).line), closed: () => { map = null; } });
     say('Your stars are your Shimmer levels. Place one: the figure draws itself, and every fourth star lights a perk.');
   });
-  btn(sh, 'Falling star', '', () => { F.fall({ caught: () => F.note(W.dust.replace('{n}', '2')) }); say('Not a map star: a falling star gives STARDUST, the thing wishes are bought with. Walk over it.'); });
+  btn(sh, 'Stardust', '', () => { F.fall({ caught: () => F.note(W.dust.replace('{n}', '2')) }); say('Stardust is not a perk and not a map star: it is the endgame’s other half. Now and then a star falls near you; walk over it and you get stardust, which buys wishes (lanterns on the square for an hour, rain for the gardens). The Shimmer doc has the wishes.'); });
+  btn(sh, 'Everything on', '', () => {
+    const live = [];
+    if (pv && pv.c === 'vinyl') RAVE.goldsteps();
+    if (pv && pv.c === 'sunflower') PARK.sunflowercap();
+    live.push(petFollow(), shine(12000), sugarStars(12000));
+    perks().sugarUntil = Date.now() + 12000;
+    const t0 = performance.now(); let n = 0, worst = 0, last = t0;
+    const meter = (now) => {
+      n++; worst = Math.max(worst, now - last); last = now;
+      if (now - t0 < 12000) { requestAnimationFrame(meter); if (n % 30 === 0) say('Everything on: every look a banana can have at once, here.', Math.round(n / ((now - t0) / 1000)) + ' frames a second · slowest frame ' + Math.round(worst) + ' ms'); return; }
+      live.forEach((x) => x && x.stop && x.stop());
+      say('Everything on, for twelve seconds: ' + Math.round(n / ((now - t0) / 1000)) + ' frames a second, the slowest frame ' + Math.round(worst) + ' ms.', 'A phone runs smoothly at about 60; under 30 you will feel it.');
+    };
+    requestAnimationFrame(meter);
+  });
   btn(sh, 'Area boost', '', () => { F.plusWithStars(24, 6); say('Always on: every star you place in this area’s constellation adds 1% to the XP you earn here. The blue part is your stars’.'); });
   // ── this area's constellation, then the banana's own (it works in every area): a perk with a look plays; one that only
   // changes a number says so and stays off
@@ -476,6 +508,7 @@ export function mount(api) {
         const isToggle = fx && typeof fx === 'object' && fx.toggle;
         const b = btn(r, w.name, String(st[0]), () => {
           say(w.name + ' · star ' + st[0] + ' · ' + (W.kinds[KIND[k]] || ''), w.line);
+          if (/^night/.test(k) && !perkNight()) hint('It is day here now: it works once night falls (the sky turns every few minutes). Leave it on.');
           return isToggle ? fx.toggle() : fx && fx();
         }, isToggle);
         if (!fx) b.disabled = true;

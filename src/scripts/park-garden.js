@@ -1,7 +1,7 @@
 // 🌱 THE GARDEN — the park's daily-return ritual (P3b) + the entropy loop
 // (weeds/trash/eggs/bloom, P3b-LOOP) + the tool slot + the health bar.
 // Split from banana-park.js (P5); wired through the shared ctx.
-import { poofInto, worldSid, worldOwner, worldToken, nameTok } from '../lib/world.js';
+import { poofInto, worldSid, worldOwner, worldToken, nameTok, perkReach } from '../lib/world.js';
 import { passStat, passGet, seedGain, passSpend, passRefund, passNoticeAdd, coinsPaid } from '../lib/banana-pass.js';
 import { GLVL_STARS, gardenerLvlFor } from '../lib/pass-defs.js';
 import { gardenerCardHtml } from '../lib/world-hud.js';
@@ -1185,17 +1185,17 @@ export function initGarden(ctx) {
   function eggTick() {
     if (eggBusy) return;
     for (const [id, e] of eggs) {
-      if (Math.hypot(pos.x - e.x, (pos.y - 6) - e.y) < 34) { claimEgg(id); return; }
+      if (Math.hypot(pos.x - e.x, (pos.y - 6) - e.y) < 34 * perkReach()) { claimEgg(id); return; }
     }
   }
   function trashTick() {
     // 🕯 the questline's litter rides the SAME walk-over beat — quest-local
     // objects, park verbs (the weeds' bwqWeeds pattern, on foot)
     (window.bwqTrash || []).forEach((q) => {
-      if (Math.hypot(pos.x - q.x, (pos.y - 6) - q.y) <= 32) q.take();
+      if (Math.hypot(pos.x - q.x, (pos.y - 6) - q.y) <= 32 * perkReach()) q.take();
     });
     trash.forEach((t, id) => {
-      if (Math.hypot(pos.x - t.x, (pos.y - 6) - t.y) > 32) return;
+      if (Math.hypot(pos.x - t.x, (pos.y - 6) - t.y) > 32 * perkReach()) return;
       trash.delete(id);                    // optimistic — the reply reconciles
       t.el.classList.add('is-popped');     // ✨ popped, not poofed (see the CSS)
       setTimeout(() => t.el.remove(), 360);
@@ -1208,7 +1208,7 @@ export function initGarden(ctx) {
     // 🍂 leaf piles ride the same walk-over beat (they only exist while the
     // park sits under 60 health — raking is recovery accelerant)
     leaves.forEach((l2, id) => {
-      if (Math.hypot(pos.x - l2.x, (pos.y - 6) - l2.y) > 34) return;
+      if (Math.hypot(pos.x - l2.x, (pos.y - 6) - l2.y) > 34 * perkReach()) return;
       leaves.delete(id);
       poofInto(world, 'pk-poof', l2.x / W * 100, (l2.y - 10) / H * 100);
       l2.el.remove();

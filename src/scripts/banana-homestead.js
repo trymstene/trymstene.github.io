@@ -28,7 +28,7 @@ import { initTravel } from './world-travel.js';
 import { initSteer } from './world-steer.js';
 
 import { askName } from '../lib/banana-id.js';
-import { worldOwner, worldSid, worldToken, presenceRoom, poofInto, snapScale, wearSaved, nameTok } from '../lib/world.js';
+import { worldOwner, worldSid, worldToken, presenceRoom, poofInto, snapScale, wearSaved, nameTok, perkReach, perkSpeed } from '../lib/world.js';
 import { isProtectedName } from '../lib/name-guard.js';   // 🪪 a sign named for someone else's name is refused as it is typed
 import NAMES from '../data/copy/names.json';
 import { WORLD, BOUND, ROAD, GATE, FENCE_TIERS, TENT, STRUCTS, STRUCT_STYLES,
@@ -2277,7 +2277,7 @@ function init(visitDoc, visitMiss) {
     if (visiting) return;                               // pay-side gate: a
     for (let i = eggEls.length - 1; i >= 0; i--) {      // visited yard must
       const c = eggEls[i];                              // never mint for the
-      if (Math.hypot(c.x - pos.x, c.y - pos.y) > 34) continue;   // visitor
+      if (Math.hypot(c.x - pos.x, c.y - pos.y) > 34 * perkReach()) continue;   // visitor
       c.el.remove();
       eggEls.splice(i, 1);
       if (c.kind === 'gift') { if (catMod) catMod.gotGift(c); continue; }   // 🎁 the cat's (it saves itself)
@@ -5210,7 +5210,7 @@ function init(visitDoc, visitMiss) {
     const d = Math.hypot(dx, dy);
     if (sitting && d > 1.5) standUp();
     if (d > 1.5) {
-      const m = Math.min(d, SPEED * dt);
+      const m = Math.min(d, SPEED * perkSpeed() * dt);
       const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
       if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
       else if (!blocked(nx, pos.y)) pos.x = nx;

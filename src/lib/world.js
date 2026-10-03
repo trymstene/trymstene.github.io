@@ -515,6 +515,18 @@ export const TOWN_HAUNT_SHARE = 0.1;
 export const townHaunted = (idx) => seedRand(TOWN_HAUNT_SALT + idx * 7919) < TOWN_HAUNT_SHARE;
 export const townHauntAt = (t) => townNightAt(t) && townHaunted(townNightIdx(t));
 // CLOCK-END
+// ✨ PERKS IN PLAY (4 Oct 2026): how far a banana reaches and how fast it walks. The Shimmer bench (?shimmer) switches a perk
+// on through window.__perks so it is FELT in the real game (Trym: Long reach "doesnt work on trash pickup or taking out
+// ghosts"); one day a player's own stars will. For every player today both are 1.
+const perkOn = (k) => { try { const p = window.__perks; return !!(p && p[k]); } catch (e) { return false; } };
+export const perkReach = () => (perkOn('reach2') ? 2 : perkOn('reach') ? 1.5 : 1);
+export function perkSpeed() {
+  let k = 1;
+  if (townNightAt(Date.now())) k = perkOn('nightsprint') ? 4 / 3 : perkOn('nightstride') ? 1.2 : 1;
+  else if (perkOn('daystride')) k = 1.1;
+  try { if (window.__perks && window.__perks.sugarUntil > Date.now()) k *= 1.25; } catch (e) {}
+  return k;
+}
 // 🌑 THE VERY CURSED NIGHT (27 Sep 2026). Trym: "i believe more in letting in rare big cursed nights into the 2 minute
 // night - its better": almost nobody is in town for an evening Curse Night, so half of the haunted nights go all the way —
 // the deep night's storm, every ghost, its cursed things and its stall, for the two minutes. Outside the CLOCK block on

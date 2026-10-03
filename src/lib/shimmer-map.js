@@ -10,18 +10,31 @@ import { LADDER, ORDER, STARS_EACH, KIND } from '../data/shimmer.js';
 import { iconSvg } from './pixel-icons.js';
 
 // 💬 A PERK IS SAID BY WHAT IT DOES (Trym, 3 Oct 2026: "no user understands what a skill / perc is by just reading a perk-name
-// they havent heard of before"). Wherever the map names a perk it shows its kind (an icon and a word a player knows) and its
-// line: the next one under the chosen constellation, every one in its list, and both sides of a choice.
-const KIND_ICON = { wait: 'zap', more: 'party-popper-solid', lucky: 'star', easy: 'tools', banana: 'move', seen: 'sparkles', others: 'users', capstone: 'crown-solid' };
-function perkLine(k, see) {
-  const w = perkWords(k), d = document.createElement('div'); d.className = 'sm-pl';
+// they havent heard of before"): its kind (an icon and a word a player knows) beside its name, and its line. 4 Oct 2026, of a
+// card with two perks spelled out at once: "its easy to miss other text, like 'Next at star 12' … not all text is needed,
+// some can also be tapped to get more information". So the card spells out ONE perk at a time: the one a star just lit; the
+// next one is its name and kind on a row, and a tap opens what it does. The list works the same way, one open at a time.
+const KIND_ICON = { wait: 'zap', more: 'party-popper-solid', lucky: 'star', easy: 'tools', banana: 'move', others: 'users', capstone: 'crown-solid' };
+function perkLine(k, see, open) {
+  const w = perkWords(k), d = document.createElement('div'); d.className = 'sm-pl' + (open ? ' is-open' : ' is-tap');
   const i = document.createElement('i'); i.className = 'sm-ki'; i.innerHTML = iconSvg(KIND_ICON[KIND[k]] || 'star', { size: 14 });
   const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = w.name;
   const kd = document.createElement('em'); kd.textContent = (W.kinds && W.kinds[KIND[k]]) || ''; nm.appendChild(kd);
   const ln = document.createElement('div'); ln.className = 'ln'; ln.textContent = w.line;
   d.appendChild(i); d.appendChild(nm);
-  if (see) { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-btn sm-see'; b.textContent = W.map.see; b.onclick = see; d.appendChild(b); }
+  if (!open) { const c = document.createElement('i'); c.className = 'sm-chev'; c.innerHTML = iconSvg('chevron-down', { size: 14 }); d.appendChild(c); }
   d.appendChild(ln);
+  if (see) { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-btn sm-see'; b.textContent = W.map.see; b.onclick = (e) => { e.stopPropagation(); see(); }; d.appendChild(b); }
+  if (!open) {
+    d.setAttribute('role', 'button'); d.tabIndex = 0;
+    const flip = () => {
+      const was = d.classList.contains('is-open'), box = d.closest('.sm-lbody, .sm-next');
+      if (box) for (const o of box.querySelectorAll('.sm-pl.is-open.is-tap')) o.classList.remove('is-open');   // one open at a time
+      d.classList.toggle('is-open', !was);
+    };
+    d.addEventListener('click', flip);
+    d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+  }
   return d;
 }
 
@@ -123,13 +136,21 @@ const CSS = `
 .sm-foot{display:flex;flex-direction:column;gap:7px;padding:8px 9px;background:#0e1d3d;color:#cfe6ff;border:2px solid #000;border-radius:3px}
 .sm-next{display:flex;flex-direction:column;gap:5px;padding:7px 8px;background:#0b1730;border:2px solid #000;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(127,191,255,.45)}
 .sm-cap{font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#6f93c2}
-.sm-pl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;column-gap:6px;row-gap:1px;align-items:center;min-width:0}
+.sm-next .sm-cap{color:#bfe3ff}
+.sm-perk .sm-cap{color:#8fd0ff}
+.sm-pl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;column-gap:6px;row-gap:3px;align-items:center;min-width:0}
+.sm-pl.is-tap{cursor:pointer}
+.sm-pl:not(.is-open) .ln,.sm-pl:not(.is-open) .sm-see{display:none}
+.sm-pl .sm-chev{grid-column:3;grid-row:1;display:block;width:14px;height:14px;color:#8fc4ff;transition:transform .15s}
+.sm-pl .sm-chev svg{display:block;width:14px;height:14px}
+.sm-pl.is-open .sm-chev{transform:rotate(180deg)}
+.sm-pl:focus-visible{outline:2px solid #8fc4ff;outline-offset:2px}
 .sm-pl .sm-ki{display:block;width:14px;height:14px;color:#8fc4ff}
 .sm-pl .sm-ki svg{display:block;width:14px;height:14px}
 .sm-pl .nm{font-size:.78rem;font-weight:900;color:#fff}
 .sm-pl .nm em{font-style:normal;font-weight:800;font-size:.62rem;color:#8fc4ff;margin-left:6px;white-space:nowrap}
 .sm-pl .ln{grid-column:2 / 4;font-size:.7rem;font-weight:700;color:#cfe6ff;line-height:1.3;white-space:normal}
-.sm-pl .sm-see{grid-column:3;grid-row:1;height:22px;padding:0 7px;font-size:.62rem}
+.sm-pl .sm-see{grid-column:2 / 4;justify-self:end;height:22px;padding:0 7px;font-size:.62rem}
 .sm-caprow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .sm-caprow .sm-btn{height:22px;padding:0 7px;font-size:.62rem}
 .sm-lbody{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
@@ -277,10 +298,11 @@ export function openMap(state, opts = {}) {
     const box = document.createElement('div'); box.className = 'sm-next';
     const caprow = document.createElement('div'); caprow.className = 'sm-caprow';
     const cap = document.createElement('div'); cap.className = 'sm-cap';
-    cap.textContent = nx ? fillWords(W.map.nextAt, { at: nx[0] }) + (nx.length > 2 ? ' · ' + W.map.pick : '') : W.map.full;
+    const left = nx ? nx[0] - lit : 0;
+    cap.textContent = nx ? (left === 1 ? W.map.nextOne : fillWords(W.map.nextIn, { n: left })) + (nx.length > 2 ? ' · ' + W.map.pick : '') : W.map.full;
     caprow.appendChild(cap); caprow.appendChild(button(W.map.all, () => showList()));
     box.appendChild(caprow);
-    if (nx) for (const k of nx.slice(1)) box.appendChild(perkLine(k, seeFor(k)));
+    if (nx) for (const k of nx.slice(1)) box.appendChild(perkLine(k, seeFor(k), false));
     foot.appendChild(box);
   };
   const button = (label, fn) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-btn'; bt.textContent = label; bt.onclick = fn; return bt; };
@@ -311,7 +333,7 @@ export function openMap(state, opts = {}) {
       if (st.length > 2) top2.appendChild(document.createTextNode(' · ' + W.map.pick));
       li.appendChild(top2);
       for (const k of st.slice(1)) {
-        const pl = perkLine(k, seeFor(k));
+        const pl = perkLine(k, seeFor(k), false);
         if (st.length > 2 && state.chosen[c + st[0]] === k) pl.querySelector('.nm em').textContent += ' · ' + W.map.picked;
         li.appendChild(pl);
       }
@@ -327,10 +349,13 @@ export function openMap(state, opts = {}) {
     if (keys.length > 1) {   // the choice: both sides, each by what it does, each a button
       const cap = document.createElement('div'); cap.className = 'sm-cap'; cap.textContent = W.map.pick;
       d.appendChild(cap);
-      for (const k of keys) { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-choice'; bt.appendChild(perkLine(k)); bt.onclick = () => onPick(k); d.appendChild(bt); }
+      for (const k of keys) { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-choice'; bt.appendChild(perkLine(k, null, true)); bt.onclick = () => onPick(k); d.appendChild(bt); }
       return d;
     }
     const w = perkWords(keys[0]);
+    const cap = document.createElement('div'); cap.className = 'sm-cap'; cap.textContent = W.map.newPerk;
+    d.appendChild(cap);
+    d.addEventListener('click', () => d.remove());
     const n = document.createElement('div'); n.className = 'n';
     const si = new Image(); si.src = starSrc('l'); si.alt = '';
     const nt = document.createElement('span'); nt.className = 'sh-txt'; nt.textContent = w.name;

@@ -10,7 +10,7 @@
 import { drawComposite, assetsReady, NFRAMES, BASE_CYCLE_S } from '../lib/banana-engine.js';
 import { iconSvg } from '../lib/pixel-icons.js';
 import { passStat } from '../lib/banana-pass.js';
-import { presenceRoom, poofInto, snapScale, wearSaved } from '../lib/world.js';
+import { presenceRoom, poofInto, snapScale, wearSaved, perkSpeed } from '../lib/world.js';
 // ⚠️ coinBalance rides along: the park hands `coinBal` to the garden, fountain
 // and shops through ctx. Extracting the HUD took the old inline definition with
 // it and the ctx reference was left dangling — a ReferenceError at ctx build
@@ -1000,7 +1000,7 @@ function init() {
     const dx = tgt.x - pos.x, dy = tgt.y - pos.y;
     const d = Math.hypot(dx, dy);
     if (d > 1.5) {
-      const m = Math.min(d, SPEED * dt);
+      const m = Math.min(d, SPEED * perkSpeed() * dt);
       const nx = pos.x + (dx / d) * m, ny = pos.y + (dy / d) * m;
       if (!blocked(nx, ny)) { pos.x = nx; pos.y = ny; }
       else if (!blocked(nx, pos.y)) pos.x = nx;

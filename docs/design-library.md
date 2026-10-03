@@ -1930,6 +1930,21 @@ the flag). The bench earns and saves nothing.
   a kind, the Sunflower's sixteenth star lights Rare birds and the card fits the view, a tap on it never reaches the park,
   the Hen's eleven play on a seeded yard (two hearts off the nearest animal, four more goods by the trough in starlight, the
   dog or cat keeping up at your heels), and without the flag no player downloads the bench.
+- **👁 A look is never a perk on its own, and never always on** (Trym, 4 Oct 2026: *"The cosmetic things like Starlit steps
+  needs also to give a stat-buff or anything useful than just the visuals … bananas will at a point then have all of them on
+  at once, and that affects performance … time-boxed mini events based on things they do in the world"*). Every perk does
+  something useful; a look rides along as a MOMENT set off by what the player does (a harvest bursts into starlight, JELLY
+  TIME prints gold steps, a pickup's sugar rush lights the feet, a new Shimmer level makes you shine for a few minutes). There
+  is no "everyone sees it" kind any more. The only lasting sights are things, not effects: the Hen's pet, the Fish's second
+  rod. The bench's **Everything on** plays every look a banana can carry at once, walking, and reads the frame rate.
+- **A perk the bench switches on is REAL while it is on** (Trym, of Long reach: *"doesnt work on trash pickup or taking out
+  ghosts, or other regular range based things"*). Reach and speed are read by every area from `world.js` (`perkReach()` on
+  every walk-over pickup, ghosts included; `perkSpeed()` in every walk step, night from the world's own clock), and the
+  bench sets `window.__perks` while a button is lit. For every player today both are 1. Proved by the walk: an egg a step
+  out of reach stays put, then comes in with Long reach on.
+- **The card spells out ONE perk at a time** (Trym: *"its a lot of text … easy to miss other text, like 'Next at star 12'"*):
+  the perk a star just lit, under "New perk" (a tap puts it away); the next one is a count ("Next perk in 4 stars") over a
+  row with its name and kind, and a tap opens what it does. The list works the same way, one open at a time.
 - **A preview plays on the player's own things** (the Hen, 4 Oct 2026): your animals, your trough, your crops, your sheep;
   where the yard has none yet, a stand-in from the game's own sprites, at the game's own size, stands in front of you, and
   the bench says what to get. A number perk shows the moment the number changes (the second heart, the extra goods, the
