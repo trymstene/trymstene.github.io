@@ -40,6 +40,11 @@ const CSS = `
 .wx-riser{z-index:2171;font-size:1.05rem}
 .wx-riser>span{display:flex;align-items:center;gap:6px;transform:translate(-50%,-100%)}
 .wx-riser svg{image-rendering:pixelated;filter:drop-shadow(0 0 6px rgba(255,225,53,.9))}
+.wx-orb.wx--sh{background:radial-gradient(circle,#fff 0 30%,#cfe8ff 60%,#7fbfff 100%);box-shadow:0 0 4px 2px rgba(160,210,255,.95),0 0 10px 4px rgba(79,157,255,.6)}
+.wx-halo.wx--sh{filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #dff0ff) drop-shadow(0 0 5px rgba(127,191,255,.9))!important}
+.sh-pill .wx-glow{background:rgba(205,230,255,.13);box-shadow:inset 0 0 7px rgba(215,236,255,.55),0 0 0 2px rgba(228,242,255,.95),0 0 10px 3px rgba(127,191,255,.85)}
+.sh-pill .wx-gain{background:linear-gradient(90deg,rgba(236,246,255,.55),#f2f8ff);box-shadow:0 0 5px 1px rgba(160,210,255,.95)}
+.wx-plus.wx--sh{color:#bfe3ff}
 `;
 
 const areaKey = (() => { try { return location.pathname.split('/')[1] || ''; } catch (e) { return ''; } })();
@@ -124,10 +129,10 @@ function land(b) {
   const hr = host && host.getBoundingClientRect(), mr = me && me.getBoundingClientRect(), cr = chip && chip.getBoundingClientRect();
   const on = (r) => !!(hr && r && r.width && r.height && r.bottom > hr.top && r.top < hr.bottom && r.right > hr.left && r.left < hr.right);
   const at = (x, y) => ({ x: x - hr.left - host.clientLeft, y: y - hr.top - host.clientTop });
-  const amount = b.to - b.from;
+  const amount = b.to - b.from, sh = !!(chip && chip.classList.contains('sh-pill'));   // ✨ Shimmer: the beat in blue starlight
   if (on(mr)) {
-    glowMe(me, amount);
-    plus(host, at(mr.left + mr.width / 2, mr.top + mr.height * 0.2), amount);
+    glowMe(me, amount, sh);
+    plus(host, at(mr.left + mr.width / 2, mr.top + mr.height * 0.2), amount, sh);
   }
   api.lift(true);   // the strip rises out of any card's shade so the orbs land where they are seen (§30.2)
   if (!on(mr) || !on(cr) || still()) {   // nothing to fly between, or motion turned down: the pill says it in the beat
@@ -145,7 +150,7 @@ function land(b) {
   let landed = 0;
   for (let i = 0; i < n; i++) {
     const o = document.createElement('i');
-    o.className = 'wx-orb';
+    o.className = 'wx-orb' + (sh ? ' wx--sh' : '');
     o.style.left = from.x + 'px'; o.style.top = from.y + 'px';
     host.appendChild(o);
     const sx = dir * (Math.random() * 52 - 12), sy = -26 - Math.random() * 48;   // up off the banana, then the swoop in
@@ -179,7 +184,7 @@ function land(b) {
 // tight whitish-gold shadow that is static (§21.4: never animate a filter) under an opacity pulse — two soft pulses, and a
 // steady trickle keeps it glowing rather than stacking glows. Under reduced motion it is lit and then gone (§3d).
 let halo = null, haloAnim = null, haloOff = 0, haloUntil = 0, haloLoop = false;
-function glowMe(me, amount) {
+function glowMe(me, amount, sh) {
   const cv = me.querySelector('canvas:not(.wx-halo)');
   if (!cv) return;
   if (!halo || halo.parentNode !== me) {
@@ -190,6 +195,8 @@ function glowMe(me, amount) {
     me.classList.add('wx-me');   // a stacking context of its own: the glow sits behind the banana, not behind the world
     me.insertBefore(halo, me.firstChild);
   }
+  halo.classList.toggle('wx--sh', !!sh);
+  const ink = sh ? '#e6f4ff' : '#fff6dc';
   // exactly on the banana's own canvas (a curse that scales or mirrors it, the copy too)
   const cs = getComputedStyle(cv);
   Object.assign(halo.style, { left: cv.offsetLeft + 'px', top: cv.offsetTop + 'px', width: cv.offsetWidth + 'px', height: cv.offsetHeight + 'px', scale: cs.scale, transformOrigin: cs.transformOrigin });
@@ -200,7 +207,7 @@ function glowMe(me, amount) {
     x.globalCompositeOperation = 'copy'; x.drawImage(cv, 0, 0);   // its silhouette, this frame…
     x.globalCompositeOperation = 'source-over';
     for (const [dx, dy] of RING) x.drawImage(cv, dx, dy);   // …three canvas pixels fatter all round, so the rim reads strong (Trym: "fatten it some more")
-    x.globalCompositeOperation = 'source-in'; x.fillStyle = '#fff6dc'; x.fillRect(0, 0, halo.width, halo.height);
+    x.globalCompositeOperation = 'source-in'; x.fillStyle = ink; x.fillRect(0, 0, halo.width, halo.height);
     x.globalCompositeOperation = 'source-over';
   };
   draw();
@@ -292,9 +299,9 @@ function levelUp(from, to) {
 
 // "+N XP" beside your head (the side, so "LVL N" can rise straight up when a level comes with it): it rises a little and
 // holds long enough to read (still, under reduced motion)
-function plus(host, p, n) {
+function plus(host, p, n, sh) {
   const d = document.createElement('div');
-  d.className = 'wx-plus';
+  d.className = 'wx-plus' + (sh ? ' wx--sh' : '');
   d.textContent = fillWords(W.plus, { n: n.toLocaleString('en-US') });   // "+4,000 XP": the day's first ghost reads at a glance
   d.style.left = (p.x + 12) + 'px'; d.style.top = p.y + 'px';
   host.appendChild(d);

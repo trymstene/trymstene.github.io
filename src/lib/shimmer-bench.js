@@ -354,6 +354,7 @@ function real(key, ring) {
   return () => {
     perks()[key] = true;
     const r = ring ? F.ring(ring / F.sp(1)) : null;
+    if (r) later(2600, () => r.stop());   // the reach is shown once, as it switches on; after that you feel it
     F.tag(key);
     return { stop() { delete perks()[key]; if (r) r.stop(); } };
   };
@@ -480,7 +481,6 @@ export function mount(api) {
     map = openMap(S, { from: chip, select: myC, step: shimmerStep, canSee: (k) => !!fxOf(pv, k), see: playPerk, lit: (k) => say(F.perkWords(k).name + ' · lit on the map', F.perkWords(k).line), closed: () => { map = null; } });
     say('Your stars are your Shimmer levels. Place one: the figure draws itself, and every fourth star lights a perk.');
   });
-  btn(sh, 'Stardust', '', () => { F.fall({ caught: () => F.note(W.dust.replace('{n}', '2')) }); say('Stardust is not a perk and not a map star: it is the endgame’s other half. Now and then a star falls near you; walk over it and you get stardust, which buys wishes (lanterns on the square for an hour, rain for the gardens). The Shimmer doc has the wishes.'); });
   btn(sh, 'Everything on', '', () => {
     const live = [];
     if (pv && pv.c === 'vinyl') RAVE.goldsteps();

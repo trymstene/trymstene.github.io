@@ -26,8 +26,12 @@
     "picked": "Your pick",
     "litNote": "Yours",
     "nextIn": "Next perk in {n} stars",
-    "nextOne": "Next perk with your next star",
-    "newPerk": "New perk"
+    "nextOne": "Your next star unlocks it",
+    "unlock": "Unlock {perk}",
+    "unlockTop": "Unlock the top star",
+    "choose": "Choose your perk",
+    "unlocked": "Perk unlocked",
+    "nice": "Nice"
   },
   "kinds": {
     "wait": "less waiting",

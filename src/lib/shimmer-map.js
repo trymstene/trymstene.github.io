@@ -137,7 +137,6 @@ const CSS = `
 .sm-next{display:flex;flex-direction:column;gap:5px;padding:7px 8px;background:#0b1730;border:2px solid #000;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(127,191,255,.45)}
 .sm-cap{font-size:.6rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#6f93c2}
 .sm-next .sm-cap{color:#bfe3ff}
-.sm-perk .sm-cap{color:#8fd0ff}
 .sm-pl{display:grid;grid-template-columns:16px minmax(0,1fr) auto;column-gap:6px;row-gap:3px;align-items:center;min-width:0}
 .sm-pl.is-tap{cursor:pointer}
 .sm-pl:not(.is-open) .ln,.sm-pl:not(.is-open) .sm-see{display:none}
@@ -174,12 +173,35 @@ const CSS = `
 .sm-go[disabled]{opacity:.45;cursor:default}
 .sm-skywrap{position:relative;margin:7px 0 8px}
 .sm-skywrap .sm-sky{margin:0}
-.sm-perk{position:absolute;left:6px;right:6px;bottom:6px;display:flex;flex-direction:column;gap:3px;padding:8px 9px;background:rgba(8,16,40,.94);border:2px solid #000;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(127,191,255,.6),0 0 16px 2px rgba(60,130,255,.35)}
-.sm-perk .n{display:flex;align-items:center;gap:6px;font-size:.92rem;font-weight:900;letter-spacing:.03em}
-.sm-perk .n img{width:16px;height:16px;image-rendering:pixelated;filter:drop-shadow(0 0 3px rgba(127,191,255,.9))}
-.sm-perk .l{font-size:.72rem;font-weight:700;color:#cfe6ff;line-height:1.35}
+.sm-next.is-ready{background:linear-gradient(180deg,#14295a,#0b1730);box-shadow:inset 0 0 0 2px #bfe3ff,0 0 16px 3px rgba(127,191,255,.55)}
+.sm-next.is-ready .sm-cap{color:#fff}
+.sm-pips{display:flex;align-items:center;gap:6px;margin-top:2px}
+.sm-pips img{width:9px;height:9px;image-rendering:pixelated;opacity:.28}
+.sm-pips img.is-perk{width:13px;height:13px;opacity:.5}
+.sm-pips img.is-on{opacity:1;filter:drop-shadow(0 0 3px rgba(127,191,255,.9))}
+.sm-next.is-ready .sm-pips img.is-perk{opacity:1;animation:smPulse .9s ease-in-out infinite}
+.sm-unlock{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:42px;margin-top:3px;background:linear-gradient(180deg,#fff,#cfe8ff);color:#0b1730;border:2px solid #000;box-shadow:2px 2px 0 #000,0 0 14px 3px rgba(127,191,255,.8);font:900 .9rem/1 inherit;white-space:nowrap;cursor:pointer;animation:smPulse 1.1s ease-in-out infinite}
+.sm-unlock img{width:18px;height:18px;image-rendering:pixelated}
+.sm-unlock[disabled]{opacity:.5;animation:none;cursor:default}
+@keyframes smPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.sm-cel{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 38%,#10224a,#060e22 70%);overflow:hidden}
+.sm-rays{position:absolute;left:50%;top:40%;width:540px;height:540px;margin:-270px 0 0 -270px;pointer-events:none;background:repeating-conic-gradient(rgba(127,191,255,.17) 0 9deg,rgba(127,191,255,0) 9deg 18deg);-webkit-mask-image:radial-gradient(circle,#000 0 13%,transparent 40%);mask-image:radial-gradient(circle,#000 0 13%,transparent 40%);animation:smSpin 16s linear infinite}
+.sm-cel.is-top .sm-rays{background:repeating-conic-gradient(rgba(255,226,140,.2) 0 9deg,rgba(255,226,140,0) 9deg 18deg)}
+@keyframes smSpin{to{transform:rotate(360deg)}}
+.sm-celin{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding:16px 14px;text-align:center;max-width:290px}
+.sm-celin .sm-cap{font-size:.66rem;color:#8fd0ff}
+.sm-badge{width:66px;height:66px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:radial-gradient(circle,#fff 0 30%,#cfe8ff 55%,#4f9dff 100%);border:3px solid #000;box-shadow:0 0 0 3px #bfe3ff,0 0 22px 6px rgba(127,191,255,.8);color:#0b1730}
+.sm-cel.is-top .sm-badge{background:radial-gradient(circle,#fffdf0 0 30%,#ffe9a0 55%,#ffcf4a 100%);box-shadow:0 0 0 3px #ffe9a0,0 0 26px 8px rgba(255,214,90,.75)}
+.sm-badge svg{display:block;width:34px;height:34px}
+.sm-celin .n{font-size:1.35rem;font-weight:900;letter-spacing:.03em}
+.sm-celin .k{font-style:normal;font-size:.7rem;font-weight:800;color:#8fc4ff}
+.sm-celin .l{font-size:.8rem;font-weight:700;color:#dff0ff;line-height:1.35}
+.sm-celin .sm-acts{justify-content:center;margin-top:4px}
+.sm-ok{height:34px;padding:0 20px;font-size:.8rem}
+.sm-spark{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;image-rendering:pixelated;pointer-events:none;filter:drop-shadow(0 0 3px rgba(223,240,255,.9))}
+.sm-pickbox{display:flex;flex-direction:column;gap:7px;width:100%;text-align:left}
+@media (prefers-reduced-motion:reduce){.sm-unlock,.sm-rays,.sm-next.is-ready .sm-pips img.is-perk{animation:none}}
 .sm-choice{display:block;width:100%;text-align:left;white-space:normal;padding:6px 7px;background:#13254d;border:2px solid #000;box-shadow:2px 2px 0 #000;cursor:pointer;font:inherit;min-width:0}
-.sm-perk .sm-pl .ln{font-size:.68rem}
 .sm-fly{position:fixed;left:0;top:0;z-index:99999;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;image-rendering:pixelated;filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 7px rgba(79,157,255,.9))}
 `;
 let styled = false;
@@ -223,7 +245,8 @@ export function openMap(state, opts = {}) {
   const cell = (i) => { const c = ORDER[i]; const ox = (i % 3) * cellW + (cellW - 100 * f) / 2, oy = top + Math.floor(i / 3) * cellH + 2; return { c, ox, oy }; };
   const BG = [];
   for (let i = 0; i < 90; i++) BG.push([(i * 97 + 13) % cw, (i * 53 + 7) % ch, i % 7 === 0 ? 2 : 1]);
-  let sel = Math.max(0, ORDER.indexOf(opts.select || ORDER[0])), live = true, flash = null, run = null;
+  let sel = Math.max(0, ORDER.indexOf(opts.select || ORDER[0])), live = true, flash = null, run = null, boom = null;
+  const ready = (c) => { const lit = state.lit[c] || 0; return lit < STARS_EACH && lit % PER === PER - 1; };
   const font = getComputedStyle(card).fontFamily || 'sans-serif';
   const ns = new Image(); ns.src = starSrc('l');   // the North Star, drawn every frame from one image
   const draw = (now) => {
@@ -242,12 +265,31 @@ export function openMap(state, opts = {}) {
       const { ox, oy } = cell(i), lit = state.lit[c] || 0, on = i === sel;
       if (on) { x.fillStyle = 'rgba(79,157,255,.10)'; x.fillRect(i % 3 * cellW + 2, oy - 1, cellW - 4, cellH - 2); }
       drawFigure(x, c, lit, ox, oy, f, { dim: !on && lit > 0 });
-      // the next star of the chosen one breathes, so you know where yours goes
+      // the next star of the chosen one breathes, so you know where yours goes; one star from a perk, its star calls you
       if (on && lit < STARS_EACH) {
         const p = tipAt(c, lit + 1), px = Math.round(ox + p.x * f), py = Math.round(oy + p.y * f);
-        const k = still() ? 0.6 : 0.5 + 0.5 * Math.sin(now / 260);
-        x.strokeStyle = 'rgba(191,227,255,' + (0.35 + 0.5 * k) + ')'; x.lineWidth = 1;
-        x.beginPath(); x.arc(px + 0.5, py + 0.5, 4 + 2.5 * k, 0, Math.PI * 2); x.stroke();
+        if (ready(c)) {
+          const k = still() ? 0.6 : 0.5 + 0.5 * Math.sin(now / 170), R = 7 + 4 * k, rot = still() ? 0 : now / 900;
+          const gg = x.createRadialGradient(px, py, 0, px, py, R + 7); gg.addColorStop(0, 'rgba(223,240,255,' + (0.25 + 0.3 * k) + ')'); gg.addColorStop(1, 'rgba(127,191,255,0)');
+          x.fillStyle = gg; x.fillRect(px - R - 7, py - R - 7, (R + 7) * 2, (R + 7) * 2);
+          x.strokeStyle = 'rgba(255,255,255,' + (0.55 + 0.4 * k) + ')'; x.lineWidth = 1.5;
+          x.beginPath(); x.arc(px + 0.5, py + 0.5, R, 0, Math.PI * 2); x.stroke();
+          x.strokeStyle = 'rgba(191,227,255,' + (0.4 + 0.4 * k) + ')'; x.lineWidth = 1;
+          for (let q = 0; q < 4; q++) { const a = rot + q * Math.PI / 2; x.beginPath(); x.moveTo(px + Math.cos(a) * (R + 2), py + Math.sin(a) * (R + 2)); x.lineTo(px + Math.cos(a) * (R + 8), py + Math.sin(a) * (R + 8)); x.stroke(); }
+        } else {
+          const k = still() ? 0.6 : 0.5 + 0.5 * Math.sin(now / 260);
+          x.strokeStyle = 'rgba(191,227,255,' + (0.35 + 0.5 * k) + ')'; x.lineWidth = 1;
+          x.beginPath(); x.arc(px + 0.5, py + 0.5, 4 + 2.5 * k, 0, Math.PI * 2); x.stroke();
+        }
+      }
+      if (boom && boom.c === c) {   // a perk just lit: three rings of light out of its star, and a flash
+        const t = (now - boom.t0) / 950;
+        if (t < 1) {
+          const q = FIG[c].pts[boom.j], px = ox + q[0] * f, py = oy + q[1] * f;
+          for (let w = 0; w < 3; w++) { const tt = t - w * 0.14; if (tt <= 0) continue; x.strokeStyle = 'rgba(223,240,255,' + Math.max(0, 1 - tt) + ')'; x.lineWidth = 2.2 - w * 0.6; x.beginPath(); x.arc(px, py, 4 + tt * 34, 0, Math.PI * 2); x.stroke(); }
+          const gg = x.createRadialGradient(px, py, 0, px, py, 24); gg.addColorStop(0, 'rgba(255,255,255,' + (1 - t) + ')'); gg.addColorStop(1, 'rgba(127,191,255,0)');
+          x.fillStyle = gg; x.fillRect(px - 24, py - 24, 48, 48);
+        }
       }
       if (flash && flash.c === c) {   // a star just placed: a ring of light goes out from it
         const t = (now - flash.t0) / 520;
@@ -274,14 +316,17 @@ export function openMap(state, opts = {}) {
     const i = Math.min(1, Math.floor((my - top) / cellH)) * 3 + Math.min(2, Math.floor(mx / cellW));
     if (i >= 0 && i < ORDER.length) { sel = i; paintFoot(); }
   });
-  const paintFoot = (perkShown) => {
+  // ⭐ THE WAY TO A PERK, AND THE PERK (Trym, 4 Oct 2026: "theres not much exciting change visually that makes me see that im
+  // about to unlock something, the button is the same, it stays at the same place … think game design here, how would you
+  // build expectations when putting on stars, and how should it feel when you finally get the option to put on a perk"). Four
+  // stars to a perk, as four pips that fill (the fourth is the perk). With one to go the next-perk box takes over: it glows, the
+  // perk opens, and its own big pulsing Unlock button stands in for Place a star, while its star in the sky pulses wide. The
+  // unlock bursts rings out of that star, and the card itself celebrates: turning light, the perk's badge, its name in
+  // Shimmer's type, what it does.
+  const paintFoot = (pop) => {
     const c = ORDER[sel], lit = state.lit[c] || 0, nm = W.constellations.find((q) => q.key === c);
-    const nx = nextPerk(c, lit);
+    const nx = nextPerk(c, lit), rdy = !!nx && ready(c), can = state.toPlace > 0 && lit < STARS_EACH;
     foot.innerHTML = '';
-    // the perk a star lit rises over the bottom of the sky, so the card never grows past a phone's view
-    const wrap = card.querySelector('.sm-skywrap');
-    for (const o of wrap.querySelectorAll('.sm-perk')) o.remove();
-    if (perkShown) wrap.appendChild(perkShown);
     const row = document.createElement('div'); row.className = 'sm-row';
     const t = document.createElement('div'); t.className = 't';
     const b = document.createElement('b'); b.textContent = (nm ? nm.name : c) + ' · ' + lit + '/' + STARS_EACH;
@@ -290,21 +335,90 @@ export function openMap(state, opts = {}) {
     const go = document.createElement('button'); go.className = 'sm-go'; go.type = 'button';
     const gi = new Image(); gi.src = starSrc('m'); gi.alt = '';
     go.appendChild(gi); go.appendChild(document.createTextNode(W.map.place));
-    go.disabled = !(state.toPlace > 0) || lit >= STARS_EACH;
+    go.disabled = !can;
+    go.hidden = rdy;   // one star from a perk: the Unlock button below is the one to press
     go.onclick = () => place(go);
     row.appendChild(t); row.appendChild(go);
     foot.appendChild(row);
-    // what the next perk star gives, in words a player knows: its kind and its line, not only its name
-    const box = document.createElement('div'); box.className = 'sm-next';
+    const box = document.createElement('div'); box.className = 'sm-next' + (rdy ? ' is-ready' : '');
     const caprow = document.createElement('div'); caprow.className = 'sm-caprow';
     const cap = document.createElement('div'); cap.className = 'sm-cap';
-    const left = nx ? nx[0] - lit : 0;
-    cap.textContent = nx ? (left === 1 ? W.map.nextOne : fillWords(W.map.nextIn, { n: left })) + (nx.length > 2 ? ' · ' + W.map.pick : '') : W.map.full;
+    cap.textContent = !nx ? W.map.full : rdy ? W.map.nextOne : fillWords(W.map.nextIn, { n: nx[0] - lit }) + (nx.length > 2 ? ' · ' + W.map.pick : '');
     caprow.appendChild(cap); caprow.appendChild(button(W.map.all, () => showList()));
     box.appendChild(caprow);
-    if (nx) for (const k of nx.slice(1)) box.appendChild(perkLine(k, seeFor(k), false));
+    if (nx) for (const k of nx.slice(1)) box.appendChild(perkLine(k, seeFor(k), rdy && nx.length === 2));
+    if (nx) box.appendChild(pips(lit, pop));
+    if (rdy) {
+      const u = document.createElement('button'); u.type = 'button'; u.className = 'sm-unlock';
+      const ui = new Image(); ui.src = starSrc('l'); ui.alt = '';
+      u.appendChild(ui);
+      u.appendChild(document.createTextNode(nx.length > 2 ? W.map.choose : nx[0] === STARS_EACH ? W.map.unlockTop : fillWords(W.map.unlock, { perk: perkWords(nx[1]).name })));
+      u.disabled = !can;
+      u.onclick = () => place(u);
+      box.appendChild(u);
+    }
     foot.appendChild(box);
   };
+  // the stars toward the next perk: four pips, the last the perk's own, bigger; the one just placed pops
+  const pips = (lit, pop) => {
+    const d = document.createElement('div'); d.className = 'sm-pips';
+    for (let i = 1; i <= PER; i++) {
+      const im = new Image(); im.alt = ''; im.src = starSrc(i === PER ? 'm' : 's');
+      im.className = (i <= lit % PER ? 'is-on' : '') + (i === PER ? ' is-perk' : '');
+      d.appendChild(im);
+      if (pop && i === lit % PER && !still()) play(im, [{ scale: '0.3' }, { scale: '1.8', offset: 0.45 }, { scale: '1' }], { duration: 460, easing: 'ease-out' });
+    }
+    return d;
+  };
+  // 🎉 the perk is yours: the whole card celebrates it, and "Nice" hands the map back. The twentieth star asks first.
+  const celebrate = (keys, star, done) => {
+    const c = ORDER[sel], top = star === STARS_EACH;
+    const o = document.createElement('div'); o.className = 'sm-cel' + (top ? ' is-top' : '');
+    const rays = document.createElement('i'); rays.className = 'sm-rays';
+    const inner = document.createElement('div'); inner.className = 'sm-celin';
+    const head = document.createElement('div'); head.className = 'sm-cap';
+    inner.appendChild(head); o.appendChild(rays); o.appendChild(inner);
+    const show = (k) => {
+      for (const n of inner.querySelectorAll('.sm-pickbox')) n.remove();
+      head.textContent = top ? W.kinds.capstone : W.map.unlocked;
+      const w = perkWords(k);
+      const badge = document.createElement('div'); badge.className = 'sm-badge';
+      badge.innerHTML = iconSvg(KIND_ICON[KIND[k]] || 'star', { size: 32 });
+      const nmE = document.createElement('b'); nmE.className = 'n sh-txt'; nmE.textContent = w.name;
+      const kd = document.createElement('em'); kd.className = 'k'; kd.textContent = (W.kinds && W.kinds[KIND[k]]) || '';
+      const ln = document.createElement('div'); ln.className = 'l'; ln.textContent = w.line;
+      const acts = document.createElement('div'); acts.className = 'sm-acts';
+      const see = seeFor(k); if (see) acts.appendChild(button(W.map.see, see));
+      const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'sm-btn sm-ok'; ok.textContent = W.map.nice;
+      ok.onclick = () => { o.remove(); done(); };
+      acts.appendChild(ok);
+      for (const n of [badge, nmE, kd, ln, acts]) inner.appendChild(n);
+      requestAnimationFrame(() => { const or = o.getBoundingClientRect(), br = badge.getBoundingClientRect(); rays.style.left = (br.left + br.width / 2 - or.left) + 'px'; rays.style.top = (br.top + br.height / 2 - or.top) + 'px'; });
+      if (!still()) {
+        play(badge, [{ scale: '0', opacity: 0 }, { scale: '1.25', opacity: 1, offset: 0.6 }, { scale: '1', opacity: 1 }], { duration: 560, easing: 'ease-out' });
+        [nmE, kd, ln, acts].forEach((n, i) => play(n, [{ translate: '0 10px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 380, delay: 200 + i * 90, easing: 'ease-out', fill: 'backwards' }));
+        sparks(o, badge, top ? 24 : 14);
+      }
+      tag(k); if (opts.lit) opts.lit(k);
+    };
+    if (keys.length > 1) {
+      head.textContent = W.map.choose;
+      const pick = document.createElement('div'); pick.className = 'sm-pickbox';
+      for (const k of keys) { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-choice'; bt.appendChild(perkLine(k, null, true)); bt.onclick = () => { state.chosen[c + star] = k; show(k); }; pick.appendChild(bt); }
+      inner.appendChild(pick);
+    } else show(keys[0]);
+    card.appendChild(o);
+    if (!still()) play(o, [{ opacity: 0 }, { opacity: 1 }], { duration: 280 });
+  };
+  const sparks = (o, badge, n) => requestAnimationFrame(() => {
+    const or = o.getBoundingClientRect(), br = badge.getBoundingClientRect(), cx = br.left + br.width / 2 - or.left, cy = br.top + br.height / 2 - or.top;
+    for (let i = 0; i < n; i++) {
+      const sp = new Image(); sp.src = starSrc(i % 3 ? 's' : 'm'); sp.alt = ''; sp.className = 'sm-spark';
+      sp.style.left = cx + 'px'; sp.style.top = cy + 'px'; o.appendChild(sp);
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.4, r = 64 + Math.random() * 74;
+      play(sp, [{ translate: '0 0', scale: '0.4', opacity: 1 }, { translate: Math.cos(a) * r + 'px ' + Math.sin(a) * r + 'px', scale: '1.15', opacity: 1, offset: 0.7 }, { translate: Math.cos(a) * r * 1.12 + 'px ' + (Math.sin(a) * r * 1.12 + 12) + 'px', scale: '0.5', opacity: 0 }], { duration: 950 + Math.random() * 350, easing: 'cubic-bezier(.2,.8,.3,1)' }).then(() => sp.remove());
+    }
+  });
   const button = (label, fn) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-btn'; bt.textContent = label; bt.onclick = fn; return bt; };
   const seeFor = (k) => (opts.canSee && opts.canSee(k) ? () => { close(); opts.see(k); } : null);
   // 📜 EVERY PERK OF THE CHOSEN CONSTELLATION, what each does: yours (lit), the next, and the ones still dark
@@ -343,28 +457,6 @@ export function openMap(state, opts = {}) {
     const nextLi = body.querySelector('.is-next'); if (nextLi) body.scrollTop = Math.max(0, nextLi.offsetTop - body.offsetTop - 8);
   };
   const hideList = () => { if (list) { list.remove(); list = null; } card.querySelector('.sm-skywrap').hidden = false; foot.hidden = false; paintFoot(); };
-  // the perk a star just lit: its name in Shimmer's own type, and what it does; at the 20th, the choice of two
-  const perkCard = (keys, onPick) => {
-    const d = document.createElement('div'); d.className = 'sm-perk';
-    if (keys.length > 1) {   // the choice: both sides, each by what it does, each a button
-      const cap = document.createElement('div'); cap.className = 'sm-cap'; cap.textContent = W.map.pick;
-      d.appendChild(cap);
-      for (const k of keys) { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'sm-choice'; bt.appendChild(perkLine(k, null, true)); bt.onclick = () => onPick(k); d.appendChild(bt); }
-      return d;
-    }
-    const w = perkWords(keys[0]);
-    const cap = document.createElement('div'); cap.className = 'sm-cap'; cap.textContent = W.map.newPerk;
-    d.appendChild(cap);
-    d.addEventListener('click', () => d.remove());
-    const n = document.createElement('div'); n.className = 'n';
-    const si = new Image(); si.src = starSrc('l'); si.alt = '';
-    const nt = document.createElement('span'); nt.className = 'sh-txt'; nt.textContent = w.name;
-    n.appendChild(si); n.appendChild(nt);
-    const l = document.createElement('div'); l.className = 'l'; l.textContent = w.line;
-    d.appendChild(n); d.appendChild(l);
-    if (!still()) play(d, [{ scale: '0.7', opacity: 0 }, { scale: '1.04', opacity: 1, offset: 0.6 }, { scale: '1', opacity: 1 }], { duration: 380, easing: 'ease-out' });
-    return d;
-  };
   const place = (btn) => {
     const c = ORDER[sel], lit = state.lit[c] || 0;
     if (!(state.toPlace > 0) || lit >= STARS_EACH) return;
@@ -376,26 +468,28 @@ export function openMap(state, opts = {}) {
     const s = new Image(); s.src = starSrc('l'); s.className = 'sm-fly'; s.alt = '';
     s.style.transform = 'translate(' + fx + 'px,' + fy + 'px)';
     document.body.appendChild(s);
+    const big = isPerk(lit);
     const landed = () => {
       s.remove();
       state.lit[c] = lit + 1; state.toPlace -= 1; count();
       flash = { c, i: lit, t0: performance.now() };
-      const star = lit + 1, got = isPerk(lit) ? perkAt(c, star) : null;
-      if (!got) { paintFoot(); return; }
+      const star = lit + 1, got = big ? perkAt(c, star) : null;
+      if (!got) { paintFoot(true); return; }
+      boom = { c, j: star / PER, t0: performance.now() };
       run = { c, t0: performance.now() + 150 };
-      const show = (k) => { state.chosen[c + star] = k; paintFoot(perkCard([k])); tag(k); if (opts.lit) opts.lit(k); };
-      if (got.length > 1 && !state.chosen[c + star]) paintFoot(perkCard(got, show));
-      else show(state.chosen[c + star] || got[0]);
+      paintFoot(false);
+      const chosen = state.chosen[c + star];
+      setTimeout(() => celebrate(chosen ? [chosen] : got, star, () => paintFoot(false)), still() ? 0 : 560);
     };
     if (still()) { landed(); return; }
     const mx = (fx + tx) / 2, my = Math.min(fy, ty) - 60;
     play(s, [
       { transform: 'translate(' + fx + 'px,' + fy + 'px) scale(.6)' },
-      { transform: 'translate(' + mx + 'px,' + my + 'px) scale(1.4)', offset: 0.5 },
+      { transform: 'translate(' + mx + 'px,' + my + 'px) scale(' + (big ? 2.2 : 1.4) + ')', offset: 0.5 },
       { transform: 'translate(' + tx + 'px,' + ty + 'px) scale(.8)' },
-    ], { duration: 700, easing: 'cubic-bezier(.45,0,.4,1)' }).then(landed);
+    ], { duration: big ? 820 : 700, easing: 'cubic-bezier(.45,0,.4,1)' }).then(landed);
   };
   paintFoot();
   // the bench earns XP while the map is open: a level is a new star to place, said at once
-  return { close, refresh() { count(); prog(); const go = foot.querySelector('.sm-go'); if (go) go.disabled = !(state.toPlace > 0) || (state.lit[ORDER[sel]] || 0) >= STARS_EACH; } };
+  return { close, refresh() { count(); prog(); const can = state.toPlace > 0 && (state.lit[ORDER[sel]] || 0) < STARS_EACH; for (const g of foot.querySelectorAll('.sm-go, .sm-unlock')) g.disabled = !can; } };
 }

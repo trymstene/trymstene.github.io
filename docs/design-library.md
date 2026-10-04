@@ -1942,6 +1942,18 @@ the flag). The bench earns and saves nothing.
   every walk-over pickup, ghosts included; `perkSpeed()` in every walk step, night from the world's own clock), and the
   bench sets `window.__perks` while a button is lit. For every player today both are 1. Proved by the walk: an egg a step
   out of reach stays put, then comes in with Long reach on.
+- **⭐ The way to a perk builds, and the perk lands** (Trym, 4 Oct 2026: *"theres not much exciting change visually that makes
+  me see that im about to unlock something, the button is the same, it stays at the same place … think game design here, how
+  would you build expectations"*). Four stars to a perk, shown as four pips that fill (the fourth, bigger, is the perk). With
+  ONE to go the next-perk box takes over: a glowing frame, "Your next star unlocks it", the perk opened, and its own big
+  pulsing **Unlock {perk}** button where Place a star stood (at the 20th, "Choose your perk"; at the 40th, "Unlock the top
+  star"), while its star in the sky pulses wide with turning rays. The unlock: the star flies bigger, three rings burst out of
+  the perk star, and the card celebrates (a solid ground, light turning round the perk's badge, its name in Shimmer's type,
+  what it does, "Nice"); the map under it must not show through (it muddled the words).
+- **💙 After 99 the XP itself is blue** (Trym: *"the XP glowing dots animation should also become blue"*): while the pill
+  is blue (`.sh-pill`), world-xp flies blue orbs, lights a blue halo and pill ring, and the "+N XP" reads in blue.
+- **One thing is called a star** (Trym, twice: *"Whats falling star?"*, *"we say 'Place a star', theres no reference to
+  stardust anywhere"*): stardust is off the bench; whatever the wishes are bought with must not be named after stars.
 - **The card spells out ONE perk at a time** (Trym: *"its a lot of text … easy to miss other text, like 'Next at star 12'"*):
   the perk a star just lit, under "New perk" (a tap puts it away); the next one is a count ("Next perk in 4 stars") over a
   row with its name and kind, and a tap opens what it does. The list works the same way, one open at a time.

@@ -47,7 +47,7 @@ for (const a of AREAS) {
     await page.waitForTimeout(1500);
     const buttons = page.locator('.shb-body button:not([disabled])');
     const n = await buttons.count();
-    expect(n, 'Shimmer’s seven (Everything on among them), the area’s sign’s and the Banana’s').toBe(7 + a.perks);
+    expect(n, 'Shimmer’s six (Everything on among them), the area’s sign’s and the Banana’s').toBe(6 + a.perks);
     for (let i = 0; i < n; i++) {
       const b = buttons.nth(i), label = (await b.textContent()).trim();
       if (label === 'Star Map') continue;   // its own walk below
@@ -72,49 +72,80 @@ test('every perk on the ladder has its words in its own sign, with a kind, and n
   for (const k of new Set(Object.values(KIND))) expect(W.kinds[k], 'the kind ' + k + ' has its words').toBeTruthy();
 });
 
-test('park: the Star Map places a star, the sixteenth lights its perk, and a tap on the map never reaches the park', async ({ page }) => {
+// ⭐ THE WAY TO A PERK, AND THE PERK (Trym, 4 Oct 2026: "theres not much exciting change visually that makes me see that im about
+// to unlock something … the button is the same, it stays at the same place"). The bench's Sunflower holds 15 stars: one from
+// Rare birds. So the next-perk box is READY: it glows, the perk is open, three of four pips are lit, and its own Unlock button
+// stands in for Place a star. Unlocking it, the card celebrates the perk (and "Nice" hands the map back); the next one is a
+// count and a row again, opened by a tap. A tap on the map never reaches the park under it (it opened a flower spot once).
+test('park: one star from a perk the box gets ready, the unlock celebrates it, and a tap on the map never reaches the park', async ({ page }) => {
   const errs = await open(page, '/park/?shimmer');
   await page.waitForSelector('.shb', { timeout: 30000 });
   await page.waitForTimeout(1500);
   await page.locator('.shb button', { hasText: 'Star Map' }).evaluate((el) => el.click());
   await page.waitForSelector('.sm-card', { timeout: 5000 });
   await expect(page.locator('.sm-top span')).toHaveText(W.map.toPlace.replace('{n}', '12'));
-  // 💬 a perk is said by what it does (Trym: "no user understands what a skill / perc is by just reading a perk-name"): the
-  // next one under the constellation carries its kind in a player's words and its line, and the list has every one
   const birds = perkOf('rarebirds');
-  // 💬 ONE PERK SPELLED OUT AT A TIME (Trym, 4 Oct 2026: "its a lot of text … easy to miss other text, like 'Next at star 12'"):
-  // the next perk is a count and one row, its name and kind; a tap opens what it does
+  await expect(page.locator('.sm-next.is-ready'), 'one star to go: the box is ready').toHaveCount(1);
   await expect(page.locator('.sm-next .sm-cap')).toHaveText(W.map.nextOne);
-  await expect(page.locator('.sm-next .sm-pl .nm em')).toHaveText(W.kinds.lucky);
-  await expect(page.locator('.sm-next .sm-pl .ln'), 'what it does waits for a tap').toBeHidden();
-  await page.locator('.sm-next .sm-pl').evaluate((el) => el.click());
-  await expect(page.locator('.sm-next .sm-pl .ln')).toHaveText(birds.line);
+  await expect(page.locator('.sm-next .sm-pl .ln'), 'the perk opened').toHaveText(birds.line);
   await expect(page.locator('.sm-next .sm-pl .ln')).toBeVisible();
+  await expect(page.locator('.sm-pips img.is-on'), 'three of four pips').toHaveCount(3);
+  await expect(page.locator('.sm-unlock')).toHaveText(W.map.unlock.replace('{perk}', birds.name));
+  await expect(page.locator('.sm-go'), 'Place a star steps aside for it').toBeHidden();
   // and under the sign's name, what every star in it gives (the stars between two perks too)
   await expect(page.locator('.sm-row .t span')).toHaveText(W.constellations[0].each);
+  // 💬 the list: every perk a row, opened by a tap, one at a time
   await page.locator('.sm-next .sm-btn', { hasText: W.map.all }).evaluate((el) => el.click());
   await expect(page.locator('.sm-li'), 'ten perk stars in the Sunflower').toHaveCount(10);
-  expect(await page.locator('.sm-li .sm-pl .ln').evaluateAll((ns) => ns.filter((n) => n.textContent.trim().length > 10).length), 'every perk with its line, the choice\u2019s two included').toBe(11);
-  await expect(page.locator('.sm-li.is-next .nm').first()).toContainText(birds.name);
+  expect(await page.locator('.sm-li .sm-pl .ln').evaluateAll((ns) => ns.filter((n) => n.textContent.trim().length > 10).length), 'every perk with its line, the choice’s two included').toBe(11);
+  await expect(page.locator('.sm-li .sm-pl.is-open')).toHaveCount(0);
+  await page.locator('.sm-li').nth(1).locator('.sm-pl').evaluate((el) => el.click());
+  await page.locator('.sm-li').nth(2).locator('.sm-pl').evaluate((el) => el.click());
+  await expect(page.locator('.sm-li .sm-pl.is-open'), 'one open at a time').toHaveCount(1);
   await page.screenshot({ path: 'test-results/shimmer-map-list.png' });
   await page.locator('.sm-lhead .sm-btn').evaluate((el) => el.click());
   await expect(page.locator('.sm-skywrap')).toBeVisible();
-  await page.locator('.sm-go').evaluate((el) => el.click());
-  const perk = perkOf('rarebirds');
-  await expect(page.locator('.sm-perk .sm-cap'), 'the one perk spelled out: the new one').toHaveText(W.map.newPerk, { timeout: 4000 });
-  await expect(page.locator('.sm-perk .n'), 'the Sunflower’s 16th star: Rare birds').toHaveText(perk.name, { timeout: 4000 });
-  await expect(page.locator('.sm-next .sm-pl.is-open'), 'and the next one stays a row').toHaveCount(0);
-  await expect(page.locator('.sm-perk .l')).toHaveText(perk.line);
+  await page.screenshot({ path: 'test-results/shimmer-map-ready.png' });
+  // 🎉 the unlock
+  await page.locator('.sm-unlock').evaluate((el) => el.click());
+  await expect(page.locator('.sm-cel .sm-cap'), 'the card celebrates it').toHaveText(W.map.unlocked, { timeout: 4000 });
+  await expect(page.locator('.sm-cel .n')).toHaveText(birds.name);
+  await expect(page.locator('.sm-cel .l')).toHaveText(birds.line);
   await expect(page.locator('.sm-top span')).toHaveText(W.map.toPlace.replace('{n}', '11'));
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: 'test-results/shimmer-map-unlocked.png' });
+  await page.locator('.sm-cel .sm-ok').evaluate((el) => el.click());
+  await expect(page.locator('.sm-cel'), 'Nice hands the map back').toHaveCount(0);
+  // the next is a count and a row again: the twentieth star, a choice, four stars away
+  await expect(page.locator('.sm-next.is-ready')).toHaveCount(0);
+  await expect(page.locator('.sm-next .sm-cap')).toHaveText(W.map.nextIn.replace('{n}', '4') + ' · ' + W.map.pick);
+  await expect(page.locator('.sm-pips img.is-on')).toHaveCount(0);
+  await expect(page.locator('.sm-go')).toBeVisible();
+  await expect(page.locator('.sm-next .sm-pl .ln').first(), 'what it does waits for a tap').toBeHidden();
+  await page.locator('.sm-next .sm-pl').first().evaluate((el) => el.click());
+  await expect(page.locator('.sm-next .sm-pl .ln').first()).toBeVisible();
   // the whole card on a phone's view: the sky and its button, no scroll inside it
   expect(await page.evaluate(() => { const c = document.querySelector('.sm-card'); return c.scrollHeight <= c.clientHeight + 1; }), 'the map fits the view').toBe(true);
-  await page.screenshot({ path: 'test-results/shimmer-map-perk.png' });
   // a real tap on the map's close: the park under it must not hear it (it opened a flower spot)
   const x = await page.locator('.sm-x').boundingBox();
   await page.mouse.click(x.x + x.width / 2, x.y + x.height / 2);
   await page.waitForTimeout(600);
   expect(await page.locator('.sm-card').count(), 'closed').toBe(0);
   expect(await page.evaluate(() => [...document.querySelectorAll('.pk-panel:not([hidden]), .pk-sheet:not([hidden])')].filter((e) => e.getClientRects().length).length), 'and nothing of the park opened under it').toBe(0);
+  expect(errs).toEqual([]);
+});
+
+// 💙 THE XP IN SHIMMER'S LIGHT (Trym, 4 Oct 2026: "when im over on Shimmer … with a blue pill - the XP glowing dots animation
+// should also become blue, not yellow like the normal XP system"): with the pill blue, a real grant flies blue orbs
+test('park: with the pill blue, the XP orbs fly blue', async ({ page }) => {
+  const errs = await open(page, '/park/?shimmer&xptest');
+  await page.waitForSelector('.shb', { timeout: 30000 });
+  await page.waitForFunction(() => !!window.__xp, null, { timeout: 10000 });
+  await page.waitForTimeout(1200);
+  await page.locator('.shb button', { hasText: 'Blue pill' }).evaluate((el) => el.click());
+  await page.evaluate(() => window.__xp.grant(60));
+  await expect.poll(() => page.locator('.wx-orb.wx--sh').count(), { timeout: 4000 }).toBeGreaterThan(0);
+  expect(await page.locator('.wx-orb:not(.wx--sh)').count(), 'none in gold').toBe(0);
   expect(errs).toEqual([]);
 });
 
